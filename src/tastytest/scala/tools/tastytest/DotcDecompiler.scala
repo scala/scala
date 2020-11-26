@@ -1,8 +1,6 @@
 package scala.tools.tastytest
 
-import scala.util.{ Try, Success }
-
-import java.lang.reflect.Modifier
+import scala.util.Try
 
 object DotcDecompiler extends Script.Command {
 
@@ -19,7 +17,7 @@ object DotcDecompiler extends Script.Command {
       println(red(s"please provide at least 1 argument in sub-command: $describe"))
       return 1
     }
-    val Seq(tasty, additionalSettings @ _*) = args
+    val Seq(tasty, additionalSettings @ _*) = args: @unchecked
     val success = decompile(tasty, additionalSettings).get
     if (success) 0 else 1
   }

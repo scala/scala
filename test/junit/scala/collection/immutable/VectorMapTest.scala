@@ -45,67 +45,67 @@ class VectorMapTest {
   }
 
   @Test
-  def hasCorrectIterator: Unit = {
+  def hasCorrectIterator(): Unit = {
     val m = VectorMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
     assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator.toList)
   }
 
   @Test
-  def keysShouldPreserveOrderAsInserted: Unit = {
+  def keysShouldPreserveOrderAsInserted(): Unit = {
     val m = VectorMap("a" -> "1", "b" -> "2", "c" -> "3", "d" -> "4", "e" -> "5")
     assertEquals(List("A", "B", "C", "D", "E"), m.keys.map(_.toUpperCase).toList)
   }
 
   @Test
-  def handlesNullKeys_t11217: Unit = {
+  def handlesNullKeys_t11217(): Unit = {
     val m = VectorMap((null, 1), ("a", 2))
     assertEquals(List(null, "a"), m.keys.toList)
   }
 
   @Test
-  def hasCorrectInit_t11218: Unit = {
+  def hasCorrectInit_t11218(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(2).init
     assertEquals(List(1 -> "a"), m.toList)
   }
 
   @Test
-  def removeAllIsEmpty_t11220: Unit = {
+  def removeAllIsEmpty_t11220(): Unit = {
     val m = VectorMap(1 -> "a") - 1 + (2 -> "b") - 2
     assertEquals(List(), m.toList)
   }
 
   @Test
-  def removeLast_t11220: Unit = {
+  def removeLast_t11220(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b").removed(2).updated(3, "c")
     assertEquals(List(1 -> "a", 3 -> "c"), m.toList)
   }
 
   @Test
-  def removeLast_t11220_2: Unit = {
+  def removeLast_t11220_2(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b").removed(2).updated(3, "c").removed(3)
     assertEquals(List(1 -> "a"), m.toList)
   }
 
   @Test
-  def hasCorrectInit_t11218_2: Unit = {
+  def hasCorrectInit_t11218_2(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(3).init
     assertEquals(List(1 -> "a"), m.toList)
   }
 
   @Test
-  def hasCorrectTail: Unit = {
+  def hasCorrectTail(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").tail.removed(3)
     assertEquals(List(2 -> "b"), m.toList)
   }
 
   @Test
-  def removeInit: Unit = {
+  def removeInit(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(1).init
     assertEquals(List(2 -> "b"), m.toList)
   }
 
   @Test
-  def removeInit_2: Unit = {
+  def removeInit_2(): Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d", 5 -> "e").removed(1).removed(4).init
     assertEquals(List(2 -> "b", 3 -> "c"), m.toList)
   }

@@ -124,7 +124,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   /** Evaluate an action body and judge whether it passed. */
-  def nextTestAction[T](body: => T)(eval: PartialFunction[T, TestState]): TestState = eval.applyOrElse(body, (_: T) => genPass)
+  def nextTestAction[T](body: => T)(eval: PartialFunction[T, TestState]): TestState = eval.applyOrElse(body, (_: T) => genPass())
   /** If the action does not result in true, fail the action. */
   def nextTestActionExpectTrue(reason: String, body: => Boolean): TestState = nextTestAction(body) { case false => genFail(reason) }
   /** Fail the action. */
@@ -208,15 +208,15 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
             case Failure(e) => outFile.appendAll(stackTraceString(e)) ; return -1
             case Success(v) => v
           }
-        try p.exitValue
+        try p.exitValue()
         catch {
           case e: InterruptedException =>
             suiteRunner.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
-            p.destroy
+            p.destroy()
             nonzero
           case t: Throwable =>
             suiteRunner.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
-            p.destroy
+            p.destroy()
             throw t
         }
       }
@@ -272,7 +272,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
         case Left((status, throwable)) if status != 0 =>
           genFail("non-zero exit code")
         case _ =>
-          genPass
+          genPass()
       }
     }
   }
@@ -412,7 +412,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     normalizeLog()
     pushTranscript(s"diff $checkFile $logFile")
     currentDiff match {
-      case "" => genPass
+      case "" => genPass()
       case diff if config.optUpdateCheck =>
         suiteRunner.verbose("Updating checkfile " + checkFile)
         checkFile.writeAll(logFile.fileContents)
@@ -541,9 +541,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   // run compilation until failure, evaluate `andAlso` on success
-  def runTestCommon(andAlso: => TestState = genPass): TestState = runInContext {
+  def runTestCommon(andAlso: => TestState = genPass()): TestState = runInContext {
     // DirectCompiler already says compilation failed
-    val res = compilationRounds(testFile).find(!_.result.isOk).map(_.result).getOrElse(genPass)
+    val res = compilationRounds(testFile).find(!_.result.isOk).map(_.result).getOrElse(genPass())
     res andAlso andAlso
   }
 
@@ -609,7 +609,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     def loop(): TestState = {
       logWriter.print(prompt)
       resReader.readLine() match {
-        case null | ""  => logWriter.close() ; genPass
+        case null | ""  => logWriter.close() ; genPass()
         case line       => resCompile(line) andAlso loop()
       }
     }
@@ -635,7 +635,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       case k if k.endsWith("-neg") => runNegTest()
       case _              => runRunTest()
     }
-    (state, stopwatch.stop)
+    (state, stopwatch.stop())
   }
 
   private def runRunTest(): TestState = {
@@ -669,7 +669,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     val cmdFile = if (isWin) testFile changeExtension "bat" else testFile
     val succeeded = (((s"$cmdFile $args" #> logFile).!) == 0)
 
-    val result = if (succeeded) genPass else genFail(s"script $cmdFile failed to run")
+    val result = if (succeeded) genPass() else genFail(s"script $cmdFile failed to run")
 
     result andAlso diffIsOk
   }

@@ -31,7 +31,7 @@ abstract class MemoryTest {
       var i = 0
       while (i < calcsPerIter) { calc(); i += 1 }
       1 to 5 foreach (_ => rt.gc())
-      history += memUsage
+      history += memUsage()
     }
 
     1 to 5 foreach (_ => stressTestIter())

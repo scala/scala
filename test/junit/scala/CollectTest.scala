@@ -27,41 +27,41 @@ class CollectTest {
   }
 
   @Test
-  def testListCollect: Unit =
+  def testListCollect(): Unit =
     testing(Seq(1, 2), List(1))(List(1, 2) collect { case x if f(x) && x < 2 => x})
 
   @Test
-  def testListCollectFirst: Unit =
+  def testListCollectFirst(): Unit =
     testing(Seq(1), Some(1))(List(1, 2) collectFirst { case x if f(x) && x < 2 => x})
 
   @Test
-  def testOptionCollect1: Unit =
+  def testOptionCollect1(): Unit =
     testing(Seq(1), Some(1))(Some(1) collect { case x if f(x) && x < 2 => x})
 
   @Test
-  def testOptionCollect2: Unit =
+  def testOptionCollect2(): Unit =
     testing(Seq(2), None)(Some(2) collect { case x if f(x) && x < 2 => x})
 
   @deprecated("Tests deprecated Stream", since="2.13")
   @Test
-  def testStreamCollect: Unit =
+  def testStreamCollect(): Unit =
     testing(Seq(1, 2), List(1))((Stream(1, 2).collect { case x if f(x) && x < 2 => x}).toList)
 
   @deprecated("Tests deprecated Stream", since="2.13")
   @Test
-  def testStreamCollectFirst: Unit =
+  def testStreamCollectFirst(): Unit =
     testing(Seq(1), Some(1))(Stream.continually(1) collectFirst { case x if f(x) && x < 2 => x})
 
   @Ignore @Test
-  def testIteratorCollect: Unit =
+  def testIteratorCollect(): Unit =
     testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
 
   @Ignore @Test
-  def testListViewCollect: Unit =
+  def testListViewCollect(): Unit =
     testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
 
   @Ignore @Test
-  def testFutureCollect: Unit = {
+  def testFutureCollect(): Unit = {
     // This would do the trick in Future.collect, but I haven't added this yet as there is a tradeoff
     // with extra allocations to consider.
     //

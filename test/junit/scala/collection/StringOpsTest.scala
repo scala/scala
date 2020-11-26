@@ -98,7 +98,7 @@ class StringOpsTest {
     assertEquals("hello".withFilter(_ != 'e').map(_.toUpper), "HLLO")
   }
 
-  @Test def collect: Unit = {
+  @Test def collect(): Unit = {
     assertEquals("de", "abcdef".collect { case c @ ('b' | 'c') => (c+2).toChar })
     assertEquals(Seq('d'.toInt, 'e'.toInt), "abcdef".collect { case c @ ('b' | 'c') => (c+2).toInt })
   }

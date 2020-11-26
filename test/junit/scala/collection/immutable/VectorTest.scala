@@ -58,7 +58,7 @@ class VectorTest {
     assertSame(m, Vector.apply(m: _*))
   }
 
-  @Test def checkSearch: Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+  @Test def checkSearch(): Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
   @Test
   def emptyIteratorReuse(): Unit = {
@@ -73,12 +73,12 @@ class VectorTest {
   }
 
   @Test
-  def concat: Unit = {
+  def concat(): Unit = {
     assertEquals(Vector.from(1 to 100), Vector.from(1 to 7) concat Vector.from(8 to 100))
   }
 
   @Test
-  def copyToArray: Unit = {
+  def copyToArray(): Unit = {
     val array = Array.fill(100)(2)
     Vector.fill(100)(1).copyToArray(array, 0, 100)
     assertEquals(array.toSeq, Seq.fill(100)(1))
@@ -304,7 +304,7 @@ class VectorTest {
   val verySmallSizes = allSizes.filter(_ <= WIDTH*WIDTH)
 
   @Test
-  def testAligned: Unit = for(size <- smallSizes) {
+  def testAligned(): Unit = for(size <- smallSizes) {
     val v = Vector.range(0, size)
     //println(v.toDebugString)
     validateDebug(v)
@@ -313,7 +313,7 @@ class VectorTest {
   }
 
   @Test
-  def testNonAligned: Unit = for(size <- smallSizes.filter(n => n > 0 && n < WIDTH*WIDTH*WIDTH*WIDTH)) {
+  def testNonAligned(): Unit = for(size <- smallSizes.filter(n => n > 0 && n < WIDTH*WIDTH*WIDTH*WIDTH)) {
     val v0 = Vector.range(1, size)
     val v = 0 +: v0
     //println(v0.toDebugString)
@@ -325,7 +325,7 @@ class VectorTest {
 
 
   @Test
-  def testUpdate: Unit = for(size <- smallSizes) {
+  def testUpdate(): Unit = for(size <- smallSizes) {
     var v = Vector.range(0, size)
     var i = 0
     while(i < size) {
@@ -336,7 +336,7 @@ class VectorTest {
   }
 
   @Test
-  def testSlice1: Unit = for(size <- smallSizes) {
+  def testSlice1(): Unit = for(size <- smallSizes) {
     val step = size/16 max 1
     val v = Vector.range(0, size)
     for {
@@ -353,7 +353,7 @@ class VectorTest {
   }
 
   @Test
-  def testSlice2: Unit = for(size <- Seq(10, 100, 1000, 10000)) {
+  def testSlice2(): Unit = for(size <- Seq(10, 100, 1000, 10000)) {
     val o = new AnyRef
     val coll = Vector.fill(size)(o)
     val inc = size / 10
@@ -373,12 +373,12 @@ class VectorTest {
   }
 
   @Test
-  def testSlice3: Unit = {
+  def testSlice3(): Unit = {
     assertEquals(Vector(1).slice(1, -2147483648), Vector())
   }
 
   @Test
-  def testTail: Unit = for(size <- verySmallSizes) {
+  def testTail(): Unit = for(size <- verySmallSizes) {
     var i = 0
     var v = Vector.range(0, size)
     //println("testTail: "+size)
@@ -390,7 +390,7 @@ class VectorTest {
   }
 
   @Test
-  def testRebuild: Unit = for(size <- smallSizes) {
+  def testRebuild(): Unit = for(size <- smallSizes) {
     for(prependSize <- verySmallSizes) {
       var v = Vector.range(0, size + prependSize)
       for(i <- prependSize to 0 by -1) {
@@ -406,7 +406,7 @@ class VectorTest {
   }
 
   @Test
-  def testAppendAll: Unit = for(size <- smallSizes) {
+  def testAppendAll(): Unit = for(size <- smallSizes) {
     for(appendSize <- smallSizes) {
       val v = Vector.range(0, size)
       val v2 = Vector.range(size, size + appendSize)

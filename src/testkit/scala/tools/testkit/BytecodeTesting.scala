@@ -97,7 +97,7 @@ class Compiler(val global: Global) {
   }
 
   def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): ClassNode = {
-    val List(c) = compileClasses(code, javaCode, allowMessage)
+    val List(c) = compileClasses(code, javaCode, allowMessage): @unchecked
     c
   }
 
@@ -127,7 +127,7 @@ class Compiler(val global: Global) {
   }
 
   def compileAsmMethod(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): MethodNode = {
-    val List(m) = compileAsmMethods(code, allowMessage)
+    val List(m) = compileAsmMethods(code, allowMessage): @unchecked
     m
   }
 
@@ -135,12 +135,12 @@ class Compiler(val global: Global) {
     compileAsmMethods(code, allowMessage).map(convertMethod)
 
   def compileMethod(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): Method = {
-    val List(m) = compileMethods(code, allowMessage = allowMessage)
+    val List(m) = compileMethods(code, allowMessage = allowMessage): @unchecked
     m
   }
 
   def compileInstructions(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): List[Instruction] = {
-    val List(m) = compileMethods(code, allowMessage = allowMessage)
+    val List(m) = compileMethods(code, allowMessage = allowMessage): @unchecked
     m.instructions
   }
 }
@@ -276,7 +276,7 @@ object BytecodeTesting {
   }
 
   def findClass(cs: List[ClassNode], name: String): ClassNode = {
-    val List(c) = cs.filter(_.name == name)
+    val List(c) = cs.filter(_.name == name): @unchecked
     c
   }
 
@@ -329,7 +329,7 @@ object BytecodeTesting {
    * If `query` starts with a `+`, the next instruction is returned.
    */
   def findInstr(method: MethodNode, query: String): AbstractInsnNode = {
-    val List(i) = findInstrs(method, query)
+    val List(i) = findInstrs(method, query): @unchecked
     i
   }
 

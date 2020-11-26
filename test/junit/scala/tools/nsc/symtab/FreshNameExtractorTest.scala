@@ -17,7 +17,7 @@ class FreshNameExtractorTest {
   val prefixes = List("foo$", "x$", "bar", "bippy$baz$")
 
   @Test
-  def extractionPreservesPrefix =
+  def extractionPreservesPrefix(): Unit =
     ("" :: prefixes).foreach { creatorPrefix =>
       prefixes.foreach { newPrefix =>
         val Creator = new FreshNameCreator(creatorPrefix)
@@ -28,7 +28,7 @@ class FreshNameExtractorTest {
     }
 
   @Test
-  def extractionFailsOnCreatorPrefixMismatch = {
+  def extractionFailsOnCreatorPrefixMismatch(): Unit = {
     val Creator = new FreshNameCreator(prefixes.head)
     val Extractor = new FreshNameExtractor(prefixes.tail.head)
     assertThrows[MatchError] {
@@ -37,7 +37,7 @@ class FreshNameExtractorTest {
   }
 
   @Test
-  def `no numeric suffix? no problem!` = {
+  def `no numeric suffix? no problem!`(): Unit = {
     val Creator   = new FreshNameCreator(prefixes.head)
     val Extractor = new FreshNameExtractor(prefixes.head)
     TermName(Creator.newName("foo") + "bar") match {

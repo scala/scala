@@ -22,13 +22,13 @@ class CannotHaveAttrsTest {
   import symbolTable._
 
   @Test
-  def canHaveAttrsIsFalse =
+  def canHaveAttrsIsFalse(): Unit =
     attrlessTrees.foreach { t =>
       assertFalse(t.canHaveAttrs)
     }
 
   @Test
-  def defaultPosAssignment =
+  def defaultPosAssignment(): Unit =
     attrlessTrees.foreach { t =>
       assertEquals(t.pos, NoPosition)
       t.pos = NoPosition
@@ -38,7 +38,7 @@ class CannotHaveAttrsTest {
     }
 
   @Test
-  def defaultTpeAssignment =
+  def defaultTpeAssignment(): Unit =
     attrlessTrees.foreach { t =>
       assertEquals(t.tpe, NoType)
       t.tpe = NoType
@@ -48,7 +48,7 @@ class CannotHaveAttrsTest {
     }
 
   @Test @org.junit.Ignore("scala/bug#8816")
-  def nonDefaultPosAssignmentFails = {
+  def nonDefaultPosAssignmentFails(): Unit = {
     val pos = new OffsetPosition(null, 0)
     attrlessTrees.foreach { t =>
       assertThrows[IllegalArgumentException] { t.pos = pos }
@@ -57,7 +57,7 @@ class CannotHaveAttrsTest {
   }
 
   @Test @org.junit.Ignore("scala/bug#8816")
-  def nonDefaultTpeAssignmentFails = {
+  def nonDefaultTpeAssignmentFails(): Unit = {
     val tpe = typeOf[Int]
     attrlessTrees.foreach { t =>
       assertThrows[IllegalArgumentException] { t.tpe = tpe }
@@ -67,7 +67,7 @@ class CannotHaveAttrsTest {
 
   class Attach
   @Test
-  def attachmentsAreIgnored = {
+  def attachmentsAreIgnored(): Unit = {
     attrlessTrees.foreach { t =>
       t.setAttachments(NoPosition.update(new Attach))
       assertEquals(NoPosition, t.attachments)

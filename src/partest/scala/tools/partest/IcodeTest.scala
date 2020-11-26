@@ -35,7 +35,7 @@ abstract class IcodeTest extends DirectTest {
     compile("-d" :: testOutput.path :: args.toList : _*)
     val icodeFiles = testOutput.files.toList filter (_ hasExtension "icode")
 
-    try     icodeFiles sortBy (_.name) flatMap (f => f.lines.toList)
+    try     icodeFiles sortBy (_.name) flatMap (f => f.lines().toList)
     finally icodeFiles foreach (f => f.delete())
   }
 

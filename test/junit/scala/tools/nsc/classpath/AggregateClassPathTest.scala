@@ -107,7 +107,7 @@ class AggregateClassPathTest {
   }
 
   @Test
-  def testGettingPackages: Unit = {
+  def testGettingPackages(): Unit = {
     case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
       override def packages(inPackage: PackageName): Seq[PackageEntry] =
         packagesInPackage.find(_.inPackage == inPackage.dottedString).map(_.names).getOrElse(Nil) map PackageEntryImpl
@@ -129,7 +129,7 @@ class AggregateClassPathTest {
   }
 
   @Test
-  def testGettingClasses: Unit = {
+  def testGettingClasses(): Unit = {
     val cp = createDefaultTestClasspath()
 
     val classesInPkg1 = Seq(classFileEntry(dir2, pkg1, "C"),
@@ -151,7 +151,7 @@ class AggregateClassPathTest {
   }
 
   @Test
-  def testGettingSources: Unit = {
+  def testGettingSources(): Unit = {
     val partialClassPaths = Seq(TestClassPath(dir1, EntryNamesInPackage(pkg1)("F", "A", "G")),
       TestSourcePath(dir2, EntryNamesInPackage(pkg1)("C", "B", "A"), EntryNamesInPackage(pkg2)("D", "A", "E")),
       TestSourcePath(dir3, EntryNamesInPackage(pkg1)("A", "D", "F")),
@@ -179,7 +179,7 @@ class AggregateClassPathTest {
   }
 
   @Test
-  def testList: Unit = {
+  def testList(): Unit = {
     val cp = createDefaultTestClasspath()
 
     val classesAndSourcesInPkg1 = Seq(
@@ -196,7 +196,7 @@ class AggregateClassPathTest {
   }
 
   @Test
-  def testFindClass: Unit = {
+  def testFindClass(): Unit = {
     val cp = createDefaultTestClasspath()
 
     assertEquals(

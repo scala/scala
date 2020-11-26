@@ -17,6 +17,7 @@ import java.lang.management.ManagementFactory
 
 import org.junit.Assert.{assertEquals, assertTrue, fail}
 
+import scala.annotation.nowarn
 import scala.reflect.{ClassTag, classTag}
 
 object AllocationTest {
@@ -41,6 +42,7 @@ object AllocationTest {
 
     def double = 1D
 
+    @nowarn("cat=lint-nullary-unit")
     def unit = ()
 
     def sizeOf[T <: AnyRef](fn: => T): T = fn

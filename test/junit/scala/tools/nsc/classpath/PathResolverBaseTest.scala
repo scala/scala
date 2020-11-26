@@ -37,7 +37,7 @@ class PathResolverBaseTest {
   private val settings = new Settings
 
   @Before
-  def initTempDirAndSourcePath: Unit = {
+  def initTempDirAndSourcePath(): Unit = {
     // In Java TemporaryFolder in JUnit is managed automatically using @Rule.
     // It would work also in Scala after adding and extending a class like
     // TestWithTempFolder.java containing it. But in this case it doesn't work when running tests
@@ -56,13 +56,13 @@ class PathResolverBaseTest {
   }
 
   @After
-  def deleteTempDir: Unit = tempDir.delete()
+  def deleteTempDir(): Unit = tempDir.delete()
 
   private def createFlatClassPath(settings: Settings) =
     new PathResolver(settings, new CloseableRegistry).result
 
   @Test
-  def testEntriesFromListOperationAgainstSeparateMethods: Unit = {
+  def testEntriesFromListOperationAgainstSeparateMethods(): Unit = {
     val classPath = createFlatClassPath(settings)
 
     def compareEntriesInPackage(inPackage: String): Unit = {
@@ -95,7 +95,7 @@ class PathResolverBaseTest {
   }
 
   @Test
-  def testFindClassFile: Unit = {
+  def testFindClassFile(): Unit = {
     val classPath = createFlatClassPath(settings)
     classFilesToFind foreach { className =>
       assertTrue(s"File for $className should be found", classPath.findClassFile(className).isDefined)
@@ -103,7 +103,7 @@ class PathResolverBaseTest {
   }
 
   @Test
-  def testFindClass: Unit = {
+  def testFindClass(): Unit = {
     val classPath = createFlatClassPath(settings)
     classesToFind foreach { className =>
       assertTrue(s"File for $className should be found", classPath.findClass(className).isDefined)

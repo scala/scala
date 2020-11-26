@@ -9,20 +9,20 @@ import org.junit.Assert._
 @RunWith(classOf[JUnit4])
 class AnyRefMapTest {
 
-  @Test def testAnyRefMapCopy: Unit = {
+  @Test def testAnyRefMapCopy(): Unit = {
     val m1 = AnyRefMap("a" -> "b")
     val m2: AnyRefMap[String, AnyRef] = AnyRefMap.from(m1)
     assertEquals(m1, m2)
   }
 
-  @Test def testAnyRefMapContains: Unit = {
+  @Test def testAnyRefMapContains(): Unit = {
     val m = AnyRefMap("a" -> 1)
     assertEquals(1, m.size)
     assertTrue(m.contains("a"))
   }
 
   @Test
-  def test10540: Unit = {
+  def test10540(): Unit = {
     val badHashCode = -2105619938
     val reported = "K00278:18:H7C2NBBXX:7:1111:7791:21465"
     val equivalent = "JK1C=H"
@@ -35,14 +35,14 @@ class AnyRefMapTest {
 
   @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def t10876: Unit = {
+  def t10876(): Unit = {
     val m = collection.mutable.AnyRefMap("fish" -> 3)
     val m2 = m + (("birds", 2))
     assertEquals(Map("fish" -> 3, "birds" -> 2), (m2: collection.mutable.AnyRefMap[String, Int]))
   }
 
   @Test
-  def testClear: Unit = {
+  def testClear(): Unit = {
     val map = new AnyRefMap[String, String]()
     map("greeting") = "hi"
     map("farewell") = "bye"
@@ -57,7 +57,7 @@ class AnyRefMapTest {
   }
 
   @Test
-  def testClearMemoryReuse: Unit = { // otherwise there's no point to the override
+  def testClearMemoryReuse(): Unit = { // otherwise there's no point to the override
     val map = new AnyRefMap[String, Int]
     def getField[T <: AnyRef](name: String): T =
       reflect.ensureAccessible(map.getClass.getDeclaredField("scala$collection$mutable$AnyRefMap$$" + name)).get(map).asInstanceOf[T]

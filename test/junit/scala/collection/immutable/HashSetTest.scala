@@ -238,7 +238,7 @@ class HashSetTest extends AllocationTest {
     override def toString: String = s"$hashCode-$other"
   }
   @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
-  @Test def collidingAdd: Unit = {
+  @Test def collidingAdd(): Unit = {
     val initial = generateWithCollisions(1, 1000)
     assertEquals(1000, initial.size)
     assertEquals(1000, initial.toList.size)

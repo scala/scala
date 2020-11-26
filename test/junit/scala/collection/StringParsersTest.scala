@@ -272,45 +272,45 @@ class StringParsersTest {
   )
 
   @Test
-  def doubleSpecificTest: Unit = doubleExamples.foreach(doubleOK)
+  def doubleSpecificTest(): Unit = doubleExamples.foreach(doubleOK)
 
   @Test
-  def doubleGeneralTest: Unit = forAllExamples.foreach(doubleOK)
+  def doubleGeneralTest(): Unit = forAllExamples.foreach(doubleOK)
 
   @Test
-  def floatSpecificTest: Unit = doubleExamples.foreach(floatOK)
+  def floatSpecificTest(): Unit = doubleExamples.foreach(floatOK)
 
   @Test
-  def floatGeneralTest: Unit = forAllExamples.foreach(floatOK)
+  def floatGeneralTest(): Unit = forAllExamples.foreach(floatOK)
 
   @Test
-  def byteTest: Unit = (forAllExamples ::: nearOverflow).foreach(byteOK)
+  def byteTest(): Unit = (forAllExamples ::: nearOverflow).foreach(byteOK)
 
   @Test
-  def shortTest: Unit = (forAllExamples ::: nearOverflow).foreach(shortOK)
+  def shortTest(): Unit = (forAllExamples ::: nearOverflow).foreach(shortOK)
 
   @Test
-  def intTest: Unit = (forAllExamples ::: nearOverflow).foreach(intOK)
+  def intTest(): Unit = (forAllExamples ::: nearOverflow).foreach(intOK)
 
   @Test
-  def longTest: Unit = (forAllExamples ::: longNearOverflow).foreach(longOK)
+  def longTest(): Unit = (forAllExamples ::: longNearOverflow).foreach(longOK)
 
   @Test
-  def nullByte: Unit = assertThrows[NullPointerException](nullstring.toByteOption)
+  def nullByte(): Unit = assertThrows[NullPointerException](nullstring.toByteOption)
 
   @Test
-  def nullShort: Unit = assertThrows[NullPointerException](nullstring.toShortOption)
+  def nullShort(): Unit = assertThrows[NullPointerException](nullstring.toShortOption)
 
   @Test
-  def nullInt: Unit = assertThrows[NullPointerException](nullstring.toIntOption)
+  def nullInt(): Unit = assertThrows[NullPointerException](nullstring.toIntOption)
   
   @Test
-  def nullLong: Unit = assertThrows[NullPointerException](nullstring.toLongOption)
+  def nullLong(): Unit = assertThrows[NullPointerException](nullstring.toLongOption)
 
   @Test
-  def nullFloat: Unit = assertThrows[NullPointerException](nullstring.toFloatOption)
+  def nullFloat(): Unit = assertThrows[NullPointerException](nullstring.toFloatOption)
 
   @Test
-  def nullDouble: Unit = assertThrows[NullPointerException](nullstring.toDoubleOption)
+  def nullDouble(): Unit = assertThrows[NullPointerException](nullstring.toDoubleOption)
 
 }

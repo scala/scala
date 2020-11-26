@@ -11,7 +11,7 @@ import org.junit.runners.JUnit4
 class MatchErrorSerializationTest {
 
   @Test
-  def canSerializeMatchError = {
+  def canSerializeMatchError(): Unit = {
     import java.io._
     val matchError = new MatchError(new Object)
     val barrayOut = new ByteArrayOutputStream()

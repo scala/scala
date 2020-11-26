@@ -18,26 +18,26 @@ object Sizes {
 class Sizes {
   import JOL._
   @Test
-  def list: Unit = {
+  def list(): Unit = {
     assertTotalSize(Sizes.list, JOL.netLayout(null :: Nil, Nil))
   }
   @Test
-  def listBuffer: Unit = {
+  def listBuffer(): Unit = {
     assertTotalSize(Sizes.listBuffer, JOL.netLayout(new ListBuffer[String], Nil))
   }
   @Test
-  def rawArray: Unit = {
+  def rawArray(): Unit = {
     for (length <- 0 to 10) {
       assertTotalSize(Sizes.refArray(length), JOL.netLayout(new Array[String](length), Nil))
     }
   }
   @Test @deprecated("Tests deprecated API", since="2.13.3")
-  def wrappedArray2: Unit =
+  def wrappedArray2(): Unit =
     for (length <- 1 to 10)
       assertTotalSize(Sizes.wrappedRefArray(length), JOL.netLayout(mutable.WrappedArray.make[String](new Array[String](length)), Nil))
 
   @Test
-  def wrappedArray: Unit = {
+  def wrappedArray(): Unit = {
     val wrapped = Array[String]("")
     assertTotalSize(16, JOL.netLayout(mutable.ArraySeq.make[String](wrapped), wrapped))
     assertTotalSize(16, JOL.netLayout(immutable.ArraySeq.unsafeWrapArray[String](wrapped), wrapped))

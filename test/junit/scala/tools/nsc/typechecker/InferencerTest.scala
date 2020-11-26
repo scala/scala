@@ -28,11 +28,11 @@ class InferencerTests extends BytecodeTesting {
 
   var storedXsource: ScalaVersion = null
   @Before
-  def storeXsource: Unit = {
+  def storeXsource(): Unit = {
     storedXsource = settings.source.value
   }
   @After
-  def restoreXsource: Unit = {
+  def restoreXsource(): Unit = {
     settings.source.value = storedXsource
   }
 

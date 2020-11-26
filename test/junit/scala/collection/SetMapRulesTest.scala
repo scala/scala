@@ -210,83 +210,83 @@ class SetMapRulesTest {
 
   // Immutable maps
 
-  @Test def testImmutableMap: Unit =
+  @Test def testImmutableMap(): Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.Map.from(d)))
 
-  @Test def testImmutableListMap: Unit =
+  @Test def testImmutableListMap(): Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.ListMap.from(d)))
 
-  @Test def testImmutableVectorMap: Unit =
+  @Test def testImmutableVectorMap(): Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.VectorMap.from(d)))
 
-  @Test def testImmutableTreeMap: Unit =
+  @Test def testImmutableTreeMap(): Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.TreeMap.from(d)))
 
-  @Test def testImmutableHashMap: Unit =
+  @Test def testImmutableHashMap(): Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.HashMap.from(d)))
 
   // Mutable maps
 
-  @Test def testMutableMap: Unit =
+  @Test def testMutableMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.Map.from(d)))
 
-  @Test def testMutableHashMap: Unit =
+  @Test def testMutableHashMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.HashMap.from(d)))
 
   @deprecated("Uses OpenHashMap", since="2.13")
-  @Test def testMutableOpenHashMap: Unit =
+  @Test def testMutableOpenHashMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.OpenHashMap.from(d)))
 
-  @Test def testMutableAnyRefMap: Unit =
+  @Test def testMutableAnyRefMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.AnyRefMap.from(d)))
 
-  @Test def testMutableTreeMap: Unit =
+  @Test def testMutableTreeMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.TreeMap.from(d)))
 
-  @Test def testMutableLinkedHashMap: Unit =
+  @Test def testMutableLinkedHashMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.LinkedHashMap.from(d)))
 
-  @Test def testMutableSeqMap: Unit =
+  @Test def testMutableSeqMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.SeqMap.from(d)))
 
   @deprecated("Uses ListMap", since="2.13")
-  @Test def testMutableListMap: Unit =
+  @Test def testMutableListMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.ListMap.from(d)))
 
-  @Test def testConcurrentTrieMap: Unit =
+  @Test def testConcurrentTrieMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => concurrent.TrieMap.from(d)))
 
-  @Test def testJavaHashMap: Unit =
+  @Test def testJavaHashMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => new java.util.HashMap[Value, Value].asScala.addAll(d)))
 
   // Immutable sets
 
-  @Test def testImmutableSet: Unit =
+  @Test def testImmutableSet(): Unit =
     setdata.foreach(d => checkImmutableSet(() => immutable.Set.from(d)))
 
-  @Test def testImmutableHashSet: Unit =
+  @Test def testImmutableHashSet(): Unit =
     setdata.foreach(d => checkImmutableSet(() => immutable.HashSet.from(d)))
 
-  @Test def testImmutableListSet: Unit =
+  @Test def testImmutableListSet(): Unit =
     setdata.foreach(d => checkImmutableSet(() => immutable.ListSet.from(d)))
 
-  @Test def testImmutableTreeSet: Unit =
+  @Test def testImmutableTreeSet(): Unit =
     setdata.foreach(d => checkImmutableSet(() => immutable.TreeSet.from(d)))
 
   // Mutable sets
 
-  @Test def testMutableSet: Unit =
+  @Test def testMutableSet(): Unit =
     setdata.foreach(d => checkMutableSet(() => mutable.Set.from(d)))
 
-  @Test def testMutableHashSet: Unit =
+  @Test def testMutableHashSet(): Unit =
     setdata.foreach(d => checkMutableSet(() => mutable.HashSet.from(d)))
 
-  @Test def testMutableLinkedHashSet: Unit =
+  @Test def testMutableLinkedHashSet(): Unit =
     setdata.foreach(d => checkMutableSet(() => mutable.LinkedHashSet.from(d)))
 
-  @Test def testMutableTreeSet: Unit =
+  @Test def testMutableTreeSet(): Unit =
     setdata.foreach(d => checkMutableSet(() => mutable.TreeSet.from(d)))
 
-  @Test def testJavaHashSet: Unit =
+  @Test def testJavaHashSet(): Unit =
     setdata.foreach(d => checkMutableSet(() => new java.util.HashSet[Value].asScala.addAll(d)))
 }

@@ -32,7 +32,7 @@ abstract class IndexedTest[T, E] {
   /**
     * check some simple indexed access
     */
-  @Test def checkIndexedAccess: Unit = {
+  @Test def checkIndexedAccess(): Unit = {
     val test = underTest(size)
     for (i <- 0 until size) {
       assertEquals(s" at index $i", expectedValueAtIndex(i), get(test, i))
@@ -49,7 +49,7 @@ abstract class IndexedTest[T, E] {
     * check simple equality of the initial data.
     * More a test of the infra that we use in this est than a full test of equality
     */
-  @Test def checkEquals: Unit = {
+  @Test def checkEquals(): Unit = {
     val test1 = underTest(size)
     val test2 = underTest(size)
     doAssertEquals("", test1, test2)
@@ -73,7 +73,7 @@ abstract class IndexedTest[T, E] {
   /**
     * check the operation of {{{take}}} when the parameter is less than the size of the test data
     */
-  @Test def checkTakeNormal: Unit = {
+  @Test def checkTakeNormal(): Unit = {
     val orig = underTest(size)
     for (len <- 0 until size) {
       val taken = take(orig, len)
@@ -84,7 +84,7 @@ abstract class IndexedTest[T, E] {
   /**
     * check the operation of {{{slice}}} within the bounds of the source
     */
-  @Test def checkSliceNormal: Unit = {
+  @Test def checkSliceNormal(): Unit = {
     val orig = underTest(size)
     for (
       from <- 0 until size;
@@ -99,7 +99,7 @@ abstract class IndexedTest[T, E] {
     * check the operation of {{{take}}} works for size of 0
     * There is a special case that for some implementations empty will be a singleton
     */
-  @Test def checkTakeEmpty: Unit = {
+  @Test def checkTakeEmpty(): Unit = {
     val orig = underTest(size)
     val empty1 = take(orig, 0)
     val empty2 = take(orig, 0)
@@ -111,7 +111,7 @@ abstract class IndexedTest[T, E] {
     * check the operation of {{{slice}}} works for size of 0
     * There is a special case that for some implementations empty will be a singleton
     */
-  @Test def checkSliceEmpty: Unit = {
+  @Test def checkSliceEmpty(): Unit = {
     val orig = underTest(size)
     for (start <- 0 until size) {
       val empty1 = slice(orig, start, start)
@@ -125,7 +125,7 @@ abstract class IndexedTest[T, E] {
     * check the operation of {{{take}}} works for the entire content
     * There is a special case that for some immutable implementations they can share the result
     */
-  @Test def checkTakeAll: Unit = {
+  @Test def checkTakeAll(): Unit = {
     val orig = underTest(size)
     val all = take(orig, size)
     assertEquals(size, length(all))
@@ -140,7 +140,7 @@ abstract class IndexedTest[T, E] {
     * check the operation of {{{slice}}} works for the entire content
     * There is a special case that for some immutable implementations they can share the result
     */
-  @Test def checkSliceAll: Unit = {
+  @Test def checkSliceAll(): Unit = {
     val orig = underTest(size)
     val all = slice(orig, 0, size)
     assertEquals(size, length(all))
@@ -155,7 +155,7 @@ abstract class IndexedTest[T, E] {
     * check that take operates appropriately for negative values
     * take and slice should be lenient and silently ignore any data outside valid ranges
     */
-  @Test def checkTakeNeg: Unit = {
+  @Test def checkTakeNeg(): Unit = {
     val orig = underTest(size)
     val e = take(orig, 0)
     for (len <- List(-1, -10, -99, Int.MinValue)) {
@@ -169,7 +169,7 @@ abstract class IndexedTest[T, E] {
     * check that take operates appropriately for lengths that exceed the input size
     * take and slice should be lenient and silently ignore any data outside valid ranges
     */
-  @Test def checkTakeTooBig: Unit = {
+  @Test def checkTakeTooBig(): Unit = {
     val orig = underTest(size)
     val e = take(orig, 0)
     assertNotNull(e)
@@ -184,7 +184,7 @@ abstract class IndexedTest[T, E] {
     * check that slice operates appropriately for negative start point
     * take and slice should be lenient and silently ignore any data outside valid ranges
     */
-  @Test def checkSliceFromNeg: Unit = {
+  @Test def checkSliceFromNeg(): Unit = {
     val orig = underTest(size)
     for (
       from <- List(-1, -10, -99, Int.MinValue);
@@ -198,7 +198,7 @@ abstract class IndexedTest[T, E] {
     * check that slice operates appropriately for out of range end values
     * take and slice should be lenient and silently ignore any data outside valid ranges
     */
-  @Test def checkSliceToTooBig: Unit = {
+  @Test def checkSliceToTooBig(): Unit = {
     val orig = underTest(size)
     for (
       from <- List(-1, -10, -99, Int.MinValue, 0, 1, 5);
@@ -214,7 +214,7 @@ abstract class IndexedTest[T, E] {
     * check that slice operates appropriately for negative values start and ends too large
     * take and slice should be lenient and silently ignore any data outside valid ranges
     */
-  @Test def checkSliceFromNegAndToTooBig: Unit = {
+  @Test def checkSliceFromNegAndToTooBig(): Unit = {
     val orig = underTest(size)
     for (
       from <- List(-1, -10, -99, Int.MinValue);

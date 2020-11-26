@@ -37,14 +37,14 @@ class ArraySeqTest {
   }
 
   @Test
-  def testSortInPlaceAnyRef: Unit = {
+  def testSortInPlaceAnyRef(): Unit = {
     val arr = ArraySeq[Integer](3, 2, 1)
     arr.sortInPlace()
     assertEquals(ArraySeq[Integer](1, 2, 3), arr)
   }
 
   @Test
-  def testSortInPlaceInt: Unit = {
+  def testSortInPlaceInt(): Unit = {
     val arr = ArraySeq.make(Array[Int](3, 2, 1))
     arr.sortInPlace()
     assertEquals(ArraySeq.make(Array[Int](1, 2, 3)), arr)

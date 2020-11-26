@@ -660,11 +660,11 @@ class IteratorTest {
       case _ => ???
     }
 
-    def noop = ()
+    def noop(): Unit = ()
 
-    def check() = assertNotReachable(seq1.get, it)(noop)
+    def check(): Unit = assertNotReachable(seq1.get, it)(noop())
 
-    def checkHasElement() = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(noop)
+    def checkHasElement(): Unit = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(noop())
 
     assert(it.hasNext)
     assertEquals("first", it.next())

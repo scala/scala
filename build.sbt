@@ -591,10 +591,12 @@ lazy val partest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler, replFrontend, scalap, scaladoc, testkit)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
@@ -606,11 +608,13 @@ lazy val partest = configureAsSubproject(project)
 lazy val tastytest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
     libraryDependencies ++= List(diffUtilsDep, TastySupport.scala3Compiler),
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
@@ -618,6 +622,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
   .settings(commonSettings)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -639,7 +644,8 @@ lazy val specLib = project.in(file("test") / "instrumented")
         patch("BoxesRunTime.java", "boxes.patch"),
         patch("ScalaRunTime.scala", "srt.patch")
       )
-    }.taskValue
+    }.taskValue,
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // The scala version used by the benchmark suites, leave undefined to use the ambient version.")
@@ -668,10 +674,11 @@ lazy val testkit = configureAsSubproject(project)
   .dependsOn(compiler)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.testkit"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-testkit",
     description := "Scala Compiler Testkit",
-    Compile / scalacOptions += "-feature",
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     libraryDependencies ++= Seq(junitDep, asmDep),
     Compile / unmanagedSourceDirectories := List(baseDirectory.value),
     fixPom(
@@ -685,16 +692,21 @@ lazy val testkit = configureAsSubproject(project)
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(commonSettings)
-  .settings(Compile / scalacOptions += "-Xlint:-adapted-args,-nullary-unit,_")
-  .settings(Compile / javacOptions ++= Seq("-Xlint"))
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     Test / fork := true,
     Test / javaOptions += "-Xss1M",
     (Test / forkOptions) := (Test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     (Test / testOnly / forkOptions) := (Test / testOnly / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
-    Compile / scalacOptions += "-feature",
+    Compile / scalacOptions ++= Seq(
+      "-feature",
+      "-Xlint:-valpattern,_",
+      "-Wconf:msg=match may not be exhaustive:s", // if we missed a case, all that happens is the test fails
+      "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
+    ),
+    Compile / javacOptions ++= Seq("-Xlint"),
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     Compile / unmanagedSourceDirectories := Nil,

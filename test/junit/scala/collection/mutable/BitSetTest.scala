@@ -52,7 +52,7 @@ class BitSetTest {
     assert(bsFromEmptyBitMaskNoCopy.add(0))
   }
 
-  @Test def strawman_508: Unit = {
+  @Test def strawman_508(): Unit = {
     val m = BitSet(1)
     assert(m.map(i => i.toLong).isInstanceOf[TreeSet[Long]])
     assert(m.map(i => i + 1).isInstanceOf[BitSet])
@@ -72,7 +72,7 @@ class BitSetTest {
     assert(im.collect { case i => i + 1 }.isInstanceOf[collection.immutable.BitSet])
   }
 
-  @Test def strawman_507: Unit = {
+  @Test def strawman_507(): Unit = {
     val m = BitSet(1,2,3)
     assert(m.collect{case i if i%2 == 1 => i.toLong}.isInstanceOf[TreeSet[Long]])
     assert(m.collect{case i if i%2 == 1 => i.toLong} == TreeSet(1L, 3L))

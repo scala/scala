@@ -11,13 +11,13 @@ import scala.tools.testkit.AssertUtil.assertThrows
 class NumericRangeTest {
 
   @Test
-  def emptyiterator: Unit = {
+  def emptyiterator(): Unit = {
     assertFalse(NumericRange(1, 0, 1).iterator.hasNext)
     assertFalse(NumericRange(0, 10, -1).iterator.hasNext)
   }
 
   @Test
-  def nonEmptyiterator: Unit = {
+  def nonEmptyiterator(): Unit = {
     val it = NumericRange(0, 3, 1).iterator
 
     assertTrue(it.hasNext)
@@ -30,13 +30,13 @@ class NumericRangeTest {
   }
 
   @Test
-  def t11163_BigDecimalSum: Unit = {
+  def t11163_BigDecimalSum(): Unit = {
     val x = (BigDecimal(1) to BigDecimal(3) by 1).sum
     assertEquals(BigDecimal(6), x)
   }
 
   @Test
-  def t11152_BigDecimalMakesProgress: Unit = {
+  def t11152_BigDecimalMakesProgress(): Unit = {
     // Overflow case with default MathContext
     val a = BigDecimal(1)
     val b = a + BigDecimal("1e-30")
@@ -70,7 +70,7 @@ class NumericRangeTest {
   }
 
   @Test
-  def numericRangeIsEmpty: Unit = {
+  def numericRangeIsEmpty(): Unit = {
     //Test Positive Step
     assertFalse((1 to 9).isEmpty)
     assertTrue((9 to 1).isEmpty)
@@ -90,7 +90,7 @@ class NumericRangeTest {
   }
 
   @Test
-  def smallIncrementCount: Unit = {
+  def smallIncrementCount(): Unit = {
     case class TestRange(start: BigDecimal, end: BigDecimal, step: BigDecimal, inclusive: Boolean = false)
     def foldListIncrement(rangeTest: TestRange): List[BigDecimal] = {
       List.unfold(rangeTest. start) { prec =>

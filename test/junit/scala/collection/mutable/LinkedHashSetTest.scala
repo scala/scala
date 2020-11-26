@@ -14,7 +14,7 @@ class LinkedHashSetTest {
   }
   
   @Test
-  def testClear: Unit = {
+  def testClear(): Unit = {
     val lhs = new TestClass
     Seq("a", "b").foreach(k => lhs.add(k))
     

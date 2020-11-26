@@ -175,7 +175,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
   /** Run the tests and return the success status */
   def run(): Boolean = {
-    setUncaughtHandler
+    setUncaughtHandler()
 
     if (config.optVersion) echo(versionMsg)
     else if (config.optHelp) {

@@ -1,5 +1,6 @@
 package scala.tools.tastytest
 
+import scala.collection.immutable.ArraySeq
 import scala.util.{Try, Success, Properties}
 
 import javax.tools.ToolProvider
@@ -23,7 +24,7 @@ object Javac extends Script.Command {
         "-d", out,
         "-classpath", classpath,
       ) ++ sources
-      compile(settings:_*)
+      compile(ArraySeq.unsafeWrapArray(settings):_*)
     }
   }
 
@@ -35,7 +36,7 @@ object Javac extends Script.Command {
       println(red(s"please provide two arguments in sub-command: $describe"))
       return 1
     }
-    val Seq(out, src) = args
+    val Seq(out, src) = args: @unchecked
     val success = javac(out, src).get
     if (success) 0 else 1
   }

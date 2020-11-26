@@ -67,81 +67,81 @@ import PrinterHelper._
 
 @RunWith(classOf[JUnit4])
 class BasePrintTest {
-  @Test def testIdent = assertTreeCode(Ident(TermName("*")))("*")
+  @Test def testIdent(): Unit = assertTreeCode(Ident(TermName("*")))("*")
 
-  @Test def testConstant1 = assertTreeCode(Literal(Constant("*")))("\"*\"")
+  @Test def testConstant1(): Unit = assertTreeCode(Literal(Constant("*")))("\"*\"")
 
-  @Test def testConstant2 = assertTreeCode(Literal(Constant(42)))("42")
+  @Test def testConstant2(): Unit = assertTreeCode(Literal(Constant(42)))("42")
 
-  @Test def testConstantFloat = assertTreeCode(Literal(Constant(42f)))("42.0F")
+  @Test def testConstantFloat(): Unit = assertTreeCode(Literal(Constant(42f)))("42.0F")
 
-  @Test def testConstantDouble = assertTreeCode(Literal(Constant(42d)))("42.0")
+  @Test def testConstantDouble(): Unit = assertTreeCode(Literal(Constant(42d)))("42.0")
 
-  @Test def testConstantLong = assertTreeCode(Literal(Constant(42L)))("42L")
+  @Test def testConstantLong(): Unit = assertTreeCode(Literal(Constant(42L)))("42L")
 
   val sq  = "\""
   val tq  = "\"" * 3
   val teq = "\"\"\\\""
 
-  @Test def testConstantMultiline = assertTreeCode(Literal(Constant("hello\nworld")))(s"${tq}hello\nworld${tq}")
+  @Test def testConstantMultiline(): Unit = assertTreeCode(Literal(Constant("hello\nworld")))(s"${tq}hello\nworld${tq}")
 
-  @Test def testConstantFormfeed = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
+  @Test def testConstantFormfeed(): Unit = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
 
-  @Test def testConstantControl = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
+  @Test def testConstantControl(): Unit = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
 
-  @Test def testConstantFormfeedChar = assertTreeCode(Literal(Constant('\f')))("'\\f'")
+  @Test def testConstantFormfeedChar(): Unit = assertTreeCode(Literal(Constant('\f')))("'\\f'")
 
-  @Test def testConstantControlChar = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
+  @Test def testConstantControlChar(): Unit = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
 
-  @Test def testConstantEmbeddedTriple = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${tq}${teq}hello${teq}\nworld${tq}")
+  @Test def testConstantEmbeddedTriple(): Unit = assertTreeCode(Literal(Constant(s"${tq}hello${tq}\nworld")))(s"${tq}${teq}hello${teq}\nworld${tq}")
 
-  @Test def testOpExpr = assertPrintedCode("(5).+(4)", checkTypedTree = false)
+  @Test def testOpExpr(): Unit = assertPrintedCode("(5).+(4)", checkTypedTree = false)
 
-  @Test def testName1 = assertPrintedCode("class test")
+  @Test def testName1(): Unit = assertPrintedCode("class test")
 
-  @Test def testName2 = assertPrintedCode("class *")
+  @Test def testName2(): Unit = assertPrintedCode("class *")
 
-  @Test def testName4 = assertPrintedCode("class `a*`")
+  @Test def testName4(): Unit = assertPrintedCode("class `a*`")
 
-  @Test def testName5 = assertPrintedCode("val :::: = 1")
+  @Test def testName5(): Unit = assertPrintedCode("val :::: = 1")
 
-  @Test def testName6 = assertPrintedCode("val `::::t` = 1")
+  @Test def testName6(): Unit = assertPrintedCode("val `::::t` = 1")
 
-  @Test def testName7 = assertPrintedCode("""class \/""")
+  @Test def testName7(): Unit = assertPrintedCode("""class \/""")
 
-  @Test def testName8 = assertPrintedCode("""class \\\\""")
+  @Test def testName8(): Unit = assertPrintedCode("""class \\\\""")
 
-  @Test def testName9 = assertPrintedCode("""class test_\/""")
+  @Test def testName9(): Unit = assertPrintedCode("""class test_\/""")
 
-  @Test def testName10 = assertPrintedCode("""class `*_*`""")
+  @Test def testName10(): Unit = assertPrintedCode("""class `*_*`""")
 
-  @Test def testName11 = assertPrintedCode("""class `a_*`""")
+  @Test def testName11(): Unit = assertPrintedCode("""class `a_*`""")
 
-  @Test def testName12 = assertPrintedCode("""class `*_a`""")
+  @Test def testName12(): Unit = assertPrintedCode("""class `*_a`""")
 
-  @Test def testName13 = assertPrintedCode("""class a_a""")
+  @Test def testName13(): Unit = assertPrintedCode("""class a_a""")
 
-  @Test def testName14 = assertPrintedCode("val x$11 = 5")
+  @Test def testName14(): Unit = assertPrintedCode("val x$11 = 5")
 
-  @Test def testName15 = assertPrintedCode("class `[]`")
+  @Test def testName15(): Unit = assertPrintedCode("class `[]`")
 
-  @Test def testName16 = assertPrintedCode("class `()`")
+  @Test def testName16(): Unit = assertPrintedCode("class `()`")
 
-  @Test def testName17 = assertPrintedCode("class `{}`")
+  @Test def testName17(): Unit = assertPrintedCode("class `{}`")
 
-  @Test def testName18 = assertPrintedCode("class <>")
+  @Test def testName18(): Unit = assertPrintedCode("class <>")
 
-  @Test def testName19 = assertPrintedCode("""class `class`""")
+  @Test def testName19(): Unit = assertPrintedCode("""class `class`""")
 
-  @Test def testName20 = assertPrintedCode("""class `test name`""")
+  @Test def testName20(): Unit = assertPrintedCode("""class `test name`""")
 
-  @Test def testName21 = assertPrintedCode("""class `test.name`""")
+  @Test def testName21(): Unit = assertPrintedCode("""class `test.name`""")
 
-  @Test def testName22 = assertEquals("val `some-val`: Int = 1", showCode(q"""val ${TermName("some-val")}: Int = 1"""))
+  @Test def testName22(): Unit = assertEquals("val `some-val`: Int = 1", showCode(q"""val ${TermName("some-val")}: Int = 1"""))
 
-  @Test def testName23 = assertEquals("val `some+`: String = \"foo\"", showCode(q"""val ${TermName("some+")}: String = "foo""""))
+  @Test def testName23(): Unit = assertEquals("val `some+`: String = \"foo\"", showCode(q"""val ${TermName("some+")}: String = "foo""""))
 
-  @Test def testIfExpr1 = assertResultCode(code = sm"""
+  @Test def testIfExpr1(): Unit = assertResultCode(code = sm"""
     |val a = 1
     |if (a > 1)
     |  a: Int
@@ -162,7 +162,7 @@ class BasePrintTest {
     |  ((PrintersContext.this.a.toString()): scala.Predef.String)
     """, wrap = true)
 
-  @Test def testIfExpr2 = assertPrintedCode(sm"""
+  @Test def testIfExpr2(): Unit = assertPrintedCode(sm"""
     |class A {
     |  (if (true)
     |  {
@@ -176,7 +176,7 @@ class BasePrintTest {
     |  }).toString()
     |}""")
 
-  @Test def testIfExpr3 = assertPrintedCode(sm"""
+  @Test def testIfExpr3(): Unit = assertPrintedCode(sm"""
     |class A {
     |  (if (true)
     |  {
@@ -191,12 +191,12 @@ class BasePrintTest {
     |}""")
 
   //val x = true && true && false.!
-  @Test def testBooleanExpr1 = assertPrintedCode("val x = true.&&(true).&&(false.`unary_!`)", checkTypedTree = false)
+  @Test def testBooleanExpr1(): Unit = assertPrintedCode("val x = true.&&(true).&&(false.`unary_!`)", checkTypedTree = false)
 
   //val x = true && !(true && false)
-  @Test def testBooleanExpr2 = assertPrintedCode("val x = true.&&(true.&&(false).`unary_!`)", checkTypedTree = false)
+  @Test def testBooleanExpr2(): Unit = assertPrintedCode("val x = true.&&(true.&&(false).`unary_!`)", checkTypedTree = false)
 
-  @Test def testNewExpr1 = assertResultCode(
+  @Test def testNewExpr1(): Unit = assertResultCode(
     code = sm"""
     |class foo
     |new foo()
@@ -210,7 +210,7 @@ class BasePrintTest {
     |""",
     wrap = true)
 
-  @Test def testNewExpr2 = assertResultCode(
+  @Test def testNewExpr2(): Unit = assertResultCode(
     code = sm"""
     |class foo
     |new foo { "test" }
@@ -233,20 +233,20 @@ class BasePrintTest {
     |}""",
     wrap = true)
 
-  @Test def testNewExpr3 = assertPrintedCode(sm"""
+  @Test def testNewExpr3(): Unit = assertPrintedCode(sm"""
     |{
     |  class foo[t];
     |  new foo[scala.Int]()
     |}""")
 
-  @Test def testNewExpr4 = assertPrintedCode(sm"""
+  @Test def testNewExpr4(): Unit = assertPrintedCode(sm"""
     |{
     |  class foo(x: scala.Int);
     |  val x = 5;
     |  new foo(x)
     |}""")
 
-  @Test def testNewExpr5 = assertPrintedCode(sm"""
+  @Test def testNewExpr5(): Unit = assertPrintedCode(sm"""
     |{
     |  class foo[t](x: scala.Int);
     |  val x = 5;
@@ -254,7 +254,7 @@ class BasePrintTest {
     |}""")
 
   //new foo[t](x) { () }
-  @Test def testNewExpr6 = assertResultCode(
+  @Test def testNewExpr6(): Unit = assertResultCode(
     code = sm"""
     |class foo[t](x: Int)
     |new foo[String](3) { () }
@@ -281,7 +281,7 @@ class BasePrintTest {
     |}""")
 
   //new foo with bar
-  @Test def testNewExpr7 = assertPrintedCode(sm"""
+  @Test def testNewExpr7(): Unit = assertPrintedCode(sm"""
     |{
     |  trait foo;
     |  trait bar;
@@ -292,7 +292,7 @@ class BasePrintTest {
     |}""")
 
   //new { anonymous }
-  @Test def testNewExpr8 = assertPrintedCode(sm"""
+  @Test def testNewExpr8(): Unit = assertPrintedCode(sm"""
     |{
     |  final class $$anon {
     |    5
@@ -301,7 +301,7 @@ class BasePrintTest {
     |}""")
 
   //new { val early = 1 } with Parent[Int] { body }
-  @Test def testNewExpr9 = assertPrintedCode(sm"""
+  @Test def testNewExpr9(): Unit = assertPrintedCode(sm"""
     |{
     |  class Parent[t];
     |  {
@@ -315,7 +315,7 @@ class BasePrintTest {
     |}""")
 
   //new Foo { self => }
-  @Test def testNewExpr10 = assertPrintedCode(sm"""
+  @Test def testNewExpr10(): Unit = assertPrintedCode(sm"""
     |{
     |  class Foo;
     |  {
@@ -326,68 +326,68 @@ class BasePrintTest {
     |  }
     |}""")
 
-  @Test def testReturn = assertPrintedCode("def test: scala.Int = return 42")
+  @Test def testReturn(): Unit = assertPrintedCode("def test: scala.Int = return 42")
 
-  @Test def testFunc1 = assertResultCode(
+  @Test def testFunc1(): Unit = assertResultCode(
     code = "List(1, 2, 3).map((i: Int) => i - 1)")(
     parsedCode = "List(1, 2, 3).map(((i: Int) => i.-(1)))",
     typedCode = sm"scala.`package`.List.apply[Int](1, 2, 3).map[Int](((i: scala.Int) => i.-(1)))")
 
-  @Test def testFunc2 = assertResultCode(
+  @Test def testFunc2(): Unit = assertResultCode(
     code = "val sum: Seq[Int] => Int = _ reduceLeft (_+_)")(
     parsedCode = "val sum: _root_.scala.Function1[Seq[Int], Int] = ((x$1) => x$1.reduceLeft(((x$2, x$3) => x$2.+(x$3))))",
     typedCode = "val sum: scala.Function1[scala.`package`.Seq[scala.Int], scala.Int] = ((x$1: Seq[Int]) => x$1.reduceLeft[Int](((x$2: Int, x$3: Int) => x$2.+(x$3))))")
 
-  @Test def testFunc3 = assertResultCode(
+  @Test def testFunc3(): Unit = assertResultCode(
     code = "List(1, 2, 3) map (_ - 1)")(
     parsedCode = "List(1, 2, 3).map(((x$1) => x$1.-(1))) ",
     typedCode = "scala.`package`.List.apply[Int](1, 2, 3).map[Int](((x$1: Int) => x$1.-(1)))")
 
-  @Test def testFunc4 = assertResultCode(
+  @Test def testFunc4(): Unit = assertResultCode(
     code = "val x: String => Int = ((str: String) => 1)")(
     parsedCode = "val x: _root_.scala.Function1[String, Int] = ((str: String) => 1)",
     typedCode = " val x: _root_.scala.Function1[_root_.scala.Predef.String, _root_.scala.Int] = ((str: _root_.scala.Predef.String) => 1)", printRoot = true)
 
-  @Test def testAssign1 = assertPrintedCode("(f.v = 5).toString", checkTypedTree = false)
+  @Test def testAssign1(): Unit = assertPrintedCode("(f.v = 5).toString", checkTypedTree = false)
 
-  @Test def testAssign2 = assertPrintedCode("(f.v = 5)(2)", checkTypedTree = false)
+  @Test def testAssign2(): Unit = assertPrintedCode("(f.v = 5)(2)", checkTypedTree = false)
 
-  @Test def testImport1 = assertPrintedCode("import scala.collection.mutable")
+  @Test def testImport1(): Unit = assertPrintedCode("import scala.collection.mutable")
 
-  @Test def testImport2 = assertPrintedCode("import java.lang.{String=>Str}")
+  @Test def testImport2(): Unit = assertPrintedCode("import java.lang.{String=>Str}")
 
-  @Test def testImport3 = assertPrintedCode("import java.lang.{String=>Str, Object=>_, _}")
+  @Test def testImport3(): Unit = assertPrintedCode("import java.lang.{String=>Str, Object=>_, _}")
 
-  @Test def testImport4 = assertPrintedCode("import scala.collection._")
+  @Test def testImport4(): Unit = assertPrintedCode("import scala.collection._")
 }
 
 @RunWith(classOf[JUnit4])
 class ClassPrintTest {
-  @Test def testClass = assertPrintedCode("class *")
+  @Test def testClass(): Unit = assertPrintedCode("class *")
 
-  @Test def testClassWithBody = assertPrintedCode(sm"""
+  @Test def testClassWithBody(): Unit = assertPrintedCode(sm"""
     |class X {
     |  def y = "test"
     |}""")
 
-  @Test def testClassConstructorModifiers = assertPrintedCode("class X private (x: scala.Int)")
+  @Test def testClassConstructorModifiers(): Unit = assertPrintedCode("class X private (x: scala.Int)")
 
-  @Test def testClassConstructorModifierVisibility = assertPrintedCode(sm"""
+  @Test def testClassConstructorModifierVisibility(): Unit = assertPrintedCode(sm"""
     |object A {
     |  class X protected[A] (x: scala.Int)
     |}""")
 
-  @Test def testClassWithPublicParams = assertPrintedCode("class X(val x: scala.Int, val s: scala.Predef.String)")
+  @Test def testClassWithPublicParams(): Unit = assertPrintedCode("class X(val x: scala.Int, val s: scala.Predef.String)")
 
-  @Test def testClassWithParams1 = assertPrintedCode("class X(x: scala.Int, s: scala.Predef.String)")
+  @Test def testClassWithParams1(): Unit = assertPrintedCode("class X(x: scala.Int, s: scala.Predef.String)")
 
-  @Test def testClassWithParams2 = assertPrintedCode("class X(@test x: Int, s: String)", checkTypedTree = false)
+  @Test def testClassWithParams2(): Unit = assertPrintedCode("class X(@test x: Int, s: String)", checkTypedTree = false)
 
-  @Test def testClassWithParams3 = assertPrintedCode("class X(implicit x: Int, s: String)", checkTypedTree = false)
+  @Test def testClassWithParams3(): Unit = assertPrintedCode("class X(implicit x: Int, s: String)", checkTypedTree = false)
 
-  @Test def testClassWithParams4 = assertPrintedCode("class X(implicit @unchecked x: Int, s: String)", checkTypedTree = false)
+  @Test def testClassWithParams4(): Unit = assertPrintedCode("class X(implicit @unchecked x: Int, s: String)", checkTypedTree = false)
 
-  @Test def testClassWithParams5 = assertPrintedCode(sm"""
+  @Test def testClassWithParams5(): Unit = assertPrintedCode(sm"""
     |{
     |  class Y {
     |    val x = 5
@@ -396,25 +396,25 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testClassWithParams6 = assertPrintedCode("class X(@test1 override private[this] val x: Int, @test2(param1 = 7) s: String) extends Y", checkTypedTree = false)
+  @Test def testClassWithParams6(): Unit = assertPrintedCode("class X(@test1 override private[this] val x: Int, @test2(param1 = 7) s: String) extends Y", checkTypedTree = false)
 
-  @Test def testClassWithParams7 = assertPrintedCode("class X protected (val x: scala.Int, val s: scala.Predef.String)")
+  @Test def testClassWithParams7(): Unit = assertPrintedCode("class X protected (val x: scala.Int, val s: scala.Predef.String)")
 
-  @Test def testClassWithParams8 = assertPrintedCode("class X(var x: scala.Int)")
+  @Test def testClassWithParams8(): Unit = assertPrintedCode("class X(var x: scala.Int)")
 
-  @Test def testClassWithParams9 = assertPrintedCode("def test(x: scala.Int*) = 5")
+  @Test def testClassWithParams9(): Unit = assertPrintedCode("def test(x: scala.Int*) = 5")
 
-  @Test def testClassWithByNameParam = assertPrintedCode("class X(x: => scala.Int)")
+  @Test def testClassWithByNameParam(): Unit = assertPrintedCode("class X(x: => scala.Int)")
 
-  @Test def testClassWithDefault = assertPrintedCode(sm"""
+  @Test def testClassWithDefault(): Unit = assertPrintedCode(sm"""
     |{
     |  class X(var x: scala.Int = 5);
     |  ()
     |}""")
 
-  @Test def testClassWithParams10 = assertPrintedCode("class X(protected[zzz] var x: Int)", checkTypedTree = false)
+  @Test def testClassWithParams10(): Unit = assertPrintedCode("class X(protected[zzz] var x: Int)", checkTypedTree = false)
 
-  @Test def testClassWithParams11 = assertPrintedCode(sm"""
+  @Test def testClassWithParams11(): Unit = assertPrintedCode(sm"""
     |{
     |  class F(x: scala.Int);
     |  trait E {
@@ -424,30 +424,30 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testClassWithParams12 = assertPrintedCode("class X(val y: scala.Int)()(var z: scala.Double)")
+  @Test def testClassWithParams12(): Unit = assertPrintedCode("class X(val y: scala.Int)()(var z: scala.Double)")
 
-  @Test def testClassWithImplicitParams = assertPrintedCode("class X(var i: scala.Int)(implicit val d: scala.Double, var f: scala.Float)")
+  @Test def testClassWithImplicitParams(): Unit = assertPrintedCode("class X(var i: scala.Int)(implicit val d: scala.Double, var f: scala.Float)")
 
-  @Test def testClassWithEarly =
+  @Test def testClassWithEarly(): Unit =
     assertPrintedCode(sm"""
     |class X(var i: scala.Int) extends {
     |  val a = i;
     |  type B
     |} with scala.`package`.Serializable""")
 
-  @Test def testClassWithThrow1 = assertPrintedCode(sm"""
+  @Test def testClassWithThrow1(): Unit = assertPrintedCode(sm"""
     |class Throw1 {
     |  throw new scala.`package`.Exception("exception!")
     |}""")
 
-  @Test def testClassWithThrow2 = assertPrintedCode(sm"""
+  @Test def testClassWithThrow2(): Unit = assertPrintedCode(sm"""
     |class Throw2 {
     |  var msg = "   ";
     |  val e = new scala.`package`.Exception(Throw2.this.msg);
     |  throw Throw2.this.e
     |}""")
 
-  @Test def testClassWithAssignmentWithTuple1 = assertResultCode(sm"""
+  @Test def testClassWithAssignmentWithTuple1(): Unit = assertResultCode(sm"""
     |class Test {
     |  val (a, b) = (1, 2)
     |}""")(
@@ -468,7 +468,7 @@ class ClassPrintTest {
     |  val b = Test.this.x$$1._2
     |}""")
 
-  @Test def testClassWithAssignmentWithTuple2 = assertResultCode(
+  @Test def testClassWithAssignmentWithTuple2(): Unit = assertResultCode(
     code = sm"""
     |class Test {
     |  val (a, b) = (1).->(2)
@@ -495,7 +495,7 @@ class ClassPrintTest {
       val List(one, three, five) = List(1,3,5)
     }
   */
-  @Test def testClassWithPatternMatchInAssignment = assertPrintedCode(sm"""
+  @Test def testClassWithPatternMatchInAssignment(): Unit = assertPrintedCode(sm"""
     |class Test {
     |  private[this] val x$$1 = (scala.collection.immutable.List.apply[scala.Int](1, 3, 5): @scala.unchecked) match {
     |    case scala.collection.immutable.List((one @ _), (three @ _), (five @ _)) => scala.Tuple3.apply[scala.Int, scala.Int, scala.Int](one, three, five)
@@ -506,17 +506,17 @@ class ClassPrintTest {
     |}""")
 
   //class A(l: List[_])
-  @Test def testClassWithExistentialParameter1 = assertPrintedCode(sm"""
+  @Test def testClassWithExistentialParameter1(): Unit = assertPrintedCode(sm"""
     |class Test(l: (scala.`package`.List[_$$1] forSome { 
     |  type _$$1
     |}))""")
 
-  @Test def testClassWithExistentialParameter2 = assertPrintedCode(sm"""
+  @Test def testClassWithExistentialParameter2(): Unit = assertPrintedCode(sm"""
     |class B(l: (scala.`package`.List[T] forSome { 
     |  type T
     |}))""")
 
-  @Test def testClassWithCompoundTypeTree = assertPrintedCode(sm"""
+  @Test def testClassWithCompoundTypeTree(): Unit = assertPrintedCode(sm"""
     |{
     |  trait A;
     |  trait B;
@@ -528,7 +528,7 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testClassWithSelectFromTypeTree = assertPrintedCode(sm"""
+  @Test def testClassWithSelectFromTypeTree(): Unit = assertPrintedCode(sm"""
     |{
     |  trait A {
     |    type T
@@ -537,34 +537,34 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testImplicitClass = assertPrintedCode(sm"""
+  @Test def testImplicitClass(): Unit = assertPrintedCode(sm"""
     |{
     |  implicit class X(protected[this] var x: scala.Int);
     |  ()
     |}""",
     checkTypedTree = true)
 
-  @Test def testAbstractClass = assertPrintedCode("abstract class X(protected[this] var x: scala.Int)")
+  @Test def testAbstractClass(): Unit = assertPrintedCode("abstract class X(protected[this] var x: scala.Int)")
 
-  @Test def testCaseClassWithParams1 = assertPrintedCode(sm"""
+  @Test def testCaseClassWithParams1(): Unit = assertPrintedCode(sm"""
     |{
     |  case class X(x: scala.Int, s: scala.Predef.String);
     |  ()
     |}""")
 
-  @Test def testCaseClassWithParams2 = assertPrintedCode(sm"""
+  @Test def testCaseClassWithParams2(): Unit = assertPrintedCode(sm"""
     |{
     |  case class X(protected val x: scala.Int, s: scala.Predef.String);
     |  ()
     |}""")
 
-  @Test def testCaseClassWithParams3 = assertPrintedCode(sm"""
+  @Test def testCaseClassWithParams3(): Unit = assertPrintedCode(sm"""
     |{
     |  case class X()(implicit x: scala.Int, s: scala.Predef.String);
     |  ()
     |}""")
 
-  @Test def testCaseClassWithParams4 = assertPrintedCode(sm"""
+  @Test def testCaseClassWithParams4(): Unit = assertPrintedCode(sm"""
     |{
     |  trait V {
     |    val x: scala.Int
@@ -573,7 +573,7 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testCaseClassWithBody = assertPrintedCode(sm"""
+  @Test def testCaseClassWithBody(): Unit = assertPrintedCode(sm"""
     |{
     |  case class X() {
     |    def y = "test"
@@ -581,7 +581,7 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testLocalClass = assertPrintedCode(sm"""
+  @Test def testLocalClass(): Unit = assertPrintedCode(sm"""
     |def test = {
     |  class X(var a: scala.Int) {
     |    def y = "test"
@@ -589,7 +589,7 @@ class ClassPrintTest {
     |  new X(5)
     |}""")
 
-  @Test def testLocalCaseClass = assertPrintedCode(sm"""
+  @Test def testLocalCaseClass(): Unit = assertPrintedCode(sm"""
     |def test = {
     |  case class X(var a: scala.Int) {
     |    def y = "test"
@@ -597,7 +597,7 @@ class ClassPrintTest {
     |  new X(5)
     |}""")
 
-  @Test def testSuperInClass = assertPrintedCode(sm"""
+  @Test def testSuperInClass(): Unit = assertPrintedCode(sm"""
     |{
     |  trait Root {
     |    def r = "Root"
@@ -615,7 +615,7 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testThisInClass = assertPrintedCode(sm"""
+  @Test def testThisInClass(): Unit = assertPrintedCode(sm"""
     |class Outer {
     |  class Inner {
     |    val outer = Outer.this
@@ -623,7 +623,7 @@ class ClassPrintTest {
     |  val self = this
     |}""")
 
-  @Test def testCaseClassWithParamsAndBody = assertPrintedCode(sm"""
+  @Test def testCaseClassWithParamsAndBody(): Unit = assertPrintedCode(sm"""
     |{
     |  case class X(var x: scala.Int, var s: scala.Predef.String) {
     |    def y = "test"
@@ -631,42 +631,42 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testObject = assertPrintedCode("object *")
+  @Test def testObject(): Unit = assertPrintedCode("object *")
 
-  @Test def testObjectWithBody = assertPrintedCode(sm"""
+  @Test def testObjectWithBody(): Unit = assertPrintedCode(sm"""
     |object X {
     |  def y = "test"
     |}""")
 
-  @Test def testObjectWithEarly1 = assertPrintedCode(sm"""
+  @Test def testObjectWithEarly1(): Unit = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42
     |} with scala.`package`.Serializable""")
 
-  @Test def testObjectWithEarly2 = assertPrintedCode(sm"""
+  @Test def testObjectWithEarly2(): Unit = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42;
     |  type EarlyT = scala.Predef.String
     |} with scala.`package`.Serializable""")
 
-  @Test def testObjectWithSelf = assertPrintedCode(sm"""
+  @Test def testObjectWithSelf(): Unit = assertPrintedCode(sm"""
     |object Foo extends scala.`package`.Serializable { self =>
     |  42
     |}""")
 
-  @Test def testObjectInh = assertPrintedCode(sm"""
+  @Test def testObjectInh(): Unit = assertPrintedCode(sm"""
     |trait Y {
     |  private[Y] object X extends scala.`package`.Serializable with scala.`package`.Cloneable
     |}""")
 
-  @Test def testObjectWithPatternMatch1 = assertPrintedCode(sm"""
+  @Test def testObjectWithPatternMatch1(): Unit = assertPrintedCode(sm"""
     |object PM1 {
     |  scala.collection.immutable.List.apply[scala.Int](1, 2) match {
     |    case (i @ _) => i
     |  }
     |}""")
 
-  @Test def testObjectWithPatternMatch2 = assertResultCode(
+  @Test def testObjectWithPatternMatch2(): Unit = assertResultCode(
     code = sm"""
     |object PM2 {
     |  List(1, 2).map {
@@ -689,7 +689,7 @@ class ClassPrintTest {
     *
     */
 
-  @Test def testObjectWithPatternMatch3 = assertResultCode(
+  @Test def testObjectWithPatternMatch3(): Unit = assertResultCode(
     code = sm"""
     |object PM3 {
     |  List(1, 2).map {
@@ -712,7 +712,7 @@ class ClassPrintTest {
     *
     */
 
-  @Test def testObjectWithPatternMatch4 = assertResultCode(
+  @Test def testObjectWithPatternMatch4(): Unit = assertResultCode(
     code = sm"""
     |object PM4 {
     |  List(1, 2).map {
@@ -735,7 +735,7 @@ class ClassPrintTest {
     *
     */
 
-  @Test def testObjectWithPatternMatch5 = assertResultCode(
+  @Test def testObjectWithPatternMatch5(): Unit = assertResultCode(
     code = sm"""
     |object PM5 {
     |  List(1, 2) match {
@@ -755,7 +755,7 @@ class ClassPrintTest {
     |  }
     |}""")
 
-  @Test def testObjectWithPatternMatch6 = assertResultCode(
+  @Test def testObjectWithPatternMatch6(): Unit = assertResultCode(
     code = sm"""
     |object PM6 {
     |  List(1, 2).map {
@@ -781,14 +781,14 @@ class ClassPrintTest {
     *
     */
 
-  @Test def testObjectWithPatternMatch7 = assertPrintedCode(sm"""
+  @Test def testObjectWithPatternMatch7(): Unit = assertPrintedCode(sm"""
     |object PM7 {
     |  scala.Predef.wrapString("abcde").toList match {
     |    case scala.collection.Seq((car @ _), _*) => car
     |  }
     |}""")
 
-  @Test def testObjectWithPatternMatch8 = assertPrintedCode(sm"""
+  @Test def testObjectWithPatternMatch8(): Unit = assertPrintedCode(sm"""
     |{
     |  object Extractor {
     |    def unapply(i: scala.Int) = scala.Some.apply[scala.Int](i)
@@ -801,14 +801,14 @@ class ClassPrintTest {
     |  ()
     |}""")
 
-  @Test def testObjectWithPartialFunc = assertPrintedCode(sm"""
+  @Test def testObjectWithPartialFunc(): Unit = assertPrintedCode(sm"""
     |object Test {
     |  def partFuncTest[A, B](e: scala.`package`.Either[A, B]): scala.Unit = e match {
     |    case scala.`package`.Right(_) => ()
     |  }
     |}""")
 
-  @Test def testObjectWithTry = assertResultCode(
+  @Test def testObjectWithTry(): Unit = assertResultCode(
     code = sm"""
     |object Test {
     |  import java.io._;
@@ -849,50 +849,50 @@ class ClassPrintTest {
 
 @RunWith(classOf[JUnit4])
 class TraitPrintTest {
-  @Test def testTrait = assertPrintedCode("trait *")
+  @Test def testTrait(): Unit = assertPrintedCode("trait *")
 
-  @Test def testTraitWithBody = assertPrintedCode(sm"""
+  @Test def testTraitWithBody(): Unit = assertPrintedCode(sm"""
     |trait X {
     |  def y = "test"
     |}""")
 
-  @Test def testTraitWithSelfTypeAndBody = assertPrintedCode(sm"""
+  @Test def testTraitWithSelfTypeAndBody(): Unit = assertPrintedCode(sm"""
     |trait X { self: scala.`package`.Cloneable =>
     |  def y = "test"
     |}""")
 
-  @Test def testTraitWithSelf1 = assertPrintedCode(sm"""
+  @Test def testTraitWithSelf1(): Unit = assertPrintedCode(sm"""
     |trait X { self =>
     |  def y = "test"
     |}""")
 
-  @Test def testTraitWithSelf2 = assertPrintedCode(sm"""
+  @Test def testTraitWithSelf2(): Unit = assertPrintedCode(sm"""
     |trait X { self: scala.`package`.Cloneable with scala.`package`.Serializable =>
     |  val x: scala.Int = 1
     |}""")
 
-  @Test def testTraitTypeParams = assertPrintedCode("trait X[A, B]")
+  @Test def testTraitTypeParams(): Unit = assertPrintedCode("trait X[A, B]")
 
-  @Test def testTraitWithBody2 = assertPrintedCode(sm"""
+  @Test def testTraitWithBody2(): Unit = assertPrintedCode(sm"""
     |trait X {
     |  def foo: scala.Unit;
     |  val bar: scala.Predef.String
     |}""")
 
-  @Test def testTraitWithInh = assertPrintedCode("trait X extends scala.`package`.Cloneable with scala.`package`.Serializable")
+  @Test def testTraitWithInh(): Unit = assertPrintedCode("trait X extends scala.`package`.Cloneable with scala.`package`.Serializable")
 
-  @Test def testTraitWithEarly1 = assertPrintedCode(sm"""
+  @Test def testTraitWithEarly1(): Unit = assertPrintedCode(sm"""
     |trait X extends {
     |  val x: Int = 1
     |} with AnyRef""", checkTypedTree = false)
 
-  @Test def testTraitWithEarly2 = assertPrintedCode(sm"""
+  @Test def testTraitWithEarly2(): Unit = assertPrintedCode(sm"""
     |trait X extends {
     |  val x: scala.Int = 0;
     |  type Foo = scala.Unit
     |} with scala.`package`.Cloneable""")
 
-  @Test def testTraitWithEarly3 = assertPrintedCode(sm"""
+  @Test def testTraitWithEarly3(): Unit = assertPrintedCode(sm"""
     |trait X extends {
     |  val x: scala.Int = 5;
     |  val y: scala.Double = 4.0;
@@ -900,7 +900,7 @@ class TraitPrintTest {
     |  type XString = scala.Predef.String
     |} with scala.`package`.Serializable""")
 
-  @Test def testTraitWithEarly4 = assertPrintedCode(sm"""
+  @Test def testTraitWithEarly4(): Unit = assertPrintedCode(sm"""
     |trait X extends {
     |  val x: scala.Int = 5;
     |  val y: scala.Double = 4.0;
@@ -910,24 +910,24 @@ class TraitPrintTest {
     |  val z: scala.Int = 7
     |}""")
 
-  @Test def testTraitWithSingletonTypeTree = assertPrintedCode(sm"""
+  @Test def testTraitWithSingletonTypeTree(): Unit = assertPrintedCode(sm"""
     |trait Test {
     |  def testReturnSingleton(): Test.this.type
     |}""")
 
-  @Test def testTraitWithThis = assertTreeCode(q"trait Test { this: X with Y => }")(sm"""
+  @Test def testTraitWithThis(): Unit = assertTreeCode(q"trait Test { this: X with Y => }")(sm"""
     |trait Test { _ : X with Y =>
     |  
     |}""")
 
-  @Test def testTraitWithWhile1 = assertPrintedCode(sm"""
+  @Test def testTraitWithWhile1(): Unit = assertPrintedCode(sm"""
     |trait Test {
     |  while (false) 
     |    scala.Predef.println("testing...")
     |  
     |}""")
 
-  @Test def testTraitWithWhile2 = assertPrintedCode(sm"""
+  @Test def testTraitWithWhile2(): Unit = assertPrintedCode(sm"""
     |trait Test {
     |  while (true) 
     |    {
@@ -937,14 +937,14 @@ class TraitPrintTest {
     |  
     |}""")
 
-  @Test def testTraitWithDoWhile1 = assertPrintedCode(sm"""
+  @Test def testTraitWithDoWhile1(): Unit = assertPrintedCode(sm"""
     |trait Test {
     |  do 
     |    scala.Predef.println("testing...")
     |   while (true) 
     |}""")  
 
-  @Test def testTraitWithTypes = assertResultCode(
+  @Test def testTraitWithTypes(): Unit = assertResultCode(
     code = sm"""
     |trait Test {
     |  type A = Int;
@@ -970,26 +970,26 @@ class TraitPrintTest {
 
 @RunWith(classOf[JUnit4])
 class ValAndDefPrintTest {
-  @Test def testVal1 = assertPrintedCode("val a: scala.Unit = ()")
+  @Test def testVal1(): Unit = assertPrintedCode("val a: scala.Unit = ()")
 
-  @Test def testVal2 = assertPrintedCode("val * : scala.Unit = ()")
+  @Test def testVal2(): Unit = assertPrintedCode("val * : scala.Unit = ()")
 
-  @Test def testVal3 = assertPrintedCode("val a_ : scala.Unit = ()")
+  @Test def testVal3(): Unit = assertPrintedCode("val a_ : scala.Unit = ()")
 
-  @Test def testDef1 = assertPrintedCode("def a = ()")
+  @Test def testDef1(): Unit = assertPrintedCode("def a = ()")
 
-  @Test def testDef2 = assertPrintedCode("def * : scala.Unit = ()")
+  @Test def testDef2(): Unit = assertPrintedCode("def * : scala.Unit = ()")
 
-  @Test def testDef3 = assertPrintedCode("def a_(x: scala.Int): scala.Unit = ()")
+  @Test def testDef3(): Unit = assertPrintedCode("def a_(x: scala.Int): scala.Unit = ()")
 
-  @Test def testDef4 = assertPrintedCode("def a_ : scala.Unit = ()")
+  @Test def testDef4(): Unit = assertPrintedCode("def a_ : scala.Unit = ()")
 
-  @Test def testDef5 = assertPrintedCode("def a_(* : scala.Int): scala.Unit = ()")
+  @Test def testDef5(): Unit = assertPrintedCode("def a_(* : scala.Int): scala.Unit = ()")
 
-  @Test def testDef6 = assertPrintedCode("def a_(b_ : scala.Int) = ()")
+  @Test def testDef6(): Unit = assertPrintedCode("def a_(b_ : scala.Int) = ()")
 
   @deprecated("Tests deprecated API", since="2.13")
-  @Test def testDef7 = assertTreeCode{
+  @Test def testDef7(): Unit = assertTreeCode{
     Block(
       DefDef(NoMods, TermName("test1"), Nil, Nil, EmptyTree, Literal(Constant(()))),
       DefDef(NoMods, TermName("test2"), Nil, Nil :: Nil, EmptyTree, Literal(Constant(())))
@@ -1000,7 +1000,7 @@ class ValAndDefPrintTest {
     |  def test2() = ()
     |}""")
 
-  @Test def testDef8 = {
+  @Test def testDef8(): Unit = {
     val arg = ValDef(Modifiers(Flag.IMPLICIT) , TermName("a"),
       AppliedTypeTree(Ident(TypeName("R")), List(Ident(TypeName("X")))), EmptyTree)
 
@@ -1011,16 +1011,16 @@ class ValAndDefPrintTest {
     assertTreeCode(tree)("def test[X](implicit a: R[X]) = ()")
   }
 
-  @Test def testDef9 = assertPrintedCode("def a(x: scala.Int)(implicit z: scala.Double, y: scala.Float): scala.Unit = ()")
+  @Test def testDef9(): Unit = assertPrintedCode("def a(x: scala.Int)(implicit z: scala.Double, y: scala.Float): scala.Unit = ()")
 
-  @Test def testDefWithLazyVal1 = assertPrintedCode(sm"""
+  @Test def testDefWithLazyVal1(): Unit = assertPrintedCode(sm"""
     |def a = {
     |  lazy val test: scala.Int = 42;
     |  ()
     |}
     """)
 
-  @Test def testDefWithLazyVal2 = assertPrintedCode(sm"""
+  @Test def testDefWithLazyVal2(): Unit = assertPrintedCode(sm"""
     |def a = {
     |  lazy val test: scala.Unit = {
     |    scala.Predef.println();
@@ -1029,63 +1029,63 @@ class ValAndDefPrintTest {
     |  ()
     |}""")
 
-  @Test def testDefWithParams1 = assertPrintedCode("def foo(x: scala.Int*) = ()")
+  @Test def testDefWithParams1(): Unit = assertPrintedCode("def foo(x: scala.Int*) = ()")
 
-  @Test def testDefWithParams2 = assertPrintedCode(sm"""
+  @Test def testDefWithParams2(): Unit = assertPrintedCode(sm"""
     |{
     |  def foo(x: scala.Int)(y: scala.Int = 1) = ();
     |  ()
     |}""")
 
-  @Test def testDefWithTypeParams1 = assertPrintedCode(sm"""
+  @Test def testDefWithTypeParams1(): Unit = assertPrintedCode(sm"""
     |{
     |  def foo[A, B, C](x: A)(y: scala.Int = 1): C = ().asInstanceOf[C];
     |  ()
     |}""")
 
-  @Test def testDefWithTypeParams2 = assertPrintedCode("def foo[A, B <: scala.AnyVal] = ()")
+  @Test def testDefWithTypeParams2(): Unit = assertPrintedCode("def foo[A, B <: scala.AnyVal] = ()")
 
-  @Test def testDefWithAnn1 = assertPrintedCode("@annot def foo = null", checkTypedTree = false)
+  @Test def testDefWithAnn1(): Unit = assertPrintedCode("@annot def foo = null", checkTypedTree = false)
 
-  @Test def testDefWithAnn2 = assertPrintedCode("@a(x) def foo = null", checkTypedTree = false)
+  @Test def testDefWithAnn2(): Unit = assertPrintedCode("@a(x) def foo = null", checkTypedTree = false)
 
-  @Test def testDefWithAnn3 = assertPrintedCode("@Foo[A, B] def foo = null", checkTypedTree = false)
+  @Test def testDefWithAnn3(): Unit = assertPrintedCode("@Foo[A, B] def foo = null", checkTypedTree = false)
 
-  @Test def testDefWithAnn4 = assertPrintedCode("@Foo(a)(b)(x, y) def foo = null", checkTypedTree = false)
+  @Test def testDefWithAnn4(): Unit = assertPrintedCode("@Foo(a)(b)(x, y) def foo = null", checkTypedTree = false)
 
-  @Test def testDefWithAnn5 = assertPrintedCode("@Foo[A, B](a)(b) @Bar def foo(x: Int) = null", checkTypedTree = false)
+  @Test def testDefWithAnn5(): Unit = assertPrintedCode("@Foo[A, B](a)(b) @Bar def foo(x: Int) = null", checkTypedTree = false)
 
-  @Test def testDefWithAnn6 = assertPrintedCode("@test1(new test2()) def foo = 42", checkTypedTree = false)
+  @Test def testDefWithAnn6(): Unit = assertPrintedCode("@test1(new test2()) def foo = 42", checkTypedTree = false)
 
-  @Test def testDefWithAnn7 = assertPrintedCode("@`t*` def foo = 42", checkTypedTree = false)
+  @Test def testDefWithAnn7(): Unit = assertPrintedCode("@`t*` def foo = 42", checkTypedTree = false)
 
-  @Test def testDefWithAnn8 = assertPrintedCode("@throws(classOf[Exception]) def foo = throw new Exception()", checkTypedTree = false)
+  @Test def testDefWithAnn8(): Unit = assertPrintedCode("@throws(classOf[Exception]) def foo = throw new Exception()", checkTypedTree = false)
 
-  @Test def testAnnotated1 = assertResultCode(
+  @Test def testAnnotated1(): Unit = assertResultCode(
     code = "def foo = 42: @baz")(
     parsedCode = "def foo = 42: @baz",
     typedCode = "def foo = (42: @baz)",
     wrap = true)
 
-  @Test def testAnnotated2 = assertResultCode(
+  @Test def testAnnotated2(): Unit = assertResultCode(
     code = "def foo = 42: @foo2[A1, B1](4)(2)")(
     parsedCode = "def foo = 42: @foo2[A1, B1](4)(2)",
     typedCode = "def foo = (42: @foo2[A1, B1](4)(2))",
     wrap = true)
 
-  @Test def testAnnotated3 = assertResultCode(
+  @Test def testAnnotated3(): Unit = assertResultCode(
     code = "def foo = (42: @foo1[A1, B1]): @foo2[A1, B1](4)(2)")(
     parsedCode = "def foo = (42: @foo1[A1, B1]): @foo2[A1, B1](4)(2)",
     typedCode = "def foo = ((42: @foo1[A1, B1]): @foo2[A1, B1](4)(2))",
     wrap = true)
 
-  @Test def testAnnotated4 = assertResultCode(
+  @Test def testAnnotated4(): Unit = assertResultCode(
     code = "def foo = 42: @foo3[A1, B1](4)(2.0F, new foo1[A1, B1]())")(
     parsedCode = "def foo = 42: @foo3[A1, B1](4)(2.0F, new foo1[A1, B1]())",
     typedCode = "def foo = (42: @foo3[A1, B1](4)(2.0F, new foo1[A1, B1]()))",
     wrap = true)
 
-  @Test def testAnnotated5 = assertPrintedCode(sm"""
+  @Test def testAnnotated5(): Unit = assertPrintedCode(sm"""
     |{
     |  val x = 5;
     |  (x: @unchecked) match {
@@ -1094,7 +1094,7 @@ class ValAndDefPrintTest {
     |  }
     |}""")
 
-  @Test def testAnnotated8 = assertPrintedCode(sm"""
+  @Test def testAnnotated8(): Unit = assertPrintedCode(sm"""
     |{
     |  val x = 5;
     |  ((x: @unchecked): @foo3(4)(2.0F, new foo1[A1, B1]())) match {
@@ -1105,12 +1105,12 @@ class ValAndDefPrintTest {
 
 @RunWith(classOf[JUnit4])
 class PackagePrintTest {
-  @Test def testPackage1 = assertPrintedCode(sm"""
+  @Test def testPackage1(): Unit = assertPrintedCode(sm"""
     |package foo.bar {
     |  
     |}""", checkTypedTree = false)
 
-  @Test def testPackage2 = assertPrintedCode(sm"""
+  @Test def testPackage2(): Unit = assertPrintedCode(sm"""
     |package foo {
     |  class C
     |
@@ -1118,13 +1118,13 @@ class PackagePrintTest {
     |}""", checkTypedTree = false)
 
   //package object foo extends a with b
-  @Test def testPackage3 = assertPrintedCode(sm"""
+  @Test def testPackage3(): Unit = assertPrintedCode(sm"""
     |package foo {
     |  object `package` extends a with b
     |}""", checkTypedTree = false)
 
   //package object foo { def foo; val x = 1 }
-  @Test def testPackage4 = assertPrintedCode(sm"""
+  @Test def testPackage4(): Unit = assertPrintedCode(sm"""
     |package foo {
     |  object `package` {
     |    def foo: scala.Unit = ();
@@ -1133,7 +1133,7 @@ class PackagePrintTest {
     |}""", checkTypedTree = false)
 
   //package object foo extends { val x = 1; type I = Int } with Any
-  @Test def testPackage5 = assertPrintedCode(sm"""
+  @Test def testPackage5(): Unit = assertPrintedCode(sm"""
     |package foo {
     |  object `package` extends {
     |    val x = 1;
@@ -1144,63 +1144,63 @@ class PackagePrintTest {
 
 @RunWith(classOf[JUnit4])
 class QuasiTreesPrintTest {
-  @Test def testQuasiIdent = assertTreeCode(q"*")("*")
+  @Test def testQuasiIdent(): Unit = assertTreeCode(q"*")("*")
 
-  @Test def testQuasiVal = assertTreeCode(q"val * : Unit = null")("val * : Unit = null")
+  @Test def testQuasiVal(): Unit = assertTreeCode(q"val * : Unit = null")("val * : Unit = null")
 
-  @Test def testQuasiDef = assertTreeCode(q"def * : Unit = null")("def * : Unit = null")
+  @Test def testQuasiDef(): Unit = assertTreeCode(q"def * : Unit = null")("def * : Unit = null")
 
-  @Test def testQuasiTrait = assertTreeCode(q"trait *")("trait *")
+  @Test def testQuasiTrait(): Unit = assertTreeCode(q"trait *")("trait *")
 
-  @Test def testQuasiClass = assertTreeCode(q"class *")("class *")
+  @Test def testQuasiClass(): Unit = assertTreeCode(q"class *")("class *")
 
-  @Test def testQuasiClassWithPublicParams = assertTreeCode(q"class X(val x: Int, val s:String)")("class X(val x: Int, val s: String)")
+  @Test def testQuasiClassWithPublicParams(): Unit = assertTreeCode(q"class X(val x: Int, val s:String)")("class X(val x: Int, val s: String)")
 
-  @Test def testQuasiClassWithParams = assertTreeCode(q"class X(x: Int, s:String)")("class X(x: Int, s: String)")
+  @Test def testQuasiClassWithParams(): Unit = assertTreeCode(q"class X(x: Int, s:String)")("class X(x: Int, s: String)")
 
-  @Test def testQuasiObject = assertTreeCode(q"object *")("object *")
+  @Test def testQuasiObject(): Unit = assertTreeCode(q"object *")("object *")
 
-  @Test def testQuasiObjectWithBody = assertTreeCode(q"""object X{ def y = "test" }""")(sm"""
+  @Test def testQuasiObjectWithBody(): Unit = assertTreeCode(q"""object X{ def y = "test" }""")(sm"""
     |object X {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiClassWithBody = assertTreeCode(q"""class X{ def y = "test" }""")(sm"""
+  @Test def testQuasiClassWithBody(): Unit = assertTreeCode(q"""class X{ def y = "test" }""")(sm"""
     |class X {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiTraitWithBody = assertTreeCode(q"""trait X{ def y = "test" }""")(sm"""
+  @Test def testQuasiTraitWithBody(): Unit = assertTreeCode(q"""trait X{ def y = "test" }""")(sm"""
     |trait X {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiTraitWithSelfTypeAndBody = assertTreeCode(q"""trait X{ self: Order => def y = "test" }""")(sm"""
+  @Test def testQuasiTraitWithSelfTypeAndBody(): Unit = assertTreeCode(q"""trait X{ self: Order => def y = "test" }""")(sm"""
     |trait X { self: Order =>
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiTraitWithSelf = assertTreeCode(q"""trait X{ self => def y = "test" }""")(sm"""
+  @Test def testQuasiTraitWithSelf(): Unit = assertTreeCode(q"""trait X{ self => def y = "test" }""")(sm"""
     |trait X { self =>
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiCaseClassWithBody = assertTreeCode(q"""case class X() { def y = "test" }""")(sm"""
+  @Test def testQuasiCaseClassWithBody(): Unit = assertTreeCode(q"""case class X() { def y = "test" }""")(sm"""
     |case class X() {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiCaseClassWithParamsAndBody = assertTreeCode(q"""case class X(x: Int, s: String){ def y = "test" }""")(sm"""
+  @Test def testQuasiCaseClassWithParamsAndBody(): Unit = assertTreeCode(q"""case class X(x: Int, s: String){ def y = "test" }""")(sm"""
     |case class X(x: Int, s: String) {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiCaseClassWithTypes1 = assertTreeCode(q"""case class X(x: ${typeOf[Int]}, s: ${typeOf[String]}){ def y = "test" }""")(sm"""
+  @Test def testQuasiCaseClassWithTypes1(): Unit = assertTreeCode(q"""case class X(x: ${typeOf[Int]}, s: ${typeOf[String]}){ def y = "test" }""")(sm"""
     |case class X(x: Int, s: String) {
     |  def y = "test"
     |}""")
 
-  @Test def testQuasiCaseClassWithTypes2 = assertTreeCode(q"""case class X(x: ${typeOf[Int]}, s: ${typeOf[String]}){ def y = "test" }""", typecheck = true)(sm"""
+  @Test def testQuasiCaseClassWithTypes2(): Unit = assertTreeCode(q"""case class X(x: ${typeOf[Int]}, s: ${typeOf[String]}){ def y = "test" }""", typecheck = true)(sm"""
     |{
     |  case class X(x: Int, s: String) {
     |    def y = "test"

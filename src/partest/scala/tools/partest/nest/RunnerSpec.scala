@@ -13,6 +13,7 @@
 package scala.tools.partest.nest
 
 import language.postfixOps
+import scala.annotation.nowarn
 
 trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = RunnerSpec
@@ -66,5 +67,7 @@ object RunnerSpec extends RunnerSpec with Reference {
   type ThisCommandLine = CommandLine
   def creator(args: List[String]): ThisCommandLine = new CommandLine(RunnerSpec, args)
 
+  // TODO: restructure to avoid using early initializers
+  @nowarn("cat=deprecation&msg=early initializers")
   def forArgs(args: Array[String]): Config = new { val parsed = creator(args.toList) } with Config
 }
