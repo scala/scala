@@ -68,7 +68,6 @@ jobs:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest Test/compile info testAll1
-          - sbt -Dscala.build.compileWithDotty=true library/compile
 
       - name: testAll2
         if: type = pull_request OR repo != scala/scala
@@ -78,6 +77,15 @@ jobs:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest info testAll2
+
+      - name: testDotty
+        if: type = pull_request OR repo != scala/scala
+        workspaces:
+          use: published-local
+        script:
+          - set -e
+          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+          - sbt -Dscala.build.compileWithDotty=true library/compile
 
       - stage: build
         name: build the spec using jekyll
