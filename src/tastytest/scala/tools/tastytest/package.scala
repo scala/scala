@@ -2,11 +2,9 @@ package scala.tools
 
 package object tastytest {
 
-import java.nio.file.FileSystems
+  import scala.util.Try
 
-import scala.util.Try
-
-import Files.{pathSep, classpathSep}
+  import Files.{pathSep, classpathSep}
 
   def printerrln(str: String): Unit = System.err.println(red(str))
   def printwarnln(str: String): Unit = System.err.println(yellow(str))

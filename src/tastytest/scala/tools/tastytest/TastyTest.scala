@@ -11,7 +11,6 @@ import java.{ util => ju }
 
 import SourceKind._
 import Files._
-import scala.util.Properties
 
 object TastyTest {
 
@@ -172,7 +171,7 @@ object TastyTest {
   private def getMovePreChangeSources(root: String,
     preAFilters: Set[SourceKind] = Set(Scala),
     preBFilters: Set[SourceKind] = Set(Scala),
-    src2Filters: Set[SourceKind] = Set(Scala),
+    src2Filters: Set[SourceKind] /*= Set(Scala)*/,
     src3Filters: Set[SourceKind] = Set(Scala)
   ): Try[(Seq[String], Seq[String], Seq[String], Seq[String])] = {
     for {
@@ -181,7 +180,7 @@ object TastyTest {
     } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*), src2, src3)
   }
 
-  private def get2And3Sources(root: String, src2Filters: Set[SourceKind] = Set(Scala),
+  private def get2And3Sources(root: String, src2Filters: Set[SourceKind] /*= Set(Scala)*/,
     src3Filters: Set[SourceKind] = Set(Scala)
   ): Try[(Seq[String], Seq[String])] = {
     for {
@@ -190,8 +189,8 @@ object TastyTest {
     } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3:_*))
   }
 
-  private def getPreChangeSources(root: String, preAFilters: Set[SourceKind] = Set(Scala),
-    preBFilters: Set[SourceKind] = Set(Scala)
+  private def getPreChangeSources(root: String, preAFilters: Set[SourceKind] /*= Set(Scala)*/,
+    preBFilters: Set[SourceKind] /*= Set(Scala)*/
   ): Try[(Seq[String], Seq[String])] = {
     for {
       preA <- getFiles(root/"pre-a")
@@ -199,7 +198,7 @@ object TastyTest {
     } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*))
   }
 
-  private def getNegIsolatedSources(root: String, src2Filters: Set[SourceKind] = Set(Scala),
+  private def getNegIsolatedSources(root: String, src2Filters: Set[SourceKind] /*= Set(Scala)*/,
     src3Filters: Set[SourceKind] = Set(Scala)
   ): Try[(Seq[String], Seq[String], Seq[String])] = {
     for {

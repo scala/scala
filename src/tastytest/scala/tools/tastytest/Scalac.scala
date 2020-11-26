@@ -1,5 +1,6 @@
 package scala.tools.tastytest
 
+import scala.collection.immutable.ArraySeq
 import scala.util.{ Try, Success, chaining }, chaining._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 
@@ -35,7 +36,7 @@ object Scalac extends Script.Command {
         "-Xfatal-warnings",
         "-usejavacp"
       ) ++ additionalSettings
-      compile(settings:_*)
+      compile(ArraySeq.unsafeWrapArray(settings):_*)
     }
   }
 
@@ -47,7 +48,7 @@ object Scalac extends Script.Command {
       println(red(s"please provide at least 2 arguments in sub-command: $describe"))
       return 1
     }
-    val Seq(out, src, additionalArgs @ _*) = args
+    val Seq(out, src, additionalArgs @ _*) = args: @unchecked
     val success = scalac(out, additionalArgs, src).get
     if (success) 0 else 1
   }

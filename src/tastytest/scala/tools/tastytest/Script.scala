@@ -9,7 +9,7 @@ trait Script extends Script.Command {
       println(red("Please provide at least one sub-command"))
       return 1
     }
-    val Seq(command, args0 @ _*) = args
+    val Seq(command, args0 @ _*) = args: @unchecked
     subcommands.collectFirst {
       case subcommand if subcommand.commandName == command => subcommand.process(args0:_*)
     }.getOrElse {

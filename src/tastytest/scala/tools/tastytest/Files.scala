@@ -2,7 +2,7 @@ package scala.tools.tastytest
 
 import scala.io.{ Source, BufferedSource }
 import scala.jdk.CollectionConverters._
-import scala.util.{ Try, Success, Failure }
+import scala.util.Try
 
 import java.{ lang => jl, util => ju }
 import java.nio.file.{ Files => JFiles, Paths => JPaths, Path => JPath, PathMatcher, FileSystems }
@@ -61,7 +61,7 @@ object Files {
     var source: BufferedSource = null
     try {
       source = Source.fromResource(resource)
-      op(() => source.getLines.asJava)
+      op(() => source.getLines().asJava)
     }
     finally if (source != null) {
       source.close()

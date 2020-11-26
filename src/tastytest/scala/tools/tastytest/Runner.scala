@@ -6,11 +6,10 @@ import scala.util.Try
 
 import java.nio.file.Paths
 import java.io.{ OutputStream, ByteArrayOutputStream }
-import java.{ lang => jl, util => ju }
+import java.{ lang => jl }
 import jl.reflect.Modifier
 import scala.util.control.NonFatal
 import java.lang.reflect.Method
-import java.net.URLClassLoader
 
 import Files._
 import java.net.URL
@@ -79,7 +78,7 @@ object Runner extends Script.Command {
       println(red(s"please provide 2 arguments in sub-command: $describe"))
       return 1
     }
-    val Seq(classpath, className) = args
+    val Seq(classpath, className) = args: @unchecked
     classloadFrom(classpath).map(run(_, className)).get
     0
   }

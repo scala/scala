@@ -47,7 +47,7 @@ object Dotc extends Script.Command {
       println(red(s"please provide two arguments in sub-command: $describe"))
       return 1
     }
-    val Seq(out, src) = args
+    val Seq(out, src) = args: @unchecked
     val success = dotc(out, out, Nil, src).get
     if (success) 0 else 1
   }

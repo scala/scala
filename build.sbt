@@ -608,11 +608,13 @@ lazy val partest = configureAsSubproject(project)
 lazy val tastytest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
     libraryDependencies ++= List(diffUtilsDep, TastySupport.scala3Compiler),
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
