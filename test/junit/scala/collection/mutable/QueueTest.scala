@@ -31,18 +31,18 @@ class QueueTest {
   }
 
   @Test
-  def copyToArrayOutOfBounds: Unit = {
+  def copyToArrayOutOfBounds(): Unit = {
     val target = Array[Int]()
     assertEquals(0, mutable.Queue(1, 2).copyToArray(target, 1, 0))
   }
 
   @Test
-  def insertsWhenResizeIsNeeded: Unit = {
+  def insertsWhenResizeIsNeeded(): Unit = {
     val q = Queue.from(Array.range(0, 15))
     q.insert(1, -1)
     assertEquals(Queue(0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), q)
   }
 
   @Test
-  def sliding: Unit = ArrayDequeTest.genericSlidingTest(Queue, "Queue")
+  def sliding(): Unit = ArrayDequeTest.genericSlidingTest(Queue, "Queue")
 }

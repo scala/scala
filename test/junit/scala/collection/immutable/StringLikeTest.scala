@@ -12,7 +12,7 @@ import scala.util.Random
 @RunWith(classOf[JUnit4])
 class StringLikeTest {
   @Test
-  def testStringSplitWithChar: Unit = {
+  def testStringSplitWithChar(): Unit = {
     val chars = (0 to 255).map(_.toChar)
     def randString = Random.nextString(30)
 
@@ -28,7 +28,7 @@ class StringLikeTest {
   }
 
   @Test
-  def testSplitEdgeCases: Unit = {
+  def testSplitEdgeCases(): Unit = {
     val high = 0xD852.toChar
     val low = 0xDF62.toChar
     val surrogatepair = List(high, low).mkString
@@ -44,7 +44,7 @@ class StringLikeTest {
 
   /* Test for scala/bug#9767 */
   @Test
-  def testNumericConversion: Unit = {
+  def testNumericConversion(): Unit = {
     val sOne = " \t\n 1 \n\r\t "
     val sOk  = "2"
     val sNull:String = null

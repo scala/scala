@@ -9,7 +9,7 @@ import scala.tools.testkit.AllocationTest
 
 class IndexedSeqTest extends AllocationTest {
 
-  @Test def testEqualsSimple: Unit = {
+  @Test def testEqualsSimple(): Unit = {
     assertTrue(Vector.empty == Vector.empty)
     assertTrue(Vector(1, 2, 3) == Vector(1, 2, 3))
     assertTrue(Vector(1, 2, 3, 4, 5, 6, 7, 8, 9) == Vector(1, 2, 3, 4, 5, 6, 7, 8, 9))
@@ -19,7 +19,7 @@ class IndexedSeqTest extends AllocationTest {
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) == ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
 
-  @Test def testNotEqualsSimple1: Unit = {
+  @Test def testNotEqualsSimple1(): Unit = {
     assertTrue(Vector.empty != Vector(1, 2, 3))
     assertTrue(Vector(3, 2, 1) != Vector(1, 2, 3))
     assertTrue(Vector(1, 2, 3) != Vector(1, 2))
@@ -27,7 +27,7 @@ class IndexedSeqTest extends AllocationTest {
     assertTrue(Vector(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(1, 2, 3, 4, 5, 6, 7, 8, 99))
   }
 
-  @Test def testNotEqualsSimple2: Unit = {
+  @Test def testNotEqualsSimple2(): Unit = {
     assertTrue(ArraySeq.empty != ArraySeq(1, 2, 3))
     assertTrue(ArraySeq(3, 2, 1) != ArraySeq(1, 2, 3))
     assertTrue(ArraySeq(1, 2, 3) != ArraySeq(1, 2))
@@ -35,7 +35,7 @@ class IndexedSeqTest extends AllocationTest {
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 99))
   }
 
-  @Test def testNotEqualsSimple3: Unit = {
+  @Test def testNotEqualsSimple3(): Unit = {
     assertTrue(ArraySeq.empty != Vector(1, 2, 3))
     assertTrue(ArraySeq(3, 2, 1) != Vector(1, 2, 3))
     assertTrue(ArraySeq(1, 2, 3) != Vector(1, 2))
@@ -43,7 +43,7 @@ class IndexedSeqTest extends AllocationTest {
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(1, 2, 3, 4, 5, 6, 7, 8, 99))
   }
 
-  @Test def testNotEqualsEdges: Unit = {
+  @Test def testNotEqualsEdges(): Unit = {
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(10, 2, 3, 4, 5, 6, 7, 8, 9))
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(1, 20, 3, 4, 5, 6, 7, 8, 9))
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(1, 2, 30, 4, 5, 6, 7, 8, 9))
@@ -55,34 +55,34 @@ class IndexedSeqTest extends AllocationTest {
     assertTrue(ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9) != Vector(1, 2, 3, 4, 5, 6, 7, 8, 90))
   }
 
-  @Test def testEqualsSimpleNonAllocatingEmpty: Unit = {
+  @Test def testEqualsSimpleNonAllocatingEmpty(): Unit = {
     nonAllocatingEqual(true, Vector.empty, Vector.empty)
     nonAllocatingEqual(true, ArraySeq.empty, ArraySeq.empty)
     nonAllocatingEqual(true, Vector.empty, ArraySeq.empty)
   }
 
-  @Test def testEqualsSimpleNonAllocatingSmall: Unit = {
+  @Test def testEqualsSimpleNonAllocatingSmall(): Unit = {
     nonAllocatingEqual(true, Vector(1, 2, 3), Vector(1, 2, 3))
     nonAllocatingEqual(true, ArraySeq(1, 2, 3), ArraySeq(1, 2, 3))
     nonAllocatingEqual(true, Vector(1, 2, 3), ArraySeq(1, 2, 3))
   }
 
-  @Test def testEqualsSimpleNonAllocatingDiffSize: Unit = {
+  @Test def testEqualsSimpleNonAllocatingDiffSize(): Unit = {
     nonAllocatingEqual(false, Vector(1, 2, 3, 4, 5, 6, 7, 8, 9), Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
     nonAllocatingEqual(false, ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9), ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
     nonAllocatingEqual(false, Vector(1, 2, 3, 4, 5, 6, 7, 8, 9), ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
   }
 
-  @Test def testEqualsSimpleNonAllocatingDiffInFirstFew: Unit = {
+  @Test def testEqualsSimpleNonAllocatingDiffInFirstFew(): Unit = {
     nonAllocatingEqual(false, Vector(1, 2, 3, 14, 5, 6, 7, 8, 9), Vector(1, 2, 3, 4, 5, 6, 7, 8, 9))
     nonAllocatingEqual(false, ArraySeq(1, 2, 3, 14, 5, 6, 7, 8, 9), ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9))
     nonAllocatingEqual(false, Vector(1, 2, 3, 14, 5, 6, 7, 8, 9), ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
 
-  @Test def testEqualsArraySeqSpecialised1: Unit = {
+  @Test def testEqualsArraySeqSpecialised1(): Unit = {
     nonAllocatingEqual(true, ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9), ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9))
   }
-  @Test def testEqualsArraySeqSpecialised2: Unit = {
+  @Test def testEqualsArraySeqSpecialised2(): Unit = {
     nonAllocatingEqual(true, ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9), Range(1,10))
   }
 

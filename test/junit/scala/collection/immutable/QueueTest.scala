@@ -32,7 +32,7 @@ class QueueTest {
   }
 
   @Test
-  def copyToArrayOutOfBounds: Unit = {
+  def copyToArrayOutOfBounds(): Unit = {
     val target = Array[Int]()
     assertEquals(0, Queue(1,2).copyToArray(target, 1, 0))
   }

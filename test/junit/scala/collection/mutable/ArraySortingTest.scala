@@ -29,7 +29,7 @@ class ArraySortingTest {
   }
 
   @Test
-  def testSortInPlace: Unit = {
+  def testSortInPlace(): Unit = {
     val arr = Array(3, 2, 1)
     arr.sortInPlace()
 

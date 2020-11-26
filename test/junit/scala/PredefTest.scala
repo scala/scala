@@ -6,7 +6,7 @@ import org.junit.Test
 
 class PredefTest {
   @Test
-  def testTuple2Alias: Unit = {
+  def testTuple2Alias(): Unit = {
     val tup = "foobar" -> 3
     val char = tup match {
       case str -> i => str.charAt(i)

@@ -8,7 +8,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class EnumerationTest {
 
-  @Test def t10906: Unit = {
+  @Test def t10906(): Unit = {
     object A extends Enumeration
     val s1 = A.values.map(x => 42)
     assertEquals(Set.empty, (s1: scala.collection.immutable.SortedSet[Int]))
@@ -20,7 +20,7 @@ class EnumerationTest {
     assertEquals(Set.empty, (s4: A.ValueSet))
   }
 
-  @Test def implicitOrderingIsSameAsEnumerationOrdering: Unit = {
+  @Test def implicitOrderingIsSameAsEnumerationOrdering(): Unit = {
     object MyEnum extends Enumeration {
       val a, b, c = Value
     }

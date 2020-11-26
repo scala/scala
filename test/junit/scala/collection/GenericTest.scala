@@ -41,7 +41,7 @@ object Parse {
 class GenericTest {
 
   @Test
-  def genericTest: Unit = {
+  def genericTest(): Unit = {
     assert(Parse.parseCollection[Int, immutable.List[Int]].parse("1|2|3").contains(1 :: 2 :: 3 :: immutable.Nil))
     assert(Parse.parseCollection[(Int, Int), immutable.HashMap[Int, Int]].parse("1-2|3-4").contains(immutable.HashMap((1, 2), (3, 4))))
   }

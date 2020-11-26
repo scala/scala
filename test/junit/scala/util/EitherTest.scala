@@ -5,7 +5,7 @@ import org.junit.Test
 
 class EitherTest {
 
-  @Test def testFlatten: Unit = {
+  @Test def testFlatten(): Unit = {
     val  l: Either[String, Either[String, Int]] = Left("pancake")
     val rl: Either[String, Either[String, Int]] = Right(Left("flounder"))
     val rr: Either[String, Either[String, Int]] = Right(Right(7))
@@ -20,7 +20,7 @@ class EitherTest {
   }
 
   @Test
-  def testWithRight: Unit = {
+  def testWithRight(): Unit = {
 
     def rightSumOrLeftEmpty(l: List[Int]) =
       l.foldLeft(Left("empty").withRight[Int]) {
@@ -33,7 +33,7 @@ class EitherTest {
   }
 
   @Test
-  def testWithLeft: Unit = {
+  def testWithLeft(): Unit = {
 
     def leftSumOrRightEmpty(l: List[Int]) =
       l.foldLeft(Right("empty").withLeft[Int]) {

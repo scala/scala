@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class LinearSeqTest {
   // Tests regression on issue 11262
-  @Test def extensionIteratorTest: Unit = {
+  @Test def extensionIteratorTest(): Unit = {
     class ConstantLinearSeq[A](len: Int, elt: A) extends scala.collection.LinearSeq[A] {
       override val isEmpty: Boolean = len == 0
       override val head = elt

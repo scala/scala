@@ -261,14 +261,14 @@ class LazyZipOpsTest {
   }
 
   @Test
-  def lazyZipArray: Unit = {
+  def lazyZipArray(): Unit = {
     val a = Array(1,2,3).lazyZip(List(4,5,6)).map(_ + _)
     val at: Array[Int] = a
     assertArrayEquals(Array(5, 7, 9), at)
   }
 
   @Test
-  def lazyZipString: Unit = {
+  def lazyZipString(): Unit = {
     val v = "abc".lazyZip(List(1,2,3)).map((a, b) => a.toInt + b.toInt)
     val vt: IndexedSeq[Int] = v
     assertEquals(Vector(98, 100, 102), vt)

@@ -58,7 +58,7 @@ class TreeSetTest extends AllocationTest {
   }
 
   @Test
-  def t11637: Unit = {
+  def t11637(): Unit = {
     import scala.collection.immutable.{RedBlackTree => RB}
     val instrs = List[RB.Tree[Int, Null] => RB.Tree[Int, Null]](
       RB.update(_, 18, null, overwrite = false),
@@ -96,7 +96,7 @@ class TreeSetTest extends AllocationTest {
   }
 
 
-  @Test def keysEqualSimple: Unit = {
+  @Test def keysEqualSimple(): Unit = {
     val tree = TreeMap(1 -> "a", 2 -> "b", 3 -> "c")
     assertEquals(Set(1, 2, 3), tree.keySet)
     val tree2 = TreeMap(1 -> "x", 2 -> "y", 3 -> "z")
@@ -106,7 +106,7 @@ class TreeSetTest extends AllocationTest {
     assertEquals(tree.keySet, tree3)
   }
 
-  @Test def valuesEqual: Unit = {
+  @Test def valuesEqual(): Unit = {
     val data = (Array.tabulate(1000) { i => i.toString }).sorted
     val expectedData = data.drop(30)
 
@@ -119,7 +119,7 @@ class TreeSetTest extends AllocationTest {
     assertEquals(tree1, tree2)
   }
 
-  @Test def keysFromMapEqualFastPath: Unit = {
+  @Test def keysFromMapEqualFastPath(): Unit = {
     class V(s: String) {
 
       override def equals(obj: Any): Boolean = {
@@ -136,7 +136,7 @@ class TreeSetTest extends AllocationTest {
     assertEquals(tree1.drop(5).keySet, tree1.drop(5).keySet)
   }
 
-  @Test def equalFastPath: Unit = {
+  @Test def equalFastPath(): Unit = {
     var compareCount = 0
     class K(val s: String) extends Ordered[K] {
       override def toString: String = s"K-$s"
@@ -199,7 +199,7 @@ class TreeSetTest extends AllocationTest {
     }
   }
 
-  @Test def consistentEquals: Unit = {
+  @Test def consistentEquals(): Unit = {
     class K(val s: String) extends Ordered[K] {
       override def toString: String = s"K-$s"
 

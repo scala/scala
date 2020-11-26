@@ -12,12 +12,12 @@ class SymbolTableTest {
   object symbolTable extends SymbolTableForUnitTesting
 
   @Test
-  def initDefinitions = {
+  def initDefinitions(): Unit = {
     symbolTable.definitions.init()
   }
 
   @Test
-  def basicSubTypeCheck = {
+  def basicSubTypeCheck(): Unit = {
     symbolTable.definitions.init()
     val listClassTpe = symbolTable.definitions.ListClass.tpe
     val seqClassTpe = symbolTable.definitions.SeqClass.tpe
@@ -29,7 +29,7 @@ class SymbolTableTest {
    * from scratch and perform sub type check.
    */
   @Test
-  def customClassesSubTypeCheck: Unit = {
+  def customClassesSubTypeCheck(): Unit = {
     import symbolTable._
     symbolTable.definitions.init()
     val rootClass = symbolTable.rootMirror.RootClass
@@ -45,7 +45,7 @@ class SymbolTableTest {
   }
 
   @Test
-  def noSymbolOuterClass_t9133: Unit = {
+  def noSymbolOuterClass_t9133(): Unit = {
     import symbolTable._
     assertEquals(NoSymbol, NoSymbol.outerClass)
   }

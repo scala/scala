@@ -76,7 +76,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // x => x : VC => VC applied to VC(1)
   @Test
-  def testVC_VC_VC =
+  def testVC_VC_VC(): Unit =
     test("VC", "VC", "new VC(1)")("(I)I",
       List(VarOp(ILOAD, 0), Op(IRETURN)),
       List(Op(ICONST_1)),
@@ -84,7 +84,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // x => new VC(x) : Int => VC applied to 1
   @Test
-  def testInt_VC_1 =
+  def testInt_VC_1(): Unit =
     test("Int", "VC", "1", x => s"new VC($x)")("(I)I",
       List(VarOp(ILOAD, 0), Op(IRETURN)),
       List(Op(ICONST_1)),
@@ -92,7 +92,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // x => x : VC => Int applied to VC(1)
   @Test
-  def testVC_Int_VC =
+  def testVC_Int_VC(): Unit =
     test("VC", "Int", "new VC(1)", x => "1")("(I)I",
       List(Op(ICONST_1), Op(IRETURN)),
       List(Op(ICONST_1)),
@@ -100,7 +100,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // x => new VC(1) : VC => Any applied to VC(1)
   @Test
-  def testVC_Any_VC =
+  def testVC_Any_VC(): Unit =
     test("VC", "Any", "new VC(1)", x => s"new VC(1)")("(I)Ljava/lang/Object;",
       List(TypeOp(NEW, "VC"), Op(DUP), Op(ICONST_1), Invoke(INVOKESPECIAL, "VC", "<init>", "(I)V", false), Op(ARETURN)),
       List(Op(ICONST_1)),
@@ -109,7 +109,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // x => x : VC => Unit applied to VC(1)
   @Test
-  def testVC_Unit_VC =
+  def testVC_Unit_VC(): Unit =
     test("VC", "Unit", "new VC(1)")("(I)V",
       List(VarOp(ILOAD, 0), Op(POP), Op(RETURN)),
       List(Op(ICONST_1)),
@@ -124,7 +124,7 @@ class IndySammyTest extends BytecodeTesting {
   //   FunAny_VC  lam() { return x -> BoxesRunTime.unboxToInt((Object)x); }
   //   int    app()    { lam().apply(BoxesRunTime.boxToInteger((int)1));
   @Test
-  def testAny_VC_1 =
+  def testAny_VC_1(): Unit =
     test("Any", "VC", "1", x => s"new VC($x.asInstanceOf[Int])")("(Ljava/lang/Object;)I",
       List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false), Op(IRETURN)),
       List(Op(ICONST_1), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false)),
@@ -139,7 +139,7 @@ class IndySammyTest extends BytecodeTesting {
 
   // Tests ThisReferringMethodsTraverser
   @Test
-  def testStaticIfNoThisReference: Unit = {
+  def testStaticIfNoThisReference(): Unit = {
     val methodNodes = compileAsmMethods("def foo = () => () => () => 42")
     methodNodes.forall(m => !m.name.contains("anonfun") || (m.access & ACC_STATIC) == ACC_STATIC)
   }

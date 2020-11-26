@@ -5,7 +5,7 @@ import org.junit.Test
 
 class MapTest {
 
-  @Test def builderCompare1: Unit = {
+  @Test def builderCompare1(): Unit = {
     for (size <- 0 to 100;
          start <- 0 to 10;
          overwrite <- List(true, false)) {
@@ -39,7 +39,7 @@ class MapTest {
 
     }
   }
-  @Test def builderCompare2: Unit = {
+  @Test def builderCompare2(): Unit = {
     for (size <- 0 to 100;
          start <- 0 to 10;
          overwrite <- List(true, false)) {
@@ -68,7 +68,7 @@ class MapTest {
     }
   }
 
-  @Test def addition: Unit = {
+  @Test def addition(): Unit = {
     for (size <- 0 to 100;
          start <- 0 to 10) {
       val tBuilder = TreeMap.newBuilder[String, String]

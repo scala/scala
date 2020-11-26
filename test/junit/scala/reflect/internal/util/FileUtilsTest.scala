@@ -50,7 +50,7 @@ class FileUtilsTest {
     fileExpected.delete()
   }
 
-  @Test def showPerformance: Unit = {
+  @Test def showPerformance(): Unit = {
     //warmup
     for (i <- 1 to 1000) {
       writeIsSame()

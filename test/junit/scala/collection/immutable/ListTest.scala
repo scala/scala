@@ -76,7 +76,7 @@ class ListTest extends AllocationTest{
     assertSame(ls, List.from(ls))
   }
 
-  @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+  @Test def checkSearch(): Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
 
   @Test def colonColonColon(): Unit = {
@@ -107,7 +107,7 @@ class ListTest extends AllocationTest{
   }
 
 
-  @Test def smallListAllocation: Unit = {
+  @Test def smallListAllocation(): Unit = {
     if (CompileTime.versionNumberString == "2.13.2") return
     exactAllocates(Sizes.list * 1, "list  size 1")(List("0"))
     exactAllocates(Sizes.list * 2, "list  size 2")(List("0", "1"))
@@ -118,7 +118,7 @@ class ListTest extends AllocationTest{
     exactAllocates(Sizes.list * 7, "list  size 7")(List("0", "1", "2", "3", "4", "5", "6"))
   }
 
-  @Test def largeListAllocation: Unit = {
+  @Test def largeListAllocation(): Unit = {
     def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
     exactAllocates(expected(10), "list  size 10")(
       List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))

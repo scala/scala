@@ -83,7 +83,7 @@ abstract class PerRunInitTest {
   }
 
   @Test
-  def clearedWhenExpired: Unit = {
+  def clearedWhenExpired(): Unit = {
     val data = newData()
 
     add(1, data)
@@ -97,7 +97,7 @@ abstract class PerRunInitTest {
   }
 
   @Test
-  def clearedWeakOnly: Unit = {
+  def clearedWeakOnly(): Unit = {
     var data = newData()
     val ref = WeakReference(data)
 
@@ -110,7 +110,7 @@ abstract class PerRunInitTest {
   }
 
   @Test
-  def notClearedIfRequested: Unit = {
+  def notClearedIfRequested(): Unit = {
     val data = newData()
     dontClear(data)
 

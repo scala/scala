@@ -28,13 +28,13 @@ class ArrayOpsTest {
   }
 
   @Test
-  def reverseIterator: Unit = {
+  def reverseIterator(): Unit = {
     val a = Array(1,2,3)
     assertEquals(List(3,2,1), a.reverseIterator.toList)
   }
 
   @Test
-  def folds: Unit = {
+  def folds(): Unit = {
     val a = Array(1,2,3)
     assertEquals(6, a.foldLeft(0){ (a, b) => a+b })
     assertEquals(6, a.foldRight(0){ (a, b) => a+b })
@@ -78,7 +78,7 @@ class ArrayOpsTest {
   }
 
   @Test
-  def startsWith: Unit = {
+  def startsWith(): Unit = {
     val l0 = Nil
     val l1 = 1 :: Nil
     val a0 = Array[Int]()
@@ -105,14 +105,14 @@ class ArrayOpsTest {
   }
 
   @Test
-  def slice: Unit = {
+  def slice(): Unit = {
     assertArrayEquals(Array[Int](2), Array[Int](1, 2).slice(1, 2))
     assertArrayEquals(Array[Int](), Array[Int](1).slice(1052471512, -1496048404))
     assertArrayEquals(Array[Int](), Array[Int](1).slice(2, 3))
   }
 
   @Test
-  def copyToArrayOutOfBoundsTest: Unit = {
+  def copyToArrayOutOfBoundsTest(): Unit = {
     val target = Array[Int]()
     assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
   }

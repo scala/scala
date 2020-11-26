@@ -15,7 +15,7 @@ class LinkedHashMapTest {
   }
   
   @Test
-  def testClear: Unit = {
+  def testClear(): Unit = {
     val lhm = new TestClass
     Seq("a" -> 8, "b" -> 9).foreach(kv => lhm.put(kv._1, kv._2))
     

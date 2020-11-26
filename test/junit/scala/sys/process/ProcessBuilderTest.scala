@@ -10,7 +10,7 @@ import scala.tools.testkit.AssertUtil._
 class ProcessBuilderTest {
 
   @Test
-  def t8406: Unit = {
+  def t8406(): Unit = {
     import java.io.ByteArrayInputStream
     import java.nio.charset.StandardCharsets.UTF_8
     import scala.util.Try

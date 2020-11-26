@@ -28,14 +28,14 @@ class TreeMapTest extends AllocationTest {
     assertSame(m, TreeMap.from(m))
   }
   @Test
-  def testWithDefaultValue: Unit = {
+  def testWithDefaultValue(): Unit = {
     val m1 = TreeMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue("missing")
     assertEquals("a", m2(1))
     assertEquals("missing", m2(3))
   }
   @Test
-  def testWithDefault: Unit = {
+  def testWithDefault(): Unit = {
     val m1 = TreeMap(1 -> "a", 2 -> "b")
 
     val m2: Map[Int, String] =
@@ -60,12 +60,12 @@ class TreeMapTest extends AllocationTest {
     assertEquals(m4(100), "101")
   }
 
-  @Test def entriesEqualSimple: Unit = {
+  @Test def entriesEqualSimple(): Unit = {
     val tree1 = TreeMap(1 -> "a", 2 -> "b", 3 -> "c")
     val tree2 = TreeMap(1 -> "a", 2 -> "b", 3 -> "c")
     assertEquals(tree1, tree2)
   }
-  @Test def entriesEqual: Unit = {
+  @Test def entriesEqual(): Unit = {
     val b1 = TreeMap.newBuilder[Int, String]
     for ( i <- 10 to 1000) {
       b1 += i -> s"$i value"
@@ -83,7 +83,7 @@ class TreeMapTest extends AllocationTest {
     assertEquals((tree1+ (9999 -> "zzz")), (tree2+ (9999 -> "zzz")))
     assertNotEquals((tree1+ (9999 -> "zzz")), (tree2+ (9999999 -> "zzz")))
   }
-  @Test def equalFastPath: Unit = {
+  @Test def equalFastPath(): Unit = {
     class V(val s: String) {
       override def equals(obj: Any): Boolean = obj match {
         case v:V => v.s == s
@@ -138,7 +138,7 @@ class TreeMapTest extends AllocationTest {
         assertSame(tree, nonAllocating(tree.updated(k, v)))
     }
   }
-  @Test def consistentEquals: Unit = {
+  @Test def consistentEquals(): Unit = {
     class V(val s: String) {
 
       override def equals(obj: Any): Boolean = obj match {
@@ -235,13 +235,13 @@ class TreeMapTest extends AllocationTest {
     assertEquals(r1, r2)
   }
 
-  @Test def caseIndependent1: Unit = {
+  @Test def caseIndependent1(): Unit = {
     val m = scala.collection.immutable.TreeMap[String, String]()(_ compareToIgnoreCase _)
     val r = m ++ Seq("a" -> "1", "A" -> "2")
     assertMapSameElements(Map("a" -> "2"), r)
   }
 
-  @Test def caseIndependent2: Unit = {
+  @Test def caseIndependent2(): Unit = {
     val m = scala.collection.immutable.TreeMap[String, String]()(_ compareToIgnoreCase _)
     val r = Seq("a" -> "1", "A" -> "2").foldLeft (m) {
       case (acc, t) => acc + t

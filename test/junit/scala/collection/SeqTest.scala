@@ -96,7 +96,7 @@ class SeqTest extends AllocationTest {
     nonAllocating(Seq())
   }
 
-  @Test def smallSeqAllocation: Unit = {
+  @Test def smallSeqAllocation(): Unit = {
     if (CompileTime.versionNumberString == "2.13.2") return
     exactAllocates(Sizes.list * 1, "collection seq  size 1")(Seq("0"))
     exactAllocates(Sizes.list * 2, "collection seq  size 2")(Seq("0", "1"))
@@ -107,7 +107,7 @@ class SeqTest extends AllocationTest {
     exactAllocates(Sizes.list * 7, "collection seq  size 7")(Seq("0", "1", "2", "3", "4", "5", "6"))
   }
 
-  @Test def largeSeqAllocation: Unit = {
+  @Test def largeSeqAllocation(): Unit = {
     def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
     exactAllocates(expected(10) , "collection seq size 10")(
       Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))

@@ -6,7 +6,7 @@ import org.junit.Assert._
 class HashSetTest {
   // based on run/hashset.scala partest
   @Test
-  def testPar: Unit = {
+  def testPar(): Unit = {
     val h1 = new HashSet[Int]
     for (i <- 0 until 20) h1 += i
     for (i <- 0 until 20) assertTrue(h1.contains(i))
@@ -28,7 +28,7 @@ class HashSetTest {
   }
 
   @Test
-  def si4894: Unit = {
+  def si4894(): Unit = {
     val hs = HashSet[Int]()
     hs ++= 1 to 10
     hs --= 1 to 10
@@ -49,7 +49,7 @@ class HashSetTest {
   }
 
   @Test
-  def iterator: Unit = {
+  def iterator(): Unit = {
     val hs = HashSet.from(1 to 5)
     val it = hs.iterator
     var s = 0
@@ -58,7 +58,7 @@ class HashSetTest {
   }
 
   @Test
-  def equality: Unit = {
+  def equality(): Unit = {
     val hs = HashSet[Any](1)
     assertTrue(hs.contains(1.0))
   }
@@ -66,7 +66,7 @@ class HashSetTest {
   case class PackageEntryImpl(name: String)
 
   @Test
-  def addConflicting: Unit = {
+  def addConflicting(): Unit = {
     val hs = HashSet[PackageEntryImpl](PackageEntryImpl("javax"), PackageEntryImpl("java"))
     assertFalse(hs.add(PackageEntryImpl("java")))
   }
@@ -77,7 +77,7 @@ class HashSetTest {
   import scala.jdk.CollectionConverters._
 
   @Test
-  def addAll: Unit = {
+  def addAll(): Unit = {
     val jhs: java.util.HashSet[Type1] = new java.util.HashSet[Type1]
     jhs.add(new Type1("A"))
     jhs.add(new Type1("B"))
@@ -106,7 +106,7 @@ class HashSetTest {
   }
 
   @Test
-  def addAllTest2: Unit = {
+  def addAllTest2(): Unit = {
     val hs = HashSet.empty[Int]
     hs.addAll(new OnceOnly)
   }

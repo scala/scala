@@ -10,7 +10,7 @@ import scala.reflect.internal.util._
 class AttachmentsTest {
   def emptyAtt: Attachments = NoPosition
 
-  @Test def testAttachments = {
+  @Test def testAttachments(): Unit = {
     var atts = emptyAtt
 
     assert(atts.isEmpty)

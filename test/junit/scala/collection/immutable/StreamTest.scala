@@ -107,17 +107,17 @@ class StreamTest {
   }
 
   @Test // scala/bug#9134
-  def filter_map_properly_lazy_in_tail: Unit = {
+  def filter_map_properly_lazy_in_tail(): Unit = {
     assertStreamOpLazyInTail(_.filter(_ % 2 == 0).map(identity), List(1, 2))
   }
 
   @Test // scala/bug#9134
-  def withFilter_map_properly_lazy_in_tail: Unit = {
+  def withFilter_map_properly_lazy_in_tail(): Unit = {
     assertStreamOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
   }
 
   @Test // scala/bug#6881
-  def test_reference_equality: Unit = {
+  def test_reference_equality(): Unit = {
     // Make sure we're tested with reference equality
     val s = Stream.from(0)
     assert(s == s, "Referentially identical streams should be equal (==)")
@@ -127,7 +127,7 @@ class StreamTest {
   }
 
   @Test
-  def t9886: Unit = {
+  def t9886(): Unit = {
     assertEquals(Stream(None, Some(1)), None #:: Stream(Some(1)))
     assertEquals(Stream(None, Some(1)), Stream(None) #::: Stream(Some(1)))
   }
@@ -160,20 +160,20 @@ class StreamTest {
   }
 
   @Test
-  def testStreamToStringWhenHeadAndTailBothAreNotEvaluated = {
+  def testStreamToStringWhenHeadAndTailBothAreNotEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     assertEquals("Stream(1, <not computed>)", l.toString)
   }
 
   @Test
-  def testStreamToStringWhenOnlyHeadIsEvaluated = {
+  def testStreamToStringWhenOnlyHeadIsEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
     assertEquals("Stream(1, <not computed>)", l.toString)
   }
 
   @Test
-  def testStreamToStringWhenHeadAndTailIsEvaluated = {
+  def testStreamToStringWhenHeadAndTailIsEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
     l.tail
@@ -181,7 +181,7 @@ class StreamTest {
   }
 
   @Test
-  def testStreamToStringWhenHeadAndTailHeadIsEvaluated = {
+  def testStreamToStringWhenHeadAndTailHeadIsEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
     l.tail.head
@@ -189,41 +189,41 @@ class StreamTest {
   }
 
   @Test
-  def testStreamToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
+  def testStreamToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     l.tail
     assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
-  def testStreamToStringWhedHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
+  def testStreamToStringWhedHeadIsNotEvaluatedAndTailHeadIsEvaluated(): Unit = {
     val l = Stream(1, 2, 3, 4, 5)
     l.tail.head
     assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
-  def testStreamToStringWhenStreamIsForcedToList: Unit = {
+  def testStreamToStringWhenStreamIsForcedToList(): Unit = {
     val l = 1 #:: 2 #:: 3 #:: 4 #:: Stream.empty
     l.toList
     assertEquals("Stream(1, 2, 3, 4)", l.toString)
   }
 
   @Test
-  def testStreamToStringWhenStreamIsEmpty: Unit = {
+  def testStreamToStringWhenStreamIsEmpty(): Unit = {
     val l = Stream.empty
     assertEquals("Stream()", l.toString)
   }
 
   @Test
-  def testStreamToStringWhenStreamHasCyclicReference: Unit = {
+  def testStreamToStringWhenStreamHasCyclicReference(): Unit = {
     lazy val cyc: Stream[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
     cyc.tail.tail.tail.tail
     assertEquals("Stream(1, 2, 3, 4, <cycle>)", cyc.toString)
   }
 
   @Test
-  def testAppendAliasToLazyAppendedAll: Unit = {
+  def testAppendAliasToLazyAppendedAll(): Unit = {
     val l = 1 #:: 2 #:: 3 #:: Stream.Empty
     assertEquals(l.append(l), l.lazyAppendedAll(l))
   }
@@ -235,7 +235,7 @@ class StreamTest {
   }
 
   @Test
-  def testLazyListIterator: Unit = {
+  def testLazyListIterator(): Unit = {
     val it1 = new CountingIt
     val s2 = it1.toStream
     s2.iterator.next()
@@ -247,7 +247,7 @@ class StreamTest {
   }
 
   @Test
-  def t10883: Unit = {
+  def t10883(): Unit = {
     var value: Int = -1
     Stream.iterate(0){ a =>
       val next = a + 1
@@ -265,7 +265,7 @@ class StreamTest {
   }
 
   @Test
-  def t09791: Unit = {
+  def t09791(): Unit = {
     // updated tests
     val x = Stream.continually("*").updated(0, "new value")
     assertEquals(List("new value", "*", "*", "*", "*", "*", "*", "*", "*", "*"), x.take(10).toList)
