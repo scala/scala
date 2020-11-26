@@ -44,16 +44,20 @@ jobs:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest compile
-          # as per discussion on #9332, caching the new STARR only goes halfway.
-          # we should also cache the products of the bootstrapped build. currently all three stages
-          # (build, testAll1, testAll2) end up recompiling core projects like `library` and `compiler`.
-          # fixing that will take some care to satisfy sbt/zinc.
         workspaces:
           create:
             name: published-local
             paths:
-              - "$PWD/buildcharacter.properties"
+              # so new STARR will be available
+              - "buildcharacter.properties"
               - "$HOME/.ivy2/local/org.scala-lang"
+              # so build products built using new STARR are kept
+              - "target"
+              - "project/target"
+              - "project/project/target"
+              - "project/project/project/target"
+              - "dist"
+              - "build"
 
       - stage: testAll
         name: testAll1
