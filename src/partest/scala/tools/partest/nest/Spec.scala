@@ -12,6 +12,7 @@
 
 package scala.tools.partest.nest
 
+import scala.language.implicitConversions
 import scala.util.chaining._
 
 /** This trait works together with others in scala.tools.cmd to allow

@@ -54,7 +54,7 @@ object FileManager {
   def mapFile(file: File, replace: String => String): Unit = {
     val f = SFile(file)
 
-    f.printlnAll(f.lines.toList map replace: _*)
+    f.printlnAll(f.lines().toList map replace: _*)
   }
 
   def jarsWithPrefix(dir: Directory, name: String): Iterator[SFile] =

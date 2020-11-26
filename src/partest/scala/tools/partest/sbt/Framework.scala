@@ -52,7 +52,7 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
     if (Runtime.getRuntime().maxMemory() / (1024*1024) < 800)
       loggers foreach (_.warn(s"""Low heap size detected (~ ${Runtime.getRuntime().maxMemory() / (1024*1024)}M). Please add the following to your build.sbt: javaOptions in Test += "-Xmx1G""""))
 
-    try runner.run
+    try runner.run()
     catch {
       case ex: ClassNotFoundException =>
         loggers foreach { l => l.error("Please make sure partest is running in a forked VM by including the following line in build.sbt:\nfork in Test := true") }

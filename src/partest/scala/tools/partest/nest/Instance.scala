@@ -12,6 +12,8 @@
 
 package scala.tools.partest.nest
 
+import scala.language.implicitConversions
+
 /** The trait mixed into each instance of a specification.
  *
  *  @see    Reference

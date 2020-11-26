@@ -591,10 +591,12 @@ lazy val partest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler, replFrontend, scalap, scaladoc, testkit)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,

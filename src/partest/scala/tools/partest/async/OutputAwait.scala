@@ -53,7 +53,7 @@ object Output {
     val mutableMap = collection.mutable.HashMap[K, mutable.Builder[V, Vector[V]]]()
     for ((k, v) <- written) mutableMap.getOrElseUpdate(k, Vector.newBuilder[V]) += v
     val immutableMapBuilder = collection.immutable.HashMap.newBuilder[K, Vector[V]]
-    immutableMapBuilder ++= mutableMap.mapValues(_.result())
+    immutableMapBuilder ++= mutableMap.view.mapValues(_.result())
     immutableMapBuilder.result()
   }
 }

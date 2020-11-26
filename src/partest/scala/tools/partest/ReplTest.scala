@@ -108,7 +108,7 @@ object StackCleaner {
  */
 abstract class SessionTest extends ReplTest  {
   /** Session transcript. */
-  def session: String = testPath.changeExtension("check").toFile.slurp
+  def session: String = testPath.changeExtension("check").toFile.slurp()
 
   /** Expected output, as an iterator, optionally marginally stripped. */
   def expected = if (stripMargins) session.stripMargin.linesIterator else session.linesIterator
