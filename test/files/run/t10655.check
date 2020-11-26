@@ -1,0 +1,28 @@
+
+scala> :paste -java <| EOF
+// Entering paste mode (EOF to finish)
+
+    |package p;
+    |public class C {
+    |    public int c() {
+    |        return 42;
+    |    }
+    |    public String toString() {
+    |        return "hi, C";
+    |    }
+    |}
+EOF
+
+// Exiting paste mode, now interpreting.
+
+
+scala> new p.C
+val res0: p.C = hi, C
+
+scala> class D extends p.C
+class D
+
+scala> new D().c()
+val res1: Int = 42
+
+scala> :quit
