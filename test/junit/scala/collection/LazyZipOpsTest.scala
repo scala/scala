@@ -1,7 +1,8 @@
 package scala.collection
 
 import org.hamcrest.CoreMatchers._
-import org.junit.Assert._
+import org.hamcrest.MatcherAssert._
+import org.junit.Assert.{assertThat => _, _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
