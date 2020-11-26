@@ -41,9 +41,9 @@ jobs:
         if: type = pull_request OR repo != scala/scala
         script:
           - set -e
-          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest compile
+          - sbt -Dstarr.version=$STARR setupValidateTest compile
         workspaces:
           create:
             name: published-local
@@ -67,7 +67,7 @@ jobs:
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest Test/compile info testAll1
+          - sbt -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
 
       - name: testAll2
         if: type = pull_request OR repo != scala/scala
@@ -76,7 +76,7 @@ jobs:
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest info testAll2
+          - sbt -Dstarr.version=$STARR setupValidateTest testAll2
 
       - name: testDotty
         if: type = pull_request OR repo != scala/scala
