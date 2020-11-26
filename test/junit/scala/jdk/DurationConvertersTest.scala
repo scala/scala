@@ -17,6 +17,7 @@ import java.time.{Duration => JavaDuration}
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
+import scala.AdaptedArrowAssocWorkaround.Tx
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 import scala.jdk.javaapi.{DurationConverters => conv}
@@ -26,13 +27,13 @@ class DurationConvertersTest {
   @Test
   def scalaNanosToJavaDuration(): Unit = {
     Seq[(Long, (Long, Int))](
-      (Long.MinValue + 1) -> (-9223372037L, 145224193), // because java duration nanos are offset from the "wrong" direction
-      -1000000001L        -> (-2, 999999999),
-      -1L                 -> (-1, 999999999),
-      0L                  -> (0, 0),
-      1L                  -> (0, 1),
-      1000000001L         -> (1,1),
-      Long.MaxValue       -> (9223372036L, 854775807)
+      (Long.MinValue + 1) -> Tx(-9223372037L, 145224193), // because java duration nanos are offset from the "wrong" direction
+      -1000000001L        -> Tx(-2, 999999999),
+      -1L                 -> Tx(-1, 999999999),
+      0L                  -> Tx(0, 0),
+      1L                  -> Tx(0, 1),
+      1000000001L         -> Tx(1,1),
+      Long.MaxValue       -> Tx(9223372036L, 854775807)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.nanos.toJava
       assertEquals(s"toJava($n nanos) -> $expSecs s)", expSecs, result.getSeconds)
@@ -43,11 +44,11 @@ class DurationConvertersTest {
   @Test
   def scalaMilliSecondsToJavaDuration(): Unit = {
     Seq[(Long, (Long, Int))](
-      -9223372036854L -> (-9223372037L, 146000000),
-      -1L             -> (-1L, 999000000),
-      0L              -> (0L,  0),
-      1L              -> (0L,  1000000),
-      9223372036854L  -> (9223372036L, 854000000)
+      -9223372036854L -> Tx(-9223372037L, 146000000),
+      -1L             -> Tx(-1L, 999000000),
+      0L              -> Tx(0L,  0),
+      1L              -> Tx(0L,  1000000),
+      9223372036854L  -> Tx(9223372036L, 854000000)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.millis.toJava
       assertEquals(s"toJava($n millis) -> $expSecs s)", expSecs, result.getSeconds)
@@ -58,11 +59,11 @@ class DurationConvertersTest {
   @Test
   def scalaMicroSecondsToJavaDuration(): Unit = {
     Seq[(Long, (Long, Int))](
-      -9223372036854775L -> (-9223372037L, 145225000),
-      -1L                -> (-1L, 999999000),
-      0L                 -> (0L,  0),
-      1L                 -> (0L,  1000),
-      9223372036854775L  -> (9223372036L, 854775000)
+      -9223372036854775L -> Tx(-9223372037L, 145225000),
+      -1L                -> Tx(-1L, 999999000),
+      0L                 -> Tx(0L,  0),
+      1L                 -> Tx(0L,  1000),
+      9223372036854775L  -> Tx(9223372036L, 854775000)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.micros.toJava
       assertEquals(s"toJava($n micros) -> $expSecs s)", expSecs, result.getSeconds)
@@ -73,11 +74,11 @@ class DurationConvertersTest {
   @Test
   def scalaSecondsToJavaDuration(): Unit = {
     Seq[(Long, (Long, Int))](
-      -9223372036L -> (-9223372036L, 0),
-      -1L          -> (-1L, 0),
-      0L           -> (0L,  0),
-      1L           -> (1L,  0),
-      9223372036L  -> (9223372036L, 0)
+      -9223372036L -> Tx(-9223372036L, 0),
+      -1L          -> Tx(-1L, 0),
+      0L           -> Tx(0L,  0),
+      1L           -> Tx(1L,  0),
+      9223372036L  -> Tx(9223372036L, 0)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.seconds.toJava
       assertEquals(expSecs, result.getSeconds)

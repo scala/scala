@@ -2,6 +2,7 @@ package scala.collection.generic
 
 import org.junit.Test
 
+import scala.AdaptedArrowAssocWorkaround.Tx
 import scala.annotation.unused
 import scala.collection.immutable.{BitSet, IntMap, LongMap, TreeMap, TreeSet}
 import scala.collection.{BuildFrom, View, mutable}
@@ -164,14 +165,14 @@ class DecoratorsTest {
       def leftOuterJoin[W, That](other: Map[map.K, W])(implicit bf: BuildFrom[C, (map.K, (map.V, Option[W])), That]): That = {
         val b = bf.newBuilder(coll)
         for ((k, v) <- map(coll)) {
-          b += k -> (v, other.get(k))
+          b += k -> Tx(v, other.get(k))
         }
         b.result()
       }
       def rightOuterJoin[W, That](other: Map[map.K, W])(implicit bf: BuildFrom[C, (map.K, (Option[map.V], W)), That]): That = {
         val b = bf.newBuilder(coll)
         for ((k, w) <- other) {
-          b += k -> (map(coll).get(k), w)
+          b += k -> Tx(map(coll).get(k), w)
         }
         b.result()
       }

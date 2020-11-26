@@ -692,8 +692,6 @@ lazy val testkit = configureAsSubproject(project)
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(commonSettings)
-  .settings(Compile / scalacOptions += "-Xlint:-adapted-args,-nullary-unit,_")
-  .settings(Compile / javacOptions ++= Seq("-Xlint"))
   .settings(disableDocs)
   .settings(publish / skip := true)
   .settings(
@@ -701,7 +699,8 @@ lazy val junit = project.in(file("test") / "junit")
     Test / javaOptions += "-Xss1M",
     (Test / forkOptions) := (Test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     (Test / testOnly / forkOptions) := (Test / testOnly / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
-    Compile / scalacOptions += "-feature",
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
+    Compile / javacOptions ++= Seq("-Xlint"),
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     Compile / unmanagedSourceDirectories := Nil,
