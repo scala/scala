@@ -622,6 +622,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
   .settings(commonSettings)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -643,7 +644,8 @@ lazy val specLib = project.in(file("test") / "instrumented")
         patch("BoxesRunTime.java", "boxes.patch"),
         patch("ScalaRunTime.scala", "srt.patch")
       )
-    }.taskValue
+    }.taskValue,
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // The scala version used by the benchmark suites, leave undefined to use the ambient version.")
