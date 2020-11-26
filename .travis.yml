@@ -6,7 +6,7 @@ language: scala
 
 stages:
   - build
-  - testAll
+  - test
 
 jobs:
     include:
@@ -37,7 +37,7 @@ jobs:
       # the bootstrap above is older historically; this way of doing it is newer
       # and also simpler. we should aim to reduce/eliminate the duplication.
       - stage: build
-        name: bootstrap and publishLocal
+        name: build, publishLocal, build again
         if: type = pull_request OR repo != scala/scala
         script:
           - set -e
@@ -46,7 +46,7 @@ jobs:
           - sbt -Dstarr.version=$STARR setupValidateTest compile
         workspaces:
           create:
-            name: published-local
+            name: bootstrapped
             paths:
               # so new STARR will be available
               - "buildcharacter.properties"
@@ -59,36 +59,36 @@ jobs:
               - "dist"
               - "build"
 
-      - stage: testAll
-        name: testAll1
+      - stage: test
+        name: tests (junit, scalacheck, et al)
         if: type = pull_request OR repo != scala/scala
         workspaces:
-          use: published-local
+          use: bootstrapped
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
 
-      - name: testAll2
+      - name: tests (partest)
         if: type = pull_request OR repo != scala/scala
         workspaces:
-          use: published-local
+          use: bootstrapped
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR setupValidateTest testAll2
 
-      - name: testDotty
+      - name: ensure standard library is buildable by Scala 3
         if: type = pull_request OR repo != scala/scala
         workspaces:
-          use: published-local
+          use: bootstrapped
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
       - stage: build
-        name: build the spec using jekyll
+        name: language spec (Jekyll)
         language: ruby
         install:
           - ruby -v
