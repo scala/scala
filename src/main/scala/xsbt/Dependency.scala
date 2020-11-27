@@ -175,7 +175,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               isSyntheticCoreClass(targetSymbol)
           )
           if (!noByteCode) {
-            classFile(targetSymbol.initialize) match {
+            classFile(targetSymbol) match {
               case Some((at, binaryClassName)) =>
                 // Associated file is set, so we know which classpath entry it came from
                 processExternalDependency(binaryClassName, at)
