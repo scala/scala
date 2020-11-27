@@ -191,11 +191,10 @@ trait SyntheticMethods extends ast.TreeDSL {
           if (usefulEquals) {
             val thisAcc  = Select(mkThis, acc)
             val otherAcc = Select(Ident(otherSym), acc)
-            val op       = acc.tpe.member(nme.EQ)
             if (isPrimitiveValueType(resultType))
-              prims += fn(thisAcc, op, otherAcc)
+              prims += fn(thisAcc, acc.tpe.member(nme.EQ), otherAcc)
             else
-              refs  += fn(thisAcc, op, gen.mkCast(otherAcc, AnyTpe))
+              refs  += fn(thisAcc, Any_==, otherAcc)
           }
         }
         prims.prependToList(refs.toList)      // (prims ++ refs).toList
