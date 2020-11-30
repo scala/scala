@@ -240,33 +240,38 @@ the pattern.
 An extractor pattern cannot match the value `null`. The implementation
 ensures that the `unapply`/`unapplySeq` method is not applied to `null`.
 
+A type is said to be an _extractor type_ for some type `T` if it has a
+method `get` with return type `T`, and a method `isEmpty` with a return type
+that conforms to `Boolean`. `Option[T]` is an extractor type for type `T`.
+
 An `unapply` method in an object ´x´ _matches_ the pattern
 ´x(p_1 , \ldots , p_n)´ if it has a single parameter (and, optionally, an
 implicit parameter list) and one of the following applies:
 
-* ´n=0´ and `unapply`'s result type is `Boolean`. In this case
+* ´n=0´ and `unapply`'s result type conforms to `Boolean`. In this case
   the extractor pattern matches all values ´v´ for which
   `´x´.unapply(´v´)` yields `true`.
-* ´n=1´ and `unapply`'s result type is `Option[´T´]`, for some
+* ´n=1´ and `unapply`'s result type is an extractor type for some
   type ´T´.  In this case, the (only) argument pattern ´p_1´ is typed in
   turn with expected type ´T´.  The extractor pattern matches then all
-  values ´v´ for which `´x´.unapply(´v´)` yields a value of form
-  `Some(´v_1´)`, and ´p_1´ matches ´v_1´.
+  values ´v´ for which `´x´.unapply(´v´)` yields a value ´u´ for which `´u´.isEmpty` yields
+  `false`, `´u´.get` yields a value ´v_1´, and ´p_1´ matches ´v_1´.
 * ´n>1´ and `unapply`'s result type is
-  `Option[(´T_1 , \ldots , T_n´)]`, for some
+  an extractor type for some type ´T´ with members ´\_1 , \ldots , \_n´ returning
   types ´T_1 , \ldots , T_n´.  In this case, the argument patterns ´p_1
   , \ldots , p_n´ are typed in turn with expected types ´T_1 , \ldots ,
   T_n´.  The extractor pattern matches then all values ´v´ for which
-  `´x´.unapply(´v´)` yields a value of form
-  `Some((´v_1 , \ldots , v_n´))`, and each pattern
-  ´p_i´ matches the corresponding value ´v_i´.
+  `´x´.unapply(´v´)` yields a value ´u´ for which
+  `´u´.isEmpty` yields `false`, `´u´.get` yields some value ´t´, and each pattern
+  ´p_i´ matches the corresponding value ´t._1´ from
+  ´t._1 , \ldots , t._n´.
 
 An `unapplySeq` method in an object ´x´ matches the pattern
 ´x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)´ if it takes exactly one argument
 and its result type is of the form `Option[(´T_1 , \ldots , T_m´, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted).
 This case is further discussed [below](#pattern-sequences).
 
-###### Example
+###### Example 1
 
 If we define an extractor object `Pair`:
 
@@ -288,6 +293,37 @@ val y = x match {
 }
 ```
 
+###### Example 2
+
+If we define a class `NameBased`
+
+```scala
+class NameBased[A, B](a: A, b: B) {
+  def isEmpty = false
+  def get = this
+  def _1 = a
+  def _2 = b
+}
+```
+
+Then `NameBased` is an extractor type for `NameBased` itself, since it has a
+member `isEmpty` returning a value of type Boolean, and it has a member `get`
+returning a value of type `NameBased`.
+
+Since it also has members `_1` and `_2`, it can be used in an extractor pattern
+with n = 2 as follows:
+
+```scala
+object Extractor {
+  def unapply(x: Any) = new NameBased(1, "two")
+}
+
+"anything" match {
+  case Extractor(a, b) => println(s"\$a, \$b") //prints "1, two"
+}
+```
+
+
 ### Pattern Sequences
 
 ```ebnf
@@ -297,7 +333,7 @@ SimplePattern ::= StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ �
 A _pattern sequence_ ´p_1 , \ldots , p_n´ appears in two contexts.
 First, in a constructor pattern ´c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)´, where ´c´ is a case class which has ´m+1´ primary constructor parameters,  ending in a [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters) of type `S*`.
 Second, in an extractor pattern ´x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)´ if the extractor object ´x´ does not have an `unapply` method,
-but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns ´p_i´ is ´S´.
+but it does define an `unapplySeq` method with a result type that is an extractor type for type `(T_1, ... , T_m, Seq[S])` (if `m = 0`, an extractor type for the type `Seq[S]` is also accepted). The expected type for the patterns ´p_i´ is ´S´.
 
 The last pattern in a pattern sequence may be a _sequence wildcard_ `_*`.
 Each element pattern ´p_i´ is type-checked with
@@ -366,6 +402,12 @@ A pattern ´p´ is _irrefutable_ for a type ´T´, if one of the following appli
     is an instance of class ´c´, the [primary constructor](05-classes-and-objects.html#class-definitions)
     of type ´T´ has argument types ´T_1 , \ldots , T_n´, and each ´p_i´ is
     irrefutable for ´T_i´.
+1.  ´p´ is an extractor pattern for which the extractor type is `Some[´T´]` for
+    some type ´T´
+1.  ´p´ is an extractor pattern for which the extractor types `isEmpty` method
+    is the singleton type `false`
+1.  ´p´ is an extractor pattern for which the return type is the singleton type
+    `true`
 
 ## Type Patterns
 
