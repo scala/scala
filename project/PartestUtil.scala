@@ -3,32 +3,33 @@ package scala.build
 import sbt._
 import sbt.complete._, Parser._, Parsers._
 
+import ParserUtil.Opt
+
 object PartestUtil {
   private case class TestFiles(srcPath: String, globalBase: File, testBase: File) {
-    private val testCaseDir = new SimpleFileFilter(f => f.isDirectory && f.listFiles.nonEmpty && !(f.getParentFile / (f.name + ".res")).exists)
-    private val testCaseFilter = GlobFilter("*.scala") | GlobFilter("*.java") | GlobFilter("*.res") || testCaseDir
-    private def testCaseFinder = (testBase / srcPath).*(AllPassFilter).*(testCaseFilter)
-    private val basePaths = allTestCases.map(_._2.split('/').take(3).mkString("/") + "/").distinct
+    val srcDir = testBase / srcPath // mirror of partest.nest.PathSettings#srcDir
 
-    def allTestCases = testCaseFinder.pair(io.Path.relativeTo(globalBase))
-    def basePathExamples = new FixedSetExamples(basePaths)
-    private def equiv(f1: File, f2: File) = f1.getCanonicalFile == f2.getCanonicalFile
+    private val testCaseFile   = GlobFilter("*.scala") | GlobFilter("*.java") | GlobFilter("*.res")
+    private val testCaseDir    = new SimpleFileFilter(f => f.isDirectory() && f.listFiles().nonEmpty && !(f.getParentFile / (f.getName + ".res")).exists())
+    private val testCaseFilter = testCaseFile || testCaseDir
+    private val testCaseFinder = srcDir * AllPassFilter * testCaseFilter
+
+    def allTestCases = testCaseFinder.pair(Path.relativeTo(globalBase))
+
     def parentChain(f: File): Iterator[File] =
-      if (f == null || !f.exists) Iterator()
-      else Iterator(f) ++ (if (f.getParentFile == null) Nil else parentChain(f.getParentFile))
+      if (f == null || !f.exists()) Iterator.empty
+      else Iterator.single(f) ++ Option(f.getParentFile).iterator.flatMap(parentChain)
+
     def isParentOf(parent: File, f2: File, maxDepth: Int) =
-      parentChain(f2).take(maxDepth).exists(p1 => equiv(p1, parent))
-    def isTestCase(f: File) = {
-      val grandParent = if (f != null && f.getParentFile != null) f.getParentFile.getParentFile else null
-      grandParent != null && equiv(grandParent, testBase / srcPath) && testCaseFilter.accept(f)
-    }
-    def mayContainTestCase(f: File) = {
-      isParentOf(testBase / srcPath, f, 2) || isParentOf(f, testBase / srcPath, Int.MaxValue)
-    }
+      parentChain(f2).take(maxDepth).exists(equivCanon(_, parent))
+
+    def isTestCase(f: File)            = testCaseFilter.accept(f) && parentChain(f).slice(2, 3).exists(equivCanon(_, srcDir))
+    def mayContainTestCase(f: File)    = isParentOf(srcDir, f, 2) || isParentOf(f, srcDir, Int.MaxValue)
+    def equivCanon(f1: File, f2: File) = f1.getCanonicalFile == f2.getCanonicalFile
   }
 
-  def testFilePaths(globalBase: File, testBase: File): Seq[java.io.File] =
-    (new TestFiles("files", globalBase, testBase)).allTestCases.map(_._1)
+  def testFilePaths(globalBase: File, testBase: File): Seq[File] =
+    TestFiles("files", globalBase, testBase).allTestCases.map(_._1)
 
   /** A parser for the custom `partest` command */
   def partestParser(globalBase: File, testBase: File): Parser[String] = {
@@ -43,15 +44,14 @@ object PartestUtil {
     // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
     // then lazily creates the examples based on the current value.
     // TODO is there a cleaner way to do this with sbt's parser infrastructure?
-    var srcPath = "files"
-    var _testFiles: TestFiles = null
-    def testFiles = {
-      if (_testFiles == null || _testFiles.srcPath != srcPath) _testFiles = new TestFiles(srcPath, globalBase, testBase)
-      _testFiles
-    }
-    val TestPathParser = ParserUtil.FileParser(
+    var testFiles = TestFiles("files", globalBase, testBase)
+    def mkTestPathParser(base: File) = ParserUtil.FileParser(
       new SimpleFileFilter(f => testFiles.isTestCase(f)),
-      new SimpleFileFilter(f => testFiles.mayContainTestCase(f)), globalBase)
+      new SimpleFileFilter(f => testFiles.mayContainTestCase(f)),
+      base,
+    )
+    val TestPath     = mkTestPathParser(globalBase)
+    val KindTestPath = mkTestPathParser(testFiles.srcDir)
 
     // allow `--grep "is unchecked" | --grep *t123*, in the spirit of ./bin/partest-ack
     // superset of the --grep built into partest itself.
@@ -100,18 +100,18 @@ object PartestUtil {
 
     val SrcPath = ((token(srcPathOption) <~ Space) ~ token(StringBasic.examples(Set("files", "scaladoc", "async")))) map {
       case opt ~ path =>
-        srcPath = path
+        testFiles = TestFiles(path, globalBase, testBase)
         opt + " " + path
     }
 
-   val CompilerPath = ((token(compilerPathOption) <~ Space) ~ token(NotSpace)) map {
-     case opt ~ path =>
-       opt + " " + path
-   }
+    val CompilerPath = ((token(compilerPathOption) <~ Space) ~ token(NotSpace)) map {
+      case opt ~ path =>
+        opt + " " + path
+    }
 
-    val ScalacOptsParser = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
+    val ScalacOpts = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
 
-    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | CompilerPath | TestPathParser | Grep | ScalacOptsParser
-    (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse(""))
+    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | CompilerPath | TestPath | KindTestPath | Grep | ScalacOpts
+    Opt((Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")))
   }
 }
