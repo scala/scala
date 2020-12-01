@@ -127,7 +127,7 @@ trait PatternExpansion {
     // rest is private
     private val isUnapply        = fun.symbol.name == nme.unapply
     private val isUnapplySeq     = fun.symbol.name == nme.unapplySeq
-    private def isBooleanUnapply = isUnapply && unapplyResultType() =:= BooleanTpe
+    private def isBooleanUnapply = isUnapply && unapplyResultType() <:< BooleanTpe
     private def isRepeatedCaseClass = caseCtorParamTypes.exists(tpes => tpes.nonEmpty && isScalaRepeatedParamType(tpes.last))
 
     private def caseCtorParamTypes: Option[List[Type]] =
