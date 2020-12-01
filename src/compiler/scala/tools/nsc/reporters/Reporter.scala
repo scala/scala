@@ -66,11 +66,17 @@ object Reporter {
   /** Take the message without its explanation, if it has one. */
   def stripExplanation(msg: String): String = splitting(msg, explaining = false)
 
+  /** Split the message into main message and explanation, as iterators of the text. */
+  def splitExplanation(msg: String): (Iterator[String], Iterator[String]) = {
+    val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
+    (err, exp.drop(1))
+  }
+
   /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
   private def splitting(msg: String, explaining: Boolean): String =
     if (msg != null && msg.indexOf("\n----") > 0) {
-      val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
-      if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
+      val (err, exp) = splitExplanation(msg)
+      if (explaining) (err ++ exp).mkString("\n") else err.mkString("\n")
     } else {
       msg
     }
