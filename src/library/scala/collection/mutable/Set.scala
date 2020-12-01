@@ -38,6 +38,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   def result(): C = coll
 
+  /** Check whether the set contains the given element, and add it if not.
+   *
+   *  @param elem  the element to be added
+   *  @return true if the element was added
+   */
   def add(elem: A): Boolean =
     !contains(elem) && {
       coll += elem; true
