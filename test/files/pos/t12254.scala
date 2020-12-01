@@ -1,3 +1,6 @@
+// scalac: -Xfatal-warnings -Xlint:strict-unsealed-patmat
+//
+
 object Test {
   sealed trait Foo
   final class Bar extends Foo

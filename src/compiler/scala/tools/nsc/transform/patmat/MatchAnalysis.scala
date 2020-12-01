@@ -389,13 +389,13 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         // note: this assumes the other side-conditions implied by the extractor are met
         // (argument of the right type, length check succeeds for unapplySeq,...)
       private def irrefutableExtractorType(tp: Type): Boolean = tp.resultType.dealias match {
-        //Some(x) is always irrefutable
+        //Some(x) is irrefutable
         case TypeRef(_, SomeClass, _) => true
         //name based pattern matching checks for constant false `isEmpty`.
-        case TypeRef(_, res, _) => res.tpe.members.exists(isIrrefutabilityProof)
-        // probably not useful since this type won't be inferred nor can it be written down (yet)
-        case ConstantTrue => true
-        case _            => false
+        case TypeRef(_, res, _)       => res.tpe.members.exists(isIrrefutabilityProof)
+        //`true.type` is irrefutable for boolean extractors
+        case c: ConstantType          => c.value == Constant(true)
+        case _                        => false
       }
 
       private val irrefutableExtractor: PartialFunction[TreeMaker, Prop] = {
