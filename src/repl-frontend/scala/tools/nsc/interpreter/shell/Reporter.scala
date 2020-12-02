@@ -14,7 +14,6 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
 
-import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
@@ -159,7 +158,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     printMessage(pos, prefix + msg)
   }
 
-  private val boringExplanations = mutable.Set.empty[String]
+  private var boringExplanations = Set.empty[String]
 
   // indent errors, error message uses the caret to point at the line already on the screen instead of repeating it
   // TODO: can we splice the error into the code the user typed when multiple lines were entered?
@@ -168,16 +167,17 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpreter (plusOne))
   def printMessage(posIn: Position, msg0: String): Unit = {
     val msg = {
-      val (main, explanation) = Reporter.splitExplanation(msg0)
-      val text =
-        if (explanation.hasNext) {
-          val suffix  = explanation.mkString("\n")
-          val explain = boringExplanations.add(suffix)
-          if (explain) (main ++ Iterator(suffix)) else main
-        } else {
-          main
+      val main = Reporter.stripExplanation(msg0)
+      if (main eq msg0) main
+      else {
+        val (_, explanation) = Reporter.splitExplanation(msg0)
+        val suffix = explanation.mkString("\n")
+        if (boringExplanations(suffix)) main
+        else {
+          boringExplanations += suffix
+          s"$main\n$suffix"
         }
-      text.mkString("\n")
+      }
     }
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
     else if (posIn.source.file.name == "<console>" && posIn.line == 1) {

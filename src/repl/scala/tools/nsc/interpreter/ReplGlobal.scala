@@ -34,6 +34,16 @@ trait ReplGlobal extends Global {
     new AbstractFileClassLoader(virtualDirectory, loader) {}
   }
 
+  private var seenFeatureNames = Set.empty[String]
+
+  override def PerRunReporting = new PerRunReporting {
+    override def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String, required: Boolean, site: Symbol): Unit = {
+      if (seenFeatureNames(featureName)) featureReported(featureTrait)
+      else seenFeatureNames += featureName
+      super.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required, site)
+    }
+  }
+
   override protected def computeInternalPhases(): Unit = {
     super.computeInternalPhases()
     addToPhasesSet(wrapperCleanup, "Remove unused values from import wrappers to avoid unwanted capture of non-serializable objects")
