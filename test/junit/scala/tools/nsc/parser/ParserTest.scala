@@ -43,6 +43,6 @@ class ParserTest extends BytecodeTesting{
     def codeOf(pos: Position) = new String(pos.source.content.slice(pos.start, pos.end))
     val List(x, y) = unit.body.collect { case vd : ValDef => vd }.takeRight(2)
     assertEquals("var y: Int = 42", codeOf(y.pos))
-    assertEquals("var x: Int", codeOf(x.pos)) // TODO fix parser to include `= _`
+    assertEquals("var x: Int = _", codeOf(x.pos))
   }
 }

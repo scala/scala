@@ -143,5 +143,6 @@ abstract class TreeBuilder {
     }
   }
 
-  def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree) = gen.mkPatDef(mods, pat, rhs)
+  final def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[ValDef] = makePatDef(mods, pat, rhs, rhs.pos)
+  def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree, rhsPos: Position) = gen.mkPatDef(mods, pat, rhs, rhsPos)
 }
