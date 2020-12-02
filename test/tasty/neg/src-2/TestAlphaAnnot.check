@@ -1,4 +1,0 @@
-TestAlphaAnnot_fail.scala:4: error: Unsupported Scala 3 annotation on method ++: @scala.annotation.alpha("doubleplus"); found in object tastytest.AlphaAnnot.
-  def test1 = AlphaAnnot.++  // error
-                         ^
-1 error

@@ -27,5 +27,5 @@ object Position:
 
   implicit inline def here: Position = ${ genPosition }
 
-  private def genPosition(implicit qctx: QuoteContext): Expr[Position] =
+  private def genPosition(implicit q: Quotes): Expr[Position] =
     '{ ??? }

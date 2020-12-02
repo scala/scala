@@ -24,7 +24,7 @@ trait FlagOps { self: TastyUniverse =>
 
   object FlagSets {
     val TastyOnlyFlags: TastyFlagSet = (
-      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | SuperTrait | Enum
+      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent | Enum | Infix
       | Open | ParamAlias
     )
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
@@ -75,21 +75,22 @@ trait FlagOps { self: TastyUniverse =>
   def showTasty(flags: TastyFlagSet): String = { // keep up to date with with FlagSets.TastyOnlyFlags
     val tflags = flags & FlagSets.TastyOnlyFlags
     if (!tflags) "EmptyTastyFlags"
-    else (tflags).toSingletonSets.map { f =>
-      (f: @unchecked) match {
-        case Erased      => "erased"
-        case Internal    => "<internal>"
-        case Inline      => "inline"
-        case InlineProxy => "<inlineproxy>"
-        case Opaque      => "opaque"
-        case Extension   => "<extension>"
-        case Given       => "given"
-        case Exported    => "<exported>"
-        case SuperTrait  => "<supertrait>"
-        case Enum        => "enum"
-        case Open        => "open"
-        case ParamAlias  => "<paramalias>"
-      }
-    } mkString(" | ")
+    else {
+      val sb = collection.mutable.ArrayBuffer.empty[String]
+      if (flags.is(Erased))      sb += "erased"
+      if (flags.is(Internal))    sb += "<internal>"
+      if (flags.is(Inline))      sb += "inline"
+      if (flags.is(InlineProxy)) sb += "<inlineproxy>"
+      if (flags.is(Opaque))      sb += "opaque"
+      if (flags.is(Extension))   sb += "<extension>"
+      if (flags.is(Given))       sb += "given"
+      if (flags.is(Exported))    sb += "<exported>"
+      if (flags.is(Transparent)) sb += "transparent"
+      if (flags.is(Enum))        sb += "enum"
+      if (flags.is(Open))        sb += "open"
+      if (flags.is(ParamAlias))  sb += "<paramalias>"
+      if (flags.is(Infix))       sb += "infix"
+      sb.mkString(" | ")
+    }
   }
 }

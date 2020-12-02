@@ -347,7 +347,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case ANDtype => defn.IntersectionType(readType(), readType())
             case ORtype => unionIsUnsupported
             case SUPERtype => defn.SuperType(readType(), readType())
-            case MATCHtype => matchTypeIsUnsupported
+            case MATCHtype | MATCHCASEtype => matchTypeIsUnsupported
             case POLYtype => readMethodic(Function.const(PolyType), _.toTypeName)
             case METHODtype =>
               def companion(mods0: TastyFlagSet) = {
@@ -579,7 +579,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case STATIC => addFlag(Static)
           case OBJECT => addFlag(Object)
           case TRAIT => addFlag(Trait)
-          case SUPERTRAIT => addFlag(SuperTrait)
+          case TRANSPARENT => addFlag(Transparent)
+          case INFIX => addFlag(Infix)
           case ENUM => addFlag(Enum)
           case LOCAL => addFlag(Local)
           case SYNTHETIC => addFlag(Synthetic)
@@ -720,7 +721,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         tag match {
           case DEFDEF =>
             val isMacro = repr.originalFlagSet.is(Erased | Macro)
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | optFlag(isMacro)(Erased)))
+            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
             val isCtor = sym.isConstructor
             val typeParams = {
               if (isCtor) {
@@ -767,8 +768,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            val allowedTypeFlags = Enum | Open | Exported | SuperTrait
-            val allowedClassFlags = allowedTypeFlags | Opaque
+            val allowedTypeFlags = Enum | Open | Exported | Infix
+            val allowedClassFlags = allowedTypeFlags | Opaque | Transparent
             if (sym.isClass) {
               checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
               sym.owner.ensureCompleted()

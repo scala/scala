@@ -24,17 +24,18 @@ object MacroCompat {
   object Macros3 {
     import quoted._
 
-    def monoImpl(using QuoteContext) = '{1}
-    def polyImpl[T: Type](using QuoteContext) = Expr(summon[Type[T]].show)
+    def monoImpl(using Quotes) = '{1}
+    def polyImpl[T: Type](using quotes: Quotes) = Expr(quotes.reflect.TypeRepr.of[T].show)
 
-    def posImpl(using qctx: QuoteContext): Expr[Position] = {
-      import qctx.reflect.given
-      val name = qctx.reflect.rootPosition.sourceFile.jpath.getFileName.toString
-      val line = qctx.reflect.rootPosition.startLine + 1
+    def posImpl(using quotes: Quotes): Expr[Position] = {
+      import quotes.reflect.given
+      val pos = quotes.reflect.Position.ofMacroExpansion
+      val name = pos.sourceFile.jpath.getFileName.toString
+      val line = pos.startLine + 1
       '{ Position(${Expr(name)}, ${Expr(line)}) }
     }
 
-    def constIntImpl[T: Type](x: Expr[T])(using QuoteContext): Expr[Int] = '{1}
+    def constIntImpl[T: Type](x: Expr[T])(using Quotes): Expr[Int] = '{1}
 
   }
 

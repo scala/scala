@@ -41,7 +41,7 @@ object TastyUnpickler {
     val unpickler = new TastyUnpickler[tasty.type](new TastyReader(bytes))(tasty)
     unpickler.readHeader()
     unpickler.readNames()
-    val Some(astReader) = unpickler.readSection("ASTs"): @unchecked
+    val Some(astReader) = unpickler.readSection(TastyFormat.ASTsSection): @unchecked
     val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef)(tasty)
     treeUnpickler.enterTopLevel(classRoot, objectRoot)
   }
@@ -84,6 +84,12 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
       ctx.log(s"${nameTable.size}: ${name.debug}")
       name
     }
+    def readSignedRest(original: TastyName, target: TastyName): TastyName = {
+      val result = ErasedTypeRef(readName())
+      val paramsSig = until(end)(readParamSig())
+      val sig = Signature(paramsSig, result)
+      debugName(SignedName(original, sig, target))
+    }
     val result = tag match {
       case UTF8 =>
         goto(end)
@@ -103,12 +109,13 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
         debugName(UniqueName(original, separator, num))
       case DEFAULTGETTER =>
         debugName(DefaultName(readName(), readNat()))
+      case TARGETSIGNED =>
+        val original = readName()
+        val target = readName()
+        readSignedRest(original, target)
       case SIGNED =>
-        val original  = readName()
-        val result    = ErasedTypeRef(readName())
-        val paramsSig = until(end)(readParamSig())
-        val sig       = Signature(paramsSig, result)
-        debugName(SignedName(original, sig))
+        val original = readName()
+        readSignedRest(original, original)
       case OBJECTCLASS =>
         debugName(ObjectName(readName()))
       case BODYRETAINER =>

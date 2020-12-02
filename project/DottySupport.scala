@@ -12,8 +12,8 @@ import sbt.librarymanagement.{
   * Settings to support validation of TastyUnpickler against the release of dotty with the matching TASTy version
   */
 object TastySupport {
-  val supportedTASTyRelease = "3.0.0-M1-bin-20201026-ac4e29d-NIGHTLY" // TASTy version 24
-  val scala3Compiler = "org.scala-lang" % "scala3-compiler_3.0.0-M1" % supportedTASTyRelease
+  val supportedTASTyRelease = "3.0.0-M2" // TASTy version 25.1
+  val scala3Compiler = "org.scala-lang" % "scala3-compiler_3.0.0-M2" % supportedTASTyRelease
 }
 
 /** Settings needed to compile with Dotty,

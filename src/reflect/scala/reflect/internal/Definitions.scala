@@ -1315,7 +1315,7 @@ trait Definitions extends api.StandardDefinitions {
     // Tasty Unpickling Helpers - only access when Scala 3 library is expected to be available
     lazy val ChildAnnotationClass        = getClassIfDefined("scala.annotation.internal.Child")
     lazy val RepeatedAnnotationClass     = getClassIfDefined("scala.annotation.internal.Repeated")
-    lazy val AlphaAnnotationClass        = getClassIfDefined("scala.annotation.alpha")
+    lazy val TargetNameAnnotationClass   = getClassIfDefined("scala.annotation.targetName")
     lazy val StaticMethodAnnotationClass = getClassIfDefined("scala.annotation.static")
     lazy val PolyFunctionClass           = getClassIfDefined("scala.PolyFunction")
 
