@@ -199,6 +199,8 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     private[this] var reportedFeature = Set[Symbol]()
+    protected def featureReported(featureTrait: Symbol): Unit = reportedFeature += featureTrait
+
     // we don't have access to runDefinitions here, so mapping from strings instead of feature symbols
     private val featureCategory: Map[String, WarningCategory.Feature] = {
       import WarningCategory._

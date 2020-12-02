@@ -60,20 +60,31 @@ object Reporter {
     loader.create[FilteringReporter](settings.reporter.value, settings.errorFn)(settings)
   }
 
-  /** Take the message with its explanation, if it has one. */
-  def explanation(msg: String): String = splitting(msg, explaining = true)
-
-  /** Take the message without its explanation, if it has one. */
-  def stripExplanation(msg: String): String = splitting(msg, explaining = false)
-
-  /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
-  private def splitting(msg: String, explaining: Boolean): String =
-    if (msg != null && msg.indexOf("\n----") > 0) {
-      val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
-      if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
-    } else {
+  /** Take the message with its explanation, if it has one, but stripping the separator line.
+   */
+  def explanation(msg: String): String =
+    if (msg == null) {
       msg
+    } else {
+      val marker = msg.indexOf("\n----\n")
+      if (marker > 0) msg.substring(0, marker + 1) + msg.substring(marker + 6) else msg
     }
+
+  /** Drop any explanation from the message, including the newline between the message and separator line.
+   */
+  def stripExplanation(msg: String): String =
+    if (msg == null) {
+      msg
+    } else {
+      val marker = msg.indexOf("\n----\n")
+      if (marker > 0) msg.substring(0, marker) else msg
+    }
+
+  /** Split the message into main message and explanation, as iterators of the text. */
+  def splitExplanation(msg: String): (Iterator[String], Iterator[String]) = {
+    val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
+    (err, exp.drop(1))
+  }
 }
 
 /** The reporter used in a Global instance.
