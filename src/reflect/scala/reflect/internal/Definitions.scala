@@ -1601,6 +1601,7 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)
+      lazy val Predef_genericWrapRefArray = getMemberMethod(PredefModule, nme.genericWrapArray)
       lazy val Predef_???          = DefinitionsClass.this.Predef_???
 
       lazy val arrayApplyMethod       = getMemberMethod(ScalaRunTimeModule, nme.array_apply)
