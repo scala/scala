@@ -1,0 +1,4 @@
+TestSelectWithTarget_fail.scala:10: error: Unsupported Scala 3 selection of method foo with @targetName("fooString"); found in method selectFooString in object tastytest.SelectWithTarget.
+  def test = SelectWithTarget.selectFooString
+                              ^
+1 error
