@@ -1,0 +1,4 @@
+TestTargetNameAnnot_fail.scala:4: error: Unsupported Scala 3 annotation on method ++: @scala.annotation.targetName("doubleplus"); found in object tastytest.TargetNameAnnot.
+  def test1 = TargetNameAnnot.++  // error
+                              ^
+1 error

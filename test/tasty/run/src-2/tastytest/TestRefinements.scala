@@ -129,7 +129,7 @@ object TestRefinements extends Suite("TestRefinements") {
 
     def create: EncoderIntSel = {
       new Refinements.MethodSelectable(
-        method("encode", ClassTag.Int) { xs => xs.head.toString }
+        method("encode", classOf[Int]) { xs => xs.head.toString }
       ).asInstanceOf[EncoderIntSel]
     }
   }

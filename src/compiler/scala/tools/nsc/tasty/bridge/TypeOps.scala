@@ -77,7 +77,7 @@ trait TypeOps { self: TastyUniverse =>
 
     final val ChildAnnot: Symbol = u.definitions.ChildAnnotationClass
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
-    final val AlphaAnnotationClass: Symbol = u.definitions.AlphaAnnotationClass
+    final val TargetNameAnnotationClass: Symbol = u.definitions.TargetNameAnnotationClass
     final val StaticMethodAnnotationClass: Symbol = u.definitions.StaticMethodAnnotationClass
 
     object PolyFunctionType {

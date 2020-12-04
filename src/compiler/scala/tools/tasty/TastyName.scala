@@ -21,12 +21,15 @@ object TastyName {
   final case class SimpleName(raw: String)                                                    extends TastyName
   final case class ObjectName(base: TastyName)                                                extends TastyName
   final case class QualifiedName(qual: TastyName, sep: SimpleName, selector: SimpleName)      extends TastyName
-  final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[ErasedTypeRef]) extends TastyName
   final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                     extends TastyName
   final case class DefaultName(qual: TastyName, num: Int)                                     extends TastyName
   final case class PrefixName(prefix: SimpleName, qual: TastyName)                            extends TastyName
   final case class SuffixName(qual: TastyName, suffix: SimpleName)                            extends TastyName
   final case class TypeName private (base: TastyName)                                         extends TastyName
+  final case class SignedName(
+    qual: TastyName,
+    sig: Signature.MethodSignature[ErasedTypeRef],
+    target: TastyName) extends TastyName
 
   object TypeName {
     private[TastyName] def apply(base: TastyName): TypeName = base match {
@@ -105,13 +108,13 @@ object TastyName {
 
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
 
-      case SimpleName(raw)          => sb append raw
-      case DefaultName(qual, num)   => traverse(sb, qual) append "[Default " append (num + 1) append ']'
-      case PrefixName(prefix, qual) => traverse(sb, qual) append "[Prefix " append (prefix.raw) append ']'
-      case SuffixName(qual, suffix) => traverse(sb, qual) append "[Suffix " append (suffix.raw) append ']'
-      case ObjectName(name)         => traverse(sb, name) append "[ModuleClass]"
-      case TypeName(name)           => traverse(sb, name) append "[Type]"
-      case SignedName(name,sig)     => merge(traverse(sb, name) append "[Signed ", sig.map(_.signature)) append ']'
+      case SimpleName(raw)               => sb append raw
+      case DefaultName(qual, num)        => traverse(sb, qual) append "[Default " append (num + 1) append ']'
+      case PrefixName(prefix, qual)      => traverse(sb, qual) append "[Prefix " append (prefix.raw) append ']'
+      case SuffixName(qual, suffix)      => traverse(sb, qual) append "[Suffix " append (suffix.raw) append ']'
+      case ObjectName(name)              => traverse(sb, name) append "[ModuleClass]"
+      case TypeName(name)                => traverse(sb, name) append "[Type]"
+      case SignedName(name, sig, target) => merge(traverse(sb, name) append "[Signed ", sig.map(_.signature)) append " @" append target.source append ']'
 
       case QualifiedName(qual, sep, name) =>
         traverse(sb, qual) append "[Qualified " append (sep.raw) append ' ' append (name.raw) append ']'
@@ -160,7 +163,7 @@ object TastyName {
     case PrefixName(prefix, qual) => PrefixName(prefix, deepEncode(qual))
     case SuffixName(qual, suffix) => SuffixName(deepEncode(qual), suffix)
     case TypeName(base) => TypeName(deepEncode(base))
-    case SignedName(qual, sig) => SignedName(deepEncode(qual), sig.map(_.encode))
+    case SignedName(qual, sig, target) => SignedName(deepEncode(qual), sig.map(_.encode), target)
   }
 
 }
@@ -208,13 +211,13 @@ sealed abstract class TastyName extends Product with Serializable { self =>
   final def toTypeName: TypeName = TypeName(self)
 
   final def stripSignedPart: TastyName = self match {
-    case SignedName(pre, _) => pre
-    case name               => name
+    case SignedName(pre, _, _) => pre
+    case name                  => name
   }
 
   final def isSignedConstructor = self match {
-    case SignedName(TastyName.Constructor, sig) if isMethodSignature(sig) => true
-    case _                                                                => false
+    case SignedName(TastyName.Constructor, sig, _) if isMethodSignature(sig) => true
+    case _                                                                   => false
   }
 
   /** Guard against API change to SignedName */

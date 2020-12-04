@@ -1,7 +1,7 @@
 TestIntent_fail.scala:6: error: Unsupported Scala 3 inline macro method here; found in object tastytest.intent.Position.
-  extension_apply("3 + 3") {
-                           ^
+  apply("3 + 3") {
+                 ^
 TestIntent_fail.scala:7: error: could not find implicit value for parameter pos: tastytest.intent.Position
-    extension_in("should be 6")(extension_toEqual(expect(3 + 3))(6))
-                               ^
+    in("should be 6")(toEqual(expect(3 + 3))(6))
+                     ^
 2 errors

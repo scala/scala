@@ -15,8 +15,12 @@ package scala.tools.tasty
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 24
-  val MinorVersion: Int = 0
+  val MajorVersion: Int = 25
+  val MinorVersion: Int = 1
+
+  final val ASTsSection = "ASTs"
+  final val PositionsSection = "Positions"
+  final val CommentsSection = "Comments"
 
   /** Tags used to serialize names */
   class NameTags {
@@ -44,6 +48,9 @@ object TastyFormat {
                                   // body of an inline method
 
     final val OBJECTCLASS = 23    // The name of an object class (or: module class) `<name>$`.
+
+    final val TARGETSIGNED = 62   // A triple of a name, a targetname and a signature, used to identify
+                                  // possibly overloaded methods that carry a @targetName annotation.
 
     final val SIGNED = 63         // A pair of a name and a signature, used to identify
                                   // possibly overloaded methods.
@@ -98,7 +105,8 @@ object TastyFormat {
   final val OPEN = 40
   final val PARAMEND = 41
   final val PARAMalias = 42
-  final val SUPERTRAIT = 43
+  final val TRANSPARENT = 43
+  final val INFIX = 44
 
   // Cat. 2:    tag Nat
 
@@ -202,6 +210,7 @@ object TastyFormat {
 
   final val MATCHtype = 190
   final val MATCHtpt = 191
+  final val MATCHCASEtype = 192
 
   final val HOLE = 255
 
@@ -212,7 +221,7 @@ object TastyFormat {
 
   /** Useful for debugging */
   def isLegalTag(tag: Int): Boolean =
-    firstSimpleTreeTag <= tag && tag <= SUPERTRAIT ||
+    firstSimpleTreeTag <= tag && tag <= INFIX ||
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
@@ -241,7 +250,8 @@ object TastyFormat {
        | STATIC
        | OBJECT
        | TRAIT
-       | SUPERTRAIT
+       | TRANSPARENT
+       | INFIX
        | ENUM
        | LOCAL
        | SYNTHETIC
@@ -303,7 +313,8 @@ object TastyFormat {
     case OBJECT => "OBJECT"
     case TRAIT => "TRAIT"
     case ENUM => "ENUM"
-    case SUPERTRAIT => "SUPERTRAIT"
+    case TRANSPARENT => "TRANSPARENT"
+    case INFIX => "INFIX"
     case LOCAL => "LOCAL"
     case SYNTHETIC => "SYNTHETIC"
     case ARTIFACT => "ARTIFACT"
@@ -409,6 +420,7 @@ object TastyFormat {
     case TYPELAMBDAtype => "TYPELAMBDAtype"
     case LAMBDAtpt => "LAMBDAtpt"
     case MATCHtype => "MATCHtype"
+    case MATCHCASEtype => "MATCHCASEtype"
     case MATCHtpt => "MATCHtpt"
     case PARAMtype => "PARAMtype"
     case ANNOTATION => "ANNOTATION"

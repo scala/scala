@@ -55,10 +55,11 @@ object TastyFlags {
   final val Given                 = Extension.next
   final val Exported              = Given.next
   final val Macro                 = Exported.next
-  final val SuperTrait            = Macro.next
-  final val Enum                  = SuperTrait.next
+  final val Transparent           = Macro.next
+  final val Enum                  = Transparent.next
   final val Open                  = Enum.next
   final val ParamAlias            = Open.next
+  final val Infix                 = ParamAlias.next
 
   private[TastyFlags] final val maxFlag: Long = ParamAlias.shift
 
@@ -80,7 +81,6 @@ object TastyFlags {
       TastyFlagSet(1L << shift)
     }
 
-    def toSingletonSets: SingletonSets                        = SingletonSets(toLong)
     def |(other: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(toLong | other.toLong)
     def &(mask: TastyFlagSet): TastyFlagSet                   = TastyFlagSet(toLong & mask.toLong)
     def &~(mask: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(toLong & ~mask.toLong)
@@ -96,50 +96,49 @@ object TastyFlags {
         "EmptyTastyFlags"
       }
       else {
-        toSingletonSets.map { f =>
-          (f: @unchecked) match {
-            case Private => "Private"
-            case Protected => "Protected"
-            case AbsOverride => "AbsOverride"
-            case Abstract => "Abstract"
-            case Final => "Final"
-            case Sealed => "Sealed"
-            case Case => "Case"
-            case Implicit => "Implicit"
-            case Lazy => "Lazy"
-            case Override => "Override"
-            case Static => "Static"
-            case Object => "Object"
-            case Trait => "Trait"
-            case Local => "Local"
-            case Synthetic => "Synthetic"
-            case Artifact => "Artifact"
-            case Mutable => "Mutable"
-            case FieldAccessor => "FieldAccessor"
-            case CaseAccessor => "CaseAccessor"
-            case Covariant => "Covariant"
-            case Contravariant => "Contravariant"
-            case HasDefault => "HasDefault"
-            case Stable => "Stable"
-            case ParamSetter => "ParamSetter"
-            case Param => "Param"
-            case Deferred => "Deferred"
-            case Method => "Method"
-            case Erased => "Erased"
-            case Internal => "Internal"
-            case Inline => "Inline"
-            case InlineProxy => "InlineProxy"
-            case Opaque => "Opaque"
-            case Extension => "Extension"
-            case Given => "Given"
-            case Exported => "Exported"
-            case Macro => "Macro"
-            case SuperTrait => "SuperTrait"
-            case Enum => "Enum"
-            case Open => "Open"
-            case ParamAlias => "ParamAlias"
-          }
-        } mkString(" | ")
+        val sb = collection.mutable.ArrayBuffer.empty[String]
+        if (is(Private))       sb += "Private"
+        if (is(Protected))     sb += "Protected"
+        if (is(AbsOverride))   sb += "AbsOverride"
+        if (is(Abstract))      sb += "Abstract"
+        if (is(Final))         sb += "Final"
+        if (is(Sealed))        sb += "Sealed"
+        if (is(Case))          sb += "Case"
+        if (is(Implicit))      sb += "Implicit"
+        if (is(Lazy))          sb += "Lazy"
+        if (is(Override))      sb += "Override"
+        if (is(Static))        sb += "Static"
+        if (is(Object))        sb += "Object"
+        if (is(Trait))         sb += "Trait"
+        if (is(Local))         sb += "Local"
+        if (is(Synthetic))     sb += "Synthetic"
+        if (is(Artifact))      sb += "Artifact"
+        if (is(Mutable))       sb += "Mutable"
+        if (is(FieldAccessor)) sb += "FieldAccessor"
+        if (is(CaseAccessor))  sb += "CaseAccessor"
+        if (is(Covariant))     sb += "Covariant"
+        if (is(Contravariant)) sb += "Contravariant"
+        if (is(HasDefault))    sb += "HasDefault"
+        if (is(Stable))        sb += "Stable"
+        if (is(ParamSetter))   sb += "ParamSetter"
+        if (is(Param))         sb += "Param"
+        if (is(Deferred))      sb += "Deferred"
+        if (is(Method))        sb += "Method"
+        if (is(Erased))        sb += "Erased"
+        if (is(Internal))      sb += "Internal"
+        if (is(Inline))        sb += "Inline"
+        if (is(InlineProxy))   sb += "InlineProxy"
+        if (is(Opaque))        sb += "Opaque"
+        if (is(Extension))     sb += "Extension"
+        if (is(Given))         sb += "Given"
+        if (is(Exported))      sb += "Exported"
+        if (is(Macro))         sb += "Macro"
+        if (is(Transparent))   sb += "Transparent"
+        if (is(Enum))          sb += "Enum"
+        if (is(Open))          sb += "Open"
+        if (is(ParamAlias))    sb += "ParamAlias"
+        if (is(Infix))         sb += "Infix"
+        sb.mkString(" | ")
       }
     }
   }

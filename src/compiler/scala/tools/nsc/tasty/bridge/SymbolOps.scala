@@ -93,8 +93,8 @@ trait SymbolOps { self: TastyUniverse =>
       termParamss
 
   def namedMemberOfType(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = tname match {
-    case SignedName(qual, sig) => signedMemberOfSpace(space, qual, sig.map(_.encode))
-    case _                     => memberOfSpace(space, tname)
+    case SignedName(qual, sig, target) => signedMemberOfSpace(space, qual, sig.map(_.encode), target)
+    case _                             => memberOfSpace(space, tname)
   }
 
   private def memberOfSpace(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
@@ -145,37 +145,42 @@ trait SymbolOps { self: TastyUniverse =>
     typeError(s"can't find $missing; perhaps it is missing from the classpath.")
   }
 
-  private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[ErasedTypeRef])(implicit ctx: Context): Symbol = {
-    ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
-    val member = space.member(encodeTermName(qual))
-    if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
-    val (tyParamCount, argTpeRefs) = {
-      val (tyParamCounts, params) = sig.params.partitionMap(identity)
-      if (tyParamCounts.length > 1) {
-        unsupportedError(s"multiple type parameter lists on erased method signature ${showSig(sig)}")
-      }
-      (tyParamCounts.headOption.getOrElse(0), params)
+  private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[ErasedTypeRef], target: TastyName)(implicit ctx: Context): Symbol = {
+    if (target ne qual) {
+      unsupportedError(s"selection of method $qual with @targetName(" + '"' + target + '"' + ")")
     }
-    def compareSym(sym: Symbol): Boolean = sym match {
-      case sym: u.MethodSymbol =>
-        val method = sym.tpe.asSeenFrom(space, sym.owner)
-        ctx.log(s">>> trying $sym: $method")
-        val params = method.paramss.flatten
-        val isJava = sym.isJavaDefined
-        NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
-        params.length === argTpeRefs.length &&
-        (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
-          || tyParamCount === sym.typeParams.length) &&
-        params.zip(argTpeRefs).forall { case (param, tpe) => NameErasure.sigName(param.tpe, isJava) === tpe } && {
-          ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
-          true
+    else {
+      ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
+      val member = space.member(encodeTermName(qual))
+      if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
+      val (tyParamCount, argTpeRefs) = {
+        val (tyParamCounts, params) = sig.params.partitionMap(identity)
+        if (tyParamCounts.length > 1) {
+          unsupportedError(s"multiple type parameter lists on erased method signature ${showSig(sig)}")
         }
-      case _ =>
-        ctx.log(s"""! member[$space]("$qual") ${showSym(sym)} is not a method""")
-        false
+        (tyParamCounts.headOption.getOrElse(0), params)
+      }
+      def compareSym(sym: Symbol): Boolean = sym match {
+        case sym: u.MethodSymbol =>
+          val method = sym.tpe.asSeenFrom(space, sym.owner)
+          ctx.log(s">>> trying $sym: $method")
+          val params = method.paramss.flatten
+          val isJava = sym.isJavaDefined
+          NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
+          params.length === argTpeRefs.length &&
+          (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
+            || tyParamCount === sym.typeParams.length) &&
+          params.zip(argTpeRefs).forall { case (param, tpe) => NameErasure.sigName(param.tpe, isJava) === tpe } && {
+            ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
+            true
+          }
+        case _ =>
+          ctx.log(s"""! member[$space]("$qual") ${showSym(sym)} is not a method""")
+          false
+      }
+      member.asTerm.alternatives.find(compareSym).getOrElse(
+        typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}"))
     }
-    member.asTerm.alternatives.find(compareSym).getOrElse(
-      typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}"))
   }
 
   def showSig(sig: MethodSignature[ErasedTypeRef]): String = sig.map(_.signature).show

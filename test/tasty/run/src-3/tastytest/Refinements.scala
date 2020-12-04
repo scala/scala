@@ -178,15 +178,15 @@ object Refinements {
   extends scala.Selectable {
     private val map = methods.toMap
 
-    def applyDynamic(name: String, paramClasses: ClassTag[_]*)(args: Any*): Any =
+    def applyDynamic(name: String, paramClasses: Class[_]*)(args: Any*): Any =
       map.get(name, paramClasses) match
         case Some(f) => f(args)
         case None    => throw NoSuchMethodException(s"$name(${paramClasses.mkString(",")})")
 
   }
   object MethodSelectable {
-    type Method = ((String, Seq[ClassTag[_]]), Seq[Any] => Any)
-    def method(name: String, paramClasses: ClassTag[_]*)(impl: Seq[Any] => Any): Method =
+    type Method = ((String, Seq[Class[_]]), Seq[Any] => Any)
+    def method(name: String, paramClasses: Class[_]*)(impl: Seq[Any] => Any): Method =
       ((name, paramClasses), impl)
   }
 
