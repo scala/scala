@@ -3,7 +3,11 @@ reload: Snippet.scala
 askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
+#partest !java15
 retrieved 203 members
+#partest java15
+retrieved 205 members
+#partest
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
@@ -119,6 +123,9 @@ def compareTo(x$1: Double): Int
 def compareTo(x$1: Float): Int
 def compareTo(x$1: Integer): Int
 def compareTo(x$1: Long): Int
+#partest java15
+def describeConstable(): java.util.Optional[Double]
+#partest
 def doubleValue(): Double
 def ensuring(cond: Boolean): Int
 def ensuring(cond: Boolean, msg: => Any): Int
@@ -138,6 +145,9 @@ def isNegInfinity: Boolean
 def isPosInfinity: Boolean
 def isValidLong: Boolean
 def longValue(): Long
+#partest java15
+def resolveConstantDesc(x$1: java.lang.invoke.MethodHandles.Lookup): Double
+#partest
 def round: Long
 def shortValue(): Short
 def sign: Double

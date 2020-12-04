@@ -64,8 +64,13 @@ testing Object.finalize: ()
 testing Object.getClass: class java.lang.String
 testing Object.hashCode: 50
 testing Object.ne: false
+#partest !java15
 testing Object.notify: class java.lang.IllegalMonitorStateException: null
 testing Object.notifyAll: class java.lang.IllegalMonitorStateException: null
+#partest java15
+testing Object.notify: class java.lang.IllegalMonitorStateException: current thread is not owner
+testing Object.notifyAll: class java.lang.IllegalMonitorStateException: current thread is not owner
+#partest
 testing Object.synchronized: 2
 testing Object.toString: 2
 TODO: also test AnyRef.wait overloads

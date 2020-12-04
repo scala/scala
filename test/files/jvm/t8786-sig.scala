@@ -19,6 +19,7 @@ class A[U] {
 }
 
 object Test extends App {
+  import scala.util.Properties.isJavaAtLeast
   val a = classOf[A[_]]
 
   def sig   (method: String, tp: Class[_]) = a.getDeclaredMethod(method, tp).toString
@@ -58,7 +59,8 @@ object Test extends App {
   // TODO: the signature for is wrong for T <: Int, scala/bug#9846. The signature should be
   // `public int A.m4(scala.collection.immutable.Seq<java.lang.Object>)`. This is testing the status quo.
   check(genSig("m4", sq), "public <T> T A.m4(scala.collection.immutable.Seq<T>)")
-  check(genSig("m5", sq), "public <T> T A.m5(scala.collection.immutable.Seq<T>)")
+  if (!isJavaAtLeast(15)) check(genSig("m5", sq), "public <T> T A.m5(scala.collection.immutable.Seq<T>)")
+  if ( isJavaAtLeast(15)) check(genSig("m5", sq), "public <T extends java.lang.String> T A.m5(scala.collection.immutable.Seq<T>)")
   check(genSig("m6", sq), "public java.lang.String A.m6(scala.collection.immutable.Seq<java.lang.String>)")
   check(genSig("m7", sq), "public int A.m7(scala.collection.immutable.Seq<java.lang.Object>)")
   check(genSig("m8", sq), "public U A.m8(scala.collection.immutable.Seq<U>)")
@@ -80,7 +82,8 @@ object Test extends App {
   check(genSig("m3", ao), "public <T> T A.m3(T...)")
   // testing status quo: signature is wrong for T <: Int, scala/bug#9846
   check(genSig("m4", ao), "public <T> T A.m4(T...)")
-  check(genSig("m5", as), "public <T> T A.m5(T...)")
+  if (!isJavaAtLeast(15)) check(genSig("m5", as), "public <T> T A.m5(T...)")
+  if ( isJavaAtLeast(15)) check(genSig("m5", as), "public <T extends java.lang.String> T A.m5(T...)")
   check(genSig("m6", as), "public java.lang.String A.m6(java.lang.String...)")
   check(genSig("m7", ai), "public int A.m7(int...)")
   check(genSig("m8", ao), "public U A.m8(U...)")
@@ -109,7 +112,8 @@ object Test extends App {
   check(genSig("n3", ob), "public <T> T A.n3(java.lang.Object)")
   // testing status quo: signature is wrong for T <: Int, scala/bug#9846
   check(genSig("n4", ob), "public <T> T A.n4(java.lang.Object)")
-  check(genSig("n5", as), "public <T> T A.n5(T[])")
+  if (!isJavaAtLeast(15)) check(genSig("n5", as), "public <T> T A.n5(T[])")
+  if ( isJavaAtLeast(15)) check(genSig("n5", as), "public <T extends java.lang.String> T A.n5(T[])")
   check(genSig("n6", as), "public java.lang.String A.n6(java.lang.String[])")
   check(genSig("n7", ai), "public int A.n7(int[])")
   check(genSig("n8", ob), "public U A.n8(java.lang.Object)")

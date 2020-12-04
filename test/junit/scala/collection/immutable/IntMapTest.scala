@@ -17,15 +17,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testkit.ReflectUtil.{getFieldAccessible => f}
+import scala.tools.testkit.ReflectUtil
 
 @RunWith(classOf[JUnit4])
 class IntMapTest {
   @Test
   def `isEmpty O(1)`(): Unit = {
     val m = IntMap(1 -> (), 2 -> (), 3 -> ())
-    f[IntMap.Bin[_]]("left").set(m, null)
-    f[IntMap.Bin[_]]("right").set(m, null)
+    ReflectUtil.getFieldAccessible[IntMap.Bin[_]]("left").set(m, null)
+    ReflectUtil.getFieldAccessible[IntMap.Bin[_]]("right").set(m, null)
     assertFalse(m.isEmpty) // no NPE, does not access left or right
   }
 }
