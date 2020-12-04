@@ -137,7 +137,7 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
-  private val cacheDisabledProp = scala.sys.Prop[String]("scala.reflect.classtag.cache.disable")
+  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
   private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
     override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
       new jWeakReference(computeTag(runtimeClass))
@@ -173,9 +173,9 @@ object ClassTag {
   }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
-    if (cacheDisabledProp.isSet)
+    if (cacheDisabled) {
       cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
-    else {
+    } else {
       val ref = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]]
       var tag = ref.get
       if (tag == null) {
