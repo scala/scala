@@ -754,7 +754,7 @@ trait Types
      */
     def substSym(from: List[Symbol], to: List[Symbol]): Type =
       if ((from eq to) || from.isEmpty) this
-      else new SubstSymMap(from, to) apply this
+      else SubstSymMap(from, to).apply(this)
 
     /** Substitute all occurrences of `ThisType(from)` in this type by `to`.
      *
@@ -4041,8 +4041,8 @@ trait Types
   def refinedType(parents: List[Type], owner: Symbol): Type =
     refinedType(parents, owner, newScope, owner.pos)
 
-  private[this] val copyRefinedTypeSSM: ReusableInstance[MutableSubstSymMap] =
-    ReusableInstance[MutableSubstSymMap](new MutableSubstSymMap())
+  private[this] val copyRefinedTypeSSM: ReusableInstance[SubstSymMap] =
+    ReusableInstance[SubstSymMap](SubstSymMap())
 
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
@@ -4058,8 +4058,8 @@ trait Types
         val syms2 = result.decls.toList
         val resultThis = result.typeSymbol.thisType
         val substThisMap = new SubstThisMap(original.typeSymbol, resultThis)
-        copyRefinedTypeSSM.using { (msm: MutableSubstSymMap) =>
-          msm.reset(syms1, syms2)
+        copyRefinedTypeSSM.using { (msm: SubstSymMap) =>
+          msm.reload(syms1, syms2)
           syms2.foreach(_.modifyInfo(info => msm.apply(substThisMap.apply(info))))
         }
       }

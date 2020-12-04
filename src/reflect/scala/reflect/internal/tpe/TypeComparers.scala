@@ -178,7 +178,7 @@ trait TypeComparers {
     sameLength(tparams1, tparams2) && {
     // corresponds does not check length of two sequences before checking the predicate,
     // but SubstMap assumes it has been checked (scala/bug#2956)
-      val substMap = new SubstSymMap(tparams2, tparams1)
+      val substMap = SubstSymMap(tparams2, tparams1)
       (
         (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= substMap(p2.info))
           && (res1 =:= substMap(res2))
@@ -357,8 +357,8 @@ trait TypeComparers {
       //@M for an example of why we need to generate fresh symbols otherwise, see neg/tcpoly_ticket2101.scala
       val substitutes = if (isMethod) tparams1 else cloneSymbols(tparams1)
 
-      val sub1: Type => Type = if (isMethod) (tp => tp) else new SubstSymMap(tparams1, substitutes)
-      val sub2: Type => Type = new SubstSymMap(tparams2, substitutes)
+      val sub1: Type => Type = if (isMethod) (tp => tp) else SubstSymMap(tparams1, substitutes)
+      val sub2: Type => Type = SubstSymMap(tparams2, substitutes)
 
       def cmp(p1: Symbol, p2: Symbol) = sub2(p2.info) <:< sub1(p1.info)
       (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))

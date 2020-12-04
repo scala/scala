@@ -20,6 +20,7 @@ import Flags._
 import scala.annotation.{nowarn, tailrec}
 import Variance._
 import scala.collection.mutable.ListBuffer
+import scala.util.chaining._
 
 private[internal] trait TypeMaps {
   self: SymbolTable =>
@@ -663,32 +664,43 @@ private[internal] trait TypeMaps {
     override def toString = s"AsSeenFromMap($seenFromPrefix, $seenFromClass)"
   }
 
-  /** A base class to compute all substitutions */
-  abstract class AbstractSubstMap[T >: Null] extends TypeMap {
-    protected def from: List[Symbol] = Nil
-    protected def to: List[T] = Nil
+  /** A base class to compute all substitutions. */
+  sealed abstract class SubstMap[T >: Null] extends TypeMap {
+    private[this] var _from: List[Symbol] = Nil
+    private[this] var _to: List[T] = Nil
 
     private[this] var fromHasTermSymbol = false
     private[this] var fromMin = Int.MaxValue
     private[this] var fromMax = Int.MinValue
     private[this] var fromSize = 0
 
-    protected def reload(): Unit = {
+    final def from: List[Symbol] = _from
+    final def to:   List[T]      = _to
+
+    def reload(from0: List[Symbol], to0: List[T]): this.type = {
       // OPT this check was 2-3% of some profiles, demoted to -Xdev
       if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
+
+      _from = from0
+      _to   = to0
 
       fromHasTermSymbol = false
       fromMin = Int.MaxValue
       fromMax = Int.MinValue
       fromSize = 0
 
-      from.foreach {
-        sym =>
-        fromMin = math.min(fromMin, sym.id)
-        fromMax = math.max(fromMax, sym.id)
-        fromSize += 1
-        if (sym.isTerm) fromHasTermSymbol = true
-      }
+      def scanFrom(ss: List[Symbol]): Unit =
+        ss match {
+          case sym :: rest =>
+            fromMin = math.min(fromMin, sym.id)
+            fromMax = math.max(fromMax, sym.id)
+            fromSize += 1
+            if (sym.isTerm) fromHasTermSymbol = true
+            scanFrom(rest)
+          case _ => ()
+        }
+      scanFrom(from)
+      this
     }
 
     /** Are `sym` and `sym1` the same? Can be tuned by subclasses. */
@@ -770,7 +782,8 @@ private[internal] trait TypeMaps {
     }
   }
 
-  abstract class AbstractSubstSymMap extends AbstractSubstMap[Symbol] {
+  /** A map to implement the `substSym` method. */
+  sealed class SubstSymMap private () extends SubstMap[Symbol] {
 
     protected def toType(fromTpe: Type, sym: Symbol) = fromTpe match {
       case TypeRef(pre, _, args) => copyTypeRef(fromTpe, pre, sym, args)
@@ -830,30 +843,22 @@ private[internal] trait TypeMaps {
       mapTreeSymbols.transform(tree)
   }
 
-  /** A map to implement the `substSym` method. */
-  class SubstSymMap(override val from: List[Symbol], override val to: List[Symbol]) extends AbstractSubstSymMap {
-    reload()
-
-    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
-  }
-
-  class MutableSubstSymMap extends AbstractSubstSymMap {
-    private[this] var _from: List[Symbol] = Nil
-    private[this] var _to: List[Symbol] = Nil
-
-    override def from: List[Symbol] = _from
-    override def to  : List[Symbol] =   _to
-
-    def reset(nfrom: List[Symbol], nto: List[Symbol]): Unit = {
-      _from = nfrom
-      _to   = nto
-      reload()
+  object SubstSymMap {
+    def apply(): SubstSymMap = new SubstSymMap()
+    def apply(from: List[Symbol], to: List[Symbol]): SubstSymMap = new SubstSymMap().tap(_.reload(from, to))
+    def apply(from: List[Symbol], to: List[Symbol], cmp: (Symbol, Symbol) => Boolean): SubstSymMap = {
+      val ssm = new SubstSymMap() {
+        override protected def matches(sym: Symbol, sym1: Symbol): Boolean = cmp(sym, sym1)
+      }
+      ssm.tap(_.reload(from, to))
     }
+    def apply(fromto: (Symbol, Symbol)): SubstSymMap = apply(List(fromto._1), List(fromto._2))
   }
 
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(override val from: List[Symbol], override val to: List[Type]) extends AbstractSubstMap[Type] {
-    super.reload()
+  class SubstTypeMap(from0: List[Symbol], to0: List[Type]) extends SubstMap[Type] {
+    super.reload(from0, to0)
+
     override protected def toType(fromtp: Type, tp: Type) = tp
 
     override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
