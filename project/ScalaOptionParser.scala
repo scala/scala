@@ -92,12 +92,22 @@ object ScalaOptionParser {
     "-Ypresentation-strict", "-Ypresentation-verbose", "-Yquasiquote-debug", "-Yrangepos", "-Yreify-copypaste", "-Yreify-debug", "-Yrepl-class-based",
     "-Yrepl-sync", "-Yshow-member-pos", "-Yshow-symkinds", "-Yshow-symowners", "-Yshow-syms", "-Yshow-trees", "-Yshow-trees-compact", "-Yshow-trees-stringified", "-Ytyper-debug",
     "-Ywarn-dead-code", "-Ywarn-numeric-widen", "-Ywarn-value-discard", "-Ywarn-extra-implicit", "-Ywarn-self-implicit",
+    "-V",
+    "-Vclasspath", "-Vdebug", "-Vdebug-tasty", "-Vdoc", "-Vfree-terms", "-Vfree-types",
+    "-Vhot-statistics", "-Vide", "-Vimplicit-conversions", "-Vimplicits", "-Vissue",
+    "-Vmacro", "-Vmacro-lite", "-Vpatmat", "-Vphases", "-Vpos", "-Vprint-pos",
+    "-Vprint-types", "-Vquasiquote", "-Vreflective-calls", "-Vreify",
+    "-Vshow-member-pos", "-Vshow-symkinds", "-Vshow-symowners", "-Vsymbols", "-Vtyper",
+    "-W",
+    "-Wdead-code", "-Werror", "-Wextra-implicit", "-Wnumeric-widen", "-Woctal-literal",
+    "-Wvalue-discard", "-Wself-implicit",
     "-deprecation", "-explaintypes", "-feature", "-help", "-no-specialization", "-nobootcp", "-nowarn", "-optimise", "-print", "-unchecked", "-uniqid", "-usejavacp", "-usemanifestcp", "-verbose", "-version")
-  private def stringSettingNames = List("-Xjline", "-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
-    "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript")
-  private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp")
+  private def stringSettingNames = List("-Xjline", "-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Vshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
+    "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript", "-Vinline", "-Vopt", "-Vshow-class", "-Vshow-member-pos")
+  private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp", "-Vprint-args")
   private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")
-  private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before", "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint", "-Yvalidate-pos")
+  private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before",
+    "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint", "-Yvalidate-pos", "-Vbrowse", "-Vlog", "-Vprint", "-Vshow")
   private def multiStringSettingNames = List("-Xmacro-settings", "-Xplugin", "-Xplugin-disable", "-Xplugin-require", "-Ywarn-unused", "-opt-inline-from")
   private def intSettingNames = List("-Xelide-below", "-Ypatmat-exhaust-depth", "-Ypresentation-delay", "-Yrecursion")
   private def choiceSettingNames = Map[String, List[String]](
@@ -113,7 +123,9 @@ object ScalaOptionParser {
     "-opt" -> List("unreachable-code", "simplify-jumps", "compact-locals", "copy-propagation", "redundant-casts", "box-unbox", "nullness-tracking", "closure-invocations" , "allow-skip-core-module-init", "assume-modules-non-null", "allow-skip-class-loading", "inline", "l:none", "l:default", "l:method", "l:inline", "l:project", "l:classpath"),
     "-Ywarn-unused" -> List("imports", "patvars", "privates", "locals", "explicits", "implicits", "params"),
     "-Ywarn-macros" -> List("none", "before", "after", "both"),
-    "-Ystatistics" -> List("parser", "typer", "patmat", "erasure", "cleanup", "jvm")
+    "-Ystatistics" -> List("parser", "typer", "patmat", "erasure", "cleanup", "jvm"),
+    "-Vstatistics" -> List("parser", "typer", "patmat", "erasure", "cleanup", "jvm"),
+    "-Wunused" -> List("imports", "patvars", "privates", "locals", "explicits", "implicits", "nowarn", "linted")
   )
   private def scalaVersionSettings = List("-Xmigration", "-Xsource")
 
