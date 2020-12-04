@@ -34,30 +34,12 @@ checksensible.scala:31: warning: comparing values of types Int and String using 
 checksensible.scala:35: warning: comparing values of types Some[Int] and Int using `==` will always yield false
   Some(1) == 1      // as above
           ^
-#partest !java8
-checksensible.scala:37: warning: constructor Boolean in class Boolean is deprecated
-  true == new java.lang.Boolean(true) // none of these should warn except for deprecated API
-          ^
-checksensible.scala:38: warning: constructor Boolean in class Boolean is deprecated
-  new java.lang.Boolean(true) == true
-  ^
-#partest
 checksensible.scala:40: warning: comparing a fresh object using `==` will always yield false
   new AnyRef == 1
              ^
-#partest !java8
-checksensible.scala:42: warning: constructor Integer in class Integer is deprecated
-  1 == (new java.lang.Integer(1)) // ...something like this
-        ^
-#partest
 checksensible.scala:43: warning: comparing values of types Int and Boolean using `==` will always yield false
   1 == java.lang.Boolean.valueOf(true)
     ^
-#partest !java8
-checksensible.scala:43: warning: constructor Boolean in class Boolean is deprecated
-  1 == (new java.lang.Boolean(true))
-        ^
-#partest
 checksensible.scala:45: warning: comparing values of types Int and Boolean using `!=` will always yield true
   1 != true
     ^
@@ -134,9 +116,5 @@ checksensible.scala:117: warning: comparing values of types A and Int using `equ
   def foo[A](a: A) = a.equals(1)
                              ^
 error: No warnings can be incurred under -Werror.
-#partest java8
 39 warnings
-#partest !java8
-43 warnings
-#partest
 1 error
