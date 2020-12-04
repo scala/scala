@@ -166,7 +166,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   private val SafeTags =
     new Regex("""((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
-  private val safeTagMarker = '\u000E'
+  private val safeTagMarker = '\u000E'  // control-N
 
   /** A Scaladoc tag not linked to a symbol and not followed by text */
   private val SingleTagRegex =
@@ -183,11 +183,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   /** The start of a Scaladoc code block */
   private val CodeBlockStartRegex =
-    new Regex("""(.*?)((?:\{\{\{)|(?:<pre(?: [^>]*)?>))(.*)""")
+    new Regex(s"""(.*?)((?:\\{\\{\\{)|(?:$safeTagMarker<pre(?: [^>]*)?>$safeTagMarker))(.*)""")
 
   /** The end of a Scaladoc code block */
   private val CodeBlockEndRegex =
-    new Regex("""(.*?)((?:\}\}\})|(?:</pre>))(.*)""")
+    new Regex(s"""(.*?)((?:\\}\\}\\})|(?:$safeTagMarker</pre>$safeTagMarker))(.*)""")
 
   /** A key used for a tag map. The key is built from the name of the tag and
     * from the linked symbol if the tag has one.
