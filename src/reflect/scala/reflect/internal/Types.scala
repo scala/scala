@@ -4042,7 +4042,7 @@ trait Types
     refinedType(parents, owner, newScope, owner.pos)
 
   private[this] val copyRefinedTypeSSM: ReusableInstance[SubstSymMap] =
-    ReusableInstance[SubstSymMap](SubstSymMap())
+    ReusableInstance[SubstSymMap](SubstSymMap(), enabled = isCompilerUniverse)
 
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original

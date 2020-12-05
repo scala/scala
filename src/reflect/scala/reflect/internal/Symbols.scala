@@ -3771,7 +3771,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
   private[this] val cloneSymbolsSubstSymMap: ReusableInstance[SubstSymMap] =
-    ReusableInstance[SubstSymMap](SubstSymMap())
+    ReusableInstance[SubstSymMap](SubstSymMap(), enabled = isCompilerUniverse)
 
   def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
     deriveSymbols(syms, _ cloneSymbol owner)
