@@ -857,12 +857,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def diff[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     fromSpecific(iterator.filter { x =>
-      val ox = occ(x)  // Avoid multiple map lookups
-      if (ox == 0) true
-      else {
-        occ(x) = ox - 1
-        false
+      var include = false
+      occ.updateWith(x) {
+        case None => {
+          include = true
+          None
+        }
+        case Some(1) => None
+        case Some(n) => Some(n - 1)
       }
+      include
     })
   }
 
@@ -878,11 +882,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def intersect[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     fromSpecific(iterator.filter { x =>
-      val ox = occ(x)  // Avoid multiple map lookups
-      if (ox > 0) {
-        occ(x) = ox - 1
-        true
-      } else false
+      var include = true
+      occ.updateWith(x) {
+        case None => {
+          include = false
+          None
+        }
+        case Some(1) => None
+        case Some(n) => Some(n - 1)
+      }
+      include
     })
   }
 
@@ -920,8 +929,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   protected[collection] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
-    val occ = new mutable.HashMap[B, Int]().withDefaultValue(0)
-    for (y <- sq) occ(y) += 1
+    val occ = new mutable.HashMap[B, Int]()
+    for (y <- sq) occ.updateWith(y) {
+      case None => Some(1)
+      case Some(n) => Some(n + 1)
+    }
     occ
   }
 
