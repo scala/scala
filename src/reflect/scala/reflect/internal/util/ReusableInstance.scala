@@ -19,17 +19,18 @@ import scala.util.chaining._
   * The wrapper is recursion-reentrant: several instances are kept, so
   * at each depth of reentrance we are reusing the instance for that.
   *
-  * An instance is created upon creating this object, and more instances
-  * are allocated dynamically, on demand, when reentrance occurs.
+  * An instance is created eagerly, then more instances
+  * are allocated as needed on re-entry. Once allocated,
+  * cached instances are not reclaimed for the life of this ReusableInstance.
   *
   * Not thread safe.
   */
-final class ReusableInstance[T <: AnyRef] private (make: => T, enabled: Boolean) {
-  private[this] val cache = if (enabled) new ArrayBuffer[T](ReusableInstance.InitialSize).tap(_.addOne(make)) else null
+final class ReusableInstance[T <: AnyRef] private (make: => T, initialSize: Int) {
+  private[this] val cache = if (initialSize > 0) new ArrayBuffer[T](initialSize).tap(_.addOne(make)) else null
   private[this] var taken = 0
 
   @inline def using[R](action: T => R): R =
-    if (!enabled)
+    if (cache == null)
       action(make)
     else {
       if (taken == cache.size)
@@ -42,6 +43,12 @@ final class ReusableInstance[T <: AnyRef] private (make: => T, enabled: Boolean)
 object ReusableInstance {
   private final val InitialSize = 4
 
-  def apply[T <: AnyRef](make: => T): ReusableInstance[T]                   = new ReusableInstance[T](make, enabled = true)
-  def apply[T <: AnyRef](make: => T, enabled: Boolean): ReusableInstance[T] = new ReusableInstance[T](make, enabled = enabled)
+  def apply[T <: AnyRef](make: => T, initialSize: Int): ReusableInstance[T] = new ReusableInstance[T](make, initialSize)
+
+  def apply[T <: AnyRef](make: => T): ReusableInstance[T] =
+    apply(make, InitialSize)
+  def apply[T <: AnyRef](make: => T, enabled: Boolean): ReusableInstance[T] =
+    if (enabled) apply(make) else apply(make, -1)
+  def apply[T <: AnyRef](make: => T, initialSize: Int, enabled: Boolean): ReusableInstance[T] =
+    if (enabled) apply(make, initialSize) else apply(make, -1)
 }
