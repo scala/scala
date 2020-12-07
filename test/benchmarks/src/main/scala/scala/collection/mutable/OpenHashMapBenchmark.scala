@@ -28,7 +28,7 @@ private object OpenHashMapBenchmark {
     * @tparam K type of the map keys to be used in the test
     */
   @State(Scope.Thread)
-  private[this] abstract class BulkPutState[K](implicit keyBuilder: KeySeqBuilder[K]) {
+  abstract class BulkPutState[K](implicit keyBuilder: KeySeqBuilder[K]) {
     /** A lower-bound estimate of the number of nanoseconds per `put()` call */
     private[this] val nanosPerPut: Double = 5
 
@@ -99,7 +99,7 @@ private object OpenHashMapBenchmark {
     * @tparam K type of the map keys to be used in the test
     */
   @State(Scope.Thread)
-  private[this] abstract class BulkGetState[K](implicit keyBuilder: KeySeqBuilder[K]) {
+  abstract class BulkGetState[K](implicit keyBuilder: KeySeqBuilder[K]) {
     /** The sequence of keys to store into a map. */
     private[this] var _keys: KeySeq[K] = _
     def keys() = _keys
@@ -124,7 +124,7 @@ private object OpenHashMapBenchmark {
     * @tparam K type of the map keys to be used in the test
     */
   @State(Scope.Thread)
-  private[this] abstract class BulkRemovedGetState[K](implicit keyBuilder: KeySeqBuilder[K]) {
+  abstract class BulkRemovedGetState[K](implicit keyBuilder: KeySeqBuilder[K]) {
     /** The sequence of keys to store into a map. */
     private[this] var _keys: KeySeq[K] = _
     def keys() = _keys
@@ -148,22 +148,22 @@ private object OpenHashMapBenchmark {
    */
 
   @AuxCounters
-  private class IntBulkPutState extends BulkPutState[Int] {
+  class IntBulkPutState extends BulkPutState[Int] {
     override def mapEntries = super.mapEntries
     override def operations = super.operations
     override def memory = super.memory
   }
-  private class IntBulkGetState extends BulkGetState[Int]
-  private class IntBulkRemovedGetState extends BulkRemovedGetState[Int]
+  class IntBulkGetState extends BulkGetState[Int]
+  class IntBulkRemovedGetState extends BulkRemovedGetState[Int]
 
   @AuxCounters
-  private class AnyRefBulkPutState extends BulkPutState[AnyRef] {
+  class AnyRefBulkPutState extends BulkPutState[AnyRef] {
     override def mapEntries = super.mapEntries
     override def operations = super.operations
     override def memory = super.memory
   }
-  private class AnyRefBulkGetState extends BulkGetState[AnyRef]
-  private class AnyRefBulkRemovedGetState extends BulkRemovedGetState[AnyRef]
+  class AnyRefBulkGetState extends BulkGetState[AnyRef]
+  class AnyRefBulkRemovedGetState extends BulkRemovedGetState[AnyRef]
 
 
   /** Put entries into the given map.
