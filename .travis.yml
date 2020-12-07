@@ -87,6 +87,15 @@ jobs:
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
+      - stage: test
+        name: build benchmarks (bootstrapped)
+        workspaces:
+          use: bootstrapped
+        script:
+          - set -e
+          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+          - sbt bench/Jmh/compile
+
       - stage: build
         name: language spec (Jekyll)
         language: ruby
