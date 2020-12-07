@@ -782,7 +782,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val info =
                 if (repr.originalFlagSet.is(Opaque)) {
                   val (info, alias) = defn.OpaqueTypeToBounds(rhs.tpe)
-                  sym.updateAttachment(new symbolTable.DottyOpaqueTypeAlias(alias))
+                  ctx.markAsOpaqueType(sym, alias)
                   info
                 }
                 else rhs.tpe

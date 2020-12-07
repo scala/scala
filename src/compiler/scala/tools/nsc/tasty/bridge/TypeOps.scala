@@ -105,6 +105,10 @@ trait TypeOps { self: TastyUniverse =>
       new CopyCompleter(underlying, originalFlagSet)
 
     def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
+      case u.PolyType(tparams, tpe) =>
+        val (bounds, alias) = OpaqueTypeToBounds(tpe)
+        (u.PolyType(tparams, bounds), u.PolyType(tparams, alias))
+
       case tpe: OpaqueTypeBounds => (tpe, tpe.alias)
 
       case _ =>
