@@ -157,6 +157,21 @@ object StringOps {
   }
 }
 
+/** Provides extension methods for strings.
+  * 
+  * Some of these methods treat strings as a plain collection of [[Char]]s
+  * without any regard for Unicode handling. Unless the user takes Unicode
+  * handling in to account or makes sure the strings don't require such handling,
+  * these methods may result in unpaired or invalidly paired surrogate code
+  * units.
+  * 
+  * @define unicodeunaware This method treats a string as a plain sequence of
+  *                        Char code units and makes no attempt to keep
+  *                        surrogate pairs or codepoint sequences together.
+  *                        The user is responsible for making sure such cases
+  *                        are handled correctly. Failing to do so may result in
+  *                        an invalid Unicode string.
+  */
 final class StringOps(private val s: String) extends AnyVal {
   import StringOps._
 
@@ -503,6 +518,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return          a new string consisting of all chars of this string
     *                   except that `replaced` chars starting from `from` are replaced
     *                   by `other`.
+    *  @note            $unicodeunaware
     */
   def patch(from: Int, other: IterableOnce[Char], replaced: Int): String =
     patch(from, other.iterator.mkString, replaced)
@@ -519,6 +535,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return          a new string consisting of all chars of this string
     *                   except that `replaced` chars starting from `from` are replaced
     *                   by `other`.
+    *  @note            $unicodeunaware
     */
   def patch(from: Int, other: String, replaced: Int): String = {
     val len = s.length
@@ -536,6 +553,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param  elem   the replacing element
     *  @return a new string which is a copy of this string with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
+    *  @note   $unicodeunaware
     */
   def updated(index: Int, elem: Char): String = {
     val sb = new JStringBuilder(s.length).append(s)
@@ -561,6 +579,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *               begins with the string `start` and ends with the string
     *               `end`. Inside, the string chars of this string are separated by
     *               the string `sep`.
+    *  @note        $unicodeunaware
     */
   final def mkString(start: String, sep: String, end: String): String =
     addString(new StringBuilder(), start, sep, end).toString
@@ -570,6 +589,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param sep   the separator string.
     *  @return      In the resulting string
     *               the chars of this string are separated by the string `sep`.
+    *  @note        $unicodeunaware
     */
   @inline final def mkString(sep: String): String =
     if (sep.isEmpty || s.length < 2) s
@@ -618,6 +638,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return  a string containing the elements greater than or equal to
     *           index `from` extending up to (but not including) index `until`
     *           of this string.
+    *  @note    $unicodeunaware
     */
   def slice(from: Int, until: Int): String = {
     val start = from max 0
@@ -1148,7 +1169,9 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Tests whether the string is not empty. */
   @`inline` def nonEmpty: Boolean = !s.isEmpty
 
-  /** Returns new sequence with elements in reversed order. */
+  /** Returns new sequence with elements in reversed order.
+    * @note $unicodeunaware
+    */
   def reverse: String = new JStringBuilder(s).reverse().toString
 
   /** An iterator yielding chars in reversed order.
@@ -1161,7 +1184,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** Creates a non-strict filter of this string.
     *
-    *  Note: the difference between `c filter p` and `c withFilter p` is that
+    *  @note the difference between `c filter p` and `c withFilter p` is that
     *        the former creates a new string, whereas the latter only
     *        restricts the domain of subsequent `map`, `flatMap`, `foreach`,
     *        and `withFilter` operations.
@@ -1174,22 +1197,34 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def withFilter(p: Char => Boolean): StringOps.WithFilter = new StringOps.WithFilter(p, s)
 
-  /** The rest of the string without its first char. */
+  /** The rest of the string without its first char.
+    * @note $unicodeunaware
+    */
   def tail: String = slice(1, s.length)
 
-  /** The initial part of the string without its last char. */
+  /** The initial part of the string without its last char.
+    * @note $unicodeunaware
+    */
   def init: String = slice(0, s.length-1)
 
-  /** A string containing the first `n` chars of this string. */
+  /** A string containing the first `n` chars of this string.
+    * @note $unicodeunaware
+    */
   def take(n: Int): String = slice(0, min(n, s.length))
 
-  /** The rest of the string without its `n` first chars. */
+  /** The rest of the string without its `n` first chars.
+    * @note $unicodeunaware
+    */
   def drop(n: Int): String = slice(min(n, s.length), s.length)
 
-  /** A string containing the last `n` chars of this string. */
+  /** A string containing the last `n` chars of this string.
+    * @note $unicodeunaware
+    */
   def takeRight(n: Int): String = drop(s.length - max(n, 0))
 
-  /** The rest of the string without its `n` last chars. */
+  /** The rest of the string without its `n` last chars.
+    * @note $unicodeunaware
+    */
   def dropRight(n: Int): String = take(s.length - max(n, 0))
 
   /** Iterates over the tails of this string. The first value will be this
@@ -1197,6 +1232,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * values the results of successive applications of `tail`.
     *
     *  @return   an iterator over all the tails of this string
+    *  @note     $unicodeunaware
     */
   def tails: Iterator[String] = iterateUntilEmpty(_.tail)
 
@@ -1205,6 +1241,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * values the results of successive applications of `init`.
     *
     *  @return  an iterator over all the inits of this string
+    *  @note    $unicodeunaware
     */
   def inits: Iterator[String] = iterateUntilEmpty(_.init)
 
@@ -1337,6 +1374,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param n the position at which to split.
     *  @return  a pair of strings consisting of the first `n`
     *           chars of this string, and the other chars.
+    *  @note    $unicodeunaware
     */
   def splitAt(n: Int): (String, String) = (take(n), drop(n))
 
@@ -1361,6 +1399,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param size the number of elements per group
     *  @return An iterator producing strings of size `size`, except the
     *          last will be less than size `size` if the elements don't divide evenly.
+    *  @note $unicodeunaware
     */
   def grouped(size: Int): Iterator[String] = new StringOps.GroupedIterator(s, size)
 
@@ -1392,7 +1431,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param f    the 'split function' mapping the elements of this string to an [[scala.util.Either]]
     *
     *  @return     a pair of strings: the first one made of those characters returned by `f` that were wrapped in [[scala.util.Left]], 
-    *              and the second one made of those wrapped in [[scala.util.Right]]. */
+    *              and the second one made of those wrapped in [[scala.util.Right]].
+    */
   def partitionMap(f: Char => Either[Char,Char]): (String, String) = {
     val res1, res2 = new JStringBuilder
     var i = 0
@@ -1442,6 +1482,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
+    *  @note         $unicodeunaware
     */
   def diff[B >: Char](that: Seq[B]): String = new WrappedString(s).diff(that).unwrap
 
@@ -1453,10 +1494,14 @@ final class StringOps(private val s: String) extends AnyVal {
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
+    * @note          $unicodeunaware
     */
   def intersect[B >: Char](that: Seq[B]): String = new WrappedString(s).intersect(that).unwrap
 
-  /** Selects all distinct chars of this string ignoring the duplicates. */
+  /** Selects all distinct chars of this string ignoring the duplicates.
+    *
+    * @note $unicodeunaware
+    */
   def distinct: String = new WrappedString(s).distinct.unwrap
 
   /** Selects all distinct chars of this string ignoring the duplicates as determined by `==` after applying
@@ -1465,6 +1510,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * @param f The transforming function whose result is used to determine the uniqueness of each element
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new string consisting of all the chars of this string without duplicates.
+    * @note $unicodeunaware
     */
   def distinctBy[B](f: Char => B): String = new WrappedString(s).distinctBy(f).unwrap
 
@@ -1478,6 +1524,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param  ord the ordering to be used to compare elements.
     *  @return     a string consisting of the chars of this string
     *              sorted according to the ordering `ord`.
+    *  @note       $unicodeunaware
     */
   def sorted[B >: Char](implicit ord: Ordering[B]): String = new WrappedString(s).sorted(ord).unwrap
 
@@ -1491,6 +1538,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *              the desired ordering.
     *  @return     a string consisting of the elements of this string
     *              sorted according to the comparison function `lt`.
+    *  @note       $unicodeunaware
     */
   def sortWith(lt: (Char, Char) => Boolean): String = new WrappedString(s).sortWith(lt).unwrap
 
@@ -1509,6 +1557,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return  a string consisting of the chars of this string
     *           sorted according to the ordering where `x < y` if
     *           `ord.lt(f(x), f(y))`.
+    *  @note    $unicodeunaware
     */
   def sortBy[B](f: Char => B)(implicit ord: Ordering[B]): String = new WrappedString(s).sortBy(f)(ord).unwrap
 
@@ -1522,7 +1571,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *               }}}
     *               That is, every key `k` is bound to a string of those elements `x`
     *               for which `f(x)` equals `k`.
-    *
+    *  @note        $unicodeunaware
     */
   def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).view.mapValues(_.unwrap).toMap
 
@@ -1535,6 +1584,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return An iterator producing strings of size `size`, except the
     *          last element (which may be the only element) will be truncated
     *          if there are fewer than `size` chars remaining to be grouped.
+    * @note    $unicodeunaware
     */
   def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.unwrap)
 
@@ -1550,6 +1600,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @return   An Iterator which traverses the possible n-element combinations of this string.
     *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
+    *  @note     $unicodeunaware
     */
   def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.unwrap)
 
@@ -1557,6 +1608,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @return   An Iterator which traverses the distinct permutations of this string.
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
+    *  @note     $unicodeunaware
     */
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
