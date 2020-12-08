@@ -89,6 +89,7 @@ jobs:
 
       - stage: test
         name: build benchmarks (bootstrapped)
+        if: type = pull_request OR repo != scala/scala
         workspaces:
           use: bootstrapped
         script:
