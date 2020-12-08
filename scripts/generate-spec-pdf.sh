@@ -4,11 +4,12 @@
 # "toc"                     -> treated just like another page, its location can be changed
 # "--window-status loaded"  -> when window.status is set to "loaded", wkhtmltopdf knows js is loaded
 
-ROOT_DIR=..
+THIS_SCRIPT_DIR=$(dirname $0)
+ROOT_DIR=$THIS_SCRIPT_DIR/..
 SPEC_SRC_DIR=$ROOT_DIR/spec
 SPEC_BUILD_DIR=$ROOT_DIR/build/spec
 
-WKHTML_OPTS="--print-media-type --window-status loaded --footer-center [page]"
+WKHTML_OPTS='--print-media-type --window-status loaded --footer-center [page] --javascript-delay 1000 --footer-font-name "Luxi Sans"'
 WKHTML_TOC="toc --xsl-style-sheet $SPEC_SRC_DIR/spec-toc.xslt"
 
 # exclude index.html, prepend SPEC_BUILD_DIR path

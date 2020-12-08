@@ -75,8 +75,8 @@ AttValue      ::=    ‘"’ {CharQ | CharRef} ‘"’
 
 ScalaExpr     ::=    Block
 
-CharData      ::=   { CharNoRef } $\textit{ without}$ {CharNoRef}‘{’CharB {CharNoRef}
-                                  $\textit{ and without}$ {CharNoRef}‘]]>’{CharNoRef}
+CharData      ::=   { CharNoRef } ´\textit{ without}´ {CharNoRef}‘{’CharB {CharNoRef}
+                                  ´\textit{ and without}´ {CharNoRef}‘]]>’{CharNoRef}
 ```
 
 <!-- {% raw  %} sigh: liquid borks on the double brace below; brace yourself, liquid! -->
@@ -89,17 +89,17 @@ Thus, `{{` represents the XML text `{` and does not introduce an embedded Scala 
 
 ```ebnf
 BaseChar, CDSect, Char, Comment, CombiningChar, Ideographic, NameChar, PI, S, Reference
-              ::=  $\textit{“as in W3C XML”}$
+              ::=  ´\textit{“as in W3C XML”}´
 
-Char1         ::=  Char $\textit{ without}$ ‘<’ | ‘&’
-CharQ         ::=  Char1 $\textit{ without}$ ‘"’
-CharA         ::=  Char1 $\textit{ without}$ ‘'’
-CharB         ::=  Char1 $\textit{ without}$ ‘{’
+Char1         ::=  Char ´\textit{ without}´ ‘<’ | ‘&’
+CharQ         ::=  Char1 ´\textit{ without}´ ‘"’
+CharA         ::=  Char1 ´\textit{ without}´ ‘'’
+CharB         ::=  Char1 ´\textit{ without}´ ‘{’
 
 Name          ::=  XNameStart {NameChar}
 
 XNameStart    ::= ‘_’ | BaseChar | Ideographic
-                 $\textit{ (as in W3C XML, but without }$ ‘:’$)$
+                 ´\textit{ (as in W3C XML, but without }´ ‘:’´)´
 ```
 
 ## XML patterns

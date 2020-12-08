@@ -15,5 +15,9 @@
       {% endif %}
     {% endfor %}
   </ol>
-
 </div>
+
+<p class="print-only">
+  This document was generated from <a href="{{ site.baseurl}}/../{{ site.latestScalaVersion }}/">
+  HTML version of Scala {{ site.latestScalaVersion }} spec</a>
+</p>

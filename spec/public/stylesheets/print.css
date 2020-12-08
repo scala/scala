@@ -2,11 +2,15 @@
 
 body {
   padding: 0px;
-  margin: 0.5em;
+  margin: 0px; 
 }
 
 .anchor, #navigation, .to_top, .version-notice, .hidden-print {
   display: none !important;
+}
+
+.print-only {
+  display: block;
 }
 
 #content-container {
@@ -15,10 +19,10 @@ body {
 }
 
 /* no scrollbars, jump to next row.. */
-/*.highlight pre code {
+.highlight pre code {
   overflow: hidden;
   white-space: pre-wrap;
-}*/
+}
 
 main {
   position: relative;
@@ -29,4 +33,10 @@ main {
   min-width: none;
   min-height: none;
   background-color: #FFF;
+}
+
+/* Avoid clipped headings https://github.com/pdfkit/pdfkit/issues/113#issuecomment-7027798 */
+h2, h3, h4, h5, h6 {
+  padding: 0px;
+  margin: 0px;
 }

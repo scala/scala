@@ -26,10 +26,10 @@ package clause.
 A _compilation unit_
 
 ```scala
-package $p_1$;
-$\ldots$
-package $p_n$;
-$\mathit{stats}$
+package ´p_1´;
+´\ldots´
+package ´p_n´;
+´\mathit{stats}´
 ```
 
 starting with one or more package
@@ -37,10 +37,10 @@ clauses is equivalent to a compilation unit consisting of the
 packaging
 
 ```scala
-package $p_1$ { $\ldots$
-  package $p_n$ {
-    $\mathit{stats}$
-  } $\ldots$
+package ´p_1´ { ´\ldots´
+  package ´p_n´ {
+    ´\mathit{stats}´
+  } ´\ldots´
 }
 ```
 
@@ -64,15 +64,15 @@ objects and packages.  Unlike other objects, packages are not introduced
 by a definition.  Instead, the set of members of a package is determined by
 packagings.
 
-A packaging `package $p$ { $\mathit{ds}$ }` injects all
-definitions in $\mathit{ds}$ as members into the package whose qualified name
-is $p$. Members of a package are called _top-level_ definitions.
-If a definition in $\mathit{ds}$ is labeled `private`, it is
+A packaging `package ´p´ { ´\mathit{ds}´ }` injects all
+definitions in ´\mathit{ds}´ as members into the package whose qualified name
+is ´p´. Members of a package are called _top-level_ definitions.
+If a definition in ´\mathit{ds}´ is labeled `private`, it is
 visible only for other members in the package.
 
-Inside the packaging, all members of package $p$ are visible under their
+Inside the packaging, all members of package ´p´ are visible under their
 simple names. However this rule does not extend to members of enclosing
-packages of $p$ that are designated by a prefix of the path $p$.
+packages of ´p´ that are designated by a prefix of the path ´p´.
 
 ```scala
 package org.net.prj {
@@ -84,7 +84,7 @@ all members of package `org.net.prj` are visible under their
 simple names, but members of packages `org` or `org.net` require
 explicit qualification or imports.
 
-Selections $p$.$m$ from $p$ as well as imports from $p$
+Selections ´p´.´m´ from ´p´ as well as imports from ´p´
 work as for objects. However, unlike other objects, packages may not
 be used as values. It is illegal to have a package with the same fully
 qualified name as a module or a class.
@@ -100,14 +100,14 @@ are visible to each other without qualification.
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
 ```
 
-A _package object_ `package object $p$ extends $t$` adds the
-members of template $t$ to the package $p$. There can be only one
+A _package object_ `package object ´p´ extends ´t´` adds the
+members of template ´t´ to the package ´p´. There can be only one
 package object per package. The standard naming convention is to place
 the definition above in a file named `package.scala` that's
-located in the directory corresponding to package $p$.
+located in the directory corresponding to package ´p´.
 
 The package object should not define a member with the same name as
-one of the top-level objects or classes defined in package $p$. If
+one of the top-level objects or classes defined in package ´p´. If
 there is a name conflict, the behavior of the program is currently
 undefined. It is expected that this restriction will be lifted in a
 future version of Scala.
@@ -120,8 +120,8 @@ QualId           ::=  id {‘.’ id}
 
 A reference to a package takes the form of a qualified identifier.
 Like all other references, package references are relative. That is,
-a package reference starting in a name $p$ will be looked up in the
-closest enclosing scope that defines a member named $p$.
+a package reference starting in a name ´p´ will be looked up in the
+closest enclosing scope that defines a member named ´p´.
 
 If a package name is shadowed, it's possible to refer to its
 fully-qualified name by prefixing it with
@@ -171,8 +171,8 @@ passed to the `main` method as a parameter of type
 The `main` method of a program can be directly defined in the
 object, or it can be inherited. The scala library defines a special class
 `scala.App` whose body acts as a `main` method.
-An objects $m$ inheriting from this class is thus a program,
-which executes the initialization code of the object $m$.
+An objects ´m´ inheriting from this class is thus a program,
+which executes the initialization code of the object ´m´.
 
 ###### Example
 The following example will create a hello world program by defining

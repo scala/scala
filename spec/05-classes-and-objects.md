@@ -31,20 +31,20 @@ A _template_ defines the type signature, behavior and initial state of a
 trait or class of objects or of a single object. Templates form part of
 instance creation expressions, class definitions, and object
 definitions.  A template
-`$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }`
-consists of a constructor invocation $sc$
+`´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´ { ´\mathit{stats}´ }`
+consists of a constructor invocation ´sc´
 which defines the template's _superclass_, trait references
-`$mt_1 , \ldots , mt_n$` $(n \geq 0)$, which define the
-template's _traits_, and a statement sequence $\mathit{stats}$ which
+`´mt_1 , \ldots , mt_n´` ´(n \geq 0)´, which define the
+template's _traits_, and a statement sequence ´\mathit{stats}´ which
 contains initialization code and additional member definitions for the
 template.
 
-Each trait reference $mt_i$ must denote a [trait](#traits).
-By contrast, the superclass constructor $sc$ normally refers to a
+Each trait reference ´mt_i´ must denote a [trait](#traits).
+By contrast, the superclass constructor ´sc´ normally refers to a
 class which is not a trait. It is possible to write a list of
 parents that starts with a trait reference, e.g.
-`$mt_1$ with $\ldots$ with $mt_n$`. In that case the list
-of parents is implicitly extended to include the supertype of $mt_1$
+`´mt_1´ with ´\ldots´ with ´mt_n´`. In that case the list
+of parents is implicitly extended to include the supertype of ´mt_1´
 as the first parent type. The new supertype must have at least one
 constructor that does not take parameters.  In the following, we will
 always assume that this implicit extension has been performed, so that
@@ -52,8 +52,8 @@ the first parent class of a template is a regular superclass
 constructor, not a trait reference.
 
 The list of parents of a template must be well-formed. This means that
-the class denoted by the superclass constructor $sc$ must be a
-subclass of the superclasses of all the traits $mt_1 , \ldots , mt_n$.
+the class denoted by the superclass constructor ´sc´ must be a
+subclass of the superclasses of all the traits ´mt_1 , \ldots , mt_n´.
 In other words, the non-trait classes inherited by a template form a
 chain in the inheritance hierarchy which starts with the template's
 superclass.
@@ -62,35 +62,34 @@ The _least proper supertype_ of a template is the class type or
 [compound type](03-types.html#compound-types) consisting of all its parent
 class types.
 
-The statement sequence $\mathit{stats}$ contains member definitions that
-define new members or override members in the parent classes.  If the
-template forms part of an abstract class or trait definition, then
-$\mathit{stats}$ may also contain declarations of abstract members.
-If the template forms part of a concrete class definition,
-$\mathit{stats}$ may still contain declarations of abstract type members, but
-not of abstract term members.  Furthermore, $\mathit{stats}$ may in any case
-also contain strictly evaluated expressions: these are executed in the order they are
-given as part of the initialization of a template, even if they appear in
-the definition of overridden members.
+The statement sequence ´\mathit{stats}´ contains member definitions that
+define new members or overwrite members in the parent classes.  If the
+template forms part of an abstract class or trait definition, the
+statement part ´\mathit{stats}´ may also contain declarations of abstract
+members. If the template forms part of a concrete class definition,
+´\mathit{stats}´ may still contain declarations of abstract type members, but
+not of abstract term members.  Furthermore, ´\mathit{stats}´ may in any case
+also contain expressions; these are executed in the order they are
+given as part of the initialization of a template.
 
 The sequence of template statements may be prefixed with a formal
-parameter definition and an arrow, e.g. `$x$ =>`, or
-`$x$:$T$ =>`.  If a formal parameter is given, it can be
+parameter definition and an arrow, e.g. `´x´ =>`, or
+`´x´:´T´ =>`.  If a formal parameter is given, it can be
 used as an alias for the reference `this` throughout the
 body of the template.
-If the formal parameter comes with a type $T$, this definition affects
-the _self type_ $S$ of the underlying class or object as follows:  Let $C$ be the type
+If the formal parameter comes with a type ´T´, this definition affects
+the _self type_ ´S´ of the underlying class or object as follows:  Let ´C´ be the type
 of the class or trait or object defining the template.
-If a type $T$ is given for the formal self parameter, $S$
-is the greatest lower bound of $T$ and $C$.
-If no type $T$ is given, $S$ is just $C$.
-Inside the template, the type of `this` is assumed to be $S$.
+If a type ´T´ is given for the formal self parameter, ´S´
+is the greatest lower bound of ´T´ and ´C´.
+If no type ´T´ is given, ´S´ is just ´C´.
+Inside the template, the type of `this` is assumed to be ´S´.
 
 The self type of a class or object must conform to the self types of
-all classes which are inherited by the template $t$.
+all classes which are inherited by the template ´t´.
 
 A second form of self type annotation reads just
-`this: $S$ =>`. It prescribes the type $S$ for `this`
+`this: ´S´ =>`. It prescribes the type ´S´ for `this`
 without introducing an alias name for it.
 
 ###### Example
@@ -116,21 +115,21 @@ A template may have a Java class as its superclass and Java interfaces as its mi
 
 **Template Evaluation**
 
-Consider a template `$sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }`.
+Consider a template `´sc´ with ´mt_1´ with ´mt_n´ { ´\mathit{stats}´ }`.
 
 If this is the template of a [trait](#traits) then its _mixin-evaluation_
-consists of an evaluation of the statement sequence $\mathit{stats}$.
+consists of an evaluation of the statement sequence ´\mathit{stats}´.
 
 If this is not a template of a trait, then its _evaluation_
 consists of the following steps.
 
-- First, the superclass constructor $sc$ is
+- First, the superclass constructor ´sc´ is
   [evaluated](#constructor-invocations).
 - Then, all base classes in the template's [linearization](#class-linearization)
-  up to the template's superclass denoted by $sc$ are
+  up to the template's superclass denoted by ´sc´ are
   mixin-evaluated. Mixin-evaluation happens in reverse order of
   occurrence in the linearization.
-- Finally, the statement sequence $\mathit{stats}\,$ is evaluated.
+- Finally, the statement sequence ´\mathit{stats}\,´ is evaluated.
 
 ###### Delayed Initialization
 This statement sequence constitutes the initialization code for an object
@@ -157,46 +156,47 @@ Constructor invocations define the type, members, and initial state of
 objects created by an instance creation expression, or of parts of an
 object's definition which are inherited by a class or object
 definition. A constructor invocation is a function application
-`$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`, where $x$ is a
-[stable identifier](03-types.html#paths), $c$ is a type name which either designates a
-class or defines an alias type for one, $\mathit{targs}$ is a type argument
-list, $\mathit{args}_1 , \ldots , \mathit{args}_n$ are argument lists, and there is a
+`´x´.´c´[´\mathit{targs}´](´\mathit{args}_1´)´\ldots´(´\mathit{args}_n´)`, where ´x´ is a
+[stable identifier](03-types.html#paths), ´c´ is a type name which either designates a
+class or defines an alias type for one, ´\mathit{targs}´ is a type argument
+list, ´\mathit{args}_1 , \ldots , \mathit{args}_n´ are argument lists, and there is a
 constructor of that class which is [applicable](06-expressions.html#function-applications)
 to the given arguments. If the constructor invocation uses named or
 default arguments, it is transformed into a block expression using the
 same transformation as described [here](sec:named-default).
 
-The prefix `$x$.` can be omitted.  A type argument list
-can be given only if the class $c$ takes type parameters.  Even then
+The prefix `´x´.` can be omitted.  A type argument list
+can be given only if the class ´c´ takes type parameters.  Even then
 it can be omitted, in which case a type argument list is synthesized
 using [local type inference](06-expressions.html#local-type-inference). If no explicit
 arguments are given, an empty list `()` is implicitly supplied.
 
 An evaluation of a constructor invocation
-`$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`
+`´x´.´c´[´\mathit{targs}´](´\mathit{args}_1´)´\ldots´(´\mathit{args}_n´)`
 consists of the following steps:
 
-- First, the prefix $x$ is evaluated.
-- Then, the arguments $\mathit{args}_1 , \ldots , \mathit{args}_n$ are evaluated from
+- First, the prefix ´x´ is evaluated.
+- Then, the arguments ´\mathit{args}_1 , \ldots , \mathit{args}_n´ are evaluated from
   left to right.
 - Finally, the class being constructed is initialized by evaluating the
-  template of the class referred to by $c$.
+  template of the class referred to by ´c´.
 
 ### Class Linearization
 
 The classes reachable through transitive closure of the direct
-inheritance relation from a class $C$ are called the _base classes_ of $C$.  Because of mixins, the inheritance relationship
+inheritance relation from a class ´C´ are called the _base classes_ of ´C´.  Because of mixins, the inheritance relationship
 on base classes forms in general a directed acyclic graph. A
 linearization of this graph is defined as follows.
 
 ###### Definition: linearization
-Let $C$ be a class with template
-`$C_1$ with ... with $C_n$ { $\mathit{stats}$ }`.
-The _linearization_ of $C$, $\mathcal{L}(C)$ is defined as follows:
+Let ´C´ be a class with template
+´C_1´ with ... with ´C_n´ { ´\mathit{stats}´ }`.
+The _linearization_ of ´C´, ´\mathcal{L}(C)´ is defined as follows:
+$$
+\mathcal{L}(C) = C, \mathcal{L}(C_n) \; \vec{+} \; \ldots \; \vec{+} \; \mathcal{L}(C_1)
+$$
 
-$$\mathcal{L}(C) = C, \mathcal{L}(C_n) \; \vec{+} \; \ldots \; \vec{+} \; \mathcal{L}(C_1)$$
-
-Here $\vec{+}$ denotes concatenation where elements of the right operand
+Here ´\vec{+}´ denotes concatenation where elements of the right operand
 replace identical elements of the left operand:
 
 $$
@@ -223,8 +223,8 @@ Then the linearization of class `Iter` is
 ```
 
 Note that the linearization of a class refines the inheritance
-relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
-linearization where both $C$ and $D$ occur.
+relation: if ´C´ is a subclass of ´D´, then ´C´ precedes ´D´ in any
+linearization where both ´C´ and ´D´ occur.
 [Linearization](#definition:-linearization) also satisfies the property that
 a linearization of a class always contains the linearization of its direct superclass as a suffix.
 
@@ -246,57 +246,57 @@ which is not a suffix of the linearization of `Iter`.
 
 ### Class Members
 
-A class $C$ defined by a template `$C_1$ with $\ldots$ with $C_n$ { $\mathit{stats}$ }`
+A class ´C´ defined by a template `´C_1´ with ´\ldots´ with ´C_n´ { ´\mathit{stats}´ }`
 can define members in its statement sequence
-$\mathit{stats}$ and can inherit members from all parent classes.  Scala
+´\mathit{stats}´ and can inherit members from all parent classes.  Scala
 adopts Java and C\#'s conventions for static overloading of
 methods. It is thus possible that a class defines and/or inherits
 several methods with the same name.  To decide whether a defined
-member of a class $C$ overrides a member of a parent class, or whether
-the two co-exist as overloaded variants in $C$, Scala uses the
+member of a class ´C´ overrides a member of a parent class, or whether
+the two co-exist as overloaded variants in ´C´, Scala uses the
 following definition of _matching_ on members:
 
 ###### Definition: matching
-A member definition $M$ _matches_ a member definition $M'$, if $M$
-and $M'$ bind the same name, and one of following holds.
+A member definition ´M´ _matches_ a member definition ´M'´, if ´M´
+and ´M'´ bind the same name, and one of following holds.
 
-1. Neither $M$ nor $M'$ is a method definition.
-2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
-3. $M$ defines a parameterless method and $M'$ defines a method
+1. Neither ´M´ nor ´M'´ is a method definition.
+2. ´M´ and ´M'´ define both monomorphic methods with equivalent argument types.
+3. ´M´ defines a parameterless method and ´M'´ defines a method
    with an empty parameter list `()` or _vice versa_.
-4. $M$ and $M'$ define both polymorphic methods with
-   equal number of argument types $\overline T$, $\overline T'$
+4. ´M´ and ´M'´ define both polymorphic methods with
+   equal number of argument types ´\overline T´, ´\overline T'´
    and equal numbers of type parameters
-   $\overline t$, $\overline t'$, say, and  $\overline T' = [\overline t'/\overline t]\overline T$.
+   ´\overline t´, ´\overline t'´, say, and  ´\overline T' = [\overline t'/\overline t]\overline T´.
 
 <!--
 every argument type
-$T_i$ of $M$ is equal to the corresponding argument type $T`_i$ of
-$M`$ where every occurrence of a type parameter $t`$ of $M`$ has been replaced by the corresponding type parameter $t$ of $M$.
+´T_i´ of ´M´ is equal to the corresponding argument type ´T`_i´ of
+´M`´ where every occurrence of a type parameter ´t`´ of ´M`´ has been replaced by the corresponding type parameter ´t´ of ´M´.
 -->
 
 Member definitions fall into two categories: concrete and abstract.
-Members of class $C$ are either _directly defined_ (i.e. they appear in
-$C$'s statement sequence $\mathit{stats}$) or they are _inherited_.  There are two rules
+Members of class ´C´ are either _directly defined_ (i.e. they appear in
+´C´'s statement sequence ´\mathit{stats}´) or they are _inherited_.  There are two rules
 that determine the set of members of a class, one for each category:
 
-A _concrete member_ of a class $C$ is any concrete definition $M$ in
-some class $C_i \in \mathcal{L}(C)$, except if there is a preceding class
-$C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines a concrete
-member $M'$ matching $M$.
+A _concrete member_ of a class ´C´ is any concrete definition ´M´ in
+some class ´C_i \in \mathcal{L}(C)´, except if there is a preceding class
+´C_j \in \mathcal{L}(C)´ where ´j < i´ which directly defines a concrete
+member ´M'´ matching ´M´.
 
-An _abstract member_ of a class $C$ is any abstract definition $M$
-in some class $C_i \in \mathcal{L}(C)$, except if $C$ contains already a
-concrete member $M'$ matching $M$, or if there is a preceding class
-$C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines an abstract
-member $M'$ matching $M$.
+An _abstract member_ of a class ´C´ is any abstract definition ´M´
+in some class ´C_i \in \mathcal{L}(C)´, except if ´C´ contains already a
+concrete member ´M'´ matching ´M´, or if there is a preceding class
+´C_j \in \mathcal{L}(C)´ where ´j < i´ which directly defines an abstract
+member ´M'´ matching ´M´.
 
 This definition also determines the [overriding](#overriding) relationships
-between matching members of a class $C$ and its parents.
+between matching members of a class ´C´ and its parents.
 First, a concrete definition always overrides an abstract definition.
-Second, for definitions $M$ and $M$' which are both concrete or both abstract,
-$M$ overrides $M'$ if $M$ appears in a class that precedes (in the
-linearization of $C$) the class in which $M'$ is defined.
+Second, for definitions ´M´ and ´M´' which are both concrete or both abstract,
+´M´ overrides ´M'´ if ´M´ appears in a class that precedes (in the
+linearization of ´C´) the class in which ´M'´ is defined.
 
 It is an error if a template directly defines two matching members. It
 is also an error if a template contains two members (directly defined
@@ -322,31 +322,31 @@ trait `B`.
 
 <!-- TODO: Explain that classes cannot override each other -->
 
-A member $M$ of class $C$ that [matches](#class-members)
-a non-private member $M'$ of a
-base class of $C$ is said to _override_ that member.  In this case
-the binding of the overriding member $M$ must [subsume](03-types.html#conformance)
-the binding of the overridden member $M'$.
-Furthermore, the following restrictions on modifiers apply to $M$ and
-$M'$:
+A member ´M´ of class ´C´ that [matches](#class-members)
+a non-private member ´M'´ of a
+base class of ´C´ is said to _override_ that member.  In this case
+the binding of the overriding member ´M´ must [subsume](03-types.html#conformance)
+the binding of the overridden member ´M'´.
+Furthermore, the following restrictions on modifiers apply to ´M´ and
+´M'´:
 
-- $M'$ must not be labeled `final`.
-- $M$ must not be [`private`](#modifiers).
-- If $M$ is labeled `private[$C$]` for some enclosing class or package $C$,
-  then $M'$ must be labeled `private[$C'$]` for some class or package $C'$ where
-  $C'$ equals $C$ or $C'$ is contained in $C$.
+- ´M'´ must not be labeled `final`.
+- ´M´ must not be [`private`](#modifiers).
+- If ´M´ is labeled `private[´C´]` for some enclosing class or package ´C´,
+  then ´M'´ must be labeled `private[´C'´]` for some class or package ´C'´ where
+  ´C'´ equals ´C´ or ´C'´ is contained in ´C´.
 
 <!-- TODO: check whether this is accurate -->
-- If $M$ is labeled `protected`, then $M'$ must also be
+- If ´M´ is labeled `protected`, then ´M'´ must also be
   labeled `protected`.
-- If $M'$ is not an abstract member, then $M$ must be labeled `override`.
+- If ´M'´ is not an abstract member, then ´M´ must be labeled `override`.
   Furthermore, one of two possibilities must hold:
-    - either $M$ is defined in a subclass of the class where is $M'$ is defined,
-    - or both $M$ and $M'$ override a third member $M''$ which is defined
-      in a base class of both the classes containing $M$ and $M'$
-- If $M'$ is [incomplete](#modifiers) in $C$ then $M$ must be
+    - either ´M´ is defined in a subclass of the class where is ´M'´ is defined,
+    - or both ´M´ and ´M'´ override a third member ´M''´ which is defined
+      in a base class of both the classes containing ´M´ and ´M'´
+- If ´M'´ is [incomplete](#modifiers) in ´C´ then ´M´ must be
   labeled `abstract override`.
-- If $M$ and $M'$ are both concrete value definitions, then either none
+- If ´M´ and ´M'´ are both concrete value definitions, then either none
   of them is marked `lazy` or both must be marked `lazy`.
 
 - A stable member can only be overridden by a stable member.
@@ -363,8 +363,8 @@ bound may not override an abstract type member which does not have a
 volatile upper bound.
 
 A special rule concerns parameterless methods. If a parameterless
-method defined as `def $f$: $T$ = ...` or `def $f$ = ...` overrides a method of
-type $()T'$ which has an empty parameter list, then $f$ is also
+method defined as `def ´f´: ´T´ = ...` or `def ´f´ = ...` overrides a method of
+type ´()T'´ which has an empty parameter list, then ´f´ is also
 assumed to have an empty parameter list.
 
 An overriding method inherits all default arguments from the definition
@@ -397,14 +397,14 @@ class C extends A with B { type T <: C }
 
 ### Inheritance Closure
 
-Let $C$ be a class type. The _inheritance closure_ of $C$ is the
-smallest set $\mathscr{S}$ of types such that
+Let ´C´ be a class type. The _inheritance closure_ of ´C´ is the
+smallest set ´\mathscr{S}´ of types such that
 
-- $C$ is in $\mathscr{S}$.
-- If $T$ is in $\mathscr{S}$, then every type $T'$ which forms syntactically
-  a part of $T$ is also in $\mathscr{S}$.
-- If $T$ is a class type in $\mathscr{S}$, then all [parents](#templates)
-  of $T$ are also in $\mathscr{S}$.
+- ´C´ is in ´\mathscr{S}´.
+- If ´T´ is in ´\mathscr{S}´, then every type ´T'´ which forms syntactically
+  a part of ´T´ is also in ´\mathscr{S}´.
+- If ´T´ is a class type in ´\mathscr{S}´, then all [parents](#templates)
+  of ´T´ are also in ´\mathscr{S}´.
 
 It is a static error if the inheritance closure of a class type
 consists of an infinite number of types. (This restriction is
@@ -424,13 +424,13 @@ which serves to define certain field values before the supertype
 constructor is called. In a template
 
 ```scala
-{ val $p_1$: $T_1$ = $e_1$
+{ val ´p_1´: ´T_1´ = ´e_1´
   ...
-  val $p_n$: $T_n$ = $e_n$
-} with $sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }
+  val ´p_n´: ´T_n´ = ´e_n´
+} with ´sc´ with ´mt_1´ with ´mt_n´ { ´\mathit{stats}´ }
 ```
 
-The initial pattern definitions of $p_1 , \ldots , p_n$ are called
+The initial pattern definitions of ´p_1 , \ldots , p_n´ are called
 _early definitions_. They define fields
 which form part of the template. Every early definition must define
 at least one variable.
@@ -507,24 +507,24 @@ declaration in a template.  Such members can be accessed only from
 within the directly enclosing template and its companion module or
 [companion class](#object-definitions).
 
-A `private` modifier can be _qualified_ with an identifier $C$ (e.g.
-`private[$C$]`) that must denote a class or package enclosing the definition.
+A `private` modifier can be _qualified_ with an identifier ´C´ (e.g.
+`private[´C´]`) that must denote a class or package enclosing the definition.
 Members labeled with such a modifier are accessible respectively only from code
-inside the package $C$ or only from code inside the class $C$ and its
+inside the package ´C´ or only from code inside the class ´C´ and its
 [companion module](#object-definitions).
 
 A different form of qualification is `private[this]`. A member
-$M$ marked with this modifier is called _object-protected_; it can be accessed only from within
-the object in which it is defined. That is, a selection $p.M$ is only
-legal if the prefix is `this` or `$O$.this`, for some
-class $O$ enclosing the reference. In addition, the restrictions for
+´M´ marked with this modifier is called _object-protected_; it can be accessed only from within
+the object in which it is defined. That is, a selection ´p.M´ is only
+legal if the prefix is `this` or `´O´.this`, for some
+class ´O´ enclosing the reference. In addition, the restrictions for
 unqualified `private` apply.
 
 Members marked private without a qualifier are called _class-private_,
 whereas members labeled with `private[this]`
 are called _object-private_.  A member _is private_ if it is
 either class-private or object-private, but not if it is marked
-`private[$C$]` where $C$ is an identifier; in the latter
+`private[´C´]` where ´C´ is an identifier; in the latter
 case the member is called _qualified private_.
 
 Class-private or object-private members may not be abstract, and may
@@ -538,27 +538,27 @@ Protected members of a class can be accessed from within
   - all templates that have the defining class as a base class,
   - the companion module of any of those classes.
 
-A `protected` modifier can be qualified with an identifier $C$ (e.g.
-`protected[$C$]`) that must denote a class or package enclosing the definition.
+A `protected` modifier can be qualified with an identifier ´C´ (e.g.
+`protected[´C´]`) that must denote a class or package enclosing the definition.
 Members labeled with such a modifier are also accessible respectively from all
-code inside the package $C$ or from all code inside the class $C$ and its
+code inside the package ´C´ or from all code inside the class ´C´ and its
 [companion module](#object-definitions).
 
-A protected identifier $x$ may be used as a member name in a selection
-`$r$.$x$` only if one of the following applies:
+A protected identifier ´x´ may be used as a member name in a selection
+`´r´.´x´` only if one of the following applies:
   - The access is within the template defining the member, or, if
-    a qualification $C$ is given, inside the package $C$,
-    or the class $C$, or its companion module, or
-  - $r$ is one of the reserved words `this` and
+    a qualification ´C´ is given, inside the package ´C´,
+    or the class ´C´, or its companion module, or
+  - ´r´ is one of the reserved words `this` and
     `super`, or
-  - $r$'s type conforms to a type-instance of the
+  - ´r´'s type conforms to a type-instance of the
     class which contains the access.
 
 A different form of qualification is `protected[this]`. A member
-$M$ marked with this modifier is called _object-protected_; it can be accessed only from within
-the object in which it is defined. That is, a selection $p.M$ is only
-legal if the prefix is `this` or `$O$.this`, for some
-class $O$ enclosing the reference. In addition, the restrictions for
+´M´ marked with this modifier is called _object-protected_; it can be accessed only from within
+the object in which it is defined. That is, a selection ´p.M´ is only
+legal if the prefix is `this` or `´O´.this`, for some
+class ´O´ enclosing the reference. In addition, the restrictions for
 unqualified `protected` apply.
 
 ### `override`
@@ -573,10 +573,10 @@ The `override` modifier has an additional significance when
 combined with the `abstract` modifier.  That modifier combination
 is only allowed for value members of traits.
 
-We call a member $M$ of a template _incomplete_ if it is either
+We call a member ´M´ of a template _incomplete_ if it is either
 abstract (i.e. defined by a declaration), or it is labeled
 `abstract` and `override` and
-every member overridden by $M$ is again incomplete.
+every member overridden by ´M´ is again incomplete.
 
 Note that the `abstract override` modifier combination does not
 influence the concept whether a member is concrete or abstract. A
@@ -691,64 +691,64 @@ ClassTemplateOpt  ::=  ‘extends’ ClassTemplate | [[‘extends’] TemplateBo
 The most general form of class definition is
 
 ```scala
-class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\quad(n \geq 0)$.
+class ´c´[´\mathit{tps}\,´] ´as´ ´m´(´\mathit{ps}_1´)´\ldots´(´\mathit{ps}_n´) extends ´t´    ´\quad(n \geq 0)´.
 ```
 
 Here,
 
-  - $c$ is the name of the class to be defined.
-  - $\mathit{tps}$ is a non-empty list of type parameters of the class
+  - ´c´ is the name of the class to be defined.
+  - ´\mathit{tps}´ is a non-empty list of type parameters of the class
     being defined.  The scope of a type parameter is the whole class
     definition including the type parameter section itself.  It is
     illegal to define two type parameters with the same name.  The type
-    parameter section `[$\mathit{tps}\,$]` may be omitted. A class with a type
+    parameter section `[´\mathit{tps}\,´]` may be omitted. A class with a type
     parameter section is called _polymorphic_, otherwise it is called
     _monomorphic_.
-  - $as$ is a possibly empty sequence of
+  - ´as´ is a possibly empty sequence of
     [annotations](11-annotations.html#user-defined-annotations).
     If any annotations are given, they apply to the primary constructor of the
     class.
-  - $m$ is an [access modifier](#modifiers) such as
+  - ´m´ is an [access modifier](#modifiers) such as
     `private` or `protected`, possibly with a qualification.
     If such an access modifier is given it applies to the primary constructor of the class.
-  - $(\mathit{ps}\_1)\ldots(\mathit{ps}\_n)$ are formal value parameter clauses for
+  - ´(\mathit{ps}\_1)\ldots(\mathit{ps}\_n)´ are formal value parameter clauses for
     the _primary constructor_ of the class. The scope of a formal value parameter includes
-    all subsequent parameter sections and the template $t$. However, a formal
-    value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
+    all subsequent parameter sections and the template ´t´. However, a formal
+    value parameter may not form part of the types of any of the parent classes or members of the class template ´t´.
     It is illegal to define two formal value parameters with the same name.
 
     If a class has no formal parameter section that is not implicit, an empty parameter section `()` is assumed.
 
-    If a formal parameter declaration $x: T$ is preceded by a `val`
+    If a formal parameter declaration ´x: T´ is preceded by a `val`
     or `var` keyword, an accessor (getter) [definition](04-basic-declarations-and-definitions.html#variable-declarations-and-definitions)
     for this parameter is implicitly added to the class.
 
-    The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter.
-    If the introducing keyword is `var`, a setter accessor [`$x$_=`](04-basic-declarations-and-definitions.html#variable-declarations-and-definitions) is also implicitly added to the class.
-    In invocation of that setter  `$x$_=($e$)` changes the value of the parameter to the result of evaluating $e$.
+    The getter introduces a value member ´x´ of class ´c´ that is defined as an alias of the parameter.
+    If the introducing keyword is `var`, a setter accessor [`´x´_=`](04-basic-declarations-and-definitions.html#variable-declarations-and-definitions) is also implicitly added to the class.
+    In invocation of that setter  `´x´_=(´e´)` changes the value of the parameter to the result of evaluating ´e´.
 
     The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s).
     When access modifiers are given for a parameter, but no `val` or `var` keyword, `val` is assumed.
     A formal parameter prefixed by `val` or `var` may not at the same time be a [call-by-name parameter](04-basic-declarations-and-definitions.html#by-name-parameters).
 
-  - $t$ is a [template](#templates) of the form
+  - ´t´ is a [template](#templates) of the form
 
     ```scala
-    $sc$ with $mt_1$ with $\ldots$ with $mt_m$ { $\mathit{stats}$ } // $m \geq 0$
+    ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_m´ { ´\mathit{stats}´ } // ´m \geq 0´
     ```
 
     which defines the base classes, behavior and initial state of objects of
     the class. The extends clause
-    `extends $sc$ with $mt_1$ with $\ldots$ with $mt_m$`
+    `extends ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_m´`
     can be omitted, in which case
     `extends scala.AnyRef` is assumed.  The class body
-    `{ $\mathit{stats}$ }` may also be omitted, in which case the empty body
+    `{ ´\mathit{stats}´ }` may also be omitted, in which case the empty body
     `{}` is assumed.
 
-This class definition defines a type `$c$[$\mathit{tps}\,$]` and a constructor
-which when applied to parameters conforming to types $\mathit{ps}$
-initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
-$t$.
+This class definition defines a type `´c´[´\mathit{tps}\,´]` and a constructor
+which when applied to parameters conforming to types ´\mathit{ps}´
+initializes instances of type `´c´[´\mathit{tps}\,´]` by evaluating the template
+´t´.
 
 ###### Example – `val` and `var` parameters
 The following example illustrates `val` and `var` parameters of a class `C`:
@@ -786,19 +786,19 @@ SelfInvocation ::= ‘this’ ArgumentExprs {ArgumentExprs}
 
 A class may have additional constructors besides the primary
 constructor.  These are defined by constructor definitions of the form
-`def this($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) = $e$`.  Such a
+`def this(´\mathit{ps}_1´)´\ldots´(´\mathit{ps}_n´) = ´e´`.  Such a
 definition introduces an additional constructor for the enclosing
-class, with parameters as given in the formal parameter lists $\mathit{ps}_1
-, \ldots , \mathit{ps}_n$, and whose evaluation is defined by the constructor
-expression $e$.  The scope of each formal parameter is the subsequent
+class, with parameters as given in the formal parameter lists ´\mathit{ps}_1
+, \ldots , \mathit{ps}_n´, and whose evaluation is defined by the constructor
+expression ´e´.  The scope of each formal parameter is the subsequent
 parameter sections and the constructor
-expression $e$.  A constructor expression is either a self constructor
-invocation `this($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)` or a block
+expression ´e´.  A constructor expression is either a self constructor
+invocation `this(´\mathit{args}_1´)´\ldots´(´\mathit{args}_n´)` or a block
 which begins with a self constructor invocation. The self constructor
 invocation must construct a generic instance of the class. I.e. if the
-class in question has name $C$ and type parameters
-`[$\mathit{tps}\,$]`, then a self constructor invocation must
-generate an instance of `$C$[$\mathit{tps}\,$]`; it is not permitted
+class in question has name ´C´ and type parameters
+`[´\mathit{tps}\,´]`, then a self constructor invocation must
+generate an instance of `´C´[´\mathit{tps}\,´]`; it is not permitted
 to instantiate formal type parameters.
 
 The signature and the self constructor invocation of a constructor
@@ -810,12 +810,12 @@ The rest of the
 constructor expression is type-checked and evaluated as a function
 body in the current class.
 
-If there are auxiliary constructors of a class $C$, they form together
-with $C$'s primary [constructor](#class-definitions)
+If there are auxiliary constructors of a class ´C´, they form together
+with ´C´'s primary [constructor](#class-definitions)
 an overloaded constructor
 definition. The usual rules for
 [overloading resolution](06-expressions.html#overloading-resolution)
-apply for constructor invocations of $C$,
+apply for constructor invocations of ´C´,
 including for the self constructor invocations in the constructor
 expressions themselves. However, unlike other methods, constructors
 are never inherited.  To prevent infinite cycles of constructor
@@ -858,43 +858,43 @@ implicitly added to such a parameter, unless the parameter already carries
 a `val` or `var` modifier. Hence, an accessor
 definition for the parameter is [generated](#class-definitions).
 
-A case class definition of `$c$[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$)` with type
-parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implies
+A case class definition of `´c´[´\mathit{tps}\,´](´\mathit{ps}_1\,´)´\ldots´(´\mathit{ps}_n´)` with type
+parameters ´\mathit{tps}´ and value parameters ´\mathit{ps}´ implies
 the definition of a companion object, which serves as an [extractor object](08-pattern-matching.html#extractor-patterns). It has the following shape:
 
 ```scala
-object $c$ {
-  def apply[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
-  def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) =
+object ´c´ {
+  def apply[´\mathit{tps}\,´](´\mathit{ps}_1\,´)´\ldots´(´\mathit{ps}_n´): ´c´[´\mathit{tps}\,´] = new ´c´[´\mathit{Ts}\,´](´\mathit{xs}_1\,´)´\ldots´(´\mathit{xs}_n´)
+  def unapply[´\mathit{tps}\,´](´x´: ´c´[´\mathit{tps}\,´]) =
     if (x eq null) scala.None
-    else scala.Some($x.\mathit{xs}_{11}, \ldots , x.\mathit{xs}_{1k}$)
+    else scala.Some(´x.\mathit{xs}_{11}, \ldots , x.\mathit{xs}_{1k}´)
 }
 ```
 
-Here, $\mathit{Ts}$ stands for the vector of types defined in the type
-parameter section $\mathit{tps}$,
-each $\mathit{xs}\_i$ denotes the parameter names of the parameter
-section $\mathit{ps}\_i$, and
-$\mathit{xs}\_{11}, \ldots , \mathit{xs}\_{1k}$ denote the names of all parameters
-in the first parameter section $\mathit{xs}\_1$.
+Here, ´\mathit{Ts}´ stands for the vector of types defined in the type
+parameter section ´\mathit{tps}´,
+each ´\mathit{xs}\_i´ denotes the parameter names of the parameter
+section ´\mathit{ps}\_i´, and
+´\mathit{xs}\_{11}, \ldots , \mathit{xs}\_{1k}´ denote the names of all parameters
+in the first parameter section ´\mathit{xs}\_1´.
 If a type parameter section is missing in the class, it is also missing in the `apply` and `unapply` methods.
 
-If the companion object $c$ is already defined,
+If the companion object ´c´ is already defined,
 the  `apply` and `unapply` methods are added to the existing object.
-If the object $c$ already has a [matching](#definition-matching)
+If the object ´c´ already has a [matching](#definition-matching)
 `apply` (or `unapply`) member, no new definition is added.
-The definition of `apply` is omitted if class $c$ is `abstract`.
+The definition of `apply` is omitted if class ´c´ is `abstract`.
 
 If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and
 is defined as follows:
 
 ```scala
-def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
+def unapply[´\mathit{tps}\,´](´x´: ´c´[´\mathit{tps}\,´]) = x ne null
 ```
 
 The name of the `unapply` method is changed to `unapplySeq` if the first
-parameter section $\mathit{ps}_1$ of $c$ ends in a
+parameter section ´\mathit{ps}_1´ of ´c´ ends in a
 [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters).
 
 A method named `copy` is implicitly added to every case class unless the
@@ -902,15 +902,15 @@ class already has a member (directly defined or inherited) with that name, or th
 class has a repeated parameter. The method is defined as follows:
 
 ```scala
-def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
+def copy[´\mathit{tps}\,´](´\mathit{ps}'_1\,´)´\ldots´(´\mathit{ps}'_n´): ´c´[´\mathit{tps}\,´] = new ´c´[´\mathit{Ts}\,´](´\mathit{xs}_1\,´)´\ldots´(´\mathit{xs}_n´)
 ```
 
-Again, `$\mathit{Ts}$` stands for the vector of types defined in the type parameter section `$\mathit{tps}$`
-and each `$xs_i$` denotes the parameter names of the parameter section `$ps'_i$`. The value
-parameters `$ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
-the other parameters `$ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
-In all cases `$x_{i,j}$` and `$T_{i,j}$` refer to the name and type of the corresponding class parameter
-`$\mathit{ps}_{i,j}$`.
+Again, `´\mathit{Ts}´` stands for the vector of types defined in the type parameter section `´\mathit{tps}´`
+and each `´xs_i´` denotes the parameter names of the parameter section `´ps'_i´`. The value
+parameters `´ps'_{1,j}´` of first parameter list have the form `´x_{1,j}´:´T_{1,j}´=this.´x_{1,j}´`,
+the other parameters `´ps'_{i,j}´` of the `copy` method are defined as `´x_{i,j}´:´T_{i,j}´`.
+In all cases `´x_{i,j}´` and `´T_{i,j}´` refer to the name and type of the corresponding class parameter
+`´\mathit{ps}_{i,j}´`.
 
 Every case class implicitly overrides some method definitions of class
 [`scala.AnyRef`](12-the-scala-standard-library.html#root-classes) unless a definition of the same
@@ -984,14 +984,14 @@ constructor parameters. Furthermore, no constructor arguments are
 passed to the superclass of the trait. This is not necessary as traits are
 initialized after the superclass is initialized.
 
-Assume a trait $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$).
-Then the _actual supertype_ of $D$ in $x$ is the compound type consisting of all the
-base classes in $\mathcal{L}(C)$ that succeed $D$.  The actual supertype gives
+Assume a trait ´D´ defines some aspect of an instance ´x´ of type ´C´ (i.e. ´D´ is a base class of ´C´).
+Then the _actual supertype_ of ´D´ in ´x´ is the compound type consisting of all the
+base classes in ´\mathcal{L}(C)´ that succeed ´D´.  The actual supertype gives
 the context for resolving a [`super` reference](06-expressions.html#this-and-super) in a trait.
 Note that the actual supertype depends on the type to which the trait is added in a mixin composition;
 it is not statically known at the time the trait is defined.
 
-If $D$ is not a trait, then its actual supertype is simply its
+If ´D´ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).
 
 ###### Example
@@ -1082,37 +1082,37 @@ ObjectDef       ::=  id ClassTemplate
 
 An _object definition_ defines a single object of a new class. Its
 most general form is
-`object $m$ extends $t$`. Here,
-$m$ is the name of the object to be defined, and
-$t$ is a [template](#templates) of the form
+`object ´m´ extends ´t´`. Here,
+´m´ is the name of the object to be defined, and
+´t´ is a [template](#templates) of the form
 
 ```scala
-$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
+´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´ { ´\mathit{stats}´ }
 ```
 
-which defines the base classes, behavior and initial state of $m$.
-The extends clause `extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$`
+which defines the base classes, behavior and initial state of ´m´.
+The extends clause `extends ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´`
 can be omitted, in which case
 `extends scala.AnyRef` is assumed.  The class body
-`{ $\mathit{stats}$ }` may also be omitted, in which case the empty body
+`{ ´\mathit{stats}´ }` may also be omitted, in which case the empty body
 `{}` is assumed.
 
 The object definition defines a single object (or: _module_)
-conforming to the template $t$.  It is roughly equivalent to the
+conforming to the template ´t´.  It is roughly equivalent to the
 following definition of a lazy value:
 
 ```scala
-lazy val $m$ = new $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { this: $m.type$ => $\mathit{stats}$ }
+lazy val ´m´ = new ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´ { this: ´m.type´ => ´\mathit{stats}´ }
 ```
 
 Note that the value defined by an object definition is instantiated
-lazily.  The `new $m$\$cls` constructor is evaluated
+lazily.  The `new ´m´$cls` constructor is evaluated
 not at the point of the object definition, but is instead evaluated
-the first time $m$ is dereferenced during execution of the program
-(which might be never at all). An attempt to dereference $m$ again
+the first time ´m´ is dereferenced during execution of the program
+(which might be never at all). An attempt to dereference ´m´ again
 during evaluation of the constructor will lead to an infinite loop
 or run-time error.
-Other threads trying to dereference $m$ while the
+Other threads trying to dereference ´m´ while the
 constructor is being evaluated block until evaluation is complete.
 
 The expansion given above is not accurate for top-level objects. It
@@ -1143,9 +1143,9 @@ name `Point` in the type name space, whereas the object
 definition defines a name in the term namespace.
 
 This technique is applied by the Scala compiler when interpreting a
-Java class with static members. Such a class $C$ is conceptually seen
-as a pair of a Scala class that contains all instance members of $C$
-and a Scala object that contains all static members of $C$.
+Java class with static members. Such a class ´C´ is conceptually seen
+as a pair of a Scala class that contains all instance members of ´C´
+and a Scala object that contains all static members of ´C´.
 
 Generally, a _companion module_ of a class is an object which has
 the same name as the class and is defined in the same scope and
