@@ -1068,13 +1068,13 @@ lazy val scalap = configureAsSubproject(project)
 
 lazy val partest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler, scalap, replJlineEmbedded, scaladoc)
-  .settings(disableDocs)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-jline-embedded"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
       "/project/description" -> <description>Scala Compiler Testing Tool</description>,
