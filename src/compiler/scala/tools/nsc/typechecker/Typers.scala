@@ -2639,7 +2639,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val casesTrue = cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE)).duplicate.asInstanceOf[CaseDef])
 
       // must generate a new tree every time
-      def selector(paramSym: Symbol): Tree = gen.mkUnchecked(
+      def selector(paramSym: Symbol): Tree = (
         if (sel != EmptyTree) sel.duplicate
         else atPos(tree.pos.focusStart)(
           // scala/bug#6925: subsume type of the selector to `argTp`

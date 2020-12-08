@@ -1,0 +1,7 @@
+patmat-reachable-partial.scala:5: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def test(c: Seq[Option[Int]]) = c.collect { case _: C => }
+                                            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
