@@ -430,6 +430,9 @@ trait ContextOps { self: TastyUniverse =>
     final def markAsEnumSingleton(sym: Symbol): Unit =
       sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
 
+    final def markAsOpaqueType(sym: Symbol, alias: Type): Unit =
+      sym.updateAttachment(new u.DottyOpaqueTypeAlias(alias))
+
     final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
       case err: u.TypeError =>
         sym.info = u.ErrorType

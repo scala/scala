@@ -120,6 +120,8 @@ trait StdAttachments {
 
   class DottyParameterisedTrait(val params: List[Symbol])
 
+  class DottyOpaqueTypeAlias(val tpe: Type)
+
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment

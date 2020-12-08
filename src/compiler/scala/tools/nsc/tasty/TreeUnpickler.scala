@@ -768,8 +768,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            val allowedTypeFlags = Enum | Open | Exported | Infix
-            val allowedClassFlags = allowedTypeFlags | Opaque | Transparent
+            val allowedShared = Enum | Opaque | Infix
+            val allowedTypeFlags = allowedShared | Exported
+            val allowedClassFlags = allowedShared | Open | Transparent
             if (sym.isClass) {
               checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
               sym.owner.ensureCompleted()
@@ -777,8 +778,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             else {
               checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedTypeFlags)
-              val rhs = readTpt()(localCtx)
-              ctx.setInfo(sym, defn.NormalisedBounds(rhs.tpe, sym))
+              val rhs = readTpt()(if (repr.originalFlagSet.is(Opaque)) localCtx.addMode(OpaqueTypeDef) else localCtx)
+              val info =
+                if (repr.originalFlagSet.is(Opaque)) {
+                  val (info, alias) = defn.OpaqueTypeToBounds(rhs.tpe)
+                  ctx.markAsOpaqueType(sym, alias)
+                  info
+                }
+                else rhs.tpe
+              ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
               if (sym.is(Param)) sym.reset(Private | Protected)
               // sym.resetFlag(Provisional)
             }
@@ -1007,9 +1015,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case LAMBDAtpt => tpd.LambdaTypeTree(readParams[NoCycle](TYPEPARAM).map(symFromNoCycle), readTpt())
             case MATCHtpt => matchTypeIsUnsupported
             case TYPEBOUNDStpt =>
-              val lo    = readTpt()
-              val hi    = if (currentAddr == end) lo else readTpt()
-              val alias = if (currentAddr == end) untpd.EmptyTree else readTpt()
+              val lo = readTpt()
+              val hi = if (currentAddr == end) lo else readTpt()
+
+              val alias = {
+                if (currentAddr == end) {
+                  untpd.EmptyTree
+                }
+                else {
+                  assert(ctx.mode.is(OpaqueTypeDef))
+                  readTpt()(ctx.retractMode(OpaqueTypeDef))
+                }
+              }
+
               tpd.TypeBoundsTree(lo, hi, alias)
             case BLOCK =>
               if (inParentCtor | ctx.mode.is(ReadMacro)) {

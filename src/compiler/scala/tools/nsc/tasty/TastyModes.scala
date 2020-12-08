@@ -32,6 +32,8 @@ object TastyModes {
   final val ReadMacro: TastyMode = TastyMode(1 << 4)
   /** When not at the package scope */
   final val InnerScope: TastyMode = TastyMode(1 << 5)
+  /** When reading the tree of an Opaque type */
+  final val OpaqueTypeDef: TastyMode = TastyMode(1 << 6)
 
   /** The union of `IndexStats` and `InnerScope` */
   final val IndexScopedStats: TastyMode = IndexStats | InnerScope
@@ -55,6 +57,7 @@ object TastyModes {
         if (mode.is(IndexStats))     sb += "IndexStats"
         if (mode.is(ReadMacro))      sb += "ReadMacro"
         if (mode.is(InnerScope))     sb += "InnerScope"
+        if (mode.is(OpaqueTypeDef))  sb += "OpaqueTypeDef"
         sb.mkString(" | ")
       }
     }
