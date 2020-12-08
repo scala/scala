@@ -102,6 +102,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
+  private[collection] val legacyGroupBy = java.lang.Boolean.getBoolean("scala.groupBy.legacy")
 }
 
 /** Explicit instantiation of the `Traversable` trait to reduce class file size in subclasses. */

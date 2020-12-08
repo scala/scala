@@ -415,6 +415,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyArray"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyWrappedArray"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.Traversable.legacyGroupBy"),
+
     //
     // scala-reflect
     //

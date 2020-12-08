@@ -503,7 +503,25 @@ trait TraversableLike[+A, +Repr] extends Any
             hashMap.getOrElseUpdate(key, apply())
         }
 
-      def result(): immutable.Map[K, Repr] =
+      def result(): immutable.Map[K, Repr] = {
+        if (Traversable.legacyGroupBy && size > 1 && size <= 4) {
+          val legacyOrdering = mutable.Map[K, Builder[A, Repr]]()
+          legacyOrdering.update(k0, v0)
+          legacyOrdering.update(k1, v1)
+          if (size > 2) legacyOrdering.update(k2, v2)
+          if (size > 3) legacyOrdering.update(k3, v3)
+
+          val it = legacyOrdering.iterator
+
+          var kv = it.next(); k0 = kv._1; v0 = kv._2
+          kv = it.next();     k1 = kv._1; v1 = kv._2
+
+          if (size > 2)
+            { kv = it.next(); k2 = kv._1; v2 = kv._2}
+          if (size > 3)
+            { kv = it.next(); k3 = kv._1; v3 = kv._2}
+
+        }
         size match {
           case 0 => immutable.Map.empty
           case 1 => new immutable.Map.Map1(k0, v0.result())
@@ -519,7 +537,7 @@ trait TraversableLike[+A, +Repr] extends Any
             }
             m1.result()
         }
-
+      }
     }
     this.seq.foreach(grouper)
     grouper.result()
