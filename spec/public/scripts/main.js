@@ -27,16 +27,19 @@ function heading(i, heading, $heading) {
   }
 }
 
-$('#toc').toc(
-  {
-    'selectors': 'h1,h2,h3',
-    'smoothScrolling': false,
-    'chapter': currentChapter(),
-    'headerLevel': 1,
-    'headerCounts': [-1, currentChapter() - 1, 1, 1],
-    'headerText': heading
-  }
-);
+// ignore when using wkhtmltopdf, or it won't work...
+if(window.jekyllEnv !== 'spec-pdf') {
+  $('#toc').toc(
+    {
+      'selectors': 'h1,h2,h3',
+      'smoothScrolling': false,
+      'chapter': currentChapter(),
+      'headerLevel': 1,
+      'headerCounts': [-1, currentChapter() - 1, 1, 1],
+      'headerText': heading
+    }
+  );
+}
 
 // no language auto-detect so that EBNF isn't detected as scala
 hljs.configure({
