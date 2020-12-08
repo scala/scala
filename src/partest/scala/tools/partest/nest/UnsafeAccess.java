@@ -14,7 +14,7 @@ package scala.tools.partest.nest;
 
 import java.lang.reflect.Field;
 
-@SuppressWarnings("unsafe")
+@SuppressWarnings("sunapi")  // also requires passing -XDenableSunApiLintControl to javac
 public class UnsafeAccess {
     public final static sun.misc.Unsafe U;
 

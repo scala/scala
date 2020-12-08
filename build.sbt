@@ -596,6 +596,8 @@ lazy val partest = configureAsSubproject(project)
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    Compile / javacOptions ++= Seq("-XDenableSunApiLintControl", "-Xlint") ++
+      (if (fatalWarnings.value) Seq("-Werror") else Seq()),
     Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
