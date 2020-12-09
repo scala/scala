@@ -13,8 +13,10 @@
 package scala
 package collection
 
+import java.security.{AccessController, PrivilegedAction}
 import generic._
 import mutable.Builder
+import scala.util.Try
 import scala.util.control.Breaks
 
 /** A trait for traversable collections.
@@ -102,7 +104,9 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
-  private[collection] val legacyGroupBy = java.lang.Boolean.getBoolean("scala.groupBy.legacy")
+  private[collection] val legacyGroupBy = java.security.AccessController.doPrivileged(new PrivilegedAction[Boolean]() {
+    override def run = Try(System.getProperty("scala.groupBy.legacy", "false").toBoolean).getOrElse(false)
+  })
 }
 
 /** Explicit instantiation of the `Traversable` trait to reduce class file size in subclasses. */
