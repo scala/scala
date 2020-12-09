@@ -14,6 +14,11 @@ import Files._
 
 object TastyTest {
 
+  private val verbose = false
+
+  private def log(s: => String): Unit =
+    if (verbose) println(s)
+
   def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
@@ -26,7 +31,7 @@ object TastyTest {
 
   def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
-    _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
+    _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
@@ -59,12 +64,12 @@ object TastyTest {
   } yield ()
 
   private def javacPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(sourceRoot)} with javac.")
+    log(s"compiling sources in ${yellow(sourceRoot)} with javac.")
     successWhen(Javac.javac(out, sources:_*))("javac failed to compile sources.")
   }
 
   private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
+    log(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
     successWhen(Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*))("scalac failed to compile sources.")
   }
 
@@ -90,7 +95,7 @@ object TastyTest {
         val byteArrayStream = new ByteArrayOutputStream(50)
         try {
           if (ScalaFail.filter(source)) {
-            println(s"neg test ${cyan(source.stripSuffix(ScalaFail.name))} started")
+            log(s"neg test ${cyan(source.stripSuffix(ScalaFail.name))} started")
           }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
@@ -152,7 +157,7 @@ object TastyTest {
   def dotcPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = dotcPos(out, out, sourceRoot, additionalSettings, sources:_*)
 
   def dotcPos(out: String, classpath: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
+    log(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
     successWhen(Dotc.dotc(out, classpath, additionalSettings, sources:_*))("dotc failed to compile sources.")
   }
 
@@ -258,7 +263,7 @@ object TastyTest {
           val names = test.split('.')
           names.init.mkString(".") -> names.last
         }
-        println(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
+        log(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
         runner.runCaptured(test) match {
           case Success(output) =>
             val diff = Diff.compareContents(output, "")
