@@ -1,4 +1,7 @@
 nested-annotation.scala:8: error: nested classfile annotations must be defined in java; found: inline
   @ComplexAnnotation(new inline) def bippy(): Int = 1
                      ^
-1 error
+nested-annotation.scala:11: error: no arguments allowed for nullary constructor SuppressWarnings: (): SuppressWarnings
+  @ComplexAnnotation(new SuppressWarnings(Array("blup"))) def huppy(): Int = 2
+                                               ^
+2 errors

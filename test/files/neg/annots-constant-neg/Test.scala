@@ -47,8 +47,8 @@ object Test {
   @Ann() def u4 = 0 // err
   @Ann(value = 0) def u5 = 0
   @Ann(value = 0, a = "") def u6 = 0
-  @Ann(0, "") def u7 = 0 // err
-  @Ann(0, a = "") def u8 = 0 // err
+  @Ann(0, "") def u7 = 0
+  @Ann(0, a = "") def u8 = 0
 
   @Ann(value = 0, a = "moin", b = classOf[Object], c = Array("")) def u9 = 0
   @Ann(value = 0, a = null) def u10 = 0 // err
@@ -59,18 +59,18 @@ object Test {
   @Ann(value = 0, b = java.lang.Integer.TYPE) def u16 = 0 // err
 
   @Ann1() def v1 = 0
-  @Ann1(0) def v2 = 0 // err
-  @Ann1(value = 0) def v3 = 0 // err
+  @Ann1(0) def v2 = 0
+  @Ann1(value = 0) def v3 = 0
   @Ann1(x = "") def v4 = 0 // err
-  @Ann1 def v5 = 0 // err
+  @Ann1 def v5 = 0
   @Ann1(0)(0) def v6 = 0 // err
   @Ann2 def v7 = 0 // err
-  @Ann2(x = 0) def v8 = 0
-  @Ann2(x = 0)(y = 0) def v9 = 0 // err
+  @Ann2(x = 0) def v8 = 0 // err
+  @Ann2(x = 0)(y = 0) def v9 = 0 // warn
   @Ann3 def v10 = 0
   @Ann3(0) def v11 = 0 // err
   @Ann4(0) def v12 = 0
-  @Ann4(0, 1) def v13 = 0 // err
+  @Ann4(0, 1) def v13 = 0
   @Ann4(x = 0, value = 1) def v14 = 0
   @Ann4(value = 1, x = 0) def v15 = 0
   @Ann5 def v16 = 0
