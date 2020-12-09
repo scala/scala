@@ -99,24 +99,6 @@ Global / scalaVersion      := {
     versionProps("starr.version")
 }
 
-val replBootstrap = (project in file("target/replBootstrap")).settings(
-  scalaVersion := "2.13.5-bin-SNAPSHOT",
-)
-
-lazy val replRun = configureAsSubproject(project.in(file("target/replRun"))).settings(
-  scalaInstance := {
-    val s = (replBootstrap / scalaInstance).value
-    // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
-    // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
-    if(s.isManagedVersion) s else {
-      import sbt.internal.inc.ScalaInstance
-      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJars, s.compilerJar, s.allJars, Some(s.actualVersion))
-      assert(s2.isManagedVersion)
-      s2
-    }
-  },
-)
-
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
   crossPaths := false,
@@ -555,6 +537,17 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
     Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
   )
   .dependsOn(repl)
+
+// dummy project so we can get a clean `scalaInstance` for use in replRun
+val replBootstrap = (project in file("target/replBootstrap")).settings(
+  scalaVersion := "2.13.5-bin-SNAPSHOT",
+  publish / skip := true,
+)
+
+lazy val replRun = configureAsSubproject(project.in(file("target/replRun"))).settings(
+  publish / skip := true,
+  scalaInstance := (replBootstrap / scalaInstance).value,
+)
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
@@ -1226,15 +1219,22 @@ watchSources ++= PartestUtil.testFilePaths((ThisBuild / baseDirectory).value, (T
 
 // Add tab completion to scalac et al.
 commands ++= {
-  val commands =
-  List(("scalac",   "compiler", "scala.tools.nsc.Main"),
-       ("scala",    "repl-frontend", "scala.tools.nsc.MainGenericRunner"),
-       ("scaladoc", "scaladoc", "scala.tools.nsc.ScalaDoc"))
-
-  commands.map {
+  val runCommands =
+    List(("scalac",   "compiler",      "scala.tools.nsc.Main"),
+         ("scaladoc", "scaladoc",      "scala.tools.nsc.ScalaDoc"))
+  // making this one work via `runMain` was hard (sbt/sbt#6185),
+  // it uses `console` instead
+  val consoleCommands =
+    List(("scala",    "replRun"))
+  runCommands.map {
     case (entryPoint, projectRef, mainClassName) =>
       Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (ThisBuild / baseDirectory).value)) { (state, parsedOptions) =>
         (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
+      }
+  } ++ consoleCommands.map {
+    case (entryPoint, projectRef) =>
+      Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (ThisBuild / baseDirectory).value)) { (state, parsedOptions) =>
+        (projectRef + "/console") :: state
       }
   }
 }
