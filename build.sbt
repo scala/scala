@@ -99,6 +99,24 @@ Global / scalaVersion      := {
     versionProps("starr.version")
 }
 
+val replBootstrap = (project in file("target/replBootstrap")).settings(
+  scalaVersion := "2.13.5-bin-SNAPSHOT",
+)
+
+lazy val replRun = configureAsSubproject(project.in(file("target/replRun"))).settings(
+  scalaInstance := {
+    val s = (replBootstrap / scalaInstance).value
+    // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
+    // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
+    if(s.isManagedVersion) s else {
+      import sbt.internal.inc.ScalaInstance
+      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJars, s.compilerJar, s.allJars, Some(s.actualVersion))
+      assert(s2.isManagedVersion)
+      s2
+    }
+  },
+)
+
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
   crossPaths := false,
