@@ -446,7 +446,7 @@ lazy val compiler = configureAsSubproject(project)
         (LocalProject("interactive")   / Compile / packageBin / products).value ++
         (LocalProject("scaladoc")      / Compile / packageBin / products).value ++
         (LocalProject("repl")          / Compile / packageBin / products).value ++
-        (LocalProject("repl-frontend") / Compile / packageBin / products).value,
+        (LocalProject("replFrontend")  / Compile / packageBin / products).value,
     Compile / unmanagedResources / includeFilter :=
       "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
       "*.png" | "*.gif" | "*.gif" | "*.txt",
@@ -456,7 +456,7 @@ lazy val compiler = configureAsSubproject(project)
         (LocalProject("interactive")   / Compile / unmanagedResourceDirectories).value ++
         (LocalProject("scaladoc")      / Compile / unmanagedResourceDirectories).value ++
         (LocalProject("repl")          / Compile / unmanagedResourceDirectories).value ++
-        (LocalProject("repl-frontend") / Compile / unmanagedResourceDirectories).value
+        (LocalProject("replFrontend")  / Compile / unmanagedResourceDirectories).value
       base ** ((Compile / unmanagedResources / includeFilter).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair Path.relativeTo(base)
     },
     // Include the additional projects in the scaladoc JAR:
@@ -465,7 +465,7 @@ lazy val compiler = configureAsSubproject(project)
         (LocalProject("interactive")   / Compile / unmanagedSourceDirectories).value ++
         (LocalProject("scaladoc")      / Compile / unmanagedSourceDirectories).value ++
         (LocalProject("repl")          / Compile / unmanagedSourceDirectories).value ++
-        (LocalProject("repl-frontend") / Compile / unmanagedSourceDirectories).value
+        (LocalProject("replFrontend")  / Compile / unmanagedSourceDirectories).value
       ((base ** ("*.scala" || "*.java"))
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
       ).get
@@ -523,7 +523,7 @@ lazy val repl = configureAsSubproject(project)
   .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"))
   .dependsOn(compiler, interactive)
 
-lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
+lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-frontend"))
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
@@ -533,7 +533,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
     Compile / scalacOptions ++= Seq("-Xlint"),
   )
   .settings(
-    run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
+    run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `replFrontend/run` works
     Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
   )
   .dependsOn(repl)
@@ -803,7 +803,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
 
-lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
+lazy val partestJavaAgent = Project("partestJavaAgent", file(".") / "src" / "partest-javaagent")
   .settings(commonSettings)
   .settings(generatePropertiesFileSettings)
   .settings(disableDocs)
@@ -884,7 +884,7 @@ lazy val manual = configureAsSubproject(project)
     Compile / classDirectory := (Compile / target).value / "classes"
   )
 
-lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-dist-src-dummy")
+lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dist-src-dummy")
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(
@@ -1121,8 +1121,8 @@ lazy val dist = (project in file("dist"))
  * We pass `project` as an argument which is in fact a macro call. This macro determines
  * project.id based on the name of the lazy val on the left-hand side.
  */
-def configureAsSubproject(project: Project): Project = {
-  val base = file(".") / "src" / project.id
+def configureAsSubproject(project: Project, srcdir: Option[String] = None): Project = {
+  val base = file(".") / "src" / srcdir.getOrElse(project.id)
   (project in base)
     .settings(scalaSubprojectSettings)
     .settings(generatePropertiesFileSettings)
@@ -1210,7 +1210,7 @@ watchSources ++= PartestUtil.testFilePaths((ThisBuild / baseDirectory).value, (T
 commands ++= {
   val commands =
   List(("scalac",   "compiler", "scala.tools.nsc.Main"),
-       ("scala",    "repl-frontend", "scala.tools.nsc.MainGenericRunner"),
+       ("scala",    "replFrontend", "scala.tools.nsc.MainGenericRunner"),
        ("scaladoc", "scaladoc", "scala.tools.nsc.ScalaDoc"))
 
   commands.map {
