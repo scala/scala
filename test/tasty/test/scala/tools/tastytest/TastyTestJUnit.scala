@@ -3,7 +3,9 @@ package scala.tools.tastytest
 import org.junit.{Test => test}
 import org.junit.Assert._
 
-import scala.util.Properties
+import scala.util.{Try, Failure, Properties}
+
+import TastyTestJUnit._
 
 class TastyTestJUnit {
 
@@ -14,7 +16,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   @test def pos(): Unit = TastyTest.posSuite(
     src                     = "pos",
@@ -23,7 +25,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   @test def posFalseNoAnnotations(): Unit = TastyTest.posSuite(
     src                     = "pos-false-noannotations",
@@ -32,7 +34,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Seq("-Ytasty-no-annotations"),
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   @test def neg(): Unit = TastyTest.negSuite(
     src                     = "neg",
@@ -41,7 +43,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   @test def negMoveMacros(): Unit = TastyTest.negChangePreSuite(
     src                     = "neg-move-macros",
@@ -50,7 +52,7 @@ class TastyTestJUnit {
     outDirs                 = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   @test def negIsolated(): Unit = TastyTest.negSuiteIsolated(
     src                     = "neg-isolated",
@@ -59,12 +61,21 @@ class TastyTestJUnit {
     outDirs                 = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).get
+  ).eval
 
   val propSrc          = "tastytest.src"
   val propPkgName      = "tastytest.packageName"
 
   def assertPropIsSet(prop: String): String = {
     Properties.propOrNull(prop).ensuring(_ != null, s"-D$prop is not set")
+  }
+}
+
+object TastyTestJUnit {
+  final implicit class TryOps(val op: Try[Unit]) extends AnyVal {
+    def eval: Unit = op match {
+      case Failure(err) => fail(err.getMessage)
+      case _ => ()
+    }
   }
 }
