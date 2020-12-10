@@ -56,10 +56,10 @@ abstract class Any {
   final def != (that: Any): Boolean  =  !(this == that)
 
   /** Hash code; abstract here */
-  def hashCode: Int = $\ldots$
+  def hashCode: Int = ´\ldots´
 
   /** Textual representation; abstract here */
-  def toString: String = $\ldots$
+  def toString: String = ´\ldots´
 
   /** Type test; needs to be inlined to work as given */
   def isInstanceOf[a]: Boolean
@@ -78,35 +78,35 @@ final class AnyVal extends Any
 /** The root class of all reference types */
 class AnyRef extends Any {
   def equals(that: Any): Boolean      = this eq that
-  final def eq(that: AnyRef): Boolean = $\ldots$ // reference equality
+  final def eq(that: AnyRef): Boolean = ´\ldots´ // reference equality
   final def ne(that: AnyRef): Boolean = !(this eq that)
 
-  def hashCode: Int = $\ldots$     // hashCode computed from allocation address
-  def toString: String  = $\ldots$ // toString computed from hashCode and class name
+  def hashCode: Int = ´\ldots´     // hashCode computed from allocation address
+  def toString: String  = ´\ldots´ // toString computed from hashCode and class name
 
   def synchronized[T](body: => T): T // execute `body` in while locking `this`.
 }
 ```
 
-The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
+The type test `´x´.isInstanceOf[´T´]` is equivalent to a typed
 pattern match
 
 ```scala
-$x$ match {
-  case _: $T'$ => true
+´x´ match {
+  case _: ´T'´ => true
   case _ => false
 }
 ```
 
-where the type $T'$ is the same as $T$ except if $T$ is
-of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer class $C$.
-In this case $T'$ is `$C$#$D$` (or `$C$#$D[tps]$`, respectively), whereas $T$ itself would expand to `$C$.this.$D[tps]$`.
+where the type ´T'´ is the same as ´T´ except if ´T´ is
+of the form ´D´ or ´D[\mathit{tps}]´ where ´D´ is a type member of some outer class ´C´.
+In this case ´T'´ is `´C´#´D´` (or `´C´#´D[tps]´`, respectively), whereas ´T´ itself would expand to `´C´.this.´D[tps]´`.
 In other words, an `isInstanceOf` test does not check that types have the same enclosing instance.
 
-The test `$x$.asInstanceOf[$T$]` is treated specially if $T$ is a
+The test `´x´.asInstanceOf[´T´]` is treated specially if ´T´ is a
 [numeric value type](#value-classes). In this case the cast will
 be translated to an application of a [conversion method](#numeric-value-types)
-`x.to$T$`. For non-numeric values $x$ the operation will raise a
+`x.to´T´`. For non-numeric values ´x´ the operation will raise a
 `ClassCastException`.
 
 ## Value Classes
@@ -146,14 +146,14 @@ from every numeric value type to all higher-ranked numeric value types.
 Therefore, lower-ranked types are implicitly converted to higher-ranked types
 when required by the [context](06-expressions.html#implicit-conversions).
 
-Given two numeric value types $S$ and $T$, the _operation type_ of
-$S$ and $T$ is defined as follows: If both $S$ and $T$ are subrange
-types then the operation type of $S$ and $T$ is `Int`.  Otherwise
-the operation type of $S$ and $T$ is the larger of the two types wrt
-ranking. Given two numeric values $v$ and $w$ the operation type of
-$v$ and $w$ is the operation type of their run-time types.
+Given two numeric value types ´S´ and ´T´, the _operation type_ of
+´S´ and ´T´ is defined as follows: If both ´S´ and ´T´ are subrange
+types then the operation type of ´S´ and ´T´ is `Int`.  Otherwise
+the operation type of ´S´ and ´T´ is the larger of the two types wrt
+ranking. Given two numeric values ´v´ and ´w´ the operation type of
+´v´ and ´w´ is the operation type of their run-time types.
 
-Any numeric value type $T$ supports the following methods.
+Any numeric value type ´T´ supports the following methods.
 
   * Comparison methods for equals (`==`), not-equals (`!=`),
     less-than (`<`), greater-than (`>`), less-than-or-equals
@@ -166,13 +166,13 @@ Any numeric value type $T$ supports the following methods.
   * Arithmetic methods addition (`+`), subtraction (`-`),
     multiplication (`*`), division (`/`), and remainder
     (`%`), which each exist in 7 overloaded alternatives. Each
-    alternative takes a parameter of some numeric value type $U$.  Its
-    result type is the operation type of $T$ and $U$. The operation is
+    alternative takes a parameter of some numeric value type ´U´.  Its
+    result type is the operation type of ´T´ and ´U´. The operation is
     evaluated by converting the receiver and its argument to their
     operation type and performing the given arithmetic operation of that
     type.
   * Parameterless arithmetic methods identity (`+`) and negation
-    (`-`), with result type $T$.  The first of these returns the
+    (`-`), with result type ´T´.  The first of these returns the
     receiver unchanged, whereas the second returns its negation.
   * Conversion methods `toByte`, `toShort`, `toChar`,
     `toInt`, `toLong`, `toFloat`, `toDouble` which
@@ -189,21 +189,21 @@ Integer numeric value types support in addition the following operations:
     {`|`}, and bitwise-exclusive-or (`^`), which each exist in 5
     overloaded alternatives. Each alternative takes a parameter of some
     integer numeric value type. Its result type is the operation type of
-    $T$ and $U$. The operation is evaluated by converting the receiver and
+    ´T´ and ´U´. The operation is evaluated by converting the receiver and
     its argument to their operation type and performing the given bitwise
     operation of that type.
 
   * A parameterless bit-negation method (`~`). Its result type is
-    the receiver type $T$ or `Int`, whichever is larger.
+    the receiver type ´T´ or `Int`, whichever is larger.
     The operation is evaluated by converting the receiver to the result
     type and negating every bit in its value.
   * Bit-shift methods left-shift (`<<`), arithmetic right-shift
     (`>>`), and unsigned right-shift (`>>>`). Each of these
-    methods has two overloaded alternatives, which take a parameter $n$
+    methods has two overloaded alternatives, which take a parameter ´n´
     of type `Int`, respectively `Long`. The result type of the
-    operation is the receiver type $T$, or `Int`, whichever is larger.
+    operation is the receiver type ´T´, or `Int`, whichever is larger.
     The operation is evaluated by converting the receiver to the result
-    type and performing the specified shift by $n$ bits.
+    type and performing the specified shift by ´n´ bits.
 
 Numeric value types also implement operations `equals`,
 `hashCode`, and `toString` from class `Any`.
@@ -353,25 +353,25 @@ right operand.
 
 ### The `Tuple` classes
 
-Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 22$.
+Scala defines tuple classes `Tuple´n´` for ´n = 2 , \ldots , 22´.
 These are defined as follows.
 
 ```scala
 package scala
-case class Tuple$n$[+T_1, ..., +T_n](_1: T_1, ..., _$n$: T_$n$) {
-  def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
+case class Tuple´n´[+T_1, ..., +T_n](_1: T_1, ..., _´n´: T_´n´) {
+  def toString = "(" ++ _1 ++ "," ++ ´\ldots´ ++ "," ++ _´n´ ++ ")"
 }
 ```
 
 ### The `Function` Classes
 
-Scala defines function classes `Function$n$` for $n = 1 , \ldots , 22$.
+Scala defines function classes `Function´n´` for ´n = 1 , \ldots , 22´.
 These are defined as follows.
 
 ```scala
 package scala
-trait Function$n$[-T_1, ..., -T_$n$, +R] {
-  def apply(x_1: T_1, ..., x_$n$: T_$n$): R
+trait Function´n´[-T_1, ..., -T_´n´, +R] {
+  def apply(x_1: T_1, ..., x_´n´: T_´n´): R
   def toString = "<function>"
 }
 ```
@@ -397,17 +397,17 @@ informational purposes only:
 ```scala
 final class Array[T](_length: Int)
 extends java.io.Serializable with java.lang.Cloneable {
-  def length: Int = $\ldots$
-  def apply(i: Int): T = $\ldots$
-  def update(i: Int, x: T): Unit = $\ldots$
-  override def clone(): Array[T] = $\ldots$
+  def length: Int = ´\ldots´
+  def apply(i: Int): T = ´\ldots´
+  def update(i: Int, x: T): Unit = ´\ldots´
+  override def clone(): Array[T] = ´\ldots´
 }
 ```
 
-If $T$ is not a type parameter or abstract type, the type `Array[T]`
+If ´T´ is not a type parameter or abstract type, the type `Array[T]`
 is represented as the array type `|T|[]` in the
 underlying host system, where `|T|` is the erasure of `T`.
-If $T$ is a type parameter or abstract type, a different representation might be
+If ´T´ is a type parameter or abstract type, a different representation might be
 used (it is `Object` on the Java platform).
 
 #### Operations
@@ -443,10 +443,10 @@ explained in the following.
 #### Variance
 
 Unlike arrays in Java, arrays in Scala are _not_
-co-variant; That is, $S <: T$ does not imply
-`Array[$S$] $<:$ Array[$T$]` in Scala.
+co-variant; That is, ´S <: T´ does not imply
+`Array[´S´] ´<:´ Array[´T´]` in Scala.
 However, it is possible to cast an array
-of $S$ to an array of $T$ if such a cast is permitted in the host
+of ´S´ to an array of ´T´ if such a cast is permitted in the host
 environment.
 
 For instance `Array[String]` does not conform to
@@ -461,13 +461,13 @@ val xs = new Array[String](2)
 val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
 ```
 
-The instantiation of an array with a polymorphic element type $T$ requires
-information about type $T$ at runtime.
+The instantiation of an array with a polymorphic element type ´T´ requires
+information about type ´T´ at runtime.
 This information is synthesized by adding a [context bound](07-implicits.html#context-bounds-and-view-bounds)
-of `scala.reflect.ClassTag` to type $T$.
+of `scala.reflect.ClassTag` to type ´T´.
 An example is the
 following implementation of method `mkArray`, which creates
-an array of an arbitrary type $T$, given a sequence of $T$`s which
+an array of an arbitrary type ´T´, given a sequence of ´T´`s which
 defines its elements:
 
 ```scala
@@ -483,7 +483,7 @@ def mkArray[T : ClassTag](elems: Seq[T]): Array[T] = {
 }
 ```
 
-If type $T$ is a type for which the host platform offers a specialized array
+If type ´T´ is a type for which the host platform offers a specialized array
 representation, this representation is used.
 
 ###### Example
@@ -502,46 +502,46 @@ package scala
 object Array {
   /** copies array elements from `src` to `dest`. */
   def copy(src: AnyRef, srcPos: Int,
-           dest: AnyRef, destPos: Int, length: Int): Unit = $\ldots$
+           dest: AnyRef, destPos: Int, length: Int): Unit = ´\ldots´
 
   /** Returns an array of length 0 */
   def empty[T: ClassTag]: Array[T] =
 
   /** Create an array with given elements. */
-  def apply[T: ClassTag](xs: T*): Array[T] = $\ldots$
+  def apply[T: ClassTag](xs: T*): Array[T] = ´\ldots´
 
   /** Creates array with given dimensions */
-  def ofDim[T: ClassTag](n1: Int): Array[T] = $\ldots$
+  def ofDim[T: ClassTag](n1: Int): Array[T] = ´\ldots´
   /** Creates a 2-dimensional array */
-  def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = $\ldots$
-  $\ldots$
+  def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = ´\ldots´
+  ´\ldots´
 
   /** Concatenate all argument arrays into a single array. */
-  def concat[T: ClassTag](xss: Array[T]*): Array[T] = $\ldots$
+  def concat[T: ClassTag](xss: Array[T]*): Array[T] = ´\ldots´
 
   /** Returns an array that contains the results of some element computation a number
     * of times. */
-  def fill[T: ClassTag](n: Int)(elem: => T): Array[T] = $\ldots$
+  def fill[T: ClassTag](n: Int)(elem: => T): Array[T] = ´\ldots´
   /** Returns a two-dimensional array that contains the results of some element
     * computation a number of times. */
-  def fill[T: ClassTag](n1: Int, n2: Int)(elem: => T): Array[Array[T]] = $\ldots$
-  $\ldots$
+  def fill[T: ClassTag](n1: Int, n2: Int)(elem: => T): Array[Array[T]] = ´\ldots´
+  ´\ldots´
 
   /** Returns an array containing values of a given function over a range of integer
     * values starting from 0. */
-  def tabulate[T: ClassTag](n: Int)(f: Int => T): Array[T] = $\ldots$
+  def tabulate[T: ClassTag](n: Int)(f: Int => T): Array[T] = ´\ldots´
   /** Returns a two-dimensional array containing values of a given function
     * over ranges of integer values starting from `0`. */
-  def tabulate[T: ClassTag](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] = $\ldots$
-  $\ldots$
+  def tabulate[T: ClassTag](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] = ´\ldots´
+  ´\ldots´
 
   /** Returns an array containing a sequence of increasing integers in a range. */
-  def range(start: Int, end: Int): Array[Int] = $\ldots$
+  def range(start: Int, end: Int): Array[Int] = ´\ldots´
   /** Returns an array containing equally spaced values in some integer interval. */
-  def range(start: Int, end: Int, step: Int): Array[Int] = $\ldots$
+  def range(start: Int, end: Int, step: Int): Array[Int] = ´\ldots´
 
   /** Returns an array containing repeated applications of a function to a start value. */
-  def iterate[T: ClassTag](start: T, len: Int)(f: T => T): Array[T] = $\ldots$
+  def iterate[T: ClassTag](start: T, len: Int)(f: T => T): Array[T] = ´\ldots´
 
   /** Enables pattern matching over arrays */
   def unapplySeq[A](x: Array[A]): Option[IndexedSeq[A]] = Some(x)

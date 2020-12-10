@@ -48,24 +48,24 @@ locally {
 }
 ```
 
-A reference to an unqualified (type- or term-) identifier $x$ is bound
+A reference to an unqualified (type- or term-) identifier ´x´ is bound
 by the unique binding, which
 
-- defines an entity with name $x$ in the same namespace as the identifier, and
-- shadows all other bindings that define entities with name $x$ in that
+- defines an entity with name ´x´ in the same namespace as the identifier, and
+- shadows all other bindings that define entities with name ´x´ in that
   namespace.
 
-It is an error if no such binding exists.  If $x$ is bound by an
-import clause, then the simple name $x$ is taken to be equivalent to
-the qualified name to which $x$ is mapped by the import clause. If $x$
-is bound by a definition or declaration, then $x$ refers to the entity
-introduced by that binding. In that case, the type of $x$ is the type
+It is an error if no such binding exists.  If ´x´ is bound by an
+import clause, then the simple name ´x´ is taken to be equivalent to
+the qualified name to which ´x´ is mapped by the import clause. If ´x´
+is bound by a definition or declaration, then ´x´ refers to the entity
+introduced by that binding. In that case, the type of ´x´ is the type
 of the referenced entity.
 
-A reference to a qualified (type- or term-) identifier $e.x$ refers to
-the member of the type $T$ of $e$ which has the name $x$ in the same
-namespace as the identifier. It is an error if $T$ is not a [value type](03-types.html#value-types).
-The type of $e.x$ is the member type of the referenced entity in $T$.
+A reference to a qualified (type- or term-) identifier ´e.x´ refers to
+the member of the type ´T´ of ´e´ which has the name ´x´ in the same
+namespace as the identifier. It is an error if ´T´ is not a [value type](03-types.html#value-types).
+The type of ´e.x´ is the member type of the referenced entity in ´T´.
 
 Binding precedence implies that the way source is bundled in files affects name resolution.
 In particular, imported names have higher precedence than names, defined in other files,
@@ -160,24 +160,24 @@ precedences between them.
 package p {                   // `X' bound by package clause
 import Console._              // `println' bound by wildcard import
 object Y {
-  println(s"L4: \$X")          // `X' refers to `p.X' here
+  println(s"L4: $X")          // `X' refers to `p.X' here
   locally {
     import q._                // `X' bound by wildcard import
-    println(s"L7: \$X")        // `X' refers to `q.X' here
+    println(s"L7: $X")        // `X' refers to `q.X' here
     import X._                // `x' and `y' bound by wildcard import
-    println(s"L9: \$x")        // `x' refers to `q.X.x' here
+    println(s"L9: $x")        // `x' refers to `q.X.x' here
     locally {
       val x = 3               // `x' bound by local definition
-      println(s"L12: \$x")     // `x' refers to constant `3' here
+      println(s"L12: $x")     // `x' refers to constant `3' here
       locally {
         import q.X._          // `x' and `y' bound by wildcard import
-//      println(s"L15: \$x")   // reference to `x' is ambiguous here
+//      println(s"L15: $x")   // reference to `x' is ambiguous here
         import X.y            // `y' bound by explicit import
-        println(s"L17: \$y")   // `y' refers to `q.X.y' here
+        println(s"L17: $y")   // `y' refers to `q.X.y' here
         locally {
           val x = "abc"       // `x' bound by local definition
           import p.X._        // `x' and `y' bound by wildcard import
-//        println(s"L21: \$y") // reference to `y' is ambiguous here
-          println(s"L22: \$x") // `x' refers to string "abc" here
+//        println(s"L21: $y") // reference to `y' is ambiguous here
+          println(s"L22: $x") // `x' refers to string "abc" here
 }}}}}}
 ```

@@ -1,6 +1,7 @@
 version: ~> 1.0 # needed for imports
-
 import: scala/scala-dev:travis/default.yml
+
+dist: bionic  # for generating spec PDF; see #7432
 
 language: scala
 
@@ -105,10 +106,19 @@ jobs:
           - gem install bundler
           - bundler --version
           - bundle install
+          # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
+          - sudo apt-get update
+          - sudo apt-get install -y build-essential xorg xfonts-75dpi libpng16-16 libssl1.1
+          - wget --quiet "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb"
+          - sudo dpkg -i "wkhtmltox_0.12.6-1.bionic_amd64.deb"
+          - rm "wkhtmltox_0.12.6-1.bionic_amd64.deb"
         script:
           - set -e
           - (cd admin && ./init.sh)
           - bundle exec jekyll build -s spec/ -d build/spec
+          - export JEKYLL_ENV=spec-pdf
+          - bundle exec jekyll build -s spec/ -d build/spec-pdf
+          - ./scripts/generate-spec-pdf.sh
         after_success:
           - ./scripts/travis-publish-spec.sh
 

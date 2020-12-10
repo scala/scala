@@ -6,16 +6,10 @@
   <link rel="icon" type="image/png" href="public/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="public/favicon.ico">
 
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-  <script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    tex2jax: {
-      inlineMath: [['$','$'], ['\\(','\\)']],
-      skipTags: ['script', 'noscript', 'style', 'textarea'],
-      processEscapes: true
-    }
-  });
-  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+  
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css">
   <!-- need to use include to see value of page.chapter variable -->
@@ -30,7 +24,7 @@
 </head>
 
 <body>
-  <header>
+  <header class="hidden-print">
     <nav id="chapters">
       <a href="{{site.baseurl}}/" title="Table of Contents">Scala {{ site.thisScalaVersion }}</a>
       <a id="github" href="https://github.com/scala/scala/tree/2.13.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
@@ -42,13 +36,14 @@
       {% endfor %}
     </nav>
   </header>
-  <aside class="left"><nav id="toc"></nav></aside>
+  <aside class="left hidden-print"><nav id="toc"></nav></aside>
 
   <main id="content">
 {% include version-notice.yml %}
 {{ content }}
   </main>
 
+  <script>window.jekyllEnv = '{{jekyll.environment}}';</script>
   <script src="public/scripts/toc.js"></script>
   <script src="public/scripts/highlight.pack.js"></script>
   <script src="public/scripts/main.js"></script>

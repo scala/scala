@@ -1,0 +1,23 @@
+
+<div class="hidden-print">
+
+  <h1>Table of Contents</h1>
+
+  <ol>
+    {% assign sorted_pages = site.pages | sort:"name" %}
+    {% for post in sorted_pages %}
+      <!-- exclude this page from the toc, not sure how to check
+          whether there is no chapter variable in the page  -->
+      {% if post.chapter >= 0 %}
+        <li>
+          <a href="{{site.baseurl}}{{ post.url }}"> {{ post.title }}</a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ol>
+</div>
+
+<p class="print-only">
+  This document was generated from <a href="{{ site.baseurl}}/../{{ site.latestScalaVersion }}/">
+  HTML version of Scala {{ site.latestScalaVersion }} spec</a>
+</p>

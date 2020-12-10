@@ -425,7 +425,7 @@ header {
     color: #FFFFFF;
     text-decoration: none;
     font-size: 0.63vw;
-    padding: 100% 8px;
+    padding: 100% 5px;
 }
 
 #chapters a:hover, #chapters a:focus, #github:hover, #github:focus {
@@ -514,4 +514,8 @@ header {
     color: #f2f2f2;
     font-weight: bold;
     text-decoration: underline;
+}
+
+.print-only {
+  display: none;
 }

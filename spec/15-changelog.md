@@ -73,7 +73,7 @@ A formal parameter to an anonymous function may now be a
 
 #### Unicode alternative for left arrow
 
-The Unicode glyph ‘\\(\leftarrow\\)’ \\(`\u2190`\\) is now treated as a reserved
+The Unicode glyph ‘´\leftarrow´’ ´`\u2190`´ is now treated as a reserved
 identifier, equivalent to the ASCII symbol ‘`<-`’.
 
 ## Changes in Version 2.7.1
@@ -201,7 +201,7 @@ one may for example write the following existential types
 It is now possible to define lazy value declarations using the new modifier
 [`lazy`](04-basic-declarations-and-definitions.html#value-declarations-and-definitions).
 A `lazy` value definition evaluates its right hand
-side \\(e\\) the first time the value is accessed. Example:
+side ´e´ the first time the value is accessed. Example:
 
     import compat.Platform._
     val t0 = currentTime
@@ -343,24 +343,24 @@ _(09-Mar-2007)_
 
 The `private` and `protected` modifiers now accept a
 [`[this]` qualifier](05-classes-and-objects.html#modifiers).
-A definition \\(M\\) which is labelled `private[this]` is private,
+A definition ´M´ which is labelled `private[this]` is private,
 and in addition can be accessed only from within the current object.
-That is, the only legal prefixes for \\(M\\) are `this` or `$C$.this`.
-Analogously, a definition \\(M\\) which is labelled `protected[this]` is
+That is, the only legal prefixes for ´M´ are `this` or `´C´.this`.
+Analogously, a definition ´M´ which is labelled `protected[this]` is
 protected, and in addition can be accessed only from within the current
 object.
 
 #### Tuples, revised
 
-The syntax for [tuples](06-expressions.html#tuples) has been changed from \\(\\{…\\}\\) to
-\\((…)\\). For any sequence of types \\(T_1 , … , T_n\\),
+The syntax for [tuples](06-expressions.html#tuples) has been changed from ´\\{…\\}´ to
+´(…)´. For any sequence of types ´T_1 , … , T_n´,
 
-\\((T_1 , … , T_n)\\) is a shorthand for `Tuple$n$[$T_1 , … , T_n$]`.
+´(T_1 , … , T_n)´ is a shorthand for `Tuple´n´[´T_1 , … , T_n´]`.
 
-Analogously, for any sequence of expressions or patterns \\(x_1
-, … , x_n\\),
+Analogously, for any sequence of expressions or patterns ´x_1
+, … , x_n´,
 
-\\((x_1 , … , x_n)\\) is a shorthand for `Tuple$n$($x_1 , … , x_n$)`.
+´(x_1 , … , x_n)´ is a shorthand for `Tuple´n´(´x_1 , … , x_n´)`.
 
 #### Access modifiers for primary constructors
 
@@ -461,13 +461,13 @@ Patterns” by Emir, Odersky and Williams.
 #### Tuples
 
 A new [lightweight syntax for tuples](06-expressions.html#tuples) has been introduced.
-For any sequence of types \\(T_1 , … , T_n\\),
+For any sequence of types ´T_1 , … , T_n´,
 
-\\(\{T_1 , … , T_n \}\\) is a shorthand for `Tuple$n$[$T_1 , … , T_n$]`.
+´\{T_1 , … , T_n \}´ is a shorthand for `Tuple´n´[´T_1 , … , T_n´]`.
 
-Analogously, for any sequence of expressions or patterns \\(x_1, … , x_n\\),
+Analogously, for any sequence of expressions or patterns ´x_1, … , x_n´,
 
-\\(\{x_1 , … , x_n \}\\) is a shorthand for `Tuple$n$($x_1 , … , x_n$)`.
+´\{x_1 , … , x_n \}´ is a shorthand for `Tuple´n´(´x_1 , … , x_n´)`.
 
 #### Infix operators of greater arities
 
@@ -497,8 +497,8 @@ A simplified syntax for [methods returning `unit`]
 (04-basic-declarations-and-definitions.html#procedures) has been introduced.
 Scala now allows the following shorthands:
 
-`def f(params)` \\(\mbox{for}\\) `def f(params): unit`
-`def f(params) { ... }` \\(\mbox{for}\\) `def f(params): unit = { ... }`
+`def f(params)` **for** `def f(params): unit`  
+`def f(params) { ... }` **for** `def f(params): unit = { ... }`
 
 #### Type Patterns
 
@@ -544,15 +544,15 @@ referenced from the companion module of the class and vice versa.
 
 The lookup method for [implicit definitions](07-implicits.html#implicit-parameters)
 has been generalized.
-When searching for an implicit definition matching a type \\(T\\), now are considered
+When searching for an implicit definition matching a type ´T´, now are considered
 
 1.  all identifiers accessible without prefix, and
 
-2.  all members of companion modules of classes associated with \\(T\\).
+2.  all members of companion modules of classes associated with ´T´.
 
 (The second clause is more general than before). Here, a class is _associated_
-with a type \\(T\\) if it is referenced by some part of \\(T\\), or if it is a
-base class of some part of \\(T\\).
+with a type ´T´ if it is referenced by some part of ´T´, or if it is a
+base class of some part of ´T´.
 For instance, to find implicit members corresponding to the type
 
       HashSet[List[Int], String]
@@ -618,8 +618,8 @@ _(24-May-2006)_
 #### Class Literals
 
 There is a new syntax for [class literals](06-expressions.html#literals):
-For any class type \\(C\\), `classOf[$C$]` designates the run-time
-representation of \\(C\\).
+For any class type ´C´, `classOf[´C´]` designates the run-time
+representation of ´C´.
 
 ## Changes in Version 2.0
 
