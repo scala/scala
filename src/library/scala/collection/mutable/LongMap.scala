@@ -36,6 +36,7 @@ import generic.CanBuildFrom
  *  rapidly as 2^30 is approached.
  *
  */
+@SerialVersionUID(3311432836435989440L)
 final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[Long, V]
    with Map[Long, V]

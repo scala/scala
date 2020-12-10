@@ -347,6 +347,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
+  @SerialVersionUID(4549809275616486327L)
   class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[this] var kvOrNull: (A,B @uV)) extends HashMap[A,B] {
     override def size = 1
 
@@ -436,6 +437,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
+  @SerialVersionUID(-1917647429457579983L)
   private[collection] class HashMapCollision1[A, +B](private[collection] val hash: Int, val kvs: ListMap[A, B @uV])
           extends HashMap[A, B @uV] {
     // assert(kvs.size > 1)
@@ -551,6 +553,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
+  @SerialVersionUID(834418348325321784L)
   class HashTrieMap[A, +B](
     private[HashMap] var bitmap0: Int,
     private[HashMap] var elems0: Array[HashMap[A, B @uV]],

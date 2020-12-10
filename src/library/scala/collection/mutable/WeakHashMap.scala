@@ -42,6 +42,7 @@ import convert.Wrappers._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(-853182442555455877L)
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
 			   with JMapWrapperLike[A, B, WeakHashMap[A, B]] {
   override def empty = new WeakHashMap[A, B]

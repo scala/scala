@@ -259,8 +259,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   /**
    * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
    */
+  @SerialVersionUID(-8788235040812980474L)
   private[HashSet] sealed abstract class LeafHashSet[A](private[HashSet] final val hash: Int) extends HashSet[A]
 
+  @SerialVersionUID(7828248784025959392L)
   class HashSet1[A](private[HashSet] val key: A, hash: Int) extends LeafHashSet[A](hash) {
     override def size = 1
 
@@ -333,6 +335,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = f(key)
   }
 
+  @SerialVersionUID(-4499898620567995040L)
   private[immutable] class HashSetCollision1[A](hash: Int, val ks: ListSet[A],  override val size: Int) extends LeafHashSet[A](hash) {
 
     override protected def get0(key: A, hash: Int, level: Int): Boolean =
@@ -536,6 +539,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
    * elems: [a,b]
    * children:        ---b----------------a-----------
    */
+  @SerialVersionUID(-1260675327783828535L)
   class HashTrieSet[A](private[HashSet] var bitmap: Int, private[collection] var elems: Array[HashSet[A]], private[HashSet] var size0: Int)
         extends HashSet[A] {
     @inline override final def size = size0

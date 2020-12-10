@@ -143,6 +143,7 @@ object LinkedHashSet extends MutableSetFactory[LinkedHashSet] {
   /** Class for the linked hash set entry, used internally.
    *  @since 2.10
    */
+  @SerialVersionUID(6056749505994053009L)
   private[scala] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] with Serializable {
     var earlier: Entry[A] = null
     var later: Entry[A] = null

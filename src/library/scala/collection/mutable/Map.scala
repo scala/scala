@@ -64,6 +64,7 @@ object Map extends MutableMapFactory[Map] {
 
   def empty[K, V]: Map[K, V] = new HashMap[K, V]
 
+  @SerialVersionUID(3886083557164597477L)
   class WithDefault[K, V](underlying: Map[K, V], d: K => V) extends scala.collection.Map.WithDefault(underlying, d) with Map[K, V] {
     override def += (kv: (K, V)) = {underlying += kv; this}
     def -= (key: K) = {underlying -= key; this}

@@ -123,6 +123,7 @@ object BitSet extends BitSetFactory[BitSet] {
       else new BitSet1(elems - java.lang.Long.lowestOneBit(elems))
   }
 
+  @SerialVersionUID(-860417644893387539L)
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
     protected def nwords = 2
     protected def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
@@ -150,6 +151,7 @@ object BitSet extends BitSetFactory[BitSet] {
    *  implementation. Care needs to be taken not to modify the exposed
    *  array.
    */
+  @SerialVersionUID(807040099560956194L)
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected def nwords = elems.length
     protected def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
