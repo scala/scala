@@ -3858,7 +3858,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * Convert an annotation constructor call into an AnnotationInfo.
      */
     @nowarn("cat=lint-nonlocal-return")
-    def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = context.withinAnnotation {
+    def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       var unmappable: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
@@ -3921,7 +3921,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // begin typedAnnotation
       val treeInfo.Applied(fun0, _, argss) = ann
       if (fun0.isErroneous) return finish(ErroneousAnnotation)
-      val typedFun = typed(fun0, mode.forFunMode)
+      val typedFun = context.withinAnnotation(typed(fun0, mode.forFunMode))
       if (typedFun.isErroneous) return finish(ErroneousAnnotation)
 
       val Select(New(annTpt), _) = typedFun: @unchecked

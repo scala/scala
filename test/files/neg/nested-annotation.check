@@ -1,7 +1,0 @@
-nested-annotation.scala:8: error: annotation argument needs to be a constant; found: new scala.inline()
-  @ComplexAnnotation(new inline) def bippy(): Int = 1
-                     ^
-nested-annotation.scala:11: error: no arguments allowed for nullary constructor SuppressWarnings: (): SuppressWarnings
-  @ComplexAnnotation(new SuppressWarnings(Array("blup"))) def huppy(): Int = 2
-                                               ^
-2 errors

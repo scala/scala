@@ -42,6 +42,11 @@ object Test {
   @JAnn(value = 0, b = classOf[Int]) def t15 = 0
   @JAnn(value = 0, b = java.lang.Integer.TYPE) def t16 = 0 // err
 
+  // nested annotation is ok
+  @JAnn(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def t17 = 0
+  // but the nested annotation needs to be itself a Java annotation
+  @JAnn(value = 0, c = Array(new inline)) def t18 = 0 // err
+
   @Ann(1) def u1 = 0
   @Ann(const) def u2 = 0
   @Ann(nonConst) def u3 = 0 // err
@@ -59,6 +64,11 @@ object Test {
 
   @Ann(value = 0, b = classOf[Int]) def u15 = 0
   @Ann(value = 0, b = java.lang.Integer.TYPE) def u16 = 0 // err
+
+  // nested annotations are only allowed for Java annotations, not for Scala ConstantAnnotations
+  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
+  // the outer and the nested annotation need to be Java annotations
+  @Ann(value = 0, c = Array(new inline)) def u18 = 0 // err
 
   @Ann1() def v1 = 0
   @Ann1(0) def v2 = 0
