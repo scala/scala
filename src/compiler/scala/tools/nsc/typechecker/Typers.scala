@@ -3918,13 +3918,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ErroneousAnnotation
       }
 
+      // begin typedAnnotation
+      val treeInfo.Applied(fun0, _, argss) = ann
+      if (fun0.isErroneous) return finish(ErroneousAnnotation)
+      val typedFun = typed(fun0, mode.forFunMode)
+      if (typedFun.isErroneous) return finish(ErroneousAnnotation)
+
+      val Select(New(annTpt), _) = typedFun: @unchecked
+      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
+      val annTypeSym = annType.typeSymbol
+      val isJava = annTypeSym.isJavaDefined
+
+      val isAnnotation = annTypeSym.isJavaAnnotation || annType <:< AnnotationClass.tpe
+      if (!isAnnotation) {
+        reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
+        return finish(ErroneousAnnotation)
+      }
+
       /* Calling constfold right here is necessary because some trees (negated
        * floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
         // e.g. it may have encountered an implicit conversion.
-        val ttree = typed(constfold(tr, context.owner), pt)
+        val ttree = if (isJava) typed(constfold(tr, context.owner), pt) else tr
         val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
@@ -3960,7 +3977,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Apply(Select(New(_), nme.CONSTRUCTOR), _) if pt.typeSymbol == ArrayClass =>
           reportAnnotationError(ArrayConstantsError(tree)); None
 
-        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), _) =>
+        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), _) if isJava =>
           val annInfo = typedAnnotation(ann, None, mode)
           val annType = annInfo.atp
 
@@ -3974,10 +3991,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // use of Array.apply[T: ClassTag](xs: T*): Array[T]
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
-        case treeInfo.Applied(fun, _, args :: _) =>
-          val typedFun = typed(fun, mode.forFunMode)
+        case treeInfo.Applied(fun, targs, args :: _) =>
+          val typedFun = if (isJava) typed(fun, mode.forFunMode) else fun
           if (typedFun.symbol.owner == ArrayModule.moduleClass && typedFun.symbol.name == nme.apply)
             pt match {
+              case _ if !isJava =>
+                trees2ConstArg(args, targs.headOption.map(_.tpe).getOrElse(WildcardType))
               case TypeRef(_, ArrayClass, targ :: _) =>
                 trees2ConstArg(args, targ)
               case _ =>
@@ -4004,23 +4023,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotArg] = {
         traverseOpt(trees)(tree2ConstArg(_, pt))
           .map(args => ArrayAnnotArg(args.toArray))
-      }
-
-      // begin typedAnnotation
-      val treeInfo.Applied(fun0, _, argss) = ann
-      if (fun0.isErroneous) return finish(ErroneousAnnotation)
-      val typedFun = typed(fun0, mode.forFunMode)
-      if (typedFun.isErroneous) return finish(ErroneousAnnotation)
-
-      val Select(New(annTpt), _) = typedFun: @unchecked
-      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
-      val annTypeSym = annType.typeSymbol
-      val isJava = annTypeSym.isJavaDefined
-
-      val isAnnotation = annTypeSym.isJavaAnnotation || annType <:< AnnotationClass.tpe
-      if (!isAnnotation) {
-        reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
-        return finish(ErroneousAnnotation)
       }
 
       @inline def constantly = {

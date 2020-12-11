@@ -15,6 +15,8 @@ class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
 class Ann3 extends ConstantAnnotation
 class Ann4(x: Int = 0, value: Int) extends ConstantAnnotation
 class Ann5() extends ConstantAnnotation
+class Ann6(x: Int) extends ConstantAnnotation // scala/bug#11724
+class Ann7[T](x: T) extends annotation.ConstantAnnotation // scala/bug#11724
 
 object Test {
   final val const = 1
@@ -76,4 +78,9 @@ object Test {
   @Ann5 def v16 = 0
   @Ann5() def v17 = 0
   @Ann5(0) def v18 = 0 // err
+
+  @Ann6(1) def w1 = 0
+
+  @Ann7(1) def x1 = 0
+  @Ann7(Array("")) def x2 = 0
 }
