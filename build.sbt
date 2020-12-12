@@ -888,6 +888,7 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(
+    name := "scala-dist",
     Compile / packageBin / mappings ++= {
       val binBaseDir = buildDirectory.value / "pack"
       val binMappings = (dist / mkBin).value.pair(Path.relativeTo(binBaseDir), errorIfNone = false)
