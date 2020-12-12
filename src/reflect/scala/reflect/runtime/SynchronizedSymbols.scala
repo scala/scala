@@ -170,10 +170,8 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
           else {
             // analogously to the "info" getter, here we allow for two completions:
             //   one: sourceCompleter to LazyType, two: LazyType to completed type
-            rawInfo load this
-            if (validTo == NoPeriod)
-              rawInfo load this
-
+            rawInfo.complete(this)
+            if (validTo == NoPeriod) rawInfo.complete(this)
             rawInfo.typeParams
           }
         }

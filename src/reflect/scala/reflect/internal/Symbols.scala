@@ -1795,10 +1795,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else {
           // analogously to the "info" getter, here we allow for two completions:
           //   one: sourceCompleter to LazyType, two: LazyType to completed type
-          enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-          if (validTo == NoPeriod)
-            enteringPhase(phaseOf(infos.validFrom))(rawInfo load this)
-
+          enteringPhase(phaseOf(infos.validFrom))(rawInfo.complete(this))
+          if (validTo == NoPeriod) enteringPhase(phaseOf(infos.validFrom))(rawInfo.complete(this))
           rawInfo.typeParams
         }
       }
