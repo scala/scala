@@ -37,10 +37,13 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | back end, optimizer, named & default arguments, reporters       |
  <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | 2.12.x branch, compiler performance, weird compiler bugs, lambdas |
  <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | getting started, build, CI, community build, Jenkins, docs, library, REPL |
+ <img src="https://avatars.githubusercontent.com/dwijnand"      height="50px" title="Dale Wijnand"/>         | [`@dwijnand`](https://github.com/dwijnand)           | pattern matcher, MiMa, partest |
+ <img src="https://avatars.githubusercontent.com/som-snytt"     height="50px" title="Som Snytt"/>            | [`@som-snytt`](https://github.com/som-snytt)         | warnings/lints/errors, REPL, compiler options, compiler internals, partest |
  <img src="https://avatars.githubusercontent.com/Ichoran"       height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/viktorklang"   height="50px" title="Viktor Klang"/>         | [`@viktorklang`](https://github.com/viktorklang)     | concurrency, futures |
  <img src="https://avatars.githubusercontent.com/sjrd"          height="50px" title="Sébastien Doeraene"/>   | [`@sjrd`](https://github.com/sjrd)                   | interactions with Scala.js |
- <img src="https://avatars.githubusercontent.com/NthPortal"     height="50px" title="Princess \| April"/>   | [`@NthPortal`](https://github.com/NthPortal)          | library, concurrency, `scala.math`, `LazyList`, `Using` |
+ <img src="https://avatars.githubusercontent.com/NthPortal"     height="50px" title="Princess \| April"/>    | [`@NthPortal`](https://github.com/NthPortal)         | library, concurrency, `scala.math`, `LazyList`, `Using`, warnings |
+ <img src="https://avatars.githubusercontent.com/bishabosha"    height="50px" title="Jamie Thompson"/>       | [`@bishabosha`](https://github.com/bishabosha)       | TASTy reader |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
