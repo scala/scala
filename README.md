@@ -44,6 +44,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/sjrd"          height="50px" title="Sébastien Doeraene"/>   | [`@sjrd`](https://github.com/sjrd)                   | interactions with Scala.js |
  <img src="https://avatars.githubusercontent.com/NthPortal"     height="50px" title="Princess \| April"/>    | [`@NthPortal`](https://github.com/NthPortal)         | library, concurrency, `scala.math`, `LazyList`, `Using`, warnings |
  <img src="https://avatars.githubusercontent.com/bishabosha"    height="50px" title="Jamie Thompson"/>       | [`@bishabosha`](https://github.com/bishabosha)       | TASTy reader |
+ <img src="https://avatars.githubusercontent.com/joroKr21"      height="50px" title="Georgi Krastev"/>       | [`@joroKr21`](https://github.com/joroKr21)           | higher-kinded types, implicits, variance |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
