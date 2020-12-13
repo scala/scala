@@ -158,6 +158,8 @@ recompile from scratch, sadly.)
 For history on how the current scheme was arrived at, see
 https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
 
+**Building with fatal warnings**: To make warnings in the project fatal (i.e. turn them into errors), run `set Global / fatalWarnings := true` in sbt (replace `Global` with the name of a module—such as `reflect`—to only make warnings fatal for that module). To disable fatal warnings again, either `reload` sbt, or run `set Global / fatalWarnings := false` (again, replace `Global` with the name of a module if you only enabled fatal warnings for that module). CI always has fatal warnings enabled.
+
 ### Using the sbt build
 
 Once you've started an `sbt` session you can run one of the core commands:
