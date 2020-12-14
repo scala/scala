@@ -1,0 +1,23 @@
+
+scala> @deprecated(message = "x", since = "y") def f = 1; f
+                                                          ^
+       warning: method f is deprecated (since y): x
+def f: Int
+val res0: Int = 1
+
+scala> :pa -raw << JUMP!
+// Entering paste mode (JUMP! to finish)
+
+package scala { class deprecated(message: String = "", since: String = "") extends scala.annotation.ConstantAnnotation }
+JUMP!
+
+// Exiting paste mode, now interpreting.
+
+
+scala> @deprecated(message = "x", since = "y") def g = 1; g
+                                                          ^
+       warning: method g is deprecated (since y): x
+def g: Int
+val res1: Int = 1
+
+scala> :quit
