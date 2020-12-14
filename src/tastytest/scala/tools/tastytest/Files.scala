@@ -6,20 +6,23 @@ import scala.util.Try
 
 import java.{ lang => jl, util => ju }
 import java.nio.file.{ Files => JFiles, Paths => JPaths, Path => JPath, PathMatcher, FileSystems }
-import java.io.FileNotFoundException
+import java.io.{FileNotFoundException, File => JFile}
 
 object Files {
 
   def globMatcher(str: String): PathMatcher = FileSystems.getDefault.getPathMatcher(s"glob:$str")
 
-  def tempDir(dir: String): Try[String] = Try(JFiles.createTempDirectory(dir)).map(_.toString)
+  def tempDir(category: String): Try[(String, String => Unit)] =
+    Try(JFiles.createTempDirectory(category)).map(f => f.toString -> deleteRecursively(category))
+
+  private def consumeAny[T](t: T): Unit = ()
 
   def currentDir: String = FileSystems.getDefault.getPath(".").toString
 
-  def dir(dir: String): Try[String] = Try {
+  def dir(dir: String): Try[(String, String => Unit)] = Try {
     val path = JPaths.get(dir)
     if (JFiles.isDirectory(path)) {
-      path.normalize.toString
+      path.normalize.toString -> consumeAny
     }
     else {
       throw new FileNotFoundException(s"$path is not a directory.")
@@ -67,6 +70,17 @@ object Files {
       source.close()
     }
   }.flatten
+
+  def deleteRecursively(category: String)(dir: String) = {
+    if (scala.reflect.io.Directory(new JFile(dir)).deleteRecursively()) {
+      // ok to silence
+      log(green(s"deleted recursively dir in category $category: $dir"))
+    }
+    else {
+      // don't silence as temp files could be growing unbounded.
+      println(yellow(s"warn: could not delete files recursively in dir in category $category: $dir"))
+    }
+  }
 
   val pathSep: String = FileSystems.getDefault.getSeparator
 

@@ -6,12 +6,17 @@ package object tastytest {
 
   import Files.{pathSep, classpathSep}
 
+  private val verbose = false
+
+  def log(s: => String): Unit =
+    if (verbose) println(s)
+
   def printerrln(str: String): Unit = System.err.println(red(str))
   def printwarnln(str: String): Unit = System.err.println(yellow(str))
   def printsuccessln(str: String): Unit = System.err.println(green(str))
 
   implicit final class ZipOps[T](val t: Try[T]) extends AnyVal {
-    @inline final def *>[U](u: Try[U]): Try[(T, U)] = for {
+    @inline final def <*>[U](u: Try[U]): Try[(T, U)] = for {
       x <- t
       y <- u
     } yield (x, y)

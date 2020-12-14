@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 import scala.util.{ Try, Success, Failure }
+import scala.util.chaining._
 
 import java.nio.file.{ Files => JFiles, Paths => JPaths, Path => JPath }
 import java.io.ByteArrayOutputStream
@@ -14,54 +15,86 @@ import Files._
 
 object TastyTest {
 
-  private val verbose = false
+  def runSuite(src: String, srcRoot: String, pkg: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = {
 
-  private def log(s: => String): Unit =
-    if (verbose) println(s)
+    def body(out: String, pre: Seq[String], src2: Seq[String], src3: Seq[String]) = for {
+      _     <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+      _     <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
+      _     <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+      tests <- visibleClasses(out, pkg, src2:_*)
+      _     <- runMainOn(out, tests:_*)
+    } yield ()
 
-  def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (pre, src2, src3) <- getRunSources(srcRoot/src)
-    out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
-    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
-    testNames         <- visibleClasses(out, pkgName, src2:_*)
-    _                 <- runMainOn(out, testNames:_*)
-  } yield ()
+    for {
+      (pre, src2, src3) <- getRunSources(srcRoot/src)
+      (o, c)            <- outDir.fold(tempDir("run"))(dir)
+      _                 <- body(o, pre, src2, src3).tap(_ => c(o))
+    } yield ()
+  }
 
-  def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
-    _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
-    out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
-    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
-  } yield ()
+  def posSuite(src: String, srcRoot: String, pkg: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = {
 
-  def negSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (src2, src3)      <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
-    out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacNeg(out, additionalSettings, src2:_*)
-  } yield ()
+    def body(out: String, pre: Seq[String], src2: Seq[String], src3: Seq[String]) = for {
+      _ <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
+      _ <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
+      _ <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
+      _ <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    } yield ()
 
-  def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
-    (out1, out2)             <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
-    _                        <- scalacPos(out1, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
-    _                        <- dotcPos(out2, out1, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                        <- scalacPos(out2, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
-    _                        <- scalacNeg(out2, additionalSettings, src2:_*)
-  } yield ()
+    for {
+      (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
+      _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
+      (o, c)            <- outDir.fold(tempDir("pos"))(dir)
+      _                 <- body(o, pre, src2, src3).tap(_ => c(o))
+    } yield ()
+  }
 
-  def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
-    (out1, out2)         <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
-    _                    <- dotcPos(out1, sourceRoot=srcRoot/src/"src-3-A", additionalDottySettings, src3A:_*)
-    _                    <- dotcPos(out2, classpath(out1, out2), sourceRoot=srcRoot/src/"src-3-B", additionalDottySettings, src3B:_*)
-    _                    <- scalacNeg(out2, additionalSettings, src2:_*)
-  } yield ()
+
+  def negSuite(src: String, srcRoot: String, pkg: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = {
+
+    def body(out: String, src2: Seq[String], src3: Seq[String]) = for {
+      _ <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
+      _ <- scalacNeg(out, additionalSettings, src2:_*)
+    } yield ()
+
+    for {
+      (src2, src3) <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
+      (o, c)       <- outDir.fold(tempDir("neg"))(dir)
+      _            <- body(o, src2, src3).tap(_ => c(o))
+    } yield ()
+
+  }
+
+  def negChangePreSuite(src: String, srcRoot: String, pkg: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = {
+
+    def body(out1: String, out2: String, preA: Seq[String], preB: Seq[String], src2: Seq[String], src3: Seq[String]) = for {
+      _ <- scalacPos(out1, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
+      _ <- dotcPos(out2, out1, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
+      _ <- scalacPos(out2, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
+      _ <- scalacNeg(out2, additionalSettings, src2:_*)
+    } yield ()
+
+    for {
+      (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
+      ((o1, c1), (o2, c2))     <- outDirs.fold(tempDir("neg-change-a") <*> tempDir("neg-change-b"))(p => dir(p._1) <*> dir(p._2))
+      _                        <- body(o1, o2, preA, preB, src2, src3).tap({ _ => c1(o1); c2(o2)})
+    } yield ()
+  }
+
+  def negSuiteIsolated(src: String, srcRoot: String, pkg: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = {
+
+    def body(out1: String, out2: String, src2: Seq[String], src3A: Seq[String], src3B: Seq[String]) = for {
+      _ <- dotcPos(out1, sourceRoot=srcRoot/src/"src-3-A", additionalDottySettings, src3A:_*)
+      _ <- dotcPos(out2, classpath(out1, out2), sourceRoot=srcRoot/src/"src-3-B", additionalDottySettings, src3B:_*)
+      _ <- scalacNeg(out2, additionalSettings, src2:_*)
+    } yield ()
+
+    for {
+      (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
+      ((o1, c1), (o2, c2)) <- outDirs.fold(tempDir("neg-iso-a") <*> tempDir("neg-iso-b"))({ case (o1, o2) => dir(o1) <*> dir(o2) })
+      _                    <- body(o1, o2, src2, src3A, src3B).tap({ _ => c1(o1); c2(o2)})
+    } yield ()
+  }
 
   private def javacPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
     log(s"compiling sources in ${yellow(sourceRoot)} with javac.")
@@ -213,14 +246,14 @@ object TastyTest {
     } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3A:_*), filterByKind(src3Filters, src3B:_*))
   }
 
-  private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {
+  private def visibleClasses(classpath: String, pkg: String, src2: String*): Try[Seq[String]] = Try {
     val classes = {
       val matcher = globMatcher(
-        s"$classpath/${if (pkgName.isEmpty) "" else pkgName.*->/}Test*.class"
+        s"$classpath/${if (pkg.isEmpty) "" else pkg.*->/}Test*.class"
       )
       val visibleTests = src2.map(getSourceAsName)
-      val addPkg: String => String = if (pkgName.isEmpty) identity else pkgName + "." + _
-      val prefix = if (pkgName.isEmpty) "" else pkgName.*->/
+      val addPkg: String => String = if (pkg.isEmpty) identity else pkg + "." + _
+      val prefix = if (pkg.isEmpty) "" else pkg.*->/
       val cp = JPaths.get(classpath).normalize
       def nameFromClass(path: JPath) = {
         path.subpath(cp.getNameCount, path.getNameCount)
