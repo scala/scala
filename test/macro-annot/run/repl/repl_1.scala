@@ -1,4 +1,4 @@
-// http://stackoverflow.com/questions/22549647/whats-the-right-way-to-generate-a-companion-class-de-novo-using-quasiquotes
+// https://stackoverflow.com/questions/22549647/whats-the-right-way-to-generate-a-companion-class-de-novo-using-quasiquotes
 import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context

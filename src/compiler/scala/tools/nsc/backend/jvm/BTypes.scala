@@ -335,8 +335,8 @@ abstract class BTypes {
    *
    * In this summary, "class" means "class or interface".
    *
-   * JLS: http://docs.oracle.com/javase/specs/jls/se8/html/index.html
-   * JVMS: http://docs.oracle.com/javase/specs/jvms/se8/html/index.html
+   * JLS: https://docs.oracle.com/javase/specs/jls/se8/html/index.html
+   * JVMS: https://docs.oracle.com/javase/specs/jvms/se8/html/index.html
    *
    * Terminology
    * -----------
@@ -721,7 +721,7 @@ abstract class BTypes {
     /**
      * Finding the least upper bound in agreement with the bytecode verifier
      * Background:
-     *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
+     *   https://xavierleroy.org/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
      *   https://github.com/scala/bug/issues/3872#issuecomment-292386375
      */

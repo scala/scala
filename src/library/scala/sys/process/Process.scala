@@ -205,7 +205,7 @@ trait ProcessImplicits {
     * input to a process. For example:
     * {{{
     * import scala.sys.process._
-    * Seq("xmllint", "--html", "-") #< new java.net.URL("http://www.scala-lang.org") #> new java.io.File("fixed.html") !
+    * Seq("xmllint", "--html", "-") #< new java.net.URL("https://www.scala-lang.org") #> new java.io.File("fixed.html") !
     * }}}
     */
   implicit def urlToProcess(url: URL): URLBuilder                         = apply(url)

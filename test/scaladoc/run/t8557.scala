@@ -17,7 +17,7 @@ object Test extends ScaladocModelTest {
       class A
     """
 
-  def scalaURL = "http://www.scala-lang.org/api/current/"
+  def scalaURL = "https://www.scala-lang.org/api/current/"
 
   // a non-canonical path to scala-library.jar should still work
   override def scaladocSettings = {

@@ -21,7 +21,7 @@ object ClassfileConstants {
   final val JAVA_MAJOR_VERSION = 45
   final val JAVA_MINOR_VERSION = 3
 
-  /** (see http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1)
+  /** (see https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.1)
    *
    *  If the `ACC_INTERFACE` flag is set, the `ACC_ABSTRACT` flag must also
    *  be set (ch. 2.13.1).

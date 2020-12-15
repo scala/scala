@@ -701,7 +701,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // TODO: give nested objects the ACC_FINAL flag again, since we won't let them be overridden
     //
     // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
-    // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
+    // Source: https://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
     // "Another problem is that the specification allows aggressive
     // optimization of final fields. Within a thread, it is permissible to
     // reorder reads of a final field with those modifications of a final

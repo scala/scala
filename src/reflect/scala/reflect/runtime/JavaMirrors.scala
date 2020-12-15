@@ -897,7 +897,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      * The Scala owner of the Scala class corresponding to the Java class `jclazz`
      */
     // @eb: a weird classloader might return a null package for something with a non-empty package name
-    // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
+    // for example, https://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
     // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
     // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
     // [martin] I think it's better to be forgiving here. Restoring packageNameToScala.
@@ -1068,7 +1068,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             // otherwise we may mistake mangled symbolic names for mangled nested names
             //
             // in case when a Java binary name can be treated both as a top-level class and as a nested class
-            // (as described in http://groups.google.com/group/scala-internals/browse_thread/thread/10855403bbf04298)
+            // (as described in https://groups.google.com/group/scala-internals/browse_thread/thread/10855403bbf04298)
             // we check for a top-level class first
             // this is totally correct, because a top-level class and a nested class with the same name cannot coexist
             // so it's either one or another, but not both - therefore we always load $-bearing classes correctly
@@ -1152,7 +1152,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           }
         }
       case japplied: ParameterizedType =>
-        // http://stackoverflow.com/questions/5767122/parameterizedtype-getrawtype-returns-j-l-r-type-not-class
+        // https://stackoverflow.com/questions/5767122/parameterizedtype-getrawtype-returns-j-l-r-type-not-class
         val sym = classToScala(japplied.getRawType.asInstanceOf[jClass[_]])
         val pre = if (japplied.getOwnerType ne null) typeToScala(japplied.getOwnerType) else sym.owner.thisType
         val args0 = japplied.getActualTypeArguments

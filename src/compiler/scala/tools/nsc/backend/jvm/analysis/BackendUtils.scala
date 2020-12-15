@@ -709,7 +709,7 @@ object BackendUtils {
        *
        * However, the JVM spec does not require subroutines to `RET x` to their caller, they could return back to an
        * outer subroutine caller (nested subroutines), or `RETURN`, or use a static jump. Static analysis of subroutines
-       * is therefore complex (http://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
+       * is therefore complex (https://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
        *
        * The asm.Analyzer however makes the assumption that subroutines only occur in the shape emitted by early
        * javac, i.e., `RET` always returns to the next enclosing caller. So we do that as well.

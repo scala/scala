@@ -13,7 +13,7 @@ object scalac extends Command {
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Compiler for the " &
-    Link("Scala 2", "http://scala-lang.org/") & " language")
+    Link("Scala 2", "https://scala-lang.org/") & " language")
 
   val synopsis = Section("SYNOPSIS",
 

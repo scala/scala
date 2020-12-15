@@ -1,4 +1,4 @@
-# Adapted from http://stackoverflow.com/questions/1682442/reading-java-properties-file-from-bash/2318840#2318840
+# Adapted from https://stackoverflow.com/questions/1682442/reading-java-properties-file-from-bash/2318840#2318840
 BEGIN {
     FS="=";
     n="";

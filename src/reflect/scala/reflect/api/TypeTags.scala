@@ -150,7 +150,7 @@ import java.io.ObjectStreamException
  * APIs to use `Tag`s.
  *
  * For more information about `TypeTag`s, see the
- * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
+ * [[https://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
  *
  * @see [[scala.reflect.ClassTag]], [[scala.reflect.api.TypeTags#TypeTag]], [[scala.reflect.api.TypeTags#WeakTypeTag]]
  * @group ReflectionAPI
@@ -170,7 +170,7 @@ trait TypeTags { self: Universe =>
    * [[scala.reflect.api.TypeTags#TypeTag]] instead, which statically guarantees this property.
    *
    * For more information about `TypeTag`s, see the
-   * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
+   * [[https://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
    *
    * @see [[scala.reflect.api.TypeTags]]
    * @group TypeTags

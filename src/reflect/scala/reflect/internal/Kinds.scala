@@ -261,7 +261,7 @@ trait Kinds {
      */
     def scalaNotation: String
 
-    /** Kind notation used in http://adriaanm.github.com/files/higher.pdf.
+    /** Kind notation used in https://adriaanm.github.com/files/higher.pdf.
      * Proper types are expressed as *.
      * Type constructors are expressed * -> *(lo, hi) -(+)-> *.
      */

@@ -823,7 +823,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else tpr.typed(withImplicitArgs, mode, pt)
               } orElse { originalErrors =>
                 // Re-try typing (applying to implicit args) without expected type. Add in 53d98e7d42 to
-                // for better error message (scala/bug#2180, http://www.scala-lang.org/old/node/3453.html)
+                // for better error message (scala/bug#2180, https://www.scala-lang.org/old/node/3453.html)
                 val resetTree = resetAttrs(original)
                 resetTree match {
                   case treeInfo.Applied(fun, _, _) =>

@@ -119,7 +119,7 @@ sealed class ListMap[K, +V]
   * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
   * elements.
   *
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list-maps "Scala's Collection Library overview"]]
+  * @see [[https://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list-maps "Scala's Collection Library overview"]]
   * section on `List Maps` for more information.
   * @define Coll ListMap
   * @define coll list map

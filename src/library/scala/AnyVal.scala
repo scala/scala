@@ -52,7 +52,7 @@ package scala
  *
  * It's important to note that user-defined value classes are limited, and in some circumstances,
  * still must allocate a value class instance at runtime. These limitations and circumstances are
- * explained in greater detail in the [[http://docs.scala-lang.org/overviews/core/value-classes.html Value Classes and Universal Traits]].
+ * explained in greater detail in the [[https://docs.scala-lang.org/overviews/core/value-classes.html Value Classes and Universal Traits]].
  */
 abstract class AnyVal extends Any {
   def getClass(): Class[_ <: AnyVal] = null

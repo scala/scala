@@ -16,7 +16,7 @@ By the way, the team at Lightbend is: @adriaanm, @lrytz, @retronym, @SethTisue, 
 
 ## What kind of PR are you submitting?
 
-Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala), to protect the OSS nature of the code base.
+Regardless of the nature of your Pull Request, we have to ask you to digitally sign the [Scala CLA](https://www.lightbend.com/contribute/cla/scala), to protect the OSS nature of the code base.
 
 You don't need to submit separate PRs for 2.12.x and 2.13.x. Any change accepted on 2.12.x will, in time, be merged onto 2.13.x too. (We are no longer accepting PRs for 2.11.x.)
 
@@ -48,7 +48,7 @@ For longer-running development, likely required for this category of code contri
 
 Any language change (including bug fixes) must be accompanied by the relevant updates to the spec, which lives in the same repository for this reason.
 
-A new language feature or other substantial enough language change requires a SIP (Scala Improvement Process) proposal. For more details on submitting SIPs, see [how to submit a SIP](http://docs.scala-lang.org/sips/sip-submission.html).
+A new language feature or other substantial enough language change requires a SIP (Scala Improvement Process) proposal. For more details on submitting SIPs, see [how to submit a SIP](https://docs.scala-lang.org/sips/sip-submission.html).
 
 ## Guidelines
 
@@ -227,7 +227,7 @@ Follow the [Boy Scout Rule](https://martinfowler.com/bliki/OpportunisticRefactor
 * "Always leave the code behind in a better state than you found it"
 * This translates to using any opportunity possible to improve and clean up the code in front of you
 
-Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
+Please also have a look at the [Scala Hacker Guide](https://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 
 ### Clean commits, clean history
 
@@ -255,7 +255,7 @@ if this commit should not be merged forward into the next release
 branch.
 
 Here is standard advice on good commit messages:
-http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 
 ### Pass Scabot
 

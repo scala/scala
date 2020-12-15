@@ -7,7 +7,7 @@ object Test extends ScaladocModelTest {
 
   override def code = """
   /**
-   *  Check out [[http://www.scala-lang.org
+   *  Check out [[https://www.scala-lang.org
    *  this great website]]!
    */
   class Test
@@ -30,7 +30,7 @@ object Test extends ScaladocModelTest {
 
     val link = find(test.comment.get.body).collect { case Link(ta, Text(ti)) => (ta, ti) }
     assert(link.isDefined)
-    val expected = ("http://www.scala-lang.org", "this great website")
+    val expected = ("https://www.scala-lang.org", "this great website")
     link.foreach {l => assert(l == expected, s"$l != $expected")}
   }
 }

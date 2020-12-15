@@ -16,7 +16,7 @@ object scala extends Command {
   val name = Section("NAME",
 
     MBold(command) & " " & NDash & " Run code in the " &
-    Link("Scala 2", "http://scala-lang.org/") &
+    Link("Scala 2", "https://scala-lang.org/") &
     " language")
 
   val synopsis = Section("SYNOPSIS",

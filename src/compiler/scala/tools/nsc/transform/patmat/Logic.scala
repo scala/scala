@@ -176,7 +176,7 @@ trait Logic extends Debugging  {
      *
      * Complexity: DFS over formula tree
      *
-     * See http://www.decision-procedures.org/slides/propositional_logic-2x3.pdf
+     * See https://www.decision-procedures.org/slides/propositional_logic-2x3.pdf
      */
     def simplify(f: Prop): Prop = {
 

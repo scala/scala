@@ -19,7 +19,7 @@ object Test extends DirectTest {
       // and then force scalac to perform implicit search for a manifest
       // if type tag lookup is not disabled, the compiler will crash
       // if it is disabled, then the compilation will succeed
-      // http://groups.google.com/group/scala-internals/browse_thread/thread/166ce4b71b7c46bb
+      // https://groups.google.com/group/scala-internals/browse_thread/thread/166ce4b71b7c46bb
       def foo[T: Manifest] = ()
       foo[List[Int]]
     }

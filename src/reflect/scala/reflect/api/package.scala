@@ -33,7 +33,7 @@ import scala.reflect.api.{Universe => ApiUniverse}
  *  - [[scala.reflect.api.Universe]]
  *
  *  For more information about Scala Reflection, see the
- * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ * [[https://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
  *  @groupname ReflectionAPI Scala Reflection API
  *  @groupprio API        9

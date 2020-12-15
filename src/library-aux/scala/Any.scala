@@ -31,13 +31,13 @@ package scala
  *     w.print()
  * }}}
  *
- * See the [[http://docs.scala-lang.org/overviews/core/value-classes.html Value Classes and Universal Traits]] for more
+ * See the [[https://docs.scala-lang.org/overviews/core/value-classes.html Value Classes and Universal Traits]] for more
  * details on the interplay of universal traits and value classes.
  */
 abstract class Any {
   /** Compares the receiver object (`this`) with the argument object (`that`) for equivalence.
    *
-   *  Any implementation of this method should be an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]:
+   *  Any implementation of this method should be an [[https://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]:
    *
    *  - It is reflexive: for any instance `x` of type `Any`, `x.equals(x)` should return `true`.
    *  - It is symmetric: for any instances `x` and `y` of type `Any`, `x.equals(y)` should return `true` if and

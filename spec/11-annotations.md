@@ -148,7 +148,7 @@ Java platform, the following annotations have a standard meaning.
 
     Whenever the static type of an expression matches a specialized variant of
     a definition, the compiler will instead use the specialized version.
-    See the [specialization sid](http://docs.scala-lang.org/sips/completed/scala-specialization.html) for more details of the implementation.
+    See the [specialization sid](https://docs.scala-lang.org/sips/completed/scala-specialization.html) for more details of the implementation.
     
 
 ## User-defined Annotations

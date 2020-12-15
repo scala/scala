@@ -20,7 +20,7 @@ object EditDistance {
   /**
    * @author Paul Phillips
    * Translated from the java version at
-   *    http://www.merriampark.com/ld.htm
+   *    https://www.merriampark.com/ld.htm
    *  which is declared to be public domain.
    */
   def levenshtein(

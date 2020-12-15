@@ -20,7 +20,7 @@ import scala.util.hashing.MurmurHash3
 
 /** This class implements mutable maps using a hashtable.
   *
-  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   *  section on `Hash Tables` for more information.
   *
   *  @tparam K    the type of the keys contained in this hash map.

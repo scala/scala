@@ -41,7 +41,7 @@ import scala.concurrent.ExecutionContext.parasitic
  *  }
  *  }}}
  *
- *  @see [[http://docs.scala-lang.org/overviews/core/futures.html Futures and Promises]]
+ *  @see [[https://docs.scala-lang.org/overviews/core/futures.html Futures and Promises]]
  *
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be

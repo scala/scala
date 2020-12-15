@@ -341,7 +341,7 @@ trait EntityPage extends HtmlPage {
     val postamble =
       List(Div(id = "tooltip"),
            if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2020 ") :: A(href = "http://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "http://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
+             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2020 ") :: A(href = "https://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "https://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
            else
              Div(id = "footer", elems = Txt(tpl.universe.settings.docfooter.value)))
 
@@ -528,7 +528,7 @@ trait EntityPage extends HtmlPage {
                 case _      => "" // no parameters
               }
               Br ++ Txt("To access this member you can use a ") ++
-              A(href="http://stackoverflow.com/questions/2087250/what-is-the-purpose-of-type-ascription-in-scala",
+              A(href="https://stackoverflow.com/questions/2087250/what-is-the-purpose-of-type-ascription-in-scala",
                 target="_blank", elems= Txt("type ascription")) ++ Txt(":") ++
               Br ++ Div(`class`="cmt", elems=Pre(Txt(s"(${EntityPage.lowerFirstLetter(tpl.name)}: ${conv.targetType.name}).${mbr.name}$params")))
             }
@@ -1008,7 +1008,7 @@ trait EntityPage extends HtmlPage {
         templateToHtml(ktcc.typeClassEntity) ++ Txt(")")
     case tcc: TypeClassConstraint =>
       Txt(tcc.typeParamName + " is ") ++
-        A(href="http://stackoverflow.com/questions/2982276/what-is-a-context-bound-in-scala", target="_blank", elems=
+        A(href="https://stackoverflow.com/questions/2982276/what-is-a-context-bound-in-scala", target="_blank", elems=
         Txt("context-bounded")) ++ Txt(" by " + tcc.typeClassEntity.qualifiedName + " (" + tcc.typeParamName + ": ") ++
         templateToHtml(tcc.typeClassEntity) ++ Txt(")")
     case impl: ImplicitInScopeConstraint =>

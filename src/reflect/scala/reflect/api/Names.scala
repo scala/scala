@@ -33,7 +33,7 @@ package api
  *
  *  To search for a type member, one can follow the same procedure, using `TypeName` instead.
  *
- *  For more information about creating and using `Name`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
+ *  For more information about creating and using `Name`s, see the [[https://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
  *  @contentDiagram hideNodes "*Api"
  *  @group ReflectionAPI

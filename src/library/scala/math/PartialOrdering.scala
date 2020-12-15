@@ -18,7 +18,7 @@ package math
  *  of partial ordering on some type.  This trait is for representing the
  *  latter.
  *
- *  A [[http://en.wikipedia.org/wiki/Partially_ordered_set partial ordering]] is a
+ *  A [[https://en.wikipedia.org/wiki/Partially_ordered_set partial ordering]] is a
  *  binary relation on a type `T`, exposed as the `lteq` method of this trait.
  *  This relation must be:
  *
@@ -31,7 +31,7 @@ package math
  *    for any `x`, `y`, and `z` of type `T`.
  *
  *  Additionally, a partial ordering induces an
- *  [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
+ *  [[https://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
  *  on a type `T`: `x` and `y` of type `T` are equivalent if and only if
  *  `lteq(x, y) && lteq(y, x) == '''true'''`. This equivalence relation is
  *  exposed as the `equiv` method, inherited from the

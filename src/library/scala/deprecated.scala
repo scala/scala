@@ -49,7 +49,7 @@ import scala.annotation.meta._
  *  all 2.13.x releases, but may be removed in the future. (A deprecated element
  *  might be kept longer to ease migration, but developers should not rely on this.)
  *
- *  @see    The official documentation on [[http://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
+ *  @see    The official documentation on [[https://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
  *  @param  message the message to print during compilation if the definition is accessed
  *  @param  since   a string identifying the first version in which the definition was deprecated
  *  @see    [[scala.deprecatedInheritance]]

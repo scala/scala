@@ -975,7 +975,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * Q: When exactly is a sym marked as STATIC?
      * A: If it's a member of a toplevel object, or of an object contained in a toplevel object, or
      * any number of levels deep.
-     * http://groups.google.com/group/scala-internals/browse_thread/thread/d385bcd60b08faf6
+     * https://groups.google.com/group/scala-internals/browse_thread/thread/d385bcd60b08faf6
      *
      * TODO: should this only be invoked on class / module symbols? because there's also `isStaticMember`.
      *

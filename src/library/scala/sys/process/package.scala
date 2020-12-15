@@ -186,7 +186,7 @@ package scala.sys {
     * import java.io.File
     * import java.net.URL
     * import scala.sys.process._
-    * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
+    * new URL("https://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
     * More information about the other ways of controlling I/O can be found

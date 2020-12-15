@@ -33,8 +33,8 @@ import java.io.Writer
  *  These Picklers build on the work of Andrew Kennedy. They are most closely inspired by
  *  Iulian Dragos' picklers for Scala to XML. See:
  *
- *  <a href="http://code.google.com/p/gdata-scala-client/wiki/DevelopersGuide">
- *  http://code.google.com/p/gdata-scala-client/wiki/DevelopersGuide
+ *  <a href="https://code.google.com/p/gdata-scala-client/wiki/DevelopersGuide">
+ *  https://code.google.com/p/gdata-scala-client/wiki/DevelopersGuide
  *  </a>
  */
 abstract class Pickler[T] {

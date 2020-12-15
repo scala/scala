@@ -43,7 +43,7 @@ class SyncVar[A] {
     wait(timeout)
     val elapsed = System.nanoTime() - start
     // nanoTime should be monotonic, but it's not possible to rely on that.
-    // See http://bugs.java.com/view_bug.do?bug_id=6458294
+    // See https://bugs.java.com/view_bug.do?bug_id=6458294
     if (elapsed < 0) 0 else TimeUnit.NANOSECONDS.toMillis(elapsed)
   }
 

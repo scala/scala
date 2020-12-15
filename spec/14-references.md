@@ -94,7 +94,7 @@ for syntactic definitions?",
   organization = {EPFL},
   month =        feb,
   year =         2007,
-  note =         {http://www.scala-lang.org/docu/manuals.html}
+  note =         {https://www.scala-lang.org/docu/manuals.html}
 }
 
 @Book{odersky:scala-reference,
@@ -125,7 +125,7 @@ for syntactic definitions?",
   year		= 2003,
   month		= jan,
   note		= {\hspace*{\fill}\\
-                  \verb@http://www.cis.upenn.edu/~bcpierce/FOOL/FOOL10.html@}
+                  \verb@https://www.cis.upenn.edu/~bcpierce/FOOL/FOOL10.html@}
 }
 
 %% Misc
@@ -135,14 +135,14 @@ for syntactic definitions?",
   author	= {W3C},
   title		= {Document Object Model ({DOM})},
   howpublished	= {\hspace*{\fill}\\
-                  \verb@http://www.w3.org/DOM/@}
+                  \verb@https://www.w3.org/DOM/@}
 }
 
 @Misc{w3c:xml,
   author	= {W3C},
   title		= {Extensible {M}arkup {L}anguage ({XML})},
   howpublished	= {\hspace*{\fill}\\
-                  \verb@http://www.w3.org/TR/REC-xml@}
+                  \verb@https://www.w3.org/TR/REC-xml@}
 }
 
 @TechReport{scala-overview-tech-report,
@@ -185,7 +185,7 @@ for syntactic definitions?",
   booktitle =    {Proc. FOOL 12},
   year =         2005,
   month =        jan,
-  note =         {\verb@http://homepages.inf.ed.ac.uk/wadler/fool@}
+  note =         {\verb@https://homepages.inf.ed.ac.uk/wadler/fool@}
 }
 
 @InProceedings{odersky:scala-experiment,
@@ -201,7 +201,7 @@ for syntactic definitions?",
   year = {2007},
   month = jan,
   note = {FOOL-WOOD '07},
-  short = {http://www.cis.upenn.edu/~bcpierce/papers/variance.pdf}
+  short = {https://www.cis.upenn.edu/~bcpierce/papers/variance.pdf}
 }
 
 -->

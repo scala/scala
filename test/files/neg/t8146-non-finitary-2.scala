@@ -1,5 +1,5 @@
 // Example 3 from "On Decidability of Nominal Subtyping with Variance" (Pierce, Kennedy)
-// http://research.microsoft.com/pubs/64041/fool2007.pdf
+// https://research.microsoft.com/pubs/64041/fool2007.pdf
 trait N[-Z]
 trait D[Y]
 trait C[X] extends N[N[C[D[X]]]]

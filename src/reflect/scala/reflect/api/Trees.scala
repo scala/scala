@@ -52,7 +52,7 @@ import scala.annotation.{nowarn, tailrec}
  *    print( showRaw( reify{5}.tree ) )` // prints Literal(Constant(5))
  *  }}}
  *
- *  For more information about `Tree`s, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, Types]].
+ *  For more information about `Tree`s, see the [[https://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, Types]].
  *
  *  @groupname Traversal Tree Traversal and Transformation
  *  @groupprio Traversal 1

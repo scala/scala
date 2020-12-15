@@ -1,4 +1,4 @@
-// Test from http://lrytz.github.io/scala-aladdin-bugtracker/displayItem.do%3Fid=763.html
+// Test from https://lrytz.github.io/scala-aladdin-bugtracker/displayItem.do%3Fid=763.html
 // and expanded with package object variants
 
 

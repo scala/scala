@@ -143,7 +143,7 @@ import java.io.{ PrintWriter, StringWriter }
  * }}}
  *
  * For more details about `Printer`s and other aspects of Scala reflection, see the
- * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ * [[https://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
  *  @group ReflectionAPI
  */

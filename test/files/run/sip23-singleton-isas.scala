@@ -2,7 +2,7 @@ object Test extends App {
 
   // expr.isInstanceOf[Singleton] is true iff the expression has a singleton type
   // However, expr.asInstanceOf[Singleton] is erased to expr.asInstanceOf[Any] so it never throws
-  // as discussed in http://docs.scala-lang.org/sips/minutes/2017-12-06-sip-minutes.html
+  // as discussed in https://docs.scala-lang.org/sips/minutes/2017-12-06-sip-minutes.html
 
   val foo: String = "foo"
   assert(foo.isInstanceOf[Singleton])

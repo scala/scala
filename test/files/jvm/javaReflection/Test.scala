@@ -7,7 +7,7 @@ getSimpleName / getCanonicalName / isAnonymousClass / isLocalClass / isSynthetic
     therefore give surprising answers or may even throw an exception.
 
     In particular, the method "getSimpleName" assumes that classes are named after the Java spec
-      http://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1
+      https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1
 
     Consider the following Scala example:
       class A { object B { class C } }

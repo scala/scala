@@ -150,7 +150,7 @@ object EmitManPage {
     out println ".\\\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #"
     out println ".\\\" #     / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL              #"
     out println ".\\\" #   __\\ \\/ /__/ __ |/ /__/ __ |                                          #"
-    out println ".\\\" #  /____/\\___/_/ |_/____/_/ | |    http://scala-lang.org/                #"
+    out println ".\\\" #  /____/\\___/_/ |_/____/_/ | |    https://scala-lang.org/                #"
     out println ".\\\" #                           |/                                           #"
     out println ".\\\" ##########################################################################"
     out println ".\\\""

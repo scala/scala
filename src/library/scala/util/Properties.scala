@@ -148,7 +148,7 @@ private[scala] trait PropertiesTrait {
   /* Some derived values. */
   /** Returns `true` iff the underlying operating system is a version of Microsoft Windows. */
   def isWin                 = osName startsWith "Windows"
-  // See http://mail.openjdk.java.net/pipermail/macosx-port-dev/2012-November/005148.html for
+  // See https://mail.openjdk.java.net/pipermail/macosx-port-dev/2012-November/005148.html for
   // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
   /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
   def isMac                 = osName startsWith "Mac OS X"

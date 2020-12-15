@@ -28,7 +28,7 @@ import java.io.{IOException, NotSerializableException, ObjectInputStream, Object
   * Inspired by: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/locks/AbstractQueuedSynchronizer.java
   * Written by Doug Lea with assistance from members of JCP JSR-166
   * Expert Group and released to the public domain, as explained at
-  * http://creativecommons.org/publicdomain/zero/1.0/
+  * https://creativecommons.org/publicdomain/zero/1.0/
   */
 private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer with (Try[T] => Unit) {
   //@volatie not needed since we use acquire/release
