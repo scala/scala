@@ -1841,7 +1841,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
           // of constant argument values "for free". Related to scala/bug#7041.
           else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
-            """|subclassing Classfile does not
+            """|subclassing ClassfileAnnotation does not
                |make your annotation visible at runtime.  If that is what
                |you want, you must write the annotation class in Java.""".stripMargin, WarningCategory.Other, clazz)
         }

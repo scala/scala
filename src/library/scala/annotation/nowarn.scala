@@ -31,4 +31,5 @@ package scala.annotation
   *
   * To ensure that a `@nowarn` annotation actually suppresses a warning, enable `-Xlint:nowarn`.
   */
+@nowarn("msg=subclassing ClassfileAnnotation does not\nmake your annotation visible at runtime")
 class nowarn(value: String = "") extends ClassfileAnnotation
