@@ -1,2 +1,2 @@
 new sann(1, scala.`package`.List.apply[Int](1, 2))
-new jann(y = Array(1, 2), x = 2)
+new jann(x = 2, y = Array(1, 2))

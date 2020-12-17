@@ -1,7 +1,0 @@
-t6082.scala:2: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-@annot("") class C
-       ^
-t6082.scala:2: error: annotation annot is missing argument notValue
-@annot("") class C
- ^
-2 errors

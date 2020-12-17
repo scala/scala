@@ -4,109 +4,107 @@ Test.scala:12: error: class Ann1 cannot have auxiliary constructors because it e
 Test.scala:14: error: class Ann2 needs to have exactly one argument list because it extends ConstantAnnotation
 class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
                                    ^
-Test.scala:25: error: annotation argument needs to be a constant; found: Test.this.nonConst
+Test.scala:27: error: annotation argument needs to be a constant; found: Test.this.nonConst
   @JAnn(nonConst) def t3 = 0 // err
         ^
-Test.scala:27: error: annotation JAnn is missing argument value
+Test.scala:29: error: annotation JAnn is missing argument value
   @JAnn() def t4 = 0 // err
    ^
-Test.scala:30: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
+Test.scala:32: error: arguments to Java annotations have to be supplied as named arguments
   @JAnn(0, "") def t7 = 0 // err
         ^
-Test.scala:30: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
+Test.scala:32: error: arguments to Java annotations have to be supplied as named arguments
   @JAnn(0, "") def t7 = 0 // err
            ^
-Test.scala:30: error: annotation JAnn is missing argument value
+Test.scala:32: error: annotation JAnn is missing argument value
   @JAnn(0, "") def t7 = 0 // err
    ^
-Test.scala:31: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
+Test.scala:33: error: arguments to Java annotations have to be supplied as named arguments
   @JAnn(0, a = "") def t8 = 0 // err
         ^
-Test.scala:31: error: annotation JAnn is missing argument value
+Test.scala:33: error: annotation JAnn is missing argument value
   @JAnn(0, a = "") def t8 = 0 // err
    ^
-Test.scala:34: error: annotation argument cannot be null
+Test.scala:36: error: annotation argument cannot be null
   @JAnn(value = 0, a = null) def t10 = 0 // err
                        ^
-Test.scala:35: error: annotation argument needs to be a constant; found: Test.this.getClass()
+Test.scala:37: error: annotation argument needs to be a constant; found: Test.this.getClass()
   @JAnn(value = 0, b = getClass) def t11 = 0 // err
                        ^
-Test.scala:36: error: Array constants have to be specified using the `Array(...)` factory method
+Test.scala:38: error: Array constants have to be specified using the `Array(...)` factory method
   @JAnn(value = 0, c = new Array(1)) def t12 = 0 // err
                        ^
-Test.scala:37: error: annotation argument cannot be null
+Test.scala:39: error: annotation argument cannot be null
   @JAnn(value = 0, d = null) def t13 = 0 // err
                        ^
-Test.scala:38: error: annotation argument cannot be null
+Test.scala:40: error: annotation argument cannot be null
   @JAnn(value = 0, d = null) def t14 = 0 // err
                        ^
-Test.scala:41: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE
+Test.scala:43: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE
   @JAnn(value = 0, b = java.lang.Integer.TYPE) def t16 = 0 // err
                                          ^
-Test.scala:45: error: annotation argument needs to be a constant; found: Test.this.nonConst
+Test.scala:48: error: nested classfile annotations must be defined in java; found: inline
+  @JAnn(value = 0, c = Array(new inline)) def t18 = 0 // err
+                             ^
+Test.scala:52: error: annotation argument needs to be a constant; found: Test.this.nonConst
   @Ann(nonConst) def u3 = 0 // err
        ^
-Test.scala:47: error: annotation Ann is missing argument value
+Test.scala:54: error: not enough arguments for constructor Ann: (value: Int, a: String, b: Class[_], c: Array[Object]): Ann.
+Unspecified value parameter value.
   @Ann() def u4 = 0 // err
    ^
-Test.scala:50: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann(0, "") def u7 = 0 // err
-       ^
-Test.scala:50: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann(0, "") def u7 = 0 // err
-          ^
-Test.scala:50: error: annotation Ann is missing argument value
-  @Ann(0, "") def u7 = 0 // err
-   ^
-Test.scala:51: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann(0, a = "") def u8 = 0 // err
-       ^
-Test.scala:51: error: annotation Ann is missing argument value
-  @Ann(0, a = "") def u8 = 0 // err
-   ^
-Test.scala:54: error: annotation argument cannot be null
+Test.scala:61: error: annotation argument cannot be null
   @Ann(value = 0, a = null) def u10 = 0 // err
                       ^
-Test.scala:55: error: annotation argument needs to be a constant; found: Test.this.getClass()
+Test.scala:62: error: annotation argument needs to be a constant; found: Test.this.getClass()
   @Ann(value = 0, b = getClass) def u11 = 0 // err
                       ^
-Test.scala:56: error: Array constants have to be specified using the `Array(...)` factory method
+Test.scala:63: error: Array constants have to be specified using the `Array(...)` factory method
   @Ann(value = 0, c = new Array(1)) def u12 = 0 // err
                       ^
-Test.scala:59: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE
+Test.scala:66: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE
   @Ann(value = 0, b = java.lang.Integer.TYPE) def u16 = 0 // err
                                         ^
-Test.scala:62: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann1(0) def v2 = 0 // err
-        ^
-Test.scala:63: error: unknown annotation argument name: value
-  @Ann1(value = 0) def v3 = 0 // err
-              ^
-Test.scala:64: error: unknown annotation argument name: x
+Test.scala:69: error: Java annotation SuppressWarnings is abstract; cannot be instantiated
+Error occurred in an application involving default arguments.
+  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
+                            ^
+Test.scala:69: error: not found: value value
+Error occurred in an application involving default arguments.
+  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
+                                                 ^
+Test.scala:71: error: annotation argument needs to be a constant; found: new scala.inline()
+  @Ann(value = 0, c = Array(new inline)) def u18 = 0 // err
+                            ^
+Test.scala:76: error: multiple constructors for Ann1 with alternatives:
+  (s: String)Ann1 <and>
+  (value: Int)Ann1
+ cannot be invoked with (x: String)
   @Ann1(x = "") def v4 = 0 // err
-          ^
-Test.scala:66: error: multiple argument lists on Java annotation or subclass of ConstantAnnotation
+   ^
+Test.scala:78: error: Ann1 does not take parameters
   @Ann1(0)(0) def v6 = 0 // err
    ^
-Test.scala:67: error: annotation Ann2 is missing argument x
+Test.scala:79: error: not enough arguments for constructor Ann2: (x: Int)(y: Int): Ann2.
+Unspecified value parameter x.
   @Ann2 def v7 = 0 // err
    ^
-Test.scala:69: error: multiple argument lists on Java annotation or subclass of ConstantAnnotation
-  @Ann2(x = 0)(y = 0) def v9 = 0 // err
+Test.scala:80: error: missing argument list for constructor Ann2 in class Ann2
+  @Ann2(x = 0) def v8 = 0 // err
    ^
-Test.scala:71: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
+Test.scala:83: error: no arguments allowed for nullary constructor Ann3: (): Ann3
   @Ann3(0) def v11 = 0 // err
         ^
-Test.scala:73: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann4(0, 1) def v13 = 0 // err
-        ^
-Test.scala:73: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
-  @Ann4(0, 1) def v13 = 0 // err
-           ^
-Test.scala:73: error: annotation Ann4 is missing argument value
-  @Ann4(0, 1) def v13 = 0 // err
+Test.scala:84: error: not enough arguments for constructor Ann4: (x: Int, value: Int): Ann4.
+Unspecified value parameter value.
+  @Ann4(0) def v12 = 0
    ^
-Test.scala:78: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
+Test.scala:90: error: no arguments allowed for nullary constructor Ann5: (): Ann5
   @Ann5(0) def v18 = 0 // err
         ^
-37 errors
+Test.scala:81: warning: Implementation limitation: multiple argument lists on annotations are
+currently not supported; ignoring arguments List(0)
+  @Ann2(x = 0)(y = 0) def v9 = 0 // warn
+   ^
+1 warning
+32 errors

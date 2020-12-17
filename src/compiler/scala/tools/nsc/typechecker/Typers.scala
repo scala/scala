@@ -3858,7 +3858,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * Convert an annotation constructor call into an AnnotationInfo.
      */
     @nowarn("cat=lint-nonlocal-return")
-    def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = context.withinAnnotation {
+    def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       var unmappable: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
@@ -3918,13 +3918,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ErroneousAnnotation
       }
 
+      // begin typedAnnotation
+      val treeInfo.Applied(fun0, _, argss) = ann
+      if (fun0.isErroneous) return finish(ErroneousAnnotation)
+      val typedFun = context.withinAnnotation(typed(fun0, mode.forFunMode))
+      if (typedFun.isErroneous) return finish(ErroneousAnnotation)
+
+      val Select(New(annTpt), _) = typedFun: @unchecked
+      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
+      val annTypeSym = annType.typeSymbol
+      val isJava = annTypeSym.isJavaDefined
+
+      val isAnnotation = annTypeSym.isJavaAnnotation || annType <:< AnnotationClass.tpe
+      if (!isAnnotation) {
+        reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
+        return finish(ErroneousAnnotation)
+      }
+
       /* Calling constfold right here is necessary because some trees (negated
        * floats and literals in particular) are not yet folded.
        */
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
         // e.g. it may have encountered an implicit conversion.
-        val ttree = typed(constfold(tr, context.owner), pt)
+        val ttree = if (isJava) typed(constfold(tr, context.owner), pt) else tr
         val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
@@ -3933,9 +3950,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 
+        def isDefaultArg(tree: Tree) = tree match {
+          case treeInfo.Applied(fun, _, _) => fun.symbol.isDefaultGetter
+          case _ => false
+        }
+
         if (const == null) {
           if (unit.isJava) unmappable = true
-          else reportAnnotationError(AnnotationNotAConstantError(ttree))
+          else if (!isDefaultArg(ttree)) reportAnnotationError(AnnotationNotAConstantError(ttree))
           None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
@@ -3955,7 +3977,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Apply(Select(New(_), nme.CONSTRUCTOR), _) if pt.typeSymbol == ArrayClass =>
           reportAnnotationError(ArrayConstantsError(tree)); None
 
-        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), _) =>
+        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), _) if isJava =>
           val annInfo = typedAnnotation(ann, None, mode)
           val annType = annInfo.atp
 
@@ -3969,10 +3991,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // use of Array.apply[T: ClassTag](xs: T*): Array[T]
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
-        case Apply(fun, args) =>
-          val typedFun = typed(fun, mode.forFunMode)
+        case treeInfo.Applied(fun, targs, args :: _) =>
+          val typedFun = if (isJava) typed(fun, mode.forFunMode) else fun
           if (typedFun.symbol.owner == ArrayModule.moduleClass && typedFun.symbol.name == nme.apply)
             pt match {
+              case _ if !isJava =>
+                trees2ConstArg(args, targs.headOption.map(_.tpe).getOrElse(WildcardType))
               case TypeRef(_, ArrayClass, targ :: _) =>
                 trees2ConstArg(args, targ)
               case _ =>
@@ -4001,38 +4025,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           .map(args => ArrayAnnotArg(args.toArray))
       }
 
-      // begin typedAnnotation
-      val treeInfo.Applied(fun0, _, argss) = ann
-      if (fun0.isErroneous) return finish(ErroneousAnnotation)
-      val typedFun = typed(fun0, mode.forFunMode)
-      if (typedFun.isErroneous) return finish(ErroneousAnnotation)
-
-      val Select(New(annTpt), _) = typedFun: @unchecked
-      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
-      val annTypeSym = annType.typeSymbol
-      val isJava = annTypeSym.isJavaDefined
-
-      val isAnnotation = annTypeSym.isJavaAnnotation || annType <:< AnnotationClass.tpe
-      if (!isAnnotation) {
-        reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
-        return finish(ErroneousAnnotation)
-      }
-
       @inline def constantly = {
         // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
         // stored in the `assocs` field of the resulting AnnotationInfo
         if (argss.lengthIs > 1) {
           reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
         } else {
-          // TODO: annType may have undetermined type params for Scala ConstantAnnotations, see scala/bug#11724.
-          // Can we infer them, e.g., `typed(argss.foldLeft(fun0)(Apply(_, _)))`?
-          val annScopeJava =
-            if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
-            else EmptyScope // annScopeJava is only used if isJava
+          val annScopeJava = annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
 
           val names = mutable.Set[Symbol]()
-          names ++= (if (isJava) annScopeJava.iterator
-                     else typedFun.tpe.params.iterator)
+          names ++= annScopeJava.iterator
 
           def hasValue = names exists (_.name == nme.value)
           val namedArgs = argss match {
@@ -4043,8 +4045,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val nvPairs = namedArgs map {
             case arg @ NamedArg(Ident(name), rhs) =>
-              val sym = if (isJava) annScopeJava.lookup(name)
-                        else findSymbol(typedFun.tpe.params)(_.name == name)
+              val sym = annScopeJava.lookup(name)
               if (sym == NoSymbol) {
                 reportAnnotationError(UnknownAnnotationNameError(arg, name))
                 (nme.ERROR, None)
@@ -4053,7 +4054,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 (nme.ERROR, None)
               } else {
                 names -= sym
-                if (isJava) sym.cookJavaRawInfo() // #3429
+                sym.cookJavaRawInfo() // #3429
                 val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
                 (sym.name, annArg)
               }
@@ -4086,10 +4087,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             AnnotationInfo(tpt.tpe, args, Nil).setOriginal(typedAnn).setPos(t.pos)
 
           case Block(_, expr) =>
-            context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
-                              "constructor call into a block. The corresponding AnnotationInfo\n"+
-                              "will contain references to local values and default getters instead\n"+
-                              "of the actual argument trees", WarningCategory.Other)
+            if (!annTypeSym.isNonBottomSubClass(ConstantAnnotationClass))
+              context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
+                                "constructor call into a block. The corresponding AnnotationInfo\n"+
+                                "will contain references to local values and default getters instead\n"+
+                                "of the actual argument trees", WarningCategory.Other)
             annInfo(expr)
 
           case Apply(fun, args) =>
@@ -4124,12 +4126,38 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      finish(
-        if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass))
+      finish {
+        if (isJava)
           constantly
-        else
-          statically
-      )
+        else {
+          val info = statically
+          if (!info.isErroneous && annTypeSym.isNonBottomSubClass(ConstantAnnotationClass)) {
+            var namedArgs: Map[Name, Tree] = Map.empty
+            val treeInfo.Applied(constr, _, _) = info.original match {
+              case Block(stats, call) =>
+                // when named / default args are used
+                namedArgs = Map.from(stats collect {
+                  case ValDef(_, name, _, rhs) => (name, rhs)
+                })
+                call
+              case call => call
+            }
+            val params = constr.symbol.paramss.headOption.getOrElse(Nil)
+            val assocs = info.args.zip(params) map {
+              case (arg, param) =>
+                val origArg = arg match {
+                  case Ident(n) => namedArgs.getOrElse(n, arg)
+                  case _ => arg
+                }
+                (param.name, tree2ConstArg(origArg, param.tpe.resultType))
+            }
+            if (hasError) ErroneousAnnotation
+            else if (unmappable) UnmappableAnnotation
+            else AnnotationInfo(info.atp, Nil, assocs.collect({ case (n, Some(arg)) => (n, arg) })).setOriginal(info.original).setPos(info.pos)
+          } else
+              info
+        }
+      }
     }
 
     def typedMacroAnnotation(cdef: ClassDef) = {
