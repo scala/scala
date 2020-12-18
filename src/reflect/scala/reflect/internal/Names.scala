@@ -14,6 +14,7 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.tailrec
 import scala.io.Codec
 
 trait Names extends api.Names {
@@ -214,7 +215,7 @@ trait Names extends api.Names {
     /** The length of this name. */
     final def length: Int = len
     final def nonEmpty = !isEmpty
-    // This method is implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
+    // This method implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
     override final def isEmpty = length == 0
 
     def nameKind: String
@@ -413,21 +414,30 @@ trait Names extends api.Names {
       false
     }
 
-    def lastIndexOf(s: String): Int = {
-      if (s.isEmpty()) return length
+    def lastIndexOf(s: String): Int = if (s.isEmpty) length else {
+      val slength   = s.length()
+      val lastIndex = slength - 1
+      val lastChar  = s.charAt(lastIndex)
+      val contents  = _chrs
+      val base      = start
+      val min       = base + lastIndex
 
-      val last = s(s.length - 1)
-      var i = length
-      while (s.length() <= i) {
-        if (_chrs(start + i - 1) == last) {
-          var j = 2
-          while (j <= s.length() && _chrs(start + i - j) == s.charAt(s.length() - j))
-            j += 1
-          if (j > s.length()) return i - s.length()
+      @tailrec
+      def scan(end: Int): Int =
+        if (end < min) -1
+        else if (contents(end) == lastChar) {
+          var i  = end - 1
+          val i0 = i - lastIndex
+          var at = lastIndex - 1
+          while (i > i0 && contents(i) == s.charAt(at)) {
+            i -= 1
+            at -= 1
+          }
+          if (i > i0) scan(end - 1) else i0 + 1 - base
         }
-        i -= 1
-      }
-      return -1
+        else scan(end - 1)
+
+      scan(base + length - 1)
     }
 
     /** Some thoroughly self-explanatory convenience functions.  They

@@ -125,15 +125,19 @@ class NamesTest {
       val nameResult = name.lastIndexOf(sub)
       assertEquals(s""""$name".lastIndexOf("$sub")""", javaResult, nameResult)
     }
-    check(f,  "isch")  // put the isch in fisch
+    val d = TermName("x$default$42")
+    val e = TermName("")
+    check(f,  "isch")  // the isch in fisch
     check(fy, "isch")
     check(f,  "")
-    check(TermName(""),  "")
-    check(TermName(""),  "abc")
+    check(e,  "")
+    check(e,  "abc")
     check(f,  "ischbiisch")
     check(fy, "ischbiisch")
     check(fy, "fyou")
     check(f,  "disch")
     check(fy, "disch")
+    check(f,  "hai")   // happens to be earlier in name array
+    check(d,  "$$")    // likely to be earlier in name array
   }
 }
