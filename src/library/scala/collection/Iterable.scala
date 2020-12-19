@@ -815,9 +815,20 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def tails: Iterator[C] = iterateUntilEmpty(_.tail)
 
-  /** Iterates over the inits of this $coll. The first value will be this
-    *  $coll and the final one will be an empty $coll, with the intervening
-    *  values the results of successive applications of `init`.
+  /** Iterates over the initial segments of this $coll, longest first.
+    *
+    *  The initial segments of a collection, e.g. a list, can be defined recursively as follows:
+    *  1) The empty list Nil has just one initial segment: Nil itself.
+    *  2) The initial segments of list x::xs consist of Nil plus the initial segments of xs, but with x consed onto each of them.
+    *  Note that the order of segments in the above definition is shortest first rather than longest first.
+    *  Purely for illustration purposes, here is an implementation of the above definition for a List:
+    *
+    *  {{{
+    *  def inits[A](xs: List[A]): List[List[A]] = xs match {
+    *    case Nil => List(Nil)
+    *    case x::xs => Nil::inits(xs).map(x::_)
+    *  }
+    *  }}}
     *
     *  $willForceEvaluation
     *
