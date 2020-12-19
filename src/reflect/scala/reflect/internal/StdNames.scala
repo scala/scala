@@ -456,9 +456,8 @@ trait StdNames {
      *  or $ followed by an operator that gets encoded, go directly to compiler
      *  crash. Do not pass go and don't even think about collecting any $$
      */
-    def unexpandedName(name: Name): Name = {
-      if (!name.containsChar('$')) name // lastIndexOf calls Name.toString, add a fast path to avoid that.
-      else name lastIndexOf "$$" match {
+    def unexpandedName(name: Name): Name =
+      name.lastIndexOf("$$") match {
         case 0 | -1 => name
         case idx0   =>
           // Sketchville - We've found $$ but if it's part of $$$ or $$$$
@@ -467,9 +466,8 @@ trait StdNames {
           var idx = idx0
           while (idx > 0 && name.charAt(idx - 1) == '$')
             idx -= 1
-          name drop idx + 2
+          name.drop(idx + 2)
       }
-    }
 
     @deprecated("use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
     @deprecated("use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
