@@ -14,7 +14,6 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.tailrec
 import scala.io.Codec
 
 trait Names extends api.Names {
@@ -421,11 +420,10 @@ trait Names extends api.Names {
       val contents  = _chrs
       val base      = start
       val min       = base + lastIndex
+      var end       = base + length - 1
 
-      @tailrec
-      def scan(end: Int): Int =
-        if (end < min) -1
-        else if (contents(end) == lastChar) {
+      while (end >= min) {
+        if (contents(end) == lastChar) {
           var i  = end - 1
           val i0 = i - lastIndex
           var at = lastIndex - 1
@@ -433,11 +431,11 @@ trait Names extends api.Names {
             i -= 1
             at -= 1
           }
-          if (i > i0) scan(end - 1) else i0 + 1 - base
+          if (i == i0) return i0 + 1 - base
         }
-        else scan(end - 1)
-
-      scan(base + length - 1)
+        end -= 1
+      }
+      -1
     }
 
     /** Some thoroughly self-explanatory convenience functions.  They
