@@ -4309,11 +4309,13 @@ trait Types
 
     if (tparams.isEmpty || (tpe0 eq NoType) ) tpe0
     else {
-      val tpe      = normalizeAliases(tpe0)
+      val tpe = normalizeAliases(tpe0)
       val extrapolation = new ExistentialExtrapolation(tparams)
       if (flipVariance) extrapolation.variance = Contravariant
-      val tpe1     = extrapolation extrapolate tpe
-      newExistentialType(transitiveReferredFrom(tpe1), tpe1)
+      val tpe1 = extrapolation.extrapolate(tpe)
+      val referred = transitiveReferredFrom(tpe1)
+      if (tpe.eq(tpe1) && referred.isEmpty) tpe0
+      else newExistentialType(referred, tpe1)
     }
   }
 
