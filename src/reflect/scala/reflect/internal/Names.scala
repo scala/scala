@@ -214,7 +214,7 @@ trait Names extends api.Names {
     /** The length of this name. */
     final def length: Int = len
     final def nonEmpty = !isEmpty
-    // This method is implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
+    // This method implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
     override final def isEmpty = length == 0
 
     def nameKind: String
@@ -413,11 +413,36 @@ trait Names extends api.Names {
       false
     }
 
+    def lastIndexOf(s: String): Int = if (s.isEmpty) length else {
+      val slength   = s.length()
+      val lastIndex = slength - 1
+      val lastChar  = s.charAt(lastIndex)
+      val contents  = _chrs
+      val base      = start
+      val min       = base + lastIndex
+      var end       = base + length - 1
+
+      while (end >= min) {
+        if (contents(end) == lastChar) {
+          var i  = end - 1
+          val i0 = i - lastIndex
+          var at = lastIndex - 1
+          while (i > i0 && contents(i) == s.charAt(at)) {
+            i -= 1
+            at -= 1
+          }
+          if (i == i0) return i0 + 1 - base
+        }
+        end -= 1
+      }
+      -1
+    }
+
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
      */
-    final def startChar: Char                   = this charAt 0
-    final def endChar: Char                     = this charAt len - 1
+    final def startChar: Char                   = charAt(0)
+    final def endChar: Char                     = charAt(len - 1)
     final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
     final def startsWith(name: String): Boolean = startsWith(name, 0)
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
@@ -434,7 +459,6 @@ trait Names extends api.Names {
 
     /** The lastPos methods already return -1 on failure. */
     def lastIndexOf(ch: Char): Int  = lastPos(ch)
-    def lastIndexOf(s: String): Int = toString lastIndexOf s
 
     /** Replace all occurrences of `from` by `to` in
      *  name; result is always a term name.
