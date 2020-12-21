@@ -5535,11 +5535,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedAppliedTypeTree(tree: AppliedTypeTree) = {
-        val tpt        = tree.tpt
-        val args       = tree.args
-        val tpt1       = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
-        def isPoly     = tpt1.tpe.isInstanceOf[PolyType]
-        def isComplete = tpt1.symbol.rawInfo.isComplete
+        val tpt = tree.tpt
+        val args = tree.args
+        val tpt1 = typed1(tpt, mode | FUNmode | TAPPmode, WildcardType)
 
         if (tpt1.isErrorTyped) {
           tpt1
@@ -5547,6 +5545,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           AppliedTypeNoParametersError(tree, tpt1.tpe)
         } else {
           val tparams = tpt1.symbol.typeParams
+          val isComplete = tpt1.symbol.rawInfo.isComplete
 
           if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
@@ -5594,6 +5593,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             val original = treeCopy.AppliedTypeTree(tree, tpt1, args1)
             val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal original
+            val isPoly = tpt1.tpe.isInstanceOf[PolyType]
             if (isPoly) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
               TypeTreeWithDeferredRefCheck() { () =>
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
