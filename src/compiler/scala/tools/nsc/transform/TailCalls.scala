@@ -16,7 +16,7 @@ package transform
 
 import symtab.Flags
 import Flags.SYNTHETIC
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 
 /** Perform tail recursive call elimination.
  *
@@ -29,25 +29,10 @@ abstract class TailCalls extends Transform {
 
   val phaseName: String = "tailcalls"
 
+  override def enabled = settings.debuginfo.value != "notailcalls"
+
   def newTransformer(unit: CompilationUnit): AstTransformer =
     new TailCallElimination(unit)
-
-  /** Create a new phase which applies transformer */
-  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new TailCallsPhase(prev)
-
-  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.TailCalls\.Phase""")
-  final type TailCallsPhase = Phase
-
-  /** The phase defined by this transform */
-  @nowarn("msg=shadowing a nested class of a parent is deprecated")
-  @deprecated("use TailCallsPhase instead", since = "2.13.4")
-  class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): Unit = {
-      if (!(settings.debuginfo.value == "notailcalls")) {
-        newTransformer(unit).transformUnit(unit)
-      }
-    }
-  }
 
   import treeInfo.hasSynthCaseSymbol
 
