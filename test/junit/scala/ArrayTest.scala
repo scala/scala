@@ -34,4 +34,17 @@ class ArrayTest {
     assertFalse(ge(Array[Char]('x')))
     assertFalse(ge(Array("")))
   }
+
+  /** Test Array.equals (sameElements) for reference arrays. */
+  @Test def testArraySemiDeepEquality(): Unit = {
+    val xs = Array(List(1, 2, 3))
+    val ys = Array(Vector(1, 2, 3))
+    def anyxs = xs.asInstanceOf[Array[AnyRef]]
+    def anyys = ys.asInstanceOf[Array[AnyRef]]
+    assertTrue("Arrays of List and Vector should compare equal", Array.equals(anyxs, anyys))
+    assertTrue(xs.sameElements(ys))     // for fun
+    //assertTrue(Array.equals(xs, ys))  // would be nice
+    assertTrue("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("hello, world")))
+    assertFalse("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("goodbye, cruel world")))
+  }
 }

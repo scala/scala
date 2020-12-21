@@ -826,6 +826,15 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
   }
 
+  /** Checks whether corresponding elements of the given iterable collection
+   *  compare equal (with respect to `==`) to elements of this $coll.
+   *
+   *  @param that  the collection to compare
+   *  @tparam B    the type of the elements of collection `that`.
+   *  @return `true` if both collections contain equal elements in the same order, `false` otherwise.
+   *
+   *    @inheritdoc
+   */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val those = that.iterator
     while (hasNext && those.hasNext)
