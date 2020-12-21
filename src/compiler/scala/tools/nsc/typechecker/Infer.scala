@@ -1558,9 +1558,13 @@ trait Infer extends Checkable {
           finish(sym setInfo tpe, tpe)
       }
       matchingLength.alternatives match {
-        case Nil        => fail()
+        case Nil => fail()
         case alt :: Nil => finish(alt, pre memberType alt)
-        case _          => checkWithinBounds(matchingLength filter (alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes)))
+        case _ =>
+          checkWithinBounds(matchingLength.filter { alt =>
+            isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) &&
+              kindsConform(alt.typeParams, argtypes, pre, alt.owner)
+          })
       }
     }
   }
