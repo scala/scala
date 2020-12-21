@@ -566,7 +566,7 @@ trait Implicits {
       // e.g. we have `class Foo(val bar: Bar)` and `class Bar(val x: Int)`
       // then it's quite reasonable for the macro writer to synthesize Complex[Foo] by calling `inferImplicitValue(typeOf[Complex[Bar])`
       // however if we didn't insert the `info.sym.isMacro` check here, then under some circumstances
-      // (e.g. as described here http://groups.google.com/group/scala-internals/browse_thread/thread/545462b377b0ac0a)
+      // (e.g. as described here https://groups.google.com/group/scala-internals/browse_thread/thread/545462b377b0ac0a)
       // `dominates` might decide that `Bar` dominates `Foo` and therefore a recursive implicit search should be prohibited
       // now when we yield control of divergent expansions to the macro writer, what happens next?
       // in the worst case, if the macro writer is careless, we'll get a StackOverflowException from repeated macro calls
@@ -1836,7 +1836,7 @@ trait Implicits {
   object ImplicitAmbiguousMsg extends ImplicitAnnotationMsg(_.implicitAmbiguousMsg, ImplicitAmbiguousClass, "implicitAmbiguous")
 
   class Message(sym: Symbol, msg: String, annotationName: String) {
-    // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
+    // https://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
     private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
     private def interpolate(text: String, vars: Map[String, String]) =

@@ -72,7 +72,7 @@ object Test {
       0xffffffffffffffffL, -1L)
 
     // see JLS at address:
-    // http://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#230798
+    // https://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#230798
 
     // float
     check_success("1e1f == 10.0f", 1e1f, 10.0f)

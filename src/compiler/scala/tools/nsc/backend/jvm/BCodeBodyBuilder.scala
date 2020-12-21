@@ -25,7 +25,7 @@ import scala.tools.nsc.backend.jvm.GenBCode._
 
 /*
  *
- *  @author  Miguel Garcia, http://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
+ *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
  *
  */
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
@@ -667,7 +667,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               //
               // Note that using `Object.clone()` would work as well, but only because the JVM
               // relaxes protected access specifically if the receiver is an array:
-              //   http://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/interpreter/linkResolver.cpp#l439
+              //   https://hg.openjdk.java.net/jdk8/jdk8/hotspot/file/87ee5ee27509/src/share/vm/interpreter/linkResolver.cpp#l439
               // Example: `class C { override def clone(): Object = "hi" }`
               // Emitting `def f(c: C) = c.clone()` as `Object.clone()` gives a VerifyError.
               val target: String = tpeTK(qual).asRefBType.classOrArrayType
@@ -824,7 +824,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          * Note: The two verifiers (old: type inference, new: type checking) have different
          * requirements. Very briefly:
          *
-         * Old (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.2.1): at
+         * Old (https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.2.1): at
          * each program point, no matter what branches were taken to get there
          *   - Stack is same size and has same typed values
          *   - Local and stack values need to have consistent types
@@ -832,7 +832,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          *     instructions after an ATHROW. For example, there can be another ATHROW (without
          *     loading another throwable first).
          *
-         * New (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)
+         * New (https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)
          *   - Requires consistent stack map frames. GenBCode always generates stack frames.
          *   - In practice: the ASM library computes stack map frames for us (ClassWriter). Emitting
          *     correct frames after an ATHROW is probably complex, so ASM uses the following strategy:
@@ -1007,7 +1007,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               // could add some guess based on types of primitive args.
               // or, we could stringify all the args onto the stack, compute the exact size of
               // the StringBuilder.
-              // or, just let http://openjdk.java.net/jeps/280 (or a re-implementation thereof in our 2.13.x stdlib) do all the hard work at link time
+              // or, just let https://openjdk.java.net/jeps/280 (or a re-implementation thereof in our 2.13.x stdlib) do all the hard work at link time
               0
           }.sum
           bc.genStartConcat(tree.pos, approxBuilderSize)

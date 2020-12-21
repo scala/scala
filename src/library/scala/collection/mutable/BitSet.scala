@@ -23,7 +23,7 @@ import scala.annotation.implicitNotFound
   *
   * $bitsetinfo
   *
-  * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable-bitsets "Scala's Collection Library overview"]]
+  * @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable-bitsets "Scala's Collection Library overview"]]
   * section on `Mutable Bitsets` for more information.
   *
   * @define Coll `BitSet`

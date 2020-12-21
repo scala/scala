@@ -34,16 +34,16 @@ import scala.language.implicitConversions
  *  import scala.util.control.Exception._
  *  import java.net._
  *
- *  val s = "http://www.scala-lang.org/"
+ *  val s = "https://www.scala-lang.org/"
  *
- *  // Some(http://www.scala-lang.org/)
+ *  // Some(https://www.scala-lang.org/)
  *  val x1: Option[URL] = catching(classOf[MalformedURLException]) opt new URL(s)
  *
- *  // Right(http://www.scala-lang.org/)
+ *  // Right(https://www.scala-lang.org/)
  *  val x2: Either[Throwable,URL] =
  *    catching(classOf[MalformedURLException], classOf[NullPointerException]) either new URL(s)
  *
- *  // Success(http://www.scala-lang.org/)
+ *  // Success(https://www.scala-lang.org/)
  *  val x3: Try[URL] = catching(classOf[MalformedURLException], classOf[NullPointerException]) withTry new URL(s)
  *
  *  val defaultUrl = new URL("http://example.com")
@@ -69,7 +69,7 @@ import scala.language.implicitConversions
  *  //     at java.net.URL.<init>(URL.java:586)
  *  withThrowableLogging { printUrl(badUrl) }
  *
- *  val goodUrl = "http://www.scala-lang.org/"
+ *  val goodUrl = "https://www.scala-lang.org/"
  *  // Prints page content,
  *  //   &lt;!DOCTYPE html&gt;
  *  //   &lt;html&gt;

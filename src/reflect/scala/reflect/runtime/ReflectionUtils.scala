@@ -106,7 +106,7 @@ object ReflectionUtils {
     // I think we can keep the source code though, because it can be useful to the others
     //
     // def inferAssociatedFile(clazz: Class[_]): AbstractFile = {
-    //   // http://stackoverflow.com/questions/227486/find-where-java-class-is-loaded-from
+    //   // https://stackoverflow.com/questions/227486/find-where-java-class-is-loaded-from
     //   try {
     //     var cl = clazz.getClassLoader()
     //     if (cl == null) {

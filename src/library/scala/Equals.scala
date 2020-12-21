@@ -18,7 +18,7 @@ package scala
 trait Equals extends Any {
   /** A method that should be called from every well-designed equals method
    *  that is open to be overridden in a subclass. See
-   *  [[http://www.artima.com/pins1ed/object-equality.html Programming in Scala,
+   *  [[https://www.artima.com/pins1ed/object-equality.html Programming in Scala,
    *  Chapter 28]] for discussion and design.
    *
    *  @param    that    the value being probed for possible equality

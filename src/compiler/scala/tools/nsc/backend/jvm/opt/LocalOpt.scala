@@ -574,7 +574,7 @@ abstract class LocalOpt {
      *
      * However, the JVM spec does not require subroutines to `RET x` to their caller, they could return back to an
      * outer subroutine caller (nested subroutines), or `RETURN`, or use a static jump. Static analysis of subroutines
-     * is therefore complex (http://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
+     * is therefore complex (https://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
      *
      * The asm.Analyzer however makes the assumption that subroutines only occur in the shape emitted by early
      * javac, i.e., `RET` always returns to the next enclosing caller. So we do that as well.
@@ -796,7 +796,7 @@ object LocalOptImpls {
    *
    * There are no executable instructions that we can assume don't throw (eg ILOAD). The JVM spec
    * basically says that a VirtualMachineError may be thrown at any time:
-   *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.3
+   *   https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.3
    *
    * Note that no instructions are eliminated.
    *
@@ -1131,7 +1131,7 @@ object LocalOptImpls {
      * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
      * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
      * an IllegalMonitorStateException, as described here:
-     *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
+     *   https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
      */
     def simplifyGotoReturn(instruction: AbstractInsnNode, inTryBlock: Boolean): Boolean = !inTryBlock && (instruction match {
       case Goto(jump) =>

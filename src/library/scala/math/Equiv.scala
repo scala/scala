@@ -21,7 +21,7 @@ import scala.annotation.migration
  *  equivalence and a representation of equivalence on some type. This
  *  trait is for representing the latter.
  *
- *  An [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
+ *  An [[https://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
  *  is a binary relation on a type. This relation is exposed as
  *  the `equiv` method of the `Equiv` trait.  The relation must be:
  *

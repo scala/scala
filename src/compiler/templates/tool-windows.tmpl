@@ -16,7 +16,7 @@ setlocal enableextensions enabledelayedexpansion
 
 set _LINE_TOOLCP=
 
-rem Use "%~1" to handle spaces in paths. See http://ss64.com/nt/syntax-args.html
+rem Use "%~1" to handle spaces in paths. See https://ss64.com/nt/syntax-args.html
 rem scala/bug#7295 The goto here is needed to avoid problems with `scala Script.cmd "arg(with)paren"`,
 rem                we must not evaluate %~2 eagerly, but delayed expansion doesn't seem to allow
 rem                removal of quotation marks.
@@ -157,7 +157,7 @@ rem # subroutines
 goto :eof
 
 rem Variable "%~dps0" works on WinXP SP2 or newer
-rem (see http://support.microsoft.com/?kbid=833431)
+rem (see https://support.microsoft.com/?kbid=833431)
 rem set _SCALA_HOME=%~dps0..
 :set_home
   set _BIN_DIR=
@@ -168,5 +168,5 @@ goto :eof
 :end
 @@endlocal
 
-REM exit code fix, see http://stackoverflow.com/questions/4632891/exiting-batch-with-exit-b-x-where-x-1-acts-as-if-command-completed-successfu
+REM exit code fix, see https://stackoverflow.com/questions/4632891/exiting-batch-with-exit-b-x-where-x-1-acts-as-if-command-completed-successfu
 @@"%COMSPEC%" /C exit %errorlevel% >nul

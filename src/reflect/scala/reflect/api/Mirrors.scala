@@ -213,7 +213,7 @@ package api
  * }}}
  *
  * For more information about `Mirrors`s, see the
- * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+ * [[https://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
  *
  *  @contentDiagram hideNodes "*Api"
  *  @group ReflectionAPI

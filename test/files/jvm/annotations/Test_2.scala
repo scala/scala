@@ -47,7 +47,7 @@ object Test3 {
    public String url();
    public String mail();
 }
-@Source(url="http://scala.epfl.ch", mail="scala@lists.epfl.ch")
+@Source(url="https://scala.epfl.ch", mail="scala@lists.epfl.ch")
 class Foo {}
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -55,13 +55,13 @@ public class Main {
         Annotation[] annotations = clazz.getAnnotations();
         for (int i = 0; i < annotations.length; i++)
             System.out.println(annotations[i]);
-        // @test.Main$Source(url=http://scala-lang.org, mail=scala@lists.epfl.ch)
+        // @test.Main$Source(url=https://scala-lang.org, mail=scala@lists.epfl.ch)
     }
 }
 */
 object Test4 {
   import test.SourceAnnotation_1
-  @SourceAnnotation_1(value = "http://scala-lang.org",
+  @SourceAnnotation_1(value = "https://scala-lang.org",
                     mails = Array("scala@lists.epfl.ch", "scala-lounge@lists.epfl.ch"))
   class Foo1
   @SourceAnnotation_1(value = "http://bloodsuckers.com",
@@ -90,7 +90,7 @@ object Test4 {
   class Foo9 {
     import scala.annotation.meta._
     import scala.beans.BeanProperty
-    @(SourceAnnotation_1 @getter)("http://apple.com") val x = 0
+    @(SourceAnnotation_1 @getter)("https://apple.com") val x = 0
     @BeanProperty @(SourceAnnotation_1 @beanSetter)("http://uppla.com") var y = 0
 
     type myAnn = SourceAnnotation_1 @beanGetter @field

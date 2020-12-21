@@ -284,7 +284,7 @@ abstract class InlinerHeuristics extends PerRunInit {
   }
 
   /*
-  // using http://lihaoyi.github.io/Ammonite/
+  // using https://lihaoyi.github.io/Ammonite/
 
   load.ivy("com.google.guava" % "guava" % "18.0")
   val javaUtilFunctionClasses = {

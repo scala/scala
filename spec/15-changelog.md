@@ -639,7 +639,7 @@ The following three words are now reserved; they cannot be used as
 
 #### Newlines as Statement Separators
 
-[Newlines](http://www.scala-lang.org/files/archive/spec/2.11/)
+[Newlines](https://www.scala-lang.org/files/archive/spec/2.11/)
 can now be used as statement separators in place of semicolons.
 
 #### Syntax Restrictions

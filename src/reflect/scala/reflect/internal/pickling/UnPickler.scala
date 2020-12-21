@@ -232,7 +232,7 @@ abstract class UnPickler {
 
           (module map { case (group, art) =>
             s"""\n(NOTE: It looks like the $art module is missing; try adding a dependency on "$group" : "$art".
-               |       See http://docs.scala-lang.org/overviews/ for more information.)""".stripMargin
+               |       See https://docs.scala-lang.org/overviews/ for more information.)""".stripMargin
            } getOrElse "")
         }
 

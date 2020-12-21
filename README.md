@@ -13,7 +13,7 @@ To contribute here, please open a [pull request](https://help.github.com/article
 
 Be aware that we can't accept additions to the standard library, only modifications to existing code.  Binary compatibility forbids adding new public classes or public methods. Additions are made to [scala-library-next](https://github.com/scala/scala-library-next) instead.
 
-We require that you sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect Scala's future as open source software.
+We require that you sign the [Scala CLA](https://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect Scala's future as open source software.
 
 The general workflow is as follows.
 1. Find/file an issue in scala/bug (or submit a well-documented PR right away!).
@@ -28,7 +28,7 @@ For more information on building and developing the core of Scala, read the rest
 
 In order to get in touch with other Scala contributors, join
 [scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
-[contributors.scala-lang.org](http://contributors.scala-lang.org) (Discourse).
+[contributors.scala-lang.org](https://contributors.scala-lang.org) (Discourse).
 
 If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
 
@@ -233,10 +233,10 @@ It contains useful information on our coding standards, testing, documentation, 
 we use git and GitHub and how to get your code reviewed.
 
 You may also want to check out the following resources:
-  - The ["Scala Hacker Guide"](http://scala-lang.org/contribute/hacker-guide.html)
+  - The ["Scala Hacker Guide"](https://scala-lang.org/contribute/hacker-guide.html)
     covers some of the same ground as this README, but in greater detail and in a more
     tutorial style, using a running example.
-  - [Scala documentation site](http://docs.scala-lang.org)
+  - [Scala documentation site](https://docs.scala-lang.org)
 
 # Scala CI
 
@@ -285,7 +285,7 @@ The Scala CI builds nightly download releases and publishes
 them to https://scala-ci.typesafe.com/artifactory/scala-integration/ .
 
 Using a nightly build in sbt is explained in
-[this Stack Overflow answer](http://stackoverflow.com/questions/40622878)
+[this Stack Overflow answer](https://stackoverflow.com/questions/40622878)
 
 Although we casually refer to these as "nightly" builds, they aren't
 actually built nightly, but "mergely".  That is to say, a build is

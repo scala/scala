@@ -1,4 +1,4 @@
-// As per http://meta.plasm.us/posts/2013/08/31/feeding-our-vampires/
+// As per https://meta.plasm.us/posts/2013/08/31/feeding-our-vampires/
 // scalac: -Werror
 
 import scala.annotation.StaticAnnotation

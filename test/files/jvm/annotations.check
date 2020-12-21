@@ -1,7 +1,7 @@
 #partest java8
 class java.io.IOException
 @java.lang.Deprecated()
-@test.SourceAnnotation_1(mails={scala@lists.epfl.ch,scala-lounge@lists.epfl.ch}, value=http://scala-lang.org)
+@test.SourceAnnotation_1(mails={scala@lists.epfl.ch,scala-lounge@lists.epfl.ch}, value=https://scala-lang.org)
 class Test4$Foo1
 
 @test.SourceAnnotation_1(mails={you@bloodsuckers.com}, value=http://bloodsuckers.com)
@@ -43,7 +43,7 @@ public int Test4$Foo9.getZ2()
 @test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
 public int Test4$Foo9.getZ3()
 
-@test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://apple.com)
+@test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=https://apple.com)
 public int Test4$Foo9.x()
 
 @test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://uppla.com)
@@ -65,7 +65,7 @@ dylan
 #partest !java8
 class java.io.IOException
 @java.lang.Deprecated(forRemoval=false, since="")
-@test.SourceAnnotation_1(mails={scala@lists.epfl.ch,scala-lounge@lists.epfl.ch}, value=http://scala-lang.org)
+@test.SourceAnnotation_1(mails={scala@lists.epfl.ch,scala-lounge@lists.epfl.ch}, value=https://scala-lang.org)
 class Test4$Foo1
 
 @test.SourceAnnotation_1(mails={you@bloodsuckers.com}, value=http://bloodsuckers.com)
@@ -107,7 +107,7 @@ public int Test4$Foo9.getZ2()
 @test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
 public int Test4$Foo9.getZ3()
 
-@test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://apple.com)
+@test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=https://apple.com)
 public int Test4$Foo9.x()
 
 @test.SourceAnnotation_1(mails={bill.gates@bloodsuckers.com}, value=http://uppla.com)

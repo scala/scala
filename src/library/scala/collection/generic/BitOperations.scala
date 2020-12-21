@@ -16,7 +16,7 @@ package generic
 
 /** Some bit operations.
   *
-  *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
+  *  See [[https://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
   *  an explanation of unsignedCompare.
   */
 private[collection] object BitOperations {

@@ -399,7 +399,7 @@ trait Solving extends Logic {
       aligned
     }
 
-    // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
+    // adapted from https://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
 
     // empty set of clauses is trivially satisfied
     val EmptyModel = Map.empty[Sym, Boolean]

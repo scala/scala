@@ -1277,10 +1277,10 @@ abstract class Inliner {
         //    - the receiver is the target of the CallSite
         //    - the other argument values are those that were on the operand stack at the indy instruction (indyLambda: the captured values)
         //
-        // [1] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.10
-        // [2] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.23
-        // [3] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
-        // [4] http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html#jvms-5.4.3
+        // [1] https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.4.10
+        // [2] https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.23
+        // [3] https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.invokedynamic
+        // [4] https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html#jvms-5.4.3
 
         // We cannot generically check if an `invokedynamic` instruction can be safely inlined into
         // a different class, that depends on the bootstrap method. The Lookup object passed to the

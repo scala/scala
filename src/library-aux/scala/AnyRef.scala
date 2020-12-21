@@ -51,7 +51,7 @@ trait AnyRef extends Any {
 
   /** Tests whether the argument (`that`) is a reference to the receiver object (`this`).
    *
-   *  The `eq` method implements an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]] on
+   *  The `eq` method implements an [[https://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]] on
    *  non-null instances of `AnyRef`, and has three additional properties:
    *
    *   - It is consistent: for any non-null instances `x` and `y` of type `AnyRef`, multiple invocations of

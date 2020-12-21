@@ -184,7 +184,7 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def invocationReceiversProtected(): Unit = {
-    // http://lrytz.github.io/scala-aladdin-bugtracker/displayItem.do%3Fid=455.html / 9954eaf
+    // https://lrytz.github.io/scala-aladdin-bugtracker/displayItem.do%3Fid=455.html / 9954eaf
     // also https://github.com/scala/bug/issues/1430 / 0bea2ab (same but with interfaces)
     val aC =
       """package a;

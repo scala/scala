@@ -19,7 +19,7 @@ trait Quasiquotes { self: Universe =>
    *  that are also known as quasiquotes. With their help you can easily manipulate
    *  Scala reflection ASTs.
    *
-   *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/intro.html]]
+   *  @see [[https://docs.scala-lang.org/overviews/quasiquotes/intro.html]]
    */
   implicit class Quasiquote(ctx: StringContext) {
     protected trait api {

@@ -42,7 +42,7 @@ import scala.annotation.{implicitNotFound, nowarn}
  * }}}
  *
  * See [[scala.reflect.api.TypeTags]] for more examples, or the
- * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
+ * [[https://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
  * for more details.
  *
  */

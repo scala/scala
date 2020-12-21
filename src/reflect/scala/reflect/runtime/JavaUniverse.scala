@@ -154,7 +154,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   def init(): Unit = {
     definitions.init()
 
-    // workaround for http://groups.google.com/group/scala-internals/browse_thread/thread/97840ba4fd37b52e
+    // workaround for https://groups.google.com/group/scala-internals/browse_thread/thread/97840ba4fd37b52e
     // constructors are by definition single-threaded, so we initialize all lazy vals (and local object) in advance
     // in order to avoid deadlocks later (e.g. one thread holds a global reflection lock and waits for definitions.Something to initialize,
     // whereas another thread holds a definitions.Something initialization lock and needs a global reflection lock to complete the initialization)

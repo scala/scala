@@ -51,7 +51,7 @@ package api
  *  ''Note:'' Method `typeOf` does not work for types with type parameters, such as `typeOf[List[A]]` where `A` is
  *  a type parameter. In this case, use [[scala.reflect.api.TypeTags#weakTypeOf]] instead.
  *
- *  For other ways to instantiate types, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html corresponding section of the Reflection Guide]].
+ *  For other ways to instantiate types, see the [[https://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html corresponding section of the Reflection Guide]].
  *
  *  === Common Operations on Types ===
  *
@@ -69,7 +69,7 @@ package api
  *     res1: reflect.runtime.universe.Symbol = method map
  *  }}}
  *
- * For more information about `Type`s, see the [[http://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, and Types]]
+ * For more information about `Type`s, see the [[https://docs.scala-lang.org/overviews/reflection/symbols-trees-types.html Reflection Guide: Symbols, Trees, and Types]]
  *
  *  @groupname TypeCreators Types - Creation
  *  @groupname TypeOps      Types - Operations

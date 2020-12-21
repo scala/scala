@@ -41,7 +41,7 @@ import scala.collection.immutable.ListMap
  *  has to analyze trees representing annotation arguments to manually extract corresponding values. Towards that end,
  *  arguments of an annotation can be obtained via `annotation.tree.children.tail`.
  *
- *  For more information about `Annotation`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
+ *  For more information about `Annotation`s, see the [[https://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
  *  @contentDiagram hideNodes "*Api"
  *  @group ReflectionAPI

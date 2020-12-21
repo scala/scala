@@ -128,7 +128,7 @@ trait Typers {
    *  which makes it sometimes corrupt trees so that they don't make sense anymore. Unfortunately, there's no workaround for that.
    *  We plan to fix this issue soon, but for now please keep it in mind.
    *
-   *  @see [[http://stackoverflow.com/questions/20936509/scala-macros-what-is-the-difference-between-typed-aka-typechecked-an-untyped]]
+   *  @see [[https://stackoverflow.com/questions/20936509/scala-macros-what-is-the-difference-between-typed-aka-typechecked-an-untyped]]
    */
   def untypecheck(tree: Tree): Tree
 }

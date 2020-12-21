@@ -23,7 +23,7 @@ package object runtime {
    * To use Scala runtime reflection, simply use or import `scala.reflect.runtime.universe._`
    *
    * See [[scala.reflect.api.Universe]] or the
-   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
+   * [[https://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
    * for more details.
    */
   lazy val universe: api.JavaUniverse = new runtime.JavaUniverse

@@ -2,7 +2,7 @@
  * Demo of using by name implicits to resolve (hidden) divergence issues when
  * traversing recursive generic structures.
  *
- * See http://stackoverflow.com/questions/25923974
+ * See https://stackoverflow.com/questions/25923974
  */
 sealed trait HList
 object HList {

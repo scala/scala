@@ -21,7 +21,7 @@ import scala.annotation.implicitNotFound
  *
  * A more detailed guide to Futures and Promises, including discussion and examples
  * can be found at
- * [[http://docs.scala-lang.org/overviews/core/futures.html]].
+ * [[https://docs.scala-lang.org/overviews/core/futures.html]].
  *
  * == Common Imports ==
  *

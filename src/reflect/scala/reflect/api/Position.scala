@@ -58,7 +58,7 @@ import scala.reflect.macros.Attachments
  *  pos.focus           Converts a range position to an offset position focused on the point
  *  pos.makeTransparent Convert an opaque range into a transparent range
  *
- *  For more information about `Position`s, see the [[http://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
+ *  For more information about `Position`s, see the [[https://docs.scala-lang.org/overviews/reflection/annotations-names-scopes.html Reflection Guide: Annotations, Names, Scopes, and More]]
  *
  *  @groupname Common   Commonly used methods
  *  @group ReflectionAPI

@@ -1,7 +1,7 @@
 # Scala library benchmarks
 
 This directory is used by the `bench` subproject of the Scala sbt build.
-It makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
+It makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](https://openjdk.java.net/projects/code-tools/jmh/).
 
 ## Running a benchmark
 
@@ -44,7 +44,7 @@ derived from the fully-qualified package name of the `Runner` class.
 ## Some useful HotSpot options
 Adding these to the `jmh:run` or `jmh:runMain` command line may help if you're using the HotSpot (Oracle, OpenJDK) compiler.
 They require prefixing with `-jvmArgs`.
-See [the Java documentation](http://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html) for more options. 
+See [the Java documentation](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html) for more options. 
 
 ### Viewing JIT compilation events
 Adding `-XX:+PrintCompilation` shows when Java methods are being compiled or deoptimized.
@@ -130,7 +130,7 @@ Follow instructions in the output above and start gleaning insights!
 ## Useful reading
 * [OpenJDK advice on microbenchmarks](https://wiki.openjdk.java.net/display/HotSpot/MicroBenchmarks)
 * Brian Goetz's "Java theory and practice" articles:
-  * "[Dynamic compilation and performance measurement](http://www.ibm.com/developerworks/java/library/j-jtp12214/)"
-  * "[Anatomy of a flawed benchmark](http://www.ibm.com/developerworks/java/library/j-jtp02225/)"
+  * "[Dynamic compilation and performance measurement](https://www.ibm.com/developerworks/java/library/j-jtp12214/)"
+  * "[Anatomy of a flawed benchmark](https://www.ibm.com/developerworks/java/library/j-jtp02225/)"
 * [Doug Lea's JSR 166 benchmarks](http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/loops/)
-* "[Measuring performance](http://docs.scala-lang.org/overviews/parallel-collections/performance.html)" of Scala parallel collections
+* "[Measuring performance](https://docs.scala-lang.org/overviews/parallel-collections/performance.html)" of Scala parallel collections

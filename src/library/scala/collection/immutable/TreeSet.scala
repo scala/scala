@@ -26,7 +26,7 @@ import scala.runtime.AbstractFunction1
   *  @tparam A         the type of the elements contained in this tree set
   *  @param ordering   the implicit ordering used to compare objects of type `A`
   *
-  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
   *  section on `Red-Black Trees` for more information.
   *
   *  @define Coll `immutable.TreeSet`

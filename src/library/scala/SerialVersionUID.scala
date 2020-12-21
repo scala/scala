@@ -20,7 +20,7 @@ package scala
   * which the JVM's serialization mechanism uses to determine serialization
   * compatibility between different versions of a class.
   *
-  * @see [[http://docs.oracle.com/javase/8/docs/api/java/io/Serializable.html `java.io.Serializable`]]
+  * @see [[https://docs.oracle.com/javase/8/docs/api/java/io/Serializable.html `java.io.Serializable`]]
   * @see [[Serializable]]
   */
 @deprecatedInheritance("Scheduled for being final in the future", "2.13.0")

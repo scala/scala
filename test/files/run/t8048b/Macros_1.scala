@@ -1,8 +1,8 @@
 // see the following discussions to understand what's being tested here:
 // * https://github.com/scala/bug/issues/6992
 // * https://github.com/scala/bug/issues/8048
-// * http://stackoverflow.com/questions/14370842/getting-a-structural-type-with-an-anonymous-classs-methods-from-a-macro
-// * http://stackoverflow.com/questions/18480707/method-cannot-be-accessed-in-macro-generated-class/18485004#18485004
+// * https://stackoverflow.com/questions/14370842/getting-a-structural-type-with-an-anonymous-classs-methods-from-a-macro
+// * https://stackoverflow.com/questions/18480707/method-cannot-be-accessed-in-macro-generated-class/18485004#18485004
 // * https://groups.google.com/forum/#!topic/scala-internals/eXQt-BPm4i8
 
 import scala.language.experimental.macros

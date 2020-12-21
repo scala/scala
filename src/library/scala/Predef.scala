@@ -139,7 +139,7 @@ object Predef extends LowPriorityImplicits {
   /** The `String` type in Scala has all the methods of the underlying
    *  `java.lang.String`, of which it is just an alias.
    *  (See the documentation corresponding to your Java version,
-   *  for example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]].)
+   *  for example [[https://docs.oracle.com/javase/8/docs/api/java/lang/String.html]].)
    *  In addition, extension methods in [[scala.collection.StringOps]]
    *  are added implicitly through the conversion [[augmentString]].
    *  @group aliases

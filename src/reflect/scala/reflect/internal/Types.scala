@@ -239,7 +239,7 @@ trait Types
         }
         // erasure screws up all ThisTypes for modules into PackageTypeRefs
         // we need to unscrew them, or certain typechecks will fail mysteriously
-        // http://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
+        // https://groups.google.com/group/scala-internals/browse_thread/thread/6d3277ae21b6d581
         result = result.map(tpe => tpe match {
           case tpe: PackageTypeRef => ThisType(tpe.sym)
           case _ => tpe
@@ -1565,7 +1565,7 @@ trait Types
       (if (emptyLowerBound) "" else " >: " + typeString(lo)) +
       (if (emptyUpperBound) "" else " <: " + typeString(hi))
     }
-    /** Bounds notation used in http://adriaanm.github.com/files/higher.pdf.
+    /** Bounds notation used in https://adriaanm.github.com/files/higher.pdf.
       * For example *(scala.collection.generic.Sorted[K,This]).
       */
     private[internal] def starNotation(typeString: Type => String): String = {

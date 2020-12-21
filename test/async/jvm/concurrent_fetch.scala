@@ -10,8 +10,8 @@ object Test extends App {
 
   val sumLengths: Future[Int] = {
     async {
-      val body1 = fetchURL("http://scala-lang.org")
-      val body2 = fetchURL("http://docs.scala-lang.org")
+      val body1 = fetchURL("https://scala-lang.org")
+      val body2 = fetchURL("https://docs.scala-lang.org")
       await(body1).length + await(body2).length
     }
   }

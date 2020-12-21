@@ -105,7 +105,7 @@ trait Extractors {
   }
 
   // if we're reifying a MethodType, we can't use it as a type argument for TypeTag ctor
-  // http://groups.google.com/group/scala-internals/browse_thread/thread/2d7bb85bfcdb2e2
+  // https://groups.google.com/group/scala-internals/browse_thread/thread/2d7bb85bfcdb2e2
   private def mkTarg(tpe: Type): Tree = (
     if ((tpe eq null) || !isUseableAsTypeArg(tpe)) TypeTree(AnyTpe)
     else TypeTree(tpe)

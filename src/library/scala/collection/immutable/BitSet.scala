@@ -20,7 +20,7 @@ import scala.annotation.{implicitNotFound, nowarn}
 
 /** A class for immutable bitsets.
   *  $bitsetinfo
-  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable-bitsets "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable-bitsets "Scala's Collection Library overview"]]
   *  section on `Immutable BitSets` for more information.
   *
   *  @define Coll `immutable.BitSet`

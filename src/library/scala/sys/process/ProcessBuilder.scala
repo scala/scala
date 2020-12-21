@@ -67,7 +67,7 @@ import ProcessBuilder.{Sink, Source}
   * something else such as a `java.io.File` or a `java.io.InputStream`.
   * For example:
   * {{{
-  * new URL("http://databinder.net/dispatch/About") #> "grep JSON" #>> new File("About_JSON") !
+  * new URL("https://databinder.net/dispatch/About") #> "grep JSON" #>> new File("About_JSON") !
   * }}}
   *
   * ==Starting Processes==

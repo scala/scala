@@ -61,7 +61,7 @@ import scala.language.implicitConversions
  * quite possible that in future releases of the reflection API, flag sets could be replaced with something else.
  *
  * For more details about `FlagSet`s and other aspects of Scala reflection, see the
- * [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ * [[https://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  *
  * @group ReflectionAPI
  *

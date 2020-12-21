@@ -26,7 +26,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
  *
- *  @author  Miguel Garcia, http://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
+ *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
  *
  */
 abstract class BCodeHelpers extends BCodeIdiomatic {
@@ -355,8 +355,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    * Custom attribute (JVMS 4.7.1) "ScalaSig" used as marker only
    * i.e., the pickle is contained in a custom annotation, see:
    *   (1) `addAnnotations()`,
-   *   (2) SID # 10 (draft) - Storage of pickled Scala signatures in class files, http://www.scala-lang.org/sid/10
-   *   (3) SID # 5 - Internals of Scala Annotations, http://www.scala-lang.org/sid/5
+   *   (2) SID # 10 (draft) - Storage of pickled Scala signatures in class files, https://www.scala-lang.org/sid/10
+   *   (3) SID # 5 - Internals of Scala Annotations, https://www.scala-lang.org/sid/5
    * That annotation in turn is not related to the "java-generic-signature" (JVMS 4.7.9)
    * other than both ending up encoded as attributes (JVMS 4.7)
    * (with the caveat that the "ScalaSig" attribute is associated to some classes,
@@ -1010,7 +1010,7 @@ object BCodeHelpers {
 
   /**
    * Valid flags for InnerClass attribute entry.
-   * See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
+   * See https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
    */
   val INNER_CLASSES_FLAGS = {
     asm.Opcodes.ACC_PUBLIC   | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED  |

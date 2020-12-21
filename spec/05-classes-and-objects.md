@@ -410,7 +410,7 @@ It is a static error if the inheritance closure of a class type
 consists of an infinite number of types. (This restriction is
 necessary to make subtyping decidable[^kennedy]).
 
-[^kennedy]: Kennedy, Pierce. [On Decidability of Nominal Subtyping with Variance.]( http://research.microsoft.com/pubs/64041/fool2007.pdf) in FOOL 2007
+[^kennedy]: Kennedy, Pierce. [On Decidability of Nominal Subtyping with Variance.]( https://research.microsoft.com/pubs/64041/fool2007.pdf) in FOOL 2007
 
 ### Early Definitions
 

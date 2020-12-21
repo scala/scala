@@ -13,7 +13,7 @@ object scaladoc extends Command {
 
   protected def cn = new Error().getStackTrace()(0).getClassName()
 
-  val scalaLink = Link("Scala 2", "http://scala-lang.org/")
+  val scalaLink = Link("Scala 2", "https://scala-lang.org/")
 
   val name = Section("NAME",
 

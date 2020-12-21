@@ -27,7 +27,7 @@ object Test extends DirectTest {
     //   // This is the line that causes scalac to choke.
     //   // It results in a GroovyInterface$1 class, which is a non-static inner class but its constructor does not
     //   // include the implicit parameter that is the immediate enclosing instance.
-    //   // See http://jira.codehaus.org/browse/GROOVY-7312
+    //   // See https://issues.apache.org/jira/browse/GROOVY-7312
     //   //
     //   // Scalac error:
     //   //   [scalac] error: error while loading 1, class file '..../scala_groovy_interop/classes/com/example/groovy/GroovyInterface$1.class' is broken

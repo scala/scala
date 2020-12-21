@@ -63,7 +63,7 @@ package api
  *  }
  * }}}
  *
- * For more information about `Universe`s, see the [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
+ * For more information about `Universe`s, see the [[https://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Universes]]
  *
  *  @groupprio Universe -1
  *  @group ReflectionAPI
