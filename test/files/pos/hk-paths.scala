@@ -1,4 +1,5 @@
 object Test {
+  // scala/bug#12142
   trait Bounds {
     type Upper <: Bounds
   }
@@ -34,5 +35,27 @@ object Test {
   def test[F, A <: U, U, X](fun :Functor[F, A, U], x :Implicit[X, A] { type S >: A <: U }) = {
     x.expr.applyTo[({ type E[B >: A <: U] = fun.Super[B] })#E]
     x.expr.applyTo[fun.Super]
+  }
+
+  // scala/bug#10186
+  trait Foo {
+    type A
+    type F[_ <: A]
+  }
+
+  def noop[A, F[_ <: A]]: Unit = ()
+  def f(foo: Foo): Unit = noop[foo.A, foo.F]
+
+  // scala/bug#9625
+  trait `* -> *`[F[_]]
+
+  trait Bar {
+    type Qux[A]
+    implicit val `* -> *`: `* -> *`[Qux]
+  }
+
+  def foo(bar: Bar): `* -> *`[bar.Qux] = {
+    import bar._
+    implicitly[`* -> *`[bar.Qux]]
   }
 }
