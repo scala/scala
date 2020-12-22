@@ -65,7 +65,7 @@ object Reader {
       completion: shell.Completion,
       accumulator: Accumulator): Reader = {
     require(repl != null)
-    if (config.isReplDebug) initLogging()
+    if (config.isReplDebug) initLogging(trace = config.isReplTrace)
 
     System.setProperty(LineReader.PROP_SUPPORT_PARSEDLINE, java.lang.Boolean.TRUE.toString())
 
@@ -208,12 +208,13 @@ object Reader {
     }
   }
 
-  private def initLogging(): Unit = {
+  private def initLogging(trace: Boolean): Unit = {
     import java.util.logging._
-    val logger = Logger.getLogger("org.jline")
+    val logger  = Logger.getLogger("org.jline")
     val handler = new ConsoleHandler()
-    logger.setLevel(Level.ALL)
-    handler.setLevel(Level.ALL)
+    val level   = if (trace) Level.FINEST else Level.FINE
+    logger.setLevel(level)
+    handler.setLevel(level)
     logger.addHandler(handler)
   }
 }
