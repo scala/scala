@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Werror
 //
 object CatchAll {
   try { "warn" } catch { case _ => }
@@ -28,6 +28,12 @@ object CatchAll {
   try { "okay" } catch { case _ if "".isEmpty => }
 
   "okay" match { case _ => "" }
+
+  val handler: PartialFunction[Throwable, String] = { case _ => "hello, world" }
+  val discarder = (_: Throwable) => "goodbye, cruel world"
+
+  try "okay" catch handler
+  try "okay" catch discarder   // warn total function
 }
 
 object T extends Throwable

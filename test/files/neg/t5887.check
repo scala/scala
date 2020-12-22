@@ -19,5 +19,11 @@ t5887.scala:8: warning: A try without a catch or finally is equivalent to puttin
 t5887.scala:10: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
   def h = List("x") map (s => try { case _ => 7 })
                               ^
-2 warnings
+t5887.scala:12: warning: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
+  def j = try ??? catch (_ => 42)
+                           ^
+t5887.scala:18: warning: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
+  def k2 = try 27 catch recover
+                        ^
+4 warnings
 3 errors

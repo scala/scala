@@ -7,6 +7,9 @@ catch-all.scala:6: warning: This catches all Throwables. If this is really inten
 catch-all.scala:8: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
   try { "warn" } catch { case _: RuntimeException => ; case x => }
                                                             ^
+catch-all.scala:36: warning: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
+  try "okay" catch discarder   // warn total function
+                   ^
 error: No warnings can be incurred under -Werror.
-3 warnings
+4 warnings
 1 error

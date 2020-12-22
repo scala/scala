@@ -1,6 +1,8 @@
 
 import scala.tools.testkit.AssertUtil.assertThrows
+import scala.annotation.nowarn
 
+@nowarn("msg=This catches all Throwables.")
 object Test extends App {
   def npe: Int = throw null
   def err: Int = throw new Error()
