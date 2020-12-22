@@ -15,7 +15,7 @@ package jline
 
 import java.util.{List => JList}
 
-import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
+import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, SyntaxError, UserInterruptException}
 import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
 import org.jline.terminal.Terminal
 
@@ -144,8 +144,11 @@ object Reader {
       import ParseContext._
       context match {
         case ACCEPT_LINE =>
-          if (repl.parseString(line) == Incomplete) throw new EOFError(0, 0, "incomplete")
-          tokenize(line, cursor)     // Try a real "final" parse.
+          repl.parseString(line) match {
+            case Incomplete if line.endsWith("\n\n") => throw new SyntaxError(0, 0, "incomplete") // incomplete but we're bailing now
+            case Incomplete                          => throw new EOFError(0, 0, "incomplete")    // incomplete so keep reading input
+            case Success | Error                     => tokenize(line, cursor) // Try a real "final" parse. (dnw: even for Error??)
+          }
         case COMPLETE => tokenize(line, cursor)    // Parse to find completions (typically after a Tab).
         case SECONDARY_PROMPT =>
           tokenize(line, cursor) // Called when we need to update the secondary prompts.
