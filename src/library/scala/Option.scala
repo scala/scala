@@ -37,14 +37,14 @@ object Option {
    *  Some(a). When the condition is false, `a` is not evaluated and None is
    *  returned.
    */
-  def when[A](cond: Boolean)(a: => A): Option[A] =
+  @inline def when[A](cond: Boolean)(a: => A): Option[A] =
     if (cond) Some(a) else None
 
   /** Unless a given condition is true, this will evaluate the `a` argument and
    *  return Some(a). Otherwise, `a` is not evaluated and None is returned.
    */
   @inline def unless[A](cond: Boolean)(a: => A): Option[A] =
-    when(!cond)(a)
+    if (cond) None else Some(a)
 }
 
 /** Represents optional values. Instances of `Option`
@@ -166,7 +166,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    * }
    * }}}
    */
-  final def isDefined: Boolean = !isEmpty
+  @inline final def isDefined: Boolean = !isEmpty
 
   override final def knownSize: Int = if (isEmpty) 0 else 1
 
@@ -300,7 +300,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    *           also an $option.
    * @see flatMap
    */
-  def flatten[B](implicit ev: A <:< Option[B]): Option[B] =
+  @inline final def flatten[B](implicit ev: A <:< Option[B]): Option[B] =
     if (isEmpty) None else ev(this.get)
 
   /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
@@ -344,7 +344,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    * }}}
    *  @note   Implemented here to avoid the implicit conversion to Iterable.
    */
-  final def nonEmpty: Boolean = isDefined
+  @inline final def nonEmpty: Boolean = isDefined
 
   /** Necessary to keep $option from being implicitly converted to
    *  [[scala.collection.Iterable]] in `for` comprehensions.
