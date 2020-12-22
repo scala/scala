@@ -240,7 +240,7 @@ You may also want to check out the following resources:
 
 # Scala CI
 
-[![Build Status](https://travis-ci.org/scala/scala.svg?branch=2.13.x)](https://travis-ci.org/scala/scala)
+[![Build Status](https://travis-ci.com/scala/scala.svg?branch=2.13.x)](https://travis-ci.com/scala/scala)
 
 Once you submit a PR your commits will be automatically tested by the Scala CI.
 
