@@ -15,7 +15,7 @@ package scala.tools.tasty
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 25
+  val MajorVersion: Int = 26
   val MinorVersion: Int = 1
 
   final val ASTsSection = "ASTs"
@@ -205,6 +205,7 @@ object TastyFormat {
   final val TERMREFin = 174
   final val TYPEREFin = 175
   final val SELECTin = 176
+  final val EXPORT = 177
 
   final val METHODtype = 180
 
@@ -404,6 +405,7 @@ object TastyFormat {
     case TERMREFin => "TERMREFin"
     case TYPEREFin => "TYPEREFin"
     case SELECTin => "SELECTin"
+    case EXPORT => "EXPORT"
 
     case REFINEDtype => "REFINEDtype"
     case REFINEDtpt => "REFINEDtpt"

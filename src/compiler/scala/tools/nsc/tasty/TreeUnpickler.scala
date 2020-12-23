@@ -639,7 +639,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
             symbolAtCurrent()
             skipTree()
-          case IMPORT =>
+          case IMPORT | EXPORT =>
             skipTree()
           case PACKAGE =>
             processPackage(end => implicit ctx => indexStats(end))
@@ -886,6 +886,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         readIndexedMember()
       case IMPORT =>
         unsupportedTermTreeError("import statement")
+      case EXPORT =>
+        unsupportedTermTreeError("export statement")
       case PACKAGE =>
         unsupportedTermTreeError("package statement")
       case _ =>

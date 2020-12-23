@@ -346,7 +346,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private val SyntheticScala3Type =
-    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:|Tuple)$$".r
+    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:|Tuple|Matchable)$$".r
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
@@ -365,6 +365,7 @@ trait TypeOps { self: TastyUniverse =>
           case tpnme.TupleCons                                        => genTupleIsUnsupported("scala.*:")
           case tpnme.Tuple               if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
           case tpnme.AnyKind                                          => u.definitions.AnyTpe
+          case tpnme.Matchable                                        => u.definitions.AnyTpe
           case _                                                      => lookupType
         }
 
