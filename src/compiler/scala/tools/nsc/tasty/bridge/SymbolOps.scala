@@ -34,6 +34,16 @@ trait SymbolOps { self: TastyUniverse =>
   final def declaringSymbolOf(sym: Symbol): Symbol =
     if (sym.isModuleClass) sym.sourceModule else sym
 
+  private final def deepComplete(tpe: Type): Unit = {
+    val asTerm = tpe.termSymbol
+    if (asTerm ne u.NoSymbol) {
+      asTerm.ensureCompleted()
+      deepComplete(tpe.widen)
+    } else {
+      tpe.typeSymbol.ensureCompleted()
+    }
+  }
+
   implicit final class SymbolDecorator(val sym: Symbol) {
 
     def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
@@ -92,9 +102,12 @@ trait SymbolOps { self: TastyUniverse =>
     else
       termParamss
 
-  def namedMemberOfType(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = tname match {
-    case SignedName(qual, sig, target) => signedMemberOfSpace(space, qual, sig.map(_.encode), target)
-    case _                             => memberOfSpace(space, tname)
+  def namedMemberOfType(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
+    deepComplete(space)
+    tname match {
+      case SignedName(qual, sig, target) => signedMemberOfSpace(space, qual, sig.map(_.encode), target)
+      case _                             => memberOfSpace(space, tname)
+    }
   }
 
   private def memberOfSpace(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
