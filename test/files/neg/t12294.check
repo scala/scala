@@ -1,0 +1,37 @@
+t12294.scala:2: error: invalid unicode escape
+  "\u"
+     ^
+t12294.scala:3: error: invalid unicode escape
+  "\u   "
+     ^
+t12294.scala:4: error: invalid unicode escape
+  "\uuuu"
+        ^
+t12294.scala:5: error: invalid unicode escape
+  "\uuuuu"
+         ^
+t12294.scala:6: error: invalid unicode escape
+  "\u123"
+     ^
+t12294.scala:7: error: invalid unicode escape
+  "\uu123"
+      ^
+t12294.scala:8: error: invalid unicode escape at index 1 of \u
+  """\u"""
+      ^
+t12294.scala:9: error: invalid unicode escape at index 2 of \u
+  """\u   """
+       ^
+t12294.scala:10: error: invalid unicode escape at index 4 of \uuuu
+  """\uuuu"""
+         ^
+t12294.scala:11: error: invalid unicode escape at index 5 of \uuuuu
+  """\uuuuu"""
+          ^
+t12294.scala:12: error: invalid unicode escape at index 5 of \u123
+  """\u123"""
+          ^
+t12294.scala:13: error: invalid unicode escape at index 6 of \uu123
+  """\uu123"""
+           ^
+12 errors
