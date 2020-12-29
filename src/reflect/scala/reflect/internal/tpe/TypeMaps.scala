@@ -345,18 +345,17 @@ private[internal] trait TypeMaps {
       val tp1 = mapOver(tp)
       if (variance.isInvariant) tp1
       else tp1 match {
-        case TypeRef(pre, sym, args) if tparams.contains(sym) && occurCount(sym) == 1 =>
-          val repl = if (variance.isPositive) dropSingletonType(tp1.upperBound) else tp1.lowerBound
+        case TypeRef(_, sym, typeArgs) if tparams.contains(sym) && occurCount(sym) == 1 =>
           def msg = {
             val word = if (variance.isPositive) "upper" else "lower"
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
-          if (!repl.typeSymbol.isBottomClass && ! anyContains.collect(repl))
-            debuglogResult(msg)(repl)
-          else
-            tp1
-        case _ =>
-          tp1
+
+          val widened = if (variance.isPositive) dropSingletonType(tp1.upperBound) else tp1.lowerBound
+          if (widened.typeSymbol.isBottomClass || anyContains.collect(widened)) tp1
+          else debuglogResult(msg)(appliedType(genPolyType(sym.typeParams, widened), typeArgs))
+        case other =>
+          other
       }
     }
     override def mapOver(tp: Type): Type = tp match {
