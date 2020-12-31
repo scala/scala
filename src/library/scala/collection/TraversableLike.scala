@@ -491,10 +491,10 @@ trait TraversableLike[+A, +Repr] extends Any
             else if (k3 == key) v3
             else {
               hashMap = new mutable.HashMap
-              hashMap += ((k0, v0))
-              hashMap += ((k1, v1))
-              hashMap += ((k2, v2))
-              hashMap += ((k3, v3))
+              hashMap(k0) = v0
+              hashMap(k1) = v1
+              hashMap(k2) = v2
+              hashMap(k3) = v3
               val bldr = apply()
               hashMap(key) = bldr
               bldr
