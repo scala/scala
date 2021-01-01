@@ -195,9 +195,9 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   }
 
   /** This implicit method augments `T` with the comparison operators defined
-    * in `scala.math.Ordering.Ops`.
-    */
-  implicit def mkOrderingOps(lhs: T): OrderingOps = new OrderingOps(lhs)
+   *  in `OrderingOps`, with semantics determined by this `Ordering`.
+   */
+  final implicit def mkOrderingOps(lhs: T): OrderingOps = new OrderingOps(lhs)
 }
 
 trait LowPriorityOrderingImplicits {
@@ -889,5 +889,19 @@ object Ordering extends LowPriorityOrderingImplicits {
       case _ => false
     }
     override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8, ord9).hashCode()
+  }
+
+  /** Infix ordering operations that delegate to an implicit Ordering.
+   *
+   *  These extension methods avoid allocating a wrapper class when inlined.
+   */
+  implicit class Ops[A](val lhs: A) extends AnyVal {
+    def <(rhs: A)(implicit ord: Ordering[A]): Boolean     = ord.lt(lhs, rhs)
+    def <=(rhs: A)(implicit ord: Ordering[A]): Boolean    = ord.lteq(lhs, rhs)
+    def >(rhs: A)(implicit ord: Ordering[A]): Boolean     = ord.gt(lhs, rhs)
+    def >=(rhs: A)(implicit ord: Ordering[A]): Boolean    = ord.gteq(lhs, rhs)
+    def equiv(rhs: A)(implicit ord: Ordering[A]): Boolean = ord.equiv(lhs, rhs)
+    def max(rhs: A)(implicit ord: Ordering[A]): A         = ord.max(lhs, rhs)
+    def min(rhs: A)(implicit ord: Ordering[A]): A         = ord.min(lhs, rhs)
   }
 }

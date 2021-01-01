@@ -42,7 +42,7 @@ class OrderingTest {
   @deprecated("Tests deprecated Ordering for Iterable", since="2.13")
   @Test
   def reverseOrdering(): Unit = {
-    def check[T: Ordering](t1: T, t2: T): Unit = {
+    def check[T](t1: T, t2: T)(implicit ord: Ordering[T]): Unit = {
       val O = Ordering[T]
       val R = O.reverse
       assertEquals(O.min(t1, t2), R.max(t1, t2))
@@ -67,6 +67,17 @@ class OrderingTest {
 
       assertEquals(O.mkOrderingOps(t1).min(t2), R.mkOrderingOps(t1).max(t2))
       assertEquals(O.mkOrderingOps(t1).max(t2), R.mkOrderingOps(t1).min(t2))
+
+      // repeat infix tests with Ordering.Ops
+      locally {
+        import Ordering.Ops
+        assertEquals(t1 < t2, { implicit val ord: Ordering[T] = R ; t2 < t1 })
+        assertEquals(t1 <= t2, { implicit val ord: Ordering[T] = R ; t2 <= t1 })
+        assertEquals(t1 > t2, { implicit val ord: Ordering[T] = R ; t2 > t1 })
+        assertEquals(t1 >= t2, { implicit val ord: Ordering[T] = R ; t2 >= t1 })
+        assertEquals(t1 min t2, { implicit val ord: Ordering[T] = R ; t2 max t1 })
+        assertEquals(t1 max t2, { implicit val ord: Ordering[T] = R ; t2 min t1 })
+      }
     }
     def checkAll[T: Ordering](ts: T*): Unit = {
       for (t1 <- ts; t2 <- ts) check(t1, t2)
