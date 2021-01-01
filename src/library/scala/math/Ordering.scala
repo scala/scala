@@ -184,6 +184,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   }
 
   /** This inner class defines comparison operators available for `T`. */
+  @deprecated("Use Ordering.Ops", since="2.13.5")
   class OrderingOps(lhs: T) {
     def <(rhs: T): Boolean = lt(lhs, rhs)
     def <=(rhs: T): Boolean = lteq(lhs, rhs)
@@ -195,9 +196,9 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   }
 
   /** This implicit method augments `T` with the comparison operators defined
-   *  in `OrderingOps`, with semantics determined by this `Ordering`.
+   *  in `Ordering.Ops`.
    */
-  final implicit def mkOrderingOps(lhs: T): OrderingOps = new OrderingOps(lhs)
+  final implicit def mkOrderingOps(lhs: T): Ordering.Ops[T] = new Ordering.Ops[T](lhs)
 }
 
 trait LowPriorityOrderingImplicits {
@@ -299,7 +300,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * def lessThan[T: Ordering](x: T, y: T) = x < y
       * }}}
       */
-    implicit def infixOrderingOps[T](x: T)(implicit ord: Ordering[T]): Ordering[T]#OrderingOps = new ord.OrderingOps(x)
+    final implicit def infixOrderingOps[T: Ordering](x: T): Ordering.Ops[T] = new Ordering.Ops[T](x)
   }
 
   /** An object containing implicits which are not in the default scope. */

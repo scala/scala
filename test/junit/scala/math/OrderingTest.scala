@@ -60,21 +60,13 @@ class OrderingTest {
 
       assertEquals(O.tryCompare(t1, t2), R.tryCompare(t2, t1))
 
-      assertEquals(O.mkOrderingOps(t1).<(t2), R.mkOrderingOps(t2).<(t1))
-      assertEquals(O.mkOrderingOps(t1).<=(t2), R.mkOrderingOps(t2).<=(t1))
-      assertEquals(O.mkOrderingOps(t1).>(t2), R.mkOrderingOps(t2).>(t1))
-      assertEquals(O.mkOrderingOps(t1).>=(t2), R.mkOrderingOps(t2).>=(t1))
-
-      assertEquals(O.mkOrderingOps(t1).min(t2), R.mkOrderingOps(t1).max(t2))
-      assertEquals(O.mkOrderingOps(t1).max(t2), R.mkOrderingOps(t1).min(t2))
-
-      // repeat infix tests with Ordering.Ops
+      // infix operations take an implicit ordering
       locally {
         import Ordering.Ops
-        assertEquals(t1 < t2, { implicit val ord: Ordering[T] = R ; t2 < t1 })
-        assertEquals(t1 <= t2, { implicit val ord: Ordering[T] = R ; t2 <= t1 })
-        assertEquals(t1 > t2, { implicit val ord: Ordering[T] = R ; t2 > t1 })
-        assertEquals(t1 >= t2, { implicit val ord: Ordering[T] = R ; t2 >= t1 })
+        assertEquals(t1 < t2,   { implicit val ord: Ordering[T] = R ; t2 < t1 })
+        assertEquals(t1 <= t2,  { implicit val ord: Ordering[T] = R ; t2 <= t1 })
+        assertEquals(t1 > t2,   { implicit val ord: Ordering[T] = R ; t2 > t1 })
+        assertEquals(t1 >= t2,  { implicit val ord: Ordering[T] = R ; t2 >= t1 })
         assertEquals(t1 min t2, { implicit val ord: Ordering[T] = R ; t2 max t1 })
         assertEquals(t1 max t2, { implicit val ord: Ordering[T] = R ; t2 min t1 })
       }
