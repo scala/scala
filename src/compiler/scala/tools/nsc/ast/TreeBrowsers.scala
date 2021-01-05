@@ -217,8 +217,8 @@ abstract class TreeBrowsers {
     }
 
     class ASTMenuBar extends JMenuBar {
-      val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()
-      val shiftKey = InputEvent.SHIFT_MASK
+      val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()
+      val shiftKey = InputEvent.SHIFT_DOWN_MASK
       val jmFile = new JMenu("File")
       // val jmiSaveImage = new JMenuItem(
       //   new AbstractAction("Save Tree Image") {
