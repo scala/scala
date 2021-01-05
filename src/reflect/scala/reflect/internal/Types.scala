@@ -2438,7 +2438,7 @@ trait Types
 
 
     // interpret symbol's info in terms of the type's prefix and type args
-    protected def relativeInfo: Type = appliedType(sym.info.asSeenFrom(pre, sym.owner), argsOrDummies)
+    protected def relativeInfo: Type = appliedType(sym.info.asSeenFrom(pre, sym.owner), args)
 
     // @M: propagate actual type params (args) to `tp`, by replacing
     // formal type parameters with actual ones. If tp is higher kinded,
