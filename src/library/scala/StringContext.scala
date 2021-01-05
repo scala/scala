@@ -388,9 +388,9 @@ object StringContext {
     }
 
   protected[scala] def processUnicode(str: String): String =
-    str indexOf "\\" match {
-      case i if i == -1 || i >= (str.length() - 5) => str
-      case i => replaceU(str, i)
+    str indexOf "\\u" match {
+      case -1 => str
+      case i  => replaceU(str, i)
     }
 
   //replace escapes with given first escape
@@ -429,38 +429,47 @@ object StringContext {
       loop(0, first)
     }
 
-  //replace escapes with given first escape
-  private[this] def replaceU(str: String, first: Int): String = {
+  /** replace Unicode escapes starting at index `backslash` which must be the
+   *  index of the first index of a backslash character followed by a `u`
+   *  character
+   *
+   * If a backslash is followed by one or more `u` characters and there is
+   * an odd number of backslashes immediately preceding the `u`, processing
+   * the escape is attempted and an invalid escape is an error.
+   * The odd backslashes rule is, well, odd, but is grandfathered in from
+   * pre-2.13.2 times, when this same rule existed in the scanner, and was also
+   * odd. Since escape handling here is for backwards compatibility only, that
+   * backwards compatibility is also retained.
+   * Otherwise, the backslash is not taken to introduce an escape and the
+   * backslash is taken to be literal
+   */
+  private[this] def replaceU(str: String, backslash: Int): String = {
     val len = str.length()
     val b = new JLSBuilder
-    // append replacement starting at index `i`, with `next` backslash
+
     @tailrec def loop(i: Int, next: Int): String = {
       if (next >= 0) {
-        //require(str(next) == '\\')
-        if (next > i) b.append(str, i, next)
-        var idx = next + 1
-        if (idx >= len) {
-          if (idx == len) b.append('\\')
-          b.toString()
-        }
-        else {
-          val (ch, advance) = str(idx) match {
-            case 'u'  => readUEscape(str, idx)
-            case chr  => {
-              b.append('\\')
-              (chr, 1)
-            }
-          }
-          idx += advance
+        //require(str(next) == '\\' && str(next + 1) == 'u')
+        def oddBackslashes(ibackslash: Int): Boolean =
+          if (ibackslash > 0 && str(ibackslash - 1) == '\\') oddBackslashes(ibackslash - 1)
+          else ((next - ibackslash) % 2) == 0
+
+        if(oddBackslashes(next)) {
+          if (next > i) b.append(str, i, next)
+          val idx = next + 1
+          val (ch, advance) = readUEscape(str, idx)
+          val nextCharIndex = idx + advance
           b.append(ch)
-          loop(idx, str.indexOf('\\', idx))
+          loop(nextCharIndex, str.indexOf("\\u", nextCharIndex))
         }
-      } else {
+        else loop(i, str.indexOf("\\u", next + 1))
+      }
+      else {
         if (i < len) b.append(str, i, len)
         b.toString()
       }
     }
-    loop(0, first)
+    loop(0, backslash)
   }
 
   def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
