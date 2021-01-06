@@ -14,7 +14,7 @@
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="interactive" />
     <orderEntry type="module" module-name="repl" />
-    <orderEntry type="library" name="repl-frontend-deps" level="project" />
+    <orderEntry type="library" name="replFrontend-deps" level="project" />
     <orderEntry type="library" name="starr" level="project" />
   </component>
 </module>
