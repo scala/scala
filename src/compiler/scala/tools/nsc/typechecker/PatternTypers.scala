@@ -195,16 +195,16 @@ trait PatternTypers {
 
       def skolems = try skolemBuffer.toList finally skolemBuffer.clear()
       def apply(tp: Type): Type = mapOver(tp) match {
-        case tp @ TypeRef(NoPrefix, tpSym, Nil) if eligible(tpSym) =>
-          val bounds = (
-            if (variance.isInvariant) tpSym.tpeHK.bounds
-            else if (variance.isPositive) TypeBounds.upper(tpSym.tpeHK)
-            else TypeBounds.lower(tpSym.tpeHK)
+        case TypeRef(NoPrefix, tpSym, Nil) if eligible(tpSym) =>
+          val bounds = genPolyType(tpSym.typeParams,
+            if (variance.isInvariant) tpSym.tpe.bounds
+            else if (variance.isPositive) TypeBounds.upper(tpSym.tpe)
+            else TypeBounds.lower(tpSym.tpe)
           )
           // origin must be the type param so we can deskolemize
           val skolem = context.owner.newGADTSkolem(freshTypeName("?" + tpSym.name), tpSym, bounds)
           skolemBuffer += skolem
-          logResult(s"Created gadt skolem $skolem: ${skolem.tpe_*} to stand in for $tpSym")(skolem.tpe_*)
+          logResult(s"Created gadt skolem $skolem: ${skolem.tpeHK} to stand in for $tpSym")(skolem.tpeHK)
         case tp1 => tp1
       }
     }
