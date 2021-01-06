@@ -284,6 +284,14 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     } catch {
       case ex: ClassCastException => false
     }
+    
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      val it = underlying.iterator
+      while (it.hasNext) {
+        val next = it.next()
+        f(next.getKey, next.getValue)
+      }
+    }
   }
 
   @SerialVersionUID(3L)
