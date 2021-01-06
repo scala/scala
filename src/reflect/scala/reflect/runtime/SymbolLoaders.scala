@@ -39,7 +39,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
         // if (!isCompilerUniverse) markAllCompleted(clazz, module)
       }
     }
-    override def load(sym: Symbol) = complete(sym)
+    override def load(sym: Symbol) = { complete(sym); symbolInfoCompleted(sym) }
   }
 
   /** Create a class and a companion object, enter in enclosing scope,

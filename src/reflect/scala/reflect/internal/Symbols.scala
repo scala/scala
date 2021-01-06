@@ -53,6 +53,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   protected def freshExistentialName(suffix: String): TypeName = freshExistentialName(suffix, nextExistentialId())
   protected def freshExistentialName(suffix: String, id: Int): TypeName = newTypeName("_" + id + suffix)
 
+  def symbolInfoCompleted(sym: Symbol): Unit = ()
+
   // Set the fields which point companions at one another.  Returns the module.
   def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol = {
     moduleClass.sourceModule = m
@@ -1537,6 +1539,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         def abortNoProgress() = abort(s"no progress in completing $this: ${infos.info}")
         if (cnt == 3) abortNoProgress()
       }
+      if (cnt > 0) symbolInfoCompleted(this)
       rawInfo
     }
 

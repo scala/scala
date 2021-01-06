@@ -1,0 +1,17 @@
+@scala.deprecated("dis?", "2.13.0")
+p.u.v.C          // class C
+p.u.v.C.D$       // object D
+p.u.v.C.::       // method
+p.u.v.C.m        // both overloads in class
+p.u.v.O$.`####`$ // method ####
+
+@scala.deprecated("dat?", "2.13.0")
+p.u.v.C.`::`#    // class
+p.u.v.C$.m       // method in object
+p.u.v.O$.`####`# // class ####
+
+@scala.deprecated("wut?", "2.13.0")
+p.u              // no-op, cannot annotate a package
+
+@scala.deprecated("whu?", "2.13.0")
+p.u._            // members of u, but not sub-packages

@@ -264,7 +264,7 @@ abstract class SymbolLoaders {
       }
     }
 
-    override def load(root: Symbol): Unit = { complete(root) }
+    override def load(root: Symbol): Unit = { complete(root); symbolInfoCompleted(root) }
 
     private def markAbsent(sym: Symbol): Unit = {
       val tpe: Type = if (ok) NoType else ErrorType

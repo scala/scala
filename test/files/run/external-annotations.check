@@ -1,0 +1,33 @@
+newSource1.scala:3: warning: class C in package v is deprecated (since 2.13.0): dis?
+  val c = new C // dis
+              ^
+newSource1.scala:4: warning: method m in class C is deprecated (since 2.13.0): dis?
+  c.m           // dis
+    ^
+newSource1.scala:5: warning: method m in class C is deprecated (since 2.13.0): dis?
+  c.m(1)        // dis
+    ^
+newSource1.scala:6: warning: method :: in class C is deprecated (since 2.13.0): dis?
+  c.::          // dis
+    ^
+newSource1.scala:7: warning: class :: in class C is deprecated (since 2.13.0): dat?
+  (new c.::).m  // dat
+         ^
+newSource1.scala:9: warning: object D in class C is deprecated (since 2.13.0): dis?
+  c.D.m         // dis
+    ^
+newSource1.scala:10: warning: method m in object C is deprecated (since 2.13.0): dat?
+  C.m           // dat
+    ^
+newSource1.scala:11: warning: method #### in object O is deprecated (since 2.13.0): dis?
+  O.####        // dis
+    ^
+newSource1.scala:12: warning: class #### in object O is deprecated (since 2.13.0): dat?
+  new O.####    // dat
+        ^
+newSource1.scala:14: warning: class K in package u is deprecated (since 2.13.0): whu?
+  (new p.u.K).m // whu
+           ^
+newSource1.scala:15: warning: object K in package u is deprecated (since 2.13.0): whu?
+  p.u.K.m       // whu
+      ^

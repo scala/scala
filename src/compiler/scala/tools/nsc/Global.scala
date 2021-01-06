@@ -53,7 +53,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     with DocComments
     with Positions
     with Reporting
-    with Parsing { self =>
+    with Parsing
+    with ExternalAnnotations { self =>
 
   // the mirror --------------------------------------------------
 
@@ -107,6 +108,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
   def erasurePhase: Phase = if (currentRun.isDefined) currentRun.erasurePhase else NoPhase
+
+  override def symbolInfoCompleted(sym: Symbol): Unit = addExternalAnnotations(sym)
 
   /* Override `newStubSymbol` defined in `SymbolTable` to provide us access
    * to the last tree to typer, whose position is the trigger of stub errors. */

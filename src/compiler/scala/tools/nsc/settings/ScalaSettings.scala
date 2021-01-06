@@ -270,6 +270,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
 
   val Youtline        = BooleanSetting    ("-Youtline", "Don't compile method bodies. Use together with `-Ystop-after:pickler` to generate the pickled signatures for all source files.").internalOnly()
 
+  val YexternalAnnotations = BooleanSetting("-Yexternal-annotations", "Apply external annotations defined in the `external-annotations.txt` resource in classpath entries.")
+  val YexternalAnnotationFiles = PathSetting("-Yexternal-annotation-files", "Files from which to read external annotations", "")
+
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
