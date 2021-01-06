@@ -219,14 +219,15 @@ trait Kinds {
       // Prevent WildcardType from causing kind errors, as typevars may be higher-order
       if (targ == WildcardType) Nil else {
         // NOTE: *not* targ.typeSymbol, which normalizes
-        val targSym = targ.typeSymbolDirect
-        // force symbol load for #4205
-        targSym.info
+        // force initialize symbol for scala/bug#4205
+        val targSym = targ.typeSymbolDirect.initialize
+        // NOTE: *not* targ.prefix, which normalizes
+        val targPre = targ.prefixDirect
         // @M must use the typeParams of the *type* targ, not of the *symbol* of targ!!
         val tparamsHO = targ.typeParams
         if (targ.isHigherKinded || tparam.typeParams.nonEmpty) {
           val kindErrors = checkKindBoundsHK(
-            tparamsHO, targSym, targ.prefix, targSym.owner,
+            tparamsHO, targSym, targPre, targSym.owner,
             tparam, tparam.owner, tparam.typeParams, tparamsHO
           )
           if (kindErrors.isEmpty) Nil else {

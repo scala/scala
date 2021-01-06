@@ -163,6 +163,7 @@ trait Types
     override def upperBound = underlying.upperBound
     override def parents = underlying.parents
     override def prefix = underlying.prefix
+    override def prefixDirect = underlying.prefixDirect
     override def decls = underlying.decls
     override def baseType(clazz: Symbol) = underlying.baseType(clazz)
     override def baseTypeSeq = underlying.baseTypeSeq
@@ -424,6 +425,12 @@ trait Types
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
     def prefix: Type = NoType
+
+    /** The prefix ''directly'' associated with the type.
+     *  In other words, no normalization is performed: if this is an alias type,
+     *  the prefix returned is that of the alias, not the underlying type.
+     */
+    def prefixDirect: Type = prefix
 
     /** A chain of all typeref or singletype prefixes of this type, longest first.
      *  (Only used from safeToString.)
@@ -2583,6 +2590,7 @@ trait Types
 
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
     override def prefix           = pre
+    override def prefixDirect     = pre
     override def termSymbol       = super.termSymbol
     override def termSymbolDirect = super.termSymbol
     override def typeArgs         = args
