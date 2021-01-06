@@ -294,7 +294,7 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="partest-javaagent-deps">
+    <library name="partestJavaAgent-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/7.3.1-scala-1/scala-asm-7.3.1-scala-1.jar!/" />
       </CLASSES>
@@ -310,7 +310,7 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="repl-frontend-deps">
+    <library name="replFrontend-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/7.3.1-scala-1/scala-asm-7.3.1-scala-1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.16.0/jline-3.16.0.jar!/" />
