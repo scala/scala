@@ -122,7 +122,7 @@ extends scala.collection.AbstractSeq[Int]
       else head
     } else super.max(ord)
 
-  protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
+  protected def copy(start: Int, end: Int, step: Int): Range = Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
    *  a new `step`.
@@ -445,14 +445,20 @@ object Range {
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
 
+  private lazy val smallRanges = Array.tabulate(64)(end => new Range(0, end, 1))
   /** Make a range from `start` until `end` (exclusive) with given step value.
    * @note step != 0
    */
-  def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
+  def apply(start: Int, end: Int, step: Int): Range = {
+    if (step == 1 && start == 0 && end >= start && end < smallRanges.length)
+      smallRanges(end)
+    else
+      new Range(start, end, step)
+  }
 
   /** Make a range from `start` until `end` (exclusive) with step value 1.
    */
-  def apply(start: Int, end: Int): Range = new Range(start, end, 1)
+  def apply(start: Int, end: Int): Range = apply(start, end, 1)
 
   /** Make an inclusive range from `start` to `end` with given step value.
    * @note step != 0

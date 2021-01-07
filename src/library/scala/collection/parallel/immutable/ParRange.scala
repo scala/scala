@@ -117,6 +117,6 @@ self =>
 object ParRange {
   def apply(start: Int, end: Int, step: Int, inclusive: Boolean) = new ParRange(
     if (inclusive) new Range.Inclusive(start, end, step)
-    else new Range(start, end, step)
+    else Range(start, end, step)
   )
 }
