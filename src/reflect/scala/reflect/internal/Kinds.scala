@@ -140,7 +140,8 @@ trait Kinds {
       param:         Symbol,
       paramOwner:    Symbol,
       underHKParams: List[Symbol],
-      withHKArgs:    List[Symbol]
+      withHKArgs:    List[Symbol],
+      flip:          Boolean
     ): KindErrors = {
 
       var kindErrors: KindErrors = NoKindErrors
@@ -165,7 +166,9 @@ trait Kinds {
       }
       else foreach2(hkargs, hkparams) { (hkarg, hkparam) =>
         if (hkparam.typeParams.isEmpty && hkarg.typeParams.isEmpty) { // base-case: kind *
-          kindCheck(variancesMatch(hkarg, hkparam), _.varianceError(hkarg -> hkparam))
+          if (flip) kindCheck(variancesMatch(hkparam, hkarg), _.varianceError(hkparam -> hkarg))
+          else kindCheck(variancesMatch(hkarg, hkparam), _.varianceError(hkarg -> hkparam))
+
           // instantiateTypeParams(tparams, targs)
           //   higher-order bounds, may contain references to type arguments
           // substSym(hkparams, hkargs)
@@ -179,7 +182,8 @@ trait Kinds {
           val declaredBoundsInst = declaredBounds.substSym(underHKParams, withHKArgs).asSeenFrom(pre, owner)
           val argumentBounds     = hkarg.info.bounds.asSeenFrom(argPre, argOwner).asSeenFrom(pre, owner)
 
-          kindCheck(declaredBoundsInst <:< argumentBounds, _.strictnessError(hkarg -> hkparam))
+          if (flip) kindCheck(argumentBounds <:< declaredBoundsInst, _.strictnessError(hkparam -> hkarg))
+          else kindCheck(declaredBoundsInst <:< argumentBounds, _.strictnessError(hkarg -> hkparam))
 
           debuglog(
             "checkKindBoundsHK base case: " + hkparam +
@@ -200,7 +204,8 @@ trait Kinds {
             hkparam,
             paramOwner,
             underHKParams ++ hkparam.typeParams,
-            withHKArgs ++ hkarg.typeParams
+            withHKArgs ++ hkarg.typeParams,
+            !flip
           )
         }
         if (!explainErrors && !kindErrors.isEmpty)
@@ -228,7 +233,8 @@ trait Kinds {
         if (targ.isHigherKinded || tparam.typeParams.nonEmpty) {
           val kindErrors = checkKindBoundsHK(
             tparamsHO, targSym, targPre, targSym.owner,
-            tparam, tparam.owner, tparam.typeParams, tparamsHO
+            tparam, tparam.owner, tparam.typeParams, tparamsHO,
+            flip = false
           )
           if (kindErrors.isEmpty) Nil else {
             if (explainErrors) List((targ, tparam, kindErrors))
