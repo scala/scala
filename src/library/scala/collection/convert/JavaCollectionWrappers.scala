@@ -319,11 +319,12 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def size = underlying.size
 
+    // support Some(null) if currently bound to null
     def get(k: K) = {
-      val v = underlying get k
+      val v = underlying.get(k)
       if (v != null)
         Some(v)
-      else if (underlying containsKey k)
+      else if (underlying.containsKey(k))
         Some(null.asInstanceOf[V])
       else
         None
@@ -332,11 +333,18 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
 
-    override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
+    // support Some(null) if currently bound to null
+    override def put(k: K, v: V): Option[V] = {
+      val present = underlying.containsKey(k)
+      val result  = underlying.put(k, v)
+      if (present) Some(result) else None
+    }
 
-    override def update(k: K, v: V): Unit = { underlying.put(k, v) }
+    override def update(k: K, v: V): Unit = underlying.put(k, v)
 
-    override def remove(k: K): Option[V] = Option(underlying remove k)
+    // support Some(null) if currently bound to null
+    override def remove(k: K): Option[V] =
+      if (underlying.containsKey(k)) Some(underlying.remove(k)) else None
 
     def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
       val ui = underlying.entrySet.iterator
