@@ -4855,6 +4855,8 @@ trait Types
           false
         case PolyType(_, _) =>
           false
+        case ConstantType(_) =>
+          matchesType(tp1, tp2.underlying.widen, alwaysMatchSimple)
         case _ =>
           alwaysMatchSimple || tp1 =:= tp2
       }
