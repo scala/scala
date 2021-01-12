@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{immutable, mutable}
 import symtab._
@@ -42,7 +42,7 @@ abstract class Erasure extends InfoTransform
 
 // -------- erasure on types --------------------------------------------------------
 
-  // convert a numeric with a toXXX method
+  // convert a numeric with a toNNN method
   def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
@@ -90,8 +90,11 @@ abstract class Erasure extends InfoTransform
         }
       }
     @tailrec
-    private[this] def untilApply(ts: List[Type]): Unit =
-      if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
+    private def untilApply(ts: List[Type]): Unit =
+      if (!ts.isEmpty && !result) {
+        apply(ts.head)
+        untilApply(ts.tail)
+      }
   }
 
   override protected def verifyJavaErasure = settings.Xverify.value || settings.isDebug
@@ -795,9 +798,9 @@ abstract class Erasure extends InfoTransform
     /** A replacement for the standard typer's `typed1` method.
      */
     override def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
-      val tree1 = try {
+      val tree1 = try
         tree match {
-          case DefDef(_,_,_,_,_,_) if tree.symbol.isClassConstructor && tree.symbol.isPrimaryConstructor && tree.symbol.owner != ArrayClass =>
+          case _: DefDef if tree.symbol.isClassConstructor && tree.symbol.isPrimaryConstructor && tree.symbol.owner != ArrayClass =>
             super.typed1(deriveDefDef(tree)(addMixinConstructorCalls(_, tree.symbol.owner)), mode, pt) // (3)
           case Template(parents, self, body) =>
             val parents1 = tree.symbol.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
@@ -820,16 +823,14 @@ abstract class Erasure extends InfoTransform
           case _ =>
             super.typed1(adaptMember(tree), mode, pt)
         }
-      } catch {
+      catch {
         case er: TypeError =>
           Console.println("exception when typing " + tree+"/"+tree.getClass)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
           abort("unrecoverable error")
         case ex: Exception =>
-          //if (settings.debug.value)
-          try Console.println("exception when typing " + tree)
-          finally throw ex
+          try Console.println(s"exception when typing $tree") catch identity: @nowarn
           throw ex
       }
 
@@ -846,7 +847,6 @@ abstract class Erasure extends InfoTransform
             case Some(SAMFunction(samTp, _, _)) => fun setType specialScalaErasure(samTp)
             case _ => fun
           }
-
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree1, cond, adaptBranch(thenp), adaptBranch(elsep))
         case Match(selector, cases) =>
@@ -858,7 +858,7 @@ abstract class Erasure extends InfoTransform
             val first = tree1.symbol.alternatives.head
             val firstTpe = first.tpe
             val sym1 = tree1.symbol.filter {
-              alt => alt == first || !(firstTpe looselyMatches alt.tpe)
+              alt => alt == first || !firstTpe.looselyMatches(alt.tpe)
             }
             if (tree.symbol ne sym1) {
               tree1 setSymbol sym1 setType sym1.tpe
@@ -884,13 +884,13 @@ abstract class Erasure extends InfoTransform
           else if (low.owner == base) "name clash between defined and inherited member"
           else "name clash between inherited members"
         )
-        val when = if (exitingRefchecks(lowType matches highType)) "" else " after erasure: " + exitingPostErasure(highType)
+        val when = if (exitingRefchecks(lowType matches highType)) "" else s" after erasure: ${exitingPostErasure(highType)}"
 
         reporter.error(pos,
-          s"""|$what:
-              |${exitingRefchecks(highString)} and
-              |${exitingRefchecks(lowString)}
-              |have same type$when""".trim.stripMargin
+          sm"""|$what:
+               |${exitingRefchecks(highString)} and
+               |${exitingRefchecks(lowString)}
+               |have same type$when"""
         )
       }
       low setInfo ErrorType
@@ -1195,7 +1195,7 @@ abstract class Erasure extends InfoTransform
                 global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual, typer.resolveClassTag(tree.pos, qual.tpe.widen))))
               } else if (primitiveGetClassMethods.contains(fn.symbol)) {
                 // if we got here then we're trying to send a primitive getClass method to either
-                // a) an Any, in which cage Object_getClass works because Any erases to object. Or
+                // a) an Any, in which case Object_getClass works because Any erases to object. Or
                 //
                 // b) a non-primitive, e.g. because the qualifier's type is a refinement type where one parent
                 //    of the refinement is a primitive and another is AnyRef. In that case
@@ -1226,10 +1226,10 @@ abstract class Erasure extends InfoTransform
         case tree: Apply =>
           preEraseApply(tree)
 
-        case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
-                                      fun.symbol != Object_asInstanceOf &&
-                                      fun.symbol != Object_isInstanceOf &&
-                                      fun.symbol != Object_synchronized) =>
+        case TypeApply(fun, args) if fun.symbol.owner != AnyClass &&
+                                     fun.symbol != Object_asInstanceOf &&
+                                     fun.symbol != Object_isInstanceOf &&
+                                     fun.symbol != Object_synchronized =>
           // leave all other type tests/type casts, remove all other type applications
           preErase(fun)
 

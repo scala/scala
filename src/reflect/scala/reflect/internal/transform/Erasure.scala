@@ -75,7 +75,7 @@ trait Erasure {
   /** Arrays despite their finality may turn up as refined type parents,
    *  e.g. with "tagged types" like Array[Int] with T.
    */
-  def unboundedGenericArrayLevel(tp: Type): Int = tp match {
+  protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefTpe || core.upperBound == ObjectTpeJava) => level
     case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")(unboundedGenericArrayLevel(intersectionDominator(ps)))
     case _                                                  => 0
@@ -96,7 +96,7 @@ trait Erasure {
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
    */
-  def erasedValueClassArg(tref: TypeRef): Type = {
+  protected def erasedValueClassArg(tref: TypeRef): Type = {
     assert(!phase.erasedTypes, "Types are erased")
     val clazz = tref.sym
     if (valueClassIsParametric(clazz)) {
@@ -135,7 +135,7 @@ trait Erasure {
       case FoldableConstantType(ct) =>
         // erase classOf[List[_]] to classOf[List]. special case for classOf[Unit], avoid erasing to classOf[BoxedUnit].
         if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != UnitClass) ConstantType(Constant(apply(ct.typeValue)))
-        else tp
+        else ct.tpe
       case st: ThisType if st.sym.isPackageClass =>
         tp
       case st: SubType =>
@@ -253,7 +253,7 @@ trait Erasure {
     else scalaErasure
   }
 
-  /** This is used as the Scala erasure during the erasure phase itself
+  /** This is used as the Scala erasure during the erasure phase itself.
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
    */
@@ -262,11 +262,10 @@ trait Erasure {
       erasure(sym)(tp)
     else if (sym.isClassConstructor)
       specialConstructorErasure(sym.owner, tp)
-    else {
+    else
       specialScalaErasureFor(sym)(tp)
-    }
 
-  def specialConstructorErasure(clazz: Symbol, tpe: Type): Type = {
+  def specialConstructorErasure(clazz: Symbol, tpe: Type): Type =
     tpe match {
       case PolyType(tparams, restpe) =>
         specialConstructorErasure(clazz, restpe)
@@ -282,7 +281,6 @@ trait Erasure {
         assert(clazz == ArrayClass || tp.isError, s"unexpected constructor erasure $tp for $clazz")
         specialScalaErasureFor(clazz)(tp)
     }
-  }
 
   /** Scala's more precise erasure than java's is problematic as follows:
    *
@@ -530,7 +528,7 @@ trait Erasure {
       ErasedValueType(tref.sym, erasedValueClassArg(tref))
   }
 
-  /** This is used as the Scala erasure during the erasure phase itself
+  /** This is used as the Scala erasure during the erasure phase itself.
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
    *  are then later unwrapped to the underlying parameter type in phase posterasure.
    */
@@ -541,10 +539,9 @@ trait Erasure {
    */
   object specialScala3Erasure extends Scala3ErasureMap with SpecialScalaErasure
 
-  def specialScalaErasureFor(sym: Symbol): ErasureMap = {
+  def specialScalaErasureFor(sym: Symbol): ErasureMap =
     if (sym.isScala3Defined) specialScala3Erasure
     else specialScalaErasure
-  }
 
   object javaErasure extends JavaErasureMap
 

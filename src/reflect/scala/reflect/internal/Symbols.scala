@@ -2439,12 +2439,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *  @param ofclazz is a subclass of this symbol's owner
      */
-    final def overridingSymbol(ofclazz: Symbol): Symbol = (
-      if (canMatchInheritedSymbols)
-        matchingSymbol(ofclazz, ofclazz.thisType)
-      else
-        NoSymbol
-    )
+    final def overridingSymbol(ofclazz: Symbol): Symbol =
+      if (canMatchInheritedSymbols) matchingSymbol(ofclazz, ofclazz.thisType) else NoSymbol
 
     /** If false, this symbol cannot possibly participate in an override,
      *  either as overrider or overridee. For internal use; you should consult
