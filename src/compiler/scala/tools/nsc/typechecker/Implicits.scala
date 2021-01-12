@@ -1031,12 +1031,17 @@ trait Implicits {
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
       @nowarn("cat=lint-inaccessible")
-      def survives(info: ImplicitInfo, shadower: Shadower) = (
-           !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
-        && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
-        && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
-        && matchesPt(info)                          // stable and matches expected type
-      )
+      def survives(info: ImplicitInfo, shadower: Shadower) = {
+        def survives = (
+             !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
+          && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
+          && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
+          && matchesPt(info)                          // stable and matches expected type
+        )
+
+        if (isView) undoLog.undo(survives) else survives
+      }
+
       /** The implicits that are not valid because they come later in the source and
        *  lack an explicit result type. Used for error diagnostics only.
        */

@@ -210,8 +210,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     val infer = new Inferencer {
       def context = Typer.this.context
-      // See scala/bug#3281 re undoLog
-      override def isCoercible(tp: Type, pt: Type) = undoLog undo viewExists(tp, pt)
+      override def isCoercible(tp: Type, pt: Type) = viewExists(tp, pt)
     }
 
     /** Overridden to false in scaladoc and/or interactive. */
