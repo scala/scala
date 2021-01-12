@@ -287,11 +287,11 @@ constructUpdatedModuleVersions() {
 pollForStagingReposClosed() {
   OK=false
 
-  for i in $(seq 1 10); do
+  for i in $(seq 1 20); do
     OK=true
     for repo in $1; do
       if [[ "$(st_stagingRepoStatus $repo)" != "closed" ]]; then
-        echo "Staging repo $repo not yet closed, waiting 30 seconds ($i / 10)"
+        echo "Staging repo $repo not yet closed, waiting 30 seconds ($i / 20)"
         OK=false
         break
       fi
@@ -301,7 +301,7 @@ pollForStagingReposClosed() {
   done
 
   if [ "$OK" = "false" ]; then
-    echo "Failed to close staging repos in 5 minutes: $1"
+    echo "Failed to close staging repos in 10 minutes: $1"
     exit 1
   fi
 }
