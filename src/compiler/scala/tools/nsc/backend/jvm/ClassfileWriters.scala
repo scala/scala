@@ -171,19 +171,18 @@ abstract class ClassfileWriters {
   }
 
   object FileWriter {
-    def apply(global: Global, file: AbstractFile, jarManifestMainClass: Option[String]): FileWriter = {
-      if (file hasExtension "jar") {
+    def apply(global: Global, file: AbstractFile, jarManifestMainClass: Option[String]): FileWriter =
+      if (file.hasExtension("jar")) {
         val jarCompressionLevel = global.settings.YjarCompressionLevel.value
-        val jarFactory = Class.forName(global.settings.YjarFactory.value).asSubclass(classOf[JarFactory]).newInstance()
+        val jarFactory =
+          Class.forName(global.settings.YjarFactory.value)
+            .asSubclass(classOf[JarFactory])
+            .getDeclaredConstructor().newInstance()
         new JarEntryWriter(file, jarManifestMainClass, jarCompressionLevel, jarFactory, global.plugins)
-      } else if (file.isVirtual) {
-        new VirtualFileWriter(file)
-      } else if (file.isDirectory) {
-        new DirEntryWriter(file.file.toPath)
-      } else {
-        throw new IllegalStateException(s"don't know how to handle an output of $file [${file.getClass}]")
       }
-    }
+      else if (file.isVirtual) new VirtualFileWriter(file)
+      else if (file.isDirectory) new DirEntryWriter(file.file.toPath)
+      else throw new IllegalStateException(s"don't know how to handle an output of $file [${file.getClass}]")
   }
 
   private final class JarEntryWriter(file: AbstractFile, mainClass: Option[String], compressionLevel: Int, jarFactory: JarFactory, plugins: List[Plugin]) extends FileWriter {
