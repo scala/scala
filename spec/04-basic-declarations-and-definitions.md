@@ -719,7 +719,7 @@ _repeated_ parameter inside the method is then the sequence type
 That is, if a method ´m´ with type
 `(´p_1:T_1 , \ldots , p_n:T_n, p_s:S´*)´U´` is applied to arguments
 ´(e_1 , \ldots , e_k)´ where ´k \geq n´, then ´m´ is taken in that application
-to have type ´(p_1:T_1 , \ldots , p_n:T_n, p_s:S , \ldots , p_{s'}S)U´, with
+to have type ´(p_1:T_1 , \ldots , p_n:T_n, p_s:S , \ldots , p_{s'}:S)U´, with
 ´k - n´ occurrences of type
 ´S´ where any parameter names beyond ´p_s´ are fresh. The only exception to
 this rule is if the last argument is
