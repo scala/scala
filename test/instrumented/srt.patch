@@ -9,14 +9,14 @@
    def array_apply(xs: AnyRef, idx: Int): Any = {
 +    arrayApplyCount += 1
      xs match {
-@@ -70,2 +73,3 @@
+@@ -69,2 +72,3 @@
    }
 +  var arrayApplyCount = 0
 
-@@ -73,2 +77,3 @@
+@@ -72,2 +76,3 @@
    def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
 +    arrayUpdateCount += 1
      xs match {
-@@ -87,2 +92,3 @@
+@@ -85,2 +90,3 @@
    }
 +  var arrayUpdateCount = 0
