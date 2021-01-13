@@ -631,7 +631,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         var access = asm.Opcodes.ACC_FINAL
         if (param.isArtifact)
           access |= asm.Opcodes.ACC_SYNTHETIC
-        jmethod.visitParameter(param.name.decoded, access)
+        jmethod.visitParameter(param.name.encoded, access)
       }
     }
   } // end of trait BCAnnotGen
