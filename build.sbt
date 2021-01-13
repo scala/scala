@@ -92,7 +92,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-baseVersion in Global       := "2.12.13"
+baseVersion in Global       := "2.12.14"
 baseVersionSuffix in Global := "SNAPSHOT"
 organization in ThisBuild   := "org.scala-lang"
 homepage in ThisBuild       := Some(url("https://www.scala-lang.org"))
