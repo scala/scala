@@ -215,7 +215,7 @@ trait Names extends api.Names {
     /** The length of this name. */
     final def length: Int = len
     final def nonEmpty = !isEmpty
-    // This method is implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
+    // This method implements NameHasIsEmpty, and overrides CharSequence's isEmpty on JDK 15+
     override final def isEmpty = length == 0
 
     def nameKind: String
