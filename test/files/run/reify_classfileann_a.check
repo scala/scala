@@ -1,4 +1,4 @@
-reify_classfileann_a.scala:6: warning: Implementation restriction: subclassing Classfile does not
+reify_classfileann_a.scala:6: warning: Implementation restriction: subclassing ClassfileAnnotation does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends annotation.ClassfileAnnotation

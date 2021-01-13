@@ -1,4 +1,4 @@
-reflection-scala-annotations.scala:5: warning: Implementation restriction: subclassing Classfile does not
+reflection-scala-annotations.scala:5: warning: Implementation restriction: subclassing ClassfileAnnotation does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class jann(x: Int, y: Array[Int]) extends ClassfileAnnotation

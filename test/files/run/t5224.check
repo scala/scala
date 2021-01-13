@@ -1,4 +1,4 @@
-t5224.scala:3: warning: Implementation restriction: subclassing Classfile does not
+t5224.scala:3: warning: Implementation restriction: subclassing ClassfileAnnotation does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class Foo(bar: String) extends annotation.ClassfileAnnotation
