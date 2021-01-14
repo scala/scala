@@ -288,4 +288,10 @@ class TreeSetTest extends AllocationTest{
       assertEquals(expected, src filter set)
     }
   }
+  @Test def removeNonContent(): Unit = {
+    val src      = TreeSet(Range(0, 100, 2) :_*)
+    for (i <- Range(-1, 101, 2)) {
+      assertSame(src, nonAllocating(src - i))
+    }
+  }
 }
