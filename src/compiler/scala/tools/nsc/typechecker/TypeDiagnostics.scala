@@ -597,7 +597,9 @@ trait TypeDiagnostics {
           case nme.CONSTRUCTOR => sym.owner.companion.isCaseClass
           case nme.copy        => sym.owner.typeSignature.member(nme.copy).isSynthetic
         }
-      sym.isDefaultGetter && !privateSyntheticDefault
+      def defaultGetterOK = sym.isDefaultGetter && !privateSyntheticDefault
+      def contextBoundOK = sym.isImplicit && settings.warnUnusedSynthetics
+      contextBoundOK || defaultGetterOK
     }
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
