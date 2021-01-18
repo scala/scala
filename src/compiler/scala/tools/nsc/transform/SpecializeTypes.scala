@@ -641,7 +641,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.upperBound)}) + ", in env: " + env)
 
         def applyContext(tpe: Type) =
-          subst(env, tpe).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe))
+          subst(env, tpe).instantiateTypeParams(oldClassTParams, newClassTParams.map(_.tpeHK))
 
         /* Return a list of specialized parents to be re-mixed in a specialized subclass.
          * Assuming env = [T -> Int] and
@@ -699,7 +699,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        */
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
-        sym.modifyInfo(_.substThis(clazz, sClass).instantiateTypeParams(oldClassTParams, newClassTParams.map(_.tpe)))
+        sym.modifyInfo(_.substThis(clazz, sClass).instantiateTypeParams(oldClassTParams, newClassTParams.map(_.tpeHK)))
         // we remove any default parameters. At this point, they have been all
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
@@ -951,7 +951,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           tps1 foreach (_ modifyInfo (_.instantiateTypeParams(keys, vals)))
 
           // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
-          val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
+          val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpeHK)).cloneInfo(specMember)
           specMember setInfo GenPolyType(tps1, methodType)
 
           debuglog("%s expands to %s in %s".format(sym, specMember.name.decode, pp(env)))
