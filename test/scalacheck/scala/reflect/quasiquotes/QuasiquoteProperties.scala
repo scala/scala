@@ -75,7 +75,13 @@ trait Helpers {
       assert(false, "exception wasn't thrown")
   }
 
-  def assertEqAst(tree: Tree, code: String) = assert(eqAst(tree, code))
+  def assertEqAst(tree: Tree, code: String) =
+    assert(eqAst(tree, code),
+      s"""quasiquote tree != parse(code) tree
+         |quasiquote: $tree
+         |parse tree: ${parse(code)}
+         |code (str): $code""".stripMargin)
+
   def eqAst(tree: Tree, code: String) = tree ≈ parse(code)
 
   val toolbox = currentMirror.mkToolBox()

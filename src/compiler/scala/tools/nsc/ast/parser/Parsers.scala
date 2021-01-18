@@ -2620,25 +2620,27 @@ self =>
       in.nextToken()
       val lhs = commaSeparated(stripParens(noSeq.pattern2()))
       val tp = typedOpt()
-      val rhs =
+
+      val (rhs, rhsPos) =
         if (tp.isEmpty || in.token == EQUALS) {
           accept(EQUALS)
           if (!tp.isEmpty && newmods.isMutable &&
               (lhs.toList forall (_.isInstanceOf[Ident])) && in.token == USCORE) {
-            in.nextToken()
+            val start = in.skipToken()
             newmods = newmods | Flags.DEFAULTINIT
-            EmptyTree
+            (EmptyTree, r2p(start, in.offset))
           } else {
-            expr()
+            val t = expr()
+            (t, t.pos)
           }
         } else {
           newmods = newmods | Flags.DEFERRED
-          EmptyTree
+          (EmptyTree, NoPosition)
         }
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
         val trees = {
           val pat = if (tp.isEmpty) p else Typed(p, tp) setPos (p.pos union tp.pos)
-          makePatDef(newmods, pat, rhs)
+          makePatDef(newmods, pat, rhs, rhsPos)
         }
         if (newmods.isDeferred) {
           trees match {

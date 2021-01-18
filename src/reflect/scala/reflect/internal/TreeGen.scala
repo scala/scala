@@ -753,9 +753,10 @@ abstract class TreeGen {
     propagateNoWarnAttachment(from, to).updateAttachment(PatVarDefAttachment)
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
-  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
+  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = mkPatDef(mods, pat, rhs, rhs.pos)(fresh)
+  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree, rhsPos: Position)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
-      List(atPos(pat.pos union rhs.pos) {
+      List(atPos(pat.pos union rhsPos) {
         propagateNoWarnAttachment(pat, ValDef(mods, name.toTermName, tpt, rhs))
       })
 
@@ -782,13 +783,13 @@ abstract class TreeGen {
         case Typed(expr, tpt) if !expr.isInstanceOf[Ident] =>
           val rhsTypedUnchecked =
             if (tpt.isEmpty) rhsUnchecked
-            else Typed(rhsUnchecked, tpt) setPos (rhs.pos union tpt.pos)
+            else Typed(rhsUnchecked, tpt) setPos (rhsPos union tpt.pos)
           (expr, rhsTypedUnchecked)
         case ok =>
           (ok, rhsUnchecked)
       }
       val vars = getVariables(pat1)
-      val matchExpr = atPos((pat1.pos union rhs.pos).makeTransparent) {
+      val matchExpr = atPos((pat1.pos union rhsPos).makeTransparent) {
         Match(
           rhs1,
           List(
@@ -799,7 +800,7 @@ abstract class TreeGen {
       }
       vars match {
         case List((vname, tpt, pos, original)) =>
-          List(atPos(pat.pos union pos union rhs.pos) {
+          List(atPos(pat.pos union pos union rhsPos) {
             propagatePatVarDefAttachments(original, ValDef(mods, vname.toTermName, tpt, matchExpr))
           })
         case _ =>
