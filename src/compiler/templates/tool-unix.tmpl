@@ -106,19 +106,6 @@ if [[ -z "$TOOL_CLASSPATH" ]]; then
     done
 fi
 
-if [[ -n "$cygwin" ]]; then
-    if [[ "$OS" = "Windows_NT" ]] && cygpath -m .>/dev/null 2>/dev/null ; then
-        format=mixed
-    else
-        format=windows
-    fi
-    SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
-    if [[ -n "$JAVA_HOME" ]]; then
-        JAVA_HOME="$(cygpath --$format "$JAVA_HOME")"
-    fi
-    TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
-fi
-
 if [[ -n "$cygwin$mingw$msys" ]]; then
     case "$TERM" in
         rxvt* | xterm* | cygwin*)
@@ -183,6 +170,19 @@ done
 
 # reset "$@@" to the remaining args
 set -- "${scala_args[@@]}"
+
+if [[ -n "$cygwin" ]]; then
+    if [[ "$OS" = "Windows_NT" ]] && cygpath -m .>/dev/null 2>/dev/null ; then
+        format=mixed
+    else
+        format=windows
+    fi
+    SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
+    if [[ -n "$JAVA_HOME" ]]; then
+        JAVA_HOME="$(cygpath --$format "$JAVA_HOME")"
+    fi
+    TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
+fi
 
 if [[ -z "$JAVACMD" && -n "$JAVA_HOME" && -x "$JAVA_HOME/bin/java" ]]; then
     JAVACMD="$JAVA_HOME/bin/java"
