@@ -478,7 +478,7 @@ abstract class RefChecks extends Transform {
             checkOverrideDeprecated()
             if (settings.warnNullaryOverride) {
               if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
-                reporter.warning(member.pos, "non-nullary method overrides nullary method")
+                refchecksWarning(member.pos, "non-nullary method overrides nullary method", WarningCategory.LintNullaryOverride)
               }
             }
           }
@@ -1376,8 +1376,8 @@ abstract class RefChecks extends Transform {
       tree match {
         case DefDef(_, name, _, params :: _, _, _) =>
           if (settings.warnByNameRightAssociative && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
-            reporter.warning(tree.pos,
-              "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see scala/bug#1980.")
+            refchecksWarning(tree.pos,
+              "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see scala/bug#1980.", WarningCategory.Other)
         case _ =>
       }
     }
