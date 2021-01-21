@@ -123,9 +123,9 @@ object fsc extends Command {
           "Specify the options to be passed to the " & MBold("java") &
           " command defined by " & MBold("JAVACMD") & ".",
 
-          "With Java 1.5 (or newer) one may for example configure the " &
-          "memory usage of the JVM as follows: " &
-          Mono("JAVA_OPTS=\"-Xmx512M -Xms16M -Xss16M\"")
+          "One might for example configure the " &
+          "memory usage of the JVM with: " &
+          Mono("JAVA_OPTS=\"-Xmx2G -Xss16M\"")
         ))))
 
   val exitStatus = Section("EXIT STATUS",
