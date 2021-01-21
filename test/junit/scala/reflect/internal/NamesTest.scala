@@ -49,19 +49,6 @@ class NamesTest {
   }
 
   @Test
-  def testLookupTypeName(): Unit = {
-    assertTrue(lookupTypeName("hai".toCharArray) eq h1y)
-    assertTrue(lookupTypeName("fisch".toCharArray) eq fy)
-    assertTrue(lookupTypeName("uhu".toCharArray) eq uy)
-
-    assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
-    val d = TermName("dog")
-    assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
-    val dy = d.toTypeName
-    assertTrue(lookupTypeName("dog".toCharArray) eq dy)
-  }
-
-  @Test
   def emptyName(): Unit = {
     val z = TermName("")
     val zy = z.toTypeName
