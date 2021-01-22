@@ -20,7 +20,7 @@ import java.lang.{ClassLoader => JClassLoader}
 import java.lang.reflect.Modifier
 import java.net.{URLClassLoader => JURLClassLoader}
 import java.net.URL
-
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.reflect.runtime.ReflectionUtils.{show, unwrapHandler}
 import scala.util.control.Exception.catching
 import scala.reflect.{ClassTag, classTag}
@@ -129,10 +129,17 @@ object ScalaClassLoader {
 
   def setContext(cl: JClassLoader) = Thread.currentThread.setContextClassLoader(cl)
 
+  object URLClassLoader {
+    private val registered = new AtomicBoolean
+  }
   class URLClassLoader(urls: Seq[URL], parent: JClassLoader)
       extends JURLClassLoader(urls.toArray, parent)
          with ScalaClassLoader
          with HasClassPath {
+    // Note - this is calling a caller sensitive method so must be called from the class that is being registered
+    // and we are behaving like a java static method
+    if (URLClassLoader.registered.compareAndSet(false, true))
+      ClassLoader.registerAsParallelCapable()
 
     private var classloaderURLs: Seq[URL] = urls
     def classPathURLs: Seq[URL] = classloaderURLs
