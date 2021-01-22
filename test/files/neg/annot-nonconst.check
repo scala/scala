@@ -1,9 +1,3 @@
-annot-nonconst.scala:6: error: annotation argument needs to be a constant; found: Test.this.n
-  @Length(n) def foo = "foo"
-          ^
-annot-nonconst.scala:7: error: annotation argument cannot be null
-  @Ann2(null) def bar = "bar"
-        ^
 annot-nonconst.scala:1: warning: Implementation restriction: subclassing ClassfileAnnotation does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
@@ -14,5 +8,11 @@ make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class Ann2(value: String) extends annotation.ClassfileAnnotation
       ^
+annot-nonconst.scala:6: error: annotation argument needs to be a constant; found: Test.this.n
+  @Length(n) def foo = "foo"
+          ^
+annot-nonconst.scala:7: error: annotation argument cannot be null
+  @Ann2(null) def bar = "bar"
+        ^
 two warnings found
 two errors found
