@@ -1,0 +1,3 @@
+newSource1.scala:3: error: class A in package a cannot be accessed as a member of package a from object Test in package example
+object Test { val x = new a.A }
+                            ^

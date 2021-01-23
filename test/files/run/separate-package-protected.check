@@ -1,0 +1,6 @@
+newSource1.scala:3: error: class A in package a cannot be accessed as a member of package a from object Test in package example
+ Access to protected class A not permitted because
+ enclosing object Test in package example is not a subclass of
+ package a where target is defined
+object Test { val x = new a.A }
+                            ^
