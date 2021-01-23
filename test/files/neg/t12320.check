@@ -1,0 +1,12 @@
+t12320.scala:4: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f = Option.empty[Int].contains("") || false
+                            ^
+t12320.scala:5: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def g(other: Option[Int]) = other.contains("") || false
+                                    ^
+t12320.scala:6: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def any = Option.empty[Int].contains("")
+                              ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error
