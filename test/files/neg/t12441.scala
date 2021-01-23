@@ -1,5 +1,5 @@
 
-// scalac: -Xlint -Werror
+//> using options -Werror -Xlint
 
 trait T {
   def k(u: => Unit): Unit = u

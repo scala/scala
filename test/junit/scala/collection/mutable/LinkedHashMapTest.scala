@@ -108,7 +108,7 @@ class LinkedHashMapTest {
 
     val hashMapCollide2 = mutable.LinkedHashMap(0 -> "a", (null: Any) -> "b", "" -> "c")
     assertEquals(hashMapCollide2.updateWith((null: Any))(noneAnytime), None)
-    assertEquals(hashMapCollide2, mutable.LinkedHashMap(0 -> "a", "" -> "c"))
+    assertEquals(hashMapCollide2, mutable.LinkedHashMap[Any, String](0 -> "a", "" -> "c"))
 
     val hashMapCollide3 = mutable.LinkedHashMap(0 -> "a", (null: Any) -> "b", "" -> "c")
     assertEquals(hashMapCollide3.updateWith("")(noneAnytime), None)

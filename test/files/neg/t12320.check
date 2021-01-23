@@ -1,0 +1,21 @@
+t12320.scala:4: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f = Option.empty[Int].contains("") || false
+                            ^
+t12320.scala:5: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def g(other: Option[Int]) = other.contains("") || false
+                                    ^
+t12320.scala:6: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def any = Option.empty[Int].contains("")
+                              ^
+t12320.scala:11: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f = List(1 -> "a", 2 -> "b", 3) map { p => val (a,b) = p; a + " -> " + b }
+          ^
+t12320.scala:17: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def test = review.f(42)
+                    ^
+t12320.scala:11: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
+  def f = List(1 -> "a", 2 -> "b", 3) map { p => val (a,b) = p; a + " -> " + b }
+                                                                ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

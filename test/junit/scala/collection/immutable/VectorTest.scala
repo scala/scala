@@ -465,7 +465,7 @@ class VectorTest {
 
       assertEquals(1 to 5, vector)
       assertEquals(vector.updated(0, 20), Vector(20,2,3,4,5))
-      assertEquals(vector.updated(0, ""), Vector("",2,3,4,5))
+      assertEquals(vector.updated[Any](0, ""), Vector[Any]("",2,3,4,5))
       assertEquals(1 to 5, arraySeq) // ensure arraySeq is not mutated
     }
     locally {
@@ -474,7 +474,7 @@ class VectorTest {
       val vector = Vector.from(arr)
       assertEquals(arr.toList, vector)
       assertEquals(List(20), vector.updated(0, 20))
-      assertEquals(List(""), vector.updated(0, ""))
+      assertEquals(List(""), vector.updated[Any](0, ""))
     }
   }
 

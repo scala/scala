@@ -53,7 +53,7 @@ class MapTest {
     val m1 = m ++: m
     assertEquals(m.toList.sorted, (m1: Map[Int, Int]).toList.sorted)
     val s1: Iterable[Any] = List(1) ++: m
-    assertEquals(1 :: m.toList.sorted, s1.toList.sortBy { case (x: Int, _) => x ; case x: Int => x })
+    assertEquals(::[Any](1, m.toList.sorted), s1.toList.sortBy { case (x: Int, _) => x ; case x: Int => x })
   }
 
   @Test

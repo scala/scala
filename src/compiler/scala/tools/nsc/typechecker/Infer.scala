@@ -581,34 +581,17 @@ trait Infer extends Checkable {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
       }
       val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      if (settings.warnInferAny && !fn.isEmpty) {
-        // Can warn about inferring Any/AnyVal/Object as long as they don't appear
-        // explicitly anywhere amongst the formal, argument, result, or expected type.
-        // ...or lower bound of a type param, since they're asking for it.
-        var checked, warning = false
-        def checkForAny(): Unit = {
-          val collector = new ContainsAnyCollector(topTypes) {
-            val seen = mutable.Set.empty[Type]
-            override def apply(t: Type): Unit = {
-              def saw(dw: Type): Unit =
-                if (!result && !seen(dw)) {
-                  seen += dw
-                  if (!dw.typeSymbol.isRefinementClass) super.apply(dw)
-                }
-              if (!result && !seen(t)) t.dealiasWidenChain.foreach(saw)
-            }
-          }
-          @inline def containsAny(t: Type): Boolean = collector.collect(t)
-          val hasAny = containsAny(pt) || containsAny(restpe) ||
-            formals.exists(containsAny) ||
-            argtpes.exists(containsAny) ||
-            tparams.exists(x => containsAny(x.info.lowerBound))
-          checked = true
-          warning = !hasAny
+      // Any "top type" in the constraint mitigates the warning, instead of a precise match such as:
+      // !tvar.constr.loBounds.contains(targ)
+      // For example, don't require this arg, where the lub of `AnyRef` and `V` yields the `Any`.
+      // this.forall(kv => map.getOrElse[Any](kv._1, Map.DefaultSentinelFn()) == kv._2)
+      if (settings.warnInferAny && !fn.isEmpty)
+        foreach2(targs, tvars) { (targ, tvar) =>
+          if (topTypes.contains(targ.typeSymbol) &&
+              !tvar.constr.loBounds.exists(t => topTypes.contains(t.typeSymbol)) &&
+              !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
+            context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
         }
-        def canWarnAboutAny = { if (!checked) checkForAny() ; warning }
-        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny))
-      }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
 
@@ -1602,7 +1585,8 @@ trait Infer extends Checkable {
       case _                                          => mapOver(tp)
     }
   }
-  private lazy val topTypes: List[Symbol] = List(AnyClass, AnyValClass, ObjectClass)
+
+  private lazy val topTypes: Set[Symbol] = Set(AnyClass, AnyValClass, ObjectClass, AnyRefClass)
 
   final case class AdjustedTypeArgs(okParams: List[Symbol], okArgs: List[Type], undetParams: List[Symbol], allArgs: List[Type])
 }
