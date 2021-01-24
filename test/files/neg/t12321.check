@@ -1,0 +1,4 @@
+Test_2.scala:7: error: not found: type B
+  def b = new B(1)
+              ^
+1 error
