@@ -107,7 +107,7 @@ trait TypersTracking {
     def showPush(tree: Tree, mode: Mode, pt: Type, context: Context): Unit = {
       def tree_s = truncAndOneLine(ptTree(tree))
       def pt_s = if (pt.isWildcard || context.inTypeConstructorAllowed) "" else s": pt=$pt"
-      def all_s = List(tree_s, pt_s, mode, fullSiteString(context)) filterNot (_ == "") mkString " "
+      def all_s = List(tree_s, pt_s, mode.toString, fullSiteString(context)).filterNot(_.isEmpty).mkString(" ")
 
       atLowerIndent(show(indented("""|-- """ + all_s)))
     }

@@ -514,7 +514,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @return  `true` if this $coll contains a slice with the same elements
    *           as `that`, otherwise `false`.
    */
-  def containsSlice[B](that: Seq[B]): Boolean = indexOfSlice(that) != -1
+  def containsSlice[B >: A](that: Seq[B]): Boolean = indexOfSlice(that) != -1
 
   /** Tests whether this $coll contains a given value as an element.
    *  $mayNotTerminateInf
