@@ -320,7 +320,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         }
       }
 
-      override def toString = "P"+((prevBinder.name,  extraCond getOrElse "", localSubstitution))
+      override def toString = s"P(${prevBinder.name}, ${extraCond.fold("")(_.toString)}, ${localSubstitution})"
     }
 
     object IrrefutableExtractorTreeMaker {

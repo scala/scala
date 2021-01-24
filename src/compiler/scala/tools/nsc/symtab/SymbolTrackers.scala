@@ -186,15 +186,15 @@ trait SymbolTrackers {
         val ownerString = {
           val (few, rest) = sym.ownersIterator.splitAt(3)
           val ellipsis = Iterator("...").filter(_ => rest.hasNext)
-          (few ++ ellipsis).mkString(" -> ")
+          few.map(_.toString).concat(ellipsis).mkString(" -> ")
         }
         val treeStrings = symMap(sym).map(t => f"${t.shortClass}%10s: $t")
 
         (ownerString :: treeStrings).mkString("\n")
       }
-      def removedString = (removed: List[Symbol]).zipWithIndex map {
+      def removedString = (removed: List[Symbol]).zipWithIndex.map {
         case (t, i) => "(%2s) ".format(i + 1) + detailString(t)
-      } mkString "\n"
+      }.mkString("\n")
 
       "" + hierarchy + (
         if (removed.isEmpty) ""

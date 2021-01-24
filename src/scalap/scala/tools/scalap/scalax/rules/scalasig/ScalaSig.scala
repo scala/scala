@@ -170,7 +170,7 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
   val index = read(_.index)
   val key = read(_.entryType)
 
-  lazy val entry: EntryParser[Any] = symbol | typeEntry | literal | name | attributeInfo | annotInfo | children | get
+  lazy val entry: EntryParser[Any] = (symbol: EntryParser[Any]) | typeEntry | literal | name | attributeInfo | annotInfo | children | get
 
   val ref = byteCodeEntryParser(nat)
 
