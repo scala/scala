@@ -486,9 +486,27 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
-      case Apply(appMeth, Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(_, _))) :: Nil) :: _ :: Nil)
-      if wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
-        super.transform(arg)
+      case Apply(appMeth, Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(elemtpt, elems))) :: Nil) :: classTagEvidence :: Nil)
+      if (wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_genericWrapRefArray || wrapRefArrayMeth.symbol ==  currentRun.runDefinitions.Predef_wrapRefArray) && appMeth.symbol == ArrayModule_genericApply &&
+         !elemtpt.tpe.typeSymbol.isBottomClass =>
+        classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
+          case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
+            super.transform(arg)
+          case None                                                    =>
+            localTyper.typedPos(tree.pos) {
+              gen.evalOnce(classTagEvidence, currentOwner, unit) { ev =>
+                val arr = localTyper.typedPos(tree.pos)(gen.mkMethodCall(classTagEvidence, definitions.ClassTagClass.info.decl(nme.newArray), Nil, Literal(Constant(elems.size)) :: Nil))
+                gen.evalOnce(arr, currentOwner, unit) { arr =>
+                  val stats = mutable.ListBuffer[Tree]()
+                  foreachWithIndex(elems) { (elem, i) =>
+                    stats += gen.mkMethodCall(gen.mkAttributedRef(definitions.ScalaRunTimeModule), currentRun.runDefinitions.arrayUpdateMethod,
+                                              Nil, arr() :: Literal(Constant(i)) :: elem :: Nil)
+                  }
+                  super.transform(Block(stats.toList, arr()))
+                }
+              }
+            }
+        }
       case Apply(appMeth, elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))

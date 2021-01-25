@@ -1,0 +1,8 @@
+Method call statistics:
+    1  OptimusSeq$.apply1(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Lscala/reflect/ClassTag;)LOptimusSeq;
+    1  OptimusSeq$.unsafeFromAnyArray1([Ljava/lang/Object;)LOptimusSeq;
+    1  Test$.doIt$1()LOptimusSeq;
+    1  scala/reflect/ClassTag$.AnyRef()Lscala/reflect/ClassTag;
+    1  scala/reflect/ManifestFactory$ObjectManifest.newArray(I)Ljava/lang/Object;
+    1  scala/reflect/ManifestFactory$ObjectManifest.newArray(I)[Ljava/lang/Object;
+    4  scala/runtime/ScalaRunTime$.array_update(Ljava/lang/Object;ILjava/lang/Object;)V
