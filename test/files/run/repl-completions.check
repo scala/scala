@@ -9,6 +9,7 @@ scala> :completions O.x
 [completions] O.x_y_z
 
 scala> :completions O.x_y_x
+[completions] O.x_y_x
 
 scala> :completions O.x_y_a
 
@@ -27,6 +28,6 @@ scala> :completions object O2 { val x = O.
 [completions] object O2 { val x = O.x_y_z
 
 scala> :completions :completion
-[completions] :completions 
+[completions] ::completions
 
 scala> :quit

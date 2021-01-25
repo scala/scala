@@ -787,9 +787,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     // The source file contents only has the code originally input by the user,
     // with unit's body holding the synthetic trees.
     // When emitting errors, be careful not to refer to the synthetic code
-    private val unit = new CompilationUnit(new BatchSourceFile(if (synthetic) "<synthetic>" else label, line))
+    // pad with a trailing " " so that the synthetic position for enclosing trees does not exactly coincide with the
+    // position of the user-written code, these seems to confuse the presentation compiler.
+    private val paddedLine = line + " "
+    private val unit = new CompilationUnit(new BatchSourceFile(if (synthetic) "<synthetic>" else label, paddedLine))
     // a dummy position used for synthetic trees (needed for pres compiler to locate the trees for user input)
-    private val wholeUnit = Position.range(unit.source, 0, 0, line.length)
+    private val wholeUnit = Position.range(unit.source, 0, 0, paddedLine.length)
 
     private def storeInVal(tree: Tree): Tree = {
       val resName = newTermName(if (synthetic) freshInternalVarName() else freshUserVarName())
@@ -797,15 +800,17 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
     // Wrap last tree in a valdef to give user a nice handle for it (`resN`)
-    val trees: List[Tree] = origTrees.init :+ {
-      val tree = origTrees.last
-      @tailrec def loop(scrut: Tree): Tree = scrut match {
-        case _: Assign                => tree
-        case _: RefTree | _: TermTree => storeInVal(tree)
-        case Annotated(_, arg)        => loop(arg)
-        case _                        => tree
-      }
-      loop(tree)
+    val trees: List[Tree] = origTrees match {
+      case init :+ tree =>
+        @tailrec def loop(scrut: Tree): Tree = scrut match {
+          case _: Assign                => tree
+          case _: RefTree | _: TermTree => storeInVal(tree)
+          case Annotated(_, arg)        => loop(arg)
+          case _                        => tree
+        }
+        init :+ loop(tree)
+      case xs =>
+        xs // can get here in completion of erroneous code
     }
 
     /** handlers for each tree in this request */
@@ -889,13 +894,13 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         else ModuleDef(NoMods, readName, wrapperTempl))
 
       if (isClassBased)
-        stats += q"""object $readName { val INSTANCE = new ${tq"""${readName.toTypeName}"""} }"""
+        stats += atPos(wholeUnit.focus)(q"""object $readName { val INSTANCE = new ${tq"""${readName.toTypeName}"""} }""")
 
       val unspliced = PackageDef(atPos(wholeUnit.focus)(Ident(lineRep.packageName)), stats.toList)
       unit.body = spliceUserCode.transform(unspliced)
       unit.encounteredXml(firstXmlPos)
 
-//      settings.Xprintpos.value = true
+      // settings.Xprintpos.value = true
       showCode(asCompactString(unit.body))
 
       unit

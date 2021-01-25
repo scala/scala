@@ -14,15 +14,17 @@ package scala.tools.nsc.interpreter
 package jline
 
 import org.jline.builtins.InputRC
+import org.jline.keymap.KeyMap
 import org.jline.reader.Parser.ParseContext
 import org.jline.reader._
-import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
+import org.jline.reader.impl.{CompletionMatcherImpl, DefaultParser, LineReaderImpl}
 import org.jline.terminal.Terminal
 
 import java.io.{ByteArrayInputStream, File}
 import java.net.{MalformedURLException, URL}
 import java.util.{List => JList}
 import scala.io.Source
+import scala.reflect.internal.Chars
 import scala.tools.nsc.interpreter.shell.{Accumulator, ShellConfig}
 import scala.util.Using
 import scala.util.control.NonFatal
@@ -122,17 +124,67 @@ object Reader {
         .variable(SECONDARY_PROMPT_PATTERN, config.encolor(config.continueText)) // Continue prompt
         .variable(WORDCHARS, LineReaderImpl.DEFAULT_WORDCHARS.filterNot("*?.[]~=/&;!#%^(){}<>".toSet))
         .option(Option.DISABLE_EVENT_EXPANSION, true) // Otherwise `scala> println(raw"\n".toList)` gives `List(n)` !!
+        .option(Option.COMPLETE_MATCHER_CAMELCASE, true)
+        .option(Option.COMPLETE_MATCHER_TYPO, true)
     }
+    object customCompletionMatcher extends CompletionMatcherImpl {
+      override def compile(options: java.util.Map[LineReader.Option, java.lang.Boolean], prefix: Boolean, line: CompletingParsedLine, caseInsensitive: Boolean, errors: Int, originalGroupName: String): Unit = {
+        val errorsReduced = line.wordCursor() match {
+          case 0 | 1 | 2 | 3 => 0 // disable JLine's levenshtein-distance based typo matcher for short strings
+          case 4 | 5 => math.max(errors, 1)
+          case _ => errors
+        }
+        super.compile(options, prefix, line, caseInsensitive, errorsReduced, originalGroupName)
+      }
+
+      override def matches(candidates: JList[Candidate]): JList[Candidate] = {
+        val matching = super.matches(candidates)
+        matching
+      }
+    }
+
+    builder.completionMatcher(customCompletionMatcher)
 
     val reader = builder.build()
     try inputrcFileContents.foreach(f => InputRC.configure(reader, new ByteArrayInputStream(f))) catch {
       case NonFatal(_) =>
     } //ignore
+
+    val keyMap = reader.getKeyMaps.get("main")
+
+    object ScalaShowType {
+      val Name = "scala-show-type"
+      private var lastInvokeLocation: Option[(String, Int)] = None
+      def apply(): Boolean = {
+        val nextInvokeLocation = Some((reader.getBuffer.toString, reader.getBuffer.cursor()))
+        val cursor = reader.getBuffer.cursor()
+        val text   = reader.getBuffer.toString
+        val result = completer.complete(text, cursor, filter = true)
+        if (lastInvokeLocation == nextInvokeLocation) {
+          show(Naming.unmangle(result.typedTree))
+          lastInvokeLocation = None
+        } else {
+          show(result.typeAtCursor)
+          lastInvokeLocation = nextInvokeLocation
+        }
+        true
+      }
+      def show(text: String): Unit = {
+        reader.getTerminal.writer.println()
+        reader.getTerminal.writer.println(text)
+        reader.callWidget(LineReader.REDRAW_LINE)
+        reader.callWidget(LineReader.REDISPLAY)
+        reader.getTerminal.flush()
+      }
+    }
+    reader.getWidgets().put(ScalaShowType.Name, () => ScalaShowType())
+
     locally {
       import LineReader._
       // VIINS, VICMD, EMACS
       val keymap = if (config.viMode) VIINS else EMACS
       reader.getKeyMaps.put(MAIN, reader.getKeyMaps.get(keymap));
+      keyMap.bind(new Reference(ScalaShowType.Name), KeyMap.ctrl('T'))
     }
     def secure(p: java.nio.file.Path): Unit = {
       try scala.reflect.internal.util.OwnerOnlyChmod.chmodFileOrCreateEmpty(p)
@@ -201,6 +253,12 @@ object Reader {
         val (wordCursor, wordIndex) = current match {
           case Some(t) if t.isIdentifier =>
             (cursor - t.start, tokens.indexOf(t))
+          case Some(t)  =>
+            val isIdentifierStartKeyword = (t.start until t.end).forall(i => Chars.isIdentifierPart(line.charAt(i)))
+            if (isIdentifierStartKeyword)
+              (cursor - t.start, tokens.indexOf(t))
+            else
+              (0, -1)
           case _ =>
             (0, -1)
         }
@@ -259,45 +317,50 @@ object Reader {
 class Completion(delegate: shell.Completion) extends shell.Completion with Completer {
   require(delegate != null)
   // REPL Completion
-  def complete(buffer: String, cursor: Int): shell.CompletionResult = delegate.complete(buffer, cursor)
+  def complete(buffer: String, cursor: Int, filter: Boolean): shell.CompletionResult = delegate.complete(buffer, cursor, filter)
 
   // JLine Completer
   def complete(lineReader: LineReader, parsedLine: ParsedLine, newCandidates: JList[Candidate]): Unit = {
-    def candidateForResult(line: String, cc: CompletionCandidate): Candidate = {
-      val value = if (line.startsWith(":")) ":" + cc.defString else cc.defString
-      val displayed = cc.defString + (cc.arity match {
+    def candidateForResult(cc: CompletionCandidate, deprecated: Boolean, universal: Boolean): Candidate = {
+      val value = cc.name
+      val displayed = cc.name + (cc.arity match {
         case CompletionCandidate.Nullary => ""
         case CompletionCandidate.Nilary => "()"
         case _ => "("
       })
       val group = null        // results may be grouped
       val descr =             // displayed alongside
-        if (cc.isDeprecated) "deprecated"
-        else if (cc.isUniversal) "universal"
+        if (deprecated) "deprecated"
+        else if (universal) "universal"
         else null
       val suffix = null       // such as slash after directory name
       val key = null          // same key implies mergeable result
       val complete = false    // more to complete?
       new Candidate(value, displayed, group, descr, suffix, key, complete)
     }
-    val result = complete(parsedLine.line, parsedLine.cursor)
-    result.candidates.map(_.defString) match {
-      // the presence of the empty string here is a signal that the symbol
-      // is already complete and so instead of completing, we want to show
-      // the user the method signature. there are various JLine 3 features
-      // one might use to do this instead; sticking to basics for now
-      case "" :: defStrings if defStrings.nonEmpty =>
-        // specifics here are cargo-culted from Ammonite
-        lineReader.getTerminal.writer.println()
-        for (cc <- result.candidates.tail)
-          lineReader.getTerminal.writer.println(cc.defString)
-        lineReader.callWidget(LineReader.REDRAW_LINE)
-        lineReader.callWidget(LineReader.REDISPLAY)
-        lineReader.getTerminal.flush()
-      // normal completion
-      case _ =>
-        for (cc <- result.candidates)
-          newCandidates.add(candidateForResult(result.line, cc))
+    val result = complete(parsedLine.line, parsedLine.cursor, filter = false)
+    for (group <- result.candidates.groupBy(_.name)) {
+      // scala/bug#12238
+      // Currently, only when all methods are Deprecated should they be displayed `Deprecated` to users. Only handle result of PresentationCompilation#toCandidates.
+      // We don't handle result of PresentationCompilation#defStringCandidates, because we need to show the deprecated here.
+      val allDeprecated = group._2.forall(_.isDeprecated)
+      val allUniversal = group._2.forall(_.isUniversal)
+      group._2.foreach(cc => newCandidates.add(candidateForResult(cc, allDeprecated, allUniversal)))
+    }
+
+    val parsedLineWord = parsedLine.word()
+    result.candidates.filter(_.name == parsedLineWord) match {
+      case Nil =>
+      case exacts =>
+        val declStrings = exacts.map(_.declString()).filterNot(_ == "")
+        if (declStrings.nonEmpty) {
+          lineReader.getTerminal.writer.println()
+          for (declString <- declStrings)
+            lineReader.getTerminal.writer.println(declString)
+          lineReader.callWidget(LineReader.REDRAW_LINE)
+          lineReader.callWidget(LineReader.REDISPLAY)
+          lineReader.getTerminal.flush()
+        }
     }
   }
 }

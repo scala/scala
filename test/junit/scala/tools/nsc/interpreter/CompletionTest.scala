@@ -50,7 +50,7 @@ class CompletionTest {
     }
     val acc             = new Accumulator
     val shellCompletion = new Completion {
-      override def complete(buffer: String, cursor: Int) =
+      override def complete(buffer: String, cursor: Int, filter: Boolean) =
         if (buffer.startsWith(":")) new CommandMock().colonCompletion(buffer, cursor).complete(buffer, cursor)
         else NoCompletions
     }
@@ -106,7 +106,7 @@ class CompletionTest {
     checkExact(completer, "asInstanceO", "", includeUniversal = true)("asInstanceOf")
 
     // Output is sorted
-    assertEquals(List("prefix_aaa", "prefix_nnn", "prefix_zzz"), completer.complete( """class C { def prefix_nnn = 0; def prefix_zzz = 0; def prefix_aaa = 0; prefix_""").candidates.filter(!_.isUniversal).map(_.defString))
+    assertEquals(List("prefix_aaa", "prefix_nnn", "prefix_zzz"), completer.complete( """class C { def prefix_nnn = 0; def prefix_zzz = 0; def prefix_aaa = 0; prefix_""").candidates.filter(!_.isUniversal).map(_.name))
 
     // Enable implicits to check completion enrichment
     checkExact(completer, """'c'.toU""")("toUpper")
@@ -172,11 +172,9 @@ class CompletionTest {
   def defStringConstructor(): Unit = {
     val intp = newIMain()
     val completer = new ReplCompletion(intp)
-    checkExact(completer, "class Shazam(i: Int); new Shaza")("Shazam")
-    checkExact(completer, "class Shazam(i: Int); new Shazam")(EmptyString, "def <init>(i: Int): Shazam")
-
-    checkExact(completer, "class Shazam(i: Int) { def this(x: String) = this(0) }; new Shaza")("Shazam")
-    checkExact(completer, "class Shazam(i: Int) { def this(x: String) = this(0) }; new Shazam")(EmptyString, "def <init>(i: Int): Shazam", "def <init>(x: String): Shazam")
+    // : String to workaround https://github.com/scala/bug/issues/11964
+    checkExact(completer, "class Shazam(i: Int); new Shazam",  result = _.declString())("def <init>(i: Int): Shazam" : String)
+    checkExact(completer, "class Shazam(i: Int) { def this(x: String) = this(0) }; new Shazam", result = _.declString())("def <init>(i: Int): Shazam", "def <init>(x: String): Shazam": String)
   }
 
   @Test
@@ -212,7 +210,7 @@ class CompletionTest {
          |  .map(_ + 1) /* then we do reverse */
          |  .rev""".stripMargin
     assertTrue(
-      completer.complete(withMultilineCommit).candidates.map(_.defString).contains("reverseMap")
+      completer.complete(withMultilineCommit).candidates.map(_.name).contains("reverseMap")
     )
 
     val withInlineCommit =
@@ -220,7 +218,7 @@ class CompletionTest {
          |  .map(_ + 1) // then we do reverse
          |  .rev""".stripMargin
     assertTrue(
-      completer.complete(withInlineCommit).candidates.map(_.defString).contains("reverseMap")
+      completer.complete(withInlineCommit).candidates.map(_.name).contains("reverseMap")
     )
   }
 
@@ -245,7 +243,9 @@ class CompletionTest {
       )
     val candidates1 = completer.complete("Stale.ol").candidates
     assertEquals(2, candidates1.size)
-    assertEquals(candidates1.head.isDeprecated, false)
+    // Our JLine Reader is now responsible for only displaying @deprecated if all candidates with the name are
+    // deprecated. That isn't covered by this test.
+    assertEquals(candidates1.head.isDeprecated, true)
     assertEquals(candidates1.last.isDeprecated, false)
   }
 
@@ -255,8 +255,8 @@ class CompletionTest {
       """object Stale { def oldie(i: Int) = ???; @deprecated("","") def oldie = ??? }"""
       )
     val candidates1 = completer.complete("Stale.oldie").candidates
-    assertEquals(3, candidates1.size)
-    assertEquals(candidates1.filter(_.isDeprecated).map(_.defString.contains("deprecated")).head, true)
+    assertEquals(2, candidates1.size)
+    assertEquals(candidates1.filter(_.isDeprecated).map(_.declString().contains("deprecated")).head, true)
     assertEquals(candidates1.last.isDeprecated, false)
   }
 
@@ -267,11 +267,11 @@ class CompletionTest {
       """object Stuff { @deprecated("","") def `this` = ??? ; @deprecated("","") def `that` = ??? }"""
       )
     val candidates1 = completer.complete("Stale.oldie").candidates
-    assertEquals(2, candidates1.size) // When exactly matched, there is an empty character
-    assertTrue(candidates1.filter(_.defString.contains("oldie")).head.defString.contains("deprecated"))
+    assertEquals(1, candidates1.size) // When exactly matched, there is an empty character
+    assertTrue(candidates1.filter(_.declString().contains("oldie")).head.declString().contains("deprecated"))
     val candidates2 = completer.complete("Stuff.that").candidates
-    assertEquals(2, candidates2.size)
-    assertTrue(candidates2.filter(_.defString.contains("that")).head.defString.contains("deprecated"))
+    assertEquals(1, candidates2.size)
+    assertTrue(candidates2.filter(_.declString().contains("that")).head.declString().contains("deprecated"))
   }
 
   @Test
@@ -301,9 +301,9 @@ class CompletionTest {
       """object A { class Type; object Term }"""
     )
     val candidates1 = completer.complete("A.T").candidates
-    assertEquals("Term", candidates1.map(_.defString).mkString(" "))
+    assertEquals("Term", candidates1.map(_.name).mkString(" "))
     val candidates2 = completer.complete("import A.T").candidates
-    assertEquals("Term Type", candidates2.map(_.defString).sorted.mkString(" "))
+    assertEquals("Term Type", candidates2.map(_.name).sorted.mkString(" "))
   }
 
   @Test
@@ -348,11 +348,12 @@ object Test2 {
     checkExact(completer, "test.Test.withoutParens.charA")("charAt")
   }
 
-  def checkExact(completer: Completion, before: String, after: String = "", includeUniversal: Boolean = false)(expected: String*): Unit = {
-    val actual =
-      completer.complete(before, after).candidates
-        .filter(c => includeUniversal || !c.isUniversal)
-        .map(_.defString)
+  def checkExact(completer: Completion, before: String, after: String = "", includeUniversal: Boolean = false,
+                 result: CompletionCandidate => String = _.name)(expected: String*): Unit = {
+    val candidates  = completer.complete(before, after).candidates
+                          .filter(c => includeUniversal || !c.isUniversal)
+    val actual = candidates.map(result)
     assertEquals(expected.sorted.mkString(" "), actual.toSeq.distinct.sorted.mkString(" "))
   }
+
 }

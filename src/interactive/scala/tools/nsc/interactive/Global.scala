@@ -1197,54 +1197,36 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       override def positionDelta = 0
       override def forImport: Boolean = false
     }
-    private val CamelRegex = "([A-Z][^A-Z]*)".r
-    private def camelComponents(s: String, allowSnake: Boolean): List[String] = {
-      if (allowSnake && s.forall(c => c.isUpper || c == '_')) s.split('_').toList.filterNot(_.isEmpty)
-      else CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
-    }
-    def camelMatch(entered: Name): Name => Boolean = {
-      val enteredS = entered.toString
-      val enteredLowercaseSet = enteredS.toLowerCase().toSet
-      val allowSnake = !enteredS.contains('_')
-
-      {
-        candidate: Name =>
-          def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
-          // Loosely based on IntelliJ's autocompletion: the user can just write everything in
-          // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
-          def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
-            candidate match {
-              case Nil => entered.isEmpty && matchCount > 0
-              case head :: tail =>
-                val enteredAlternatives = Set(entered, entered.capitalize)
-                val n = head.toIterable.lazyZip(entered).count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
-                head.take(n).inits.exists(init =>
-                  enteredAlternatives.exists(entered =>
-                    lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
-                  )
-                )
-            }
-          }
-          val containsAllEnteredChars = {
-            // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
-            val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
-            enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
-          }
-          containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
-      }
-    }
   }
 
   final def completionsAt(pos: Position): CompletionResult = {
     val focus1: Tree = typedTreeAt(pos)
     def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
       val qualPos = qual.pos
-      val allTypeMembers = typeMembers(qualPos).last
+      val saved = tree.tpe
+      // Force `typeMembers` to complete via the prefix, not the type of the Select itself.
+      tree.setType(ErrorType)
+      val allTypeMembers = try {
+        typeMembers(qualPos).last
+      } finally {
+        tree.setType(saved)
+      }
       val positionDelta: Int = pos.start - nameStart
       val subName: Name = name.newName(new String(pos.source.content, nameStart, pos.start - nameStart)).encodedName
       CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
     }
     focus1 match {
+      case Apply(Select(qual, name), _) if qual.hasAttachment[InterpolatedString.type] =>
+        // This special case makes CompletionTest.incompleteStringInterpolation work.
+        // In incomplete code, the parser treats `foo""` as a nested string interpolation, even
+        // though it is likely that the user wanted to complete `fooBar` before adding the closing brace.
+        // val fooBar = 42; s"abc ${foo<TAB>"
+        //
+        // TODO: We could also complete the selection here to expand `ra<TAB>"..."` to `raw"..."`.
+        val allMembers = scopeMembers(pos)
+        val positionDelta: Int = pos.start - focus1.pos.start
+        val subName = name.subName(0, positionDelta)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = false)
       case imp@Import(i @ Ident(name), head :: Nil) if head.name == nme.ERROR =>
         val allMembers = scopeMembers(pos)
         val nameStart = i.pos.start
@@ -1259,9 +1241,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
       case sel@Select(qual, name) =>
         val qualPos = qual.pos
-        def fallback = qualPos.end + 2
+        val effectiveQualEnd = if (qualPos.isRange) qualPos.end else qualPos.point - 1
+        def fallback = {
+          effectiveQualEnd + 2
+        }
         val source = pos.source
-        val nameStart: Int = (focus1.pos.end - 1 to qualPos.end by -1).find(p =>
+
+        val nameStart: Int = (focus1.pos.end - 1 to effectiveQualEnd by -1).find(p =>
           source.identifier(source.position(p)).exists(_.length == 0)
         ).map(_ + 1).getOrElse(fallback)
         typeCompletions(sel, qual, nameStart, name)

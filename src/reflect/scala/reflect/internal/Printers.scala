@@ -781,26 +781,30 @@ trait Printers extends api.Printers { self: SymbolTable =>
             print("class ", printedName(name))
             printTypeParams(tparams)
 
-            val build.SyntacticClassDef(_, _, _, ctorMods, vparamss, earlyDefs, parents, selfType, body) = cl: @unchecked
+            cl match {
+              case build.SyntacticClassDef(_, _, _, ctorMods, vparamss, earlyDefs, parents, selfType, body) =>
+                // constructor's modifier
+                if (ctorMods.hasFlag(AccessFlags) || ctorMods.hasAccessBoundary) {
+                  print(" ")
+                  printModifiers(ctorMods, primaryCtorParam = false)
+                }
 
-            // constructor's modifier
-            if (ctorMods.hasFlag(AccessFlags) || ctorMods.hasAccessBoundary) {
-              print(" ")
-              printModifiers(ctorMods, primaryCtorParam = false)
+                def printConstrParams(ts: List[ValDef]): Unit = {
+                  parenthesize() {
+                    printImplicitInParamsList(ts)
+                    printSeq(ts)(printVParam(_, primaryCtorParam = true))(print(", "))
+                  }
+                }
+                // constructor's params processing (don't print single empty constructor param list)
+                vparamss match {
+                  case Nil | List(Nil) if !mods.isCase && !ctorMods.hasFlag(AccessFlags) =>
+                  case _ => vparamss foreach printConstrParams
+                }
+                parents
+              case _ =>
+                // Can get here with erroneous code, like `{@deprecatedName `
+                Nil
             }
-
-            def printConstrParams(ts: List[ValDef]): Unit = {
-              parenthesize() {
-                printImplicitInParamsList(ts)
-                printSeq(ts)(printVParam(_, primaryCtorParam = true))(print(", "))
-              }
-            }
-            // constructor's params processing (don't print single empty constructor param list)
-            vparamss match {
-              case Nil | List(Nil) if !mods.isCase && !ctorMods.hasFlag(AccessFlags) =>
-              case _ => vparamss foreach printConstrParams
-            }
-            parents
           }
 
           // get trees without default classes and traits (when they are last)
