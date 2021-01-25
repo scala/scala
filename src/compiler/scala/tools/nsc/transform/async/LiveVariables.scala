@@ -90,7 +90,7 @@ trait LiveVariables extends ExprBuilder {
 
         override def nestedMethod(defdef: DefDef): Unit = capturingCheck(defdef)
 
-        override def byNameArgument(arg: Tree): Unit = capturingCheck(arg)
+        override def synchronizedCall(arg: Tree): Unit = capturingCheck(arg)
 
         override def function(function: Function): Unit = capturingCheck(function)
         override def function(expandedFunction: ClassDef): Unit = capturingCheck(expandedFunction)

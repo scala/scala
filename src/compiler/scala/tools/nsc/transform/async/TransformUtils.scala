@@ -122,7 +122,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     def nestedMethod(defdef: DefDef): Unit = {
     }
 
-    def byNameArgument(arg: Tree): Unit = {
+    def synchronizedCall(arg: Tree): Unit = {
     }
 
     def function(function: Function): Unit = {
@@ -133,13 +133,14 @@ private[async] trait TransformUtils extends AsyncTransformStates {
 
     override def traverse(tree: Tree): Unit = {
       tree match {
-        case cd: ClassDef          =>
+        case cd: ClassDef                                                              =>
           if (cd.symbol.isAnonymousClass) function(cd)
           else if (cd.symbol.isModuleClass) nestedModuleClass(cd)
           else nestedClass(cd)
-        case dd: DefDef            => nestedMethod(dd)
-        case fun: Function         => function(fun)
-        case _                     => super.traverse(tree)
+        case dd: DefDef                                                                => nestedMethod(dd)
+        case fun: Function                                                             => function(fun)
+        case Apply(TypeApply(fun, _), arg :: Nil) if fun.symbol == definitions.Object_synchronized => synchronizedCall(arg)
+        case _                                                                         => super.traverse(tree)
       }
     }
   }
