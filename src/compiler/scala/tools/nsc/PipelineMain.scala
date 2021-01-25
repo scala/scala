@@ -52,10 +52,19 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
   /** Forward errors to the (current) reporter. */
   protected def scalacError(msg: String): Unit = {
-    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
+    reporterError(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
   }
 
   private var reporter: Reporter = _
+  private def reporterEcho(pos: Position, msg: String): Unit = synchronized {
+    reporter.echo(pos, msg)
+  }
+  private def reporterEcho(msg: String): Unit = synchronized {
+    reporter.echo(NoPosition, msg)
+  }
+  private def reporterError(pos: Position, msg: String): Unit = synchronized {
+    reporter.echo(msg)
+  }
 
   private object handler extends UncaughtExceptionHandler {
     override def uncaughtException(t: Thread, e: Throwable): Unit = {
@@ -89,14 +98,14 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     builder.append("}\n")
     val path = logDir.resolve("projects.dot")
     Files.write(path, builder.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
-    reporter.echo("Wrote project dependency graph to: " + path.toAbsolutePath)
+    reporterEcho("Wrote project dependency graph to: " + path.toAbsolutePath)
   }
 
   private case class Dependency(t: Task, isMacro: Boolean, isPlugin: Boolean)
 
   def process(): Boolean = {
     reporter = createReporter(new Settings(scalacError))
-    reporter.echo(s"parallelism = $parallelism, strategy = $strategy")
+    reporterEcho(s"parallelism = $parallelism, strategy = $strategy")
 
     def commandFor(argFileArg: Path): Task = {
       val ss = new Settings(scalacError)
@@ -134,13 +143,13 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           } else {
             PickleExtractor.process(entry, extracted)
             Files.setLastModifiedTime(extracted, sourceTimeStamp)
-            reporter.echo(s"Exported pickles from $entry to $extracted")
+            reporterEcho(s"Exported pickles from $entry to $extracted")
             Files.setLastModifiedTime(extracted, sourceTimeStamp)
           }
           strippedAndExportedClassPath(entry) = extracted
         }
         exportTimer.stop()
-        reporter.echo(f"Exported external classpath in ${exportTimer.durationMs}%.0f ms")
+        reporterEcho(f"Exported external classpath in ${exportTimer.durationMs}%.0f ms")
       }
     }
 
@@ -165,14 +174,14 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         Await.result(awaitAllFutures, Duration(60, "s"))
         timer.stop()
         val numCompleted = allFutures.count(_.isCompleted)
-        reporter.echo(s"PROGRESS: $numCompleted / $numAllFutures")
+        reporterEcho(s"PROGRESS: $numCompleted / $numAllFutures")
         return
       } catch {
         case _: TimeoutException =>
           val numCompleted = allFutures.count(_.isCompleted)
           if (numCompleted == lastNumCompleted) {
-            reporter.echo(s"STALLED: $numCompleted / $numAllFutures")
-            reporter.echo("Outline/Scala/Javac")
+            reporterEcho(s"STALLED: $numCompleted / $numAllFutures")
+            reporterEcho("Outline/Scala/Javac")
             projects.map {
               p =>
                 def toX(b: Future[_]): String = b.value match { case None => "-"; case Some(Success(_)) => "x"; case Some(Failure(_)) => "!" }
@@ -180,7 +189,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
                 reporter.echo(s + " " + p.label)
             }
           } else {
-            reporter.echo(s"PROGRESS: $numCompleted / $numAllFutures")
+            reporterEcho(s"PROGRESS: $numCompleted / $numAllFutures")
             lastNumCompleted = numCompleted
           }
       }
@@ -222,9 +231,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
         if (parallelism == 1) {
           val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
         } else
-          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Pipeline =>
         projects.foreach { p =>
           val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
@@ -261,9 +270,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
         if (parallelism == 1) {
           val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
         } else
-          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Traditional =>
         projects.foreach { p =>
           val f1 = Future.traverse(dependsOn.getOrElse(p, Nil))(_.t.javaDone.future)
@@ -286,9 +295,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         }
         if (parallelism == 1) {
           val maxFullCriticalPath: Double = projects.map(_.fullCriticalPathMs).max
-          reporter.echo(f"Critical path: $maxFullCriticalPath%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f"Critical path: $maxFullCriticalPath%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
         } else {
-          reporter.echo(f"Wall Clock: ${timer.durationMs}%.0f ms")
+          reporterEcho(f"Wall Clock: ${timer.durationMs}%.0f ms")
         }
     }
 
@@ -337,7 +346,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     trace.append("]}")
     val traceFile = logDir.resolve(s"build-${label}.trace")
     Files.write(traceFile, trace.toString.getBytes())
-    reporter.echo("Chrome trace written to " + traceFile.toAbsolutePath)
+    reporterEcho("Chrome trace written to " + traceFile.toAbsolutePath)
   }
 
   case class Group(files: List[String]) {
@@ -420,7 +429,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       if (reporter.hasErrors)
         reporter.flush()
       else if (command.shouldStopWithInfo)
-        reporter.echo(command.getInfoMessage(result))
+        reporterEcho(command.getInfoMessage(result))
       result.reporter = createReporter(result.settings)
       result
     } catch {
@@ -553,9 +562,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
                 Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
               }
               diagnostic.getKind match {
-                case Kind.ERROR                            => reporter.error(position, msg)
+                case Kind.ERROR                            => reporterError(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => Task.this.compiler.runReporting.warning(position, msg, WarningCategory.JavaSource, site = "")
-                case Kind.NOTE | Kind.OTHER                => reporter.echo(position, msg)
+                case Kind.NOTE | Kind.OTHER                => reporterEcho(position, msg)
               }
             }
           }
@@ -574,7 +583,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         javaDone.complete(Success(()))
       }
     }
-    def log(msg: String): Unit = reporter.echo(this.label + ": " + msg)
+    def log(msg: String): Unit = reporterEcho(this.label + ": " + msg)
   }
 
   final class Timer() {
