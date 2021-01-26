@@ -42,11 +42,13 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
+  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
   override def abs: Float              = math.abs(self)
   override def max(that: Float): Float = math.max(self, that)
   override def min(that: Float): Float = math.min(self, that)
   @deprecated("signum does not handle -0.0f or Float.NaN; use `sign` method instead", since = "2.13.0")
   override def signum: Int             = math.signum(self).toInt
+  override def sign: Float             = math.signum(self)
 
   def round: Int   = math.round(self)
   def ceil: Float  = math.ceil(self.toDouble).toFloat

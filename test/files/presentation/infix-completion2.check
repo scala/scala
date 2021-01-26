@@ -150,7 +150,6 @@ def resolveConstantDesc(x$1: java.lang.invoke.MethodHandles.Lookup): Double
 #partest
 def round: Long
 def shortValue(): Short
-def sign: Double
 def to(end: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Int, step: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
@@ -208,6 +207,7 @@ override def min(that: Double): Double
 override def min(that: Float): Float
 override def min(that: Int): Int
 override def min(that: Long): Long
+override def sign: Double
 override def signum: Int
 private[this] val self: Double
 ================================================================================

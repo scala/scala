@@ -13,7 +13,6 @@
 package scala
 package runtime
 
-
 final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy[Short] {
   protected def num = scala.math.Numeric.ShortIsIntegral
   protected def ord = scala.math.Ordering.Short
@@ -27,7 +26,10 @@ final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy
 
   override def isValidShort  = true
 
+  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
   override def abs: Short              = math.abs(self.toInt).toShort
   override def max(that: Short): Short = math.max(self.toInt, that.toInt).toShort
   override def min(that: Short): Short = math.min(self.toInt, that.toInt).toShort
+  override def signum: Int             = math.signum(self.toInt)
+  override def sign: Short             = math.signum(self.toInt).toShort
 }

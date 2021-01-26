@@ -13,7 +13,6 @@
 package scala
 package runtime
 
-
 final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[Byte] {
   protected def num = scala.math.Numeric.ByteIsIntegral
   protected def ord = scala.math.Ordering.Byte
@@ -27,7 +26,10 @@ final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[B
 
   override def isValidByte   = true
 
+  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
   override def abs: Byte             = math.abs(self).toByte
   override def max(that: Byte): Byte = math.max(self, that).toByte
   override def min(that: Byte): Byte = math.min(self, that).toByte
+  override def signum: Int           = math.signum(self.toInt)
+  override def sign: Byte            = math.signum(self.toInt).toByte
 }

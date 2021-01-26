@@ -13,9 +13,6 @@
 package scala
 package runtime
 
-
-import java.lang.Character
-
 final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
   protected def num = scala.math.Numeric.CharIsIntegral
   protected def ord = scala.math.Ordering.Char
@@ -29,9 +26,12 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
 
   override def isValidChar   = true
 
+  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
   override def abs: Char             = self
   override def max(that: Char): Char = math.max(self.toInt, that.toInt).toChar
   override def min(that: Char): Char = math.min(self.toInt, that.toInt).toChar
+  override def signum: Int           = math.signum(self.toInt)
+  override def sign: Char            = math.signum(self.toInt).toChar
 
   def asDigit: Int                      = Character.digit(self, Character.MAX_RADIX)
 
