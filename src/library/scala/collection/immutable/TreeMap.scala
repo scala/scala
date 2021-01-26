@@ -106,16 +106,26 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
     private[this] def readObject(in: java.io.ObjectInputStream) = {
       val size = in.readInt()
       ordering = in.readObject().asInstanceOf[Ordering[A]]
-      implicit val ord = ordering
-
-      val data = Array.newBuilder[(A, B)]
-      data.sizeHint(size)
-      for (i <- 0 until size) {
-        val key = in.readObject().asInstanceOf[A]
-        val value = in.readObject().asInstanceOf[B]
-        data += ((key, value))
+      size match {
+        case 0 => //tree is null already
+        case 1 =>
+          val key   = in.readObject().asInstanceOf[A]
+          val value = in.readObject().asInstanceOf[B]
+          tree = RB.update(null, key, value, true)(ordering)
+        case _ =>
+          val keys   = new Array[Any](size)
+          val values = new Array[Any](size)
+          var i      = 0
+          while (i < size) {
+            keys(i) = in.readObject()
+            values(i) = in.readObject()
+            i += 1
+          }
+          tree = RB.fromOrderedEntries(
+            keys.iterator.asInstanceOf[Iterator[A]],
+            values.iterator.asInstanceOf[Iterator[B]],
+            size)
       }
-      tree = RB.fromOrderedEntries(data.result.iterator, size)
     }
     @throws[IOException]
     private[this] def readResolve(): AnyRef =
