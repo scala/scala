@@ -369,10 +369,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def errorNotClass(tpt: Tree, found: Type)  = { ClassTypeRequiredError(tpt, found); false }
     private def errorNotStable(tpt: Tree, found: Type) = { TypeNotAStablePrefixError(tpt, found); false }
 
-    /** Check that `tpt` refers to a non-refinement class type */
+    /** Check that `tpt` refers to a non-refinement class or module type */
     def checkClassOrModuleType(tpt: Tree): Boolean = {
       val tpe = unwrapToClass(tpt.tpe)
-      isNonRefinementClassType(tpe, allowModules = true) || errorNotClass(tpt, tpe)
+      def isModule = tpe match {
+        case SingleType(_, sym) => sym.isModule
+        case _ => false
+      }
+      isNonRefinementClassType(tpe) || isModule || errorNotClass(tpt, tpe)
     }
 
     /** Check that `tpt` refers to a class type with a stable prefix. */
