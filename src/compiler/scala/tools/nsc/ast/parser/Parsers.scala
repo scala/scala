@@ -1920,9 +1920,13 @@ self =>
       enums.toList
     }
 
-    def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true): List[Tree] =
-      if (in.token == IF && !isFirst) makeFilter(in.offset, guard()) :: Nil
+    def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
+      def loop(): List[Tree] =
+        if (in.token != IF) Nil
+        else makeFilter(in.offset, guard()) :: loop()
+      if (in.token == IF && !isFirst) loop()
       else generator(!isFirst, allowNestedIf)
+    }
 
     /** {{{
      *  Generator ::= Pattern1 (`<-` | `=`) Expr [Guard]
