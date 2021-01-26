@@ -1,0 +1,4 @@
+t12322b.scala:9: error: class type required but MyObj.type found
+    val mo: MyObj.type = new MyObj.type() // here
+                                  ^
+1 error

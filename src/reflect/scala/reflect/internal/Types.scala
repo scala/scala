@@ -4762,8 +4762,8 @@ trait Types
    */
   /** def isNonValueType(tp: Type) = !isValueElseNonValue(tp) */
 
-  def isNonRefinementClassType(tpe: Type) = tpe match {
-    case SingleType(_, sym) => sym.isModuleOrModuleClass
+  def isNonRefinementClassType(tpe: Type, allowModules: Boolean = false) = tpe match {
+    case SingleType(_, sym) => if (allowModules) sym.isModuleOrModuleClass else sym.isModuleClass
     case TypeRef(_, sym, _) => sym.isClass && !sym.isRefinementClass
     case ErrorType          => true
     case _                  => false
