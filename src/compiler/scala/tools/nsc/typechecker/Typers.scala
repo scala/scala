@@ -369,10 +369,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def errorNotClass(tpt: Tree, found: Type)  = { ClassTypeRequiredError(tpt, found); false }
     private def errorNotStable(tpt: Tree, found: Type) = { TypeNotAStablePrefixError(tpt, found); false }
 
-    /** Check that `tpt` refers to a non-refinement class type */
-    def checkClassType(tpt: Tree): Boolean = {
+    /** Check that `tpt` refers to a non-refinement class or module type */
+    def checkClassOrModuleType(tpt: Tree): Boolean = {
       val tpe = unwrapToClass(tpt.tpe)
-      isNonRefinementClassType(tpe) || errorNotClass(tpt, tpe)
+      def isModule = tpe match {
+        case SingleType(_, sym) => sym.isModule
+        case _ => false
+      }
+      isNonRefinementClassType(tpe) || isModule || errorNotClass(tpt, tpe)
     }
 
     /** Check that `tpt` refers to a class type with a stable prefix. */
@@ -4300,7 +4304,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def typedClassOf(tree: Tree, tpt: Tree, noGen: Boolean = false) =
-      if (!checkClassType(tpt) && noGen) tpt
+      if (!checkClassOrModuleType(tpt) && noGen) tpt
       else atPos(tree.pos)(gen.mkClassOf(tpt.tpe))
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Mode): Tree = {

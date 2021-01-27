@@ -1,0 +1,7 @@
+t12322b.scala:7: error: class type required but MyObj.type found
+object ObjectNew extends MyObj.type {
+                              ^
+t12322b.scala:9: error: class type required but MyObj.type found
+    val mo: MyObj.type = new MyObj.type() // here
+                                  ^
+2 errors

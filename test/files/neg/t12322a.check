@@ -1,0 +1,7 @@
+t12322a.scala:3: error: class type required but Wrapper.this.MyObj.type found
+  val obj = new MyObj.type
+                     ^
+t12322a.scala:6: error: class type required but Wrapper.this.MyObj.type found
+  val oops = new Oops
+                 ^
+2 errors
