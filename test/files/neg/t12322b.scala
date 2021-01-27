@@ -4,7 +4,7 @@ object MyObj {
   val c: String = "ABC"
 }
 
-object ObjectNew {
+object ObjectNew extends MyObj.type {
   def main(args: Array[String]): Unit = {
     val mo: MyObj.type = new MyObj.type() // here
   }
