@@ -1707,6 +1707,18 @@ abstract class RefChecks extends Transform {
                   deriveDefDef(dd)(_ => typed(gen.mkThrowNewRuntimeException("native method stub")))
                 } else
                   tree
+
+              case _: DefDef if sym.hasAnnotation(inheritSignatureClass) =>
+                val os = sym.nextOverriddenSymbol
+                if (os == NoSymbol) {
+                  reporter.error(sym.pos, "Invalid `@inheritSignature` annotation, the method overrides nothing.")
+                  sym.removeAnnotation(definitions.inheritSignatureClass)
+                } else if (exitingErasure(os.tpe =:= sym.tpe) && !os.hasAnnotation(inheritSignatureClass)) {
+                  reporter.error(sym.pos, "Invalid `@inheritSignature` annotation, the overridden member has the same signature.")
+                  sym.removeAnnotation(definitions.inheritSignatureClass)
+                }
+                tree
+
               case _ => tree
             }
 

@@ -1,0 +1,13 @@
+inheritSignature.scala:8: error: Invalid `@inheritSignature` annotation, the overridden member has the same signature.
+class C1 extends B1 { @inheritSignature override def f: String = "c" } // error, same signature
+                                                     ^
+inheritSignature.scala:11: error: Invalid `@inheritSignature` annotation, the method overrides nothing.
+class D { @inheritSignature def f: String = "d" } // error, overrides nothing
+                                ^
+inheritSignature.scala:19: error: Invalid `@inheritSignature` annotation, the method overrides nothing.
+    @annotation.inheritSignature override def f: String = "c" // message is not very accurate, but it's a niche feature anyway
+                                              ^
+inheritSignature.scala:20: error: Invalid `@inheritSignature` annotation, the method overrides nothing.
+    @annotation.inheritSignature override def g(x: Int): String = "c" // message is not very accurate, but it's a niche feature anyway
+                                              ^
+4 errors

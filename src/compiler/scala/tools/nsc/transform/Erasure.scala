@@ -777,7 +777,7 @@ abstract class Erasure extends InfoTransform
         case Apply(fun @ Select(qual, _), args) if fun.symbol.hasAnnotation(definitions.inheritSignatureClass) =>
           if (!context.enclMethod.owner.isBridge) {
             val os = enteringTyper(fun.symbol.nextOverriddenSymbol)
-            adaptMember(atPos(tree.pos)(Apply(Select(qual, os), args)))
+            adaptMember(atPos(tree.pos)(treeCopy.Apply(tree, Select(qual, os), args)))
           } else
             tree
 
