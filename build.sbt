@@ -939,7 +939,8 @@ lazy val root: Project = (project in file("."))
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath async").result map (_ -> "partest --srcpath async"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
-        (mimaReportBinaryIssues).result map (_ -> "mimaReportBinaryIssues"),
+        (library / mimaReportBinaryIssues).result.map(_ -> "library/mimaReportBinaryIssues"), // doesn't aggregate..
+        (reflect / mimaReportBinaryIssues).result.map(_ -> "reflect/mimaReportBinaryIssues"), // ..so specify both
         (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
