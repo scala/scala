@@ -270,7 +270,7 @@ class IterableTest {
 
   @Test
   def partitionMap(): Unit = {
-    val (left, right) = Seq(1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionMap {
+    val (left, right) = Seq[Any](1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionMap {
       case i: Int => Left(i)
       case s: String => Right(s)
     }
