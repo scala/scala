@@ -48,7 +48,7 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   override def min(that: Double): Double = math.min(self, that)
   @deprecated("signum does not handle -0.0 or Double.NaN; use `sign` method instead", since = "2.13.0")
   override def signum: Int               = math.signum(self).toInt
-  override def sign: Double              = math.signum(self)
+//override def sign: Double              = math.signum(self)
 
   def round: Long   = math.round(self)
   def ceil: Double  = math.ceil(self)
