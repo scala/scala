@@ -50,7 +50,8 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
           // the ARTIFACT and BRIDGE flags have no effect on scalac or the jvm, but they matter to javac when
           // compiling Java code against inheritSignature methods. The selection here seem to work best.
           dd.symbol.setFlag(Flags.PRIVATE | Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
-          dd.symbol.getAndRemoveAttachment[InheritedSignature].get.bridge.resetFlag(Flags.ARTIFACT).setFlag(Flags.OVERRIDE)
+          // we leave the attachment on the symbol to for `adaptToNewRunMap`
+          dd.symbol.attachments.get[InheritedSignature].get.bridge.resetFlag(Flags.ARTIFACT).setFlag(Flags.OVERRIDE)
           tree
         case tree                                  => tree
       }

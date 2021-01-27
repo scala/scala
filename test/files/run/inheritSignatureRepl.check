@@ -1,0 +1,14 @@
+
+scala> abstract class A { def f: Object }
+class A
+
+scala> object B extends A { @annotation.inheritSignature def f: String = " b "; def g: String = f }
+object B
+
+scala> B.f.trim
+val res0: String = b
+
+scala> B.g.trim
+val res1: String = b
+
+scala> :quit

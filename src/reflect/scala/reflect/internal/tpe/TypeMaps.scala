@@ -1235,6 +1235,8 @@ private[internal] trait TypeMaps {
             if (decl.hasAllFlags(METHOD | MODULE))
               // HACK: undo flag Uncurry's flag mutation from prior run
               decl.resetFlag(METHOD | STABLE)
+            if (decl.hasFlag(METHOD) && decl.hasAttachment[InheritedSignature])
+              decl.setFlag(Flags.OVERRIDE).resetFlag(Flags.PRIVATE | Flags.ARTIFACT)
           }
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, clazz)
