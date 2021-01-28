@@ -83,6 +83,21 @@ trait PatternTypers {
       val member      = unapplyMember(fun.tpe)
       def resultType  = (fun.tpe memberType member).finalResultType
       def isEmptyType = resultOfIsEmpty(resultType)
+
+      def useConstructor = (
+        // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
+        // Use the case class constructor if (after canElide + isCase) the unapply method:
+        // (1) doesn't exist, e.g. case classes with 23+ params. run/case-class-23.scala
+        // (2) is the synthetic case class one, i.e. not user redefined. pos/t11252.scala
+        // (3a) is overloaded and the synthetic case class one is still present (i.e. not suppressed) pos/t12250.scala
+        // (3b) the scrutinee type is the case class (not a subtype). pos/overloaded-unapply.scala vs pos/t12250b.scala
+        canElide && caseClass.isCase && (
+             member == NoSymbol                                                  // (1)
+          || member.isSynthetic                                                  // (2)
+          || (member.alternatives.exists(_.isSynthetic) && caseClass.tpe =:= pt) // (3a)(3b)
+        )
+      )
+
       def isOkay      = (
            resultType.isErroneous
         || (resultType <:< BooleanTpe)
@@ -94,12 +109,7 @@ trait PatternTypers {
       // if we're already failing, no need to emit another error here
       if (fun.tpe.isErroneous)
         fun
-      // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
-      // A case class with 23+ params has no unapply method.
-      // A case class constructor may be overloaded with unapply methods in the companion.
-      // A case class maybe have its own custom unapply (so non-synthetic) scala/bug#11252
-      // Unapply methods aren't `isCaseApplyOrUnapply` in Scala 3 tasty/run/src-2/tastytest/TestColour.scala
-      else if (canElide && caseClass.isCase && !member.isOverloaded && (member == NoSymbol || member.isSynthetic))
+      else if (useConstructor)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
       else if (!reallyExists(member))
         CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have a valid unapply/unapplySeq member")
