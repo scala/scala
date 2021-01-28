@@ -13,10 +13,11 @@
 package scala
 
 import scala.collection.generic._
-import scala.collection.{ mutable, immutable }
-import mutable.{ ArrayBuilder, ArraySeq }
-import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime.{ array_apply, array_update }
+import scala.collection.{immutable, mutable}
+import mutable.{ArrayBuilder, ArraySeq}
+import scala.reflect.{ClassTag, classTag}
+import scala.runtime.ScalaRunTime
+import scala.runtime.ScalaRunTime.{array_apply, array_update}
 
 /** Contains a fallback builder for arrays when the element type
  *  does not have a class tag. In that case a generic array is built.
@@ -194,10 +195,20 @@ object Array extends FallbackArrayBuilding {
   // Subject to a compiler optimization in Cleanup.
   // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
   def apply[T: ClassTag](xs: T*): Array[T] = {
-    val array = new Array[T](xs.length)
-    var i = 0
-    for (x <- xs.iterator) { array(i) = x; i += 1 }
-    array
+    val len = xs.length
+    xs match {
+      case wa: mutable.WrappedArray[_] if wa.elemTag == classTag[T] =>
+        // We get here in test/files/run/sd760a.scala, `Array[T](t)` for
+        // a specialized type parameter `T`. While we still pay for two
+        // copies of the array it is better than before when we also boxed
+        // each element when populating the result.
+        ScalaRunTime.array_clone(wa.array).asInstanceOf[Array[T]]
+      case _ =>
+        val array = new Array[T](len)
+        var i = 0
+        for (x <- xs.iterator) { array(i) = x; i += 1 }
+        array
+    }
   }
 
   /** Creates an array of `Boolean` objects */
