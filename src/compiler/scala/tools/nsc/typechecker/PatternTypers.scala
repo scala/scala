@@ -19,7 +19,7 @@ import scala.collection.mutable
 import symtab.Flags
 import Mode._
 
- /**
+/**
  *  A pattern match such as:
  *
  * {{{
@@ -55,9 +55,8 @@ trait PatternTypers {
 
     // If the tree's symbol's type does not define an extractor, maybe the tree's type does.
     // this is the case when we encounter an arbitrary tree as the target of an unapply call
-    // (rather than something that looks like a constructor call.) (for now, this only happens
-    // due to wrapClassTagUnapply, but when we support parameterized extractors, it will become
-    // more common place)
+    // (rather than something that looks like a constructor call.)
+    // (happens due to wrapClassTagUnapply)
     private def hasUnapplyMember(tpe: Type): Boolean   = reallyExists(unapplyMember(tpe))
     private def hasUnapplyMember(sym: Symbol): Boolean = hasUnapplyMember(sym.tpe_*)
 
@@ -182,6 +181,7 @@ trait PatternTypers {
         case _         => wrapClassTagUnapply(treeTyped, extractor, tpe)
       }
     }
+
     private class VariantToSkolemMap extends VariancedTypeMap {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
@@ -248,13 +248,10 @@ trait PatternTypers {
       // as they may also be sensitive to the prefix (see test/files/pos/t11103.scala).
       // Note that undetParams may thus be different from caseClass.typeParams.
       // (For a monomorphic case class, GenPolyType will not create/destruct a PolyType.)
-      val (undetparams, caseConstructorType) =
-        GenPolyType.unapply {
-          val ctorUnderClassTypeParams = GenPolyType(caseClass.typeParams, caseClass.primaryConstructor.info)
-          ctorUnderClassTypeParams.asSeenFrom(caseClassType, caseClass)
-        }.get
+      val GenPolyType(undetparams, caseConstructorType) =
+        GenPolyType(caseClass.typeParams, caseClass.primaryConstructor.info).asSeenFrom(caseClassType, caseClass)
 
-      // println(s"convertToCaseConstructor(${tree.tpe}, $caseClass, $ptIn) // $caseClassType // ${caseConstructorType.typeParams.map(_.info)}")
+      // log(s"convertToCaseConstructor(${tree.tpe}, $caseClass, $ptIn) // $caseClassType // ${caseConstructorType.typeParams.map(_.info)}")
 
       val tree1 = TypeTree(caseConstructorType) setOriginal tree
 

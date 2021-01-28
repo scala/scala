@@ -1197,7 +1197,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _                                               => applyPossible
           }
         }
-        if (tree.isType)
+        if (tree.isType) // (6)
           adaptType()
         else if (mode.typingExprNotFun &&
                  treeInfo.isMacroApplication(tree) &&
@@ -1205,17 +1205,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           macroExpand(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
           typedConstructorPattern(tree, pt)
-        else if (shouldInsertApply(tree))
+        else if (shouldInsertApply(tree)) // (8)
           insertApply()
-        else if (hasUndetsInMonoMode) { // (9)
+        else if (hasUndetsInMonoMode) // (9)
           // This used to have
           //     assert(!context.inTypeConstructorAllowed, context)
           // but that's not guaranteed to be true in the face of erroneous code; errors in typedApply might mean we
           // never get around to inferring them, and they leak out and wind up here.
           instantiatePossiblyExpectingUnit(tree, mode, pt)
-        }
-        // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields), but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
-        else if (isScalaRepeatedParamType(tree.tpe) && !isScalaRepeatedParamType(pt)) adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
+        else if (isScalaRepeatedParamType(tree.tpe) && !isScalaRepeatedParamType(pt))
+          // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields),
+          //  but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
+          adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
         else if (tree.tpe <:< pt)
           tree
         else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })

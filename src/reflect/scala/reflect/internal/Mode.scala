@@ -14,50 +14,45 @@ package scala
 package reflect
 package internal
 
-import scala.language.implicitConversions
-
 object Mode {
-  private implicit def liftIntBitsToMode(bits: Int): Mode = apply(bits)
   def apply(bits: Int): Mode = new Mode(bits)
 
   /** NOmode, EXPRmode and PATTERNmode are mutually exclusive.
    */
-  final val NOmode: Mode        = 0x000
-  final val EXPRmode: Mode      = 0x001
-  final val PATTERNmode: Mode   = 0x002
+  final val NOmode: Mode        = Mode(0x000)
+  final val EXPRmode: Mode      = Mode(0x001)
+  final val PATTERNmode: Mode   = Mode(0x002)
 
-  /** TYPEmode needs a comment. <-- XXX.
-   */
-  final val TYPEmode: Mode      = 0x004
+  final val TYPEmode: Mode      = Mode(0x004)
 
   /** SCCmode is orthogonal to above. When set we are
    *  in the this or super constructor call of a constructor.
    */
-  final val SCCmode: Mode       = 0x008
+  final val SCCmode: Mode       = Mode(0x008)
 
   /** FUNmode is orthogonal to above.
    *  When set we are looking for a method or constructor.
    */
-  final val FUNmode: Mode       = 0x010
+  final val FUNmode: Mode       = Mode(0x010)
 
   /** POLYmode is orthogonal to above.
    *  When set expression types can be polymorphic.
    */
-  final val POLYmode: Mode      = 0x020
+  final val POLYmode: Mode      = Mode(0x020)
 
   /** QUALmode is orthogonal to above. When set
    *  expressions may be packages and Java statics modules.
    */
-  final val QUALmode: Mode      = 0x040
+  final val QUALmode: Mode      = Mode(0x040)
 
   /** TAPPmode is set for the function/type constructor
    *  part of a type application. When set we do not decompose PolyTypes.
    */
-  final val TAPPmode: Mode      = 0x080
+  final val TAPPmode: Mode      = Mode(0x080)
 
   /** LHSmode is set for the left-hand side of an assignment.
    */
-  final val LHSmode: Mode       = 0x400
+  final val LHSmode: Mode       = Mode(0x400)
 
   /** BYVALmode is set when we are typing an expression
    *  that occurs in a by-value position. An expression e1 is in by-value
@@ -66,11 +61,11 @@ object Mode {
    *  arguments or the conditional of an if-then-else clause.
    *  This mode has been added to support continuations.
    */
-  final val BYVALmode: Mode     = 0x8000
+  final val BYVALmode: Mode     = Mode(0x8000)
 
   /** TYPEPATmode is set when we are typing a type in a pattern.
    */
-  final val TYPEPATmode: Mode   = 0x10000
+  final val TYPEPATmode: Mode   = Mode(0x10000)
 
   /** This mode is set when starting to type check a `Select`, `Apply` or `TypeApply`, e.g., `x.y`
     * or `a.b.foo[T](x, y).bar(z)`. Stabilizers (a feature added in PR scala/scala#5999) created
@@ -92,7 +87,7 @@ object Mode {
     *     })
     *   }
     */
-  final val APPSELmode: Mode   = 0x20000
+  final val APPSELmode: Mode    = Mode(0x20000)
 
   private val StickyModes: Mode       = EXPRmode | PATTERNmode | TYPEmode
   private val StickyModesForFun: Mode = StickyModes | SCCmode
@@ -100,28 +95,26 @@ object Mode {
   final val PolyQualifierModes: Mode  = MonoQualifierModes | POLYmode
   final val OperatorModes: Mode       = EXPRmode | POLYmode | TAPPmode | FUNmode
 
-  /** Translates a mask of mode flags into something readable.
-   */
-  private val modeNameMap = Map[Int, String]( // TODO why duplicate the bitmasks here, rather than just referring to this.EXPRmode etc?
-    (1 << 0)  -> "EXPRmode",
-    (1 << 1)  -> "PATTERNmode",
-    (1 << 2)  -> "TYPEmode",
-    (1 << 3)  -> "SCCmode",
-    (1 << 4)  -> "FUNmode",
-    (1 << 5)  -> "POLYmode",
-    (1 << 6)  -> "QUALmode",
-    (1 << 7)  -> "TAPPmode",
-    (1 << 8)  -> "<>",      // formerly SUPERCONSTRmode
-    (1 << 9)  -> "<>",      // formerly SNDTRYmode
-    (1 << 10) -> "LHSmode",
-    (1 << 11) -> "<>",
-    (1 << 12) -> "<>",      // formerly STARmode
-    (1 << 13) -> "<>",      // formerly ALTmode
-    (1 << 14) -> "<>",      // formerly HKmode
-    (1 << 15) -> "BYVALmode",
-    (1 << 16) -> "TYPEPATmode",
-    (1 << 17) -> "APPSELmode"
-  ).map({ case (k, v) => Mode(k) -> v })
+  /** Translates a mask of mode flags into something readable. */
+  private val modeNameMap = Map[Mode, String](
+    EXPRmode     -> "EXPRmode",
+    PATTERNmode  -> "PATTERNmode",
+    TYPEmode     -> "TYPEmode",
+    SCCmode      -> "SCCmode",
+    FUNmode      -> "FUNmode",
+    POLYmode     -> "POLYmode",
+    QUALmode     -> "QUALmode",
+    TAPPmode     -> "TAPPmode",
+    LHSmode      -> "LHSmode",
+    BYVALmode    -> "BYVALmode",
+    TYPEPATmode  -> "TYPEPATmode",
+    APPSELmode   -> "APPSELmode"
+  )
+
+  // Former modes and their values:
+  // SUPERCONSTRmode (0x100), SNDTRYmode (0x200), CONSTmode (0x800)
+  // STARmode (0x1000), ALTmode (0x2000), HKmode (0x4000)
+  // RETmode (0x20000) - now APPSELmode
 }
 import Mode._
 
