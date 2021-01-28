@@ -138,7 +138,7 @@ object ScalaClassLoader {
          with HasClassPath {
     // Note - this is calling a caller sensitive method so must be called from the class that is being registered
     // and we are behaving like a java static method
-    if (URLClassLoader.registered.compareAndSet(false, true))
+    if (!URLClassLoader.registered.getAndSet(true))
       ClassLoader.registerAsParallelCapable()
 
     private var classloaderURLs: Seq[URL] = urls
