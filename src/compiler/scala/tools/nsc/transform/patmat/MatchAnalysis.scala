@@ -84,15 +84,10 @@ trait TreeAndTypeAnalysis extends Debugging {
     // TODO: domain of other feasibly enumerable built-in types (char?)
     def enumerateSubtypes(tp: Type, grouped: Boolean): List[List[Type]] =
       tp.typeSymbol match {
-        // TODO case _ if tp.isTupleType => // recurse into component types?
-        case UnitClass if !grouped =>
-          List(List(UnitTpe))
-        case BooleanClass if !grouped =>
-          List(ConstantTrue :: ConstantFalse :: Nil)
-        // TODO case _ if tp.isTupleType => // recurse into component types
-        case modSym: ModuleClassSymbol if !grouped =>
-          List(List(tp))
-        case sym: RefinementClassSymbol =>
+        case    UnitClass             => List(List(UnitTpe))
+        case BooleanClass             => List(List(ConstantTrue, ConstantFalse))
+        case _: ModuleClassSymbol     => List(List(tp))
+        case _: RefinementClassSymbol =>
           val parentSubtypes = tp.parents.flatMap(parent => enumerateSubtypes(parent, grouped))
           if (parentSubtypes exists (_.nonEmpty)) {
             // If any of the parents is enumerable, then the refinement type is enumerable.
