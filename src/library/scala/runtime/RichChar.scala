@@ -26,12 +26,12 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
 
   override def isValidChar   = true
 
-  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine signum and sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Char             = self
   override def max(that: Char): Char = math.max(self.toInt, that.toInt).toChar
   override def min(that: Char): Char = math.min(self.toInt, that.toInt).toChar
-//override def signum: Int           = math.signum(self.toInt)
-//override def sign: Char            = math.signum(self.toInt).toChar
 
   def asDigit: Int                      = Character.digit(self, Character.MAX_RADIX)
 

@@ -36,12 +36,12 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   override def isValidInt   = true
   def isValidLong  = true
 
-  // These are all redefined to avoid VC boxing (they also avoid the indirection through `num`)
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine signum and sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Int            = math.abs(self)
   override def max(that: Int): Int = math.max(self, that)
   override def min(that: Int): Int = math.min(self, that)
-//override def signum: Int         = math.signum(self)
-//override def sign: Int           = math.signum(self)
 
   /** There is no reason to round an `Int`, but this method is provided to avoid accidental loss of precision from a detour through `Float`. */
   @deprecated("this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?", "2.11.0")
