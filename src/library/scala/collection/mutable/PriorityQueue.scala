@@ -62,7 +62,6 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     with Growable[A]
     with Serializable
 {
-  import ord._
 
   private class ResizableArrayAccess[A0] extends ArrayBuffer[A0] {
     override def mapInPlace(f: A0 => A0): this.type = {
@@ -107,7 +106,8 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   private def toA(x: AnyRef): A = x.asInstanceOf[A]
   protected def fixUp(as: Array[AnyRef], m: Int): Unit = {
     var k: Int = m
-    while (k > 1 && toA(as(k / 2)) < toA(as(k))) {
+    // use `ord` directly to avoid allocating `OrderingOps`
+    while (k > 1 && ord.lt(toA(as(k / 2)), toA(as(k)))) {
       resarr.p_swap(k, k / 2)
       k = k / 2
     }
@@ -118,9 +118,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     var k: Int = m
     while (n >= 2 * k) {
       var j = 2 * k
-      if (j < n && toA(as(j)) < toA(as(j + 1)))
+      // use `ord` directly to avoid allocating `OrderingOps`
+      if (j < n && ord.lt(toA(as(j)), toA(as(j + 1))))
         j += 1
-      if (toA(as(k)) >= toA(as(j)))
+      if (ord.gteq(toA(as(k)), toA(as(j))))
         return k != m
       else {
         val h = as(k)

@@ -183,7 +183,11 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
     if (res1 != 0) res1 else ord.compare(f(x), f(y))
   }
 
-  /** This inner class defines comparison operators available for `T`. */
+  /** This inner class defines comparison operators available for `T`.
+   *
+   * It can't extend `AnyVal` because it is not a top-level class
+   * or a member of a statically accessible object.
+   */
   class OrderingOps(lhs: T) {
     def <(rhs: T): Boolean = lt(lhs, rhs)
     def <=(rhs: T): Boolean = lteq(lhs, rhs)
