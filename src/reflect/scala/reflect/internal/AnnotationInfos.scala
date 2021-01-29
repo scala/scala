@@ -274,7 +274,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def stringArg(index: Int)  = constantAtIndex(index) map (_.stringValue)
     def intArg(index: Int)     = constantAtIndex(index) map (_.intValue)
     def booleanArg(index: Int) = constantAtIndex(index) map (_.booleanValue)
-    def symbolArg(index: Int) = argAtIndex(index) collect {
+    def symbolArg(index: Int) = argAtIndex(args, index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)
     }
@@ -283,10 +283,14 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // expression, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.
     def constantAtIndex(index: Int): Option[Constant] =
-      argAtIndex(index) collect { case Literal(x) => x }
+      if (args.nonEmpty) argAtIndex(args, index) collect {
+        case Literal(x) => x
+      } else if (assocs.nonEmpty) argAtIndex(assocs, index) collect {
+        case (_, LiteralAnnotArg(const)) => const
+      } else None
 
-    def argAtIndex(index: Int): Option[Tree] =
-      if (index < args.size) Some(args(index)) else None
+    def argAtIndex[T](l: List[T], index: Int): Option[T] =
+      if (index < l.size) Some(l(index)) else None
 
     def transformArgs(f: List[Tree] => List[Tree]): AnnotationInfo =
       new CompleteAnnotationInfo(atp, f(args), assocs)
