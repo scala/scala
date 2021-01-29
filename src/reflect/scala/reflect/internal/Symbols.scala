@@ -3061,7 +3061,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // any more because of t8011.scala, which demonstrates a problem with the extension methods
       // phase. As it moves a method body to an extension method in the companion, it substitutes
       // the new type parameter symbols into the method body, which mutates the base type sequence of
-      // a local class symbol. We can no longer assume that`mtpePre eq pre` is a sufficient condition
+      // a local class symbol. We can no longer assume that `mtpePre eq pre` is a sufficient condition
       // to use the cached result here.
       //
       // Elaborating: If we allow for the possibility of mutation of symbol infos, `sym.tpeHK.asSeenFrom(pre, sym.owner)`

@@ -307,7 +307,7 @@ trait Types {
      *
      *  {{{
      *  scala> class C { def foo[T](x: T)(y: T) = ??? }
-     *  defined class C
+     *  class C
      *
      *  scala> typeOf[C].member(TermName("foo")).asMethod
      *  res0: reflect.runtime.universe.MethodSymbol = method foo
@@ -337,10 +337,10 @@ trait Types {
      *
      *  {{{
      *  scala> class C {
-     *       | def foo[T](x: T)(y: T) = ???
-     *       | def bar: Int = ???
+     *       |   def foo[T](x: T)(y: T) = ???
+     *       |   def bar: Int = ???
      *       | }
-     *  defined class C
+     *  class C
      *
      *  scala> typeOf[C].member(TermName("foo")).asMethod
      *  res0: reflect.runtime.universe.MethodSymbol = method foo
@@ -363,7 +363,7 @@ trait Types {
      *  scala> typeOf[C].member(TermName("bar")).asMethod
      *  res6: reflect.runtime.universe.MethodSymbol = method bar
      *
-     *  scala> res6.info
+     *  scala> res6.info // vanilla NullaryMethodType
      *  res7: reflect.runtime.universe.Type = => scala.Int
      *
      *  scala> res6.info.resultType

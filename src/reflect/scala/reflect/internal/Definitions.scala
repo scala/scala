@@ -1078,10 +1078,7 @@ trait Definitions extends api.StandardDefinitions {
     //         extractor to limit exposure to regressions like the reported problem with existentials.
     //         TODO fix the existential problem in the general case, see test/pending/pos/t8128.scala
     private def typeArgOfBaseTypeOr(tp: Type, baseClass: Symbol)(or: => Type): Type = (tp baseType baseClass).typeArgs match {
-      case x :: Nil =>
-        val x1 = x
-        val x2 = repackExistential(x1)
-        x2
+      case x :: Nil => repackExistential(x)
       case _        => or
     }
 
