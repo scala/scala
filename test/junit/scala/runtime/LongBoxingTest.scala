@@ -36,7 +36,7 @@ class LongBoxingTest extends SideEffectTest with AllocationTest {
   }
 
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Long.toString(value), "", false)
+    val cost = allocationInfo(java.lang.Long.toString(value))
     assertEquals("99999999999999", exactAllocates(cost.min)(value.toString()))
   }
   //check that any rewrites don't skip side effects

@@ -1,8 +1,7 @@
-warning: 1 deprecation (since 2.13.0); re-run with -deprecation for details
 warning: 6 deprecations (since 2.13.0); re-run with -deprecation for details
 
 class TestByte
-source-newSource1.scala,line-29 TestByte.super.<init>()
+source-newSource1.scala,line-28 TestByte.super.<init>()
 source-newSource1.scala,line-3 1.toByte()
 source-newSource1.scala,line-6 java.lang.Byte.toString(TestByte.this.value())
 source-newSource1.scala,line-6 TestByte.this.value()
@@ -52,7 +51,7 @@ source-newSource1.scala,line-27 TestByte.this.value()
 
 
 class TestShort
-source-newSource2.scala,line-29 TestShort.super.<init>()
+source-newSource2.scala,line-28 TestShort.super.<init>()
 source-newSource2.scala,line-3 1.toShort()
 source-newSource2.scala,line-6 java.lang.Short.toString(TestShort.this.value())
 source-newSource2.scala,line-6 TestShort.this.value()
@@ -102,7 +101,7 @@ source-newSource2.scala,line-27 TestShort.this.value()
 
 
 class TestInt
-source-newSource3.scala,line-29 TestInt.super.<init>()
+source-newSource3.scala,line-28 TestInt.super.<init>()
 source-newSource3.scala,line-3 1.toInt()
 source-newSource3.scala,line-6 java.lang.Integer.toString(TestInt.this.value())
 source-newSource3.scala,line-6 TestInt.this.value()
@@ -151,7 +150,7 @@ source-newSource3.scala,line-27 TestInt.this.value()
 
 
 class TestLong
-source-newSource4.scala,line-29 TestLong.super.<init>()
+source-newSource4.scala,line-28 TestLong.super.<init>()
 source-newSource4.scala,line-3 1.toLong()
 source-newSource4.scala,line-6 java.lang.Long.toString(TestLong.this.value())
 source-newSource4.scala,line-6 TestLong.this.value()
@@ -220,7 +219,7 @@ source-newSource6.scala,line-8 TestChar.this.value()
 
 
 class TestFloat
-source-newSource7.scala,line-40 TestFloat.super.<init>()
+source-newSource7.scala,line-39 TestFloat.super.<init>()
 source-newSource7.scala,line-3 1.toFloat()
 source-newSource7.scala,line-6 java.lang.Float.toString(TestFloat.this.value())
 source-newSource7.scala,line-6 TestFloat.this.value()
@@ -297,7 +296,7 @@ source-newSource7.scala,line-38 TestFloat.this.value()
 
 
 class TestDouble
-source-newSource8.scala,line-40 TestDouble.super.<init>()
+source-newSource8.scala,line-39 TestDouble.super.<init>()
 source-newSource8.scala,line-3 1.toDouble()
 source-newSource8.scala,line-6 java.lang.Double.toString(TestDouble.this.value())
 source-newSource8.scala,line-6 TestDouble.this.value()
