@@ -1506,24 +1506,27 @@ abstract class RefChecks extends Transform {
           if (sym.isTrait) warn("traits")
           else if (!sym.isSerializable) warn("non-serializable classes")
         }
-        if (!sym.isMethod && !sym.isConstructor && sym.hasAnnotation(ThrowsClass))
-          reporter.error(tree.pos, s"`@throws` only allowed for methods and constructors")
+        if (!sym.isMethod && !sym.isConstructor)
+          checkNoThrows(sym.annotations)
       }
+      def checkNoThrows(anns: List[AnnotationInfo]): Unit =
+        if (anns.exists(_.symbol == ThrowsClass))
+          reporter.error(tree.pos, s"`@throws` only allowed for methods and constructors")
 
       tree match {
         case m: MemberDef =>
           checkMember(m.symbol)
         case tpt@TypeTree() =>
-          if (tpt.original != null) {
-            tpt.original foreach {
+          if (tpt.original != null)
+            tpt.original.foreach {
               case dc@TypeTreeWithDeferredRefCheck() =>
                 applyRefchecksToAnnotations(dc.check()) // #2416
               case _ =>
             }
-          }
           if (!inPattern)
-            tree.setType(tree.tpe map {
+            tree.setType(tree.tpe.map {
               case AnnotatedType(anns, ul) =>
+                checkNoThrows(anns)
                 AnnotatedType(applyChecks(anns), ul)
               case tp => tp
             })
