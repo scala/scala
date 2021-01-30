@@ -1,0 +1,16 @@
+t12324.scala:2: error: `@throws` only allowed for methods and constructors
+@throws[Exception] class ScalaClass[T](someList: List[T]) {
+                         ^
+t12324.scala:8: error: `@throws` only allowed for methods and constructors
+  @throws[Exception] object Y { ??? }
+                            ^
+t12324.scala:12: error: `@throws` only allowed for methods and constructors
+  def f[A <: AnyRef](a: A) = a: AnyRef @throws[Exception]
+      ^
+t12324.scala:12: error: `@throws` only allowed for methods and constructors
+  def f[A <: AnyRef](a: A) = a: AnyRef @throws[Exception]
+                                        ^
+t12324.scala:14: error: `@throws` only allowed for methods and constructors
+  def g(): Unit = (): @throws[Exception]
+                       ^
+5 errors

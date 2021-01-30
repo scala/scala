@@ -4157,9 +4157,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             if (hasError) ErroneousAnnotation
             else if (unmappable) UnmappableAnnotation
-            else AnnotationInfo(info.atp, Nil, assocs.collect({ case (n, Some(arg)) => (n, arg) })).setOriginal(info.original).setPos(info.pos)
+            else AnnotationInfo(info.atp, Nil, assocs.collect { case (n, Some(arg)) => (n, arg) }).setOriginal(info.original).setPos(info.pos)
           } else
-              info
+            info
         }
       }
     }
