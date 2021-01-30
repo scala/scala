@@ -1,0 +1,4 @@
+t12324.scala:2: error: `@throws` only allowed for methods and constructors
+@throws[Exception] class ScalaClass[T](someList: List[T]) {
+                         ^
+1 error

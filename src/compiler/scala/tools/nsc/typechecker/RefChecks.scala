@@ -1488,26 +1488,31 @@ abstract class RefChecks extends Transform {
       }
       if (currentRun.isScala213) checkIsElidable(tree.symbol)
 
+      def checkMember(sym: Symbol): Unit = {
+        sym.setAnnotations(applyChecks(sym.annotations))
+
+        // validate implicitNotFoundMessage and implicitAmbiguousMessage
+        if (settings.lintImplicitNotFound) {
+          def messageWarning(name: String)(warn: String) =
+            refchecksWarning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn", WarningCategory.LintImplicitNotFound)
+          analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
+          analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
+        }
+
+        if (settings.warnSerialization && sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
+          def warn(what: String) =
+            refchecksWarning(tree.pos, s"@SerialVersionUID has no effect on $what", WarningCategory.LintSerial)
+
+          if (sym.isTrait) warn("traits")
+          else if (!sym.isSerializable) warn("non-serializable classes")
+        }
+        if (!sym.isMethod && !sym.isConstructor && sym.hasAnnotation(ThrowsClass))
+          reporter.error(tree.pos, s"`@throws` only allowed for methods and constructors")
+      }
+
       tree match {
         case m: MemberDef =>
-          val sym = m.symbol
-          sym.setAnnotations(applyChecks(sym.annotations))
-
-          // validate implicitNotFoundMessage and implicitAmbiguousMessage
-          if (settings.lintImplicitNotFound) {
-            def messageWarning(name: String)(warn: String) =
-              refchecksWarning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn", WarningCategory.LintImplicitNotFound)
-            analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
-            analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
-          }
-
-          if (settings.warnSerialization && sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
-            def warn(what: String) =
-              refchecksWarning(tree.pos, s"@SerialVersionUID has no effect on $what", WarningCategory.LintSerial)
-
-            if (sym.isTrait) warn("traits")
-            else if (!sym.isSerializable) warn("non-serializable classes")
-          }
+          checkMember(m.symbol)
         case tpt@TypeTree() =>
           if (tpt.original != null) {
             tpt.original foreach {
