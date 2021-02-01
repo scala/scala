@@ -70,8 +70,9 @@ trait Contexts { self: Analyzer =>
     mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
 
   def warnUnusedImports(unit: CompilationUnit) = {
-    def cullUnusedSelections(infos0: List[(ImportInfo, Symbol)]): List[(Position, Symbol)] = {
-      var unused = List.empty[(Position, Symbol)]
+    type Culled = (Position, Symbol, String)
+    def cullUnusedSelections(infos0: List[(ImportInfo, Symbol)]): List[Culled] = {
+      var unused = List.empty[Culled]
       @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
         infos match {
           case (info, owner) :: rest =>
@@ -82,7 +83,7 @@ trait Contexts { self: Analyzer =>
                 case selector :: rest =>
                   checkSelectors(rest)
                   if (!selector.isMask && !used(selector))
-                    unused ::= ((info.posOf(selector), owner))
+                    unused ::= ((info.posOf(selector), owner, info.fullSelectorString(selector)))
                 case _ =>
               }
             checkSelectors(info.tree.selectors)
@@ -92,16 +93,16 @@ trait Contexts { self: Analyzer =>
       loop(infos0)
       unused
     }
-    @tailrec def warnUnusedSelections(unused: List[(Position, Symbol)]): Unit =
+    def warnUnusedSelection(unused: Culled): Unit =
       unused match {
-        case (pos, site) :: rest =>
-          runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, site = site)
-          warnUnusedSelections(rest)
+        case (pos, site, origin) =>
+          runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, site = site, origin = origin)
         case _ =>
       }
+    // begin
     if (!unit.isJava)
       allImportInfos.remove(unit) match {
-        case Some(importInfos) => warnUnusedSelections(cullUnusedSelections(importInfos))
+        case Some(importInfos) => cullUnusedSelections(importInfos).foreach(warnUnusedSelection)
         case _                 => ()
       }
   }
@@ -1867,6 +1868,9 @@ trait Contexts { self: Analyzer =>
         case _                  => (current, result)
       }
     }
+
+    def fullSelectorString(s: ImportSelector): String =
+      s"${if (qual.tpe.isError) tree.toString else qual.tpe.typeSymbol.fullName}.${selectorString(s)}"
 
     private def selectorString(s: ImportSelector): String =
       if (s.isWildcard) "_"

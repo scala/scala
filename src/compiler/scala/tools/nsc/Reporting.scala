@@ -111,6 +111,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private def issueWarning(warning: Message): Unit = {
       def verbose = warning match {
         case Message.Deprecation(_, msg, site, origin, version) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.filterString}] $msg"
+        case Message.Origin(_, msg, category, site, origin @ _) => s"[${category.name} @ $site] $msg"  // origin text is obvious at caret
         case Message.Plain(_, msg, category, site) => s"[${category.name} @ $site] $msg"
       }
       wconf.action(warning) match {
@@ -192,7 +193,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       impl(sym)
     } else ""
 
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
+    override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
       issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
@@ -262,6 +263,10 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
       warning(pos, msg, category, siteName(site))
 
+    // Provide an origin for the warning.
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
+      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin))
+
     // used by Global.deprecationWarnings, which is used by sbt
     def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
     def uncheckedWarnings: List[(Position, String)]   = summaryMap(Action.WarningSummary, WarningCategory.Unchecked).toList.map(p => (p._1, p._2.msg))
@@ -305,7 +310,11 @@ object Reporting {
   }
 
   object Message {
+    // an ordinary Message has a `category` for filtering and the `site` where it was issued
     final case class Plain(pos: Position, msg: String, category: WarningCategory, site: String) extends Message
+
+    // a Plain message with an `origin` which should not be empty. For example, the origin of an unused import is the fully-qualified selection
+    final case class Origin(pos: Position, msg: String, category: WarningCategory, site: String, origin: String) extends Message
 
     // `site` and `origin` may be empty
     final case class Deprecation(pos: Position, msg: String, site: String, origin: String, since: Version) extends Message {
@@ -502,6 +511,7 @@ object Reporting {
     final case class DeprecatedOrigin(pattern: Regex) extends MessageFilter {
       def matches(message: Message): Boolean = message match {
         case m: Message.Deprecation => pattern.matches(m.origin)
+        case m: Message.Origin      => pattern.matches(m.origin)
         case _ => false
       }
     }
@@ -558,7 +568,7 @@ object Reporting {
         regex(s.substring(5)).map(SitePattern)
       } else if (s.startsWith("origin=")) {
         regex(s.substring(7)).map(DeprecatedOrigin)
-      } else if(s.startsWith("since")) {
+      } else if (s.startsWith("since")) {
         def fail = Left(s"invalid since filter: `$s`; required shape: `since<1.2.3`, `since=3.2`, `since>2`")
         if (s.length < 6) fail
         else {
