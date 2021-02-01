@@ -13,7 +13,6 @@
 package scala
 package runtime
 
-
 final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy[Short] {
   protected def num = scala.math.Numeric.ShortIsIntegral
   protected def ord = scala.math.Ordering.Short
@@ -27,6 +26,9 @@ final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy
 
   override def isValidShort  = true
 
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine signum and sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Short              = math.abs(self.toInt).toShort
   override def max(that: Short): Short = math.max(self.toInt, that.toInt).toShort
   override def min(that: Short): Short = math.min(self.toInt, that.toInt).toShort

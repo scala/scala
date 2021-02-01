@@ -42,10 +42,14 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Float              = math.abs(self)
   override def max(that: Float): Float = math.max(self, that)
   override def min(that: Float): Float = math.min(self, that)
-  @deprecated("signum does not handle -0.0f or Float.NaN; use `sign` method instead", since = "2.13.0") override def signum: Int = num.signum(self)
+  @deprecated("signum does not handle -0.0f or Float.NaN; use `sign` method instead", since = "2.13.0")
+  override def signum: Int             = math.signum(self).toInt
 
   def round: Int   = math.round(self)
   def ceil: Float  = math.ceil(self.toDouble).toFloat

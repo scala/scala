@@ -36,6 +36,9 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   override def isValidInt   = true
   def isValidLong  = true
 
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine signum and sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Int            = math.abs(self)
   override def max(that: Int): Int = math.max(self, that)
   override def min(that: Int): Int = math.min(self, that)

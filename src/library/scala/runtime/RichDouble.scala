@@ -42,10 +42,14 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   def isPosInfinity: Boolean = Double.PositiveInfinity == self
   def isNegInfinity: Boolean = Double.NegativeInfinity == self
 
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Double               = math.abs(self)
   override def max(that: Double): Double = math.max(self, that)
   override def min(that: Double): Double = math.min(self, that)
-  @deprecated("signum does not handle -0.0 or Double.NaN; use `sign` method instead", since = "2.13.0") override def signum: Int = num.signum(self)
+  @deprecated("signum does not handle -0.0 or Double.NaN; use `sign` method instead", since = "2.13.0")
+  override def signum: Int               = math.signum(self).toInt
 
   def round: Long   = math.round(self)
   def ceil: Double  = math.ceil(self)

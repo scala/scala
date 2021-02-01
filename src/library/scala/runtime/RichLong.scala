@@ -32,6 +32,9 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   // override def isValidFloat = self.toFloat.toLong == self && self != Long.MaxValue
   // override def isValidDouble = self.toDouble.toLong == self && self != Long.MaxValue
 
+  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
+  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
+  // We'd like to redefine signum and sign too but forwards binary compatibility doesn't allow us to.
   override def abs: Long             = math.abs(self)
   override def max(that: Long): Long = math.max(self, that)
   override def min(that: Long): Long = math.min(self, that)

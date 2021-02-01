@@ -1758,6 +1758,20 @@ trait Definitions extends api.StandardDefinitions {
         lazy val SubType_refl  = getMemberMethod(SubTypeModule, nme.refl)
 
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
+
+      lazy val Predef_double2Double = getMemberMethod(PredefModule, nme.double2Double)
+      lazy val Predef_float2Float = getMemberMethod(PredefModule, nme.float2Float)
+      lazy val Predef_byte2Byte = getMemberMethod(PredefModule, nme.byte2Byte)
+      lazy val Predef_short2Short = getMemberMethod(PredefModule, nme.short2Short)
+      lazy val Predef_char2Character = getMemberMethod(PredefModule, nme.char2Character)
+      lazy val Predef_int2Integer = getMemberMethod(PredefModule, nme.int2Integer)
+      lazy val Predef_long2Long = getMemberMethod(PredefModule, nme.long2Long)
+      lazy val Predef_boolean2Boolean = getMemberMethod(PredefModule, nme.boolean2Boolean)
+
+      lazy val PreDef_primitives2Primitives =
+        Set[Symbol](Predef_double2Double, Predef_float2Float, Predef_byte2Byte, Predef_short2Short,
+          Predef_char2Character, Predef_int2Integer, Predef_long2Long, Predef_boolean2Boolean)
+
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_???          = DefinitionsClass.this.Predef_???
       lazy val Predef_any2stringaddMethod = getMemberMethod(PredefModule, nme.any2stringadd).suchThat(_.isMethod)
