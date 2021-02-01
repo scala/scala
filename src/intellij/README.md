@@ -1,50 +1,57 @@
 # Developing Scala in IntelliJ IDEA
 
-Use the latest IntelliJ release and install the Scala plugin from within the IDE.
+Use the latest IntelliJ release.
+
+Make sure the Scala plugin is installed.  (It may come preinstalled;
+if not, install it before proceeding.)
 
 ## Initial Setup
 
-To create the IntelliJ project files:
+Do not attempt to import our sbt build into IntelliJ; it won't work.
+
+Instead, create IntelliJ project files as follows.
 
   - Run `sbt intellij`
-  - Open `src/intellij/scala.ipr` in IntelliJ
-  - In `File` → `Project Structure` → `Project` → `Project SDK`, create an SDK entry
-    named "1.8" containing the Java 1.8 SDK (1.6 if you're on the Scala the 2.11.x branch)
 
 The project files are created as copies of the `.SAMPLE` files, which are under version
 control. The actual IntelliJ project files are in `.gitignore` so that local changes
 are ignored.
 
-## Dependencies
+Then to start coding:
 
-For every module in the IntelliJ project there is a corresponding `-deps` library, for example `compiler-deps` provides JARs for the compiler codebase.
-The `.jar` files in these `-deps` libraries can be easily kept up-to-date by running `sbt intellij` again.
-This is necessary whenever the dependencies in the sbt build change, for example when the `starr` version is updated.
+  - Open `src/intellij/scala.ipr` in IntelliJ
+  - Wait for the project to index
+  - On the `Build` menu, choose `Build Project`
 
-Note that this command only patches the dependency lists, all other settings in the IntelliJ project definition are unchanged.
-To overwrite the project definition files by copying the `.SAMPLE` files again run `sbt intellijFromSample`.
+Everything (library, compiler etc) should build within a few minutes.
+
+## Troubleshooting
+
+Recent versions of IntelliJ are able to find a JDK on your system and select it
+automatically. If that doesn't happen:
+
+  - In `File` → `Project Structure` → `Project` → `Project SDK`, create an SDK entry
+    named "1.8" containing the Java 1.8 SDK
+
+Note that 8 is the safest choice. If you're having trouble, you might check to see
+if IntelliJ selected some later version.
 
 ## Switching Branches
 
-The 2.12.x branch contains IntelliJ module files for `actors` and `forkjoin` even though these modules only exist in 2.11.x.
-This allows using the same IntelliJ project files when switching to the 2.11.x branch (without causing any issues while working on 2.12.x).
+If you often work on both the 2.12.x and 2.13.x branches, the safest approach is to
+have a separate clone of the repository for each branch.
 
-When switching between 2.11.x and 2.12.x, make sure to run `sbt intellij`.
-Note that the `Project SDK` is not updated in this process.
-If you want to use the Java 1.6 SDK while working on 2.11.x you need to change it manually (`File` → `Project Structure` → `Project` → `Project SDK`).
+(But if you find that switching works even in the same clone, consider
+submitting an update to this readme with any advice you have on this.)
 
-If you switch between 2.11.x and 2.12.x often, it makes sense to have a separate clone
-of the repository for each branch.
+## IntelliJ and sbt
 
-## Incremental Compilation
-
-Run `Build` → `Make Project` to build all modules of the Scala repository (library,
-compiler, etc). Note that compilation IntelliJ is performed in a single pass (no
+Note that compilation IntelliJ is performed in a single pass (no
 bootstrap), like the sbt build.
 
 Note that the output directory when compiling in IntelliJ is the same as for the
 sbt build. This allows building incrementally in IntelliJ
-and directly use the changes using the command-line scripts in `build/quick/bin/`.
+and directly using the changes using the command-line scripts in `build/quick/bin/`.
 
 ## Running JUnit Tests
 
@@ -76,6 +83,16 @@ To run the REPL create an "Application" configuration with
   - Program arguments: `-usejavacp`
   - Working directory: the path of your checkout
   - Use classpath of module: `repl-frontend`
+
+## Dependencies
+
+For every module in the IntelliJ project there is a corresponding `-deps` library, for example `compiler-deps` provides JARs for the compiler codebase.
+The `.jar` files in these `-deps` libraries can be easily kept up-to-date by running `sbt intellij` again.
+This is necessary whenever the dependencies in the sbt build change, for example when the `starr` version is updated.
+
+Note that this command only patches the dependency lists, all other settings in the IntelliJ project definition are unchanged.
+
+To overwrite the project definition files by copying the `.SAMPLE` files again run `sbt intellijFromSample`.
 
 ## Updating the `.SAMPLE` files
 
