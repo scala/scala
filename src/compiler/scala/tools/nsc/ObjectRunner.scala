@@ -25,7 +25,8 @@ trait CommonRunner {
    *  @throws InvocationTargetException
    */
   def run(urls: Seq[URL], objectName: String, arguments: Seq[String]) {
-    (ScalaClassLoader fromURLs urls).run(objectName, arguments)
+    import scala.reflect.internal.util.RichClassLoader._
+    ScalaClassLoader.fromURLsParallelCapable(urls).run(objectName, arguments)
   }
 
   /** Catches exceptions enumerated by run (in the case of InvocationTargetException,
