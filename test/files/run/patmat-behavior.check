@@ -136,6 +136,30 @@ patmat-behavior.scala:55: warning: match may not be exhaustive.
 It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
     def gc6[A](x: C[A]) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
                           ^
+patmat-behavior.scala:57: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd1[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
+patmat-behavior.scala:58: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd2[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
+patmat-behavior.scala:59: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd3[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
+patmat-behavior.scala:60: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd4[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
+patmat-behavior.scala:61: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd5[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
+patmat-behavior.scala:62: warning: match may not be exhaustive.
+It would fail on the following inputs: C00(), C01(_), C10(_), C11(_, _), C20(_, _), C21(_, _, _)
+    def gd6[A, B <: C[A]](x: B) = x match { case F00() => ??? ; case F10(x) => x ; case F20(x, y) => x ; case F01(xs @ _*) => xs.head ; case F11(x, ys @ _*) => x ; case F21(x, y, zs @ _*) => x }
+                                  ^
 patmat-behavior.scala:68: warning: match may not be exhaustive.
 It would fail on the following input: C00()
     def gb1[A](x: C00[A]) = x match { case E00() => ??? ; case E10(x) => x ; case E20(x, y) => x ; case E01(xs @ _*) => xs.head ; case E11(x, ys @ _*) => x ; case E21(x, y, zs @ _*) => x }

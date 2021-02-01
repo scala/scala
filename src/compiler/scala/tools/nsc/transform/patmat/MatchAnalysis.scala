@@ -88,6 +88,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       case sym if sym.isRefinementClass => enumerateRefinement(tp, grouped)
       case sym if sym.isSealed          => enumerateSealed(tp, grouped)
       case sym if sym.isCase            => List(List(tp))
+      case sym if sym.isTypeSkolem      => enumerateSubtypes(sym.info.upperBound, grouped) // pos/t12277
       case sym                          => debug.patmatResult(s"enum unsealed tp=$tp sym=$sym")(Nil)
     }
 
