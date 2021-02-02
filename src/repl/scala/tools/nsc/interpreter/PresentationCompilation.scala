@@ -168,9 +168,11 @@ trait PresentationCompilation { self: IMain =>
           sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
-          val tp = member.prefix memberType sym
+          val tp         = member.prefix memberType sym
+          val desc       = Seq(if (isMemberDeprecated(member)) "(deprecated)" else "", if (isMemberUniversal(member)) "(universal)" else "")
+          val methodOtherDesc = if (!desc.exists(_ != "")) "" else " " + desc.filter(_ != "").mkString(" ")
           CompletionCandidate(
-            defString = sugared.defStringSeenAs(tp),
+            defString = sugared.defStringSeenAs(tp) + methodOtherDesc,
             arity = memberArity(member),
             isDeprecated = isMemberDeprecated(member),
             isUniversal = isMemberUniversal(member))
