@@ -57,8 +57,13 @@ class TargetTest {
     check("-target:jvm-12", "12")
     check("-target:12", "12")
 
+    // (scene missing)
+
+    check("-target:jvm-16", "16")
+    check("-target:16", "16")
+
     checkFail("-target:jvm-6")    // no longer
-    checkFail("-target:jvm-13")   // not yet...
+    checkFail("-target:jvm-17")   // not yet...
     checkFail("-target:jvm-3000") // not in our lifetime
     checkFail("-target:msil")     // really?
 
