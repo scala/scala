@@ -95,9 +95,16 @@ trait TreeAndTypeAnalysis extends Debugging {
       val parentSubtypes = tp.parents.flatMap(parent => enumerateSubtypes(parent, grouped))
       if (parentSubtypes.exists(_.nonEmpty)) {
         // If any of the parents is enumerable, then the refinement type is enumerable.
-        // We must only include subtypes of the parents that conform to `tp`.
-        // See neg/virtpatmat_exhaust_compound.scala for an example.
-        parentSubtypes.map(_.filter(_ <:< tp))
+        // We must only include subtypes of the parents that conform to `tpApprox`.
+        // See neg/virtpatmat_exhaust_compound.scala and pos/t9657.scala for examples.
+        val approximateTypeSkolemsToUpperBound = new TypeMap { // from approximateAbstracts
+          def apply(tp: Type): Type = tp.dealiasWiden match {
+            case TypeRef(_, sym, _) if sym.isTypeSkolem => tp.upperBound
+            case _                                      => mapOver(tp)
+          }
+        }
+        val tpApprox = approximateTypeSkolemsToUpperBound(tp)
+        parentSubtypes.map(_.filter(_ <:< tpApprox))
       } else Nil
     }
 
