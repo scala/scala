@@ -81,93 +81,70 @@ trait TreeAndTypeAnalysis extends Debugging {
   trait CheckableTreeAndTypeAnalysis {
     val typer: Typer
 
-    // TODO: domain of other feasibly enumerable built-in types (char?)
-    def enumerateSubtypes(tp: Type, grouped: Boolean): List[List[Type]] =
-      tp.typeSymbol match {
-        // TODO case _ if tp.isTupleType => // recurse into component types?
-        case UnitClass if !grouped =>
-          List(List(UnitTpe))
-        case BooleanClass if !grouped =>
-          List(ConstantTrue :: ConstantFalse :: Nil)
-        // TODO case _ if tp.isTupleType => // recurse into component types
-        case modSym: ModuleClassSymbol if !grouped =>
-          List(List(tp))
-        case sym: RefinementClassSymbol =>
-          val parentSubtypes = tp.parents.flatMap(parent => enumerateSubtypes(parent, grouped))
-          if (parentSubtypes exists (_.nonEmpty)) {
-            // If any of the parents is enumerable, then the refinement type is enumerable.
-            // We must only include subtypes of the parents that conform to `tp`.
-            // See neg/virtpatmat_exhaust_compound.scala for an example.
-            parentSubtypes map (_.filter(_ <:< tp))
-          }
-          else Nil
-        // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
-        case sym if sym.isSealed =>
+    def enumerateSubtypes(tp: Type, grouped: Boolean): List[List[Type]] = tp.typeSymbol match {
+      case UnitClass                    => List(List(UnitTpe))
+      case BooleanClass                 => List(List(ConstantTrue, ConstantFalse))
+      case sym if sym.isModuleClass     => List(List(tp))
+      case sym if sym.isRefinementClass => enumerateRefinement(tp, grouped)
+      case sym if sym.isSealed          => enumerateSealed(tp, grouped)
+      case sym if sym.isCase            => List(List(tp))
+      case sym                          => debug.patmatResult(s"enum unsealed tp=$tp sym=$sym")(Nil)
+    }
 
-          val tpApprox = analyzer.approximateAbstracts(tp)
-          val pre = tpApprox.prefix
+    private def enumerateRefinement(tp: Type, grouped: Boolean) = {
+      val parentSubtypes = tp.parents.flatMap(parent => enumerateSubtypes(parent, grouped))
+      if (parentSubtypes.exists(_.nonEmpty)) {
+        // If any of the parents is enumerable, then the refinement type is enumerable.
+        // We must only include subtypes of the parents that conform to `tp`.
+        // See neg/virtpatmat_exhaust_compound.scala for an example.
+        parentSubtypes.map(_.filter(_ <:< tp))
+      } else Nil
+    }
 
-          def filterChildren(children: List[Symbol]): List[Type] = {
-            children flatMap { sym =>
-              // have to filter out children which cannot match: see ticket #3683 for an example
-              // compare to the fully known type `tp` (modulo abstract types),
-              // so that we can rule out stuff like: sealed trait X[T]; class XInt extends X[Int] --> XInt not valid when enumerating X[String]
-              // however, must approximate abstract types in
+    private def enumerateSealed(tp: Type, grouped: Boolean): List[List[Type]] = {
+      val tpApprox = analyzer.approximateAbstracts(tp)
+      val pre      = tpApprox.prefix
+      val sym      = tp.typeSymbol
 
-              val memberType = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
-              val subTp = appliedType(memberType, WildcardType.fillList(sym.typeParams.length))
-              val subTpApprox = analyzer.approximateAbstracts(subTp) // TODO: needed?
-              // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
-              if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
-              else None
-            }
-          }
-
-          if(grouped) {
-            def enumerateChildren(sym: Symbol) = {
-              sym.sealedChildren.toList
-                .sortBy(_.sealedSortName)
-                .filterNot(x => (x.isSealed || x.isPrivate) && x.isAbstractClass && !isPrimitiveValueClass(x))
-            }
-
-            // enumerate only direct subclasses,
-            // subclasses of subclasses are enumerated in the next iteration
-            // and added to a new group
-            @tailrec
-            def groupChildren(wl: List[Symbol],
-                              acc: List[List[Type]]): List[List[Type]] = wl match {
-              case hd :: tl =>
-                val children = enumerateChildren(hd)
-                // put each trait in a new group, since traits could belong to the same
-                // group as a derived class
-                val (traits, nonTraits) = children.partition(_.isTrait)
-                val filtered = (traits.map(List(_)) ++ List(nonTraits)).map(filterChildren)
-                groupChildren(tl ++ children, acc ++ filtered)
-              case Nil      => acc
-            }
-
-            groupChildren(sym :: Nil, Nil)
-          } else {
-            val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses")(
-              // symbols which are both sealed and abstract need not be covered themselves, because
-              // all of their children must be and they cannot otherwise be created.
-              sym.sealedDescendants.toList
-                sortBy (_.sealedSortName)
-                filterNot (x => (x.isSealed || x.isPrivate) && x.isAbstractClass && !isPrimitiveValueClass(x))
-            )
-
-            List(debug.patmatResult(s"enum sealed tp=$tp, tpApprox=$tpApprox as") {
-              // valid subtypes are turned into checkable types, as we are entering the realm of the dynamic
-              filterChildren(subclasses)
-            })
-          }
-        case sym if sym.isCase =>
-          List(List(tp))
-
-        case sym =>
-          debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
-          Nil
+      def subclassesToSubtypes(syms: List[Symbol]): List[Type] = syms.flatMap { sym =>
+        // have to filter out children which cannot match: see ticket #3683 for an example
+        // compare to the fully known type `tp` (modulo abstract types),
+        // so that we can rule out stuff like:
+        //    sealed trait X[T]; class XInt extends X[Int]
+        // XInt not valid when enumerating X[String]
+        // however, must also approximate abstract types
+        val memberType  = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
+        val subTp       = appliedType(memberType, WildcardType.fillList(sym.typeParams.length))
+        val subTpApprox = analyzer.approximateAbstracts(subTp)
+        if (subTpApprox <:< tpApprox) Some(checkableType(subTp)) else None
       }
+
+      def filterAndSortChildren(children: Set[Symbol]) = {
+        // symbols which are both sealed and abstract need not be covered themselves,
+        // because all of their children must be and they cannot otherwise be created.
+        children.toList.filter(x => !(x.isSealed || x.isPrivate) || !x.isAbstractClass || isPrimitiveValueClass(x))
+          .sortBy(_.sealedSortName)
+      }
+
+      @tailrec def groupChildren(wl: List[Symbol], acc: List[List[Symbol]]): List[List[Symbol]] = wl match {
+        case Nil      => acc
+        case hd :: tl =>
+          val children = filterAndSortChildren(hd.sealedChildren)
+          // put each trait in a new group since traits could belong to the same group as a derived class
+          val (traits, nonTraits) = children.partition(_.isTrait)
+          groupChildren(tl ::: children, acc ::: traits.map(List(_)).appended(nonTraits))
+      }
+
+      val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses") {
+        if (grouped) groupChildren(List(sym), Nil)
+        else List(filterAndSortChildren(sym.sealedDescendants))
+      }
+
+      debug.patmatResult(s"enum $sym sealed tp=$tp tpApprox=$tpApprox, subtypes") {
+        // A valid subtype is turned into a checkable type, as we are entering the realm of the dynamic
+        subclasses.map(subclassesToSubtypes)
+      }
+    }
 
     // approximate a type to the static type that is fully checkable at run time,
     // hiding statically known but dynamically uncheckable information using existential quantification
@@ -187,19 +164,14 @@ trait TreeAndTypeAnalysis extends Debugging {
             mapOver(tp)
         }
       }
-      val result = typeArgsToWildcardsExceptArray(tp)
-      debug.patmatResult(s"checkableType($tp)")(result)
+      debug.patmatResult(s"checkableType($tp)")(typeArgsToWildcardsExceptArray(tp))
     }
 
-    // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
-    // we consider tuple types with at least one component of a checkable type as a checkable type
+    // A type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
+    // A tuple of all uncheckable types is uncheckable
     def uncheckableType(tp: Type): Boolean = {
-      val checkable = {
-        if (isTupleType(tp)) tupleComponents(tp).exists(tp => !uncheckableType(tp))
-        else enumerateSubtypes(tp, grouped = false).nonEmpty
-      }
-      // if (!checkable) debug.patmat("deemed uncheckable: "+ tp)
-      !checkable
+      if (isTupleType(tp)) tupleComponents(tp).forall(uncheckableType)
+      else enumerateSubtypes(tp, grouped = false).isEmpty
     }
   }
 }
