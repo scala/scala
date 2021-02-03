@@ -1346,9 +1346,6 @@ trait ContextErrors {
       def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
         NormalTypeError(parent, "illegal inheritance from sealed " + psym )
 
-      def RootImportError(tree: Tree) =
-        issueNormalTypeError(tree, "_root_ cannot be imported")
-
       def SymbolValidationError(sym: Symbol, errKind: SymValidateErrors.Value): Unit = {
         val msg = errKind match {
           case ImplicitConstr               => "`implicit` modifier not allowed for constructors"

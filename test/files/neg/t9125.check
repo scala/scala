@@ -1,0 +1,6 @@
+t9125.scala:10: error: reference to p is ambiguous;
+it is both defined in package q and imported subsequently by
+import _root_.p
+      def f() = new p.C
+                    ^
+1 error
