@@ -410,7 +410,7 @@ trait Logic extends Debugging  {
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaVarEq) else null
 
-      val vars = new mutable.HashSet[Var]
+      val vars = new mutable.LinkedHashSet[Var]
 
       object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
@@ -437,12 +437,25 @@ trait Logic extends Debugging  {
 
       debug.patmat("removeVarEq vars: "+ vars)
       vars.foreach { v =>
+        val isScrutineeVar = v == vars.head
+
         // if v.domainSyms.isEmpty, we must consider the domain to be infinite
         // otherwise, since the domain fully partitions the type of the value,
         // exactly one of the types (and whatever it implies, imposed separately) must be chosen
         // consider X ::= A | B | C, and A => B
         // coverage is formulated as: A \/ B \/ C and the implications are
-        v.domainSyms foreach { dsyms => addAxiom(\/(dsyms)) }
+        v.domainSyms foreach { dsyms =>
+          // if the domain is knonw to be empty
+          // only add that axiom if the var is the scrutinee
+          // which has the effect of wiping out the whole formula
+          // (because `\/(Set.empty) == False`)
+          // otherwise it's just a subvariable of a match expression
+          // which has no domain (i.e. an unreachable branch)
+          // but it shouldn't wipe out the whole exhaustivity check
+          // neg/t8511 vs (pos/t6146 or neg/virtpatmat_exhaust_compound.scala)
+          if (isScrutineeVar || dsyms.nonEmpty)
+            addAxiom(\/(dsyms))
+        }
 
         // when this variable cannot be null the equality corresponding to the type test `(x: T)`, where T is x's static type,
         // is always true; when the variable may be null we use the implication `(x != null) => (x: T)` for the axiom

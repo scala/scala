@@ -1,0 +1,11 @@
+t8511.scala:28: warning: unreachable code
+      ???
+      ^
+t8511.scala:23: warning: match may not be exhaustive.
+It would fail on the following inputs: Bar(_), Baz(), EatsExhaustiveWarning(_)
+  private def logic(head: Expr): String = head match {
+                                          ^
+warning: 1 deprecation (since 2.13.0); re-run with -deprecation for details
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error
