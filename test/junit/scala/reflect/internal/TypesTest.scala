@@ -46,9 +46,14 @@ class TypesTest {
     val tp1 = TypeRef(ThisType(EmptyPackageClass), moduleClass, Nil)
     val tp2 = SingleType(ThisType(EmptyPackageClass), module)
     val tp3 = ThisType(moduleClass)
-    val tps = List(tp1, tp2, tp3)
+
+    val (otherModule, otherModuleClass) = EmptyPackageClass.newModuleAndClassSymbol(TermName("Other"), NoPosition, 0L)
+    val aliasSym = otherModuleClass.newTermSymbol(TermName("alias")).setInfo(tp2)
+    val tp4 = singleType(TypeRef(ThisType(EmptyPackageClass), otherModuleClass, Nil), aliasSym)
+
+    val tps = List(tp1, tp2, tp3, tp4)
     val results = mutable.Buffer[String]()
-    tps.permutations.foreach {
+    tps.combinations(3).flatMap(_.permutations).foreach {
       case ts @ List(a, b, c) =>
         def tsShownRaw = ts.map(t => showRaw(t)).mkString(", ")
         if (a <:< b && b <:< c && !(a <:< c)) results += s"<:< intransitive: $tsShownRaw"
@@ -59,6 +64,24 @@ class TypesTest {
       case xs =>
         Assert.fail(xs.mkString("\n"))
     }
+  }
+
+  @Test
+  def testNilModuleUnification(): Unit = {
+    import rootMirror.RootClass
+    val nil1 = singleType(ThisType(RootClass), typeOf[scala.`package`.type].member(TermName("Nil")))
+    val nil2 = typeOf[scala.collection.immutable.Nil.type].underlying
+
+    assert(nil1.isInstanceOf[UniqueSingleType], nil1.getClass)
+    assert(nil2.isInstanceOf[ModuleTypeRef],    nil2.getClass)
+
+    val tps = List(nil1, nil2)
+    val results = mutable.Buffer[String]()
+    tps.permutations.foreach { case List(a, b) =>
+      if (!(a =:= b))
+        results += s"expected a =:= b; where a=${showRaw(a)} b=${showRaw(b)}"
+    }
+    assertTrue(s"Mismatches:\n${results.mkString("\n")}", results.isEmpty)
   }
 
   @Test
