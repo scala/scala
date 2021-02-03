@@ -53,7 +53,7 @@ private[scala] trait PropertiesTrait {
 
   def propIsSet(name: String)                   = System.getProperty(name) != null
   def propIsSetTo(name: String, value: String)  = propOrNull(name) == value
-  def propOrElse(name: String, alt: => String)     = Option(System.getProperty(name)).getOrElse(alt)
+  def propOrElse(name: String, alt: => String)  = Option(System.getProperty(name)).getOrElse(alt)
   def propOrEmpty(name: String)                 = propOrElse(name, "")
   def propOrNull(name: String)                  = propOrElse(name, null)
   def propOrNone(name: String)                  = Option(propOrNull(name))
@@ -61,10 +61,10 @@ private[scala] trait PropertiesTrait {
   def setProp(name: String, value: String)      = System.setProperty(name, value)
   def clearProp(name: String)                   = System.clearProperty(name)
 
-  def envOrElse(name: String, alt: => String)      = Option(System getenv name) getOrElse alt
+  def envOrElse(name: String, alt: => String)   = Option(System getenv name) getOrElse alt
   def envOrNone(name: String)                   = Option(System getenv name)
 
-  def envOrSome(name: String, alt: => Option[String])       = envOrNone(name) orElse alt
+  def envOrSome(name: String, alt: => Option[String])    = envOrNone(name) orElse alt
 
   // for values based on propFilename, falling back to System properties
   def scalaPropOrElse(name: String, alt: => String): String = scalaPropOrNone(name).getOrElse(alt)

@@ -13,7 +13,7 @@
 package scala.tools.partest
 
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.shell.ILoop
+import scala.tools.nsc.interpreter.shell.{ILoop, ShellConfig}
 import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
@@ -41,19 +41,23 @@ abstract class ReplTest extends DirectTest {
     }
     transformSettings(s)
   }
-  def normalize(s: String) = s
+  /** Transform a line of output, for comparison to expected output. */
+  protected def normalize(s: String): String = s
   /** True for SessionTest to preserve session text. */
-  def inSession: Boolean = false
-  def eval() = {
-    val s = settings
-    log("eval(): settings = " + s)
-    val transcript = ILoop.runForTranscript(code, s, inSession = inSession)
+  protected def inSession: Boolean = false
+  /** Config for test. */
+  protected def shellConfig(testSettings: Settings): ShellConfig = ILoop.TestConfig(testSettings)
+  /** The normalized output from evaluating the `code` script. */
+  protected def eval(): Iterator[String] = {
+    val testSettings = settings
+    log(s"eval(): settings = $testSettings")
+    val transcript = ILoop.runForTranscript(code, testSettings, shellConfig(testSettings), inSession = inSession)
     log(s"transcript[[$transcript]]")
     transcript.linesIterator.map(normalize)
   }
-  def show() = eval() foreach println
+  /** Print the transcript produced by `eval`. */
+  override def show() = eval().foreach(println)
 }
-
 
 /** Strip Any.toString's id@abcdef16 hashCodes. These are generally at end of result lines. */
 trait Hashless extends ReplTest {
@@ -82,13 +86,13 @@ trait StackCleaner extends ReplTest {
 }
 object StackCleaner {
   private val elidedAndMore = """(\s+\.{3} )\d+( elided and )\d+( more)""".r
-  private val elidedOrMore        = """(\s+\.{3} )\d+( (?:elided|more))""".r
+  private val elidedOrMore  = """(\s+\.{3} )\d+( (?:elided|more))""".r
   private val frame         = """(\s+at [^(]+\(<console>:)\d+(\))""".r
   private def stripFrameCount(line: String) = line match {
-    case elidedAndMore(ellipsis, infix, suffix) => s"$ellipsis???$infix???$suffix" // must be before `elided`
-    case elidedOrMore(ellipsis, suffix) => s"$ellipsis???$suffix"
-    case frame(prefix, suffix)    => s"${prefix}XX${suffix}"
-    case s                        => s
+    case elidedAndMore(ellipsis, infix, suffix) => s"$ellipsis???$infix???$suffix" // must precede `elidedOrMore`
+    case elidedOrMore(ellipsis, suffix)         => s"$ellipsis???$suffix"
+    case frame(prefix, suffix)                  => s"${prefix}XX${suffix}"
+    case _                                      => line
   }
 }
 

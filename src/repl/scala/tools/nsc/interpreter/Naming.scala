@@ -12,33 +12,40 @@
 
 package scala.tools.nsc.interpreter
 
-import scala.util.Properties.lineSeparator
 import scala.util.matching.Regex
 
 /** This is for name logic which is independent of the compiler (notice there's no Global.)
  *  That includes at least generating, metaquoting, mangling, and unmangling.
  */
 object Naming {
-  def unmangle(str: String): String = {
-    val ESC = '\u001b'
-    val cleaned = lineRegex.replaceAllIn(str, "")
-    // Looking to exclude binary data which hoses the terminal, but
-    // let through the subset of it we need, like whitespace and also
-    // <ESC> for ansi codes.
-    val binaryChars = cleaned count (ch => ch < 32 && !ch.isWhitespace && ch != ESC)
-    // Lots of binary chars - translate all supposed whitespace into spaces
-    // except supposed line endings, otherwise scrubbed lines run together
-    if (binaryChars > 5) // more than one can count while holding a hamburger
-      cleaned map {
-        case c if lineSeparator contains c => c
-        case c if c.isWhitespace => ' '
-        case c if c < 32 => '?'
-        case c => c
-      }
-    // Not lots - preserve whitespace and ESC
-    else
-      cleaned map (ch => if (ch.isWhitespace || ch == ESC) ch else if (ch < 32) '?' else ch)
-  }
+  // The CSI pattern matches a subset of the following spec:
+  // For CSI, or "Control Sequence Introducer" commands,
+  // the ESC [ is followed by any number (including none) of "parameter bytes" in the range 0x30–0x3F (ASCII 0–9:;<=>?),
+  // then by any number of "intermediate bytes" in the range 0x20–0x2F (ASCII space and !"#$%&'()*+,-./),
+  // then finally by a single "final byte" in the range 0x40–0x7E (ASCII @A–Z[\]^_`a–z{|}~)
+  private final val esc = "\u001b"    // "\N{escape}"
+  private val csi = raw"$esc\[[0-9;]*([\x40-\x7E])"
+
+  // Matches one of 3 alternatives:
+  // group 1 is the CSI command letter, where 'm' is color rendition
+  // group 2 is a sequence of chars to be rendered as `?`: anything non-printable and not some space char
+  // additional groups are introduced by linePattern but not used
+  private lazy val cleaner = raw"$csi|([^\p{Print}\p{Space}]+)|$linePattern".r
+
+  /** Final pass to clean up REPL output.
+   *
+   *  Substrings representing REPL artifacts are stripped.
+   *
+   *  Attempt to replace dangerous characters with '?', which might otherwise
+   *  put the terminal in a bad state. Allow SGR (select graphic rendition, "m")
+   *  control sequences, but restrict otherwise.
+   */
+  def unmangle(str: String): String = cleaner.replaceSomeIn(str, clean)
+
+  private def clean(m: Regex.Match): Option[String] =
+    if ("m" == m.group(1) ) None
+    else if (m.group(1) != null || m.group(2) != null) Some("?" * (m.end - m.start))
+    else Some("")
 
   // Uncompiled regex pattern to detect `line` package and members
   // `read`, `eval`, `print`, for purposes of filtering output and stack traces.
@@ -47,17 +54,23 @@ object Naming {
   //
   // $line3.$read.$iw.Bippy =
   //   $line3.$read$$iw$$Bippy@4a6a00ca
-  lazy val lineRegex: Regex = {
-    val sn = sessionNames
+  //
+  // This needs to be aware of LambdaMetafactory generated classnames to strip the correct number of '$' delimiters.
+  // A lambda hosted in a module `$iw` (which has a module class `$iw$` is named `$iw$ $ $Lambda1234` (spaces added
+  // here for clarification.) This differs from an explicitly declared inner classes named `$Foo`, which would be
+  // `$iw$$Foo`.
+  //
+  // (\Q$line\E\d+(\Q$read\E)?|\Q$read\E(\.INSTANCE)?(\$\Q$iw\E)?|\Q$eval\E|\Q$print\E|\Q$iw\E)(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)
+  //
+  private def linePattern: String = {
     import Regex.{quote => q}
-    val lineN = q(sn.line) + """\d+"""
-    val lineNRead = lineN + raw"""(${q(sn.read)})?"""
-    // This needs to be aware of LambdaMetafactory generated classnames to strip the correct number of '$' delimiters.
-    // A lambda hosted in a module `$iw` (which has a module class `$iw$` is named `$iw$ $ $Lambda1234` (spaces added
-    // here for clarification.) This differs from an explicitly declared inner classes named `$Foo`, which would be
-    // `$iw$$Foo`.
-    (raw"""($lineNRead|${q(sn.read)}(\.INSTANCE)?(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
+    val sn        = sessionNames
+    val lineN     = raw"${q(sn.line)}\d+"
+    val lineNRead = raw"$lineN(${q(sn.read)})?"
+    val lambda    = """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)"""
+    raw"($lineNRead|${q(sn.read)}(\.INSTANCE)?(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})$lambda"
   }
+  lazy val lineRegex: Regex = linePattern.r
 
   object sessionNames {
     // All values are configurable by passing e.g. -Dscala.repl.name.read=XXX

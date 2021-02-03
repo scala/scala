@@ -978,29 +978,30 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): Repl = repl.intp
 
-  def testConfig(settings: Settings) =
-    new ShellConfig {
-      private val delegate = ShellConfig(settings)
+  class TestConfig(delegate: ShellConfig) extends ShellConfig {
+    def filesToPaste: List[String] = delegate.filesToPaste
+    def filesToLoad: List[String] = delegate.filesToLoad
+    def batchText: String = delegate.batchText
+    def batchMode: Boolean = delegate.batchMode
+    def doCompletion: Boolean = delegate.doCompletion
+    def haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
 
-      val filesToPaste: List[String] = delegate.filesToPaste
-      val filesToLoad: List[String] = delegate.filesToLoad
-      val batchText: String = delegate.batchText
-      val batchMode: Boolean = delegate.batchMode
-      val doCompletion: Boolean = delegate.doCompletion
-      val haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
+    override val colorOk = delegate.colorOk
 
-      // No truncated output, because the result changes on Windows because of line endings
-      override val maxPrintString = {
-        val p = sys.Prop[Int]("wtf")
-        p.set("0")
-        p
-      }
-    }
+    // No truncated output, because the result changes on Windows because of line endings
+    override val maxPrintString = sys.Prop[Int]("wtf").tap(_.set("0"))
+  }
+  object TestConfig {
+    def apply(settings: Settings) = new TestConfig(ShellConfig(settings))
+  }
 
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
-  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String = {
+  def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String =
+    runForTranscript(code, settings, TestConfig(settings), inSession)
+
+  def runForTranscript(code: String, settings: Settings, config: ShellConfig, inSession: Boolean): String = {
     import java.io.{BufferedReader, OutputStreamWriter, StringReader}
     import java.lang.System.{lineSeparator => EOL}
 
@@ -1028,7 +1029,6 @@ object ILoop {
           }
         }
 
-        val config = testConfig(settings)
         val repl = new ILoop(config, input, output) {
           // remove welcome message as it has versioning info (for reproducible test results),
           override def welcome = ""
