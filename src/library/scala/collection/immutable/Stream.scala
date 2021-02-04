@@ -471,7 +471,7 @@ object Stream extends SeqFactory[Stream] {
 
   def empty[A]: Stream[A] = Empty
 
-  override def newBuilder[A]: mutable.Builder[A, Stream[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
+  override def newBuilder[A]: mutable.Builder[A, Stream[A]] = Iterator.newBuilder[A].mapResult(fromIterator)
 
   private[immutable] def withFilter[A](l: Stream[A] @uncheckedVariance, p: A => Boolean): collection.WithFilter[A, Stream] =
     new WithFilter[A](l, p)
