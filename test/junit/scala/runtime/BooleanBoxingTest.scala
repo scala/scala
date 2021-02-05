@@ -17,7 +17,7 @@ class BooleanBoxingTest extends SideEffectTest with AllocationTest {
   }
 
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Boolean.toString(value), "", false)
+    val cost = allocationInfo(java.lang.Boolean.toString(value))
     assertEquals("true", exactAllocates(cost.min)(value.toString()))
   }
 

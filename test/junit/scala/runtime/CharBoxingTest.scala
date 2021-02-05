@@ -17,7 +17,7 @@ class CharBoxingTest extends SideEffectTest with AllocationTest {
   }
 
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Character.toString(value), "", false)
+    val cost = allocationInfo(java.lang.Character.toString(value))
     assertEquals("x", exactAllocates(cost.min)(value.toString()))
   }
 

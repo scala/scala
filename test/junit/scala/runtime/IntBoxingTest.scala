@@ -36,7 +36,7 @@ class IntBoxingTest extends SideEffectTest with AllocationTest {
   }
 
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Integer.toString(value), "", false)
+    val cost = allocationInfo(java.lang.Integer.toString(value))
     assertEquals("999999999", exactAllocates(cost.min)(value.toString()))
   }
 

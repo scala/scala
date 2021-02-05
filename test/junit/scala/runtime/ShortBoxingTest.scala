@@ -36,7 +36,7 @@ class ShortBoxingTest extends SideEffectTest with AllocationTest {
   }
 
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Short.toString(value), "", false)
+    val cost = allocationInfo(java.lang.Short.toString(value))
     assertEquals("999", exactAllocates(cost.min)(value.toString()))
   }
   //check that any rewrites don't skip side effects
