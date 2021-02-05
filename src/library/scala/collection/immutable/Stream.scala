@@ -471,7 +471,42 @@ object Stream extends SeqFactory[Stream] {
 
   def empty[A]: Stream[A] = Empty
 
-  override def newBuilder[A]: mutable.Builder[A, Stream[A]] = Iterator.newBuilder[A].mapResult(fromIterator)
+  override def newBuilder[A]: mutable.Builder[A, Stream[A]] = new mutable.Builder[A, Stream[A]] {
+    private[this] var itBuilder = Iterator.newBuilder[A]
+    private[this] var cachedResult: Stream[A] = _
+
+    def clear(): Unit = {
+      itBuilder = Iterator.newBuilder[A]
+      cachedResult = null
+    }
+
+    def result(): Stream[A] = {
+      val cached = cachedResult
+      if (cached != null) cached
+      else {
+        val res = from(itBuilder.result())
+        cachedResult = res
+        itBuilder = null
+        res
+      }
+    }
+
+    private def makeUsableBuilder(): Unit =
+      if (itBuilder == null) {
+        itBuilder = Iterator.newBuilder addAll cachedResult
+        cachedResult = null
+      }
+    def addOne(elem: A): this.type = {
+      makeUsableBuilder()
+      itBuilder addOne elem
+      this
+    }
+    override def addAll(xs: IterableOnce[A]): this.type = {
+      makeUsableBuilder()
+      itBuilder addAll xs
+      this
+    }
+  }
 
   private[immutable] def withFilter[A](l: Stream[A] @uncheckedVariance, p: A => Boolean): collection.WithFilter[A, Stream] =
     new WithFilter[A](l, p)
