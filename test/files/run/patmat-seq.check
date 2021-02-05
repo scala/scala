@@ -66,7 +66,7 @@ package <empty> {
       case <synthetic> val x1: Int(2) = 2;
       case16(){
         <synthetic> val o18: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
-        if (false.unary_!)
+        if (o18.isEmpty.unary_!)
           {
             val xs: Seq[Int] = o18.get.toSeq;
             matchEnd15(xs)
@@ -76,7 +76,7 @@ package <empty> {
       };
       case17(){
         <synthetic> val o20: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
-        if (false.unary_!.&&(o20.get.!=(null).&&(o20.get.lengthCompare(2).==(0))))
+        if (o20.isEmpty.unary_!.&&(o20.get.!=(null).&&(o20.get.lengthCompare(2).==(0))))
           {
             val x: Int = o20.get.apply(0);
             val y: Int = o20.get.apply(1);
@@ -87,7 +87,7 @@ package <empty> {
       };
       case19(){
         <synthetic> val o22: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
-        if (false.unary_!.&&(o22.get.!=(null).&&(o22.get.lengthCompare(1).>=(0))))
+        if (o22.isEmpty.unary_!.&&(o22.get.!=(null).&&(o22.get.lengthCompare(1).>=(0))))
           {
             val x: Int = o22.get.apply(0);
             val xs: Seq[Int] = o22.get.drop(1);
@@ -267,7 +267,7 @@ package <empty> {
       case <synthetic> val x1: Int(2) = 2;
       case16(){
         <synthetic> val o18: scala.collection.SeqOps = A.unapplySeq(x1);
-        if (false.unary_!())
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o18).unary_!())
           {
             val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.toSeq$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o18));
             matchEnd15(xs)
@@ -277,7 +277,7 @@ package <empty> {
       };
       case17(){
         <synthetic> val o20: scala.collection.SeqOps = A.unapplySeq(x1);
-        if (false.unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 2).==(0))))
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o20).unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 2).==(0))))
           {
             val x: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 0));
             val y: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 1));
@@ -288,7 +288,7 @@ package <empty> {
       };
       case19(){
         <synthetic> val o22: scala.collection.SeqOps = A.unapplySeq(x1);
-        if (false.unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1).>=(0))))
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o22).unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1).>=(0))))
           {
             val x: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 0));
             val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.drop$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1);

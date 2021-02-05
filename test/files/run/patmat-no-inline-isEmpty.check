@@ -1,0 +1,36 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty> {
+  object A extends scala.AnyRef {
+    def <init>(): A.type = {
+      A.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Wrap = new Wrap(a)
+  };
+  class T extends scala.AnyRef {
+    def <init>(): T = {
+      T.super.<init>();
+      ()
+    };
+    def t: Any = {
+      case <synthetic> val x1: Int(2) = 2;
+      case5(){
+        <synthetic> val o7: Wrap = A.unapplySeq(x1);
+        if (o7.isEmpty.unary_!)
+          {
+            val xs: Seq[Int] = o7.get.toSeq;
+            matchEnd4(xs)
+          }
+        else
+          case6()
+      };
+      case6(){
+        matchEnd4("other")
+      };
+      matchEnd4(x: Any){
+        x
+      }
+    }
+  }
+}
+
