@@ -14,6 +14,7 @@ package scala
 package reflect
 
 import java.lang.{Class => jClass}
+import java.lang.ref.{WeakReference => jWeakReference}
 
 import scala.annotation.{implicitNotFound, nowarn}
 
@@ -114,6 +115,34 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
+  private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
+  private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
+    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
+      new jWeakReference(computeTag(runtimeClass))
+
+    def computeTag(runtimeClass: jClass[_]): ClassTag[_] =
+      runtimeClass match {
+        case x if x.isPrimitive => primitiveClassTag(runtimeClass)
+        case ObjectTYPE         => ClassTag.Object
+        case NothingTYPE        => ClassTag.Nothing
+        case NullTYPE           => ClassTag.Null
+        case _                  => new GenericClassTag[AnyRef](runtimeClass)
+     }
+
+    private def primitiveClassTag[T](runtimeClass: Class[_]): ClassTag[_] =
+      (runtimeClass: @unchecked) match {
+        case java.lang.Byte.TYPE      => ClassTag.Byte
+        case java.lang.Short.TYPE     => ClassTag.Short
+        case java.lang.Character.TYPE => ClassTag.Char
+        case java.lang.Integer.TYPE   => ClassTag.Int
+        case java.lang.Long.TYPE      => ClassTag.Long
+        case java.lang.Float.TYPE     => ClassTag.Float
+        case java.lang.Double.TYPE    => ClassTag.Double
+        case java.lang.Boolean.TYPE   => ClassTag.Boolean
+        case java.lang.Void.TYPE      => ClassTag.Unit
+      }
+  }
+
   @SerialVersionUID(1L)
   private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
     override def newArray(len: Int): Array[T] = {
@@ -121,22 +150,19 @@ object ClassTag {
     }
   }
 
-  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
-    runtimeClass1 match {
-      case java.lang.Byte.TYPE      => ClassTag.Byte.asInstanceOf[ClassTag[T]]
-      case java.lang.Short.TYPE     => ClassTag.Short.asInstanceOf[ClassTag[T]]
-      case java.lang.Character.TYPE => ClassTag.Char.asInstanceOf[ClassTag[T]]
-      case java.lang.Integer.TYPE   => ClassTag.Int.asInstanceOf[ClassTag[T]]
-      case java.lang.Long.TYPE      => ClassTag.Long.asInstanceOf[ClassTag[T]]
-      case java.lang.Float.TYPE     => ClassTag.Float.asInstanceOf[ClassTag[T]]
-      case java.lang.Double.TYPE    => ClassTag.Double.asInstanceOf[ClassTag[T]]
-      case java.lang.Boolean.TYPE   => ClassTag.Boolean.asInstanceOf[ClassTag[T]]
-      case java.lang.Void.TYPE      => ClassTag.Unit.asInstanceOf[ClassTag[T]]
-      case ObjectTYPE               => ClassTag.Object.asInstanceOf[ClassTag[T]]
-      case NothingTYPE              => ClassTag.Nothing.asInstanceOf[ClassTag[T]]
-      case NullTYPE                 => ClassTag.Null.asInstanceOf[ClassTag[T]]
-      case _                        => new GenericClassTag[T](runtimeClass1)
+  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
+    if (cacheDisabled) {
+      cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
+    } else {
+      val ref = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]]
+      var tag = ref.get
+      if (tag == null) {
+        cache.remove(runtimeClass1)
+        tag = cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
+      }
+      tag
     }
+  }
 
   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
 }
