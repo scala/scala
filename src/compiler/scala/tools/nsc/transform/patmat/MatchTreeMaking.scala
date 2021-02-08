@@ -347,9 +347,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def eqTest(pat: Tree, testedBinder: Symbol)          = REF(testedBinder) OBJ_EQ pat
 
         override def withOuterTest(orig: Tree)(testedBinder: Symbol, expectedTp: Type): Tree = {
-          val expectedPrefix = expectedTp.prefix
-          val testedPrefix = testedBinder.info.prefix
-
           // Check if a type is defined in a static location. Unlike `tp.isStatic` before `flatten`,
           // this also includes methods and (possibly nested) objects inside of methods.
           def definedInStaticLocation(tp: Type): Boolean = {
@@ -361,20 +358,81 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             tp.typeSymbol.owner == tp.prefix.typeSymbol && isStatic(tp.prefix)
           }
 
-          if ((expectedPrefix eq NoPrefix)
-            || expectedTp.typeSymbol.isJava
-            || definedInStaticLocation(expectedTp)
-            || testedPrefix =:= expectedPrefix) orig
-          else gen.mkAttributedQualifierIfPossible(expectedPrefix) match {
-            case None => orig
-            case Some(expectedOuterRef) =>
-              // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix`
-              // by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
-              // if there's an outer accessor, otherwise the condition becomes `true`
-              // TODO: centralize logic whether there's an outer accessor and use here?
-              val synthOuterGetter = expectedTp.typeSymbol.newMethod(nme.OUTER_SYNTH, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
-              val outerTest = (Select(codegen._asInstanceOf(testedBinder, expectedTp), synthOuterGetter)) OBJ_EQ expectedOuterRef
-              and(orig, outerTest)
+          // In `def foo(a: b.B) = a match { case _: p.P }`
+          // testedBinder.symbol.info = b.B
+          // expectedTp               = p.P
+
+          expectedTp.dealias match {
+            case RefinedType(Nil, _) => orig
+            case rt@RefinedType(parent :: rest, scope) =>
+              // If the pattern type is refined type, emit outer tests for each component.
+              withOuterTest(withOuterTest(orig)(testedBinder, parent))(testedBinder, copyRefinedType(rt, rest, scope))
+            case expectedTp =>
+              val expectedClass = expectedTp.typeSymbol
+              assert(!expectedClass.isRefinementClass, orig)
+              // .typeSymbol dealiases, so look at the prefix of the base type at the dealiased symbol,
+              // not of expectedTp itself.
+              val expectedPrefix = expectedTp.baseType(expectedClass).prefix
+
+
+              // Given `(a: x.B) match { case _: x.P }` where P is subclass of B, is it possible
+              // that a value conforms to both x.B and x1.P where `x ne x1`?
+              //
+              // To answer this, we create a new prefix based on a fresh symbol and check the
+              // base type of TypeRef(freshPrefix, typePatternSymbol (P), args) at the binder
+              // symbol (B). If that is prefixed by the fresh symbol, they are statically the
+              // same.
+              //
+              // It is not sufficient to show that x.P is a subtype of x.B, as this
+              // would incorrectly elide the outer test in:
+              //
+              // class P extends p1.B
+              // def test(b: p1.B) = b match { case _: p1.P }
+              // test(new p2.P)
+              def prefixAligns: Boolean = {
+                expectedTp match {
+                  case TypeRef(pre, _, _) if !pre.isStable => // e.g. _: Outer#Inner
+                    false
+                  case TypeRef(pre, sym, args) =>
+                    val testedBinderClass = testedBinder.info.upperBound.typeSymbol
+                    val testedBinderType = testedBinder.info.baseType(testedBinderClass)
+
+                    val testedPrefixIsExpectedTypePrefix = pre =:= testedBinderType.prefix
+                    val testedPrefixAndExpectedPrefixAreStaticallyIdentical: Boolean = {
+                      val freshPrefix = pre match {
+                        case ThisType(thissym) =>
+                          ThisType(thissym.cloneSymbol(thissym.owner))
+                        case _ =>
+                          val preSym = pre.termSymbol
+                          val freshPreSym = preSym.cloneSymbol(preSym.owner).setInfo(preSym.info)
+                          singleType(pre.prefix, freshPreSym)
+                      }
+                      val expectedTpFromFreshPrefix = TypeRef(freshPrefix, sym, args)
+                      val baseTypeFromFreshPrefix = expectedTpFromFreshPrefix.baseType(testedBinderClass)
+                      freshPrefix eq baseTypeFromFreshPrefix.prefix
+                    }
+                    testedPrefixAndExpectedPrefixAreStaticallyIdentical && testedPrefixIsExpectedTypePrefix
+                  case _ =>
+                    false
+                }
+              }
+
+              if ((expectedPrefix eq NoPrefix)
+                || expectedTp.typeSymbol.isJava
+                || definedInStaticLocation(expectedTp)
+                || testedBinder.info <:< expectedTp
+                || prefixAligns) orig
+              else gen.mkAttributedQualifierIfPossible(expectedPrefix) match {
+                case None => orig
+                case Some(expectedOuterRef) =>
+                  // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix`
+                  // by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
+                  // if there's an outer accessor, otherwise the condition becomes `true`
+                  // TODO: centralize logic whether there's an outer accessor and use here?
+                  val synthOuterGetter = expectedTp.typeSymbol.newMethod(nme.OUTER_SYNTH, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
+                  val outerTest = (Select(codegen._asInstanceOf(testedBinder, expectedTp), synthOuterGetter)) OBJ_EQ expectedOuterRef
+                  and(orig, outerTest)
+              }
           }
         }
       }
