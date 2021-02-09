@@ -75,7 +75,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def result(default: Position, focus: Boolean): Position = {
       if (min > max)
         if (focus) default.focus else default //there are no ranges
-      else Position.range(default.source, min, default.point, max)
+      else Position.range(default.source, min, default.pointOrElse(min), max)
     }
     override def apply(v1: Tree): Boolean = {
       val pos = v1.pos
