@@ -47,9 +47,7 @@ trait Analyzer extends AnyRef
       override val checkable = false
       override def keepsTypeParams = false
 
-      def apply(unit: CompilationUnit): Unit = {
-        newNamer(rootContext(unit)).enterSym(unit.body)
-      }
+      def apply(unit: CompilationUnit): Unit = newNamer(rootContext(unit)).enterSym(unit.body)
     }
   }
 
