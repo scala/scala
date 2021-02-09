@@ -73,7 +73,7 @@ trait StandardScalaSettings { _: MutableSettings =>
 object StandardScalaSettings {
   // not final in case some separately compiled client code wanted to depend on updated values
   val MinTargetVersion = 8
-  val MaxTargetVersion = 16
+  val MaxTargetVersion = 17
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)
 }
