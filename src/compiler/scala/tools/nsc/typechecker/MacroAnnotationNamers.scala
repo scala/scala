@@ -226,7 +226,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       savingLock {
         tree match {
           case tree @ PackageDef(_, _) =>
-            newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
+            newNamer(context.make(tree, sym.moduleClass, sym.info.decls)).enterSyms(tree.stats)
           case tree @ ClassDef(mods, name, tparams, impl) =>
             val primaryConstructorArity = treeInfo.firstConstructorArgs(impl.body).size
             // not entering
@@ -769,7 +769,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
         case (_, unexpected) => unexpected // NOTE: who knows how people are already using macro annotations, so it's scary to fail here
       }
       if (phase.id > currentRun.typerPhase.id || !stats.exists(mightNeedTransform)) stats
-      else stats.flatMap(stat => {
+      else stats.flatMap { stat =>
         if (mightNeedTransform(stat)) {
           val sym = stat.symbol
           assert(sym != NoSymbol, (sym, stat))
@@ -785,7 +785,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
         } else {
           List(stat)
         }
-      })
+      }
     }
   }
 }

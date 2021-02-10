@@ -501,14 +501,14 @@ trait Namers extends MethodSynthesis {
       m
     }
 
-    def enterSyms(trees: List[Tree]): Namer = {
+    def enterSyms(trees: List[Tree]): Namer =
       trees.foldLeft(this: Namer) { (namer, t) =>
         val ctx = namer enterSym t
         // for Import trees, enterSym returns a changed context, so we need a new namer
         if (ctx eq namer.context) namer
         else newNamer(ctx)
       }
-    }
+
     def applicableTypeParams(owner: Symbol): List[Symbol] =
       if (owner.isTerm || owner.isPackageClass) Nil
       else applicableTypeParams(owner.owner) ::: owner.typeParams
@@ -1899,7 +1899,7 @@ trait Namers extends MethodSynthesis {
      * or may not be visible.
      */
     def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
-      annotations filterNot (_ eq null) map { ann =>
+      annotations.filterNot(_ eq null).map { ann =>
         val ctx = typer.context
         // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
         def computeInfo: AnnotationInfo = enteringTyper {
