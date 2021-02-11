@@ -1,7 +1,3 @@
-version: ~> 1.0 # needed for imports
-
-import: scala/scala-dev:travis/default.yml
-
 language: scala
 
 stages:
@@ -63,8 +59,12 @@ jobs:
         # if: type != pull_request  ## TODO uncomment before merging
         os: windows
         language: bash
-        script:
+        env: JDK="adopt@1.8.0-222"
+        before_script:
+        - wget https://raw.githubusercontent.com/DanySK/Gravis-CI/c8f400623d8f756ef7c/.install-jdk-travis.sh
+        - source .install-jdk-travis.sh
         - wget https://raw.githubusercontent.com/paulp/sbt-extras/ada5ce97d566512d43627c48384a63c1c2fde824/sbt && chmod +x ./sbt
+        script:
         - source scripts/common
         - java -version
         - javac -version
