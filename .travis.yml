@@ -58,6 +58,26 @@ jobs:
         after_success:
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
 
+      # build and test on Windows, but only on merges, not during PR validation
+      - stage: build
+        # if: type != pull_request  ## TODO uncomment before merging
+        os: windows
+        language: bash
+        script:
+        - wget https://raw.githubusercontent.com/paulp/sbt-extras/ada5ce97d566512d43627c48384a63c1c2fde824/sbt && chmod +x ./sbt
+        - source scripts/common
+        - java -version
+        - javac -version
+        - generateRepositoriesConfig
+        # it may not be necessary to set both COURSIER_HOME and sbt.coursier.home,
+        # but at least for now, doing it just in case; see discussion at
+        # https://github.com/scala/scala-dev/issues/666
+        - export COURSIER_HOME=$WORKSPACE/.coursier
+        - export SBT="./sbt -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+        - $SBT -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
+        - parseScalaProperties buildcharacter.properties
+        - $SBT -Dstarr.version=$maven_version_number -warn "setupValidateTest" testAll
+
 env:
   global:
     - ADOPTOPENJDK=8
