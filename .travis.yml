@@ -59,9 +59,9 @@ jobs:
         # if: type != pull_request  ## TODO uncomment before merging
         os: windows
         language: bash
-        env: JDK="adopt@1.8.0-222"
+        env: JDK="adopt@1.8.0-275"
         before_script:
-        - wget https://raw.githubusercontent.com/DanySK/Gravis-CI/c8f400623d8f756ef7c/.install-jdk-travis.sh
+        - wget https://raw.githubusercontent.com/DanySK/Gravis-CI/c2f22e0bbc4e75276ad197d4b883927757f457be/.install-jdk-travis.sh
         - source .install-jdk-travis.sh
         - wget https://raw.githubusercontent.com/paulp/sbt-extras/ada5ce97d566512d43627c48384a63c1c2fde824/sbt && chmod +x ./sbt
         script:
