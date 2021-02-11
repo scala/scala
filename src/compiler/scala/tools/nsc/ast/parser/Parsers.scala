@@ -2697,10 +2697,10 @@ self =>
       in.nextToken()
       val lhs = commaSeparated(stripParens(noSeq.pattern2()))
       val tp = typedOpt()
-      val rhs =
+      val (rhs, rhsPos) =
         if (!tp.isEmpty && in.token != EQUALS) {
           newmods = newmods | Flags.DEFERRED
-          EmptyTree
+          (EmptyTree, NoPosition)
         } else {
           accept(EQUALS)
           expr() match {
@@ -2712,14 +2712,14 @@ self =>
               }
               placeholderParams = placeholderParams.tail
               newmods = newmods | Flags.DEFAULTINIT
-              EmptyTree
-            case x => x
+              (EmptyTree, x.pos)
+            case x => (x, x.pos)
           }
         }
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
         val trees = {
           val pat = if (tp.isEmpty) p else Typed(p, tp) setPos (p.pos union tp.pos)
-          makePatDef(newmods, pat, rhs)
+          makePatDef(newmods, pat, rhs, rhsPos)
         }
         if (newmods.isDeferred) {
           trees match {

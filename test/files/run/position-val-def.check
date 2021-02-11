@@ -6,14 +6,14 @@ var x = 0
 
 val x, y = 0
 [NoPosition]{
-  [0:5]val x = [11]0;
+  [4]val x = [11]0;
   [7:12]val y = [11:12]0;
   [NoPosition]()
 }
 
 var x, y = 0
 [NoPosition]{
-  [0:5]var x = [11]0;
+  [4]var x = [11]0;
   [7:12]var y = [11:12]0;
   [NoPosition]()
 }
