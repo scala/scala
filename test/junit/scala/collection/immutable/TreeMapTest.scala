@@ -254,4 +254,12 @@ class TreeMapTest extends AllocationTest {
     def withoutOrdering(m: Map[K, V]): Map[K, V] = collection.immutable.Map.apply(m.iterator.toSeq: _*)
     assertEquals(withoutOrdering(expected), withoutOrdering(map))
   }
+
+  @Test def removeNonContent(): Unit = {
+    val src: Map[Int, String] = TreeMap(Range(0, 100, 2).map((_, "")) :_*)
+    for (i <- Range(-1, 101, 2)) {
+      src - i
+      assertSame(i.toString, src, nonAllocating(src - i, text = i.toString))
+    }
+  }
 }
