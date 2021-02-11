@@ -21,6 +21,9 @@ text eol=lf
 *.txt     eol=lf
 *.xml     eol=lf
 
+# Some sbt launcher scripts can't handle CR in .jvmopts
+.jvmopts  eol=lf
+
 # Windows-specific files get windows endings
 *.bat     eol=crlf
 *.cmd     eol=crlf
