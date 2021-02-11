@@ -265,6 +265,9 @@ abstract class BoxUnbox {
             case c: EscapingConsumer =>
               assert(keepBox, s"found escaping consumer, but box is eliminated: $c")
 
+            case Drop(insn) =>
+              if (keepBox) toReplace(insn) = List(getPop(1))
+
             case extraction =>
               val (slot, tp) = localSlots(boxKind.extractedValueIndex(extraction))
               val loadOps = new VarInsnNode(tp.getOpcode(ILOAD), slot) :: extraction.postExtractionAdaptationOps(tp)
@@ -327,31 +330,38 @@ abstract class BoxUnbox {
           if (boxKind.boxedTypes.lengthCompare(1) == 0) {
             // fast path for single-value boxes
             allConsumers.foreach(extraction => extraction.postExtractionAdaptationOps(boxKind.boxedTypes.head) match {
-              case Nil =>
-                toDelete ++= extraction.allInsns
+              case Nil => extraction match {
+                case Drop(_) => toReplace(extraction.consumer) = boxKind.boxedTypes.map(t => getPop(t.getSize))
+                case _ => toDelete ++= extraction.allInsns
+              }
               case ops =>
                 toReplace(extraction.consumer) = ops
                 toDelete ++= extraction.allInsns - extraction.consumer
             })
           } else {
             for (extraction <- allConsumers) {
-              val valueIndex = boxKind.extractedValueIndex(extraction)
-              val replacementOps = if (valueIndex == 0) {
-                val pops = boxKind.boxedTypes.tail.map(t => getPop(t.getSize))
-                pops ::: extraction.postExtractionAdaptationOps(boxKind.boxedTypes.head)
-              } else {
-                var loadOps: List[AbstractInsnNode] = null
+              val replacementOps = extraction match {
+                case Drop(_) =>
+                  boxKind.boxedTypes.map(t => getPop(t.getSize))
+                case _ =>
+                  val valueIndex = boxKind.extractedValueIndex(extraction)
+                  if (valueIndex == 0) {
+                    val pops = boxKind.boxedTypes.tail.map(t => getPop(t.getSize))
+                    pops ::: extraction.postExtractionAdaptationOps(boxKind.boxedTypes.head)
+                  } else {
+                    var loadOps: List[AbstractInsnNode] = null
                 val consumeStack = boxKind.boxedTypes.zipWithIndex.reverseIterator.map {
-                  case (tp, i) =>
-                    if (i == valueIndex) {
-                      val resultSlot = getLocal(tp.getSize)
-                      loadOps = new VarInsnNode(tp.getOpcode(ILOAD), resultSlot) :: extraction.postExtractionAdaptationOps(tp)
-                      new VarInsnNode(tp.getOpcode(ISTORE), resultSlot)
-                    } else {
-                      getPop(tp.getSize)
-                    }
+                      case (tp, i) =>
+                        if (i == valueIndex) {
+                          val resultSlot = getLocal(tp.getSize)
+                          loadOps = new VarInsnNode(tp.getOpcode(ILOAD), resultSlot) :: extraction.postExtractionAdaptationOps(tp)
+                          new VarInsnNode(tp.getOpcode(ISTORE), resultSlot)
+                        } else {
+                          getPop(tp.getSize)
+                        }
                 }.to(List)
-                consumeStack ::: loadOps
+                    consumeStack ::: loadOps
+                  }
               }
               toReplace(extraction.consumer) = replacementOps
               toDelete ++= extraction.allInsns - extraction.consumer
@@ -621,7 +631,7 @@ abstract class BoxUnbox {
               val afterInit = initCall.getNext
               val stackTopAfterInit = prodCons.frameAt(afterInit).stackTop
               val initializedInstanceCons = prodCons.consumersOfValueAt(afterInit, stackTopAfterInit)
-              if (initializedInstanceCons == dupConsWithoutInit && prodCons.producersForValueAt(afterInit, stackTopAfterInit) == Set(dupOp)) {
+              if (initializedInstanceCons == dupConsWithoutInit) {
                 return Some((dupOp, initCall))
               }
             }
@@ -708,6 +718,9 @@ abstract class BoxUnbox {
           val success = primBoxSupertypes(kind.boxClass).contains(ti.desc)
           Some(BoxedPrimitiveTypeCheck(ti, success))
 
+        case i: InsnNode if i.getOpcode == POP =>
+          Some(Drop(i))
+
         case _ => None
       }
     }
@@ -760,6 +773,9 @@ abstract class BoxUnbox {
 
       case ti: TypeInsnNode if ti.getOpcode == INSTANCEOF =>
         Some(BoxedPrimitiveTypeCheck(ti, ti.desc == kind.refClass || refSupertypes.contains(ti.desc)))
+
+      case i: InsnNode if i.getOpcode == POP =>
+        Some(Drop(i))
 
       case _ => None
     }
@@ -824,6 +840,7 @@ abstract class BoxUnbox {
           }
 
         case _ =>
+          if (insn.getOpcode == POP) return Some(Drop(insn))
       }
       None
     }
@@ -943,6 +960,8 @@ abstract class BoxUnbox {
   case class StaticSetterOrInstanceWrite(consumer: AbstractInsnNode) extends BoxConsumer
   /** `.\$isInstanceOf[T]` (can be statically proven true or false) */
   case class BoxedPrimitiveTypeCheck(consumer: AbstractInsnNode, success: Boolean) extends BoxConsumer
+  /** POP */
+  case class Drop(consumer: AbstractInsnNode) extends BoxConsumer
   /** An unknown box consumer */
   case class EscapingConsumer(consumer: AbstractInsnNode) extends BoxConsumer
 }
