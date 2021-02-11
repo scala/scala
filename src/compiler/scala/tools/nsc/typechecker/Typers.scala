@@ -5859,11 +5859,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (refTyped.isErrorTyped) setError(tree)
         else {
-          // .resultType unwraps NullaryMethodType (accessor of a path)
+            // .resultType unwraps NullaryMethodType (accessor of a path)
           // .deconst unwraps the ConstantType to a LiteralType (for literal-based singleton types)
-          tree setType refTyped.tpe.resultType.deconst
           if (!treeInfo.admitsTypeSelection(refTyped)) UnstableTreeError(tree)
-          else tree
+          else SingletonTypeTree(refTyped).setType(refTyped.tpe.resultType.deconst)
         }
       }
 

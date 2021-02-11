@@ -23,7 +23,7 @@
 23                                             new r.List[Int]()  New
 24                                                 0: @unchecked  Annotated
 25                                         (null: r.Outer#Inner)  SelectFromTypeTree
-26                                              (null: Nil.type)  SingletonTypeTree
+26                                            (null: r.Nil.type)  SingletonTypeTree
 27                                  (null: T forSome { type T })  ExistentialTypeTree
 28                                    { import r.{A, B=>C}; () }  Import
 29                                 { def f: Int = return 0; () }  Return
