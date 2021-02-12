@@ -991,8 +991,7 @@ object Iterator extends IterableFactory[Iterator] {
     */
   def newBuilder[A]: Builder[A, Iterator[A]] =
     new ImmutableBuilder[A, Iterator[A]](empty[A]) {
-      override def addOne(elem: A): this.type             = { elems ++= single(elem); this }
-      override def addAll(xs: IterableOnce[A]): this.type = { elems ++= xs.iterator;  this }
+      override def addOne(elem: A): this.type = { elems = elems ++ single(elem); this }
     }
 
   /** Creates iterator that produces the results of some element computation a number of times.
