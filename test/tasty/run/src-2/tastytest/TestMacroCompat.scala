@@ -8,7 +8,7 @@ object TestMacroCompat extends Suite("TestMacroCompat") {
 
   test(assert(testCase(15) === ("15", Position("TestMacroCompat.scala", 9))))
   test(assert(constInt("") === 1))
-  test(assert(mono === 1))
-  test(assert(poly[String] === "String"))
+  // test(assert(mono === 1))
+  // test(assert(poly[String] === "String"))
 
 }

@@ -46,16 +46,16 @@ trait SymbolOps { self: TastyUniverse =>
 
   implicit final class SymbolDecorator(val sym: Symbol) {
 
-    def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
-    def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
-    def isScala2Macro: Boolean = repr.originalFlagSet.is(Erased | Macro)
+    def isScala3Macro(implicit ctx: Context): Boolean = repr.originalFlagSet.is(Inline | Macro)
+    def isScala3Inline(implicit ctx: Context): Boolean = repr.originalFlagSet.is(Inline)
+    def isScala2Macro(implicit ctx: Context): Boolean = repr.originalFlagSet.is(Erased | Macro)
 
-    def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
+    def isPureMixinCtor(implicit ctx: Context): Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
     def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
 
-    def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
+    def isTraitParamAccessor(implicit ctx: Context): Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
-    def isParamGetter: Boolean =
+    def isParamGetter(implicit ctx: Context): Boolean =
       sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessorFlags)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
@@ -63,8 +63,12 @@ trait SymbolOps { self: TastyUniverse =>
      *
      *  @todo adapt callsites and type so that this property is more safe to call (barring mutation from uncontrolled code)
      */
-    def repr: TastyRepr = {
-      require(sym.rawInfo.isInstanceOf[TastyRepr], s"Expected ${u.typeOf[TastyRepr]}, is ${u.showRaw(sym.rawInfo)} ")
+    def repr(implicit ctx: Context): TastyRepr = {
+      require(sym.rawInfo.isInstanceOf[TastyRepr], {
+        val raw = u.showRaw(sym.rawInfo)
+        val tastyRepr = u.typeOf[TastyRepr]
+        s"${showSym(sym)} is already completed. Expected $tastyRepr, is $raw. in ${ctx.source}"
+      })
       sym.rawInfo.asInstanceOf[TastyRepr]
     }
 

@@ -123,11 +123,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def skipParams(): Unit =
       while ({
         val tag = nextByte
-        tag == PARAM || tag == TYPEPARAM || tag == PARAMEND
+        tag == PARAM || tag == TYPEPARAM || tag == EMPTYCLAUSE || tag == SPLITCLAUSE
       }) skipTree()
-
-    def skipTypeParams(): Unit =
-      while (nextByte === TYPEPARAM) skipTree()
 
     /** Record all directly nested definitions and templates in current tree
      *  as `OwnerTree`s in `buf`.
@@ -704,12 +701,26 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       ctx.log(s"$symAddr completing ${showSym(sym)} in scope ${showSym(ctx.owner)}")
 
-      def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = nextByte match {
-        case PARAM | PARAMEND =>
-          readParams[NoCycle](PARAM) ::
-            (if (nextByte == PARAMEND) { readByte(); readParamss } else Nil)
+      def readParamss(skipTypeParams: Boolean)(implicit ctx: Context): List[List[NoCycle]] = {
+        def readRest() = {
+          if (nextByte == SPLITCLAUSE) readByte()
+          readParamss(skipTypeParams)
+        }
 
-        case _ => Nil
+        def emptyTypeParams() = {
+          while (nextByte === TYPEPARAM) skipTree()
+          Nil
+        }
+
+        nextByte match {
+          case PARAM => readParams[NoCycle](PARAM) :: readRest()
+          case TYPEPARAM =>
+            val typarams =
+              if (skipTypeParams) emptyTypeParams() else readParams[NoCycle](TYPEPARAM)
+            typarams :: readRest()
+          case EMPTYCLAUSE => readByte(); Nil :: readRest()
+          case _ => Nil
+        }
       }
 
       def checkUnsupportedFlags(unsupported: TastyFlagSet)(implicit ctx: Context): Unit = {
@@ -723,16 +734,25 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val isMacro = repr.originalFlagSet.is(Erased | Macro)
             checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
             val isCtor = sym.isConstructor
-            val typeParams = {
+            val paramDefss = readParamss(skipTypeParams=isCtor)(localCtx) // TODO: this can mix type and term parameters, must skip type params if ctor
+            val typeParams: List[Symbol] = {
               if (isCtor) {
-                skipTypeParams()
+                // skipTypeParams()
                 sym.owner.typeParams
               }
               else {
-                readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
+                // readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
+
+                // TODO: Handle extension methods with multiple param lists
+                val first = paramDefss.take(1).flatten.map(symFromNoCycle)
+                if (first.headOption.exists(_.isType)) first else Nil
               }
             }
-            val vparamss = readParamss(localCtx)
+            val vparamss: List[List[NoCycle]] = {
+              // TODO: Handle extension methods with multiple param lists
+              val droppedClauses = if (typeParams.isEmpty) 0 else 1
+              paramDefss.drop(droppedClauses).ensuring(_.flatten.forall(nc => symFromNoCycle(nc).isTerm))
+            }
             val tpt = readTpt()(localCtx)
             if (isMacro) {
               val impl  = tpd.Macro(readTerm()(ctx.addMode(ReadMacro)))
