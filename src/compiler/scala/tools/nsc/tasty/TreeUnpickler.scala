@@ -734,24 +734,21 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val isMacro = repr.originalFlagSet.is(Erased | Macro)
             checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
             val isCtor = sym.isConstructor
-            val paramDefss = readParamss(skipTypeParams=isCtor)(localCtx) // TODO: this can mix type and term parameters, must skip type params if ctor
+            val paramDefss = readParamss(skipTypeParams=isCtor)(localCtx)
             val typeParams: List[Symbol] = {
               if (isCtor) {
-                // skipTypeParams()
                 sym.owner.typeParams
               }
               else {
-                // readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
-
-                // TODO: Handle extension methods with multiple param lists
                 val first = paramDefss.take(1).flatten.map(symFromNoCycle)
                 if (first.headOption.exists(_.isType)) first else Nil
               }
             }
             val vparamss: List[List[NoCycle]] = {
-              // TODO: Handle extension methods with multiple param lists
-              val droppedClauses = if (typeParams.isEmpty) 0 else 1
-              paramDefss.drop(droppedClauses).ensuring(_.flatten.forall(nc => symFromNoCycle(nc).isTerm))
+              val valueClauses = paramDefss.drop(if (typeParams.isEmpty) 0 else 1)
+              val hasTypeParams = valueClauses.exists(_.exists(nc => symFromNoCycle(nc).isType))
+              unsupportedWhen(hasTypeParams, s"extension method with secondary type parameter list: $tname")
+              valueClauses
             }
             val tpt = readTpt()(localCtx)
             if (isMacro) {
