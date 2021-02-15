@@ -5628,7 +5628,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (refTyped.isErrorTyped) setError(tree)
         else {
           if (!treeInfo.admitsTypeSelection(refTyped)) UnstableTreeError(tree)
-          else SingletonTypeTree(refTyped).setType(refTyped.tpe.resultType.deconst)
+          else treeCopy.SingletonTypeTree(tree, refTyped).setType(refTyped.tpe.resultType.deconst)
         }
       }
 
