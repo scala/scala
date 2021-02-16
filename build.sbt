@@ -35,9 +35,9 @@
 import scala.build._, VersionUtil._
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                          % "junit"                            % "4.13.1"
-val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.15.1"                          % "test"
+val junitDep          = "junit"                          % "junit"                            % "4.13.2"
+val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.15.3"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.13"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
@@ -781,7 +781,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
         "ch.qos.logback" % "logback-core" % "1.1.3",
         "ch.qos.logback" % "logback-classic" % "1.1.3",
         "org.slf4j" % "slf4j-api" % "1.7.12",
-        framework % "test"
+        framework % Test
       )
     },
     Test / Keys.test := (Test / Keys.test).dependsOn(Compile / packageBin).value,
