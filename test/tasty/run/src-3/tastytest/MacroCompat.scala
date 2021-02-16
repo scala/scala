@@ -11,11 +11,11 @@ object MacroCompat {
   inline def constInt[T](x: T): Int = ${ Macros3.constIntImpl[T]('x) }
 
   object Bundles {
-    // def mono: Int = macro MacroImpl.mono
-    // inline def mono: Int = ${ Macros3.monoImpl }
+    def mono: Int = macro MacroImpl.mono
+    inline def mono: Int = ${ Macros3.monoImpl }
 
-    // def poly[T]: String = macro MacroImpl.poly[T]
-    // inline def poly[T]: String = ${ Macros3.polyImpl[T] }
+    def poly[T]: String = macro MacroImpl.poly[T]
+    inline def poly[T]: String = ${ Macros3.polyImpl[T] }
   }
 
   def testCase(test: => Any)(implicit pos: Position): (String, Position) =
