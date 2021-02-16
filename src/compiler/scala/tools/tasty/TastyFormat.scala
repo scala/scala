@@ -14,48 +14,165 @@ package scala.tools.tasty
 
 object TastyFormat {
 
+  /** The first four bytes of a TASTy file, followed by four values:
+    * - `MajorVersion: Int` - see definition in `TastyFormat`
+    * - `MinorVersion: Int` - see definition in `TastyFormat`
+    * - `ExperimentalVersion: Int` - see definition in `TastyFormat`
+    * - `ToolingVersion: String` - arbitrary length string representing the tool that produced the TASTy.
+    */
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 26
-  val MinorVersion: Int = 1
+
+  /**Natural number. Each increment of the `MajorVersion` begins a
+   * new series of backward compatible TASTy versions.
+   *
+   * A TASTy file in either the preceeding or succeeding series is
+   * incompatible with the current value.
+   */
+  final val MajorVersion: Int = 28
+
+  /**Natural number. Each increment of the `MinorVersion`, within
+   * a series declared by the `MajorVersion`, breaks forward
+   * compatibility, but remains backwards compatible, with all
+   * preceeding `MinorVersion`.
+   */
+  final val MinorVersion: Int = 0
+
+  /**Natural Number. The `ExperimentalVersion` allows for
+   * experimentation with changes to TASTy without committing
+   * to any guarantees of compatibility.
+   *
+   * A zero value indicates that the TASTy version is from a
+   * stable, final release.
+   *
+   * A strictly positive value indicates that the TASTy
+   * version is experimental. An experimental TASTy file
+   * can only be read by a tool with the same version.
+   * However, tooling with an experimental TASTy version
+   * is able to read final TASTy documents if the file's
+   * `MinorVersion` is strictly less than the current value.
+   */
+  final val ExperimentalVersion: Int = 1
+
+  /**This method implements a binary relation (`<:<`) between two TASTy versions.
+   * We label the lhs `file` and rhs `compiler`.
+   * if `file <:< compiler` then the TASTy file is valid to be read.
+   *
+   * TASTy versions have a partial order,
+   * for example `a <:< b` and `b <:< a` are both false if `a` and `b` have different major versions.
+   *
+   * We follow the given algorithm:
+   * ```
+   * if file.major != compiler.major then
+   *   return incompatible
+   * if compiler.experimental == 0 then
+   *   if file.experimental != 0 then
+   *     return incompatible
+   *   if file.minor > compiler.minor then
+   *     return incompatible
+   *   else
+   *     return compatible
+   * else invariant[compiler.experimental != 0]
+   *   if file.experimental == compiler.experimental then
+   *     if file.minor == compiler.minor then
+   *       return compatible (all fields equal)
+   *     else
+   *       return incompatible
+   *   else if file.experimental == 0,
+   *     if file.minor < compiler.minor then
+   *       return compatible (an experimental version can read a previous released version)
+   *     else
+   *       return incompatible (an experimental version cannot read its own minor version or any later version)
+   *   else invariant[file.experimental is non-0 and different than compiler.experimental]
+   *     return incompatible
+   * ```
+   */
+  def isVersionCompatible(
+    fileMajor: Int,
+    fileMinor: Int,
+    fileExperimental: Int,
+    compilerMajor: Int,
+    compilerMinor: Int,
+    compilerExperimental: Int
+  ): Boolean = (
+    fileMajor == compilerMajor && (
+      if (fileExperimental == compilerExperimental) {
+        if (compilerExperimental == 0) {
+          fileMinor <= compilerMinor
+        }
+        else {
+          fileMinor == compilerMinor
+        }
+      }
+      else {
+        fileExperimental == 0 && fileMinor < compilerMinor
+      }
+    )
+  )
 
   final val ASTsSection = "ASTs"
   final val PositionsSection = "Positions"
   final val CommentsSection = "Comments"
 
-  /** Tags used to serialize names */
+  /** Tags used to serialize names, should update [[TastyFormat$.nameTagToString]] if a new constant is added */
   class NameTags {
-    final val UTF8 = 1            // A simple name in UTF8 encoding.
+    final val UTF8 = 1               // A simple name in UTF8 encoding.
 
-    final val QUALIFIED = 2       // A fully qualified name `<prefix>.<suffix>`.
+    final val QUALIFIED = 2          // A fully qualified name `<prefix>.<suffix>`.
 
-    final val EXPANDED = 3        // An expanded name `<prefix>$$<suffix>`,
-                                  // used by Scala-2 for private names.
+    final val EXPANDED = 3           // An expanded name `<prefix>$$<suffix>`,
+                                     // used by Scala-2 for private names.
 
-    final val EXPANDPREFIX = 4    // An expansion prefix `<prefix>$<suffix>`,
-                                  // used by Scala-2 for private names.
+    final val EXPANDPREFIX = 4       // An expansion prefix `<prefix>$<suffix>`,
+                                     // used by Scala-2 for private names.
 
-    final val UNIQUE = 10         // A unique name `<name>$<num>` where `<num>`
-                                  // is used only once for each `<name>`.
+    final val UNIQUE = 10            // A unique name `<name>$<num>` where `<num>`
+                                     // is used only once for each `<name>`.
 
-    final val DEFAULTGETTER = 11  // The name `<meth-name>$default$<param-num>`
-                                  // of a default getter that returns a default argument.
+    final val DEFAULTGETTER = 11     // The name `<meth-name>$default$<param-num>`
+                                     // of a default getter that returns a default argument.
 
-    final val SUPERACCESSOR = 20  // The name of a super accessor `super$name` created by SuperAccesors.
+    final val SUPERACCESSOR = 20     // The name of a super accessor `super$name` created by SuperAccesors.
 
-    final val INLINEACCESSOR = 21 // The name of an inline accessor `inline$name`
+    final val INLINEACCESSOR = 21    // The name of an inline accessor `inline$name`
 
-    final val BODYRETAINER = 22   // The name of a synthetic method that retains the runtime
-                                  // body of an inline method
+    final val BODYRETAINER = 22      // The name of a synthetic method that retains the runtime
+                                     // body of an inline method
 
-    final val OBJECTCLASS = 23    // The name of an object class (or: module class) `<name>$`.
+    final val OBJECTCLASS = 23       // The name of an object class (or: module class) `<name>$`.
 
-    final val TARGETSIGNED = 62   // A triple of a name, a targetname and a signature, used to identify
-                                  // possibly overloaded methods that carry a @targetName annotation.
+    final val SIGNED = 63            // A pair of a name and a signature, used to identify
+                                     // possibly overloaded methods.
 
-    final val SIGNED = 63         // A pair of a name and a signature, used to identify
-                                  // possibly overloaded methods.
+    final val TARGETSIGNED = 62      // A triple of a name, a targetname and a signature, used to identify
+                                     // possibly overloaded methods that carry a @targetName annotation.
+
+    // TODO swap SIGNED and TARGETSIGNED codes on next major version bump
   }
   object NameTags extends NameTags
+
+  /**Should be kept in sync with [[NameTags]]. Converts constants to a String representing their identifier,
+   * or NotANameTag(tag) if unrecognised.
+   *
+   * For debugging purposes when unpickling names in a TASTy file.
+   */
+  def nameTagToString(tag: Int) = {
+    import NameTags._
+    tag match {
+      case UTF8 => "UTF8"
+      case QUALIFIED => "QUALIFIED"
+      case EXPANDED => "EXPANDED"
+      case EXPANDPREFIX => "EXPANDPREFIX"
+      case UNIQUE => "UNIQUE"
+      case DEFAULTGETTER => "DEFAULTGETTER"
+      case SUPERACCESSOR => "SUPERACCESSOR"
+      case INLINEACCESSOR => "INLINEACCESSOR"
+      case BODYRETAINER => "BODYRETAINER"
+      case OBJECTCLASS => "OBJECTCLASS"
+      case SIGNED => "SIGNED"
+      case TARGETSIGNED => "TARGETSIGNED"
+      case id => s"NotANameTag($id)"
+    }
+  }
 
   // Position header
 
@@ -103,46 +220,47 @@ object TastyFormat {
   final val PARAMsetter = 38
   final val EXPORTED = 39
   final val OPEN = 40
-  final val PARAMEND = 41
-  final val PARAMalias = 42
-  final val TRANSPARENT = 43
-  final val INFIX = 44
+  final val PARAMalias = 41
+  final val TRANSPARENT = 42
+  final val INFIX = 43
+  final val EMPTYCLAUSE = 44
+  final val SPLITCLAUSE = 45
 
   // Cat. 2:    tag Nat
 
-  final val SHAREDterm = 50
-  final val SHAREDtype = 51
-  final val TERMREFdirect = 52
-  final val TYPEREFdirect = 53
-  final val TERMREFpkg = 54
-  final val TYPEREFpkg = 55
-  final val RECthis = 56
-  final val BYTEconst = 57
-  final val SHORTconst = 58
-  final val CHARconst = 59
-  final val INTconst = 60
-  final val LONGconst = 61
-  final val FLOATconst = 62
-  final val DOUBLEconst = 63
-  final val STRINGconst = 64
-  final val IMPORTED = 65
-  final val RENAMED = 66
+  final val SHAREDterm = 60
+  final val SHAREDtype = 61
+  final val TERMREFdirect = 62
+  final val TYPEREFdirect = 63
+  final val TERMREFpkg = 64
+  final val TYPEREFpkg = 65
+  final val RECthis = 66
+  final val BYTEconst = 67
+  final val SHORTconst = 68
+  final val CHARconst = 69
+  final val INTconst = 70
+  final val LONGconst = 71
+  final val FLOATconst = 72
+  final val DOUBLEconst = 73
+  final val STRINGconst = 74
+  final val IMPORTED = 75
+  final val RENAMED = 76
 
   // Cat. 3:    tag AST
 
-  final val THIS = 80
-  final val QUALTHIS = 81
-  final val CLASSconst = 82
-  final val BYNAMEtype = 83
-  final val BYNAMEtpt = 84
-  final val NEW = 85
-  final val THROW = 86
-  final val IMPLICITarg = 87
-  final val PRIVATEqualified = 88
-  final val PROTECTEDqualified = 89
-  final val RECtype = 90
-  final val SINGLETONtpt = 91
-  final val BOUNDED = 92
+  final val THIS = 90
+  final val QUALTHIS = 91
+  final val CLASSconst = 92
+  final val BYNAMEtype = 93
+  final val BYNAMEtpt = 94
+  final val NEW = 95
+  final val THROW = 96
+  final val IMPLICITarg = 97
+  final val PRIVATEqualified = 98
+  final val PROTECTEDqualified = 99
+  final val RECtype = 100
+  final val SINGLETONtpt = 101
+  final val BOUNDED = 102
 
   // Cat. 4:    tag Nat AST
 
@@ -222,7 +340,7 @@ object TastyFormat {
 
   /** Useful for debugging */
   def isLegalTag(tag: Int): Boolean =
-    firstSimpleTreeTag <= tag && tag <= INFIX ||
+    firstSimpleTreeTag <= tag && tag <= SPLITCLAUSE ||
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
@@ -313,9 +431,9 @@ object TastyFormat {
     case STATIC => "STATIC"
     case OBJECT => "OBJECT"
     case TRAIT => "TRAIT"
-    case ENUM => "ENUM"
     case TRANSPARENT => "TRANSPARENT"
     case INFIX => "INFIX"
+    case ENUM => "ENUM"
     case LOCAL => "LOCAL"
     case SYNTHETIC => "SYNTHETIC"
     case ARTIFACT => "ARTIFACT"
@@ -331,8 +449,9 @@ object TastyFormat {
     case PARAMsetter => "PARAMsetter"
     case EXPORTED => "EXPORTED"
     case OPEN => "OPEN"
-    case PARAMEND => "PARAMEND"
     case PARAMalias => "PARAMalias"
+    case EMPTYCLAUSE => "EMPTYCLAUSE"
+    case SPLITCLAUSE => "SPLITCLAUSE"
 
     case SHAREDterm => "SHAREDterm"
     case SHAREDtype => "SHAREDtype"
@@ -365,6 +484,7 @@ object TastyFormat {
     case DEFDEF => "DEFDEF"
     case TYPEDEF => "TYPEDEF"
     case IMPORT => "IMPORT"
+    case EXPORT => "EXPORT"
     case TYPEPARAM => "TYPEPARAM"
     case PARAM => "PARAM"
     case IMPORTED => "IMPORTED"
@@ -405,7 +525,6 @@ object TastyFormat {
     case TERMREFin => "TERMREFin"
     case TYPEREFin => "TYPEREFin"
     case SELECTin => "SELECTin"
-    case EXPORT => "EXPORT"
 
     case REFINEDtype => "REFINEDtype"
     case REFINEDtpt => "REFINEDtpt"

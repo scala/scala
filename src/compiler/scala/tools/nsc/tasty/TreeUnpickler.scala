@@ -123,11 +123,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def skipParams(): Unit =
       while ({
         val tag = nextByte
-        tag == PARAM || tag == TYPEPARAM || tag == PARAMEND
+        tag == PARAM || tag == TYPEPARAM || tag == EMPTYCLAUSE || tag == SPLITCLAUSE
       }) skipTree()
-
-    def skipTypeParams(): Unit =
-      while (nextByte === TYPEPARAM) skipTree()
 
     /** Record all directly nested definitions and templates in current tree
      *  as `OwnerTree`s in `buf`.
@@ -689,118 +686,152 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case _ =>
         val start = currentAddr
         cycleAtAddr(start) = Tombstone
-        val noCycle = readNewMember()
+        val noCycle = initializeMember()
         cycleAtAddr.remove(start)
         noCycle
     }
 
-    private def readNewMember()(implicit ctx: Context): NoCycle = {
-      val symAddr   = currentAddr
-      val tag       = readByte()
-      val end       = readEnd()
-      val tname     = readTastyName()
-      val sym       = symAtAddr(symAddr)
-      val repr      = sym.repr
+    private def initializeMember()(implicit ctx: Context): NoCycle = {
+      val symAddr = currentAddr
+      val tag     = readByte()
+      val end     = readEnd()
+      val tname   = readTastyName()
+      val sym     = symAtAddr(symAddr)
 
-      ctx.log(s"$symAddr completing ${showSym(sym)} in scope ${showSym(ctx.owner)}")
-
-      def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = nextByte match {
-        case PARAM | PARAMEND =>
-          readParams[NoCycle](PARAM) ::
-            (if (nextByte == PARAMEND) { readByte(); readParamss } else Nil)
-
-        case _ => Nil
+      def readParamss()(implicit ctx: Context): List[List[NoCycle]] = {
+        def readRest() = {
+          if (nextByte == SPLITCLAUSE) readByte()
+          readParamss()
+        }
+        nextByte match {
+          case PARAM => readParams[NoCycle](PARAM) :: readRest()
+          case TYPEPARAM => readParams[NoCycle](TYPEPARAM) :: readRest()
+          case EMPTYCLAUSE => readByte(); Nil :: readRest()
+          case _ => Nil
+        }
       }
 
       def checkUnsupportedFlags(unsupported: TastyFlagSet)(implicit ctx: Context): Unit = {
         unsupportedWhen(unsupported.hasFlags, s"${showTasty(unsupported)} ${sym.kindString} $tname")
       }
 
-      try {
+      def DefDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
+        val isMacro = repr.originalFlagSet.is(Erased | Macro)
+        checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
+        val isCtor = sym.isConstructor
+        val paramDefss = readParamss()(localCtx).map(_.map(symFromNoCycle))
+        val typeParams = {
+          // A type parameter list must be non-empty and with type symbols
+          val first = paramDefss.take(1)
+          if (first.exists(_.exists(_.isType))) first.head else Nil
+        }
+        val vparamss = {
+          // A value parameter list may be empty, or filled with term symbols
+          val valueClauses = paramDefss.drop(if (typeParams.isEmpty) 0 else 1)
+          val hasTypeParams = valueClauses.exists(_.exists(_.isType))
+          unsupportedWhen(hasTypeParams, {
+            val noun = (
+              if (isCtor) "constructor"
+              else if (repr.tastyOnlyFlags.is(Extension)) "extension method"
+              else "method"
+            )
+            s"$noun with unmergeable type parameters: $tname"
+          })
+          valueClauses
+        }
+        val tpt = readTpt()(localCtx)
+        if (isMacro) {
+          val impl  = tpd.Macro(readTerm()(ctx.addMode(ReadMacro)))
+          val annot = symbolTable.AnnotationInfo(
+            atp    = symbolTable.definitions.MacroImplLocationAnnotation.tpe,
+            args   = List(impl),
+            assocs = Nil
+          )
+          sym.addAnnotation(annot)
+        }
+        val valueParamss = normalizeIfConstructor(vparamss, isCtor)
+        val resType = effectiveResultType(sym, typeParams, tpt.tpe)
+        ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
+      }
+
+      def ValDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
+        // valdef in TASTy is either a singleton object or a method forwarder to a local value.
+        checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Extension | Exported))
+        val tpe = readTpt()(localCtx).tpe
+        ctx.setInfo(sym,
+          if (repr.originalFlagSet.is(SingletonEnumFlags)) {
+            val enumClass = sym.objectImplementation
+            val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
+            val ctor = ctx.unsafeNewSymbol(
+              owner = enumClass,
+              name  = TastyName.Constructor,
+              flags = Method,
+              info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
+            )
+            enumClass.typeOfThis = selfTpe
+            ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
+            prefixedRef(sym.owner.thisPrefix, enumClass)
+          }
+          else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
+          else if (sym.isMethod) defn.ExprType(tpe)
+          else tpe
+        )
+      }
+
+      def TypeDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
+        val allowedShared = Enum | Opaque | Infix
+        val allowedTypeFlags = allowedShared | Exported
+        val allowedClassFlags = allowedShared | Open | Transparent
+        if (sym.isClass) {
+          checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
+          sym.owner.ensureCompleted()
+          readTemplate()(localCtx)
+        }
+        else {
+          checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedTypeFlags)
+          val rhs = readTpt()(if (repr.originalFlagSet.is(Opaque)) localCtx.addMode(OpaqueTypeDef) else localCtx)
+          val info =
+            if (repr.originalFlagSet.is(Opaque)) {
+              val (info, alias) = defn.OpaqueTypeToBounds(rhs.tpe)
+              ctx.markAsOpaqueType(sym, alias)
+              info
+            }
+            else rhs.tpe
+          ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
+          if (sym.is(Param)) sym.reset(Private | Protected)
+        }
+      }
+
+      def TermParam(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
+        checkUnsupportedFlags(repr.tastyOnlyFlags &~ (ParamAlias | Exported))
+        val tpt = readTpt()(localCtx)
+        ctx.setInfo(sym,
+          if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
+          else defn.ExprType(tpt.tpe))
+      }
+
+      def initialize()(implicit ctx: Context): Unit = {
+        val repr = sym.rawInfo match {
+          case repr: TastyRepr => repr
+          case _               => return () // nothing to do here (assume correctly initalised)
+        }
+        ctx.log(s"$symAddr completing ${showSym(sym)} in scope ${showSym(ctx.owner)}")
         val localCtx = ctx.withOwner(sym)
         tag match {
-          case DEFDEF =>
-            val isMacro = repr.originalFlagSet.is(Erased | Macro)
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
-            val isCtor = sym.isConstructor
-            val typeParams = {
-              if (isCtor) {
-                skipTypeParams()
-                sym.owner.typeParams
-              }
-              else {
-                readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
-              }
-            }
-            val vparamss = readParamss(localCtx)
-            val tpt = readTpt()(localCtx)
-            if (isMacro) {
-              val impl  = tpd.Macro(readTerm()(ctx.addMode(ReadMacro)))
-              val annot = symbolTable.AnnotationInfo(
-                atp    = symbolTable.definitions.MacroImplLocationAnnotation.tpe,
-                args   = List(impl),
-                assocs = Nil
-              )
-              sym.addAnnotation(annot)
-            }
-            val valueParamss = normalizeIfConstructor(vparamss.map(_.map(symFromNoCycle)), isCtor)
-            val resType = effectiveResultType(sym, typeParams, tpt.tpe)
-            ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
-          case VALDEF => // valdef in TASTy is either a singleton object or a method forwarder to a local value.
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Extension | Exported))
-            val tpe = readTpt()(localCtx).tpe
-            ctx.setInfo(sym,
-              if (repr.originalFlagSet.is(SingletonEnumFlags)) {
-                val enumClass = sym.objectImplementation
-                val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-                val ctor = ctx.unsafeNewSymbol(
-                  owner = enumClass,
-                  name  = TastyName.Constructor,
-                  flags = Method,
-                  info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
-                )
-                enumClass.typeOfThis = selfTpe
-                ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
-                prefixedRef(sym.owner.thisPrefix, enumClass)
-              }
-              else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
-              else if (sym.isMethod) defn.ExprType(tpe)
-              else tpe
-            )
-          case TYPEDEF | TYPEPARAM =>
-            val allowedShared = Enum | Opaque | Infix
-            val allowedTypeFlags = allowedShared | Exported
-            val allowedClassFlags = allowedShared | Open | Transparent
-            if (sym.isClass) {
-              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
-              sym.owner.ensureCompleted()
-              readTemplate()(localCtx)
-            }
-            else {
-              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedTypeFlags)
-              val rhs = readTpt()(if (repr.originalFlagSet.is(Opaque)) localCtx.addMode(OpaqueTypeDef) else localCtx)
-              val info =
-                if (repr.originalFlagSet.is(Opaque)) {
-                  val (info, alias) = defn.OpaqueTypeToBounds(rhs.tpe)
-                  ctx.markAsOpaqueType(sym, alias)
-                  info
-                }
-                else rhs.tpe
-              ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
-              if (sym.is(Param)) sym.reset(Private | Protected)
-              // sym.resetFlag(Provisional)
-            }
-          case PARAM =>
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (ParamAlias | Exported))
-            val tpt = readTpt()(localCtx)
-            ctx.setInfo(sym,
-              if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
-              else defn.ExprType(tpt.tpe))
+          case DEFDEF              => DefDef(repr, localCtx)
+          case VALDEF              => ValDef(repr, localCtx)
+          case TYPEDEF | TYPEPARAM => TypeDef(repr, localCtx)
+          case PARAM               => TermParam(repr, localCtx)
         }
+      }
+
+      try {
+        initialize()
         ctx.log(s"$symAddr @@@ ${showSym(sym)}.tpe =:= '[${if (sym.isType) sym.tpe else sym.info}]; owned by ${location(sym.owner)}")
-        goto(end)
         NoCycle(at = symAddr)
-      } catch ctx.onCompletionError(sym)
+      }
+      catch ctx.onCompletionError(sym)
+      finally goto(end)
     }
 
     private def readTemplate()(implicit ctx: Context): Unit = {

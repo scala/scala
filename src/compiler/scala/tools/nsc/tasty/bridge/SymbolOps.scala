@@ -64,8 +64,13 @@ trait SymbolOps { self: TastyUniverse =>
      *  @todo adapt callsites and type so that this property is more safe to call (barring mutation from uncontrolled code)
      */
     def repr: TastyRepr = {
-      require(sym.rawInfo.isInstanceOf[TastyRepr], s"Expected ${u.typeOf[TastyRepr]}, is ${u.showRaw(sym.rawInfo)} ")
-      sym.rawInfo.asInstanceOf[TastyRepr]
+      try sym.rawInfo.asInstanceOf[TastyRepr]
+      catch {
+        case err: ClassCastException =>
+          val raw = u.showRaw(sym.rawInfo)
+          val tastyRepr = u.typeOf[TastyRepr]
+          throw new AssertionError(s"$sym is already completed. Expected $tastyRepr, is $raw.")
+      }
     }
 
     def ensureCompleted(): Unit = {

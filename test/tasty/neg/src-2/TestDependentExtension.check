@@ -1,0 +1,4 @@
+TestDependentExtension_fail.scala:11: error: Unsupported Scala 3 extension method with unmergeable type parameters: extract; found in trait tastytest.DependentExtension.
+    val res = implicitly[DependentExtension].extract(box)(_ + 1)
+                                             ^
+1 error

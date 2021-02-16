@@ -71,10 +71,12 @@ class TastyTestJUnit {
   }
 }
 
+import scala.reflect.runtime.ReflectionUtils
+
 object TastyTestJUnit {
   final implicit class TryOps(val op: Try[Unit]) extends AnyVal {
     def eval: Unit = op match {
-      case Failure(err) => fail(err.getMessage)
+      case Failure(err) => fail(err.toString)
       case _ => ()
     }
   }

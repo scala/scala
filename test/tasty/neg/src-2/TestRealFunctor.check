@@ -1,0 +1,4 @@
+TestRealFunctor_fail.scala:6: error: Unsupported Scala 3 extension method with unmergeable type parameters: map; found in trait tastytest.RealFunctor.
+    def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
+        ^
+1 error
