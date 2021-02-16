@@ -34,13 +34,13 @@ ill-nested-await.scala:71: error: await must not be used under a lazy val initia
 ill-nested-await.scala:77: error: await must not be used under a nested method.
     async { fooAsByNameLambda(await(f(""))) }
                               ^
-ill-nested-await.scala:81: error: await must not be used under a synchronized call.
+ill-nested-await.scala:82: error: await must not be used under a synchronized call.
     async { lock.synchronized { await(f(1)) + await(f(2)) } }
                                 ^
-ill-nested-await.scala:81: error: await must not be used under a synchronized call.
+ill-nested-await.scala:82: error: await must not be used under a synchronized call.
     async { lock.synchronized { await(f(1)) + await(f(2)) } }
                                               ^
-ill-nested-await.scala:10: error: `await` must be enclosed in an `async` block
+ill-nested-await.scala:11: error: `await` must be enclosed in an `async` block
      await[Any](f(null))
      ^
 15 errors
