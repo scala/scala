@@ -29,16 +29,12 @@ trait HasClassPath {
   def classPathURLs: Seq[URL]
 }
 
-/** A wrapper around java.lang.ClassLoader to lower the annoyance
- *  of java reflection.
- */
-trait ScalaClassLoader extends JClassLoader {
+final class RichClassLoader(private val self: JClassLoader) extends AnyVal {
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
-    import ScalaClassLoader.setContext
     val saved = Thread.currentThread.getContextClassLoader
-    try { setContext(this) ; action }
-    finally setContext(saved)
+    try { ScalaClassLoader.setContext(self) ; action }
+    finally ScalaClassLoader.setContext(saved)
   }
 
   /** Load and link a class with this classloader */
@@ -48,7 +44,7 @@ trait ScalaClassLoader extends JClassLoader {
 
   private def tryClass[T <: AnyRef](path: String, initialize: Boolean): Option[Class[T]] =
     catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
-      Class.forName(path, initialize, this).asInstanceOf[Class[T]]
+      Class.forName(path, initialize, self).asInstanceOf[Class[T]]
 
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
@@ -59,7 +55,7 @@ trait ScalaClassLoader extends JClassLoader {
     def fail(msg: String) = error(msg, new IllegalArgumentException(msg))
     def error(msg: String, e: Throwable) = { errorFn(msg) ; throw e }
     try {
-      val clazz = Class.forName(path, /*initialize =*/ true, /*loader =*/ this)
+      val clazz = Class.forName(path, /*initialize =*/ true, /*loader =*/ self)
       if (classTag[T].runtimeClass isAssignableFrom clazz) {
         val ctor = {
           val maybes = clazz.getConstructors filter (c => c.getParameterCount == args.size &&
@@ -70,7 +66,7 @@ trait ScalaClassLoader extends JClassLoader {
         (ctor.newInstance(args: _*)).asInstanceOf[T]
       } else {
         errorFn(s"""Loader for ${classTag[T]}:   [${show(classTag[T].runtimeClass.getClassLoader)}]
-                   |Loader for ${clazz.getName}: [${show(clazz.getClassLoader)}]""".stripMargin)
+                    |Loader for ${clazz.getName}: [${show(clazz.getClassLoader)}]""".stripMargin)
         fail(s"Not a ${classTag[T]}: ${path}")
       }
     } catch {
@@ -88,7 +84,7 @@ trait ScalaClassLoader extends JClassLoader {
   }
 
   /** An InputStream representing the given class name, or null if not found. */
-  def classAsStream(className: String) = getResourceAsStream {
+  def classAsStream(className: String) = self.getResourceAsStream {
     if (className endsWith ".class") className
     else s"${className.replace('.', '/')}.class"  // classNameToPath
   }
@@ -106,6 +102,41 @@ trait ScalaClassLoader extends JClassLoader {
     catch unwrapHandler({ case ex => throw ex })
   }
 }
+
+object RichClassLoader {
+  implicit def wrapClassLoader(loader: ClassLoader): RichClassLoader = new RichClassLoader(loader)
+}
+
+/** A wrapper around java.lang.ClassLoader to lower the annoyance
+ *  of java reflection.
+ */
+trait ScalaClassLoader extends JClassLoader {
+  private def wrap = new RichClassLoader(this)
+  /** Executing an action with this classloader as context classloader */
+  def asContext[T](action: => T): T = wrap.asContext(action)
+
+  /** Load and link a class with this classloader */
+  def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = wrap.tryToLoadClass[T](path)
+  /** Load, link and initialize a class with this classloader */
+  def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = wrap.tryToInitializeClass(path)
+
+  /** Create an instance of a class with this classloader */
+  def create(path: String): AnyRef = wrap.create(path)
+
+  /** Create an instance with ctor args, or invoke errorFn before throwing. */
+  def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T =
+    wrap.create[T](path, errorFn)(args: _*)
+
+  /** The actual bytes for a class file, or an empty array if it can't be found. */
+  def classBytes(className: String): Array[Byte] = wrap.classBytes(className)
+
+  /** An InputStream representing the given class name, or null if not found. */
+  def classAsStream(className: String) = wrap.classAsStream(className)
+
+  /** Run the main method of a class to be loaded by this classloader */
+  def run(objectName: String, arguments: Seq[String]): Unit = wrap.run(objectName, arguments)
+}
+
 
 /** Methods for obtaining various classloaders.
  *      appLoader: the application classloader.  (Also called the java system classloader.)
@@ -147,6 +178,10 @@ object ScalaClassLoader {
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader = {
     new URLClassLoader(urls, if (parent == null) bootClassLoader else parent)
+  }
+
+  def fromURLsParallelCapable(urls: Seq[URL], parent: ClassLoader = null): JURLClassLoader = {
+    new JURLClassLoader(urls.toArray, if (parent == null) bootClassLoader else parent)
   }
 
   /** True if supplied class exists in supplied path */

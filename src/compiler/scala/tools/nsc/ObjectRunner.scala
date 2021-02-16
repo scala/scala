@@ -25,8 +25,10 @@ trait CommonRunner {
    *  @throws java.lang.NoSuchMethodException
    *  @throws java.lang.reflect.InvocationTargetException
    */
-  def run(urls: Seq[URL], objectName: String, arguments: Seq[String]): Unit =
-    ScalaClassLoader.fromURLs(urls).run(objectName, arguments)
+  def run(urls: Seq[URL], objectName: String, arguments: Seq[String]): Unit = {
+    import scala.reflect.internal.util.RichClassLoader._
+    ScalaClassLoader.fromURLsParallelCapable(urls).run(objectName, arguments)
+  }
 
   /** Catches any non-fatal exception thrown by run (in the case of InvocationTargetException,
    *  unwrapping it) and returns it in an Option.
