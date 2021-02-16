@@ -596,9 +596,27 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
-      case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(_, _))) :: Nil) :: _ :: Nil)
-      if wrapRefArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod && appMeth.symbol == ArrayModule_genericApply && treeInfo.isQualifierSafeToElide(appMethQual) =>
-        arg.transform(this)
+      case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(elemtpt, elems))) :: Nil) :: classTagEvidence :: Nil)
+      if (wrapRefArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod || wrapRefArrayMeth.symbol == currentRun.runDefinitions.genericWrapVarargsRefArrayMethod) && appMeth.symbol == ArrayModule_genericApply && treeInfo.isQualifierSafeToElide(appMethQual) &&
+        !elemtpt.tpe.typeSymbol.isBottomClass =>
+        classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
+          case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
+            super.transform(arg)
+          case None                                                    =>
+            localTyper.typedPos(tree.pos) {
+              gen.evalOnce(classTagEvidence, currentOwner, unit) { ev =>
+                val arr = localTyper.typedPos(tree.pos)(gen.mkMethodCall(classTagEvidence, definitions.ClassTagClass.info.decl(nme.newArray), Nil, Literal(Constant(elems.size)) :: Nil))
+                gen.evalOnce(arr, currentOwner, unit) { arr =>
+                  val stats = mutable.ListBuffer[Tree]()
+                  foreachWithIndex(elems) { (elem, i) =>
+                    stats += gen.mkMethodCall(gen.mkAttributedRef(definitions.ScalaRunTimeModule), currentRun.runDefinitions.arrayUpdateMethod,
+                                              Nil, arr() :: Literal(Constant(i)) :: elem :: Nil)
+                  }
+                  super.transform(Block(stats.toList, arr()))
+                }
+              }
+            }
+        }
       case Apply(appMeth @ Select(appMethQual, _), elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && treeInfo.isQualifierSafeToElide(appMethQual) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
@@ -607,7 +625,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         localTyper.typedPos(elem.pos) {
           ArrayValue(TypeTree(elem.tpe), elem :: Nil)
         } transform this
-
+      case Apply(appMeth @ Select(appMethQual, _), elem :: (nil: RefTree) :: Nil)
+        if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && treeInfo.isExprSafeToInline(nil) && treeInfo.isQualifierSafeToElide(appMethQual) =>
+        localTyper.typedPos(elem.pos) {
+          ArrayValue(TypeTree(elem.tpe), elem :: Nil)
+        } transform this
       // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
       // Seq(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
       case Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
