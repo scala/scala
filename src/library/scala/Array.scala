@@ -17,8 +17,9 @@ import scala.collection.{Factory, immutable, mutable}
 import mutable.ArrayBuilder
 import immutable.ArraySeq
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 import scala.runtime.BoxedUnit
+import scala.runtime.ScalaRunTime
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
 
 /** Utility methods for operating on arrays.
@@ -182,13 +183,23 @@ object Array {
   // Subject to a compiler optimization in Cleanup.
   // Array(e0, ..., en) is translated to { val a = new Array(3); a(i) = ei; a }
   def apply[T: ClassTag](xs: T*): Array[T] = {
-    val array = new Array[T](xs.length)
-    val iterator = xs.iterator
-    var i = 0
-    while (iterator.hasNext) {
-      array(i) = iterator.next(); i += 1
+    val len = xs.length
+    xs match {
+      case wa: immutable.ArraySeq[_] if wa.unsafeArray.getClass.getComponentType == classTag[T].runtimeClass =>
+        // We get here in test/files/run/sd760a.scala, `Array[T](t)` for
+        // a specialized type parameter `T`. While we still pay for two
+        // copies of the array it is better than before when we also boxed
+        // each element when populating the result.
+        ScalaRunTime.array_clone(wa.unsafeArray).asInstanceOf[Array[T]]
+      case _ =>
+        val array = new Array[T](len)
+        val iterator = xs.iterator
+        var i = 0
+        while (iterator.hasNext) {
+          array(i) = iterator.next(); i += 1
+        }
+        array
     }
-    array
   }
 
   /** Creates an array of `Boolean` objects */

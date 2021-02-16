@@ -598,7 +598,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(elemtpt, elems))) :: Nil) :: classTagEvidence :: Nil)
       if (wrapRefArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod || wrapRefArrayMeth.symbol == currentRun.runDefinitions.genericWrapVarargsRefArrayMethod) && appMeth.symbol == ArrayModule_genericApply && treeInfo.isQualifierSafeToElide(appMethQual) &&
-        !elemtpt.tpe.typeSymbol.isBottomClass =>
+        !elemtpt.tpe.typeSymbol.isBottomClass && !elemtpt.tpe.typeSymbol.isPrimitiveValueClass /* can happen via specialization.*/  =>
         classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
           case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
             super.transform(arg)
