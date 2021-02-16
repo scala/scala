@@ -10,4 +10,7 @@ TestDefAnnots_fail.scala:7: error: Unsupported Scala 3 assignment expression in 
 TestDefAnnots_fail.scala:8: error: Unsupported Scala 3 block expression in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotLambda in object tastytest.DefAnnots.
   def test4 = DefAnnots.withArgAnnotLambda(1) == 1 // error
                         ^
-4 errors
+TestDefAnnots_fail.scala:10: error: Unsupported Scala 3 method with unmergeable type parameters: replaceWith; found in method withArgAnnotSelectExtension in object tastytest.DefAnnots.
+  def test6 = DefAnnots.withArgAnnotSelectExtension(1) == 1 // error
+                        ^
+5 errors

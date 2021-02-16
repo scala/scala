@@ -174,7 +174,7 @@ trait SymbolOps { self: TastyUniverse =>
       val (tyParamCount, argTpeRefs) = {
         val (tyParamCounts, params) = sig.params.partitionMap(identity)
         if (tyParamCounts.length > 1) {
-          unsupportedError(s"multiple type parameter lists on erased method signature ${showSig(sig)}")
+          unsupportedError(s"method with unmergeable type parameters: $qual")
         }
         (tyParamCounts.headOption.getOrElse(0), params)
       }
