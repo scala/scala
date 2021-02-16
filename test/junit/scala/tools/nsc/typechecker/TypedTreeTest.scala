@@ -1,6 +1,6 @@
 package scala.tools.nsc.typechecker
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
 
 import scala.tools.testkit.BytecodeTesting
@@ -59,6 +59,7 @@ class TypedTreeTest extends BytecodeTesting {
 
     singletonTypeTrees.foreach { t =>
       assertEquals(t.ref.symbol.fullName, "root.impl")
+      assertNotEquals(NoPosition, t.pos)
     }
   }
 }

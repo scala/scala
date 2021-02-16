@@ -5862,7 +5862,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // .resultType unwraps NullaryMethodType (accessor of a path)
           // .deconst unwraps the ConstantType to a LiteralType (for literal-based singleton types)
           if (!treeInfo.admitsTypeSelection(refTyped)) UnstableTreeError(tree)
-          else SingletonTypeTree(refTyped).setType(refTyped.tpe.resultType.deconst)
+          else treeCopy.SingletonTypeTree(tree, refTyped).setType(refTyped.tpe.resultType.deconst)
         }
       }
 
