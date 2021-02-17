@@ -22,6 +22,9 @@ object MimaFilters extends AutoPlugin {
 
     // #9314 introduced private[this] object
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$unitsIterator$"),
+
+    // #9314 #9315 #9507 NewRedBlackTree is private[collection]
+    ProblemFilters.exclude[Problem]("scala.collection.immutable.NewRedBlackTree*"),
   )
 
   override val buildSettings = Seq(
