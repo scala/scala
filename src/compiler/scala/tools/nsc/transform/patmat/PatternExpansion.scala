@@ -127,7 +127,7 @@ trait PatternExpansion {
     // rest is private
     private val isUnapply        = fun.symbol.name == nme.unapply
     private val isUnapplySeq     = fun.symbol.name == nme.unapplySeq
-    private def isBooleanUnapply = isUnapply && unapplyResultType() =:= BooleanTpe
+    private def isBooleanUnapply = isUnapply && unapplyResultType().typeSymbol == definitions.BooleanClass
     private def isRepeatedCaseClass = caseCtorParamTypes.exists(tpes => tpes.nonEmpty && isScalaRepeatedParamType(tpes.last))
 
     private def caseCtorParamTypes: Option[List[Type]] =
@@ -248,7 +248,10 @@ trait PatternExpansion {
 
     // emit error/warning on mismatch
     if (isStar && !isSeq) err("Star pattern must correspond with varargs or unapplySeq")
-    else if (equivConstrParamTypes == List(NoType)) err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultType()}")
+    else if (equivConstrParamTypes == List(NoType) && unapplyResultType().isNothing)
+      err(s"${fun.symbol.owner} can't be used as an extractor: The result type of an ${fun.symbol.name} method may not be Nothing")
+    else if (equivConstrParamTypes == List(NoType))
+      err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultType()}")
     else if (elementArity < 0) arityError("not enough")
     else if (elementArity > 0 && !isSeq) arityError("too many")
     else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn(

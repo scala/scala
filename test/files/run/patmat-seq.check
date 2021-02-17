@@ -1,5 +1,5 @@
-newSource1.scala:35: warning: unreachable code
-    case B(x, y)       => (x, y)
+newSource1.scala:32: warning: unreachable code
+    case A(x, y)       => (x, y)  // wrapper.get.apply(0/1)
                           ^
 [[syntax trees at end of                    patmat]] // newSource1.scala
 package <empty> {

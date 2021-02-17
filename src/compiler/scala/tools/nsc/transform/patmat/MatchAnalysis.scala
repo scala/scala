@@ -354,10 +354,42 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         def tru                                               = True
       }
 
+
+      private def isIrrefutabilityProof(sym: Symbol): Boolean = {
+        sym.isMethod && sym.name == nme.isEmpty && {
+          // ConstantFalse is foldable but in joint compilation (bug?) this will be a literal type
+          // with case using `==` rather than `=:=` we need to do this instead. neg/t12240.scala
+          sym.tpe.finalResultType match {
+            case c: ConstantType => c.value == Constant(false)
+            case _ => false
+          }
+        }
+      }
+        // will an extractor with unapply method of methodtype `tp` always succeed?
+        // note: this assumes the other side-conditions implied by the extractor are met
+        // (argument of the right type, length check succeeds for unapplySeq,...)
+      private def irrefutableExtractorType(tp: Type): Boolean = tp.resultType.dealias match {
+        //Some(x) is irrefutable
+        case TypeRef(_, SomeClass, _) => true
+        //name based pattern matching checks for constant false `isEmpty`.
+        case TypeRef(_, res, _)       => res.tpe.members.exists(isIrrefutabilityProof)
+        //`true.type` is irrefutable for boolean extractors
+        case c: ConstantType          => c.value == Constant(true)
+        case _                        => false
+      }
+
       private val irrefutableExtractor: PartialFunction[TreeMaker, Prop] = {
-        // the extra condition is None, the extractor's result indicates it always succeeds,
+        // if the extra condition is None, the extractor's result indicates it always succeeds,
         // (the potential type-test for the argument is represented by a separate TypeTestTreeMaker)
-        case IrrefutableExtractorTreeMaker(_, _) => True
+        case ExtractorTreeMaker(extractor, None, _) if irrefutableExtractorType(extractor.tpe) => True
+        // Otherwise, if we call the pattern irrefutable here, these conditions
+        // are no longer checked and considered true in exhaustiveness and
+        // reachability checking.
+        // Therefore, the below case alone would treat too much "irrefutable"
+        // that really isn't. Something similar is needed (perhaps elsewhere)
+        // to check whether a set of unapplySeq's with all arities is toegether
+        // exhaustive
+        //case p @ ExtractorTreeMaker(extractor, Some(conditions), _) if irrefutableExtractorType(extractor.tpe) => True
       }
 
       // special-case: interpret pattern `List()` as `Nil`
@@ -426,11 +458,12 @@ trait MatchAnalysis extends MatchApproximation {
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
+      debug.patmat("reachability analysis")
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaReach) else null
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
-      // don't rewrite List-like patterns, as List() and Nil need to distinguished for unreachability
+      // don't rewrite List-like patterns, as List() and Nil need to be distinguished for unreachability
       val approx = new TreeMakersToProps(prevBinder)
       def approximate(default: Prop) = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.refutableRewrite.applyOrElse(tm, (_: TreeMaker) => default )
@@ -488,6 +521,7 @@ trait MatchAnalysis extends MatchApproximation {
     // exhaustivity
 
     def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
+      debug.patmat("exhaustiveness analysis")
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
       //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive

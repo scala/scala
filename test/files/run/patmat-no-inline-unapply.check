@@ -1,0 +1,25 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty> {
+  class T extends scala.AnyRef {
+    def <init>(): T = {
+      T.super.<init>();
+      ()
+    };
+    def t: Any = {
+      case <synthetic> val x1: Int(2) = 2;
+      case5(){
+        if (A.unapply(x1))
+          matchEnd4("ok")
+        else
+          case6()
+      };
+      case6(){
+        matchEnd4("other")
+      };
+      matchEnd4(x: Any){
+        x
+      }
+    }
+  }
+}
+

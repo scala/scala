@@ -1016,10 +1016,19 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     && rootMirror.isMirrorInitialized
   )
   override def isPastTyper = isPast(currentRun.typerPhase)
+  def isBeforeErasure      = isBefore(currentRun.erasurePhase)
   def isPast(phase: Phase) = (
        (curRun ne null)
     && isGlobalInitialized // defense against init order issues
     && (globalPhase.id > phase.id)
+  )
+  def isBefore(phase: Phase) = (
+       (curRun ne null)
+    && isGlobalInitialized // defense against init order issues
+    && (phase match {
+      case NoPhase => true // if phase is NoPhase then that phase ain't comin', so we're "before it"
+      case _       => globalPhase.id < phase.id
+    })
   )
 
   // TODO - trim these to the absolute minimum.

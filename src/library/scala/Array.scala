@@ -566,7 +566,7 @@ object Array {
   def unapplySeq[T](x: Array[T]): UnapplySeqWrapper[T] = new UnapplySeqWrapper(x)
 
   final class UnapplySeqWrapper[T](private val a: Array[T]) extends AnyVal {
-    def isEmpty: Boolean = false
+    def isEmpty: false = false
     def get: UnapplySeqWrapper[T] = this
     def lengthCompare(len: Int): Int = a.lengthCompare(len)
     def apply(i: Int): T = a(i)
