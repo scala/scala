@@ -365,4 +365,25 @@ class BoxUnboxTest extends BytecodeTesting {
     ))
   }
 
+  @Test
+  def unboxAsmCrash(): Unit = {
+    val code =
+      """
+        |package p1
+        |
+        |class AssertUtil {
+        |
+        |  def waitForIt(terminated: => Boolean, progress: Int = 0, label: => String = "test"): Unit = {
+        |    val limit = 5
+        |    var n = 1
+        |    var (dormancy, factor) = progress match {
+        |      case 0 => (10000L, 5)
+        |      case _ => (250L, 4)
+        |    }
+        |    ()
+        |  }
+        |}""".stripMargin
+    val m = getMethod(compileClass(code), "waitForIt")
+    assertSameCode(m, List(VarOp(ILOAD, 2), TableSwitch(TABLESWITCH, 0, 0, Label(4), List(Label(4))), Label(4), Op(RETURN)))
+  }
 }
