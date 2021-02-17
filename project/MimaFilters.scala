@@ -25,6 +25,9 @@ object MimaFilters extends AutoPlugin {
 
     // #9314 #9315 #9507 NewRedBlackTree is private[collection]
     ProblemFilters.exclude[Problem]("scala.collection.immutable.NewRedBlackTree*"),
+
+    // Wrappers is private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.Wrappers#IteratorWrapper.asIterator")
   )
 
   override val buildSettings = Seq(
