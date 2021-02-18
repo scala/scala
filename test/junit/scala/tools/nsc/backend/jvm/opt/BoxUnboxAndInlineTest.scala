@@ -8,9 +8,9 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.util.CheckMethodAdapter
 import scala.tools.nsc.backend.jvm.MethodNode1
-import scala.tools.partest.ASMConverters._
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 /**
   * Tests for boxing/unboxing optimizations.

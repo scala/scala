@@ -343,7 +343,7 @@ abstract class BoxUnbox {
             for (extraction <- allConsumers) {
               val replacementOps = extraction match {
                 case Drop(_) =>
-                  boxKind.boxedTypes.reverseMap(t => getPop(t.getSize))
+                  boxKind.boxedTypes.reverseIterator.map(t => getPop(t.getSize)).toList
                 case _ =>
                   val valueIndex = boxKind.extractedValueIndex(extraction)
                   if (valueIndex == 0) {
