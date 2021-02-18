@@ -602,7 +602,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
           case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
             super.transform(arg)
-          case None                                                    =>
+          case _                                                      =>
             localTyper.typedPos(tree.pos) {
               gen.evalOnce(classTagEvidence, currentOwner, unit) { ev =>
                 val arr = localTyper.typedPos(tree.pos)(gen.mkMethodCall(classTagEvidence, definitions.ClassTagClass.info.decl(nme.newArray), Nil, Literal(Constant(elems.size)) :: Nil))
