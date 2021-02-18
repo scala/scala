@@ -989,21 +989,6 @@ private[collection] object RedBlackTree {
     blacken(fk(t))
   }
 
-  def filterKeys[A, B](t: Tree[A, B], f: A => Boolean): Tree[A, B] = if(t eq null) null else {
-    def fk(t: Tree[A, B]): Tree[A, B] = {
-      val k = t.key
-      val l = t.left
-      val r = t.right
-      val l2 = if(l eq null) null else fk(l)
-      val keep = f(k)
-      val r2 = if(r eq null) null else fk(r)
-      if(!keep) join2(l2, r2)
-      else if((l2 eq l) && (r2 eq r)) t
-      else join(l2, k, t.value, r2)
-    }
-    blacken(fk(t))
-  }
-
   private[this] val null2 = (null, null)
 
   def partitionEntries[A, B](t: Tree[A, B], p: (A, B) => Boolean): (Tree[A, B], Tree[A, B]) = if(t eq null) (null, null) else {

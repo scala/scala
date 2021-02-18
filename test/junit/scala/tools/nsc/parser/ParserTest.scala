@@ -38,7 +38,7 @@ class ParserTest extends BytecodeTesting{
     import compiler._, global._
     val run = new Run
     run.compileSources(newSourceFile(code) :: Nil)
-    assert(!reporter.hasErrors)
+    assertFalse(reporter.hasErrors)
     val unit = run.units.toList.head
     def codeOf(pos: Position) = new String(pos.source.content.slice(pos.start, pos.end))
     val List(x, y) = unit.body.collect { case vd : ValDef => vd }.takeRight(2)
