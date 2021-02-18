@@ -267,6 +267,7 @@ abstract class BoxUnbox {
 
             case Drop(insn) =>
               if (keepBox) toReplace(insn) = List(getPop(1))
+              else toDelete += insn
 
             case extraction =>
               val (slot, tp) = localSlots(boxKind.extractedValueIndex(extraction))
@@ -342,7 +343,7 @@ abstract class BoxUnbox {
             for (extraction <- allConsumers) {
               val replacementOps = extraction match {
                 case Drop(_) =>
-                  boxKind.boxedTypes.map(t => getPop(t.getSize))
+                  boxKind.boxedTypes.reverseMap(t => getPop(t.getSize))
                 case _ =>
                   val valueIndex = boxKind.extractedValueIndex(extraction)
                   if (valueIndex == 0) {
