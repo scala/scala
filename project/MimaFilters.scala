@@ -30,6 +30,13 @@ object MimaFilters extends AutoPlugin {
 
     // #9487
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.ClassTag$cache$"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithLeftRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.blackWithLeftRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.partitionKeys"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.partitionKeys"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithLeft"),
   )
 
   override val buildSettings = Seq(
