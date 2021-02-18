@@ -38,6 +38,7 @@ import annotation.tailrec
  *  @define orderDependent
  *  @define orderDependentFold
  */
+@SerialVersionUID(-3362098515407812442L)
 class ListMap[A, B]
 extends AbstractMap[A, B]
    with Map[A, B]

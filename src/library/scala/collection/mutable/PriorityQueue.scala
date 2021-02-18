@@ -55,6 +55,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(736425014438295802L)
 sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    extends AbstractIterable[A]
       with Iterable[A]
@@ -67,6 +68,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
+  @SerialVersionUID(3491656538574147683L)
   private class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] with Serializable {
     def p_size0 = size0
     def p_size0_=(s: Int) = size0 = s

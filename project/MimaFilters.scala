@@ -25,6 +25,9 @@ object MimaFilters extends AutoPlugin {
 
     // #9314 #9315 #9507 NewRedBlackTree is private[collection]
     ProblemFilters.exclude[Problem]("scala.collection.immutable.NewRedBlackTree*"),
+
+    // #9166 add missing serialVersionUID
+    ProblemFilters.exclude[MissingFieldProblem]("*.serialVersionUID"),
   )
 
   override val buildSettings = Seq(

@@ -32,6 +32,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(-5130636723247980089L)
 class Queue[A]
 extends MutableList[A]
    with LinearSeqOptimized[A, Queue[A]]

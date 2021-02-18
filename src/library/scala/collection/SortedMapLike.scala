@@ -36,6 +36,7 @@ self =>
 
   override def keySet : SortedSet[A] = new DefaultKeySortedSet
 
+  @SerialVersionUID(-38666158592954763L)
   protected class DefaultKeySortedSet extends super.DefaultKeySet with SortedSet[A] {
     implicit def ordering = self.ordering
     override def + (elem: A): SortedSet[A] = (SortedSet[A]() ++ this + elem)

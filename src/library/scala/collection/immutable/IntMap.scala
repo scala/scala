@@ -64,6 +64,7 @@ object IntMap {
   def apply[T](elems: (Int, T)*): IntMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
+  @SerialVersionUID(-9137650114085457282L)
   private[immutable] case object Nil extends IntMap[Nothing] {
     // Important! Without this equals method in place, an infinite
     // loop from Map.equals => size => pattern-match-on-Nil => equals
@@ -76,11 +77,13 @@ object IntMap {
     }
   }
 
+  @SerialVersionUID(3302720273753906158L)
   private[immutable] case class Tip[+T](key: Int, value: T) extends IntMap[T]{
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[IntMap.Tip[S]]
       else IntMap.Tip(key, s)
   }
+  @SerialVersionUID(-523093388545197183L)
   private[immutable] case class Bin[+T](prefix: Int, mask: Int, left: IntMap[T], right: IntMap[T]) extends IntMap[T] {
     def bin[S](left: IntMap[S], right: IntMap[S]): IntMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[IntMap.Bin[S]]

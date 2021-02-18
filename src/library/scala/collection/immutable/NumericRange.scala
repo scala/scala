@@ -39,6 +39,7 @@ package immutable
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(-5580158174769432538L)
 abstract class NumericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
@@ -365,6 +366,7 @@ object NumericRange {
     }
   }
 
+  @SerialVersionUID(-5986512874781685419L)
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends NumericRange(start, end, step, true) {
     def copy(start: T, end: T, step: T): Inclusive[T] =
@@ -373,6 +375,7 @@ object NumericRange {
     def exclusive: Exclusive[T] = NumericRange(start, end, step)
   }
 
+  @SerialVersionUID(-7058074814271573640L)
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends NumericRange(start, end, step, false) {
     def copy(start: T, end: T, step: T): Exclusive[T] =

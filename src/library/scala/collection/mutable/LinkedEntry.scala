@@ -17,6 +17,7 @@ package mutable
 /** Class for the linked hash map entry, used internally.
  *  @since 2.8
  */
+@SerialVersionUID(-2671939643954900582L)
 final class LinkedEntry[A, B](val key: A, var value: B)
       extends HashEntry[A, LinkedEntry[A, B]] with Serializable {
   var earlier: LinkedEntry[A, B] = null

@@ -22,6 +22,7 @@ import scala.reflect.ClassTag
  *
  *  @tparam T    the type of the elements for the builder.
  */
+@SerialVersionUID(-4721309866680431208L)
 abstract class ArrayBuilder[T] extends ReusableBuilder[T, Array[T]] with Serializable
 
 /** A companion object for array builders.
@@ -61,6 +62,7 @@ object ArrayBuilder {
    *
    *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassTag` context bound.
    */
+  @SerialVersionUID(-8376727444766075941L)
   final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
 
     private var elems: Array[T] = _
@@ -126,6 +128,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `byte`s. It can be reused. */
+  @SerialVersionUID(-3484148043254823366L)
   final class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
@@ -191,6 +194,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `short`s. It can be reused. */
+  @SerialVersionUID(3295904306819377609L)
   final class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
@@ -256,6 +260,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `char`s. It can be reused. */
+  @SerialVersionUID(-8284807600792805165L)
   final class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
@@ -321,6 +326,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `int`s. It can be reused. */
+  @SerialVersionUID(-3033902589330485711L)
   final class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
@@ -386,6 +392,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `long`s. It can be reused. */
+  @SerialVersionUID(-4278005356053656861L)
   final class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
@@ -451,6 +458,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `float`s. It can be reused. */
+  @SerialVersionUID(-740775369715282824L)
   final class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
@@ -516,6 +524,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `double`s. It can be reused. */
+  @SerialVersionUID(2549152794429074790L)
   final class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
@@ -581,6 +590,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `boolean`s. It can be reused. */
+  @SerialVersionUID(-3574834070591819420L)
   class ofBoolean extends ArrayBuilder[Boolean] {
 
     private var elems: Array[Boolean] = _
@@ -646,6 +656,7 @@ object ArrayBuilder {
   }
 
   /** A class for array builders for arrays of `Unit` type. It can be reused. */
+  @SerialVersionUID(1995804197797796249L)
   final class ofUnit extends ArrayBuilder[Unit] {
 
     private var size: Int = 0

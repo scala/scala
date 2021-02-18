@@ -62,6 +62,7 @@ object LongMap {
   def apply[T](elems: (Long, T)*): LongMap[T] =
     elems.foldLeft(empty[T])((x, y) => x.updated(y._1, y._2))
 
+@SerialVersionUID(1224320979026293120L)
   private[immutable] case object Nil extends LongMap[Nothing] {
     // Important, don't remove this! See IntMap for explanation.
     override def equals(that : Any) = that match {
@@ -71,11 +72,13 @@ object LongMap {
     }
   }
 
+@SerialVersionUID(4938010434684160500L)
   private[immutable] case class Tip[+T](key: Long, value: T) extends LongMap[T] {
     def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[LongMap.Tip[S]]
       else LongMap.Tip(key, s)
   }
+@SerialVersionUID(2433491195925361636L)
   private[immutable] case class Bin[+T](prefix: Long, mask: Long, left: LongMap[T], right: LongMap[T]) extends LongMap[T] {
     def bin[S](left: LongMap[S], right: LongMap[S]): LongMap[S] = {
       if ((this.left eq left) && (this.right eq right)) this.asInstanceOf[LongMap.Bin[S]]

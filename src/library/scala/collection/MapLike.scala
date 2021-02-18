@@ -172,6 +172,7 @@ self =>
 
   /** The implementation class of the set returned by `keySet`.
    */
+  @SerialVersionUID(1589106351530299313L)
   protected class DefaultKeySet extends AbstractSet[K] with Set[K] with Serializable {
     def contains(key : K) = self.contains(key)
     def iterator = keysIterator

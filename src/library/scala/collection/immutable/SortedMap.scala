@@ -42,6 +42,7 @@ self =>
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
   override def keySet: immutable.SortedSet[A] = new DefaultKeySortedSet
 
+  @SerialVersionUID(112809526508924148L)
   protected class DefaultKeySortedSet extends super.DefaultKeySortedSet with immutable.SortedSet[A] {
     override def + (elem: A): SortedSet[A] =
       if (this(elem)) this
