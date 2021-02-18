@@ -45,8 +45,8 @@ trait AsyncAnalysis extends TransformUtils  {
         reportUnsupportedAwait(defDef, "nested method")
     }
 
-    override def byNameArgument(arg: Tree): Unit = {
-      reportUnsupportedAwait(arg, "by-name argument")
+    override def synchronizedCall(arg: Tree): Unit = {
+      reportUnsupportedAwait(arg, "synchronized call")
     }
 
     override def function(function: Function): Unit = {

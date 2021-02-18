@@ -400,7 +400,7 @@ object TestPartitionLeft extends RedBlackTreeTest("RedBlackTree.partitionKeysLef
   override type ModifyParm = Int
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
-    partitionKeys[String, Int](tree, k => k.hashCode % 2 == 0)._1
+    partitionEntries[String, Int](tree, (k, v) => k.hashCode % 2 == 0)._1
 
   property("partition") = forAll(genInput) { case (tree, parm, newTree) =>
     iterator(tree).filter(t => t._1.hashCode % 2 == 0).toList == iterator(newTree).toList
@@ -413,7 +413,7 @@ object TestPartitionRight extends RedBlackTreeTest("RedBlackTree.partitionKeysRi
   override type ModifyParm = Int
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
-    partitionKeys[String, Int](tree, k => k.hashCode % 2 == 0)._2
+    partitionEntries[String, Int](tree, (k, v) => k.hashCode % 2 == 0)._2
 
   property("partition") = forAll(genInput) { case (tree, parm, newTree) =>
     iterator(tree).filter(t => t._1.hashCode % 2 != 0).toList == iterator(newTree).toList

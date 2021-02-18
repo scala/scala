@@ -1,6 +1,6 @@
 package scala.tools.nsc.typechecker
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
 
 import scala.tools.testkit.BytecodeTesting
@@ -23,5 +23,43 @@ class TypedTreeTest extends BytecodeTesting {
     val tree = run.units.next().body
     val List(t) = tree.filter(_.attachments.all.nonEmpty).toList
     assertEquals("42:Set(OriginalTreeAttachment(O.x))", s"$t:${t.attachments.all}")
+  }
+
+
+  // Ensure SingletonTypeTree#ref is typed and it has symbol after typing.
+  // see: https://github.com/scala/bug/issues/12296
+  @Test
+  def singletonTypeTreeRefTyped(): Unit = {
+    val code =
+      """|object root {
+         |  object impl
+         |  val f: impl.type => Unit = {
+         |    case _: impl.type => ()
+         |  }
+         |}
+      """.stripMargin
+    val run = compiler.newRun()
+    run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSingletonTypeTreeSource.scala")))
+    val tree = run.units.next().body
+
+    import compiler.global._
+
+    val singletonTypeTrees = collection.mutable.Buffer[SingletonTypeTree]()
+    object traverser extends Traverser {
+      override def traverse(t: Tree): Unit = {
+        t match {
+          case tt: TypeTree if tt.original != null => traverse(tt.original)
+          case st: SingletonTypeTree =>
+            singletonTypeTrees += st
+          case _ => super.traverse(t)
+        }
+      }
+    }
+    traverser.traverse(tree)
+
+    singletonTypeTrees.foreach { t =>
+      assertEquals(t.ref.symbol.fullName, "root.impl")
+      assertNotEquals(NoPosition, t.pos)
+    }
   }
 }

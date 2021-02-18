@@ -12,8 +12,10 @@ object DefinitionConstructionProps
     with PatDefConstruction
     with DefConstruction
     with PackageConstruction
-    with ImportConstruction {
+    with ImportConstruction
+    with QuasiquoteSliceTypeTests
 
+trait QuasiquoteSliceTypeTests { self: QuasiquoteProperties =>
   val x: Tree = q"val x: Int"
   property("scala/bug#6842 a1") = test { assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0") }
   property("scala/bug#6842 a2") = test { assertEqAst(q"class C($x)", "class C(val x: Int)") }
@@ -229,7 +231,7 @@ trait ValDefConstruction { self: QuasiquoteProperties =>
     q"var $name: $tpt = $rhs" ≈ ValDef(Modifiers(MUTABLE), name, tpt, rhs)
   }
 
-  // left tree is not a pattern due to Si-8211
+  // left tree is not a pattern due to scala/bug#8211
   property("scala/bug#8202") = test {
     assertEqAst(q"val (x: Int) = 1", "val x: Int = 1")
   }

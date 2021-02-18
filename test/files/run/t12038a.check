@@ -1,0 +1,3 @@
+[BuilderType <: p1.J_1.AbstractMessageLite.Builder[BuilderType]]Object {
+  def <init>(): p1.J_1.AbstractMessageLite[BuilderType]
+}

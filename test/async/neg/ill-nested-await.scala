@@ -76,4 +76,9 @@ class NakedAwait {
     def fooAsByNameLambda = foo("") _ // : (_ => String) = String
     async { fooAsByNameLambda(await(f(""))) }
   }
+
+  def underSynchronized(): Unit = {
+    val lock = new Object
+    async { lock.synchronized { await(f(1)) + await(f(2)) } }
+  }
 }
