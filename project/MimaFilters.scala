@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.4"),
+    mimaReferenceVersion := Some("2.13.5"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -25,18 +25,6 @@ object MimaFilters extends AutoPlugin {
     // don't publish the artifact built with JDK 11 anyways
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#IteratorWrapper.asIterator"),
 
-    // #9425 Node is private[collection]
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashMap#Node.foreachEntry"),
-
-    // #9487
-    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.ClassTag$cache$"),
-
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithRight"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithLeftRight"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.blackWithLeftRight"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.redWithLeft"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.partitionKeys"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.filterKeys"),
   )
 
   override val buildSettings = Seq(
