@@ -125,6 +125,8 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
+  def isVarargsMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_VARARGS) != 0
+
   // cross-jdk
   def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean =
     methodNode.visibleAnnotations != null &&
