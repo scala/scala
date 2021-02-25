@@ -150,8 +150,8 @@ trait TreeDSL {
     def SOME(xs: Tree*)   = Apply(SomeClass.companionSymbol, gen.mkTuple(xs.toList))
 
     /** Typed trees from symbols. */
-    def REF(sym: Symbol)            = gen.mkAttributedRef(sym)
-    def REF(pre: Type, sym: Symbol) = gen.mkAttributedRef(pre, sym)
+    def REF(sym: Symbol): RefTree            = gen.mkAttributedRef(sym)
+    def REF(pre: Type, sym: Symbol): RefTree = gen.mkAttributedRef(pre, sym)
 
     /** Implicits - some of these should probably disappear **/
     implicit def mkTreeMethods(target: Tree): TreeMethods = new TreeMethods(target)

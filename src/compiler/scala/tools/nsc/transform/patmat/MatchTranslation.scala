@@ -223,7 +223,7 @@ trait MatchTranslation {
       val selectorSym = freshSym(selector.pos, selectorTp) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala
-      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, selectorPos, matchOwner, defaultOverride)
+      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, selectorPos, matchOwner, defaultOverride, getSuppression(selector))
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatNanos, start)
       combined
@@ -250,7 +250,7 @@ trait MatchTranslation {
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
             val caseScrutSym = freshSym(caseDef.pat.pos, ThrowableTpe)
-            (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
+            (caseScrutSym, translateCase(caseScrutSym, pt)(caseDef))
           }
 
           for(cases <- emitTypeSwitch(bindersAndCases, pt).toList
@@ -260,7 +260,7 @@ trait MatchTranslation {
 
         val catches = if (swatches.nonEmpty) swatches else {
           val scrutSym = freshSym(caseDefs.head.pat.pos, ThrowableTpe)
-          val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
+          val cases    = caseDefs.map(translateCase(scrutSym, pt))
 
           val exSym = freshSym(pos, ThrowableTpe, "ex")
           val suppression =
@@ -272,7 +272,7 @@ trait MatchTranslation {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
+                  combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
                 )
               })
         }
@@ -310,7 +310,8 @@ trait MatchTranslation {
       */
     def translateCase(scrutSym: Symbol, pt: Type)(caseDef: CaseDef): List[TreeMaker] = {
       val CaseDef(pattern, guard, body) = caseDef
-      translatePattern(BoundTree(scrutSym, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
+      val treeMakers = translatePattern(BoundTree(scrutSym, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
+      propagateSubstitution(treeMakers, EmptySubstitution)
     }
 
     def translatePattern(bound: BoundTree): List[TreeMaker] = bound.translate()

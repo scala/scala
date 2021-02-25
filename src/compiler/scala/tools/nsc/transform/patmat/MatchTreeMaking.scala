@@ -573,69 +573,61 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       case _                               => Suppression.NoSuppression
     }
 
-    // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
-      // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
-      val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, selectorPos, owner, matchFailGenOverride, getSuppression(scrut))
+    def requiresSwitch(scrut: Tree, cases: List[List[TreeMaker]]): Boolean = {
+      if (settings.XnoPatmatAnalysis) false
+      else scrut match {
+        case Typed(tree, tpt) =>
+          val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
+          // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
+          // `case 1 | 2` is considered as two cases.
+          def exceedsTwoCasesOrAlts = {
+            // avoids traversing the entire list if there are more than 3 elements
+            def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
+              case a :: b :: c :: _ => 3
+              case cases            => cases.map {
+                case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
+                case c                                      => 1
+              }.sum
+            }
+            lengthMax3(cases) > 2
+          }
+          hasSwitchAnnotation && exceedsTwoCasesOrAlts
+        case _ => false
+      }
     }
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
-    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type,
-                                selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree],
-                                suppression: Suppression,
+    def combineCases(
+        scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type,
+        selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree],
+        suppression: Suppression,
     ): Tree =
       fixerUpper(owner, scrut.pos) {
         def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
 
-        debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
+        debug.patmat("combining cases: "+ (cases.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val requireSwitch: Boolean =
-          if (settings.XnoPatmatAnalysis) false
-          else scrut match {
-            case Typed(tree, tpt) =>
-              val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
-              // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-              // `case 1 | 2` is considered as two cases.
-              def exceedsTwoCasesOrAlts = {
-                // avoids traversing the entire list if there are more than 3 elements
-                def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
-                  case a :: b :: c :: _ => 3
-                  case cases            =>
-                    cases.map {
-                      case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
-                      case c => 1
-                    }.sum
-                }
-                lengthMax3(casesNoSubstOnly) > 2
-              }
-              hasSwitchAnnotation && exceedsTwoCasesOrAlts
-            case _ =>
-              false
-          }
+        emitSwitch(scrut, scrutSym, cases, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse {
+          if (requiresSwitch(scrut, cases))
+            typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse {
-          if (requireSwitch) typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
-
-          if (!casesNoSubstOnly.isEmpty) {
-            // before optimizing, check casesNoSubstOnly for presence of a default case,
+          if (!cases.isEmpty) {
+            // before optimizing, check cases for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
             // exhaustivity and reachability must be checked before optimization as well
             // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
             //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
             //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
-            val synthCatchAll =
-              if (casesNoSubstOnly.nonEmpty && {
-                    val nonTrivLast = casesNoSubstOnly.last
-                    nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
-                  }) None
-              else matchFailGen
+            val synthCatchAll = cases match {
+              case _ :+ Seq(_: BodyTreeMaker, _*) => None
+              case _                              => matchFailGen
+            }
 
-            analyzeCases(scrutSym, casesNoSubstOnly, pt, suppression)
+            analyzeCases(scrutSym, cases, pt, suppression)
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, selectorPos)
+            val (optimizedCases, toHoist) = optimizeCases(scrutSym, cases, pt, selectorPos)
 
-            val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
+            val matchRes = codegen.matcher(scrut, scrutSym, pt)(optimizedCases map combineExtractors, synthCatchAll)
 
             if (toHoist.isEmpty) matchRes else Block(toHoist, matchRes)
           } else {
