@@ -1,4 +1,5 @@
-virtpatmat_nested_lists.scala:7: warning: match may not be exhaustive.
+virtpatmat_nested_lists.scala:3: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), List(_, List(_), _), List(_, List(_, _)), List(_, List(_, _), _), List(_, Nil), List(_, Nil, _), Nil
   List(List(1), List(2)) match { case x :: (y :: Nil) :: Nil => println(y) }
       ^
 2
