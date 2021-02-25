@@ -1,7 +1,9 @@
-virtpatmat_alts.scala:5: warning: match may not be exhaustive.
+virtpatmat_alts.scala:2: warning: match may not be exhaustive.
+It would fail on the following inputs: (false, true), (true, false)
   (true, true) match {
   ^
-virtpatmat_alts.scala:9: warning: match may not be exhaustive.
+virtpatmat_alts.scala:6: warning: match may not be exhaustive.
+It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5, 6, 7))), List((x: Int forSome x not in (1, 2, 4, 5, 6, 7)), _), List(1, _), List(2, _), List(4, _), List(5, _), List(6, _), List(7, _), List(_, _)
   List(5) match {
       ^
 OK 5
