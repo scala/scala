@@ -498,13 +498,8 @@ trait MatchAnalysis extends MatchApproximation {
           else {
             prefix += prefHead
             current = current.tail
-          val and = And((current.head +: prefix).toIndexedSeq: _*)
-          val model = findModelFor(eqFreePropToSolvable(and))
-
-            // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
-            // if (NoModel ne model) debug.patmat("reached: "+ modelString(model))
-
-            reachable = NoModel ne model
+            val and = And((current.head +: prefix).toIndexedSeq: _*)
+            reachable = hasModel(eqFreePropToSolvable(and))
           }
         }
 
@@ -573,13 +568,9 @@ trait MatchAnalysis extends MatchApproximation {
           val matchFailModels = findAllModelsFor(propToSolvable(matchFails), prevBinder)
 
           val scrutVar = Var(prevBinderTree)
-          val counterExamples = {
-            matchFailModels.flatMap {
-              model =>
-                val varAssignments = expandModel(model)
-                varAssignments.flatMap(modelToCounterExample(scrutVar) _)
-            }
-          }
+          val counterExamples = matchFailModels.iterator.flatMap { model =>
+            expandModel(model).flatMap(modelToCounterExample(scrutVar))
+          }.take(AnalysisBudget.maxDPLLdepth).toList
 
           // sorting before pruning is important here in order to
           // keep neg/t7020.scala stable
@@ -658,16 +649,18 @@ trait MatchAnalysis extends MatchApproximation {
     case object WildcardExample extends CounterExample { override def toString = "_" }
     case object NoExample extends CounterExample { override def toString = "??" }
 
+    type VarAssignment = Map[Var, (Seq[Const], Seq[Const])]
+
     // returns a mapping from variable to
     // equal and notEqual symbols
-    def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
+    def modelToVarAssignment(model: Model): VarAssignment =
       model.toSeq.groupBy(_._1.variable).view.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
       }.to(Map)
 
-    def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
+    def varAssignmentString(varAssignment: VarAssignment) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
         s"$v(=${v.path}: ${v.staticTpCheckable}) == ${trues.mkString("(", ", ", ")")}  != (${falses.mkString(", ")})"
       }.mkString("\n")
@@ -702,7 +695,7 @@ trait MatchAnalysis extends MatchApproximation {
      * Only one of these symbols can be set to true,
      * since `V2` can at most be equal to one of {2,6,5,4,7}.
      */
-    def expandModel(solution: Solution): List[Map[Var, (Seq[Const], Seq[Const])]] = {
+    def expandModel(solution: Solution): List[VarAssignment] = {
 
       val model = solution.model
 
@@ -719,7 +712,7 @@ trait MatchAnalysis extends MatchApproximation {
       val groupedByVar: Map[Var, List[Sym]] = solution.unassigned.groupBy(_.variable)
 
       val expanded = for {
-        (variable, syms) <- groupedByVar.toList
+        (variable, syms) <- groupedByVar.toList.sortBy(_._1.toString)
       } yield {
 
         val (equal, notEqual) = varAssignment.getOrElse(variable, Nil -> Nil)
@@ -735,7 +728,7 @@ trait MatchAnalysis extends MatchApproximation {
         // a list counter example could contain wildcards: e.g. `List(_,_)`
         val allEqual = addVarAssignment(syms.map(_.const), Nil)
 
-        if(equal.isEmpty) {
+        if (equal.isEmpty) {
           val oneHot = for {
             s <- syms
           } yield {
@@ -747,26 +740,24 @@ trait MatchAnalysis extends MatchApproximation {
         }
       }
 
-      if (expanded.isEmpty) {
-        List(varAssignment)
-      } else {
-        // we need the Cartesian product here,
-        // since we want to report all missing cases
-        // (i.e., combinations)
-        val cartesianProd = expanded.reduceLeft((xs, ys) =>
-          for {map1 <- xs
-               map2 <- ys} yield {
-            map1 ++ map2
-          })
-
-        // add expanded variables
-        // note that we can just use `++`
-        // since the Maps have disjoint keySets
-        for {
-          m <- cartesianProd
-        } yield {
-          varAssignment ++ m
+      // we need the Cartesian product here,
+      // since we want to report all missing cases
+      // (i.e., combinations)
+      @tailrec def loop(acc: List[VarAssignment], in: List[List[VarAssignment]]): List[VarAssignment] = {
+        if (acc.sizeIs > AnalysisBudget.maxDPLLdepth) acc.take(AnalysisBudget.maxDPLLdepth)
+        else in match {
+          case vs :: vss => loop(for (map1 <- acc; map2 <- vs) yield map1 ++ map2, vss)
+          case _         => acc
         }
+      }
+      expanded match {
+        case head :: tail =>
+          val cartesianProd = loop(head, tail)
+          // add expanded variables
+          // note that we can just use `++`
+          // since the Maps have disjoint keySets
+          for (m <- cartesianProd) yield varAssignment ++ m
+        case _            => List(varAssignment)
       }
     }
 
@@ -774,7 +765,7 @@ trait MatchAnalysis extends MatchApproximation {
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
     //  since we didn't realize the tail of the outer cons was a Nil)
-    def modelToCounterExample(scrutVar: Var)(varAssignment: Map[Var, (Seq[Const], Seq[Const])]): Option[CounterExample] = {
+    def modelToCounterExample(scrutVar: Var)(varAssignment: VarAssignment): Option[CounterExample] = {
       val strict = !settings.nonStrictPatmatAnalysis.value
 
       // chop a path into a list of symbols
@@ -919,7 +910,7 @@ trait MatchAnalysis extends MatchApproximation {
       }
 
       // slurp in information from other variables
-      varAssignment.keys.foreach{ v => if (v != scrutVar) VariableAssignment(v) }
+      varAssignment.keys.toSeq.sortBy(_.toString).foreach(v => if (v != scrutVar) VariableAssignment(v))
 
       // this is the variable we want a counter example for
       VariableAssignment(scrutVar).toCounterExample()

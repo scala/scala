@@ -145,7 +145,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // mutable case class fields need to be stored regardless (scala/bug#5158, scala/bug#6070) -- see override in ProductExtractorTreeMaker
       // sub patterns bound to wildcard (_) are never stored as they can't be referenced
       // dirty debuggers will have to get dirty to see the wildcards
-      lazy val storedBinders: Set[Symbol] =
+      private lazy val storedBinders: Set[Symbol] =
         (if (debugInfoEmitVars) subPatBinders.toSet else Set.empty) ++ extraStoredBinders diff ignoredSubPatBinders
 
       // e.g., mutable fields of a case class in ProductExtractorTreeMaker

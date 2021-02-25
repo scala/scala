@@ -1,0 +1,10 @@
+t12237.scala:24: warning: Exhaustivity analysis reached max recursion depth, not all missing cases are reported.
+(Please try with scalac -Ypatmat-exhaust-depth 40 or -Ypatmat-exhaust-depth off.)
+    (pq: PathAndQuery) match {
+       ^
+t12237.scala:24: warning: match may not be exhaustive.
+    (pq: PathAndQuery) match {
+       ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
