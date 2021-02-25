@@ -20,16 +20,16 @@ object NoCompletion extends Completion {
   def complete(buffer: String, cursor: Int) = NoCompletions
 }
 
-case class CompletionResult(cursor: Int, candidates: List[CompletionCandidate]) {
+case class CompletionResult(line: String, cursor: Int, candidates: List[CompletionCandidate]) {
   final def orElse(other: => CompletionResult): CompletionResult =
     if (candidates.nonEmpty) this else other
 }
 object CompletionResult {
   val empty: CompletionResult = NoCompletions
 }
-object NoCompletions extends CompletionResult(-1, Nil)
+object NoCompletions extends CompletionResult("", -1, Nil)
 
 case class MultiCompletion(underlying: Completion*) extends Completion {
   override def complete(buffer: String, cursor: Int) =
-    underlying.foldLeft(CompletionResult.empty)((r,c) => r.orElse(c.complete(buffer, cursor)))
+    underlying.foldLeft(CompletionResult.empty)((r, c) => r.orElse(c.complete(buffer, cursor)))
 }

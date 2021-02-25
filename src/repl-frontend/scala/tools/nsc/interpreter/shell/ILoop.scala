@@ -223,15 +223,15 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     val emptyWord    = """(\s+)$""".r.unanchored
     val directorily  = """(\S*/)$""".r.unanchored
     val trailingWord = """(\S+)$""".r.unanchored
-    def listed(i: Int, dir: Option[Path]) =
+    def listed(buffer: String, i: Int, dir: Option[Path]) =
       dir.filter(_.isDirectory)
-        .map(d => CompletionResult(i, d.toDirectory.list.map(x => CompletionCandidate(x.name)).toList))
+        .map(d => CompletionResult(buffer, i, d.toDirectory.list.map(x => CompletionCandidate(x.name)).toList))
         .getOrElse(NoCompletions)
     def listedIn(dir: Directory, name: String) = dir.list.filter(_.name.startsWith(name)).map(_.name).toList
     def complete(buffer: String, cursor: Int): CompletionResult =
       buffer.substring(0, cursor) match {
-        case emptyWord(s)        => listed(cursor, Directory.Current)
-        case directorily(s)      => listed(cursor, Option(Path(s)))
+        case emptyWord(s)        => listed(buffer, cursor, Directory.Current)
+        case directorily(s)      => listed(buffer, cursor, Option(Path(s)))
         case trailingWord(s) =>
           val f = File(s)
           val (i, maybes) =
@@ -239,7 +239,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
             else if (f.isDirectory) (cursor - s.length, List(s"${f.toAbsolute.path}/"))
             else if (f.parent.exists) (cursor - f.name.length, listedIn(f.parent.toDirectory, f.name))
             else (-1, Nil)
-          if (maybes.isEmpty) NoCompletions else CompletionResult(i, maybes.map(CompletionCandidate(_)))
+          if (maybes.isEmpty) NoCompletions else CompletionResult(buffer, i, maybes.map(CompletionCandidate(_)))
         case _                   => NoCompletions
       }
   }
@@ -253,7 +253,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           val maybes = intp.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
                                .filterNot(cond(_) { case "-"|"-X"|"-Y" => true }).sorted
           if (maybes.isEmpty) NoCompletions
-          else CompletionResult(cursor - s.length, maybes.map(CompletionCandidate(_)))
+          else CompletionResult(buffer, cursor - s.length, maybes.map(CompletionCandidate(_)))
         case _ => NoCompletions
       }
     }

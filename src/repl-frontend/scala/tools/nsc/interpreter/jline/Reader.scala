@@ -13,14 +13,13 @@
 package scala.tools.nsc.interpreter
 package jline
 
-import java.util.{List => JList}
-
-import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, SyntaxError, UserInterruptException}
+import org.jline.reader.Parser.ParseContext
 import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
+import org.jline.reader._
 import org.jline.terminal.Terminal
 
-import shell.{Accumulator, ShellConfig}
-import Parser.ParseContext
+import java.util.{List => JList}
+import scala.tools.nsc.interpreter.shell.{Accumulator, ShellConfig}
 
 /** A Reader that delegates to JLine3.
  */
@@ -109,7 +108,8 @@ object Reader {
       }
     }
     def backupHistory(): Unit = {
-      import java.nio.file.{Files, Paths, StandardCopyOption}, StandardCopyOption.REPLACE_EXISTING
+      import java.nio.file.{Files, Paths, StandardCopyOption}
+      import StandardCopyOption.REPLACE_EXISTING
       val hf = Paths.get(config.historyFile)
       val bk = Paths.get(config.historyFile + ".bk")
       Files.move(/*source =*/ hf, /*target =*/ bk, REPLACE_EXISTING)
@@ -229,8 +229,8 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
 
   // JLine Completer
   def complete(lineReader: LineReader, parsedLine: ParsedLine, newCandidates: JList[Candidate]): Unit = {
-    def candidateForResult(cc: CompletionCandidate): Candidate = {
-      val value = cc.defString
+    def candidateForResult(line: String, cc: CompletionCandidate): Candidate = {
+      val value = if (line.startsWith(":")) ":" + cc.defString else cc.defString
       val displayed = cc.defString + (cc.arity match {
         case CompletionCandidate.Nullary => ""
         case CompletionCandidate.Nilary => "()"
@@ -263,7 +263,7 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
       // normal completion
       case _ =>
         for (cc <- result.candidates)
-          newCandidates.add(candidateForResult(cc))
+          newCandidates.add(candidateForResult(result.line, cc))
     }
   }
 }
