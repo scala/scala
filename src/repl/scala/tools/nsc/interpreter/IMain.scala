@@ -103,15 +103,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     else new PathResolver(settings, global.closeableRegistry).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
-  // Run the code body with the given boolean settings flipped to true.
-  def withoutWarnings[T](body: => T): T = beQuietDuring {
-    val saved = settings.nowarn.value
-    if (!saved)
-      settings.nowarn.value = true
-
-    try body
-    finally if (!saved) settings.nowarn.value = false
-  }
+  def withoutWarnings[T](body: => T): T = beQuietDuring(IMain.withSuppressedSettings(settings, global)(body))
   // Apply a temporary label for compilation (for example, script name)
   def withLabel[A](temp: String)(body: => A): A = {
     val saved = label
@@ -1166,7 +1158,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     def apply(line: String): Result = debugging(s"""parse("$line")""") {
       var isIncomplete = false
-      def parse = {
+      def parse = withoutWarnings {
         val trees = newUnitParser(line, label).parseStats()
         if (!isIncomplete)
           runReporting.summarizeErrors()
