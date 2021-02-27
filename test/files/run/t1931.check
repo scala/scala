@@ -10,8 +10,8 @@ import Predef.{any2stringadd=>_, _}
 
 scala> x + " works"
 <console>:14: error: value + is not a member of Any
-x + " works"
-  ^
+       x + " works"
+         ^
 
 scala> import Predef._
 import Predef._
@@ -27,8 +27,8 @@ import Predef._
 
 scala> f
 <console>:14: error: not found: value f
-f
-^
+       f
+       ^
 
 scala> Predef.f
 res4: Int = 42

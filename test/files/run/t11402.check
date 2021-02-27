@@ -6,8 +6,8 @@ This can be achieved by adding the import clause 'import scala.language.postfixO
 or by setting the compiler option -language:postfixOps.
 See the Scaladoc for value scala.language.postfixOps for a discussion
 why the feature should be explicitly enabled.
-import scala.concurrent.duration._; val t = 1 second
-                                              ^
+       import scala.concurrent.duration._; val t = 1 second
+                                                     ^
 import scala.concurrent.duration._
 t: scala.concurrent.duration.FiniteDuration = 1 second
 

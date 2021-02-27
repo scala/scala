@@ -16,8 +16,8 @@ scala> {
   println(code.eval)
 }
 <console>:19: free term: Ident(TermName("x")) defined by res0  in <console>:18:7
-  val code = reify {
-                   ^
+         val code = reify {
+                          ^
 2
 
 scala> :quit

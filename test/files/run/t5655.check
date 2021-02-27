@@ -10,15 +10,15 @@ scala> x
 it is imported twice in the same scope by
 import x._
 and import x
-x
-^
+       x
+       ^
 
 scala> x
 <console>:16: error: reference to x is ambiguous;
 it is imported twice in the same scope by
 import x._
 and import x
-x
-^
+       x
+       ^
 
 scala> :quit

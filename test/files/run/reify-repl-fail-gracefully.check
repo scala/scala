@@ -9,7 +9,7 @@ scala>
 
 scala> reify
 <console>:16: error: too few argument lists for macro invocation
-reify
-^
+       reify
+       ^
 
 scala> :quit

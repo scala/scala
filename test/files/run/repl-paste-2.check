@@ -43,8 +43,8 @@ res1: Int = 690
 
 scala> val x = dingus
 <console>:11: error: not found: value dingus
-val x = dingus
-        ^
+       val x = dingus
+               ^
 
 scala> val x = "dingus"
 x: String = dingus
