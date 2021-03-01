@@ -1549,10 +1549,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         if (settings.YstatisticsEnabled && settings.Ystatistics.contains(phase.name))
           printStatisticsFor(phase)
 
-        if (!globalPhase.hasNext || reporter.hasErrors) {
-          units.foreach(unit => unit.suspendedMessages.foreach(runReporting.issueIfNotSuppressed))
+        if (!globalPhase.hasNext || reporter.hasErrors)
           runReporting.warnUnusedSuppressions()
-        }
 
         advancePhase()
       }

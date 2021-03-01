@@ -114,6 +114,7 @@ trait Analyzer extends AnyRef
         try {
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
+          // interactive typed may finish by throwing a `TyperResult`
           if (!settings.Youtline.value) {
             for (workItem <- unit.toCheck) workItem()
             if (settings.warnUnusedImport)
@@ -121,13 +122,10 @@ trait Analyzer extends AnyRef
             if (settings.warnUnused.isSetByUser)
               new checkUnused(typer).apply(unit)
           }
-          if (unit.suspendMessages)
-            runReporting.reportSuspendedMessages(unit)
         }
         finally {
+          runReporting.reportSuspendedMessages(unit)
           unit.toCheck.clear()
-          unit.suspendMessages = false
-          unit.suspendedMessages.clear()
         }
       }
     }

@@ -4,14 +4,14 @@ badtok-1-212.scala:3: error: unclosed character literal (or use " not ' for stri
 badtok-1-212.scala:3: error: unclosed character literal (or use " not ' for string literal)
 '42'
    ^
-badtok-1-212.scala:7: warning: deprecated syntax for character literal (use '\'' for single quote)
-'''
-^
 badtok-1-212.scala:9: error: empty character literal
 '';
 ^
 badtok-1-212.scala:11: error: unclosed character literal
 '
+^
+badtok-1-212.scala:7: warning: deprecated syntax for character literal (use '\'' for single quote)
+'''
 ^
 one warning found
 four errors found

@@ -716,7 +716,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           // If we have a successful result, emit any warnings it created.
           if (!context1.reporter.hasErrors)
-            context1.reporter.emitWarnings(context1)
+            context1.reporter.emitWarnings()
 
           wrapResult(context1.reporter, result)
         } else {

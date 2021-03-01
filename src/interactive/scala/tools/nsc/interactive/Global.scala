@@ -650,6 +650,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private def parseAndEnter(unit: RichCompilationUnit): Unit =
     if (unit.status == NotLoaded) {
       debugLog("parsing: "+unit)
+      runReporting.clearSuppressionsComplete(unit.source)
       currentTyperRun.compileLate(unit)
       if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
       if (!unit.isJava) syncTopLevelSyms(unit)

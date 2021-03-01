@@ -15,7 +15,6 @@ package scala.tools.nsc
 import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashSet, ListBuffer}
 import scala.reflect.internal.util.{FreshNameCreator, NoSourceFile, SourceFile}
-import scala.tools.nsc.Reporting.Message
 
 trait CompilationUnits { global: Global =>
 
@@ -127,13 +126,6 @@ trait CompilationUnits { global: Global =>
 
     /** things to check at end of compilation unit */
     val toCheck = new ListBuffer[() => Unit]
-
-    var suspendMessages = true
-    private[this] var _suspendedMessages: mutable.LinkedHashSet[Message] = null
-    def suspendedMessages: mutable.LinkedHashSet[Message] = {
-      if (_suspendedMessages == null) _suspendedMessages = mutable.LinkedHashSet.empty
-      _suspendedMessages
-    }
 
     /** The features that were already checked for this unit */
     var checkedFeatures = Set[Symbol]()

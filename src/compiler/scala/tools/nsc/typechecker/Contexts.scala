@@ -606,8 +606,8 @@ trait Contexts { self: Analyzer =>
     /** Issue/throw the given error message according to the current mode for error reporting. */
     def error(pos: Position, msg: String)                                    = reporter.error(fixPosition(pos), msg)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner, this)
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site, this)
+    def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site)
     def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
     def fixPosition(pos: Position): Position = pos match {
       case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
@@ -617,22 +617,13 @@ trait Contexts { self: Analyzer =>
 
     // TODO: buffer deprecations under silent (route through ContextReporter, store in BufferingReporter)
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      if (unit.suspendMessages)
-        unit.suspendedMessages += runReporting.deprecationWarningMessage(fixPosition(pos), sym, owner, msg, since)
-      else
-        runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
 
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      if (unit.suspendMessages)
-        unit.suspendedMessages += runReporting.deprecationWarningMessage(fixPosition(pos), sym, owner)
-      else
-        runReporting.deprecationWarning(fixPosition(pos), sym, owner)
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner)
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
-      if (unit.suspendMessages)
-        unit.suspendedMessages ++= runReporting.featureWarningMessage(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
-      else
-        runReporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
+      runReporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
 
 
     // nextOuter determines which context is searched next for implicits
@@ -1369,11 +1360,8 @@ trait Contexts { self: Analyzer =>
     def echo(msg: String): Unit                = echo(NoPosition, msg)
     def echo(pos: Position, msg: String): Unit = reporter.echo(pos, msg)
 
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, context: Context): Unit =
-      if (context.unit.suspendMessages)
-        context.unit.suspendedMessages += runReporting.warningMessage(pos, msg, category, site)
-      else
-        runReporting.warning(pos, msg, category, site)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      runReporting.warning(pos, msg, category, site)
 
     def error(pos: Position, msg: String): Unit
 
@@ -1466,13 +1454,9 @@ trait Contexts { self: Analyzer =>
       else msg
     }
 
-    final def emitWarnings(context: Context) = if (_warningBuffer != null) {
+    final def emitWarnings() = if (_warningBuffer != null) {
       _warningBuffer foreach {
-        case (pos, msg, category, site) =>
-          if (context.unit.suspendMessages)
-            context.unit.suspendedMessages += runReporting.warningMessage(pos, msg, category, site)
-          else
-            runReporting.warning(pos, msg, category, site)
+        case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site)
       }
       _warningBuffer = null
     }
@@ -1510,7 +1494,7 @@ trait Contexts { self: Analyzer =>
     // the old throwing behavior was relied on by diagnostics in manifestOfType
     def error(pos: Position, msg: String): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg))
 
-    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, context: Context): Unit =
+    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
       warningBuffer += ((pos, msg, category, site))
 
     override protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = errorBuffer += err
