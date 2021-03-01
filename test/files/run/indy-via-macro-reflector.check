@@ -1,0 +1,3 @@
+HandleAndStrings{handle=MethodHandle(C,Object,int)String, scalaParamNames=[p1, p2]}, dynamic
+HandleAndStrings{handle=MethodHandle(int)C1, scalaParamNames=[a]}, dynamic
+HandleAndStrings{handle=MethodHandle(T)int, scalaParamNames=[]}, dynamic

@@ -303,8 +303,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = genApply(app, expectedType)
 
         case app @ ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
-          val numStaticArgs = bootstrapMethodRef.paramss.head.size - 3 /*JVM provided args*/
-          val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(numStaticArgs)
+          val numDynamicArgs = qual.symbol.info.params.length
+          val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(staticAndDynamicArgs.length - numDynamicArgs)
           val bootstrapDescriptor = staticHandleFromSymbol(bootstrapMethodRef)
           val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos)})
           val descriptor = methodBTypeFromMethodType(qual.symbol.info, false)
