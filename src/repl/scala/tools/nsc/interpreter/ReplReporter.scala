@@ -72,7 +72,7 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
   }
 
   // shift indentation for source text entered at prompt
-  def print(pos: Position, msg: String, severity: Severity): Unit = {
+  override protected def display(pos: Position, msg: String, severity: Severity): Unit = {
     val adjusted =
       if (pos.source.file.name == "<console>")
         new OffsetPosition(pos.source, pos.offset.getOrElse(0)) {
@@ -80,7 +80,7 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
           override def lineCaret   = s"${indentation}${super.lineCaret}"
         }
       else pos
-    super.info0(adjusted, msg, severity, force = false)
+    super.display(adjusted, msg, severity)
   }
 
   override def printMessage(msg: String): Unit = {

@@ -1,0 +1,14 @@
+
+scala> case class C(implicit x: Int)
+<console>:11: warning: case classes should have a non-implicit parameter list; adapting to 'case class C()(...)'
+       case class C(implicit x: Int)
+                   ^
+defined class C
+
+scala> for {x <- Nil; val y = 1} yield y
+<console>:12: warning: val keyword in for comprehension is deprecated
+       for {x <- Nil; val y = 1} yield y
+                            ^
+res0: List[Int] = List()
+
+scala> :quit
