@@ -19,12 +19,10 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
  *
- * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
- * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
+ * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions.
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
-  import global._
-  import definitions._
+  import global._, definitions._, CODE._
 
   final case class Suppression(suppressExhaustive: Boolean, suppressUnreachable: Boolean)
   object Suppression {
@@ -210,7 +208,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
        prevBinder: Symbol,
        expectedTp: Type,
        override val pos: Position) extends FunTreeMaker {
-      import CODE._
       override lazy val nextBinder = prevBinder.asTerm // just passing through
       val nextBinderTp = nextBinder.info.widen
 
@@ -269,7 +266,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             bindSubPats(substitution(next))
         }
         atPos(extractor.pos)(
-          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, condAndNext)
+          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, UNIT, nextBinder, condAndNext)
           else casegen.flatMap(extractor, nextBinder, condAndNext)
         )
       }
@@ -339,11 +336,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def tru: Result
       }
 
-      object treeCondStrategy extends TypeTestCondStrategy { import CODE._
+      object treeCondStrategy extends TypeTestCondStrategy {
         type Result = Tree
 
         def and(a: Result, b: Result): Result                = a AND b
-        def tru                                              = mkTRUE
+        def tru                                              = TRUE
         def typeTest(testedBinder: Symbol, expectedTp: Type) = codegen._isInstanceOf(testedBinder, expectedTp)
         def nonNullTest(testedBinder: Symbol)                = REF(testedBinder) OBJ_NE NULL
         def equalsTest(pat: Tree, testedBinder: Symbol)      = codegen._equals(pat, testedBinder)
@@ -375,7 +372,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               // by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
               // if there's an outer accessor, otherwise the condition becomes `true`
               // TODO: centralize logic whether there's an outer accessor and use here?
-              val synthOuterGetter = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
+              val synthOuterGetter = expectedTp.typeSymbol.newMethod(nme.OUTER_SYNTH, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
               val outerTest = (Select(codegen._asInstanceOf(testedBinder, expectedTp), synthOuterGetter)) OBJ_EQ expectedOuterRef
               and(orig, outerTest)
           }
@@ -486,8 +483,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             else mkEqualsTest(expected)
           // Should revisit if we end up lifting `eq`'s definition to `Any`, as discussed here:
           // https://groups.google.com/d/msg/scala-internals/jsVlJI4H5OQ/8emZWRmgzcoJ
-          case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
-          case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
+          case ThisType(sym) if sym.isModule            => and(mkEqualsTest(REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
+          case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))
           case ThisType(sym)                            => mkEqTest(expTp(This(sym)))
           case _                                        => mkDefault
@@ -529,10 +526,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
           val combinedAlts = altss map (altTreeMakers =>
-            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(mkTRUE)))(casegen))
+            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => mkFALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => FALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -576,69 +573,61 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       case _                               => Suppression.NoSuppression
     }
 
-    // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
-      // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
-      val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, selectorPos, owner, matchFailGenOverride, getSuppression(scrut))
+    def requiresSwitch(scrut: Tree, cases: List[List[TreeMaker]]): Boolean = {
+      if (settings.XnoPatmatAnalysis) false
+      else scrut match {
+        case Typed(tree, tpt) =>
+          val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
+          // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
+          // `case 1 | 2` is considered as two cases.
+          def exceedsTwoCasesOrAlts = {
+            // avoids traversing the entire list if there are more than 3 elements
+            def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
+              case a :: b :: c :: _ => 3
+              case cases            => cases.map {
+                case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
+                case c                                      => 1
+              }.sum
+            }
+            lengthMax3(cases) > 2
+          }
+          hasSwitchAnnotation && exceedsTwoCasesOrAlts
+        case _ => false
+      }
     }
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
-    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type,
-                                selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree],
-                                suppression: Suppression,
+    def combineCases(
+        scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type,
+        selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree],
+        suppression: Suppression,
     ): Tree =
       fixerUpper(owner, scrut.pos) {
         def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
 
-        debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
+        debug.patmat("combining cases: "+ (cases.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val requireSwitch: Boolean =
-          if (settings.XnoPatmatAnalysis) false
-          else scrut match {
-            case Typed(tree, tpt) =>
-              val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
-              // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-              // `case 1 | 2` is considered as two cases.
-              def exceedsTwoCasesOrAlts = {
-                // avoids traversing the entire list if there are more than 3 elements
-                def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
-                  case a :: b :: c :: _ => 3
-                  case cases            =>
-                    cases.map {
-                      case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
-                      case c => 1
-                    }.sum
-                }
-                lengthMax3(casesNoSubstOnly) > 2
-              }
-              hasSwitchAnnotation && exceedsTwoCasesOrAlts
-            case _ =>
-              false
-          }
+        emitSwitch(scrut, scrutSym, cases, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse {
+          if (requiresSwitch(scrut, cases))
+            typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse {
-          if (requireSwitch) typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
-
-          if (!casesNoSubstOnly.isEmpty) {
-            // before optimizing, check casesNoSubstOnly for presence of a default case,
+          if (!cases.isEmpty) {
+            // before optimizing, check cases for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
             // exhaustivity and reachability must be checked before optimization as well
             // TODO: improve notion of trivial/irrefutable -- a trivial type test before the body still makes for a default case
             //   ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
             //   irrefutability checking should use the approximation framework also used for CSE, unreachability and exhaustivity checking
-            val synthCatchAll =
-              if (casesNoSubstOnly.nonEmpty && {
-                    val nonTrivLast = casesNoSubstOnly.last
-                    nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
-                  }) None
-              else matchFailGen
+            val synthCatchAll = cases match {
+              case _ :+ Seq(_: BodyTreeMaker, _*) => None
+              case _                              => matchFailGen
+            }
 
-            analyzeCases(scrutSym, casesNoSubstOnly, pt, suppression)
+            analyzeCases(scrutSym, cases, pt, suppression)
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt, selectorPos)
+            val (optimizedCases, toHoist) = optimizeCases(scrutSym, cases, pt, selectorPos)
 
-            val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
+            val matchRes = codegen.matcher(scrut, scrutSym, pt)(optimizedCases map combineExtractors, synthCatchAll)
 
             if (toHoist.isEmpty) matchRes else Block(toHoist, matchRes)
           } else {

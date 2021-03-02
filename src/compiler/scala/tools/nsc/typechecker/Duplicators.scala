@@ -83,8 +83,8 @@ abstract class Duplicators extends Analyzer {
           val sym1 = (
             context.scope lookup sym.name orElse {
               // try harder (look in outer scopes)
-              // with virtpatmat, this can happen when the sym is referenced in the scope of a LabelDef but
-              // is defined in the scope of an outer DefDef (e.g., in AbstractPartialFunction's andThen)
+              // with virtpatmat, this could happen when the sym was referenced in the scope of a LabelDef but
+              // was defined in the scope of an outer DefDef (e.g., in AbstractPartialFunction's andThen)
               BodyDuplicator.super.silent(_ typedType Ident(sym.name)).fold(NoSymbol: Symbol)(_.symbol)
             } filter (_ ne sym)
           )

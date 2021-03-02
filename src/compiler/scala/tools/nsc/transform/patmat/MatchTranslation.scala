@@ -187,15 +187,9 @@ trait MatchTranslation {
       override def toString = if (subpatterns.isEmpty) "" else subpatterns.mkString("(", ", ", ")")
     }
 
-    /** Implement a pattern match by turning its cases (including the implicit failure case)
-      * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
-      *
-      * For `scrutinee match { case1 ... caseN }`, the resulting tree has the shape
-      * `runOrElse(scrutinee)(x => translateCase1(x).orElse(translateCase2(x)).....orElse(zero))`
-      *
-      * NOTE: the resulting tree is not type checked, nor are nested pattern matches transformed
+    /** NOTE: the resulting tree is not type checked, nor are nested pattern matches transformed
       *   thus, you must typecheck the result (and that will in turn translate nested matches)
-      *   this could probably optimized... (but note that the matchStrategy must be solved for each nested patternmatch)
+      *   this could probably be optimized...
       */
     def translateMatch(match_ : Match): Tree = {
       val Match(selector, cases) = match_
@@ -226,10 +220,10 @@ trait MatchTranslation {
       val pt = repeatedToSeq(origPt)
 
       // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
-      val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
+      val selectorSym = freshSym(selector.pos, selectorTp) setFlag treeInfo.SYNTH_CASE_FLAGS
 
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala
-      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, selectorPos, matchOwner, defaultOverride)
+      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, selectorPos, matchOwner, defaultOverride, getSuppression(selector))
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatNanos, start)
       combined
@@ -255,8 +249,8 @@ trait MatchTranslation {
           val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
-            val caseScrutSym = freshSym(caseDef.pat.pos, pureType(ThrowableTpe))
-            (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
+            val caseScrutSym = freshSym(caseDef.pat.pos, ThrowableTpe)
+            (caseScrutSym, translateCase(caseScrutSym, pt)(caseDef))
           }
 
           for(cases <- emitTypeSwitch(bindersAndCases, pt).toList
@@ -265,10 +259,10 @@ trait MatchTranslation {
         }
 
         val catches = if (swatches.nonEmpty) swatches else {
-          val scrutSym = freshSym(caseDefs.head.pat.pos, pureType(ThrowableTpe))
-          val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
+          val scrutSym = freshSym(caseDefs.head.pat.pos, ThrowableTpe)
+          val cases    = caseDefs.map(translateCase(scrutSym, pt))
 
-          val exSym = freshSym(pos, pureType(ThrowableTpe), "ex")
+          val exSym = freshSym(pos, ThrowableTpe, "ex")
           val suppression =
             if (settings.XnoPatmatAnalysis) Suppression.FullSuppression
             else Suppression.NoSuppression.copy(suppressExhaustive = true) // try/catches needn't be exhaustive
@@ -278,7 +272,7 @@ trait MatchTranslation {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
+                  combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
                 )
               })
         }
@@ -316,7 +310,8 @@ trait MatchTranslation {
       */
     def translateCase(scrutSym: Symbol, pt: Type)(caseDef: CaseDef): List[TreeMaker] = {
       val CaseDef(pattern, guard, body) = caseDef
-      translatePattern(BoundTree(scrutSym, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
+      val treeMakers = translatePattern(BoundTree(scrutSym, pattern)) ++ translateGuard(guard) :+ translateBody(body, pt)
+      propagateSubstitution(treeMakers, EmptySubstitution)
     }
 
     def translatePattern(bound: BoundTree): List[TreeMaker] = bound.translate()
@@ -325,11 +320,7 @@ trait MatchTranslation {
       if (guard == EmptyTree) Nil
       else List(GuardTreeMaker(guard))
 
-    // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by codegen.one),
-    // so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand?
-    // to enable this, probably need to move away from Option to a monad specific to pattern-match,
-    // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
-    // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
+    // TODO: body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
     // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
     def translateBody(body: Tree, matchPt: Type): TreeMaker =
       BodyTreeMaker(body, matchPt)
@@ -554,7 +545,7 @@ trait MatchTranslation {
         // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely
         // wrong when isSeq, and resultInMonad should always be correct since it comes
         // directly from the extractor's result type
-        val binder         = freshSym(pos, pureType(resultInMonad(patBinderOrCasted)))
+        val binder         = freshSym(pos, resultInMonad(patBinderOrCasted))
         val potentiallyMutableBinders: Set[Symbol] =
           if (extractorApply.tpe.typeSymbol.isNonBottomSubClass(OptionClass) && !isSeq)
             Set.empty

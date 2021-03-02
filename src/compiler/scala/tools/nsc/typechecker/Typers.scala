@@ -4718,7 +4718,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // in principle we should pack the types of each branch before lubbing, but lub doesn't really work for existentials anyway
         // in the special (though common) case where the types are equal, it pays to pack before comparing
-        // especially virtpatmat needs more aggressive unification of skolemized types
+        // especially virtpatmat needed more aggressive unification of skolemized types
         // this breaks src/library/scala/collection/immutable/TrieIterator.scala (which as of 2.13 doesn't actually exist anymore)
         // annotated types need to be lubbed regardless (at least, continuations break if you bypass them like this)
         def samePackedTypes = (
@@ -4743,8 +4743,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      // When there's a suitable __match in scope, virtualize the pattern match
-      // otherwise, type the Match and leave it until phase `patmat` (immediately after typer)
+      // Type the Match and leave it until phase `patmat`
       // empty-selector matches are transformed into synthetic PartialFunction implementations when the expected type demands it
       def typedVirtualizedMatch(tree: Match): Tree = {
         val selector = tree.selector

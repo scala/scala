@@ -14,11 +14,7 @@ package scala.tools.nsc.transform.patmat
 
 import scala.tools.nsc.symtab.Flags.SYNTHETIC
 
-/** Factory methods used by TreeMakers to make the actual trees.
- *
- * We have two modes in which to emit trees: optimized (the default)
- * and pure (aka "virtualized": match is parametric in its monad).
- */
+/** Factory methods used by TreeMakers to make the actual trees. */
 trait MatchCodeGen extends Interface {
   import global._
 
@@ -27,7 +23,7 @@ trait MatchCodeGen extends Interface {
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   trait CodegenCore extends MatchMonadInterface {
     private var ctr = 0
-    def freshName(prefix: String) = {ctr += 1; vpmName.counted(prefix, ctr)}
+    def freshName(prefix: String) = { ctr += 1; newTermName(s"$prefix$ctr") }
 
     // assert(owner ne null); assert(owner ne NoSymbol)
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") =
@@ -164,8 +160,8 @@ trait MatchCodeGen extends Interface {
             ValDef(prevSym, prev),
             // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
             ifThenElseZero(
-              NOT(prevSym DOT vpmName.isEmpty),
-              Substitution(b, prevSym DOT vpmName.get)(next)
+              NOT(prevSym DOT nme.isEmpty),
+              Substitution(b, prevSym DOT nme.get)(next)
             )
           )
         }
@@ -193,7 +189,7 @@ trait MatchCodeGen extends Interface {
 
         def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
           ifThenElseZero(cond, BLOCK(
-            condSym    === mkTRUE,
+            condSym    === TRUE,
             nextBinder === res,
             next
           ))
