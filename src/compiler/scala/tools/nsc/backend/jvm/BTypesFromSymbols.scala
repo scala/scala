@@ -157,8 +157,11 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val rawInternalName = ownerBType.internalName
     val ownerInternalName = rawInternalName
     val isInterface = sym.owner.isTraitOrInterface
-    val tag = if (sym.owner.isJavaDefined && sym.isStaticMember) throw new UnsupportedOperationException()
-              else if (isConstructor) asm.Opcodes.H_NEWINVOKESPECIAL
+    val tag =
+              if (sym.isStaticMember) {
+                if (sym.owner.isJavaDefined) throw new UnsupportedOperationException("handled by staticHandleFromSymbol")
+                else asm.Opcodes.H_INVOKESTATIC
+              } else if (isConstructor) asm.Opcodes.H_NEWINVOKESPECIAL
               else if (isInterface) asm.Opcodes.H_INVOKEINTERFACE
               else asm.Opcodes.H_INVOKEVIRTUAL
     new asm.Handle(tag, ownerInternalName, if (isConstructor) sym.name.toString else sym.name.encoded, descriptor, isInterface)
