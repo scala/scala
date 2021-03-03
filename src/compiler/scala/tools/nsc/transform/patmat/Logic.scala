@@ -18,7 +18,7 @@ import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.{HashSet, StatisticsStatics}
 
-trait Logic extends Debugging  {
+trait Logic extends Debugging {
   import global._
 
   private def max(xs: Seq[Int]) = if (xs.isEmpty) 0 else xs.max
@@ -117,12 +117,20 @@ trait Logic extends Debugging  {
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
     final case class And(ops: Set[Prop]) extends Prop
     object And {
-      def apply(ops: Prop*) = new And(ops.toSet)
+      def apply(ps: Prop*)           = create(ps)
+      def create(ps: Iterable[Prop]) = ps match {
+        case ps: Set[Prop] => new And(ps)
+        case _             => new And(ps.to(scala.collection.immutable.ListSet))
+      }
     }
 
     final case class Or(ops: Set[Prop]) extends Prop
     object Or {
-      def apply(ops: Prop*) = new Or(ops.toSet)
+      def apply(ps: Prop*)           = create(ps)
+      def create(ps: Iterable[Prop]) = ps match {
+        case ps: Set[Prop] => new Or(ps)
+        case _             => new Or(ps.to(scala.collection.immutable.ListSet))
+      }
     }
 
     final case class Not(a: Prop) extends Prop
@@ -161,8 +169,17 @@ trait Logic extends Debugging  {
       implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
-    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else And(props.toSeq: _*)
-    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else Or(props.toSeq: _*)
+    def /\(props: Iterable[Prop]) = props match {
+      case _ if props.isEmpty     => True
+      case _ if props.sizeIs == 1 => props.head
+      case _                      => And.create(props)
+    }
+
+    def \/(props: Iterable[Prop]) = props match {
+      case _ if props.isEmpty     => False
+      case _ if props.sizeIs == 1 => props.head
+      case _                      => Or.create(props)
+    }
 
     /**
      * Simplifies propositional formula according to the following rules:
@@ -267,61 +284,44 @@ trait Logic extends Debugging  {
              | (_: AtMostOne)   => p
       }
 
+      def simplifyAnd(ps: Set[Prop]): Prop = {
+        // recurse for nested And (pulls all Ands up)
+        // build up Set in order to remove duplicates
+        val props = mutable.HashSet.empty[Prop]
+        for (prop <- ps) {
+          simplifyProp(prop) match {
+            case True    => // ignore `True`
+            case And(fv) => fv.foreach(props += _)
+            case f       => props += f
+          }
+        }
+
+        if (props.contains(False) || hasImpureAtom(props)) False
+        else /\(props)
+      }
+
+      def simplifyOr(ps: Set[Prop]): Prop = {
+        // recurse for nested Or (pulls all Ors up)
+        // build up Set in order to remove duplicates
+        val props = mutable.HashSet.empty[Prop]
+        for (prop <- ps) {
+          simplifyProp(prop) match {
+            case False  => // ignore `False`
+            case Or(fv) => props ++= fv
+            case f      => props += f
+          }
+        }
+
+        if (props.contains(True) || hasImpureAtom(props)) True
+        else \/(props)
+      }
+
       def simplifyProp(p: Prop): Prop = p match {
-        case And(fv)     =>
-          // recurse for nested And (pulls all Ands up)
-          // build up Set in order to remove duplicates
-          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
-          for (prop <- fv) {
-            val simplified = simplifyProp(prop)
-            if (simplified != True) { // ignore `True`
-              simplified match {
-                case And(fv) => fv.foreach(opsFlattenedBuilder += _)
-                case f => opsFlattenedBuilder += f
-              }
-            }
-          }
-          val opsFlattened = opsFlattenedBuilder.result()
-
-          if (opsFlattened.contains(False) || hasImpureAtom(opsFlattened)) {
-            False
-          } else {
-            opsFlattened.size match {
-              case 0 => True
-              case 1 => opsFlattened.head
-              case _ => new And(opsFlattened)
-            }
-          }
-        case Or(fv)      =>
-          // recurse for nested Or (pulls all Ors up)
-          // build up Set in order to remove duplicates
-          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
-          for (prop <- fv) {
-            val simplified = simplifyProp(prop)
-            if (simplified != False) { // ignore `False`
-              simplified match {
-                case Or(fv) => fv.foreach(opsFlattenedBuilder += _)
-                case f => opsFlattenedBuilder += f
-              }
-            }
-          }
-          val opsFlattened = opsFlattenedBuilder.result()
-
-          if (opsFlattened.contains(True) || hasImpureAtom(opsFlattened)) {
-            True
-          } else {
-            opsFlattened.size match {
-              case 0 => False
-              case 1 => opsFlattened.head
-              case _ => new Or(opsFlattened)
-            }
-          }
-        case Not(Not(a)) =>
-          simplify(a)
-        case Not(p)      =>
-          Not(simplify(p))
-        case p           =>
-          p
+        case And(ps)     => simplifyAnd(ps)
+        case Or(ps)      => simplifyOr(ps)
+        case Not(Not(a)) => simplify(a)
+        case Not(p)      => Not(simplify(p))
+        case p           => p
       }
 
       val nnf = negationNormalForm(f)
@@ -344,7 +344,7 @@ trait Logic extends Debugging  {
     }
 
     def gatherVariables(p: Prop): collection.Set[Var] = {
-      val vars = new mutable.HashSet[Var]()
+      val vars = new mutable.LinkedHashSet[Var]()
       (new PropTraverser {
         override def applyVar(v: Var) = vars += v
       })(p)
@@ -352,7 +352,7 @@ trait Logic extends Debugging  {
     }
 
     def gatherSymbols(p: Prop): collection.Set[Sym] = {
-      val syms = new mutable.HashSet[Sym]()
+      val syms = new mutable.LinkedHashSet[Sym]()
       (new PropTraverser {
         override def applySymbol(s: Sym) = syms += s
       })(p)
@@ -511,7 +511,7 @@ trait Logic extends Debugging  {
 
     final case class Solution(model: Model, unassigned: List[Sym])
 
-    def findModelFor(solvable: Solvable): Model
+    def hasModel(solvable: Solvable): Boolean
 
     def findAllModelsFor(solvable: Solvable, sym: Symbol = NoSymbol): List[Solution]
   }
@@ -562,7 +562,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val subConsts =
           enumerateSubtypes(staticTp, grouped = false)
           .headOption.map { tps =>
-          tps.toSet[Type].map{ tp =>
+          tps.to(scala.collection.immutable.ListSet).map { tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -583,7 +583,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val subtypes = enumerateSubtypes(staticTp, grouped = true)
         subtypes.map {
           subTypes =>
-            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).toSet
+            val syms = subTypes.flatMap(tpe => symForEqualsTo.get(TypeConst(tpe))).to(scala.collection.immutable.ListSet)
             if (mayBeNull) syms + symForEqualsTo(NullConst) else syms
         }.filter(_.nonEmpty)
       }
@@ -719,13 +719,14 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
       // don't access until all potential equalities have been registered using registerEquality
-      private lazy val equalitySyms = {observed(); symForEqualsTo.values.toList}
+      private lazy val equalitySyms = {observed(); symForEqualsTo.values.toList.sortBy(_.toString) }
 
       // don't call until all equalities have been registered and registerNull has been called (if needed)
       def describe = {
+        val consts = symForEqualsTo.keys.toSeq.sortBy(_.toString)
         def domain_s = domain match {
-          case Some(d) => d.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)
-          case _       => symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")
+          case Some(d) => d.mkString(" ::= ", " | ", "// " + consts)
+          case _       => consts.mkString(" ::= ", " | ", " | ...")
         }
         s"$this: ${staticTp}${domain_s} // = $path"
       }

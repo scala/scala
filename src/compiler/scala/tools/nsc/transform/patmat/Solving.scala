@@ -12,61 +12,38 @@
 
 package scala.tools.nsc.transform.patmat
 
-import java.util
-
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.util.StatisticsStatics
 
-// a literal is a (possibly negated) variable
-case class Lit(val v: Int) {
-  private var negated: Lit = null
-  def unary_- : Lit = {
-    if (negated eq null) negated = Lit(-v)
-    negated
-  }
-
-  def variable: Int = Math.abs(v)
-
-  def positive = v >= 0
-
-  override def toString(): String = s"Lit#$v"
-
-  override val hashCode: Int = v
-}
-
-object Lit {
-  def apply(v: Int): Lit = new Lit(v)
-
-  implicit val LitOrdering: Ordering[Lit] = Ordering.by(_.v)
-}
-
-/** Solve pattern matcher exhaustivity problem via DPLL.
- */
+/** Solve pattern matcher exhaustivity problem via DPLL. */
 trait Solving extends Logic {
   import global._
 
   trait CNF extends PropositionalLogic {
+    // a literal is a (possibly negated) variable
+    type Lit <: LitApi
+    trait LitApi {
+      def unary_- : Lit
+    }
 
-    type Clause  = Set[Lit]
+    def Lit: LitModule
+    trait LitModule {
+      def apply(v: Int): Lit
+    }
 
-    val NoClauses: Array[Clause] = Array()
+    type Clause = Set[Lit]
+
+    val NoClauses: Array[Clause]    = Array()
     val ArrayOfFalse: Array[Clause] = Array(clause())
+
     // a clause is a disjunction of distinct literals
-    def clause(): Clause = Set.empty
-    def clause(l: Lit): Clause = {
-      Set.empty + l
-    }
-    def clause(l: Lit, l2: Lit): Clause = {
-      Set.empty + l + l2
-    }
-    def clause(l: Lit, l2: Lit, ls: Lit*): Clause = {
-      Set.empty + l + l2 ++ ls
-    }
-    def clause(ls: IterableOnce[Lit]): Clause = {
-      Set.from(ls)
-    }
+    def clause(): Clause                          = Set.empty
+    def clause(l: Lit): Clause                    = Set.empty + l
+    def clause(l: Lit, l2: Lit): Clause           = Set.empty + l + l2
+    def clause(l: Lit, l2: Lit, ls: Lit*): Clause = Set.empty + l + l2 ++ ls
+    def clause(ls: IterableOnce[Lit]): Clause     = Set.from(ls)
 
     /** Conjunctive normal form (of a Boolean formula).
      *  A formula in this form is amenable to a SAT solver
@@ -83,8 +60,7 @@ trait Solving extends Logic {
 
       val symForVar: Map[Int, Sym] = variableForSymbol.map(_.swap)
 
-      val relevantVars =
-        symForVar.keysIterator.map(math.abs).to(immutable.BitSet)
+      val relevantVars = symForVar.keysIterator.map(math.abs).to(immutable.BitSet)
 
       def lit(sym: Sym): Lit = Lit(variableForSymbol(sym))
 
@@ -390,7 +366,22 @@ trait Solving extends Logic {
   }
 
   // simple solver using DPLL
+  // adapted from https://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
   trait Solver extends CNF {
+    case class Lit(v: Int) extends LitApi {
+      private lazy val negated: Lit = Lit(-v)
+
+      def unary_- : Lit     = negated
+      def variable: Int     = Math.abs(v)
+      def positive: Boolean = v >= 0
+
+      override def toString = s"Lit#$v"
+      override def hashCode = v
+    }
+
+    object Lit extends LitModule {
+      def apply(v: Int): Lit = new Lit(v)
+    }
 
     def cnfString(f: Array[Clause]): String = {
       val lits: Array[List[String]] = f map (_.map(_.toString).toList)
@@ -398,8 +389,6 @@ trait Solving extends Logic {
       val aligned: String = alignAcrossRows(xss, "\\/", " /\\\n")
       aligned
     }
-
-    // adapted from https://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
 
     // empty set of clauses is trivially satisfied
     val EmptyModel = Map.empty[Sym, Boolean]
@@ -411,57 +400,59 @@ trait Solving extends Logic {
 
     // this model contains the auxiliary variables as well
     type TseitinModel = List[Lit]
-    val EmptyTseitinModel = Nil
     val NoTseitinModel: TseitinModel = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def findAllModelsFor(solvable: Solvable, owner: Symbol): List[Solution] = {
-      debug.patmat("find all models for\n"+ cnfString(solvable.cnf))
+      import solvable.{ cnf, symbolMapping }, symbolMapping.{ symForVar, relevantVars }
+      debug.patmat(s"find all models for\n${cnfString(cnf)}")
 
       // we must take all vars from non simplified formula
       // otherwise if we get `T` as formula, we don't expand the variables
       // that are not in the formula...
-      val relevantVars: immutable.BitSet = solvable.symbolMapping.relevantVars
 
       // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       // (i.e. the blocking clause - used for ALL-SAT)
-      def negateModel(m: TseitinModel) = {
+      def negateModel(m: TseitinModel): TseitinModel = {
         // filter out auxiliary Tseitin variables
-        val relevantLits = m.filter(l => relevantVars.contains(l.variable))
-        relevantLits.map(lit => -lit)
+        m.filter(lit => relevantVars.contains(lit.variable)).map(lit => -lit)
       }
 
-      final case class TseitinSolution(model: TseitinModel, unassigned: List[Int]) {
-        def projectToSolution(symForVar: Map[Int, Sym]) = Solution(projectToModel(model, symForVar), unassigned map symForVar)
+      def newSolution(model: TseitinModel, unassigned: List[Int]): Solution = {
+        val newModel: Model = if (model eq NoTseitinModel) NoModel else {
+          model.iterator.collect {
+            case lit if symForVar.isDefinedAt(lit.variable) => (symForVar(lit.variable), lit.positive)
+          }.toMap
+        }
+        Solution(newModel, unassigned.map(symForVar))
       }
 
       @tailrec
       def findAllModels(clauses: Array[Clause],
-                        models: List[TseitinSolution],
-                        recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[TseitinSolution]=
+                        models: List[Solution],
+                        recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[Solution] = {
         if (recursionDepthAllowed == 0) {
           uncheckedWarning(owner.pos, AnalysisBudget.recursionDepthReached, owner)
           models
         } else {
-          debug.patmat("find all models for\n" + cnfString(clauses))
+          debug.patmat(s"find all models for\n${cnfString(clauses)}")
           val model = findTseitinModelFor(clauses)
           // if we found a solution, conjunct the formula with the model's negation and recurse
-          if (model ne NoTseitinModel) {
+          if (model eq NoTseitinModel) models else {
             // note that we should not expand the auxiliary variables (from Tseitin transformation)
             // since they are existentially quantified in the final solution
-            val unassigned: List[Int] = (relevantVars.toList.filterNot(x => model.exists(lit => x == lit.variable)))
-            debug.patmat("unassigned "+ unassigned +" in "+ model)
+            val unassigned: List[Int] = relevantVars.filterNot(x => model.exists(lit => x == lit.variable)).toList.sorted
+            debug.patmat(s"unassigned $unassigned in $model")
 
-            val solution = TseitinSolution(model, unassigned)
-            val negated = negateModel(model)
-            findAllModels(clauses :+ negated.toSet, solution :: models, recursionDepthAllowed - 1)
+            val solution = newSolution(model, unassigned)
+            val negated  = negateModel(model).to(scala.collection.immutable.ListSet)
+            findAllModels(clauses :+ negated, solution :: models, recursionDepthAllowed - 1)
           }
-          else models
         }
+      }
 
-      val tseitinSolutions = findAllModels(solvable.cnf, Nil)
-      tseitinSolutions.map(_.projectToSolution(solvable.symbolMapping.symForVar))
+      findAllModels(solvable.cnf, Nil)
     }
 
     /** Drop trivially true clauses, simplify others by dropping negation of `unitLit`.
@@ -485,16 +476,13 @@ trait Solving extends Logic {
       }
     }
 
-    def findModelFor(solvable: Solvable): Model = {
-      projectToModel(findTseitinModelFor(solvable.cnf.map(_.toSet)), solvable.symbolMapping.symForVar)
-    }
+    def hasModel(solvable: Solvable): Boolean = findTseitinModelFor(solvable.cnf) != NoTseitinModel
 
     def findTseitinModelFor(clauses: Array[Clause]): TseitinModel = {
-      debug.patmat(s"DPLL\n${cnfString(clauses)}")
-
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
-      val satisfiableWithModel = findTseitinModel0((util.Arrays.copyOf(clauses, clauses.length), Nil) :: Nil)
+      debug.patmat(s"DPLL\n${cnfString(clauses)}")
+      val satisfiableWithModel = findTseitinModel0((java.util.Arrays.copyOf(clauses, clauses.length), Nil) :: Nil)
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
@@ -535,104 +523,85 @@ trait Solving extends Logic {
       *
       */
     private def findTseitinModel0(state: TseitinSearch): TseitinModel = {
-      val pos = new util.BitSet()
-      val neg = new util.BitSet()
-
-      @annotation.tailrec
-      def loop(state: TseitinSearch): TseitinModel ={
-        state match {
-          case Nil => NoTseitinModel
-          case (clauses, assignments) :: rest =>
-            if (clauses.isEmpty || clauses.head == null) assignments
-            else {
-              var i = 0
-              var emptyIndex = -1
-              var unitIndex = -1
-              while (i < clauses.length && emptyIndex == -1) {
-                val clause = clauses(i)
-                if (clause != null) {
-                  clause.size match {
-                    case 0 => emptyIndex = i
-                    case 1 if unitIndex == -1 =>
-                      unitIndex = i
-                    case _ =>
-                  }
+      val pos = new java.util.BitSet()
+      val neg = new java.util.BitSet()
+      @tailrec def loop(state: TseitinSearch): TseitinModel = state match {
+        case Nil => NoTseitinModel
+        case (clauses, assignments) :: rest =>
+          if (clauses.isEmpty || clauses.head == null) assignments
+          else {
+            var i = 0
+            var emptyIndex = -1
+            var unitIndex = -1
+            while (i < clauses.length && emptyIndex == -1) {
+              val clause = clauses(i)
+              if (clause != null) {
+                clause.size match {
+                  case 0 => emptyIndex = i
+                  case 1 if unitIndex == -1 =>
+                    unitIndex = i
+                  case _ =>
                 }
-                i += 1
               }
-              if (emptyIndex != -1)
-                loop(rest)
-              else if (unitIndex != -1) {
-                val unitLit = clauses(unitIndex).head
-                dropUnit(clauses, unitLit)
-                val tuples: TseitinSearch = (clauses, unitLit :: assignments) :: rest
-                loop(tuples)
+              i += 1
+            }
+            if (emptyIndex != -1)
+              loop(rest)
+            else if (unitIndex != -1) {
+              val unitLit = clauses(unitIndex).head
+              dropUnit(clauses, unitLit)
+              val tuples: TseitinSearch = (clauses, unitLit :: assignments) :: rest
+              loop(tuples)
+            } else {
+              // partition symbols according to whether they appear in positive and/or negative literals
+              pos.clear()
+              neg.clear()
+              for (clause <- clauses) {
+                if (clause != null) {
+                  clause.foreach { lit: Lit =>
+                    if (lit.positive) pos.set(lit.variable) else neg.set(lit.variable)
+                  }
+                }
+              }
+
+              // appearing only in either positive/negative positions
+
+              pos.xor(neg)
+              val pures = pos
+
+              if (!pures.isEmpty) {
+                val pureVar = pures.nextSetBit(0)
+                // turn it back into a literal
+                // (since equality on literals is in terms of equality
+                //  of the underlying symbol and its positivity, simply construct a new Lit)
+                val pureLit: Lit = Lit(if (neg.get(pureVar)) -pureVar else pureVar)
+                // debug.patmat("pure: "+ pureLit +" pures: "+ pures)
+                val simplified = clauses.filterNot(clause => clause != null && clause.contains(pureLit))
+                loop((simplified, pureLit :: assignments) :: rest)
               } else {
-                // partition symbols according to whether they appear in positive and/or negative literals
-                pos.clear()
-                neg.clear()
-                for (clause <- clauses) {
-                  if (clause != null) {
-                    clause.foreach { lit: Lit =>
-                      if (lit.positive) pos.set(lit.variable) else neg.set(lit.variable)
-                    }
-                  }
+                val split = clauses.find(_ != null).get.head
+                // debug.patmat("split: "+ split)
+                var i = 0
+                var nullIndex = -1
+                while (i < clauses.length && nullIndex == -1) {
+                  if (clauses(i) eq null) nullIndex = i
+                  i += 1
                 }
 
-                // appearing only in either positive/negative positions
+                val effectiveLength = if (nullIndex == -1) clauses.length else nullIndex
+                val posClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
+                val negClauses = java.util.Arrays.copyOf(clauses, effectiveLength + 1)
+                posClauses(effectiveLength) = Set.empty[Lit] + split
+                negClauses(effectiveLength) = Set.empty[Lit] + (-split)
 
-                pos.xor(neg)
-                val pures = pos
-
-                if (!pures.isEmpty) {
-                  val pureVar = pures.nextSetBit(0)
-                  // turn it back into a literal
-                  // (since equality on literals is in terms of equality
-                  //  of the underlying symbol and its positivity, simply construct a new Lit)
-                  val pureLit: Lit = Lit(if (neg.get(pureVar)) -pureVar else pureVar)
-                  // debug.patmat("pure: "+ pureLit +" pures: "+ pures)
-                  val simplified = clauses.filterNot(clause => clause != null && clause.contains(pureLit))
-                  loop((simplified, pureLit :: assignments) :: rest)
-                } else {
-                  val split = clauses.find(_ != null).get.head
-                  // debug.patmat("split: "+ split)
-                  var i = 0
-                  var nullIndex = -1
-                  while (i < clauses.length && nullIndex == -1) {
-                    if (clauses(i) eq null) nullIndex = i
-                    i += 1
-                  }
-
-                  val effectiveLength = if (nullIndex == -1) clauses.length else nullIndex
-                  val posClauses = util.Arrays.copyOf(clauses, effectiveLength + 1)
-                  val negClauses = util.Arrays.copyOf(clauses, effectiveLength + 1)
-                  posClauses(effectiveLength) = Set.empty[Lit] + split
-                  negClauses(effectiveLength) = Set.empty[Lit] + (-split)
-
-                  val pos = (posClauses, assignments)
-                  val neg = (negClauses, assignments)
-                  loop(pos :: neg :: rest)
-                }
+                val pos = (posClauses, assignments)
+                val neg = (negClauses, assignments)
+                loop(pos :: neg :: rest)
               }
             }
-        }
+          }
       }
       loop(state)
     }
-
-    private def projectToModel(model: TseitinModel, symForVar: Map[Int, Sym]): Model =
-      if (model == NoTseitinModel) NoModel
-      else if (model == EmptyTseitinModel) EmptyModel
-      else {
-        val mappedModels = model.iterator.toList collect {
-          case lit if symForVar isDefinedAt lit.variable => (symForVar(lit.variable), lit.positive)
-        }
-        if (mappedModels.isEmpty) {
-          // could get an empty model if mappedModels is a constant like `True`
-          EmptyModel
-        } else {
-          mappedModels.toMap
-        }
-      }
   }
 }
