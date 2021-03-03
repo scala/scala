@@ -12,9 +12,9 @@
 
 package scala.tools.nsc
 
-import scala.reflect.internal.util.{ SourceFile, NoSourceFile, FreshNameCreator }
 import scala.collection.mutable
-import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
+import scala.collection.mutable.{LinkedHashSet, ListBuffer}
+import scala.reflect.internal.util.{FreshNameCreator, NoSourceFile, SourceFile}
 
 trait CompilationUnits { global: Global =>
 

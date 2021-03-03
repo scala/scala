@@ -55,15 +55,17 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
     private val summarizedInfos: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
 
-    private var suppressionsComplete = false
     private val suppressions: mutable.LinkedHashMap[SourceFile, mutable.ListBuffer[Suppression]] = mutable.LinkedHashMap.empty
-    private val suspendedMessages: mutable.LinkedHashSet[Message] = mutable.LinkedHashSet.empty
+    private val suppressionsComplete: mutable.Set[SourceFile] = mutable.Set.empty
+    private val suspendedMessages: mutable.LinkedHashMap[SourceFile, mutable.LinkedHashSet[Message]] = mutable.LinkedHashMap.empty
 
     private def isSuppressed(warning: Message): Boolean =
       suppressions.getOrElse(warning.pos.source, Nil).find(_.matches(warning)) match {
         case Some(s) => s.markUsed(); true
         case _ => false
       }
+
+    def clearSuppressionsComplete(sourceFile: SourceFile): Unit = suppressionsComplete -= sourceFile
 
     def addSuppression(sup: Suppression): Unit = {
       val source = sup.annotPos.source
@@ -75,7 +77,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
     def warnUnusedSuppressions(): Unit = {
       // if we stop before typer completes (errors in parser, Ystop), report all suspended messages
-      suspendedMessages.foreach(issueWarning)
+      suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning))
       if (settings.warnUnusedNowarn && !settings.isScaladoc) { // scaladoc doesn't run all phases, so not all warnings are emitted
         val sources = suppressions.keysIterator.toList
         for (source <- sources; sups <- suppressions.remove(source); sup <- sups.reverse) {
@@ -85,15 +87,12 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       }
     }
 
-    def reportSuspendedMessages(): Unit = {
-      suppressionsComplete = true
+    def reportSuspendedMessages(unit: CompilationUnit): Unit = {
       // sort suppressions. they are not added in any particular order because of lazy type completion
-      suppressions.transform((_, sups) => sups.sortBy(sup => 0 - sup.start))
-      suspendedMessages.foreach { m =>
-        if (!isSuppressed(m))
-          issueWarning(m)
-      }
-      suspendedMessages.clear()
+      for (sups <- suppressions.get(unit.source))
+        suppressions(unit.source) = sups.sortBy(sup => 0 - sup.start)
+      suppressionsComplete += unit.source
+      suspendedMessages.remove(unit.source).foreach(_.foreach(issueIfNotSuppressed))
     }
 
     private def summaryMap(action: Action, category: WarningCategory) = {
@@ -122,12 +121,12 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       }
     }
 
-    private def checkSuppressedAndIssue(warning: Message): Unit = {
-      if (suppressionsComplete) {
+    def issueIfNotSuppressed(warning: Message): Unit = {
+      if (suppressionsComplete(warning.pos.source)) {
         if (!isSuppressed(warning))
           issueWarning(warning)
       } else
-        suspendedMessages += warning
+        suspendedMessages.getOrElseUpdate(warning.pos.source, mutable.LinkedHashSet.empty) += warning
     }
 
     private def summarize(action: Action, category: WarningCategory): Unit = {
@@ -189,7 +188,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     } else ""
 
     def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
-      checkSuppressedAndIssue(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
+      issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
@@ -215,6 +214,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
         ("macros", FeatureMacros)
       ).withDefaultValue(Feature)
     }
+
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean, site: Symbol): Unit = {
       val req     = if (required) "needs to" else "should"
       val fqname  = "scala.language." + featureName
@@ -245,7 +245,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
     // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      checkSuppressedAndIssue(Message.Plain(pos, msg, category, site))
+      issueIfNotSuppressed(Message.Plain(pos, msg, category, site))
 
     // Preferred over the overload above whenever a site symbol is available
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =

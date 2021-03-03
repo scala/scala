@@ -1,0 +1,50 @@
+reload: Foo.scala
+askLoadedTyped 1
+Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)
+askLoadedTyped 2
+Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)
+reload: Foo.scala
+askLoadedTyped 3
+Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)
+targeted 1
+
+askType at Foo.scala(2,37)
+================================================================================
+[response] askTypeAt (2,37)
+1
+================================================================================
+
+askType at Foo.scala(3,17)
+================================================================================
+[response] askTypeAt (3,17)
+1
+================================================================================
+
+askType at Foo.scala(4,37)
+================================================================================
+[response] askTypeAt (4,37)
+1
+================================================================================
+Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)
+reload: Foo.scala
+targeted 2 - doesn't handle nowarn correctly
+
+askType at Foo.scala(2,37)
+================================================================================
+[response] askTypeAt (2,37)
+1
+================================================================================
+
+askType at Foo.scala(3,17)
+================================================================================
+[response] askTypeAt (3,17)
+1
+================================================================================
+
+askType at Foo.scala(4,37)
+================================================================================
+[response] askTypeAt (4,37)
+1
+================================================================================
+Problem(RangePosition(t12308/src/Foo.scala, 67, 67, 72),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)
+Problem(RangePosition(t12308/src/Foo.scala, 109, 109, 114),A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.,1)

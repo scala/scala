@@ -25,6 +25,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 trait Contexts { self: Analyzer =>
   import global._
   import definitions.{ JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
+
   import ContextMode._
 
   protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
@@ -617,8 +618,9 @@ trait Contexts { self: Analyzer =>
     // TODO: buffer deprecations under silent (route through ContextReporter, store in BufferingReporter)
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
       runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
+
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      runReporting.deprecationWarning(fixPosition(pos), sym, owner) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner)
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
       runReporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
