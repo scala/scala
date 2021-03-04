@@ -3582,7 +3582,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case _ if currentRun.runDefinitions.isPolymorphicSignature(fun.symbol) =>
           // Mimic's Java's treatment of polymorphic signatures as described in
-          // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
+          // https://docs.oracle.com/javase/specs/jls/se11/html/jls-15.html#jls-15.12.3
           //
           // One can think of these methods as being infinitely overloaded. We create
           // a fictitious new cloned method symbol for each call site that takes on a signature
@@ -3590,7 +3590,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val args1 = typedArgs(args, forArgMode(fun, mode))
           val clone = fun.symbol.cloneSymbol.withoutAnnotations
           val cloneParams = args1.map(arg => clone.newValueParameter(freshTermName()).setInfo(arg.tpe.deconst))
-          val resultType = if (isFullyDefined(pt)) pt else ObjectTpe
+          val resultType =
+            if (fun.symbol.tpe.resultType.typeSymbol != ObjectClass) fun.symbol.tpe.resultType
+            else if (isFullyDefined(pt)) pt
+            else ObjectTpe
           clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
           val fun1 = fun.setSymbol(clone).setType(clone.info)
           doTypedApply(tree, fun1, args1, mode, resultType).setType(resultType)
