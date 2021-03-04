@@ -4,13 +4,13 @@ object t12349b {
 
   class Inner12349b extends t12349a {
                        override def a1(): Unit = println("Inner12349b#a1()")
-    protected          override def a2(): Unit = println("Inner12349b#a2()") // [#12349]
+    protected          override def a2(): Unit = println("Inner12349b#a2()") // weaker access privileges
       private          override def a3(): Unit = println("Inner12349b#a3()") // weaker access privileges
-    protected[t12349b] override def a4(): Unit = println("Inner12349b#a4()") // [#12349]
-      private[t12349b] override def a5(): Unit = println("Inner12349b#a5()") // [#12349]
-    protected[t12349]  override def a6(): Unit = println("Inner12349b#a6()") // [#12349]
-      private[t12349]  override def a7(): Unit = println("Inner12349b#a7()") // [#12349]
-    protected[this]    override def a8(): Unit = println("Inner12349b#a8()") // [#12349]
+    protected[t12349b] override def a4(): Unit = println("Inner12349b#a4()") // weaker access privileges
+      private[t12349b] override def a5(): Unit = println("Inner12349b#a5()") // weaker access privileges
+    protected[t12349]  override def a6(): Unit = println("Inner12349b#a6()") // weaker access privileges
+      private[t12349]  override def a7(): Unit = println("Inner12349b#a7()") // weaker access privileges
+    protected[this]    override def a8(): Unit = println("Inner12349b#a8()") // weaker access privileges
       private[this]    override def a9(): Unit = println("Inner12349b#a9()") // [#9334]
 
                        override def b1(): Unit = println("Inner12349b#b1()")
@@ -24,13 +24,13 @@ object t12349b {
       private[this]    override def b9(): Unit = println("Inner12349b#b9()") // [#9334]
 
                        override def c1(): Unit = println("Inner12349b#c1()")
-    protected          override def c2(): Unit = println("Inner12349b#c2()") // [#12349]
+    protected          override def c2(): Unit = println("Inner12349b#c2()") // weaker access privileges
       private          override def c3(): Unit = println("Inner12349b#c3()") // weaker access privileges
-    protected[t12349b] override def c4(): Unit = println("Inner12349b#c4()") // [#12349]
-      private[t12349b] override def c5(): Unit = println("Inner12349b#c5()") // [#12349]
+    protected[t12349b] override def c4(): Unit = println("Inner12349b#c4()") // weaker access privileges
+      private[t12349b] override def c5(): Unit = println("Inner12349b#c5()") // weaker access privileges
     protected[t12349]  override def c6(): Unit = println("Inner12349b#c6()")
       private[t12349]  override def c7(): Unit = println("Inner12349b#c7()")
-    protected[this]    override def c8(): Unit = println("Inner12349b#c8()") // [#12349]
+    protected[this]    override def c8(): Unit = println("Inner12349b#c8()") // weaker access privileges
       private[this]    override def c9(): Unit = println("Inner12349b#c9()") // [#9334]
 
                        override def d1(): Unit = println("Inner12349b#d1()") // overrides nothing

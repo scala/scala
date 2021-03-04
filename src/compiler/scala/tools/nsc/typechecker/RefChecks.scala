@@ -383,7 +383,7 @@ abstract class RefChecks extends Transform {
           def isOverrideAccessOK = member.isPublic || {      // member is public, definitely same or relaxed access
             (!other.isProtected || member.isProtected) &&    // if o is protected, so is m
             ((!isRootOrNone(ob) && ob.hasTransOwner(mb)) ||  // m relaxes o's access boundary
-             other.isJavaDefined)                           // overriding a protected java member, see #3946
+            (other.isJavaDefined && other.isProtected))      // overriding a protected java member, see #3946 #12349
           }
           if (!isOverrideAccessOK) {
             overrideAccessError()
