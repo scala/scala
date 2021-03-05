@@ -263,9 +263,6 @@ object scalac extends Command {
           CmdOptionBound("Vprint:", Argument("phases")),
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
-          CmdOptionBound("Vprint-icode", "[:" & Argument("phases") & "]"),
-          "Log internal icode to *.icode files after" & Argument("phases") & " (default: icode)."),
-        Definition(
           CmdOption("Vprint-pos"),
           "Print tree positions, as offsets."),
         Definition(
@@ -387,9 +384,6 @@ object scalac extends Command {
         Definition(
           MItalic("delambdafy"),
           "remove lambdas"),
-        Definition(
-          MItalic("icode"),
-          "generate portable intermediate code"),
         Definition(
           MItalic("inliner"),
           "optimization: do inlining"),
