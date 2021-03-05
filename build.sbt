@@ -141,7 +141,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   Global / excludeLintKeys ++= Set(scalaSource),
   // each subproject has to ask specifically for files they want to include
   Compile / unmanagedResources / includeFilter := NothingFilter,
-  target := (ThisBuild / baseDirectory).value / "target" / thisProject.value.id,
+  target := (ThisBuild / target).value / thisProject.value.id,
   Compile / classDirectory := buildDirectory.value / "quick/classes" / thisProject.value.id,
   Compile / doc / target := buildDirectory.value / "scaladoc" / thisProject.value.id,
   // given that classDirectory and doc target are overridden to be _outside_ of target directory, we have
@@ -1091,7 +1091,7 @@ lazy val dist = (project in file("dist"))
       (ThisBuild / buildDirectory).value / "quick"
     }.dependsOn((distDependencies.map(_ / Runtime / products) :+ mkBin): _*).value,
     mkPack := Def.task { (ThisBuild / buildDirectory).value / "pack" }.dependsOn(Compile / packageBin / packagedArtifact, mkBin).value,
-    target := (ThisBuild / baseDirectory).value / "target" / thisProject.value.id,
+    target := (ThisBuild / target).value / thisProject.value.id,
     Compile / packageBin := {
       val targetDir = (ThisBuild / buildDirectory).value / "pack" / "lib"
       val jlineJAR = findJar((Compile / dependencyClasspath).value, jlineDep).get.data
@@ -1130,7 +1130,6 @@ def configureAsSubproject(project: Project, srcdir: Option[String] = None): Proj
     .settings(generatePropertiesFileSettings)
 }
 
-lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
@@ -1197,8 +1196,6 @@ def generateServiceProviderResources(services: (String, String)*): Setting[_] =
       f
     }
   }.taskValue
-
-ThisBuild / buildDirectory := (ThisBuild / baseDirectory).value / "build"
 
 // Add tab completion to partest
 commands += Command("partest")(_ => PartestUtil.partestParser((ThisBuild / baseDirectory).value, (ThisBuild / baseDirectory).value / "test")) { (state, parsed) =>

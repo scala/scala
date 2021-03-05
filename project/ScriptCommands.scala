@@ -4,6 +4,7 @@ import java.nio.file.Paths
 
 import sbt._
 import Keys._
+import sbt.complete.Parser._
 import sbt.complete.Parsers._
 
 import BuildSettings.autoImport._
@@ -115,12 +116,17 @@ object ScriptCommands {
 
   /** For local dev: sets `scalaVersion` to the version in `/buildcharacter.properties` or the given arg.
    * Running `reload` will re-read the build files, resetting `scalaVersion`. */
-  def restarr = Command("restarr")(_ => (Space ~> StringBasic).?) { (state, s) =>
-    val newVersion = s.getOrElse(readVersionFromPropsFile(state))
-    val x = Project.extract(state)
-    val sv = x.get(Global / scalaVersion)
-    state.log.info(s"Re-STARR'ing: setting scalaVersion from $sv to $newVersion (`reload` to undo)")
-    x.appendWithSession(Global / scalaVersion := newVersion, state) // don't use version.value or it'll be a wrong, new value
+  def restarr = Command("restarr")(_ => (Space ~> token(StringBasic, "scalaVersion")).?) { (state, argSv) =>
+    val x     = Project.extract(state)
+    val oldSv = x.get(Global / scalaVersion)
+    val newSv = argSv.getOrElse(readVersionFromPropsFile(state))
+    state.log.info(s"Re-STARR'ing: setting scalaVersion from $oldSv to $newSv (`reload` to undo; IntelliJ still uses $oldSv)")
+    val settings = Def.settings(
+      Global    / scalaVersion   := newSv, // don't use version.value or it'll be a wrong, new value
+      ThisBuild / target         := (ThisBuild / baseDirectory).value / "target-restarr",
+      ThisBuild / buildDirectory := (ThisBuild / baseDirectory).value /  "build-restarr",
+    )
+    x.appendWithSession(settings, state)
   }
 
   /** For local dev: publishes locally (without optimizing) & then sets the new `scalaVersion`.
@@ -134,7 +140,10 @@ object ScriptCommands {
   }
 
   private def readVersionFromPropsFile(state: State): String = {
-    val props = readProps(file("buildcharacter.properties"))
+    val propsFile = file("buildcharacter.properties")
+    if (!propsFile.exists())
+      throw new MessageOnlyException("No buildcharacter.properties found - try restarrFull")
+    val props = readProps(propsFile)
     val newVersion = props("maven.version.number")
     val fullVersion = props("version.number")
     state.log.info(s"Read STARR version from buildcharacter.properties: $newVersion (full version: $fullVersion)")
