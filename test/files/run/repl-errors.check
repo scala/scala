@@ -8,4 +8,7 @@ scala> def foo() { }
        warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `foo`'s return type
 def foo(): Unit
 
+scala> @annotation.nowarn def sshhh() { }
+def sshhh(): Unit
+
 scala> :quit

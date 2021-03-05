@@ -59,6 +59,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private val suppressionsComplete: mutable.Set[SourceFile] = mutable.Set.empty
     private val suspendedMessages: mutable.LinkedHashMap[SourceFile, mutable.LinkedHashSet[Message]] = mutable.LinkedHashMap.empty
 
+    // Used in REPL. The old run is used for parsing. Don't discard its suspended warnings.
+    def initFrom(old: PerRunReporting): Unit = {
+      suspendedMessages ++= old.suspendedMessages
+    }
+
     private def isSuppressed(warning: Message): Boolean =
       suppressions.getOrElse(warning.pos.source, Nil).find(_.matches(warning)) match {
         case Some(s) => s.markUsed(); true

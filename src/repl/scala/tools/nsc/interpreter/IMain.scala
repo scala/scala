@@ -735,7 +735,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       compile(new CompilationUnit(new BatchSourceFile(label, packaged(code))))
 
     def compile(unit: CompilationUnit): Boolean = {
+      val oldRunReporting = currentRun.reporting
       val run = new Run()
+      // The unit is already parsed and won't be parsed again. This makes sure suspended warnings are not discarded.
+      run.reporting.initFrom(oldRunReporting)
       assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
 
       run.compileUnits(unit :: Nil)

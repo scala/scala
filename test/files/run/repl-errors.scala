@@ -6,5 +6,6 @@ object Test extends ReplTest {
   def code = """
 '\060'
 def foo() { }
+@annotation.nowarn def sshhh() { }
   """.trim
 }
