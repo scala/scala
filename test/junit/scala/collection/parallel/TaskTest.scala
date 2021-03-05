@@ -27,4 +27,13 @@ class TaskTest {
 
     for (x <- one ; y <- two) assert(Thread.currentThread.getName == "two")
   }
+
+  @Test // https://github.com/scala/scala-parallel-collections/issues/152
+  def `propagate tasksupport through CombinerFactory`(): Unit = {
+    val myTs = new ExecutionContextTaskSupport()
+    val c = List(1).par
+    c.tasksupport = myTs
+    val r = c.filter(_ != 0).map(_ + 1)
+    assert(myTs eq r.tasksupport)
+  }
 }
