@@ -107,12 +107,12 @@ trait Analyzer extends AnyRef
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
-        runReporting.reportSuspendedMessages()
       }
       def apply(unit: CompilationUnit): Unit = {
         try {
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
+          // interactive typed may finish by throwing a `TyperResult`
           if (!settings.Youtline) {
             for (workItem <- unit.toCheck) workItem()
             if (settings.warnUnusedImport)
@@ -122,6 +122,7 @@ trait Analyzer extends AnyRef
           }
         }
         finally {
+          runReporting.reportSuspendedMessages(unit)
           unit.toCheck.clear()
         }
       }
