@@ -19,7 +19,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm
-import scala.tools.asm.Attribute
+import scala.tools.asm.{Attribute, Type}
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
@@ -161,9 +161,21 @@ abstract class ByteCodeRepository extends PerRunInit {
   def methodNode(ownerInternalNameOrArrayDescriptor: String, name: String, descriptor: String): Either[MethodNotFound, (MethodNode, InternalName)] = {
     def findMethod(c: ClassNode): Option[MethodNode] = c.methods.asScala.find(m => m.name == name && m.desc == descriptor)
 
-    // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.9: "In Java SE 8, the only
-    // signature polymorphic methods are the invoke and invokeExact methods of the class MethodHandle.
-    def isSignaturePolymorphic(owner: InternalName) = owner == coreBTypes.jliMethodHandleRef.internalName && (name == "invoke" || name == "invokeExact")
+    // https://docs.oracle.com/javase/specs/jvms/se11/html/jvms-2.html#jvms-2.9.3
+    def findSignaturePolymorphic(owner: ClassNode): Option[MethodNode] = {
+      def hasObjectArrayParam(m: MethodNode) = Type.getArgumentTypes(m.desc) match {
+        case Array(pt) => pt.getDimensions == 1 && pt.getElementType.getInternalName == coreBTypes.ObjectRef.internalName
+        case _ => false
+      }
+      // Don't try to build a BType for `VarHandle`, it doesn't exist on JDK 8
+      if (owner.name == coreBTypes.jliMethodHandleRef.internalName || owner.name == "java/lang/invoke/VarHandle")
+        owner.methods.asScala.find(m =>
+          m.name == name &&
+            isNativeMethod(m) &&
+            isVarargsMethod(m) &&
+            hasObjectArrayParam(m))
+      else None
+    }
 
     // Note: if `owner` is an interface, in the first iteration we search for a matching member in the interface itself.
     // If that fails, the recursive invocation checks in the superclass (which is Object) with `publicInstanceOnly == true`.
@@ -171,10 +183,13 @@ abstract class ByteCodeRepository extends PerRunInit {
     def findInSuperClasses(owner: ClassNode, publicInstanceOnly: Boolean = false): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
       findMethod(owner) match {
         case Some(m) if !publicInstanceOnly || (isPublicMethod(m) && !isStaticMethod(m)) => Right(Some((m, owner.name)))
-        case None =>
-          if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
-          else if (owner.superName == null) Right(None)
-          else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
+        case _ =>
+          findSignaturePolymorphic(owner) match {
+            case Some(m) => Right(Some((m, owner.name)))
+            case _ =>
+              if (owner.superName == null) Right(None)
+              else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
+          }
       }
     }
 
