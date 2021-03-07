@@ -29,6 +29,21 @@ class ZipArchiveTest {
   }
 
   @Test
+  def weirdFileAtRoot(): Unit = {
+    val f = Files.createTempFile("test", ".jar").tap {f =>
+      Using.resource(new JarOutputStream(Files.newOutputStream(f))) { jout =>
+        jout.putNextEntry(new JarEntry("/.hey.txt"))
+        val bytes = "hello, world".getBytes
+        jout.write(bytes, 0, bytes.length)
+        ()
+      }
+    }
+    Using.resources(ForDeletion(f), new FileZipArchive(f.toFile)){ (_, fza) =>
+      assertEquals(Seq(".hey.txt"), fza.iterator.toSeq.map(_.name))
+    }
+  }
+
+  @Test
   def missingFile(): Unit = {
     val f = Paths.get("xxx.does.not.exist")
     val fza = new FileZipArchive(f.toFile)
