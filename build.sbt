@@ -710,7 +710,7 @@ lazy val junit = project.in(file("test") / "junit")
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
