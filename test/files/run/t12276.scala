@@ -3,7 +3,7 @@ import scala.tools.nsc.interpreter.shell.{ILoop, ShellConfig}
 import scala.tools.partest.{hexdump, ReplTest}
 
 object Test extends ReplTest {
-  def code = """
+  def code = s"""
     |java.nio.CharBuffer.allocate(5)
     |java.nio.CharBuffer.allocate(6)
     |class C
@@ -12,6 +12,7 @@ object Test extends ReplTest {
     |classOf[C].toString + esc + "[3z"
     |classOf[C].toString + esc + "[3!"
     |classOf[C].toString + scala.io.AnsiColor.YELLOW
+    |"${"\\"}uCAFE caffè"
     |""".stripMargin
 
   override protected def shellConfig(testSettings: Settings) =

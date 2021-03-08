@@ -30,7 +30,7 @@ object Naming {
   // group 1 is the CSI command letter, where 'm' is color rendition
   // group 2 is a sequence of chars to be rendered as `?`: anything non-printable and not some space char
   // additional groups are introduced by linePattern but not used
-  private lazy val cleaner = raw"$csi|([^\p{Print}\p{Space}]+)|$linePattern".r
+  private lazy val cleaner = raw"$csi|([\p{Cntrl}&&[^\p{Space}]]+)|$linePattern".r
 
   /** Final pass to clean up REPL output.
    *
