@@ -152,8 +152,12 @@ distribution to your local artifact repository and then switch sbt to
 use that version as its new `scalaVersion`.  You may then revert back
 with `reload`.  Note `restarrFull` will also write the STARR version
 to `buildcharacter.properties` so you can switch back to it with
-`restarr` without republishing (though incremental compilation will
-recompile from scratch, sadly.)
+`restarr` without republishing.  This will switch the sbt session to
+use the `build-restarr` and `target-restarr` directories instead of
+`build` and `target`, which avoids wiping out classfiles and
+incremental metadata.  IntelliJ will continue to be configured to
+compile and run tests using the starr version in
+`versions.properties`.
 
 For history on how the current scheme was arrived at, see
 https://groups.google.com/d/topic/scala-internals/gp5JsM1E0Fo/discussion.
