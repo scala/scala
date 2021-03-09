@@ -5654,33 +5654,47 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
       }
-      def issueTryWarnings(tree: Try): Try = {
-        def checkForCatchAll(cdef: CaseDef): Unit = {
-          def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
-          def warn(name: Name) = {
-            val msg = s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning."
-            context.warning(cdef.pat.pos, msg, WarningCategory.Other)
-          }
-          if (cdef.guard.isEmpty) cdef.pat match {
-            case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
-            case i @ Ident(name) if unbound(i)          => warn(name)
-            case _                                      =>
-          }
-        }
-        if (!isPastTyper) tree match {
-          case Try(_, Nil, fin) =>
-            if (fin eq EmptyTree)
-              context.warning(tree.pos, "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.", WarningCategory.Other)
-          case Try(_, catches, _) =>
-            catches foreach checkForCatchAll
-        }
-        tree
-      }
 
       def typedTry(tree: Try) = {
+        def warn(pos: Position, name: Name) = {
+          val msg = s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning."
+          context.warning(pos, msg, WarningCategory.Other)
+        }
+        def issueTryWarnings(tree: Try): Try = {
+          def checkForCatchAll(cdef: CaseDef): Unit = {
+            def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
+            if (cdef.guard.isEmpty) cdef.pat match {
+              case Bind(name, i @ Ident(_)) if unbound(i) => warn(cdef.pat.pos, name)
+              case i @ Ident(name) if unbound(i)          => warn(cdef.pat.pos, name)
+              case _                                      =>
+            }
+          }
+          if (!isPastTyper) tree match {
+            case Try(_, Nil, fin) =>
+              if (fin eq EmptyTree)
+                context.warning(tree.pos, "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.", WarningCategory.Other)
+            case Try(_, catches, _) =>
+              catches foreach checkForCatchAll
+          }
+          tree
+        }
+
+
         val Try(block, catches, fin) = tree
         val block1   = typed(block, pt)
-        val catches1 = typedCases(catches, ThrowableTpe, pt)
+        val cases    = catches match {
+          case CaseDef(EmptyTree, EmptyTree, catchExpr) :: Nil =>
+            val e = typed(catchExpr, functionType(List(ThrowableTpe), pt))
+            val catcher =
+              if (isPartialFunctionType(e.tpe)) treeBuilder.makeCatchFromExpr(e)
+              else {
+                warn(e.pos, nme.WILDCARD)
+                treeBuilder.makeCatchFromFunc(e)
+              }
+            catcher :: Nil
+          case _ => catches
+        }
+        val catches1 = typedCases(cases, ThrowableTpe, pt)
         val fin1     = if (fin.isEmpty) fin else typed(fin, UnitTpe)
 
         def finish(ownType: Type) = treeCopy.Try(tree, block1, catches1, fin1) setType ownType
