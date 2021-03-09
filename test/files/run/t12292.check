@@ -1,0 +1,30 @@
+
+scala> import scala.annotation.nowarn
+import scala.annotation.nowarn
+
+scala> scala.#::.unapply(Stream(1))
+                 ^
+       warning: method unapply in object #:: is deprecated (since 2.13.0): Prefer LazyList instead
+                         ^
+       warning: value Stream in package scala is deprecated (since 2.13.0): Use LazyList instead of Stream
+val res0: Option[(Int, Stream[Int])] = Some((1,Stream()))
+
+scala> scala.#::.unapply(Stream(1)): @nowarn
+val res1: Option[(Int, Stream[Int])] @scala.annotation.nowarn = Some((1,Stream()))
+
+scala> (scala.#::.unapply(Stream(1)): @nowarn)
+val res2: Option[(Int, Stream[Int])] @scala.annotation.nowarn = Some((1,Stream()))
+
+scala> scala.#::.unapply(Stream(1)): @inline
+                 ^
+       warning: method unapply in object #:: is deprecated (since 2.13.0): Prefer LazyList instead
+                         ^
+       warning: value Stream in package scala is deprecated (since 2.13.0): Use LazyList instead of Stream
+                                      ^
+       warning: type Stream in package scala is deprecated (since 2.13.0): Use LazyList instead of Stream
+val res3: Option[(Int, Stream[Int])] @inline = Some((1,Stream()))
+
+scala> (scala.#::.unapply(Stream(1)): @nowarn).isEmpty
+val res4: Boolean = false
+
+scala> :quit
