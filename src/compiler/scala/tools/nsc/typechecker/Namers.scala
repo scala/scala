@@ -1825,9 +1825,6 @@ trait Namers extends MethodSynthesis {
       val Import(expr, selectors) = imp
       val expr1 = typer.typedQualifier(expr)
 
-      if (expr1.symbol != null && expr1.symbol.isRootPackage)
-        RootImportError(imp)
-
       if (expr1.isErrorTyped)
         ErrorType
       else {
