@@ -814,7 +814,7 @@ trait MatchAnalysis extends MatchApproximation {
 
       // node in the tree that describes how to construct a counter-example
       case class VariableAssignment(variable: Var, equalTo: List[Const], notEqualTo: List[Const]) {
-        private val fields: mutable.Map[Symbol, VariableAssignment] = mutable.HashMap.empty
+        private val fields: mutable.LinkedHashMap[Symbol, VariableAssignment] = mutable.LinkedHashMap.empty
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
         private lazy val inSameDomain = uniqueEqualTo forall (const => variable.domainSyms.exists(_.exists(_.const.tp =:= const.tp)))

@@ -423,7 +423,7 @@ trait Solving extends Logic {
         val newModel: Model = if (model eq NoTseitinModel) NoModel else {
           model.iterator.collect {
             case lit if symForVar.isDefinedAt(lit.variable) => (symForVar(lit.variable), lit.positive)
-          }.toMap
+          }.to(scala.collection.immutable.ListMap)
         }
         Solution(newModel, unassigned.map(symForVar))
       }
