@@ -287,7 +287,7 @@ trait Logic extends Debugging {
       def simplifyAnd(ps: Set[Prop]): Prop = {
         // recurse for nested And (pulls all Ands up)
         // build up Set in order to remove duplicates
-        val props = mutable.HashSet.empty[Prop]
+        val props = mutable.LinkedHashSet.empty[Prop]
         for (prop <- ps) {
           simplifyProp(prop) match {
             case True    => // ignore `True`
@@ -303,7 +303,7 @@ trait Logic extends Debugging {
       def simplifyOr(ps: Set[Prop]): Prop = {
         // recurse for nested Or (pulls all Ors up)
         // build up Set in order to remove duplicates
-        val props = mutable.HashSet.empty[Prop]
+        val props = mutable.LinkedHashSet.empty[Prop]
         for (prop <- ps) {
           simplifyProp(prop) match {
             case False  => // ignore `False`
