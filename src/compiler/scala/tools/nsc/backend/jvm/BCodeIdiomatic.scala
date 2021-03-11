@@ -94,7 +94,7 @@ abstract class BCodeIdiomatic {
 
   /* Just a namespace for utilities that encapsulate MethodVisitor idioms.
    *  In the ASM world, org.objectweb.asm.commons.InstructionAdapter plays a similar role,
-   *  but the methods here allow choosing when to transition from ICode to ASM types
+   *  but the methods here allow choosing when to transition from BType to ASM types
    *  (including not at all, e.g. for performance).
    */
   abstract class JCodeMethodN {

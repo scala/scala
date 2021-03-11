@@ -7,7 +7,7 @@ import scala.tools.partest.DirectTest
 import scala.jdk.CollectionConverters._
 
 /**
- * Test that the ICodeReader does not crash if the bytecode of a method has unreachable code.
+ * Test that ClassReader does not crash if the bytecode of a method has unreachable code.
  */
 object Test extends DirectTest {
   def code: String = ???

@@ -105,8 +105,8 @@ object ScalaOptionParser {
   private def stringSettingNames = List("-Xjline", "-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Vshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
     "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript", "-Vinline", "-Vopt", "-Vshow-class", "-Vshow-member-pos")
   private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp", "-Vprint-args")
-  private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")
-  private val phaseSettings = List("-Xprint-icode", "-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before",
+  private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "jvm", "terminal")
+  private val phaseSettings = List("-Ystop-after", "-Yskip", "-Yshow", "-Ystop-before",
     "-Ybrowse", "-Ylog", "-Ycheck", "-Xprint", "-Yvalidate-pos", "-Vbrowse", "-Vlog", "-Vprint", "-Vshow")
   private def multiStringSettingNames = List("-Xmacro-settings", "-Xplugin", "-Xplugin-disable", "-Xplugin-require", "-Ywarn-unused", "-opt-inline-from")
   private def intSettingNames = List("-Xelide-below", "-Ypatmat-exhaust-depth", "-Ypresentation-delay", "-Yrecursion")
