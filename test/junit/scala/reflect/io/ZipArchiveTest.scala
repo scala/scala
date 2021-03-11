@@ -42,6 +42,37 @@ class ZipArchiveTest {
     }
   }
 
+  // was: java.lang.StringIndexOutOfBoundsException: String index out of range: -1, computing lazy val root
+  @Test def `weird entry name works`(): Unit = {
+    val jar = createSimpleTestJar("/bar")
+    val archive = new FileZipArchive(jar.toFile)
+    try {
+      val it = archive.iterator
+      assertTrue(it.hasNext)
+      val f = it.next()
+      assertFalse(it.hasNext)
+      assertEquals("bar", f.name)
+    } finally {
+      archive.close()
+      advisedly(Files.delete(jar))
+    }
+  }
+
+  @Test def `another weird entry name works`(): Unit = {
+    val jar = createSimpleTestJar("/.bar.baz")
+    val archive = new FileZipArchive(jar.toFile)
+    try {
+      val it = archive.iterator
+      assertTrue(it.hasNext)
+      val f = it.next()
+      assertFalse(it.hasNext)
+      assertEquals(".bar.baz", f.name)
+    } finally {
+      archive.close()
+      advisedly(Files.delete(jar))
+    }
+  }
+
   private def manifestAt(location: URI): URL = ScalaClassLoader.fromURLs(List(location.toURL), null).getResource("META-INF/MANIFEST.MF");
 
   // ZipArchive.fromManifestURL(URL)
@@ -57,21 +88,35 @@ class ZipArchiveTest {
       assertTrue(it.hasNext)
       val f = it.next()
       assertFalse(it.hasNext)
-      assertEquals("foo.class", f.name)
+      assertEquals(testEntry, f.name)
     } finally {
       archive.close()
       advisedly(Files.delete(jar))
     }
   }
 
-  private def createTestJar(): JPath = {
+  private def testEntry = "foo.class"
+
+  private def createTestJar(entryName: String = testEntry): JPath = {
     val f = Files.createTempFile("junit", ".jar")
     val man = new Manifest()
     man.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
-    man.getEntries().put("foo.class", new Attributes(0))
+    man.getEntries().put(entryName, new Attributes(0))
     val jout = new JarOutputStream(Files.newOutputStream(f), man)
     try {
-      jout.putNextEntry(new JarEntry("foo.class"))
+      jout.putNextEntry(new JarEntry(entryName))
+      val bytes = "hello, world".getBytes
+      jout.write(bytes, 0, bytes.length)
+    } finally {
+      jout.close()
+    }
+    f
+  }
+  private def createSimpleTestJar(entryName: String = testEntry): JPath = {
+    val f = Files.createTempFile("junit", ".jar")
+    val jout = new JarOutputStream(Files.newOutputStream(f))
+    try {
+      jout.putNextEntry(new JarEntry(entryName))
       val bytes = "hello, world".getBytes
       jout.write(bytes, 0, bytes.length)
     } finally {

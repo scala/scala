@@ -124,7 +124,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     }
   }
 
-  @volatile private[this] var lastDirName: String = ""
+  @volatile private[this] var lastDirName: String = RootEntry
   private def dirNameUsingLast(name: String): String = {
     val last = lastDirName
     if (name.length > last.length + 1 && name.startsWith(last) && name.charAt(last.length) == '/' && name.indexOf('/', last.length + 1) == -1) {
