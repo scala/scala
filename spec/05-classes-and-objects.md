@@ -502,10 +502,13 @@ definition apply to all constituent definitions.  The rules governing
 the validity and meaning of a modifier are as follows.
 
 ### `private`
-The `private` modifier can be used with any definition or
-declaration in a template.  Such members can be accessed only from
-within the directly enclosing template and its companion module or
+The `private` modifier can be used with any definition or declaration in a
+template. Private members of a template can be accessed only from within the
+directly enclosing template and its companion module or
 [companion class](#object-definitions).
+
+The `private` modifier is also valid for
+[top-level](09-top-level-definitions.html#packagings) templates.
 
 A `private` modifier can be _qualified_ with an identifier ´C´ (e.g.
 `private[´C´]`) that must denote a class or package enclosing the definition.
