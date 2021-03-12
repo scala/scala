@@ -37,7 +37,7 @@ abstract class OverridingPairs extends SymbolPairs {
      *  including bridges. But it may be refined in subclasses.
      */
     override protected def exclude(sym: Symbol) = (
-         sym.isPrivateLocal
+        (sym.isPrivateLocal && sym.isParamAccessor)
       || sym.isArtifact
       || sym.isConstructor
       || (sym.isPrivate && sym.owner != base) // Privates aren't inherited. Needed for pos/t7475a.scala

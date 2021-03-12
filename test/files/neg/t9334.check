@@ -1,0 +1,6 @@
+t9334.scala:5: error: weaker access privileges in overriding
+def aaa: Int (defined in class A)
+  override should not be private
+  private[this] def aaa: Int = 42
+                    ^
+1 error
