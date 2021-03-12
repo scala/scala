@@ -14,8 +14,6 @@ package scala.tools.nsc.interpreter
 package shell
 
 import scala.util.control.NonFatal
-import scala.tools.nsc.interpreter.Repl
-import scala.tools.nsc.interpreter.Naming
 
 /** Completion for the REPL.
  */
@@ -50,17 +48,17 @@ class ReplCompletion(intp: Repl, val accumulator: Accumulator = new Accumulator)
         case Left(_) => NoCompletions
         case Right(result) => try {
           buf match {
-            case slashPrint() if cursor == buf.length =>
-              CompletionResult(cursor, CompletionCandidate.fromStrings("" :: Naming.unmangle(result.print) :: Nil))
-            case slashPrintRaw() if cursor == buf.length =>
-              CompletionResult(cursor, CompletionCandidate.fromStrings("" :: result.print :: Nil))
+            case slashPrint() if cursor == buf.length            =>
+              CompletionResult(buf, cursor, CompletionCandidate.fromStrings("" :: Naming.unmangle(result.print) :: Nil))
+            case slashPrintRaw() if cursor == buf.length         =>
+              CompletionResult(buf, cursor, CompletionCandidate.fromStrings("" :: result.print :: Nil))
             case slashTypeAt(start, end) if cursor == buf.length =>
-              CompletionResult(cursor, CompletionCandidate.fromStrings("" :: result.typeAt(start.toInt, end.toInt) :: Nil))
-            case _ =>
+              CompletionResult(buf, cursor, CompletionCandidate.fromStrings("" :: result.typeAt(start.toInt, end.toInt) :: Nil))
+            case _                                               =>
               // under JLine 3, we no longer use the tabCount concept, so tabCount is always 1
               // which always gives us all completions
               val (c, r) = result.completionCandidates(tabCount = 1)
-              CompletionResult(c, r)
+              CompletionResult(buf, c, r)
           }
         } finally result.cleanup()
       }
