@@ -27,7 +27,7 @@ object ScriptCommands {
    * The optional argument is the Artifactory snapshot repository URL. */
   def setupPublishCoreNonOpt = setup("setupPublishCoreNonOpt") { args =>
     Seq(
-      baseVersionSuffix in Global := "SHA-SNAPSHOT"
+      Global / baseVersionSuffix := "SHA-SNAPSHOT"
     ) ++ (args match {
       case Seq(url) => publishTarget(url)
       case Nil => Nil
@@ -38,7 +38,7 @@ object ScriptCommands {
     * The optional argument is the Artifactory snapshot repository URL. */
   def setupPublishCore = setup("setupPublishCore") { args =>
     Seq(
-      baseVersionSuffix in Global := "SHA-SNAPSHOT"
+      Global / baseVersionSuffix := "SHA-SNAPSHOT"
     ) ++ (args match {
       case Seq(url) => publishTarget(url)
       case Nil => Nil
@@ -49,9 +49,9 @@ object ScriptCommands {
     * The optional argument is the Artifactory snapshot repository URL. */
   def setupValidateTest = setup("setupValidateTest") { args =>
     Seq(
-      testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
+      LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
     ) ++ (args match {
-      case Seq(url) => Seq(resolvers in Global += "scala-pr" at url)
+      case Seq(url) => Seq(Global / resolvers += "scala-pr" at url)
       case Nil => Nil
     }) ++ enableOptimizer
   }
@@ -62,8 +62,8 @@ object ScriptCommands {
   def setupBootstrapStarr = setup("setupBootstrapStarr") { case Seq(fileOrUrl, ver) =>
     val url = fileToUrl(fileOrUrl)
     Seq(
-      baseVersion in Global := ver,
-      baseVersionSuffix in Global := "SPLIT"
+      Global / baseVersion := ver,
+      Global / baseVersionSuffix := "SPLIT"
     ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
   }
 
@@ -73,9 +73,9 @@ object ScriptCommands {
   def setupBootstrapLocker = setup("setupBootstrapLocker") { case Seq(fileOrUrl, ver) =>
     val url = fileToUrl(fileOrUrl)
     Seq(
-      baseVersion in Global := ver,
-      baseVersionSuffix in Global := "SPLIT",
-      resolvers in Global += "scala-pr" at url
+      Global / baseVersion := ver,
+      Global / baseVersionSuffix := "SPLIT",
+      Global / resolvers += "scala-pr" at url
     ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
   }
 
@@ -89,10 +89,10 @@ object ScriptCommands {
     val targetUrl = fileToUrl(targetFileOrUrl)
     val resolverUrl = fileToUrl(resolverFileOrUrl)
     Seq(
-      baseVersion in Global := ver,
-      baseVersionSuffix in Global := "SPLIT",
-      resolvers in Global += "scala-pr" at resolverUrl,
-      testOptions in IntegrationTest in LocalProject("test") ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
+      Global / baseVersion := ver,
+      Global / baseVersionSuffix := "SPLIT",
+      Global / resolvers += "scala-pr" at resolverUrl,
+      LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
     ) ++ publishTarget(targetUrl) ++ enableOptimizer
   }
 
@@ -103,11 +103,11 @@ object ScriptCommands {
   def setupBootstrapPublish = setup("setupBootstrapPublish") { case Seq(fileOrUrl, ver) =>
     val url = fileToUrl(fileOrUrl)
     Seq(
-      baseVersion in Global := ver,
-      baseVersionSuffix in Global := "SPLIT",
-      resolvers in Global += "scala-pr" at url,
-      publishTo in Global := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-      credentials in Global += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS"))
+      Global / baseVersion := ver,
+      Global / baseVersionSuffix := "SPLIT",
+      Global / resolvers += "scala-pr" at url,
+      Global / publishTo := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
+      Global / credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS"))
       // pgpSigningKey and pgpPassphrase are set externally by travis / the bootstrap script, as the sbt-pgp plugin is not enabled by default
     ) ++ enableOptimizer
   }
