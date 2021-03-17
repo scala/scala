@@ -912,7 +912,7 @@ trait Scanners extends ScannersCommon {
         }
       } else if (ch == '$') {
         nextRawChar()
-        if (ch == '$') {
+        if (ch == '$' || ch == '"') {
           putChar(ch)
           nextRawChar()
           getStringPart(multiLine)
@@ -938,7 +938,8 @@ trait Scanners extends ScannersCommon {
             next.token = kwArray(idx)
           }
         } else {
-          syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
+          val expectations = "$$, $\", $identifier or ${expression}"
+          syntaxError(s"invalid string interpolation $$$ch, expected: $expectations")
         }
       } else {
         val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))

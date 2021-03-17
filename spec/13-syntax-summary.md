@@ -63,8 +63,9 @@ multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 interpolatedString 
                  ::=  alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
                    |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
-escape           ::=  ‘\$\$’ 
-                   |  ‘\$’ id 
+escape           ::=  ‘\$\$’
+                   |  ‘\$"’
+                   |  ‘\$’ id
                    |  ‘\$’ BlockExpr
 alphaid          ::=  upper idrest
                    |  varid

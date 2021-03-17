@@ -503,9 +503,10 @@ not processed, except for Unicode escapes.
 #### Interpolated string
 
 ```ebnf
-interpolatedString ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘$’) | escape} ‘"’ 
+interpolatedString ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘$’) | escape} ‘"’
                          |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘$’) | escape} {‘"’} ‘"""’
-escape                 ::= ‘$$’ 
+escape                 ::= ‘$$’
+                         | ‘$"’
                          | ‘$’ id
                          | ‘$’ BlockExpr
 alphaid                ::= upper idrest
@@ -522,13 +523,14 @@ or multi-line (triple quote).
 Inside a interpolated string none of the usual escape characters are interpreted 
 (except for unicode escapes) no matter whether the string literal is normal 
 (enclosed in single quotes) or multi-line (enclosed in triple quotes). 
-Instead, there are two new forms of dollar sign escape. 
+Instead, there are three new forms of dollar sign escape. 
 The most general form encloses an expression in `${` and `}`, i.e. `${expr}`. 
 The expression enclosed in the braces that follow the leading `$` character is of 
 syntactical category BlockExpr. Hence, it can contain multiple statements, 
 and newlines are significant. Single ‘$’-signs are not permitted in isolation 
 in a interpolated string. A single ‘$’-sign can still be obtained by doubling the ‘$’ 
-character: ‘$$’.
+character: ‘$$’. A single ‘"’-sign in a single quoted interpolation would end the
+interpolation. A single ‘"’-sign can be obtained by the sequence ‘\$"’.
 
 The simpler form consists of a ‘$’-sign followed by an identifier starting with 
 a letter and followed only by letters, digits, and underscore characters, 
