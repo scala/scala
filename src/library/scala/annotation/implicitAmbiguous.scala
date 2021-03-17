@@ -39,4 +39,4 @@ package scala.annotation
   * }}}
   */
 @meta.getter
-final class implicitAmbiguous(msg: String) extends scala.annotation.StaticAnnotation
+final class implicitAmbiguous(msg: String) extends scala.annotation.ConstantAnnotation

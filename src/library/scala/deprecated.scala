@@ -58,4 +58,4 @@ import scala.annotation.meta._
  */
 @getter @setter @beanGetter @beanSetter @field
 @deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
-class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
+class deprecated(message: String = "", since: String = "") extends scala.annotation.ConstantAnnotation

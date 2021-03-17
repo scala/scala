@@ -53,4 +53,4 @@ package scala.annotation
  *      ^
  * </pre>
  */
-final class implicitNotFound(msg: String) extends scala.annotation.StaticAnnotation {}
+final class implicitNotFound(msg: String) extends scala.annotation.ConstantAnnotation

@@ -76,7 +76,7 @@ package scala.annotation
  *   }
  * }}}
  */
-final class elidable(final val level: Int) extends scala.annotation.StaticAnnotation
+final class elidable(final val level: Int) extends scala.annotation.ConstantAnnotation
 
 /** This useless appearing code was necessary to allow people to use
  *  named constants for the elidable annotation.  This is what it takes
