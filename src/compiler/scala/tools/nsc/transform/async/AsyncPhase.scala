@@ -113,7 +113,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
             })
           }
           assert(localTyper.context.owner == cd.symbol.owner)
-          val withFields = new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
+          val withFields = new UseFields(localTyper, cd.symbol, applySym, liftedSyms, NoSymbol).transform(cd1)
           withFields
 
         case dd: DefDef if dd.hasAttachment[AsyncAttachment] =>
@@ -123,14 +123,17 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
           }
 
           atOwner(dd, dd.symbol) {
-            val trSym = dd.vparamss.head.head.symbol
+            val trSym = dd.vparamss.head.last.symbol
+            val selfSym = if (dd.symbol.owner.isTerm) dd.vparamss.head.head.symbol else NoSymbol
             val saved = currentTransformState
             currentTransformState = new AsyncTransformState(asyncAttachment.awaitSymbol,
-              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, trSym, asyncBody.tpe, asyncNames)
+              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, selfSym, trSym, asyncBody.tpe, asyncNames)
             try {
-              val (newRhs, liftableFields) = asyncTransform(asyncBody)
-              liftableMap(dd.symbol.owner) = (dd.symbol, liftableFields)
-              deriveDefDef(dd)(_ => newRhs)
+              val (newRhs, liftedTrees) = asyncTransform(asyncBody)
+              liftableMap(currentTransformState.stateMachineClass) = (dd.symbol, liftedTrees)
+              val liftedSyms = liftedTrees.iterator.map(_.symbol).toSet
+              val withFields = new UseFields(localTyper, currentTransformState.stateMachineClass, dd.symbol, liftedSyms, selfSym).transform(newRhs)
+              deriveDefDef(dd)(_ => withFields)
             } finally {
               currentTransformState = saved
             }
@@ -192,15 +195,20 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     //   - references to them are rewritten as referencs to the fields.
     //   - the rhs of ValDefs that initialize such fields is turned into an assignment to the field
     private class UseFields(initLocalTyper: analyzer.Typer, stateMachineClass: Symbol,
-                            applySym: Symbol, liftedSyms: Set[Symbol]) extends explicitOuter.OuterPathTransformer(initLocalTyper) {
+                            applySym: Symbol, liftedSyms: Set[Symbol], selfSym: Symbol) extends explicitOuter.OuterPathTransformer(initLocalTyper) {
       private def fieldSel(tree: Tree) = {
         assert(currentOwner != NoSymbol)
-        val outerOrThis = if (stateMachineClass == currentClass) gen.mkAttributedThis(stateMachineClass) else {
-          // These references need to be selected from an outer reference, because explicitouter
-          // has already run we must perform this transform explicitly here.
-          tree.symbol.makeNotPrivate(tree.symbol.owner)
-          outerPath(outerValue, currentClass.outerClass, stateMachineClass)
-        }
+        val outerOrThis =
+          if (selfSym != NoSymbol)
+            gen.mkAttributedIdent(selfSym)
+          else if (stateMachineClass == currentClass)
+            gen.mkAttributedThis(stateMachineClass)
+          else {
+            // These references need to be selected from an outer reference, because explicitouter
+            // has already run we must perform this transform explicitly here.
+            tree.symbol.makeNotPrivate(tree.symbol.owner)
+            outerPath(outerValue, currentClass.outerClass, stateMachineClass)
+          }
         atPos(tree.pos)(Select(outerOrThis.setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
       }
       override def transform(tree: Tree): Tree = tree match {

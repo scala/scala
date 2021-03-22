@@ -25,6 +25,7 @@ trait AsyncTransformStates extends TypingTransformers {
                             val postAnfTransform: Block => Block,
                             val dotDiagram: (Symbol, Tree) => Option[String => Unit],
                             val typingTransformer: TypingTransformer,
+                            val exteralFsmSelfParam: Symbol,
                             val applyTrParam: Symbol,
                             val asyncType: Type,
                             val asyncNames: AsyncNames[global.type]) {
@@ -39,7 +40,7 @@ trait AsyncTransformStates extends TypingTransformers {
     val applySym: Symbol = applyTr.owner
     var currentPos: Position = applySym.pos
 
-    lazy val stateMachineClass: Symbol = applySym.owner
+    lazy val stateMachineClass: Symbol = if (exteralFsmSelfParam != NoSymbol) exteralFsmSelfParam.info.typeSymbol else applySym.owner
     lazy val stateGetter: Symbol = stateMachineMember(nme.state)
     lazy val stateSetter: Symbol = stateMachineMember(nme.state.setterName)
     lazy val stateOnComplete: Symbol = stateMachineMember(TermName("onComplete"))
@@ -52,7 +53,15 @@ trait AsyncTransformStates extends TypingTransformers {
     def stateMachineMember(name: TermName): Symbol =
       stateMachineClass.info.member(name)
     def memberRef(sym: Symbol): Tree =
-      gen.mkAttributedRef(stateMachineClass.typeConstructor, sym)
+      if (exteralFsmSelfParam == NoSymbol)
+        gen.mkAttributedRef(stateMachineClass.typeConstructor, sym)
+      else
+        gen.mkAttributedSelect(gen.mkAttributedIdent(exteralFsmSelfParam), sym)
+    def stateMachineRef(): Tree =
+      if (exteralFsmSelfParam == NoSymbol)
+        gen.mkAttributedThis(stateMachineClass)
+      else
+        gen.mkAttributedIdent(exteralFsmSelfParam)
   }
 
 }

@@ -51,7 +51,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       val stats1 = mutable.ListBuffer[Tree]()
       def addNullAssigments(syms: Iterator[Symbol]): Unit = {
         for (fieldSym <- syms) {
-          stats1 += typed(Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info)))
+          stats1 += typed(Assign(currentTransformState.memberRef(fieldSym), gen.mkZero(fieldSym.info)))
         }
       }
       // Add pre-state null assigments at the beginning.
@@ -539,7 +539,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
       typed(Block(
         tempVd :: Nil,
-        If(Apply(gen.mkAttributedSelect(gen.mkAttributedThis(currentTransformState.stateMachineClass), definitions.Any_==), gen.mkAttributedIdent(temp) :: Nil),
+        If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Any_==), gen.mkAttributedIdent(temp) :: Nil),
           Return(literalUnit),
           gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
         )
@@ -598,7 +598,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         // (_without_ consuming an extra stack frome!)
 
         def callOnComplete(fut: Tree): Tree =
-          Apply(Select(This(currentTransformState.stateMachineClass), transformState.stateOnComplete), fut :: Nil)
+          Apply(currentTransformState.memberRef(transformState.stateOnComplete), fut :: Nil)
 
         val runCompletedOnSameThread = transformState.stateGetCompleted != NoSymbol
         if (runCompletedOnSameThread) {
