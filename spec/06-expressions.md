@@ -261,13 +261,13 @@ If ´f´ has some value type, the application is taken to be equivalent to `´f�
 i.e. the application of an `apply` method defined by ´f´. The value `´f´` is applicable to the given arguments if `´f´.apply` is applicable.
 
 
-Evaluation of `´f´(´e_1 , \ldots , e_n´)` usually entails evaluation of
-´f´ and ´e_1 , \ldots , e_n´ in that order. Each argument expression
-is converted to the type of its corresponding formal parameter.  After
-that, the application is rewritten to the function's right hand side,
-with actual arguments substituted for formal parameters.  The result
-of evaluating the rewritten right-hand side is finally converted to
-the function's declared result type, if one is given.
+The application `´f´(´e_1 , \ldots , e_n´)` evaluates ´f´ and then each argument
+´e_1 , \ldots , e_n´ from left to right, except for arguments that correspond to
+a by-name parameter (see below).  Each argument expression is converted to the
+type of its corresponding formal parameter.  After that, the application is
+rewritten to the function's right hand side, with actual arguments substituted
+for formal parameters.  The result of evaluating the rewritten right-hand side
+is finally converted to the function's declared result type, if one is given.
 
 The case of a formal parameter with a parameterless
 method type `=> ´T´` is treated specially. In this case, the
