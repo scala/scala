@@ -1,0 +1,61 @@
+====
+A text
+
+====
+<html>
+    <body>
+        <p>Hello, world</p>
+    </body>
+</html>
+
+====
+SELECT "EMP_ID", "LAST_NAME" FROM "EMPLOYEE_TB"
+WHERE "CITY" = 'INDIANAPOLIS'
+ORDER BY "EMP_ID", "LAST_NAME";
+
+====
+<html>
+    <body>
+        <p>Hello, world</p>
+    </body>
+</html>
+
+====
+                            <html>
+                                <body>
+                                    <p>Hello, world</p>
+                                </body>
+                            </html>
+
+====
+<html>
+    <body>
+        <p>Hello, world</p>
+    </body>
+
+</html>
+
+====
+<html>
+
+    <body>        <p>Hello ,	world</p>
+    </body>
+</html>
+
+====
+   this line has 4 tabs before it
+ this line has 5 spaces before it and space after it
+ this line has 2 tabs and 3 spaces before it
+  this line has 6 spaces before it
+
+====
+String text = """
+    A text block inside a text block
+""";
+
+====
+foo	bar
+baz
+====
+
+====
