@@ -202,6 +202,42 @@ class ExtractAPI[GlobalType <: Global](
   private def reference(sym: Symbol): xsbti.api.ParameterRef =
     xsbti.api.ParameterRef.of(tparamID(sym))
 
+  // Constructing PrintWriters can cause lock contention in highly parallel code,
+  // it's constructor looks up the "line.separator" system property which locks
+  // on JDK 8.
+  //
+  // We can safely reuse a single instance, avoiding the lock contention and
+  // also reducing allocations a little.
+  private object ReusableTreePrinter {
+    import java.io._
+    private val buffer = new StringWriter()
+    private val printWriter = new PrintWriter(buffer)
+    private val treePrinter = newTreePrinter(printWriter)
+
+    /** More efficient version of trees.mkString(start, sep, end) */
+    def mkString(trees: List[Tree], start: String, sep: String, end: String): String = {
+      var rest: List[Tree] = trees
+      printWriter.append(start)
+      while (rest != Nil) {
+        treePrinter.printTree(rest.head)
+        rest = rest.tail
+        if (rest != Nil) {
+          printWriter.append(sep)
+        }
+      }
+      printWriter.append(end)
+      val result = getAndResetBuffer()
+      val benchmark = trees.mkString(start, sep, end)
+      assert(result == benchmark, List(result, benchmark).mkString("[", "|", "]"))
+      result
+    }
+    private def getAndResetBuffer(): String = {
+      printWriter.flush()
+      try buffer.getBuffer.toString
+      finally buffer.getBuffer.setLength(0)
+    }
+  }
+
   // The compiler only pickles static annotations, so only include these in the API.
   // This way, the API is not sensitive to whether we compiled from source or loaded from classfile.
   // (When looking at the sources we see all annotations, but when loading from classes we only see the pickled (static) ones.)
@@ -215,7 +251,10 @@ class ExtractAPI[GlobalType <: Global](
             xsbti.api.Annotation.of(
               processType(in, a.atp),
               if (a.assocs.isEmpty)
-                Array(xsbti.api.AnnotationArgument.of("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
+                Array(
+                  xsbti.api.AnnotationArgument
+                    .of("", ReusableTreePrinter.mkString(a.args, "(", ",", ")"))
+                ) // what else to do with a Tree?
               else
                 a.assocs
                   .map {
