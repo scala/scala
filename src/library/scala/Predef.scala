@@ -208,7 +208,7 @@ object Predef extends LowPriorityImplicits {
    * @param x the value of type `A` to be returned.
    * @return the value `x`.
    * @group utilities */
-  @inline def identity[A](x: A): A = x // see `$conforms` for the implicit version
+  @inline def identity[A](x: A): x.type = x // see `$conforms` for the implicit version
 
   /** Summon an implicit value of type `T`. Usually, the argument is not passed explicitly.
    *
@@ -216,7 +216,7 @@ object Predef extends LowPriorityImplicits {
    *  @return the implicit value of type `T`
    *  @group utilities
    */
-  @inline def implicitly[T](implicit e: T): T = e // TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+  @inline def implicitly[T](implicit e: T): e.type = e
 
   /** Used to mark code blocks as being expressions, instead of being taken as part of anonymous classes and the like.
    *  This is just a different name for [[identity]].
