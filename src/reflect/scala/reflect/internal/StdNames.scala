@@ -264,6 +264,7 @@ trait StdNames {
     final val Object: NameType          = nameType("Object")
     final val PrefixType: NameType      = nameType("PrefixType")
     final val Product: NameType         = nameType("Product")
+    final val Record: NameType          = nameType("Record")
     final val Serializable: NameType    = nameType("Serializable")
     final val Singleton: NameType       = nameType("Singleton")
     final val Throwable: NameType       = nameType("Throwable")

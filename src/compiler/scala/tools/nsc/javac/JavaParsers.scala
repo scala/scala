@@ -118,6 +118,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def javaLangObject(): Tree = javaLangDot(tpnme.Object)
 
+    def javaLangRecord(): Tree = javaLangDot(tpnme.Record)
+
     def arrayOf(tpt: Tree) =
       AppliedTypeTree(scalaDot(tpnme.Array), List(tpt))
 
@@ -564,6 +566,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def definesInterface(token: Int) = token == INTERFACE || token == AT
 
+    /** If the next token is the identifier "record", convert it into a proper
+      * token. Technically, "record" is just a restricted identifier. However,
+      * once we've figured out that it is in a position where it identifies a
+      * "record" class, it is much more convenient to promote it to a token.
+      */
+    def adaptRecordIdentifier(): Unit = {
+      if (in.token == IDENTIFIER && in.name.toString == "record")
+        in.token = RECORD
+    }
+
     def termDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
       val inInterface = definesInterface(parentToken)
       val tparams = if (in.token == LT) typeParams() else List()
@@ -587,6 +599,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
           }
         }
+      } else if (in.token == LBRACE && parentToken == RECORD) {
+        // compact constructor
+        methodBody()
+        List.empty
       } else {
         var mods1 = mods
         if (mods hasFlag Flags.ABSTRACT) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
@@ -721,11 +737,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       }
     }
 
-    def memberDecl(mods: Modifiers, parentToken: Int): List[Tree] = in.token match {
-      case CLASS | ENUM | INTERFACE | AT =>
-        typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
-      case _ =>
-        termDecl(mods, parentToken)
+    def memberDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
+      adaptRecordIdentifier()
+      in.token match {
+        case CLASS | ENUM | RECORD | INTERFACE | AT =>
+          typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
+        case _ =>
+          termDecl(mods, parentToken)
+      }
     }
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
@@ -808,6 +827,61 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       })
     }
 
+    def recordDecl(mods: Modifiers): List[Tree] = {
+      accept(RECORD)
+      val pos = in.currentPos
+      val name = identForType()
+      val tparams = typeParams()
+      val header = formalParams()
+      val superclass = javaLangRecord()
+      val interfaces = interfacesOpt()
+      val (statics, body) = typeBody(RECORD, name)
+
+      // Records generate a canonical constructor and accessors, unless they are manually specified
+      var generateCanonicalCtor = true
+      var generateAccessors = header
+        .view
+        .map { case ValDef(_, name, tpt, _) => name -> tpt }
+        .toMap
+      for (DefDef(_, name, List(), List(params), tpt, _) <- body) {
+        if (name == nme.CONSTRUCTOR && params.size == header.size) {
+          val ctorParamsAreCanonical = params.lazyZip(header).forall {
+            case (ValDef(_, _, tpt1, _), ValDef(_, _, tpt2, _)) => tpt1 equalsStructure tpt2
+            case _ => false
+          }
+          if (ctorParamsAreCanonical) generateCanonicalCtor = false
+        } else if (generateAccessors.contains(name) && params.isEmpty) {
+          generateAccessors -= name
+        }
+      }
+
+      // Generate canonical constructor and accessors, if not already manually specified
+      val accessors = generateAccessors
+        .map { case (name, tpt) =>
+          DefDef(Modifiers(Flags.JAVA), name, List(), List(), tpt, blankExpr)
+        }
+        .toList
+      val canonicalCtor = Option.when(generateCanonicalCtor) {
+        DefDef(
+          Modifiers(Flags.JAVA),
+          nme.CONSTRUCTOR,
+          List(),
+          List(header),
+          TypeTree(),
+          blankExpr
+        )
+      }
+
+      addCompanionObject(statics, atPos(pos) {
+        ClassDef(
+          mods | Flags.FINAL,
+          name,
+          tparams,
+          makeTemplate(superclass :: interfaces, canonicalCtor.toList ++ accessors ++ body)
+        )
+      })
+    }
+
     def interfaceDecl(mods: Modifiers): List[Tree] = {
       accept(INTERFACE)
       val pos = in.currentPos
@@ -847,7 +921,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken()
         } else {
-          if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
+
+          // See "14.3. Local Class and Interface Declarations"
+          if (in.token == ENUM || in.token == RECORD || definesInterface(in.token))
+            mods |= Flags.STATIC
           val decls = joinComment(memberDecl(mods, parentToken))
 
           @tailrec
@@ -956,12 +1033,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       (res, hasClassBody)
     }
 
-    def typeDecl(mods: Modifiers): List[Tree] = in.token match {
-      case ENUM      => joinComment(enumDecl(mods))
-      case INTERFACE => joinComment(interfaceDecl(mods))
-      case AT        => annotationDecl(mods)
-      case CLASS     => joinComment(classDecl(mods))
-      case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+    def typeDecl(mods: Modifiers): List[Tree] = {
+      adaptRecordIdentifier()
+      in.token match {
+        case ENUM      => joinComment(enumDecl(mods))
+        case INTERFACE => joinComment(interfaceDecl(mods))
+        case AT        => annotationDecl(mods)
+        case CLASS     => joinComment(classDecl(mods))
+        case RECORD    => joinComment(recordDecl(mods))
+        case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+      }
     }
 
     def tryLiteral(negate: Boolean = false): Option[Constant] = {
