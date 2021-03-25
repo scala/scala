@@ -295,6 +295,11 @@ must be the same). Furthermore, the type of ´e´ must conform to
 sequence ´e´ with its elements. When the application uses named
 arguments, the vararg parameter has to be specified exactly once.
 
+If only a single argument is supplied, it may be supplied as a block expression
+and parentheses can be omitted, in the form `´f´ { block }`. This is valid when
+`f` has a single formal parameter or when all other formal parameters have
+default values.
+
 A function application usually allocates a new frame on the program's
 run-time stack. However, if a local method or a final method calls
 itself as its last action, the call is executed using the stack-frame
