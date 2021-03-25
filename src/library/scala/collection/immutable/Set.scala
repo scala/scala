@@ -80,7 +80,8 @@ object Set extends ImmutableSetFactory[Set] {
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any => U): Unit = ()
     override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
-
+    override def intersect(that: GenSet[Any]): Set[Any] = this
+    override def diff(that: GenSet[Any]): Set[Any] = this
     override def ++[B >: Any, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Set[Any], B, That]): That = {
       if (bf eq Set.canBuildFrom) that match {
         case hs: HashSet[Any] if hs.size > 4 => hs.asInstanceOf[That]
