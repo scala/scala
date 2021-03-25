@@ -620,6 +620,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case Apply(appMeth @ Select(appMethQual, _), elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && treeInfo.isQualifierSafeToElide(appMethQual) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
+        // See scala/bug#12201, should be rewrite as Primitive Array.
+        // Match Array
+      case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, StripCast(ArrayValue(elemtpt, elems)) :: Nil) :: _ :: Nil) 
+        if appMeth.symbol == ArrayModule_genericApply && treeInfo.isQualifierSafeToElide(appMethQual) && currentRun.runDefinitions.primitiveWrapArrayMethod.contains(wrapRefArrayMeth.symbol) =>
+        localTyper.typedPos(elemtpt.pos) {
+          ArrayValue(TypeTree(elemtpt.tpe), elems)
+        } transform this
       case Apply(appMeth @ Select(appMethQual, _), elem :: (nil: RefTree) :: Nil)
       if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && treeInfo.isExprSafeToInline(nil) && treeInfo.isQualifierSafeToElide(appMethQual) =>
         localTyper.typedPos(elem.pos) {

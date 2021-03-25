@@ -1784,6 +1784,18 @@ trait Definitions extends api.StandardDefinitions {
       lazy val arrayClassMethod       = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
       lazy val wrapVarargsRefArrayMethod = getMemberMethod(ScalaRunTimeModule, nme.wrapRefArray)
       lazy val genericWrapVarargsRefArrayMethod = getMemberMethod(ScalaRunTimeModule, nme.genericWrapArray)
+      lazy val primitiveWrapArrayMethod = Seq[Symbol](
+        getMemberMethod(ScalaRunTimeModule, nme.wrapBooleanArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapByteArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapCharArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapIntArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapDoubleArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapFloatArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapLongArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapShortArray),
+        getMemberMethod(ScalaRunTimeModule, nme.wrapUnitArray)
+      )
+
 
       lazy val RuntimeStatics_ioobe = getMemberMethod(RuntimeStaticsModule, nme.ioobe)
 
