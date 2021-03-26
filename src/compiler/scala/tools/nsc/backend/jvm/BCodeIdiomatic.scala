@@ -175,10 +175,11 @@ abstract class BCodeIdiomatic {
 
     } // end of method genPrimitiveShift()
 
-    /*
+    /* Creates a new `StringBuilder` instance with the requested capacity
+     *
      * can-multi-thread
      */
-    final def genStartConcat(pos: Position, size: Int): Unit = {
+    final def genNewStringBuilder(pos: Position, size: Int): Unit = {
       jmethod.visitTypeInsn(Opcodes.NEW, JavaStringBuilderClassName)
       jmethod.visitInsn(Opcodes.DUP)
       jmethod.visitLdcInsn(Integer.valueOf(size))
@@ -191,10 +192,11 @@ abstract class BCodeIdiomatic {
       )
     }
 
-    /*
+    /* Issue a call to `StringBuilder#append` for the right element type
+     *
      * can-multi-thread
      */
-    def genConcat(elemType: BType, pos: Position): Unit = {
+    final def genStringBuilderAppend(elemType: BType, pos: Position): Unit = {
       val paramType: BType = elemType match {
         case ct: ClassBType if ct.isSubtypeOf(StringRef).get          => StringRef
         case ct: ClassBType if ct.isSubtypeOf(jlStringBufferRef).get  => jlStringBufferRef
@@ -211,11 +213,36 @@ abstract class BCodeIdiomatic {
       invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 
-    /*
+    /* Extract the built `String` from the `StringBuilder`
+     *:
      * can-multi-thread
      */
-    final def genEndConcat(pos: Position): Unit = {
+    final def genStringBuilderEnd(pos: Position): Unit = {
       invokevirtual(JavaStringBuilderClassName, "toString", "()Ljava/lang/String;", pos)
+    }
+
+    /* Concatenate top N arguments on the stack with `StringConcatFactory#makeConcatWithConstants`
+     * (only works for JDK 9+)
+     *
+     * can-multi-thread
+     */
+    final def genIndyStringConcat(
+      recipe: String,
+      argTypes: Seq[asm.Type],
+      constants: Seq[String]
+    ): Unit = {
+      jmethod.visitInvokeDynamicInsn(
+        "makeConcatWithConstants",
+        asm.Type.getMethodDescriptor(StringRef.toASMType, argTypes:_*),
+        new asm.Handle(
+          asm.Opcodes.H_INVOKESTATIC,
+          "java/lang/invoke/StringConcatFactory",
+          "makeConcatWithConstants",
+          "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;",
+          false
+        ),
+        (recipe +: constants):_*
+      )
     }
 
     /*
