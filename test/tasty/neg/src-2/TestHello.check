@@ -32,4 +32,7 @@ List's type parameters do not match type F's expected parameters:
 type A is covariant, but type _ is declared contravariant
   HelloWorld.higherBounded6[List]
                            ^
-8 errors
+TestHello_fail.scala:12: error: Unsupported Scala 3 inline value msg1; found in object helloworld.HelloWorld.
+  HelloWorld.msg1
+             ^
+9 errors

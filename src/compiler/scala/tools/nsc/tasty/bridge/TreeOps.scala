@@ -116,6 +116,7 @@ trait TreeOps { self: TastyUniverse =>
         val sym = tree.tpe match {
           case u.SingleType(_, sym) => sym
           case u.TypeRef(_, sym, _) => sym
+          case u.ThisType(sym)      => sym
           case x                    => throw new MatchError(x)
         }
         if (tree.tpe.prefix === u.NoPrefix && (sym.hasFlag(Flags.PACKAGE) && !sym.isPackageObjectOrClass || sym.isLocalToBlock)) {

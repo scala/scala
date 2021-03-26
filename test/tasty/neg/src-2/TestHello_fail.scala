@@ -9,4 +9,5 @@ object TestHello {
 
   HelloWorld.higherBounded5[Show]
   HelloWorld.higherBounded6[List]
+  HelloWorld.msg1
 }
