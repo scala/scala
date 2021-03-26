@@ -1,5 +1,7 @@
 package tastytest
 
+import language.experimental.erasedDefinitions
+
 object ErasedTypes {
 
   trait Foo {

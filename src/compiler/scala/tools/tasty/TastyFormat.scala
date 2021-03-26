@@ -51,7 +51,7 @@ object TastyFormat {
    * is able to read final TASTy documents if the file's
    * `MinorVersion` is strictly less than the current value.
    */
-  final val ExperimentalVersion: Int = 1
+  final val ExperimentalVersion: Int = 3
 
   /**This method implements a binary relation (`<:<`) between two TASTy versions.
    * We label the lhs `file` and rhs `compiler`.
@@ -223,8 +223,9 @@ object TastyFormat {
   final val PARAMalias = 41
   final val TRANSPARENT = 42
   final val INFIX = 43
-  final val EMPTYCLAUSE = 44
-  final val SPLITCLAUSE = 45
+  final val INVISIBLE = 44
+  final val EMPTYCLAUSE = 45
+  final val SPLITCLAUSE = 46
 
   // Cat. 2:    tag Nat
 
@@ -387,6 +388,7 @@ object TastyFormat {
        | PARAMalias
        | EXPORTED
        | OPEN
+       | INVISIBLE
        | ANNOTATION
        | PRIVATEqualified
        | PROTECTEDqualified => true
@@ -449,6 +451,7 @@ object TastyFormat {
     case PARAMsetter => "PARAMsetter"
     case EXPORTED => "EXPORTED"
     case OPEN => "OPEN"
+    case INVISIBLE => "INVISIBLE"
     case PARAMalias => "PARAMalias"
     case EMPTYCLAUSE => "EMPTYCLAUSE"
     case SPLITCLAUSE => "SPLITCLAUSE"

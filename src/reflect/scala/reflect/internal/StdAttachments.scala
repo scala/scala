@@ -122,6 +122,8 @@ trait StdAttachments {
 
   class DottyOpaqueTypeAlias(val tpe: Type)
 
+  case object DottyMethod extends PlainAttachment
+
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment

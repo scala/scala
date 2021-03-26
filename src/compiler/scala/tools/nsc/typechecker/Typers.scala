@@ -232,7 +232,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
       val tp = appliedType(sym, args)
-      if (phase.erasedTypes) erasure.specialScalaErasure(tp) else tp
+      if (phase.erasedTypes) erasure.specialScalaErasureFor(sym)(tp) else tp
     }
 
     def typedDocDef(docDef: DocDef, mode: Mode, pt: Type): Tree =

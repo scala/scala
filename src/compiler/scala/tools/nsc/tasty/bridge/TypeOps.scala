@@ -240,6 +240,9 @@ trait TypeOps { self: TastyUniverse =>
       bounds
   }
 
+  private[bridge] def sameErasure(sym: Symbol)(tpe: Type, ref: ErasedTypeRef)(implicit ctx: Context) =
+    NameErasure.sigName(tpe, sym) === ref
+
   /** This is a port from Dotty of transforming a Method type to an ErasedTypeRef
    */
   private[bridge] object NameErasure {
@@ -279,9 +282,11 @@ trait TypeOps { self: TastyUniverse =>
       else self
     }
 
-    def sigName(tp: Type, isJava: Boolean)(implicit ctx: Context): ErasedTypeRef = {
-      val normTp = translateFromRepeated(tp)(toArray = isJava)
-      erasedSigName(normTp.erasure)
+    def sigName(tp: Type, sym: Symbol)(implicit ctx: Context): ErasedTypeRef = {
+      val normTp = translateFromRepeated(tp)(toArray = sym.isJavaDefined)
+      erasedSigName(
+        u.erasure.erasure(sym)(normTp)
+      )
     }
 
     private def erasedSigName(erased: Type)(implicit ctx: Context): ErasedTypeRef = erased match {

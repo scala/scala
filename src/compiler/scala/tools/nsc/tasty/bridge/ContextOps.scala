@@ -429,6 +429,9 @@ trait ContextOps { self: TastyUniverse =>
     final def markAsEnumSingleton(sym: Symbol): Unit =
       sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
 
+    final def markAsMethod(sym: Symbol): Unit =
+      sym.updateAttachment(u.DottyMethod)
+
     final def markAsOpaqueType(sym: Symbol, alias: Type): Unit =
       sym.updateAttachment(new u.DottyOpaqueTypeAlias(alias))
 

@@ -1,4 +1,4 @@
-TestCompiletimeQuoteType_fail.scala:4: error: Unsupported Scala 3 context function type in result: scala.quoted.Quotes ?=> scala.quoted.Type[T]; found in method of in object scala.quoted.Type.
+TestCompiletimeQuoteType_fail.scala:4: error: could not find implicit value for evidence parameter of type scala.quoted.Type[Int]
   def test = CompiletimeQuoteType.f[Int]
                                    ^
 1 error

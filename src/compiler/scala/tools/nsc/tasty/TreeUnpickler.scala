@@ -428,7 +428,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (tag === VALDEF) {
         if (flags.is(Inline) || ctx.owner.is(Trait)) flags |= FieldAccessor
         if (flags.not(Mutable)) flags |= Stable
-        if (flags.is(SingletonEnumFlags)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
+        if (flags.is(SingletonEnumInitFlags)) flags |= Object | Stable // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
@@ -595,6 +595,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case PARAMalias => addFlag(ParamAlias)
           case EXPORTED => addFlag(Exported)
           case OPEN => addFlag(Open)
+          case INVISIBLE => addFlag(Invisible)
           case PRIVATEqualified =>
             readByte()
             privateWithin = readWithin(ctx)
@@ -751,6 +752,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         val valueParamss = normalizeIfConstructor(vparamss, isCtor)
         val resType = effectiveResultType(sym, typeParams, tpt.tpe)
+        ctx.markAsMethod(sym)
         ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
       }
 
@@ -1001,7 +1003,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           (tag: @switch) match {
             case SELECTin =>
               val name = readTastyName()
-              val qual  = readTerm()
+              val qual = readTerm()
               if (inParentCtor) {
                 assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
                 skipTree()

@@ -17,6 +17,7 @@ import scala.tools.nsc.tasty.SafeEq
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
+import scala.util.chaining._
 
 /**This layer deals with selecting a member symbol from a type using a `TastyName`,
  * also contains factories for making type references to symbols.
@@ -143,13 +144,13 @@ trait SymbolOps { self: TastyUniverse =>
     val kind = if (tname.isTypeName) "type" else "term"
     def typeToString(tpe: Type) = {
       def inner(sb: StringBuilder, tpe: Type): StringBuilder = tpe match {
-        case u.SingleType(pre, sym) => inner(sb, pre) append '.' append (
-          if (sym.isPackageObjectOrClass) s"`${sym.name}`"
-          else String valueOf sym.name
-        )
-        case u.TypeRef(pre, sym, _) if sym.isTerm =>
-          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.name
-          else inner(sb, pre) append '.' append sym.name
+        case u.ThisType(cls) => sb append cls.fullNameString
+        case u.SingleType(pre, sym) =>
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
+          else inner(sb, pre) append '.' append sym.nameString
+        case u.TypeRef(pre, sym, _) =>
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
+          else inner(sb, pre) append '.' append sym.nameString
         case tpe => sb append tpe
       }
       inner(new StringBuilder(), tpe).toString
@@ -170,7 +171,7 @@ trait SymbolOps { self: TastyUniverse =>
       ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
       val member = space.member(encodeTermName(qual))
       if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
-      val (tyParamCount, argTpeRefs) = {
+      val (tyParamCount, paramRefs) = {
         val (tyParamCounts, params) = sig.params.partitionMap(identity)
         if (tyParamCounts.length > 1) {
           unsupportedError(s"method with unmergeable type parameters: $qual")
@@ -179,24 +180,27 @@ trait SymbolOps { self: TastyUniverse =>
       }
       def compareSym(sym: Symbol): Boolean = sym match {
         case sym: u.MethodSymbol =>
-          val method = sym.tpe.asSeenFrom(space, sym.owner)
-          ctx.log(s">>> trying $sym: $method")
-          val params = method.paramss.flatten
-          val isJava = sym.isJavaDefined
-          NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
-          params.length === argTpeRefs.length &&
-          (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
-            || tyParamCount === sym.typeParams.length) &&
-          params.zip(argTpeRefs).forall { case (param, tpe) => NameErasure.sigName(param.tpe, isJava) === tpe } && {
-            ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
-            true
-          }
+          val meth0 = u.unwrapWrapperTypes(sym.tpe.asSeenFrom(space, sym.owner))
+          val paramSyms = meth0.paramss.flatten
+          val resTpe = meth0.finalResultType
+          val sameParamSize = paramSyms.length === paramRefs.length
+          def sameTyParamSize = tyParamCount === (
+            if (qual === TastyName.Constructor) member.owner.typeParams.length
+            else sym.typeParams.length
+          )
+          def sameParams = paramSyms.lazyZip(paramRefs).forall({
+            case (paramSym, paramRef) => sameErasure(sym)(paramSym.tpe, paramRef)
+          })
+          sameParamSize && sameTyParamSize && sameParams && sameErasure(sym)(resTpe, sig.result)
         case _ =>
           ctx.log(s"""! member[$space]("$qual") ${showSym(sym)} is not a method""")
           false
       }
       member.asTerm.alternatives.find(compareSym).getOrElse(
-        typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}"))
+        typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}")
+      ).tap(overload =>
+        ctx.log(s">>> selected ${showSym(overload)}: ${overload.tpe}")
+      )
     }
   }
 

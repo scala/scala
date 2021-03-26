@@ -60,8 +60,7 @@ object TastyFlags {
   final val Open                  = Enum.next
   final val ParamAlias            = Open.next
   final val Infix                 = ParamAlias.next
-
-  private[TastyFlags] final val maxFlag: Long = ParamAlias.shift
+  final val Invisible             = Infix.next
 
   def optFlag(cond: Boolean)(flag: TastyFlagSet): TastyFlagSet = if (cond) flag else EmptyTastyFlags
 
@@ -138,23 +137,9 @@ object TastyFlags {
         if (is(Open))          sb += "Open"
         if (is(ParamAlias))    sb += "ParamAlias"
         if (is(Infix))         sb += "Infix"
+        if (is(Invisible))     sb += "Invisible"
         sb.mkString(" | ")
       }
-    }
-  }
-
-  case class SingletonSets(val toLong: Long) extends AnyVal {
-    def map[A](f: TastyFlagSet => A): Iterable[A] = {
-      val buf = Iterable.newBuilder[A]
-      val orig = TastyFlagSet(toLong)
-      var flag = EmptyTastyFlags
-      while (flag.shift <= maxFlag) {
-        flag = flag.next
-        if (orig.is(flag)) {
-          buf += f(flag)
-        }
-      }
-      buf.result()
     }
   }
 

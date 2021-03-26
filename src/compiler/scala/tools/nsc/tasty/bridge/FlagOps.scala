@@ -24,13 +24,14 @@ trait FlagOps { self: TastyUniverse =>
 
   object FlagSets {
     val TastyOnlyFlags: TastyFlagSet = (
-      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent | Enum | Infix
-      | Open | ParamAlias
+      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
+      | Enum | Infix | Open | ParamAlias | Invisible
     )
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
     val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
     val ObjectClassCreationFlags: TastyFlagSet = Object | Final
-    val SingletonEnumFlags: TastyFlagSet = Case | Static | Enum | Stable
+    val SingletonEnumInitFlags: TastyFlagSet = Case | Static | Enum
+    val SingletonEnumFlags: TastyFlagSet = SingletonEnumInitFlags | Stable
     val FieldAccessorFlags: TastyFlagSet = FieldAccessor | Stable
     val LocalFieldFlags: TastyFlagSet = Private | Local
   }
@@ -90,6 +91,7 @@ trait FlagOps { self: TastyUniverse =>
       if (flags.is(Open))        sb += "open"
       if (flags.is(ParamAlias))  sb += "<paramalias>"
       if (flags.is(Infix))       sb += "infix"
+      if (flags.is(Invisible))   sb += "<invisible>"
       sb.mkString(" | ")
     }
   }

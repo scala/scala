@@ -616,7 +616,9 @@ lazy val tastytest = configureAsSubproject(project)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
-    libraryDependencies ++= List(diffUtilsDep, TastySupport.scala3Compiler),
+    libraryDependencies ++= List(
+      diffUtilsDep,
+    ),
     Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
@@ -730,7 +732,7 @@ lazy val tasty = project.in(file("test") / "tasty")
   .settings(publish / skip := true)
   .settings(
     Test / fork := true,
-    libraryDependencies += junitInterfaceDep,
+    libraryDependencies ++= Seq(junitInterfaceDep, TastySupport.scala3Library),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     Test / testOptions += Tests.Argument(
       s"-Dtastytest.src=${baseDirectory.value}",
@@ -738,6 +740,27 @@ lazy val tasty = project.in(file("test") / "tasty")
     ),
     Compile / unmanagedSourceDirectories := Nil,
     Test    / unmanagedSourceDirectories := List(baseDirectory.value/"test"),
+  )
+  .configs(TastySupport.CompilerClasspath, TastySupport.LibraryClasspath)
+  .settings(
+    inConfig(TastySupport.CompilerClasspath)(Defaults.configSettings),
+    inConfig(TastySupport.LibraryClasspath)(Defaults.configSettings),
+    libraryDependencies ++= Seq(
+      TastySupport.scala3Compiler % TastySupport.CompilerClasspath,
+      TastySupport.scala3Library % TastySupport.LibraryClasspath,
+    ),
+    javaOptions ++= {
+      import java.io.File.pathSeparator
+      val lib = (library / Compile / classDirectory).value.getAbsoluteFile()
+      val ref = (reflect / Compile / classDirectory).value.getAbsoluteFile()
+      val classpath = (TastySupport.CompilerClasspath / managedClasspath).value.seq.map(_.data) :+ lib
+      val libraryClasspath = (TastySupport.LibraryClasspath / managedClasspath).value.seq.map(_.data) :+ lib
+      Seq(
+        s"-Dtastytest.classpaths.dottyCompiler=${classpath.mkString(pathSeparator)}",
+        s"-Dtastytest.classpaths.dottyLibrary=${libraryClasspath.mkString(pathSeparator)}",
+        s"-Dtastytest.classpaths.scalaReflect=${ref}",
+      )
+    },
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")

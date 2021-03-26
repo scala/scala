@@ -1,6 +1,6 @@
 package scala.tools.tastytest
 
-import org.junit.{Test => test}
+import org.junit.{Test => test, BeforeClass => setup, AfterClass => teardown}
 import org.junit.Assert._
 
 import scala.util.{Try, Failure, Properties}
@@ -63,17 +63,29 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
-  val propSrc          = "tastytest.src"
-  val propPkgName      = "tastytest.packageName"
+  val propSrc     = "tastytest.src"
+  val propPkgName = "tastytest.packageName"
 
   def assertPropIsSet(prop: String): String = {
     Properties.propOrNull(prop).ensuring(_ != null, s"-D$prop is not set")
   }
 }
 
-import scala.reflect.runtime.ReflectionUtils
-
 object TastyTestJUnit {
+
+  private[this] var _dottyClassLoader: Dotc.ClassLoader = _
+  implicit def dottyClassLoader: Dotc.ClassLoader = _dottyClassLoader
+
+  @setup
+  def init(): Unit = {
+    _dottyClassLoader = Dotc.initClassloader().get
+  }
+
+  @teardown
+  def finish(): Unit = {
+    _dottyClassLoader = null
+  }
+
   final implicit class TryOps(val op: Try[Unit]) extends AnyVal {
     def eval: Unit = op match {
       case Failure(err) => fail(err.toString)

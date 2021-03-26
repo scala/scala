@@ -14,12 +14,12 @@ import Files._
 
 object TastyTest {
 
-  private val verbose = false
+  private[tastytest] val verbose = false
 
   private def log(s: => String): Unit =
     if (verbose) println(s)
 
-  def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
+  def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
@@ -29,7 +29,7 @@ object TastyTest {
     _                 <- runMainOn(out, testNames:_*)
   } yield ()
 
-  def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
+  def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
     _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
@@ -39,14 +39,14 @@ object TastyTest {
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
-  def negSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
+  def negSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3)      <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
     _                 <- scalacNeg(out, additionalSettings, src2:_*)
   } yield ()
 
-  def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
+  def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     (out1, out2)             <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
     _                        <- scalacPos(out1, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
@@ -55,7 +55,7 @@ object TastyTest {
     _                        <- scalacNeg(out2, additionalSettings, src2:_*)
   } yield ()
 
-  def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
+  def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     (out1, out2)         <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
     _                    <- dotcPos(out1, sourceRoot=srcRoot/src/"src-3-A", additionalDottySettings, src3A:_*)
@@ -154,11 +154,12 @@ object TastyTest {
     }
   }
 
-  def dotcPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = dotcPos(out, out, sourceRoot, additionalSettings, sources:_*)
+  def dotcPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Unit] = dotcPos(out, out, sourceRoot, additionalSettings, sources:_*)
 
-  def dotcPos(out: String, classpath: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+  def dotcPos(out: String, classpath: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Unit] = {
     log(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
-    successWhen(Dotc.dotc(out, classpath, additionalSettings, sources:_*))("dotc failed to compile sources.")
+    val process = Dotc.dotc(out, classpath, additionalSettings, sources:_*)
+    successWhen(process)("dotc failed to compile sources.")
   }
 
   private def getSourceAsName(path: String): String =
@@ -273,7 +274,7 @@ object TastyTest {
             }
           case Failure(err) =>
             errors += test
-            printerrln(s"ERROR: $test failed: ${err.getClass.getSimpleName} ${err.getMessage}")
+            printerrln(s"ERROR: $test failed: ${err.getClass.getSimpleName} ${err.getMessage} in ${err.getStackTrace().mkString("\n  ", "\n  ", "")}")
         }
       }
     }

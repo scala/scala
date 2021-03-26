@@ -1,10 +1,15 @@
 package scala.tools
 
+import dotty.tools.vulpix.ParallelTesting
+
 package object tastytest {
 
   import scala.util.Try
 
   import Files.{pathSep, classpathSep}
+
+  def unlockExperimentalFeatures[T](op: => T): T =
+    new ParallelTesting().unlockExperimentalFeatures(op)
 
   def printerrln(str: String): Unit = System.err.println(red(str))
   def printwarnln(str: String): Unit = System.err.println(yellow(str))

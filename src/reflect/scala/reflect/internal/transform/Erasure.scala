@@ -118,6 +118,7 @@ trait Erasure {
 
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
+    def eraseArray(arrayRef: Type, pre: Type, args: List[Type]): Type
 
     def eraseNormalClassRef(tref: TypeRef): Type = {
       val TypeRef(pre, clazz, args) = tref
@@ -141,10 +142,7 @@ trait Erasure {
       case tref @ TypeRef(pre, sym, args) =>
         def isDottyEnumSingleton(sym: Symbol): Boolean =
           sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton]
-        if (sym eq ArrayClass)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectTpe
-          else if (args.head.typeSymbol.isBottomClass)  arrayType(ObjectTpe)
-          else typeRef(apply(pre), sym, args map applyInArray)
+        if (sym eq ArrayClass) eraseArray(tp, pre, args)
         else if ((sym eq AnyClass) || (sym eq AnyValClass) || (sym eq SingletonClass)) ObjectTpe
         else if (sym eq UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
@@ -152,7 +150,7 @@ trait Erasure {
         else if (isDottyEnumSingleton(sym)) apply(intersectionType(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
         else sym.attachments.get[DottyOpaqueTypeAlias] match {
-          case Some(alias: DottyOpaqueTypeAlias) => apply(alias.tpe) // TODO [tasty]: refactor if we build-in opaque types
+          case Some(alias: DottyOpaqueTypeAlias) => apply(alias.tpe.asSeenFrom(pre, sym.owner)) // TODO [tasty]: refactor if we build-in opaque types
           case _                                 => apply(sym.info.asSeenFrom(pre, sym.owner)) // alias type or abstract type
         }
       case PolyType(tparams, restpe) =>
@@ -247,38 +245,47 @@ trait Erasure {
    *   - for all other types, the type itself (with any sub-components erased)
    */
   def erasure(sym: Symbol): ErasureMap =
-    if (sym == NoSymbol || !sym.enclClass.isJavaDefined) scalaErasure
-    else if (verifyJavaErasure && sym.isMethod) verifiedJavaErasure
-    else javaErasure
+    if (sym == NoSymbol) scalaErasure
+    else if (sym.enclClass.isJavaDefined) {
+      if (verifyJavaErasure && sym.isMethod) verifiedJavaErasure
+      else javaErasure
+    }
+    else if (sym.hasAttachment[DottyMethod.type]) scala3Erasure
+    else scalaErasure
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
+   *
+   * @param symOfTp used to determine the erasure mode for the type,
+   *        e.g. in `SymbolPair#highErased`, `sym` may be an anonymous class for a SAM type,
+   *        but `symOfTp` may be the a bridge method for the SAM method being erased.
    */
-  def specialErasure(sym: Symbol)(tp: Type): Type =
+  def specialErasure(sym: Symbol)(tp: Type, symOfTp: Symbol): Type =
     if (sym != NoSymbol && sym.enclClass.isJavaDefined)
       erasure(sym)(tp)
     else if (sym.isClassConstructor)
-      specialConstructorErasure(sym.owner, tp)
-    else
-      specialScalaErasure(tp)
+      specialConstructorErasure(sym.owner, symOfTp, tp)
+    else {
+      specialScalaErasureFor(symOfTp)(tp)
+    }
 
-  def specialConstructorErasure(clazz: Symbol, tpe: Type): Type = {
+  def specialConstructorErasure(clazz: Symbol, ctor: Symbol, tpe: Type): Type = {
     tpe match {
       case PolyType(tparams, restpe) =>
-        specialConstructorErasure(clazz, restpe)
+        specialConstructorErasure(clazz, ctor, restpe)
       case ExistentialType(tparams, restpe) =>
-        specialConstructorErasure(clazz, restpe)
+        specialConstructorErasure(clazz, ctor, restpe)
       case mt @ MethodType(params, restpe) =>
         MethodType(
-          cloneSymbolsAndModify(params, specialScalaErasure),
-          specialConstructorErasure(clazz, restpe))
+          cloneSymbolsAndModify(params, specialScalaErasureFor(ctor)),
+          specialConstructorErasure(clazz, ctor, restpe))
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case tp =>
         if (!(clazz == ArrayClass || tp.isError))
           assert(clazz == ArrayClass || tp.isError, s"!!! unexpected constructor erasure $tp for $clazz")
-        specialScalaErasure(tp)
+        specialScalaErasureFor(ctor)(tp)
     }
   }
 
@@ -294,7 +301,8 @@ trait Erasure {
    *  For this reason and others (such as distinguishing constructors from other methods)
    *  erasure is now (Symbol, Type) => Type rather than Type => Type.
    */
-  class ScalaErasureMap extends ErasureMap {
+  abstract class ScalaErasureMap extends ErasureMap with Scala2JavaArrayErasure {
+
     /** In scala, calculate a useful parent.
      *  An intersection such as `Object with Trait` erases to Trait.
      */
@@ -302,7 +310,42 @@ trait Erasure {
       intersectionDominator(parents)
   }
 
-  class JavaErasureMap extends ErasureMap {
+  trait Scala2JavaArrayErasure { self: ErasureMap =>
+
+    def eraseArray(arrayRef: Type, pre: Type, args: List[Type]): Type =
+      if (unboundedGenericArrayLevel(arrayRef) == 1) ObjectTpe
+      else if (args.head.typeSymbol.isBottomClass) arrayType(ObjectTpe)
+      else typeRef(self(pre), ArrayClass, args map applyInArray)
+
+  }
+
+  class Scala3ErasureMap extends ErasureMap { self =>
+
+    def mergeParents(parents: List[Type]): Type = {
+      erasedGlb(parents.map(self(_)))
+    }
+
+    def mergeParentsInArray(parents: List[Type]): Type = {
+      erasedGlb(parents.map(super.applyInArray(_)))
+    }
+
+    override def applyInArray(tp: Type): Type = {
+      tp match {
+        case RefinedType(parents, _) =>
+          super.applyInArray(mergeParentsInArray(parents))
+        case _ =>
+          super.applyInArray(tp)
+      }
+    }
+
+    def eraseArray(arrayRef: Type, pre: Type, args: List[Type]): Type = {
+      if (isGenericArrayElement(args.head)) ObjectTpe
+      else typeRef(self(pre), ArrayClass, args map applyInArray)
+    }
+
+  }
+
+  class JavaErasureMap extends ErasureMap with Scala2JavaArrayErasure {
     /** In java, always take the first parent.
      *  An intersection such as `Object with Trait` erases to Object.
      */
@@ -314,14 +357,27 @@ trait Erasure {
   }
 
   object scalaErasure extends ScalaErasureMap
+  object scala3Erasure extends Scala3ErasureMap
+
+  trait SpecialScalaErasure extends ErasureMap {
+    override def eraseDerivedValueClassRef(tref: TypeRef): Type =
+      ErasedValueType(tref.sym, erasedValueClassArg(tref))
+  }
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
    *  are then later unwrapped to the underlying parameter type in phase posterasure.
    */
-  object specialScalaErasure extends ScalaErasureMap {
-    override def eraseDerivedValueClassRef(tref: TypeRef): Type =
-      ErasedValueType(tref.sym, erasedValueClassArg(tref))
+  object specialScalaErasure extends ScalaErasureMap with SpecialScalaErasure
+
+  /** This is used as the Scala erasure for Scala 3 methods during the erasure phase itself.
+   *  @see specialScalaErasure
+   */
+  object specialScala3Erasure extends Scala3ErasureMap with SpecialScalaErasure
+
+  def specialScalaErasureFor(sym: Symbol): ErasureMap = {
+    if (sym.hasAttachment[DottyMethod.type]) specialScala3Erasure
+    else specialScalaErasure
   }
 
   object javaErasure extends JavaErasureMap
@@ -388,6 +444,180 @@ trait Erasure {
     }
   }
 
+  /** Scala 3 implementation of erasure for intersection types.
+   *  @param components the erased component types of the intersection.
+   */
+  def erasedGlb(components: List[Type]): Type = {
+
+    /** A comparison function that induces a total order on erased types,
+     *  where `A <= B` implies that the erasure of `A & B` should be A.
+     *
+     *  This order respects the following properties:
+     *  - ErasedValueTypes <= non-ErasedValueTypes
+     *  - arrays <= non-arrays
+     *  - primitives <= non-primitives
+     *  - real classes <= traits
+     *  - subtypes <= supertypes
+     *
+     *  Since this isn't enough to order to unrelated classes, we use
+     *  lexicographic ordering of the class symbol full name as a tie-breaker.
+     *  This ensure that `A <= B && B <= A` iff `A =:= B`.
+     */
+    def compareErasedGlb(tp1: Type, tp2: Type): Int = {
+      // this check is purely an optimization.
+      if (tp1 eq tp2) return 0
+
+      val isEVT1 = tp1.isInstanceOf[ErasedValueType]
+      val isEVT2 = tp2.isInstanceOf[ErasedValueType]
+      if (isEVT1 && isEVT2) {
+        return compareErasedGlb(
+          tp1.asInstanceOf[ErasedValueType].valueClazz.tpe_*,
+          tp2.asInstanceOf[ErasedValueType].valueClazz.tpe_*)
+      }
+      else if (isEVT1)
+        return -1
+      else if (isEVT2)
+        return 1
+
+      val sym1 = tp1.baseClasses.head
+      val sym2 = tp2.baseClasses.head
+
+      def compareClasses: Int = {
+        if (sym1.isSubClass(sym2))
+          -1
+        else if (sym2.isSubClass(sym1))
+          1
+        else
+          sym1.fullName.compareTo(sym2.fullName)
+      }
+
+      val isArray1 = tp1.typeArgs.nonEmpty && sym1.isSubClass(definitions.ArrayClass)
+      val isArray2 = tp2.typeArgs.nonEmpty && sym2.isSubClass(definitions.ArrayClass)
+      if (isArray1 && isArray2)
+        return compareErasedGlb(tp1.typeArgs.head, tp2.typeArgs.head)
+      else if (isArray1)
+        return -1
+      else if (isArray2)
+        return 1
+
+      val isPrimitive1 = sym1.isPrimitiveValueClass
+      val isPrimitive2 = sym2.isPrimitiveValueClass
+      if (isPrimitive1 && isPrimitive2)
+        return compareClasses
+      else if (isPrimitive1)
+        return -1
+      else if (isPrimitive2)
+        return 1
+
+      val isRealClass1 = sym1.isClass && !sym1.isTrait
+      val isRealClass2 = sym2.isClass && !sym2.isTrait
+      if (isRealClass1 && isRealClass2)
+        return compareClasses
+      else if (isRealClass1)
+        return -1
+      else if (isRealClass2)
+        return 1
+
+      compareClasses
+    }
+
+    components.min((t, u) => compareErasedGlb(t, u))
+  }
+
+  /** Dotty implementation of Array Erasure:
+   *
+   *  Is `Array[tp]` a generic Array that needs to be erased to `Object`?
+   *  This is true if among the subtypes of `Array[tp]` there is either:
+   *  - both a reference array type and a primitive array type
+   *    (e.g. `Array[_ <: Int | String]`, `Array[_ <: Any]`)
+   *  - or two different primitive array types (e.g. `Array[_ <: Int | Double]`)
+   *  In both cases the erased lub of those array types on the JVM is `Object`.
+   */
+  def isGenericArrayElement(tp: Type): Boolean = {
+
+    object DottyTypeProxy {
+
+      def unapply(tp: Type): Option[Type] = {
+        val superTpe = translucentSuperType(tp)
+        if (superTpe ne NoType) Some(superTpe) else None
+      }
+
+      def translucentSuperType(tp: Type): Type = tp match {
+        case tp: TypeRef =>
+          tp.sym.attachments.get[DottyOpaqueTypeAlias] match {
+            case Some(alias) => alias.tpe.asSeenFrom(tp.pre, tp.sym.owner)
+            case None => tp.sym.info.asSeenFrom(tp.pre, tp.sym.owner)
+          }
+        case tp: SingleType => tp.underlying
+        case tp: ThisType => tp.sym.typeOfThis
+        case tp: ConstantType => tp.value.tpe
+        case tp: RefinedType if tp.decls.nonEmpty => intersectionType(tp.parents)
+        case tp: PolyType => tp.resultType
+        case tp: ExistentialType => tp.underlying
+        case tp: TypeBounds => tp.hi
+        case tp: AnnotatedType => tp.underlying
+        case tp: SuperType => tp.thistpe.baseType(tp.supertpe.typeSymbol)
+        case tp => NoType
+      }
+
+    }
+
+    object DottyAndType {
+      def unapply(tp: RefinedType): Boolean = tp.decls.isEmpty
+    }
+
+    /** A symbol that represents the sort of JVM array that values of type `t` can be stored in:
+     *  - If we can always store such values in a reference array, return Object
+     *  - If we can always store them in a specific primitive array, return the
+     *    corresponding primitive class
+     *  - Otherwise, return `NoSymbol`.
+     */
+    def arrayUpperBound(tp: Type): Symbol = tp.dealias match {
+      case tp: TypeRef if tp.sym.isClass =>
+        val cls = tp.sym
+        // Only a few classes have both primitives and references as subclasses.
+        if ((cls eq AnyClass) || (cls eq AnyValClass) || (cls eq SingletonClass))
+          NoSymbol
+        // We only need to check for primitives because derived value classes in arrays are always boxed.
+        else if (cls.isPrimitiveValueClass)
+          cls
+        else
+          ObjectClass
+      case DottyTypeProxy(unwrapped) =>
+        arrayUpperBound(unwrapped)
+      case tp @ DottyAndType() =>
+        // Find first `p` in `parents` where `arrayUpperBound(p) ne NoSymbol`
+        @tailrec def loop(tps: List[Type]): Symbol = tps match {
+          case tp :: tps1 =>
+            val ub = arrayUpperBound(tp)
+            if (ub ne NoSymbol) ub
+            else loop(tps1)
+          case nil => NoSymbol
+        }
+        loop(tp.parents)
+      case _ =>
+        NoSymbol
+    }
+
+    /** Can one of the JVM Array type store all possible values of type `t`? */
+    def fitsInJVMArray(tp: Type): Boolean = arrayUpperBound(tp) ne NoSymbol
+
+    def isOpaque(sym: Symbol) = !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
+
+    tp.dealias match {
+      case tp: TypeRef if !isOpaque(tp.sym) =>
+        !tp.sym.isClass &&
+        !tp.sym.isJavaDefined && // In Java code, Array[T] can never erase to Object
+        !fitsInJVMArray(tp)
+      case DottyTypeProxy(unwrapped) =>
+        isGenericArrayElement(unwrapped)
+      case tp @ DottyAndType() =>
+        tp.parents.forall(isGenericArrayElement)
+      case tp =>
+        false
+    }
+  }
+
   /** The symbol's erased info. This is the type's erasure, except for the following primitive symbols:
     *
     *   - $asInstanceOf    --> [T]T
@@ -407,15 +637,15 @@ trait Erasure {
     if (sym == Object_asInstanceOf || synchronizedPrimitive(sym))
       sym.info
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
-      PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType))
+      PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType, sym))
     else if (sym.isAbstractType)
       TypeBounds(WildcardType, WildcardType) // TODO why not use the erasure of the type's bounds, as stated in the doc?
     else if (sym.isTerm && sym.owner == ArrayClass) {
       if (sym.isClassConstructor) // TODO: switch on name for all branches -- this one is sym.name == nme.CONSTRUCTOR
         tp match {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
-            MethodType(cloneSymbolsAndModify(params, specialErasure(sym)),
-                       typeRef(specialErasure(sym)(pre), sym1, args))
+            MethodType(cloneSymbolsAndModify(params, tp => specialErasure(sym)(tp, sym)),
+                       typeRef(specialErasure(sym)(pre, sym), sym1, args))
           case x => throw new MatchError(x)
         }
       else if (sym.name == nme.apply)
@@ -423,9 +653,9 @@ trait Erasure {
       else if (sym.name == nme.update)
         (tp: @unchecked) match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe)), tvar), UnitTpe)
+            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe, sym)), tvar), UnitTpe)
         }
-      else specialErasure(sym)(tp)
+      else specialErasure(sym)(tp, sym)
     } else if (
       sym.owner != NoSymbol &&
       sym.owner.owner == ArrayClass &&
@@ -437,7 +667,7 @@ trait Erasure {
     } else {
       // TODO OPT: altogether, there are 9 symbols that we special-case.
       // Could we get to the common case more quickly by looking them up in a set?
-      specialErasure(sym)(tp)
+      specialErasure(sym)(tp, sym)
     }
   }
 }
