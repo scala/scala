@@ -57,8 +57,23 @@ class ReplCompletion(intp: Repl, val accumulator: Accumulator = new Accumulator)
             case _                                               =>
               // under JLine 3, we no longer use the tabCount concept, so tabCount is always 1
               // which always gives us all completions
-              val (c, r) = result.completionCandidates(tabCount = 1)
-              CompletionResult(buf, c, r)
+              val (c, r)                         = result.completionCandidates(tabCount = 1)
+              // scala/bug#12238
+              // Currently, only when all methods are Deprecated should they be displayed `Deprecated` to users. Only handle result of PresentationCompilation#toCandidates.
+              // We don't handle result of PresentationCompilation#defStringCandidates, because we need to show the deprecated here.
+              if (r.nonEmpty && r.forall(!_.defString.startsWith("def"))) {
+                val groupByDef              = r.groupBy(_.defString)
+                val allOverrideIsUniversal  = groupByDef.filter(f => f._2.forall(_.isUniversal)).keySet
+                val allOverrideIsDeprecated = groupByDef.filter(f => f._2.forall(_.isDeprecated)).keySet
+                def isOverrideMethod(candidate: CompletionCandidate): Boolean = groupByDef(candidate.defString).size > 1
+                val rewriteDecr = r.map(candidate => {
+                  // If not all overloaded methods are deprecated, but they are overloaded methods, they (all) should be set to false.
+                  val isUniv = if (!allOverrideIsUniversal.contains(candidate.defString) && isOverrideMethod(candidate)) false else candidate.isUniversal
+                  val isDepr = if (!allOverrideIsDeprecated.contains(candidate.defString) && isOverrideMethod(candidate)) false else candidate.isDeprecated
+                  candidate.copy(isUniversal = isUniv, isDeprecated = isDepr)
+                })
+                CompletionResult(buf, c, rewriteDecr)
+              } else CompletionResult(buf, c, r)
           }
         } finally result.cleanup()
       }

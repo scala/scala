@@ -239,6 +239,28 @@ class CompletionTest {
   }
 
   @Test
+  def isDeprecatedOverrideMethod(): Unit = {
+    val (completer, _, _) = interpretLines(
+      """object Stale { def oldie(i: Int) = ???; @deprecated("","") def oldie = ??? }"""
+      )
+    val candidates1 = completer.complete("Stale.ol").candidates
+    assertEquals(2, candidates1.size)
+    assertEquals(candidates1.head.isDeprecated, false)
+    assertEquals(candidates1.last.isDeprecated, false)
+  }
+
+  @Test
+  def isDeprecatedOverrideMethodDefString(): Unit = {
+    val (completer, _, _) = interpretLines(
+      """object Stale { def oldie(i: Int) = ???; @deprecated("","") def oldie = ??? }"""
+      )
+    val candidates1 = completer.complete("Stale.oldie").candidates
+    assertEquals(3, candidates1.size)
+    assertEquals(candidates1.filter(_.isDeprecated).map(_.defString.contains("deprecated")).head, true)
+    assertEquals(candidates1.last.isDeprecated, false)
+  }
+
+  @Test
   def isDeprecatedInMethodDesc(): Unit = {
     val (completer, _, _) = interpretLines(
       """object Stale { @deprecated("","") def oldie = ??? }""",
@@ -246,10 +268,10 @@ class CompletionTest {
       )
     val candidates1 = completer.complete("Stale.oldie").candidates
     assertEquals(2, candidates1.size) // When exactly matched, there is an empty character
-    assertTrue(candidates1.last.defString.contains("deprecated"))
+    assertTrue(candidates1.filter(_.defString.contains("oldie")).head.defString.contains("deprecated"))
     val candidates2 = completer.complete("Stuff.that").candidates
     assertEquals(2, candidates2.size)
-    assertTrue(candidates2.last.defString.contains("deprecated"))
+    assertTrue(candidates2.filter(_.defString.contains("that")).head.defString.contains("deprecated"))
   }
 
   @Test
