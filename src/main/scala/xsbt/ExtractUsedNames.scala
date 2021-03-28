@@ -155,11 +155,10 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
   }
 
   private def firstClassOrModuleDef(tree: Tree): Option[Tree] = {
-    tree foreach {
-      case t @ ((_: ClassDef) | (_: ModuleDef)) => return Some(t)
-      case _                                    => ()
+    tree find {
+      case ((_: ClassDef) | (_: ModuleDef)) => true
+      case _                                => false
     }
-    None
   }
 
   private class ExtractUsedNamesTraverser extends Traverser {

@@ -18,7 +18,7 @@ import scala.tools.nsc.CompilerCommand
 
 class ScaladocBridge extends xsbti.compile.ScaladocInterface2 {
   def run(sources: Array[VirtualFile], args: Array[String], log: Logger, delegate: xsbti.Reporter) =
-    (new Runner(sources, args, log, delegate)).run
+    (new Runner(sources, args, log, delegate)).run()
 }
 
 private class Runner(
@@ -30,12 +30,13 @@ private class Runner(
   import scala.tools.nsc.{ doc, Global, reporters }
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
-  val command = new CompilerCommand(args.toList, docSettings)
+  val fullArgs = args.toList ++ sources.map(_.toString)
+  val command = new CompilerCommand(fullArgs, docSettings)
   val reporter = DelegatingReporter(docSettings, delegate)
   def noErrors = !reporter.hasErrors && command.ok
 
   def run(): Unit = {
-    debug(log, "Calling Scaladoc with arguments:\n\t" + args.mkString("\n\t"))
+    debug(log, "Calling Scaladoc with arguments:\n\t" + fullArgs.mkString("\n\t"))
     if (noErrors) {
       import doc._ // 2.8 trunk and Beta1-RC4 have doc.DocFactory.  For other Scala versions, the next line creates forScope.DocFactory
       val processor = new DocFactory(reporter, docSettings)
