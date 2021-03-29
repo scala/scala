@@ -487,6 +487,7 @@ lazy val compiler = configureAsSubproject(project)
                             |org.jline.terminal.impl.jna.*;resolution:=optional
                             |org.jline.terminal.spi;resolution:=optional
                             |org.jline.utils;resolution:=optional
+                            |org.jline.builtins;resolution:=optional
                             |scala.*;version="$${range;[==,=+);$${ver}}"
                             |*""".stripMargin.linesIterator.mkString(","),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
