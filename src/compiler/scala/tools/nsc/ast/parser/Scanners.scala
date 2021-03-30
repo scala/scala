@@ -393,6 +393,16 @@ trait Scanners extends ScannersCommon {
       case _ =>
     }
 
+    /** Advance beyond a case token without marking the CASE in sepRegions.
+     *  This method should be called to skip beyond CASE tokens that are
+     *  not part of matches, i.e. no ARROW is expected after them.
+     */
+    def skipCASE(): Unit = {
+      assert(token == CASE, s"Internal error: skipCASE() called on non-case token $token")
+      nextToken()
+      sepRegions = sepRegions.tail
+    }
+
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken(): Unit = {
