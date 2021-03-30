@@ -9,7 +9,7 @@ We welcome contributions at https://github.com/scala/scala!
 Scala Tools
 -----------
 
-- scala       Scala interactive interpreter
+- scala       Scala REPL (interactive shell)
 - scalac      Scala compiler
 - fsc         Scala resident compiler
 - scaladoc    Scala API documentation generator

@@ -200,10 +200,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     cmd("load", "<path>", "interpret lines in a file", loadCommand, fileCompletion),
     cmd("paste", "[-raw] [path]", "enter paste mode or paste a file", pasteCommand, fileCompletion),
     nullary("power", "enable power user mode", () => powerCmd()),
-    nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
-    cmd("replay", "[options]", "reset the repl and replay all previous commands", replayCommand, settingsCompletion),
+    nullary("quit", "exit the REPL", () => Result(keepRunning = false, None)),
+    cmd("replay", "[options]", "reset the REPL and replay all previous commands", replayCommand, settingsCompletion),
     cmd("require", "<path>", "add a jar to the classpath", require),
-    cmd("reset", "[options]", "reset the repl to its initial state, forgetting all session entries", resetCommand, settingsCompletion),
+    cmd("reset", "[options]", "reset the REPL to its initial state, forgetting all session entries", resetCommand, settingsCompletion),
     cmd("save", "<path>", "save replayable session to a file", saveCommand, fileCompletion),
     shCommand,
     cmd("settings", "<options>", "update compiler options, if possible; see reset", changeSettings, settingsCompletion),
@@ -512,7 +512,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
    */
   def resetCommand(line: String): Unit = {
     def run(destructive: Boolean): Unit = {
-      echo("Resetting interpreter state.")
+      echo("Resetting REPL state.")
       if (replayCommandStack.nonEmpty) {
         echo("Forgetting this session history:\n")
         replayCommands foreach echo

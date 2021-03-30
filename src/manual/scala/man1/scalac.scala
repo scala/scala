@@ -94,7 +94,7 @@ object scalac extends Command {
             "Specify character encoding used by source files.",
             "The default value is platform-specific (Linux: " & Mono("\"UTF8\"") &
             ", Windows: " & Mono("\"Cp1252\"") & "). Executing the following " &
-            "code in the Scala interpreter will return the default value " &
+            "code in the Scala REPL will return the default value " &
             "on your system:",
             MBold("    scala> ") &
             Mono("new java.io.InputStreamReader(System.in).getEncoding"))),
