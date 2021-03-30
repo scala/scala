@@ -1,0 +1,7 @@
+for-comprehension-case-future.scala:22: error: '<-' expected but '=' found.
+      case y = x + 1
+             ^
+for-comprehension-case-future.scala:23: error: illegal start of simple expression
+    } yield x + y
+    ^
+two errors found

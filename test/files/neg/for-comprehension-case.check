@@ -1,0 +1,13 @@
+for-comprehension-case.scala:5: error: `case` keyword in for comprehension requires the -Xsource:3 flag.
+      case Some(x) <- List(Some(1), None)
+      ^
+for-comprehension-case.scala:12: error: `case` keyword in for comprehension requires the -Xsource:3 flag.
+      case y = x + 1
+      ^
+for-comprehension-case.scala:12: error: '<-' expected but '=' found.
+      case y = x + 1
+             ^
+for-comprehension-case.scala:13: error: illegal start of simple expression
+    } yield x+y
+    ^
+four errors found

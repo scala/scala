@@ -1860,6 +1860,12 @@ self =>
      */
     def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
       val start  = in.offset
+      val hasCase = in.token == CASE
+      if (hasCase) {
+        if (!currentRun.isScala3) syntaxError(in.offset, s"`case` keyword in for comprehension requires the -Xsource:3 flag.")
+        in.skipCASE()
+      }
+
       val hasVal = in.token == VAL
       if (hasVal)
         in.nextToken()
@@ -1873,7 +1879,7 @@ self =>
         else syntaxError(in.offset, "val in for comprehension must be followed by assignment")
       }
 
-      if (hasEq && eqOK) in.nextToken()
+      if (hasEq && eqOK && !hasCase) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
 
