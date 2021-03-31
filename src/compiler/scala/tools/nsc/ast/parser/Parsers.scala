@@ -704,6 +704,10 @@ self =>
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER
 
+    def isWildcardType =
+      in.token == USCORE ||
+      currentRun.isScala3 && isRawIdent && in.name == raw.QMARK
+
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
 
@@ -1042,12 +1046,14 @@ self =>
         val start = in.offset
         simpleTypeRest(in.token match {
           case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
-          case USCORE   => wildcardType(in.skipToken())
           case _        =>
-            path(thisOK = false, typeOK = true) match {
-              case r @ SingletonTypeTree(_) => r
-              case r => convertToTypeId(r)
-            }
+            if (isWildcardType)
+              wildcardType(in.skipToken())
+            else
+              path(thisOK = false, typeOK = true) match {
+                case r @ SingletonTypeTree(_) => r
+                case r => convertToTypeId(r)
+              }
         })
       }
 
@@ -1915,18 +1921,16 @@ self =>
       def functionArgType(): Tree = argType()
       def argType(): Tree = {
         val start = in.offset
-        in.token match {
-          case USCORE =>
+        if (isWildcardType) {
             in.nextToken()
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
-          case _ =>
-            typ() match {
-              case Ident(name: TypeName) if nme.isVariableName(name) =>
-                atPos(start) { Bind(name, EmptyTree) }
-              case t => t
-            }
-        }
+        } else
+          typ() match {
+            case Ident(name: TypeName) if nme.isVariableName(name) =>
+              atPos(start) { Bind(name, EmptyTree) }
+            case t => t
+          }
       }
 
       /** {{{

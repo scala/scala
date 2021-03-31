@@ -924,6 +924,7 @@ trait StdNames {
       final val PLUS : NameType  = "+"
       final val STAR : NameType  = "*"
       final val TILDE: NameType  = "~"
+      final val QMARK: NameType  = "?"
 
       final val isUnary: Set[Name] = Set(MINUS, PLUS, TILDE, BANG)
     }
