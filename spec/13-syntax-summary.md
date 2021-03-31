@@ -60,9 +60,11 @@ stringElement    ::=  charNoDoubleQuoteOrNewline
                    |  escapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
-interpolatedString 
-                 ::=  alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+interpolatedString
+                 ::=  alphaid ‘"’ {[‘\’] interpolatedStringPart | ‘\\’ | ‘\"’} ‘"’
                    |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+interpolatedStringPart
+                 ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
 escape           ::=  ‘\$\$’
                    |  ‘\$"’
                    |  ‘\$’ id

@@ -463,7 +463,7 @@ arbitrary, except that it may contain three or more consecutive quote characters
 only at the very end. Characters
 must not necessarily be printable; newlines or other
 control characters are also permitted. [Escape sequences](#escape-sequences) are
-not processed, except for Unicode escapes.
+not processed, except for Unicode escapes (this is deprecated since 2.13.2).
 
 > ```scala
 >   """the present string
@@ -503,8 +503,9 @@ not processed, except for Unicode escapes.
 #### Interpolated string
 
 ```ebnf
-interpolatedString ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘$’) | escape} ‘"’
-                         |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘$’) | escape} {‘"’} ‘"""’
+interpolatedString     ::= alphaid ‘"’ {[‘\’] interpolatedStringPart | ‘\\’ | ‘\"’} ‘"’
+                         | alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘$’) | escape} {‘"’} ‘"""’
+interpolatedStringPart ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
 escape                 ::= ‘$$’
                          | ‘$"’
                          | ‘$’ id
@@ -514,23 +515,24 @@ alphaid                ::= upper idrest
 
 ```
 
-Interpolated string consist of an identifier starting with a letter immediately 
+An interpolated string consists of an identifier starting with a letter immediately
 followed by a string literal. There may be no whitespace characters or comments 
-between the leading identifier and the opening quote ‘”’ of the string. 
-The string literal in a interpolated string can be standard (single quote) 
+between the leading identifier and the opening quote `"` of the string.
+The string literal in an interpolated string can be standard (single quote)
 or multi-line (triple quote).
 
-Inside a interpolated string none of the usual escape characters are interpreted 
-(except for unicode escapes) no matter whether the string literal is normal 
-(enclosed in single quotes) or multi-line (enclosed in triple quotes). 
-Instead, there are three new forms of dollar sign escape. 
+Inside an interpolated string none of the usual escape characters are interpreted
+no matter whether the string literal is normal (enclosed in single quotes) or
+multi-line (enclosed in triple quotes). Note that the sequence `\"` does not
+close a normal string literal (enclosed in single quotes).
+
+There are three forms of dollar sign escape.
 The most general form encloses an expression in `${` and `}`, i.e. `${expr}`. 
 The expression enclosed in the braces that follow the leading `$` character is of 
 syntactical category BlockExpr. Hence, it can contain multiple statements, 
 and newlines are significant. Single ‘$’-signs are not permitted in isolation 
-in a interpolated string. A single ‘$’-sign can still be obtained by doubling the ‘$’ 
-character: ‘$$’. A single ‘"’-sign in a single quoted interpolation would end the
-interpolation. A single ‘"’-sign can be obtained by the sequence ‘\$"’.
+in an interpolated string. A single ‘$’-sign can still be obtained by doubling the ‘$’
+character: ‘$$’. A single ‘"’-sign can be obtained by the sequence ‘\$"’.
 
 The simpler form consists of a ‘$’-sign followed by an identifier starting with 
 a letter and followed only by letters, digits, and underscore characters, 
