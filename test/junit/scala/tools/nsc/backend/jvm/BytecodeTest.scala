@@ -10,6 +10,7 @@ import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 import scala.tools.asm.Opcodes
+import scala.tools.asm.tree.MethodNode
 
 class BytecodeTest extends BytecodeTesting {
   import compiler._
@@ -342,5 +343,34 @@ class BytecodeTest extends BytecodeTesting {
     val A = cs.find(_.name == "A11718").get
     val a = A.fields.asScala.find(_.name == "a").get
     assertEquals(0, a.access & Opcodes.ACC_FINAL)
+  }
+
+  @Test
+  def t12362(): Unit = {
+    val code                 =
+      """object Test {
+        |  def foo(value: String) = {
+        |    println(value)
+        |  }
+        |
+        |  def abcde(value1: String, value2: Long, value3: Double, value4: Int, value5: Double): Double = {
+        |    println(value1)
+        |    value5
+        |  }
+        |}""".stripMargin
+
+    val List(mirror, _) = compileClasses(code)
+    assertEquals(mirror.name, "Test")
+
+    val foo    = getAsmMethod(mirror, "foo")
+    val abcde  = getAsmMethod(mirror, "abcde")
+
+    def t(m: MethodNode, r: List[(String, String, Int)]) = {
+      assertTrue((m.access & Opcodes.ACC_STATIC) != 0)
+      assertEquals(r, m.localVariables.asScala.toList.map(l => (l.desc, l.name, l.index)))
+    }
+
+    t(foo, List(("Ljava/lang/String;", "value", 0)))
+    t(abcde, List(("Ljava/lang/String;", "value1", 0), ("J", "value2", 1), ("D", "value3", 3), ("I", "value4", 5), ("D", "value5", 6)))
   }
 }
