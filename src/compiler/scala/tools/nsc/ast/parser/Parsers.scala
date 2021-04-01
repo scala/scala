@@ -673,6 +673,24 @@ self =>
       case _ => false
     }
 
+    def isSoftModifier: Boolean =
+      currentRun.isScala3 && in.token == IDENTIFIER && softModifierNames.contains(in.name)
+
+    /** Is the current token a soft modifier in a position where such a modifier is allowed? */
+    def isValidSoftModifier: Boolean =
+      isSoftModifier && {
+        val mod = in.name
+        lookingAhead {
+          while (in.token == NEWLINE || isModifier || isSoftModifier) in.nextToken()
+
+          in.token match {
+            case CLASS | CASECLASS => true
+            case DEF | TRAIT | TYPE => mod == nme.infix
+            case _ => false
+          }
+        }
+      }
+
     def isAnnotation: Boolean = in.token == AT
 
     def isLocalModifier: Boolean = in.token match {
@@ -727,12 +745,13 @@ self =>
 
     def isSimpleExprIntro: Boolean = isExprIntroToken(in.token)
 
-    def isExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
+    def isExprIntroToken(token: Token): Boolean =
+      !isValidSoftModifier && (isLiteralToken(token) || (token match {
       case IDENTIFIER | BACKQUOTED_IDENT |
            THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
            DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
       case _ => false
-    })
+    }))
 
     def isExprIntro: Boolean = isExprIntroToken(in.token)
 
@@ -2243,7 +2262,10 @@ self =>
           in.nextToken()
           loop(mods)
         case _ =>
-          mods
+          if (isValidSoftModifier) {
+            in.nextToken()
+            loop(mods)
+          } else mods
       }
       loop(NoMods)
     }
@@ -3162,7 +3184,7 @@ self =>
       case IMPORT =>
         in.flushDoc
         importClause()
-      case _ if isAnnotation || isTemplateIntro || isModifier =>
+      case _ if isAnnotation || isTemplateIntro || isModifier || isValidSoftModifier =>
         joinComment(topLevelTmplDef :: Nil)
     }
 
@@ -3212,7 +3234,7 @@ self =>
       case IMPORT =>
         in.flushDoc
         importClause()
-      case _ if isDefIntro || isModifier || isAnnotation =>
+      case _ if isDefIntro || isModifier || isAnnotation || isValidSoftModifier =>
         joinComment(nonLocalDefOrDcl)
       case _ if isExprIntro =>
         in.flushDoc
