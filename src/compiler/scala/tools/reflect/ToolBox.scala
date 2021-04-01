@@ -84,6 +84,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *
    *  If `silent` is false, `ToolBoxError` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
+   *  Such errors don't vanish and can be inspected by turning on -Vimplicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    */
   def inferImplicitValue(pt: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree
@@ -97,6 +98,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *
    *  If `silent` is false, `ToolBoxError` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
+   *  Such errors don't vanish and can be inspected by turning on -Vimplicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    */
   def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree

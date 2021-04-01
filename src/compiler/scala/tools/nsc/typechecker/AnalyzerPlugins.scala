@@ -187,7 +187,7 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
      * @param errors The chain of intermediate implicits that lead to this error
      * @param previous The error message constructed by the previous analyzer plugin, or the builtin default
      */
-    def noImplicitFoundError(param: Symbol, errors: List[ImplicitError], previous: Option[String]): Option[String] =
+    def noImplicitFoundError(param: Symbol, errors: List[ImplicitError], previous: String): String =
       previous
   }
 
@@ -401,9 +401,9 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
   })
 
   /** @see AnalyzerPlugin.noImplicitFoundError */
-  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImplicitError], initial: String): Option[String] =
-    invoke(new CumulativeOp[Option[String]] {
-      def default = Some(initial)
+  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImplicitError], initial: String): String =
+    invoke(new CumulativeOp[String] {
+      def default = initial
       def accumulate = (previous, p) => p.noImplicitFoundError(param, errors, previous)
     })
 

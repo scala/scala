@@ -445,6 +445,8 @@ trait Implicits extends splain.SplainData {
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
+      if (settings.debug)
+        reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -906,8 +908,9 @@ trait Implicits extends splain.SplainData {
             // bounds check on the expandee tree
             itree3.attachments.get[MacroExpansionAttachment] match {
               case Some(MacroExpansionAttachment(exp @ TypeApply(fun, targs), _)) =>
-                val withinBounds = checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targs.map(_.tpe), "inferred ")
-                if (!withinBounds) splainPushNonconformantBonds(pt, tree, targs.map(_.tpe), undetParams, None)
+                val targTpes     = mapList(targs)(_.tpe)
+                val withinBounds = checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targTpes, "inferred ")
+                if (!withinBounds) splainPushNonconformantBonds(pt, tree, targTpes, undetParams, None)
               case _ => ()
             }
 
@@ -1501,8 +1504,10 @@ trait Implicits extends splain.SplainData {
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
+      if (settings.debug) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
+      // otherwise -Vimplicits/-Vdebug will spam the long with zillions of "macros are disabled"
       // this is ugly but temporary, since all this code will be removed once I fix implicit macros
       else SearchFailure
     }

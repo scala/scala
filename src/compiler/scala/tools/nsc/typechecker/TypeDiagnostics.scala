@@ -40,9 +40,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *
  *  @author Paul Phillips
  */
-trait TypeDiagnostics
-extends splain.SplainDiagnostics
-{
+trait TypeDiagnostics extends splain.SplainDiagnostics {
   self: Analyzer with StdAttachments =>
 
   import global._
@@ -342,8 +340,10 @@ extends splain.SplainDiagnostics
     }
   }
 
-  def foundReqMsg(found: Type, req: Type): String =
-    splainFoundReqMsg(found, req).getOrElse(builtinFoundReqMsg(found, req))
+  def foundReqMsg(found: Type, req: Type): String = {
+    val errMsg = splainFoundReqMsg(found, req)
+    if (errMsg.isEmpty) builtinFoundReqMsg(found, req) else errMsg
+  }
 
   def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {
     val clazz = if (sym.isModuleClass) sym.companionClass else sym

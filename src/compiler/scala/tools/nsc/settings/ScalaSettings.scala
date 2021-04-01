@@ -501,6 +501,10 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     .withAbbreviation("-Yhot-statistics")
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
+  val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")
+  val VimplicitsVerboseTree = BooleanSetting("-Vimplicits-verbose-tree", "Display all intermediate implicits in a chain.")
+  val VimplicitsMaxRefined  = IntSetting("-Vimplicits-max-refined", "max chars for printing refined types, abbreviate to `F {...}`", Int.MaxValue, Some((0, Int.MaxValue)), _ => None)
+  val VtypeDiffs            = BooleanSetting("-Vtype-diffs", "Print found/required error messages as colored diffs.")
   val logImplicitConv    = BooleanSetting("-Vimplicit-conversions", "Print a message whenever an implicit conversion is inserted.")
     .withAbbreviation("-Xlog-implicit-conversions")
   val logReflectiveCalls = BooleanSetting("-Vreflective-calls", "Print a message when a reflective method call is generated")
@@ -567,45 +571,4 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     */
     None
   }
-
-  object VimplicitsChoices extends MultiChoiceEnumeration {
-    val enable = Choice("enable", "print dependent missing implicits")
-    val disable = Choice("disable", "disable printing dependent missing implicits")
-    val noColor = Choice("no-color", "don't colorize type errors formatted by splain")
-    val verboseTree = Choice("verbose-tree", "display all intermediate implicits in a chain")
-  }
-
-  val Vimplicits: MultiChoiceSetting[VimplicitsChoices.type] =
-    MultiChoiceSetting(
-      name = "-Vimplicits",
-      helpArg = "feature",
-      descr = "Print dependent missing implicits and colored found/required type diffs. See https://docs.scala-lang.org/overviews/compiler-options/errors.html",
-      domain = VimplicitsChoices,
-      default = Some("enable" :: Nil),
-    ).withPostSetHook(_ => enableVexplainImplicitsImplicitly())
-
-  def enableVexplainImplicitsImplicitly(): Unit =
-    if (!Vimplicits.contains(VimplicitsChoices.disable) && !Vimplicits.contains(VimplicitsChoices.enable))
-      Vimplicits.enable(VimplicitsChoices.enable)
-
-  val VimplicitsMaxRefined: IntSetting =
-    IntSetting(
-      "-Vimplicits-max-refined",
-      "max chars for printing refined types, abbreviate to `F {...}`",
-      0,
-      Some((0, Int.MaxValue)),
-      str => Some(str.toInt),
-    ).withPostSetHook(_ => enableVexplainImplicitsImplicitly())
-
-  def implicitsSettingEnable: Boolean =
-    Vimplicits.contains(VimplicitsChoices.enable) &&
-    !Vimplicits.contains(VimplicitsChoices.disable)
-  def implicitsSettingNoColor: Boolean = Vimplicits.contains(VimplicitsChoices.noColor)
-  def implicitsSettingVerboseTree: Boolean = Vimplicits.contains(VimplicitsChoices.verboseTree)
-
-  val VtypeDiffs: BooleanSetting =
-    BooleanSetting("-Vtype-diffs", "Print found/required error messages as colored diffs.")
-
-  def typeDiffsSettingEnable: Boolean =
-    VtypeDiffs.value
 }

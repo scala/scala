@@ -1,3 +1,5 @@
+// scalac: -Vimplicits
+//
 object Test {
 	import B._, C._
 

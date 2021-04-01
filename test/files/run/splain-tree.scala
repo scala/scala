@@ -1,9 +1,7 @@
 import scala.tools.partest._
 
-object Test
-extends DirectTest
-{
-  override def extraSettings: String = "-usejavacp -Vimplicits:verbose-tree,no-color"
+object Test extends DirectTest {
+  override def extraSettings: String = "-usejavacp -Vimplicits -Vimplicits-verbose-tree"
 
   def code: String = ""
 

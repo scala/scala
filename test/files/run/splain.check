@@ -13,7 +13,6 @@ newSource1.scala:6: error: type mismatch;
     ^
 newSource1.scala:7: error: implicit error;
 !I e: F[Arg]
-
   implicitly[F[Arg]]
             ^
 newSource1.scala:4: error: implicit error;
