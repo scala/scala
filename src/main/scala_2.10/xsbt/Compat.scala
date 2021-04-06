@@ -144,6 +144,8 @@ abstract class Compat {
     // `original` has been renamed to `expandee` in 2.11.x
     @inline final def expandee: Tree = self.original
   }
+
+  protected def processOriginalTreeAttachment(in: Tree)(func: Tree => Unit): Unit = ()
 }
 
 /** Defines compatibility utils for [[ZincCompiler]]. */

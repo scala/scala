@@ -13,9 +13,15 @@ package xsbt
 
 import java.io.PrintWriter
 import xsbti.compile.Output
+import scala.tools.nsc.Global
 import scala.tools.nsc.Settings
 
-abstract class Compat
+abstract class Compat {
+  val global: Global
+  import global._
+
+  protected def processOriginalTreeAttachment(in: Tree)(func: Tree => Unit): Unit = ()
+}
 object Compat {
   // IR is renamed to Results
   val Results = scala.tools.nsc.interpreter.IR

@@ -455,9 +455,15 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           inspectedOriginalTrees.add(original)
         }
         addTypeDependencies(typeTree.tpe)
+
       case m @ MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
         traverse(original)
         super.traverse(m)
+
+      case l: Literal =>
+        processOriginalTreeAttachment(l)(traverse)
+        super.traverse(l)
+
       case _: ClassDef | _: ModuleDef if !ignoredSymbol(tree.symbol) =>
         // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
         // will be used in Analyzer phase

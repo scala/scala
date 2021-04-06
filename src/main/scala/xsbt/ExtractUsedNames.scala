@@ -290,6 +290,8 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
           TypeDependencyTraverser.setCacheAndOwner(cache, _currentOwner)
           TypeDependencyTraverser.traverse(tpe)
         }
+      case l: Literal =>
+        processOriginalTreeAttachment(l)(traverse)
       case _ =>
     }
 

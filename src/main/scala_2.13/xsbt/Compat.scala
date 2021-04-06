@@ -13,10 +13,22 @@ package xsbt
 
 import java.io.PrintWriter
 import xsbti.compile.Output
+import scala.tools.nsc.Global
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
-abstract class Compat
+abstract class Compat {
+  val global: Global
+  import global._
+
+  /** If given tree contains object tree attachment calls func on tree from attachment. */
+  protected def processOriginalTreeAttachment(in: Tree)(func: Tree => Unit): Unit = {
+    import analyzer._
+    in.attachments.get[OriginalTreeAttachment].foreach { a =>
+      func(a.original)
+    }
+  }
+}
 object Compat {
   // IR is renamed to Results
   val Results = scala.tools.nsc.interpreter.Results
