@@ -1,4 +1,5 @@
-t4270.scala:5: error: could not find implicit value for parameter e: Int
+t4270.scala:5: error: implicit error;
+!I e: Int
   implicitly[Int]
             ^
 1 error

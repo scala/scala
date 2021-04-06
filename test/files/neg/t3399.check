@@ -1,4 +1,7 @@
-t3399.scala:23: error: Cannot prove that Nats.Add[Nats._1,Nats._1] =:= Nats._1.
+t3399.scala:23: error: implicit error;
+!I e: Succ[Succ[_0]] =:= Succ[_0]
+  Cannot prove that Nats.Add[Nats._1,Nats._1] =:= Nats._1.
+
     implicitly[ Add[_1, _1] =:= _1]
               ^
 1 error

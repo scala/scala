@@ -23,16 +23,20 @@ t5553_2.scala:41: error: type mismatch;
  required: Base[T]
   def test10[T]: Base[T] = Foo3[T]
                                ^
-t5553_2.scala:47: error: could not find implicit value for parameter z: String
+t5553_2.scala:47: error: implicit error;
+!I z: String
   def test13[T]: Int     = Foo3[T]
                                ^
-t5553_2.scala:48: error: could not find implicit value for parameter z: String
+t5553_2.scala:48: error: implicit error;
+!I z: String
   def test14[T]: Base[T] = Foo3[T]
                                ^
-t5553_2.scala:49: error: could not find implicit value for parameter z: String
+t5553_2.scala:49: error: implicit error;
+!I z: String
   def test15[T]: String = Foo3[T]
                               ^
-t5553_2.scala:50: error: could not find implicit value for parameter z: String
+t5553_2.scala:50: error: implicit error;
+!I z: String
   def test16[T]         = Foo3[T]
                               ^
 t5553_2.scala:54: error: ambiguous reference to overloaded definition,

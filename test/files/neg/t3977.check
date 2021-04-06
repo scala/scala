@@ -1,4 +1,5 @@
-t3977.scala:12: error: could not find implicit value for parameter w: False#If[E]
+t3977.scala:12: error: implicit error;
+!I w: E
   new NoNull
   ^
 1 error

@@ -1,4 +1,7 @@
-interop_abstypetags_arenot_classtags.scala:6: error: No ClassTag available for T
+interop_abstypetags_arenot_classtags.scala:6: error: implicit error;
+!I ctag: ClassTag[T]
+  No ClassTag available for T
+
     println(classTag[T])
                     ^
 1 error

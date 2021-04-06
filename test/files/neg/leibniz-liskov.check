@@ -1,19 +1,37 @@
-leibniz-liskov.scala:7: error: Cannot prove that LeibnizLiskov.this.A =:= LeibnizLiskov.this.B.
+leibniz-liskov.scala:7: error: implicit error;
+!I e: A =:= B
+  Cannot prove that LeibnizLiskov.this.A =:= LeibnizLiskov.this.B.
+
   implicitly[A =:= B]
             ^
-leibniz-liskov.scala:8: error: Cannot prove that LeibnizLiskov.this.B =:= LeibnizLiskov.this.A.
+leibniz-liskov.scala:8: error: implicit error;
+!I e: B =:= A
+  Cannot prove that LeibnizLiskov.this.B =:= LeibnizLiskov.this.A.
+
   implicitly[B =:= A]
             ^
-leibniz-liskov.scala:11: error: Cannot prove that LeibnizLiskov.this.A <:< LeibnizLiskov.this.SA.
+leibniz-liskov.scala:11: error: implicit error;
+!I e: A <:< SA
+  Cannot prove that LeibnizLiskov.this.A <:< LeibnizLiskov.this.SA.
+
   implicitly[A <:< SA]
             ^
-leibniz-liskov.scala:12: error: Cannot prove that LeibnizLiskov.this.SB <:< LeibnizLiskov.this.B.
+leibniz-liskov.scala:12: error: implicit error;
+!I e: SB <:< B
+  Cannot prove that LeibnizLiskov.this.SB <:< LeibnizLiskov.this.B.
+
   implicitly[SB <:< B]
             ^
-leibniz-liskov.scala:13: error: Cannot prove that LeibnizLiskov.this.SA <:< LeibnizLiskov.this.B.
+leibniz-liskov.scala:13: error: implicit error;
+!I e: SA <:< B
+  Cannot prove that LeibnizLiskov.this.SA <:< LeibnizLiskov.this.B.
+
   implicitly[SA <:< B]
             ^
-leibniz-liskov.scala:14: error: Cannot prove that LeibnizLiskov.this.A <:< LeibnizLiskov.this.SB.
+leibniz-liskov.scala:14: error: implicit error;
+!I e: A <:< SB
+  Cannot prove that LeibnizLiskov.this.A <:< LeibnizLiskov.this.SB.
+
   implicitly[A <:< SB]
             ^
 leibniz-liskov.scala:18: error: no type parameters for method substituteCo: (ff: F[LeibnizLiskov.this.A]): F[LeibnizLiskov.this.B] exist so that it can be applied to arguments (List[LeibnizLiskov.this.B])
@@ -40,7 +58,10 @@ leibniz-liskov.scala:19: error: type mismatch;
  required: F[LeibnizLiskov.this.B]
   aEqB.substituteContra(List(A(), A(), A()))
                             ^
-leibniz-liskov.scala:20: error: Cannot prove that xs.type <:< List[LeibnizLiskov.this.B].
+leibniz-liskov.scala:20: error: implicit error;
+!I e: xs.type <:< List[B]
+  Cannot prove that xs.type <:< List[LeibnizLiskov.this.B].
+
   locally { val xs = aEqB.flip.liftCo[List](List(B(), B(), B())); implicitly[xs.type <:< List[B]] }
                                                                             ^
 leibniz-liskov.scala:21: error: no type parameters for method substituteContra: (ft: F[U]): F[T] exist so that it can be applied to arguments (List[T])

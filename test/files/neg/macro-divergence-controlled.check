@@ -1,4 +1,5 @@
-Test_2.scala:2: error: could not find implicit value for parameter e: Complex[Foo]
+Test_2.scala:2: error: implicit error;
+!I e: Complex[Foo]
   println(implicitly[Complex[Foo]])
                     ^
 1 error

@@ -1,4 +1,5 @@
-t4079_2.scala:2: error: could not find implicit value for parameter f: Functor[List]
+t4079_2.scala:2: error: implicit error;
+!I f: Functor[List[?]]
   Cat.compose[List,Option].Functor
                            ^
 1 error

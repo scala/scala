@@ -1,80 +1,346 @@
-sortedImplicitNotFound.scala:10: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:10: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ms.map(_ => o)
         ^
-sortedImplicitNotFound.scala:13: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:13: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ms.flatMap(_ => List(o))
             ^
-sortedImplicitNotFound.scala:16: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:16: error: implicit error;
+!I ev: Ordering[(Int,Object)]
+  No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: (Int,Object) => Comparable[_$2]
+  No implicit view available from (Int, Object) => Comparable[_ >: (Int, Object)].
+
+⋮
+――Ordering.ordered invalid because
+  !I asComparable: Object => Comparable[_$2]
+    No implicit view available from Object => Comparable[_ >: Object].
+
+――Ordering.comparatorToOrdering invalid because
+  !I cmp: Comparator[Object]
   ms.zip(List(o))
         ^
-sortedImplicitNotFound.scala:19: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:19: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ms.collect{case _ => o}
             ^
-sortedImplicitNotFound.scala:24: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:24: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   is.map(_ => o)
         ^
-sortedImplicitNotFound.scala:27: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:27: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   is.flatMap(_ => List(o))
             ^
-sortedImplicitNotFound.scala:30: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:30: error: implicit error;
+!I ev: Ordering[(Int,Object)]
+  No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: (Int,Object) => Comparable[_$2]
+  No implicit view available from (Int, Object) => Comparable[_ >: (Int, Object)].
+
+⋮
+――Ordering.ordered invalid because
+  !I asComparable: Object => Comparable[_$2]
+    No implicit view available from Object => Comparable[_ >: Object].
+
+――Ordering.comparatorToOrdering invalid because
+  !I cmp: Comparator[Object]
   is.zip(List(o))
         ^
-sortedImplicitNotFound.scala:33: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:33: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   is.collect{case _ => o}
             ^
-sortedImplicitNotFound.scala:39: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:39: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mb.map(_ => o)
         ^
-sortedImplicitNotFound.scala:43: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:43: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mb.flatMap(_ => List(o))
             ^
-sortedImplicitNotFound.scala:47: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:47: error: implicit error;
+!I ev: Ordering[(Int,Object)]
+  No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: (Int,Object) => Comparable[_$2]
+  No implicit view available from (Int, Object) => Comparable[_ >: (Int, Object)].
+
+⋮
+――Ordering.ordered invalid because
+  !I asComparable: Object => Comparable[_$2]
+    No implicit view available from Object => Comparable[_ >: Object].
+
+――Ordering.comparatorToOrdering invalid because
+  !I cmp: Comparator[Object]
   mb.zip(List(o))
         ^
-sortedImplicitNotFound.scala:51: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:51: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mb.collect{case _ => o}
             ^
-sortedImplicitNotFound.scala:57: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:57: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ib.map(_ => o)
         ^
-sortedImplicitNotFound.scala:61: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:61: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ib.flatMap(_ => List(o))
             ^
-sortedImplicitNotFound.scala:65: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:65: error: implicit error;
+!I ev: Ordering[(Int,Object)]
+  No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: (Int,Object) => Comparable[_$2]
+  No implicit view available from (Int, Object) => Comparable[_ >: (Int, Object)].
+
+⋮
+――Ordering.ordered invalid because
+  !I asComparable: Object => Comparable[_$2]
+    No implicit view available from Object => Comparable[_ >: Object].
+
+――Ordering.comparatorToOrdering invalid because
+  !I cmp: Comparator[Object]
   ib.zip(List(o))
         ^
-sortedImplicitNotFound.scala:69: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+sortedImplicitNotFound.scala:69: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   ib.collect{case _ => o}
             ^
-sortedImplicitNotFound.scala:74: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+sortedImplicitNotFound.scala:74: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   es.map(_ => o)
         ^
-sortedImplicitNotFound.scala:77: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+sortedImplicitNotFound.scala:77: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   es.flatMap(_ => List(o))
             ^
 sortedImplicitNotFound.scala:80: error: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
 starting with method orderingToOrdered in object Ordered
   es.zip(List(o)) // ah well...: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
         ^
-sortedImplicitNotFound.scala:83: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+sortedImplicitNotFound.scala:83: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   es.collect{case _ => o}
             ^
-sortedImplicitNotFound.scala:88: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:88: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mm.map(_ => (o, o))
         ^
-sortedImplicitNotFound.scala:91: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:91: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mm.flatMap(_ => List((o, o)))
             ^
-sortedImplicitNotFound.scala:94: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:94: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   mm.collect{case _ => (o, o)}
             ^
-sortedImplicitNotFound.scala:99: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:99: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   im.map(_ => (o, o))
         ^
-sortedImplicitNotFound.scala:102: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:102: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   im.flatMap(_ => List((o, o)))
             ^
-sortedImplicitNotFound.scala:105: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+sortedImplicitNotFound.scala:105: error: implicit error;
+!I ordering: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
   im.collect{case _ => (o, o)}
             ^
 26 errors

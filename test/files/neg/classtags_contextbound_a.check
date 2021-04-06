@@ -1,4 +1,7 @@
-classtags_contextbound_a.scala:2: error: No ClassTag available for T
+classtags_contextbound_a.scala:2: error: implicit error;
+!I evidence$5: ClassTag[T]
+  No ClassTag available for T
+
   def foo[T] = Array[T]()
                        ^
 1 error
