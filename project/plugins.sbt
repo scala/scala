@@ -33,10 +33,4 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
-// See DottySupport.scala
-if (Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false))
-  Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.5.2"))
-else
-  Seq()
-
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
