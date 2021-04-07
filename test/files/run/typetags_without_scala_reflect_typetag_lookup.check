@@ -1,3 +1,2 @@
 
-pos: RangePosition(newSource1.scala, 455, 466, 471) implicit error;
-!I evidence$1: TypeTag[Int] ERROR
+pos: RangePosition(newSource1.scala, 455, 466, 471) could not find implicit value for evidence parameter of type reflect.runtime.package.universe.TypeTag[Int] ERROR

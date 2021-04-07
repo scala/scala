@@ -1,7 +1,4 @@
-t3507-old.scala:13: error: implicit error;
-!I evidence$1: Manifest[c.type]
-  No Manifest available for _1.b.c.type.
-
+t3507-old.scala:13: error: No Manifest available for _1.b.c.type.
   mani/*[object _1.b.c]*/(c) // kaboom in manifestOfType / TreeGen.mkAttributedQualifier
                          ^
 1 error

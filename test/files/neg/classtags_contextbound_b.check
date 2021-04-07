@@ -1,7 +1,4 @@
-classtags_contextbound_b.scala:5: error: implicit error;
-!I evidence$1: ClassTag[T]
-  No ClassTag available for T
-
+classtags_contextbound_b.scala:5: error: No ClassTag available for T
   def foo[T] = mkArray[T]
                       ^
 1 error

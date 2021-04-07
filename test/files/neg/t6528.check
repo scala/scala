@@ -1,5 +1,4 @@
-t6528.scala:6: error: implicit error;
-!I e: CoSet[U, Any]
+t6528.scala:6: error: could not find implicit value for parameter e: CoSet[U,Any]
   implicitly[CoSet[U, Any]]
             ^
 1 error

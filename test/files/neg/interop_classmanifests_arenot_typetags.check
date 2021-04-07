@@ -1,7 +1,4 @@
-interop_classmanifests_arenot_typetags.scala:6: error: implicit error;
-!I e: TypeTag[T]
-  No TypeTag available for T
-
+interop_classmanifests_arenot_typetags.scala:6: error: No TypeTag available for T
     println(implicitly[TypeTag[T]])
                       ^
 1 error

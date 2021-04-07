@@ -1,12 +1,4 @@
-t9960.scala:27: error: implicit error;
-!I m:
-  NNN.Aux[
-    Reader
-    ,
-    FxAppend[Fx1[Task], Fx2[Validate, Reader]]
-    ,
-    Fx2[Task, Validate]
-  ]
+t9960.scala:27: error: could not find implicit value for parameter m: NNN.Aux[NNN.Reader,NNN.FxAppend[NNN.Fx1[NNN.Task],NNN.Fx2[NNN.Validate,NNN.Reader]],NNN.Fx2[NNN.Task,NNN.Validate]]
       val hhhh: Eff[Fx2[Task, Validate], Unit] = runReader(gggg)
                                                           ^
 1 error

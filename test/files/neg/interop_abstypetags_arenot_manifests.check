@@ -1,7 +1,4 @@
-interop_abstypetags_arenot_manifests.scala:5: error: implicit error;
-!I m: Manifest[T]
-  No Manifest available for T.
-
+interop_abstypetags_arenot_manifests.scala:5: error: No Manifest available for T.
     println(manifest[T])
                     ^
 1 error

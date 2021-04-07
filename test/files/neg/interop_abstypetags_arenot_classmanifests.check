@@ -1,7 +1,4 @@
-interop_abstypetags_arenot_classmanifests.scala:6: error: implicit error;
-!I e: ClassTag[T]
-  No ClassManifest available for T.
-
+interop_abstypetags_arenot_classmanifests.scala:6: error: No ClassManifest available for T.
     println(implicitly[ClassManifest[T]])
                       ^
 1 error

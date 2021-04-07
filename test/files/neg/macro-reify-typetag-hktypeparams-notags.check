@@ -1,13 +1,7 @@
-Test.scala:5: error: implicit error;
-!I e: TypeTag[C[T]]
-  No TypeTag available for C[T]
-
+Test.scala:5: error: No TypeTag available for C[T]
     println(implicitly[TypeTag[C[T]]])
                       ^
-Test.scala:6: error: implicit error;
-!I e: TypeTag[List[C[T]]]
-  No TypeTag available for List[C[T]]
-
+Test.scala:6: error: No TypeTag available for List[C[T]]
     println(implicitly[TypeTag[List[C[T]]]])
                       ^
 2 errors

@@ -1,7 +1,4 @@
-t7289.scala:8: error: implicit error;
-!I e: Schtroumpf[Nil.type]
-Test.schtroumpf invalid because
-!I minorSchtroumpf: Schtroumpf[T]
+t7289.scala:8: error: could not find implicit value for parameter e: Test.Schtroumpf[Nil.type]
   implicitly[Schtroumpf[Nil.type]]
             ^
 1 error
