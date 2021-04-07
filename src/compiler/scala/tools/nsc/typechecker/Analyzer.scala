@@ -97,7 +97,6 @@ trait Analyzer extends AnyRef
       undoLog.clear()
       override def run(): Unit = {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.typerNanos) else null
-        global.echoPhaseSummary(this)
         val units = currentRun.units
         while (units.hasNext) {
           applyPhase(units.next())

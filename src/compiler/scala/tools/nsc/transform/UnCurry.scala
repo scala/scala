@@ -118,7 +118,6 @@ abstract class UnCurry extends InfoTransform
       try postTransform(mainTransform(tree))
       catch { case ex: TypeError =>
         reporter.error(ex.pos, ex.msg)
-        debugStack(ex)
         EmptyTree
       }
 
@@ -418,7 +417,6 @@ abstract class UnCurry extends InfoTransform
 
       /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
       def liftTree(tree: Tree) = {
-        debuglog("lifting tree at: " + (tree.pos))
         val sym = currentOwner.newMethod(unit.freshTermName(nme.LIFTED_TREE), tree.pos, Flag.ARTIFACT)
         sym.setInfo(MethodType(List(), tree.tpe))
         tree.changeOwner(currentOwner, sym)
@@ -635,11 +633,7 @@ abstract class UnCurry extends InfoTransform
           else
             flatdd
 
-        case tree: Try =>
-          devWarningIf(tree.catches exists (!treeInfo.isCatchCase(_))) {
-            "VPM BUG - illegal try/catch " + tree.catches
-          }
-          tree
+        case tree: Try => tree
 
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)

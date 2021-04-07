@@ -291,8 +291,6 @@ abstract class ClassfileWriters {
         case e: FileConflictException =>
           frontendAccess.backendReporting.error(NoPosition, s"error writing $path: ${e.getMessage}")
         case e: java.nio.file.FileSystemException =>
-          if (frontendAccess.compilerSettings.debug)
-            e.printStackTrace()
           frontendAccess.backendReporting.error(NoPosition, s"error writing $path: ${e.getClass.getName} ${e.getMessage}")
       }
     }

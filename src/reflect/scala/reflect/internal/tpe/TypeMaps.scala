@@ -347,12 +347,8 @@ private[internal] trait TypeMaps {
       else tp1 match {
         case TypeRef(pre, sym, args) if tparams.contains(sym) && occurCount(sym) == 1 =>
           val repl = if (variance.isPositive) dropSingletonType(tp1.upperBound) else tp1.lowerBound
-          def msg = {
-            val word = if (variance.isPositive) "upper" else "lower"
-            s"Widened lone occurrence of $tp1 inside existential to $word bound"
-          }
           if (!repl.typeSymbol.isBottomClass && ! anyContains.collect(repl))
-            debuglogResult(msg)(repl)
+            repl
           else
             tp1
         case _ =>
@@ -483,13 +479,11 @@ private[internal] trait TypeMaps {
         case _       =>
           val qvar = clazz.freshExistential(nme.SINGLETON_SUFFIX, nextCapturedThisId()) setInfo singletonBounds(pre)
           _capturedParams ::= qvar
-          debuglog(s"Captured This(${clazz.fullNameString}) seen from $seenFromPrefix: ${qvar.defString}")
           qvar.tpe
       }
     }
     protected def captureSkolems(skolems: List[Symbol]): Unit = {
       for (p <- skolems; if !(capturedSkolems contains p)) {
-        debuglog(s"Captured $p seen from $seenFromPrefix")
         _capturedSkolems ::= p
       }
     }
@@ -531,12 +525,7 @@ private[internal] trait TypeMaps {
         else {
           val targ   = rhsArgs(argIndex)
           // @M! don't just replace the whole thing, might be followed by type application
-          val result = appliedType(targ, lhsArgs mapConserve this)
-          def msg = s"Created $result, though could not find ${own_s(lhsSym)} among tparams of ${own_s(rhsSym)}"
-          devWarningIf(!rhsSym.typeParams.contains(lhsSym)) {
-            s"Inconsistent tparam/owner views: had to fall back on names\n$msg\n$explain"
-          }
-          result
+          appliedType(targ, lhsArgs mapConserve this)
         }
       }
     }
@@ -665,9 +654,6 @@ private[internal] trait TypeMaps {
 
   /** A base class to compute all substitutions */
   abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
-    // OPT this check was 2-3% of some profiles, demoted to -Xdev
-    if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
-
     private[this] var fromHasTermSymbol = false
     private[this] var fromMin = Int.MaxValue
     private[this] var fromMax = Int.MinValue
@@ -1130,17 +1116,11 @@ private[internal] trait TypeMaps {
         sym
       else if (sym.isModuleClass) {
         val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
-
-        sourceModule1.moduleClass orElse sourceModule1.initialize.moduleClass orElse {
-          val msg = "Cannot adapt module class; sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
-          debuglog(msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
-          sym
-        }
+        sourceModule1.moduleClass orElse sourceModule1.initialize.moduleClass orElse sym
       }
       else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, stableOnly = true) orElse {
           if (sym.isAliasType) throw missingAliasException
-          devWarning(s"$pre.$sym no longer exist at phase $phase")
           throw new MissingTypeControl // For build manager and presentation compiler purposes
         }
         /* The two symbols have the same fully qualified name */
@@ -1148,21 +1128,13 @@ private[internal] trait TypeMaps {
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          debuglog("ADAPT1 pre = "+pre+", sym = "+sym.fullLocationString+", rebind = "+rebind0.fullLocationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner))
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else
             rebind0 = pre.baseType(bcs.head).member(sym.name)
-          debuglog(
-            "ADAPT2 pre = " + pre +
-              ", bcs.head = " + bcs.head +
-              ", sym = " + sym.fullLocationString +
-              ", rebind = " + rebind0.fullLocationString
-          )
         }
         rebind0.suchThat(sym => sym.isType || sym.isStable) orElse {
-          debuglog("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
       }
@@ -1199,7 +1171,6 @@ private[internal] trait TypeMaps {
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) {
               tp
             } else if (sym1 == NoSymbol) {
-              devWarning(s"adapt to new run failed: pre=$pre pre1=$pre1 sym=$sym")
               tp
             } else {
               copyTypeRef(tp, pre1, sym1, args1)

@@ -94,7 +94,7 @@ abstract class Erasure extends InfoTransform
       if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
   }
 
-  override protected def verifyJavaErasure = settings.Xverify || settings.debug
+  override protected def verifyJavaErasure = settings.Xverify
   private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
     def needs(tp: Type) = NeedsSigCollector(sym.isClassConstructor).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
@@ -518,14 +518,6 @@ abstract class Erasure extends InfoTransform
         clashErrors += Tuple2(pos, msg)
       }
       for (bc <- root.baseClasses) {
-        if (settings.debug)
-          exitingPostErasure(println(
-            sm"""check bridge overrides in $bc
-                |${bc.info.nonPrivateDecl(bridge.name)}
-                |${site.memberType(bridge)}
-                |${site.memberType(bc.info.nonPrivateDecl(bridge.name) orElse IntClass)}
-                |${(bridge.matchingSymbol(bc, site))}"""))
-
         def overriddenBy(sym: Symbol) =
           sym.matchingSymbol(bc, site).alternatives filter (sym => !sym.isBridge)
         for (overBridge <- exitingPostErasure(overriddenBy(bridge))) {
@@ -571,12 +563,6 @@ abstract class Erasure extends InfoTransform
       // when implementing later phases.
       if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
       val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
-
-      debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
-        other, flagsToString(newFlags),
-        otpe, other.locationString, member,
-        specialErasure(root)(member.tpe), member.locationString)
-      )
 
       // the parameter symbols need to have the new owner
       bridge setInfo (otpe cloneInfo bridge)
@@ -812,7 +798,6 @@ abstract class Erasure extends InfoTransform
           er.printStackTrace
           abort("unrecoverable error")
         case ex: Exception =>
-          //if (settings.debug.value)
           try Console.println("exception when typing " + tree)
           finally throw ex
           throw ex
@@ -1302,7 +1287,6 @@ abstract class Erasure extends InfoTransform
           } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
-          debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           copyClassDef(tree)(tparams = Nil)
         case DefDef(_,_,_,_,_,_) =>
           copyDefDef(tree)(tparams = Nil)

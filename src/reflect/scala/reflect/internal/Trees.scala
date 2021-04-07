@@ -1462,13 +1462,11 @@ trait Trees extends api.Trees {
     override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
     override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
     override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
-    private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
+    private def attachmentWarning(): this.type = this
 
     private def requireLegal(value: Any, allowed: Any, what: String) = (
       if (value != allowed) {
         log(s"can't set $what for $self to value other than $allowed")
-        if (settings.debug && settings.developer)
-          (new Throwable).printStackTrace
       }
     )
     override def traverse(traverser: Traverser): Unit =
@@ -1777,10 +1775,6 @@ trait Trees extends api.Trees {
             def update(sym: Symbol) = {
               val newInfo = symSubst(sym.info)
               if (!(newInfo =:= sym.info)) {
-                debuglog(sm"""
-                  |TreeSymSubstituter: updated info of symbol ${sym}
-                  |  Old: ${showRaw(sym.info, printTypes = true, printIds = true)}
-                  |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
                 mutatedSymbols ::= sym
                 sym updateInfo newInfo
               }

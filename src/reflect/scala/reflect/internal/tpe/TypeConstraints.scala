@@ -61,11 +61,7 @@ private[internal] trait TypeConstraints {
       log ::= UndoPair(tv, tv.constr.cloneInternal)
     }
 
-    def clear(): Unit = {
-      if (settings.debug)
-        self.log("Clearing " + log.size + " entries from the undoLog.")
-      log = Nil
-    }
+    def clear(): Unit = log = Nil
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
@@ -281,7 +277,6 @@ private[internal] trait TypeConstraints {
             if (depth.isAnyDepth) lub(tvar.constr.loBounds) else lub(tvar.constr.loBounds, depth)
           }
 
-        // debuglog(s"$tvar setInst $newInst")
         tvar setInst newInst
       }
     }

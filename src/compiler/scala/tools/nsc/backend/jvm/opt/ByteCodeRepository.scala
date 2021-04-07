@@ -314,7 +314,6 @@ abstract class ByteCodeRepository extends PerRunInit {
         Some(classNode)
       } catch {
         case ex: Exception =>
-          if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
           backendReporting.warning(NoPosition, s"Error while reading InlineInfoAttribute from ${fullName}\n${ex.getMessage}")
           None
       }

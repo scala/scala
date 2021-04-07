@@ -25,8 +25,7 @@ object Test extends StoreReporterDirectTest {
 
     // bad symbolic reference error expected (but no stack trace!)
     // Included a NullPointerException before.
-    // Edit: Stub symbol message was reduced, and no longer emitted even under -Xdev
-    compile("-cp", classpath, "-Xdev")
+    compile("-cp", classpath)
     storeReporter.infos.foreach(println)  // empty
   }
 }

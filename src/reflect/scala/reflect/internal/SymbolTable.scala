@@ -87,28 +87,14 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
-  final def isDeveloper: Boolean = settings.debug.value || settings.developer.value
   def picklerPhase: Phase
 
   def erasurePhase: Phase
 
   def settings: MutableSettings
 
-  /** Override with final implementation for inlining. */
-  def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
-
-  /** dev-warns if dev-warning is enabled and `cond` is true; no-op otherwise */
-  @inline final def devWarningIf(cond: => Boolean)(msg: => String): Unit =
-    if (isDeveloper && cond) devWarning(msg)
-  def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
   def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
-
-  @inline final def devWarningDumpStack(msg: => String, maxFrames: Int): Unit =
-    devWarning(msg + "\n" + throwableAsString(new Throwable, maxFrames))
-
-  /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
-  def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println("%s: %s\nCalled from: %s".format(msg, result,
@@ -127,26 +113,9 @@ abstract class SymbolTable extends macros.Universe
     result
   }
   @inline
-  final private[scala] def debuglogResult[T](msg: => String)(result: T): T = {
-    debuglog(msg + ": " + result)
-    result
-  }
-  @inline
-  final private[scala] def devWarningResult[T](msg: => String)(result: T): T = {
-    devWarning(msg + ": " + result)
-    result
-  }
-  @inline
   final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
     if (cond(result))
       log(msg + ": " + result)
-
-    result
-  }
-  @inline
-  final private[scala] def debuglogResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
-    if (cond(result))
-      debuglog(msg + ": " + result)
 
     result
   }
@@ -422,7 +391,7 @@ abstract class SymbolTable extends macros.Universe
     final def recordClassloader(loader: ClassLoader): ClassLoader = {
       def attemptClose(loader: ClassLoader): Unit = {
         loader match {
-          case u: URLClassLoader => debuglog("Closing classloader " + u); u.close()
+          case u: URLClassLoader => u.close()
           case _ =>
         }
       }
@@ -448,7 +417,6 @@ abstract class SymbolTable extends macros.Universe
     }
 
     def clearAll() = {
-      debuglog("Clearing " + (caches.size + javaCaches.size) + " caches.")
       caches foreach (ref => Option(ref.get).foreach(_.clear()))
       caches = caches.filterNot(_.get == null)
 

@@ -271,12 +271,12 @@ class SettingsTest {
     import scala.collection.mutable.ListBuffer
     val errors   = ListBuffer.empty[String]
     val settings = new Settings(errors.addOne)
-    val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-Vdebug" :: "x.scala" :: Nil, true)
+    val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-verbose" :: "x.scala" :: Nil, true)
     assert("processing should succeed", ok)
     assertEquals("processing stops at argument", 1, rest.length)
     assertEquals("processing stops at the correct argument", "x.scala", rest.head)
     assertEquals(0, errors.size)
-    assert(settings.debug)
+    assert(settings.verbose)
     assert(settings.Wconf.isHelping)
   }
   @Test def `t12098 MultiStringSetting prepends`(): Unit = {

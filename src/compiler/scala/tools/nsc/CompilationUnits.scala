@@ -28,14 +28,7 @@ trait CompilationUnits { global: Global =>
   }
 
   /** Creates a `FreshNameCreator` that reports an error if it is used during the typer phase */
-  final def warningFreshNameCreator: FreshNameCreator = new FreshNameCreator {
-    override def newName(prefix: String): String = {
-      if (global.phase == currentRun.typerPhase) {
-        devWarningDumpStack("Typer phase should not use the compilation unit scoped fresh name creator", 32)
-      }
-      super.newName(prefix)
-    }
-  }
+  final def warningFreshNameCreator: FreshNameCreator = new FreshNameCreator
 
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
@@ -105,17 +98,9 @@ trait CompilationUnits { global: Global =>
      */
     object synthetics {
       private val map = mutable.AnyRefMap[Symbol, Tree]()
-      def update(sym: Symbol, tree: Tree): Unit = {
-        debuglog(s"adding synthetic ($sym, $tree) to $self")
-        map.update(sym, tree)
-      }
-      def -=(sym: Symbol): Unit = {
-        debuglog(s"removing synthetic $sym from $self")
-        map -= sym
-      }
-      def get(sym: Symbol): Option[Tree] = debuglogResultIf[Option[Tree]](s"found synthetic for $sym in $self", _.isDefined) {
-        map get sym
-      }
+     def update(sym: Symbol, tree: Tree): Unit = map.update(sym, tree)
+      def -=(sym: Symbol): Unit = map -= sym
+      def get(sym: Symbol): Option[Tree] = map get sym
       def keys: Iterable[Symbol] = map.keys
       def clear(): Unit = map.clear()
       override def toString = map.toString

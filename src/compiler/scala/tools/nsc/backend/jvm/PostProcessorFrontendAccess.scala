@@ -59,8 +59,6 @@ sealed abstract class PostProcessorFrontendAccess {
 
 object PostProcessorFrontendAccess {
   sealed trait CompilerSettings {
-    def debug: Boolean
-
     def target: String
 
     def outputDirectory(source: AbstractFile): AbstractFile
@@ -183,8 +181,6 @@ object PostProcessorFrontendAccess {
 
     private def buildCompilerSettings(): CompilerSettings = new CompilerSettings {
       import global.{settings => s}
-
-      val debug: Boolean = s.debug
 
       val target: String = s.target.value
 

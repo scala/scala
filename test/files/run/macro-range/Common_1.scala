@@ -34,8 +34,6 @@ abstract class Utils {
     case Block(stats, expr) =>
       Block(stats, makeApply(expr, args))
     case _ =>
-      // todo. read the compiler config and print if -Ydebug is set
-      //println("no beta on "+fn+" "+fn.getClass)
       Apply(fn, args)
   }
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {

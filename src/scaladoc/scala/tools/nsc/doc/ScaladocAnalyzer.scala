@@ -95,10 +95,6 @@ trait ScaladocAnalyzer extends Analyzer {
       namer.enterSyms(trees)
       typedStats(trees, NoSymbol)
       useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
-
-      if (settings.debug)
-        useCase.defined foreach (sym => println("defined use cases: %s:%s".format(sym, sym.tpe)))
-
       useCase.defined
     }
   }

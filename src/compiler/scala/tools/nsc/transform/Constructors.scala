@@ -383,7 +383,6 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
           val stat2 = rewriteArrayUpdate(stat1)
           // statements coming from the original class need retyping in the current context
-          debuglog("retyping " + stat2)
 
           val d = new specializeTypes.Duplicator(Map[Symbol, Type]())
           d.retyped(localTyper.context1.asInstanceOf[d.Context],

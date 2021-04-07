@@ -37,7 +37,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def addThrowsAnnotation(throwableSym: Symbol): Self = {
       val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
-        debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
         // in case we encounter polymorphic exception the best we can do is to convert that type to
         // monomorphic one by introducing existentials, see scala/bug#7009 for details
         existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)

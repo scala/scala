@@ -152,12 +152,6 @@ trait Kinds {
       def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit =
         if (!cond) kindErrors = f(kindErrors)
 
-      if (settings.debug) {
-        log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramOwner)
-        log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ argOwner)
-        log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
-      }
-
       if (!sameLength(hkargs, hkparams)) return {
         // Any and Nothing are kind-overloaded
         if (arg == AnyClass || arg == NothingClass) NoKindErrors
@@ -184,18 +178,9 @@ trait Kinds {
 
           if (flip) kindCheck(argumentBounds <:< declaredBoundsInst, _.strictnessError(hkparam -> hkarg))
           else kindCheck(declaredBoundsInst <:< argumentBounds, _.strictnessError(hkarg -> hkparam))
-
-          debuglog(
-            "checkKindBoundsHK base case: " + hkparam +
-            " declared bounds: " + declaredBounds +
-            " after instantiating earlier hkparams: " + declaredBoundsInst + "\n" +
-            "checkKindBoundsHK base case: "+ hkarg +
-            " has bounds: " + argumentBounds
-          )
         }
         else {
           hkarg.initialize // scala/bug#7902 otherwise hkarg.typeParams yields List(NoSymbol)!
-          debuglog("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
           kindErrors ++= checkKindBoundsHK(
             hkarg.typeParams,
             hkarg,
@@ -214,11 +199,6 @@ trait Kinds {
       if (explainErrors) kindErrors
       else NoKindErrors
     }
-
-    if (settings.debug && (tparams.nonEmpty || targs.nonEmpty)) log(
-      "checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", "
-      + owner + ", " + explainErrors + ")"
-    )
 
     flatMap2(tparams, targs) { (tparam, targ) =>
       // Prevent WildcardType from causing kind errors, as typevars may be higher-order

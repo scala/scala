@@ -266,7 +266,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case lblDf : LabelDef => genLabelDef(lblDf, expectedType)
 
         case ValDef(_, nme.THIS, _, _) =>
-          debuglog(s"skipping trivial assign to ${nme.THIS}: $tree")
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol

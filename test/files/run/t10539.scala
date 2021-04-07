@@ -1,5 +1,3 @@
-// scalac: -Xdev
-//
 class A {
   def ==(a: A) = "LOL"
 }

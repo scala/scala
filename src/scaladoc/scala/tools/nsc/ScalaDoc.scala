@@ -48,7 +48,6 @@ class ScalaDoc {
       try { new DocFactory(reporter, docSettings) document command.files }
       catch {
         case ex @ FatalError(msg) =>
-          if (docSettings.debug.value) ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }
       finally reporter.finish()

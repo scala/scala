@@ -57,8 +57,7 @@ object REPL {
         }
       } catch {
         case ex @ FatalError(msg) =>
-          if (true || command.settings.debug) // !!!
-            ex.printStackTrace()
+          ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }
     }

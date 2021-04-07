@@ -50,8 +50,6 @@ object MainTokenMetric {
       tokenMetric(compiler, command.files)
     } catch {
       case ex @ FatalError(msg) =>
-        if (command.settings.debug)
-          ex.printStackTrace()
         reporter.error(null, "fatal error: " + msg)
     }
   }

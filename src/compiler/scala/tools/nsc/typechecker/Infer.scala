@@ -94,8 +94,6 @@ trait Infer extends Checkable {
       // solve constraints tracked by tvars
       val targs = solvedTypes(tvars, tparams, varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
 
-      debuglog(s"sam infer: $samTp --> ${appliedType(samTyCon, targs)} by ${funTp} <:< $samInfoWithTVars --> $targs for $tparams")
-
       appliedType(samTyCon, targs)
     }
   }
@@ -239,11 +237,6 @@ trait Infer extends Checkable {
 
     // When filtering sym down to the accessible alternatives leaves us empty handed.
     private def checkAccessibleError(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
-      if (settings.debug) {
-        Console.println(context)
-        Console.println(tree)
-        Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
-      }
       ErrorUtils.issueTypeError(AccessError(tree, sym, pre, context.enclClass.owner,
         if (settings.check.isDefault)
           analyzer.lastAccessCheckDetails
@@ -1122,8 +1115,6 @@ trait Infer extends Checkable {
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
 
-      debuglog("infer constr inst "+ tree +"/"+ undetparams +"/ pt= "+ pt +" pt0= "+ pt0 +" resTp: "+ resTp)
-
       /* Compute type arguments for undetermined params */
       def inferFor(pt: Type): Option[List[Type]] = {
         val tvars   = undetparams map freshVar
@@ -1131,7 +1122,6 @@ trait Infer extends Checkable {
 
         if (resTpV <:< pt) {
           try {
-            // debuglog("TVARS "+ (tvars map (_.constr)))
             // look at the argument types of the primary constructor corresponding to the pattern
             val varianceFun: Variance.Extractor[Symbol] =
               if (ctorTp.paramTypes.isEmpty) varianceInType(ctorTp) else varianceInTypes(ctorTp.paramTypes)
@@ -1144,14 +1134,10 @@ trait Infer extends Checkable {
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
             Some(targs)
           } catch ifNoInstance { msg =>
-            debuglog("NO INST "+ ((tvars, tvars map (_.constr))))
             NoConstructorInstanceError(tree, resTp, pt, msg)
             None
           }
-        } else {
-          debuglog("not a subtype: "+ resTpV +" </:< "+ pt)
-          None
-        }
+        } else None
       }
 
       def inferForApproxPt =
@@ -1172,7 +1158,6 @@ trait Infer extends Checkable {
 
             if (isPopulated(resTpInst, ptV)) {
               ptvars foreach instantiateTypeVar
-              debuglog("isPopulated "+ resTpInst +", "+ ptV +" vars= "+ ptvars)
               Some(targs)
             } else None
           }
@@ -1276,8 +1261,6 @@ trait Infer extends Checkable {
       checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
       if (pattp <:< pt) ()
       else {
-        debuglog("free type params (1) = " + tpparams)
-
         var tvars = tpparams map freshVar
         var tp    = pattp.instantiateTypeParams(tpparams, tvars)
 
@@ -1285,8 +1268,6 @@ trait Infer extends Checkable {
         else {
           tvars = tpparams map freshVar
           tp    = pattp.instantiateTypeParams(tpparams, tvars)
-
-          debuglog("free type params (2) = " + ptparams)
 
           val ptvars = ptparams map freshVar
           val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
@@ -1314,7 +1295,6 @@ trait Infer extends Checkable {
     def inferModulePattern(pat: Tree, pt: Type) =
       if ((pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms(pt)
-        debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
         val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
         if (pat.tpe <:< pt1)
@@ -1517,10 +1497,7 @@ trait Infer extends Checkable {
         }
 
         private[this] val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-        def tryOnce(isLastTry: Boolean): Unit = {
-          debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
-          bestForExpectedType(pt, isLastTry)
-        }
+        def tryOnce(isLastTry: Boolean): Unit = bestForExpectedType(pt, isLastTry)
       }
 
       (new InferMethodAlternativeTwice).apply()

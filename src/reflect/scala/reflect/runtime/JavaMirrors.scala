@@ -638,7 +638,6 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
       def handleError(ex: Exception) = {
         markAbsent(ErrorType)
-        if (settings.debug) ex.printStackTrace()
         val msg = ex.getMessage()
         MissingRequirementError.signal(
           (if (msg eq null) "reflection error while loading " + clazz.name
@@ -786,7 +785,6 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       private[this] val relatedSymbols = clazz +: (if (module != NoSymbol) List(module, module.moduleClass) else Nil)
 
       override def load(sym: Symbol): Unit = {
-        debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
 
         assignAssociatedFile(clazz, module, jclazz)

@@ -52,8 +52,8 @@ abstract class MutableSettings extends AbsSettings {
   def Yshowsymowners: BooleanSetting
   def Yshowsymkinds: BooleanSetting
   def breakCycles: BooleanSetting
+  @deprecated("Removed", "1.0.0")
   def debug: BooleanSetting
-  def developer: BooleanSetting
   def explaintypes: BooleanSetting
   def printtypes: BooleanSetting
   def uniqid: BooleanSetting
@@ -70,6 +70,6 @@ abstract class MutableSettings extends AbsSettings {
 
 object MutableSettings {
   import scala.language.implicitConversions
-  /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */
+  /** Support the common use case, `if (settings.verbose) println("Hello, martin.")` */
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 }

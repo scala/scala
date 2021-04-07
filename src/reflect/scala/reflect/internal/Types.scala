@@ -837,10 +837,7 @@ trait Types
         }
       case TypeRef(_, sym, args) =>
         val that1 = existentialAbstraction(args map (_.typeSymbol), that)
-        (that ne that1) && (this <:< that1) && {
-          debuglog(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
-          true
-        }
+        (that ne that1) && (this <:< that1)
       case _ =>
         false
     })
@@ -1411,8 +1408,7 @@ trait Types
     override def underlying: Type = sym.typeOfThis
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
-      if (settings.debug) sym.nameString + ".this."
-      else if (sym.isAnonOrRefinementClass) "this."
+           if (sym.isAnonOrRefinementClass) "this."
       else if (sym.isOmittablePrefix) ""
       else if (sym.isModuleClass) sym.fullNameString + "."
       else sym.nameString + ".this."
@@ -1689,7 +1685,7 @@ trait Types
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
 
-    protected def shouldForceScope = settings.debug || parents.isEmpty || !decls.isEmpty
+    protected def shouldForceScope = parents.isEmpty || !decls.isEmpty
     protected def initDecls        = fullyInitializeScope(decls)
     protected def scopeString      = if (shouldForceScope) initDecls.mkString("{", "; ", "}") else ""
     override def safeToString      = parentsString(parents) + scopeString
@@ -1988,10 +1984,6 @@ trait Types
         tp match {
           case tr @ TypeRef(_, sym, args) if !args.isEmpty =>
             val tparams = tr.initializedTypeParams
-            devWarningIf(!sameLength(tparams, args)) {
-              s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args"
-            }
-
             foreach2(tparams, args) { (tparam1, arg) =>
               if (arg contains tparam) {
                 addRef(NonExpansive, tparam, tparam1)
@@ -2056,7 +2048,7 @@ trait Types
     /** A nicely formatted string with newlines and such.
      */
     def formattedToString = parents.mkString("\n        with ") + scopeString
-    override protected def shouldForceScope = settings.debug || decls.size > 1
+    override protected def shouldForceScope = decls.size > 1
     override protected def scopeString      = initDecls.mkString(" {\n  ", "\n  ", "\n}")
     override def safeToString               = if (shouldForceScope) formattedToString else super.safeToString
   }
@@ -2321,7 +2313,6 @@ trait Types
     override def coevolveSym(newPre: Type): Symbol =
       if ((pre ne newPre) && embeddedSymbol(pre, sym.name) == sym) {
         val newSym = embeddedSymbol(newPre, sym.name)
-        debuglog(s"co-evolve: ${pre} -> ${newPre}, $sym : ${sym.info} -> $newSym : ${newSym.info}")
         // To deal with erroneous `preNew`, fallback via `orElse sym`, in case `preNew` does not have a decl named `sym.name`.
         newSym orElse sym
       } else sym
@@ -2337,11 +2328,7 @@ trait Types
     // don't check whether tp is a RefinedType -- it may be a ThisType of one, for example
     // TODO: check the resulting symbol is owned by the refinement class? likely an invariant...
     if (tp.typeSymbol.isRefinementClass) tp.normalize.decls lookup name
-    else {
-      debuglog(s"no embedded symbol $name found in ${showRaw(tp)} --> ${tp.normalize.decls lookup name}")
-      NoSymbol
-    }
-
+    else NoSymbol
 
   trait AbstractTypeRef extends NonClassTypeRef {
     require(sym.isAbstractType, sym)
@@ -2642,8 +2629,7 @@ trait Types
     }
     // ensure that symbol is not a local copy with a name coincidence
     private def needsPreString = (
-         settings.debug
-      || !shorthands(sym.fullName)
+         !shorthands(sym.fullName)
       || (sym.ownersIterator exists (s => !s.isClass))
     )
     private def preString  = if (needsPreString) pre.prefixString else ""
@@ -2713,14 +2699,12 @@ trait Types
         case _                                         => ""
     }
     override def safeToString = {
-      val custom = if (settings.debug) "" else customToString
+      val custom = customToString
       if (custom != "") custom
       else finishPrefix(preString + sym.nameString + argsString)
     }
     override def prefixString = "" + (
-      if (settings.debug)
-        super.prefixString
-      else if (sym.isOmittablePrefix)
+           if (sym.isOmittablePrefix)
         ""
       else if (sym.isPackageClass || sym.isPackageObjectOrClass)
         sym.skipPackageObject.fullName + "."
@@ -3152,7 +3136,7 @@ trait Types
     }
 
     override def nameAndArgsString: String = underlying match {
-      case TypeRef(_, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+      case TypeRef(_, sym, args) if isRepresentableWithWildcards =>
         sym.name.toString + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
       case TypeRef(_, sym, args) =>
         sym.name.toString + args.mkString("[", ",", "]") + existentialClauses
@@ -3192,7 +3176,7 @@ trait Types
     }
 
     override def safeToString: String = underlying match {
-      case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+      case TypeRef(pre, sym, args) if isRepresentableWithWildcards =>
         val ref = typeRef(pre, sym, Nil).toString
         val wildcards = wildcardArgsString(quantified.toSet, args)
         if (wildcards.isEmpty) ref else ref + wildcards.mkString("[", ", ", "]")
@@ -4167,7 +4151,7 @@ trait Types
     tycon match {
       case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
       case TypeRef(pre, sym, Nil)                         => copyTypeRef(tycon, pre, sym, args)
-      case TypeRef(pre, sym, bogons)                      => devWarning(s"Dropping $bogons from $tycon in appliedType.") ; copyTypeRef(tycon, pre, sym, args)
+      case TypeRef(pre, sym, bogons)                      => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
       case ExistentialType(tparams, restpe)               => newExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
@@ -4826,9 +4810,6 @@ trait Types
         // for the right side of the `<:<` above (`memberInfo`).
         val tpLo = preLo.memberType(symLo)
 
-        debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
-        debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
-
         if (symHi.isTerm)
           (isSubType(tpLo, tpHi, depth)        &&
             (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
@@ -5045,10 +5026,8 @@ trait Types
         case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) =>
           if (expandLazyBaseType)
             rt.parents foreach stripType
-          else {
-            devWarning(s"Unexpected RefinedType in stripExistentialsAndTypeVars $ts, not expanding")
+          else
             stripped += tp
-          }
         case ExistentialType(qs, underlying) =>
           tparams ++= qs
           stripType(underlying)
@@ -5099,7 +5078,6 @@ trait Types
               // transpose freaked out because of irregular argss
               // catching just in case (shouldn't happen, but also doesn't cost us)
               // [JZ] It happens: see scala/bug#5683.
-              debuglog(s"transposed irregular matrix!? tps=$tps argss=$argss")
               NoType
             case Some(argsst) =>
               var capturedParamIds = 0
@@ -5167,7 +5145,6 @@ trait Types
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol, depth: Depth): Unit = {
     assert(sym != NoSymbol, "Adding member NoSymbol")
-    // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!specializesSym(thistp, sym, depth)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)
@@ -5191,17 +5168,14 @@ trait Types
   class TypeError(var pos: Position, val msg: String) extends Throwable(msg) {
     def this(msg: String) = this(NoPosition, msg)
 
-    final override def fillInStackTrace() =
-      if (settings.debug) super.fillInStackTrace() else this
+    final override def fillInStackTrace() = this
   }
 
   // TODO: RecoverableCyclicReference should be separated from TypeError,
   // but that would be a big change. Left for further refactoring.
   /** An exception for cyclic references from which we can recover */
   case class RecoverableCyclicReference(sym: Symbol)
-    extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug) printStackTrace()
-  }
+    extends TypeError("illegal cyclic reference involving " + sym)
 
   class NoCommonType(tps: List[Type]) extends ControlThrowable(
     "lub/glb of incompatible types: " + tps.mkString("", " and ", ""))

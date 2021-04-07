@@ -177,9 +177,6 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       // Assemble the body of the apply method, which is dispactches on the current state id.
       val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
 
-      // Logging
-      if ((settings.debug.value && shouldLogAtThisPhase))
-        logDiagnostics(anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
       // Offer async frontends a change to produce the .dot diagram
       transformState.dotDiagram(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
 
@@ -233,16 +230,6 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
 
       // Use localTyper to adapt () to BoxedUnit in `val ifRes: Object; if (cond) "" else ()`
       private def adapt(tree: Tree, pt: Type): Tree = localTyper.typed(tree, pt)
-    }
-
-    private def logDiagnostics(anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
-      val pos = currentTransformState.applySym.pos
-      val location = try pos.source.path catch { case _: UnsupportedOperationException => pos.toString }
-      inform(s"In file '$location':")
-      inform(s"ANF transform expands to:\n $anfTree")
-      states foreach (s => inform(s))
-      inform("===== DOT =====")
-      inform(block.toDot)
     }
   }
 }

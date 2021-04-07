@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Vdebug
+// scalac: -Werror -Xlint
 //
 // Multiple errors at a location are shown under debug.
 //

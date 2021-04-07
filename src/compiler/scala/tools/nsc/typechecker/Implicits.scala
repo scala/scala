@@ -1535,9 +1535,7 @@ trait Implicits {
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
-          val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
-          if (settings.debug) println("generated manifest: "+mani) // DEBUG
-          mani
+          gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
         }
 
       /* Creates a tree representing one of the singleton manifests.*/
@@ -1772,10 +1770,6 @@ trait Implicits {
           case _ =>
         }
       }
-
-      if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
-        log(s"no implicits found for ${pt} ${pt.typeSymbol.info.baseClasses} ${implicitsOfExpectedType}")
-
       result
     }
 

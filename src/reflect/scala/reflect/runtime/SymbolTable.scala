@@ -24,8 +24,8 @@ private[scala] trait SymbolTable extends internal.SymbolTable with JavaMirrors w
   def info(msg: => String) =
     if (settings.verbose) println("[reflect-compiler] "+msg)
 
-  def debugInfo(msg: => String) =
-    if (settings.debug) info(msg)
+  @deprecated("Removed", "1.0.0")
+  def debugInfo(msg: => String) = if (settings.debug) info(msg)
 
   /** Declares that this is a runtime reflection universe.
    *

@@ -1199,7 +1199,7 @@ def generateServiceProviderResources(services: (String, String)*): Setting[_] =
 
 // Add tab completion to partest
 commands += Command("partest")(_ => PartestUtil.partestParser((ThisBuild / baseDirectory).value, (ThisBuild / baseDirectory).value / "test")) { (state, parsed) =>
-  ("test/it:testOnly -- " + parsed) :: state
+  ("test / IntegrationTest / testOnly -- " + parsed) :: state
 }
 
 // Watch the test files also so ~partest triggers on test case changes

@@ -1,4 +1,4 @@
-// scalac: -Xlint:poly-implicit-overload -Xfatal-warnings -Xdev
+// scalac: -Xlint:poly-implicit-overload -Xfatal-warnings
 //
 object Test {
   implicit def imp1[T](x: List[T]): Map[T, T] = Map()

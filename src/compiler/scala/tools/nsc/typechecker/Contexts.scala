@@ -712,7 +712,6 @@ trait Contexts { self: Analyzer =>
         c(TypeConstructorAllowed) = false
 
       registerContext(c.asInstanceOf[analyzer.Context])
-      debuglog(s"[context] ++ ${c.unit} / ${if (tree == null) "" else tree.summaryString}")
       c
     }
 
@@ -1009,22 +1008,19 @@ trait Contexts { self: Analyzer =>
         val TypeBounds(lo, hi) = sym.info.bounds
         val isUnique           = lo <:< hi && hi <:< lo
         val isPresent          = current contains sym
-        def saved_s            = bounds_s(savedInfo.bounds)
         def current_s          = bounds_s(sym.info.bounds)
 
         if (isUnique && isPresent)
-          devWarningResult(s"Preserving inference: ${sym.nameString}=$hi in $current (based on $current_s) before restoring $sym to saved $saved_s")(
-            current.instantiateTypeParams(List(sym), List(hi))
-          )
+          current.instantiateTypeParams(List(sym), List(hi))
         else if (isPresent)
-          devWarningResult(s"Discarding inferred $current_s because it does not uniquely determine $sym in")(current)
+          current
         else
           logResult(s"Discarding inferred $current_s because $sym does not appear in")(current)
       }
       try restore()
       finally {
         for ((sym, savedInfo) <- savedTypeBounds)
-          sym setInfo debuglogResult(s"Discarding inferred $sym=${sym.info}, restoring saved info")(savedInfo)
+          sym setInfo savedInfo
 
         savedTypeBounds = Nil
       }
@@ -1101,7 +1097,6 @@ trait Contexts { self: Analyzer =>
             }
           impls
       }
-      //debuglog("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//DEBUG
       collect(imp.tree.selectors)
     }
 
@@ -1129,7 +1124,6 @@ trait Contexts { self: Analyzer =>
 
         val CycleMarker = NoRunId - 1
         if (implicitsRunId == CycleMarker) {
-          debuglog(s"cycle while collecting implicits at owner ${owner}, probably due to an implicit without an explicit return type. Continuing with implicits from enclosing contexts.")
           withOuter(Nil)
         } else if (implicitsRunId != currentRunId) {
           implicitsRunId = CycleMarker
@@ -1160,11 +1154,8 @@ trait Contexts { self: Analyzer =>
           Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
         }
       } else if (scope != outer.scope && !owner.isPackageClass) {
-        debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != outer.firstImport) {
-        if (isDeveloper)
-          assert(imports.tail.headOption == outer.firstImport, (imports, outer.imports))
         Some(collectImplicitImports(firstImport.get))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
@@ -1735,7 +1726,6 @@ trait Contexts { self: Analyzer =>
           target.errorBuffer += err
         case _ =>
       }
-      // debuglog("propagateImplicitTypeErrorsTo: " + errors)
     }
 
     protected def addDiagString(msg: String)(implicit context: Context): String = {
@@ -1868,18 +1858,8 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-    private def selectorString(s: ImportSelector): String =
-      if (s.isWildcard) "_"
-      else if (s.isRename) s"${s.name} => ${s.rename}"
-      else s.name.decoded
-
     /** Optionally record that a selector was used to import the given symbol. */
     def recordUsage(sel: ImportSelector, result: Symbol): Unit = {
-      debuglog(s"In $this at ${ pos.source.file.name }:${ posOf(sel).line }, selector '${ selectorString(sel)
-        }' resolved to ${
-          if (tree.symbol.hasCompleteInfo) s"(qual=$qual, $result)"
-          else s"(expr=${tree.expr}, ${result.fullLocationString})"
-        }")
       if (settings.warnUnusedImport && result != NoSymbol && pos != NoPosition)
         allUsedSelectors(this) += sel
     }

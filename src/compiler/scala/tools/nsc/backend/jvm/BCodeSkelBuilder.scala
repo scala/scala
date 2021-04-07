@@ -643,9 +643,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
           rhs match {
             case Return(_) | Block(_, Return(_)) | Throw(_) | Block(_, Throw(_)) => ()
             case EmptyTree =>
-              globalError("Concrete method has no definition: " + dd + (
-                if (settings.debug) "(found: " + methSymbol.owner.info.decls.toList.mkString(", ") + ")"
-                else ""))
+              globalError("Concrete method has no definition: " + dd)
             case _ =>
               bc emitRETURN returnType
           }

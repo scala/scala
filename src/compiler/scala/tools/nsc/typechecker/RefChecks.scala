@@ -146,16 +146,6 @@ abstract class RefChecks extends Transform {
           reporter.error(m1.pos, "implementation restriction: applyDynamic cannot be overloaded except by methods with different numbers of type parameters, e.g. applyDynamic[T1](method: String)(arg: T1) and applyDynamic[T1, T2](method: String)(arg1: T1, arg2: T2)")
         }
       }
-
-      // This has become noisy with implicit classes.
-      if (settings.warnPolyImplicitOverload && settings.developer) {
-        clazz.info.decls.foreach(sym => if (sym.isImplicit && sym.typeParams.nonEmpty) {
-          // implicit classes leave both a module symbol and a method symbol as residue
-          val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
-          if (alts.size > 1)
-            alts foreach (x => refchecksWarning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds", WarningCategory.LintPolyImplicitOverload))
-        })
-      }
     }
 
 // Override checking ------------------------------------------------------------
@@ -296,14 +286,12 @@ abstract class RefChecks extends Transform {
         val memberClass = member.owner
         val otherClass = other.owner
 
-        //        debuglog(s"Checking validity of ${member.fullLocationString} overriding ${other.fullLocationString}")
-
         def noErrorType = !pair.isErroneous
         def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
         def isNeitherInClass = memberClass != clazz && otherClass != clazz
 
         val indent = "  "
-        def overriddenWithAddendum(msg: String, foundReq: Boolean = settings.debug.value): String = {
+        def overriddenWithAddendum(msg: String, foundReq: Boolean = false): String = {
           val isConcreteOverAbstract =
             (otherClass isSubClass memberClass) && other.isDeferred && !member.isDeferred
           val addendum =
@@ -1221,7 +1209,6 @@ abstract class RefChecks extends Transform {
         try transform(tree)
         finally if (currentLevel.maxindex > 0) {
           // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
-          debuglog("refsym = " + currentLevel.refsym)
           reporter.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
         }
       case ValDef(_, _, _, _) =>
@@ -1230,7 +1217,6 @@ abstract class RefChecks extends Transform {
         else {
           val sym = tree.symbol
           if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
-            debuglog("refsym = " + currentLevel.refsym)
             reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
           }
           tree1
@@ -1868,7 +1854,6 @@ abstract class RefChecks extends Transform {
         result1
       } catch {
         case ex: TypeError =>
-          if (settings.debug) ex.printStackTrace()
           reporter.error(tree.pos, ex.getMessage())
           tree
       } finally {

@@ -163,7 +163,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   /** Add given member to given class, and mark member as mixed-in.
    */
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
-    debuglog(s"mixing into $clazz: ${member.defString}")
     // This attachment is used to instruct the backend about which methods in traits require
     // a static trait impl method. We remove this from the new symbol created for the method
     // mixed into the subclass.
@@ -217,7 +216,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     forwarder.info.foreach {
       case TypeRef(_, tparam, _) if tparam.isTypeParameter && !isForwarderTparam(tparam) =>
         symTparams.get(tparam.name).foreach{ symTparam =>
-          debuglog(s"Renaming ${symTparam} (owned by ${symTparam.owner}, a mixin forwarder hosted in ${forwarder.enclClass.fullNameString}) to avoid shadowing enclosing type parameter of ${tparam.owner.fullNameString})")
           symTparam.name = symTparam.name.append(NameTransformer.NAME_JOIN_STRING)
           symTparams.remove(tparam.name) // only rename once
         }
@@ -239,7 +237,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
         }
 
       }
-      debuglog("new defs of " + clazz + " = " + clazz.info.decls)
     }
   }
 
@@ -557,7 +554,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
         else if (!sym.isMethod) addValDef(sym) // field
         else if (!sym.isMacro) { // forwarder
           assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
-          // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
           addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
         }
       }
@@ -579,7 +575,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
          */
         def completeSuperAccessor(stat: Tree) = stat match {
           case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${stat.symbol.alias.owner} . ${stat.symbol.alias}")
             val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
             val pt   = stat.symbol.tpe.resultType
 

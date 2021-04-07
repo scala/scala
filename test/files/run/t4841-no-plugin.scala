@@ -11,7 +11,7 @@ object Test extends DirectTest {
 
   override def show() = {
     val tmp = new File(testOutput.jfile, "plugins.partest").getAbsolutePath
-    compile("-Xdev", s"-Xplugin:$tmp", "-Xpluginsdir", tmp)
+    compile(s"-Xplugin:$tmp", "-Xpluginsdir", tmp)
   }
 }
 

@@ -132,13 +132,7 @@ trait SymbolTrackers {
           if (masked == 0L) ""
           else " (" + Flags.flagsToString(masked) + ")"
       }
-      def symString(sym: Symbol) = (
-        if (settings.debug && sym.hasCompleteInfo) {
-          val s = sym.defString take 240
-          if (s.length == 240) s + "..." else s
-        }
-        else "" + sym + changedOwnerString + flagSummaryString
-      )
+      def symString(sym: Symbol) = "" + sym + changedOwnerString + flagSummaryString
 
       def flatten = children.foldLeft(Set(root))(_ ++ _.flatten)
       def indentString(indent: String): String = {

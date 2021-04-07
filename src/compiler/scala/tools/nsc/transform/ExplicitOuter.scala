@@ -186,9 +186,7 @@ abstract class ExplicitOuter extends InfoTransform
         for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = exitingExplicitOuter(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
-            if (skipMixinOuterAccessor(clazz, mc))
-              debuglog(s"Reusing outer accessor symbol of $clazz for the mixin outer accessor of $mc")
-            else {
+            if (!skipMixinOuterAccessor(clazz, mc)) {
               if (decls1 eq decls) decls1 = decls.cloneScope
               val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED).setPos(clazz.pos)
               newAcc setInfo (clazz.thisType memberType mixinOuterAcc)

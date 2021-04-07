@@ -37,7 +37,6 @@ abstract class Duplicators extends Analyzer {
     } else resetClassOwners()
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
-    debuglog("retyped with env: " + env)
 
     newBodyDuplicator(context).typed(tree)
   }
@@ -89,7 +88,6 @@ abstract class Duplicators extends Analyzer {
             } filter (_ ne sym)
           )
           if (sym1.exists) {
-            debuglog(s"fixing $sym -> $sym1")
             typeRef(NoPrefix, sym1, args mapConserve this)
           }
           else super.mapOver(tpe)
@@ -97,7 +95,6 @@ abstract class Duplicators extends Analyzer {
         case TypeRef(pre, sym, args) =>
           val newsym = updateSym(sym)
           if (newsym ne sym) {
-            debuglog("fixing " + sym + " -> " + newsym)
             typeRef(mapOver(pre), newsym, args mapConserve this)
           } else
             super.mapOver(tpe)
@@ -105,7 +102,6 @@ abstract class Duplicators extends Analyzer {
         case SingleType(pre, sym) =>
           val sym1 = updateSym(sym)
           if (sym1 ne sym) {
-            debuglog("fixing " + sym + " -> " + sym1)
             singleType(mapOver(pre), sym1)
           } else
             super.mapOver(tpe)
@@ -113,7 +109,6 @@ abstract class Duplicators extends Analyzer {
         case ThisType(sym) =>
           val sym1 = updateSym(sym)
           if (sym1 ne sym) {
-            debuglog("fixing " + sym + " -> " + sym1)
             ThisType(sym1)
           } else
             super.mapOver(tpe)
@@ -142,33 +137,27 @@ abstract class Duplicators extends Analyzer {
         sym
 
     private def invalidate(tree: Tree, owner: Symbol = NoSymbol): Unit = {
-      debuglog(s"attempting to invalidate symbol = ${tree.symbol}")
       if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol) {
-        debuglog("invalid " + tree.symbol)
         invalidSyms(tree.symbol) = tree
 
         tree match {
           case ldef @ LabelDef(name, params, rhs) =>
-            debuglog("LabelDef " + name + " sym.info: " + ldef.symbol.info)
             invalidSyms(ldef.symbol) = ldef
           //          breakIf(true, this, ldef, context)
             val newsym = ldef.symbol.cloneSymbol(context.owner)
             newsym.setInfo(fixType(ldef.symbol.info))
             ldef.symbol = newsym
-            debuglog("newsym: " + newsym + " info: " + newsym.info)
 
           // don't retypecheck val members or local lazy vals -- you'll end up with duplicate symbols because
           // entering a valdef results in synthesizing getters etc
           // TODO: why retype check any valdefs?? I checked and the rhs is specialized just fine this way
           // (and there are no args/type params/... to warrant full type checking?)
           case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) || owner.isClass =>
-            debuglog(s"ValDef $name in $owner sym.info: ${vdef.symbol.info}")
             invalidSyms(vdef.symbol) = vdef
             val newowner = owner orElse context.owner
             val newsym = vdef.symbol.cloneSymbol(newowner)
             newsym.setInfo(fixType(vdef.symbol.info))
             vdef.symbol = newsym
-            debuglog("newsym: " + newsym + " info: " + newsym.info + ", owner: " + newsym.owner + ", " + newsym.owner.isClass)
             if (newsym.owner.isClass) newsym.owner.info.decls enter newsym
 
           case DefDef(_, name, tparams, vparamss, _, rhs) =>
@@ -212,12 +201,10 @@ abstract class Duplicators extends Analyzer {
      *  namer/typer handle them, or Idents that refer to them.
      */
     override def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-      debuglog("typing " + tree + ": " + tree.tpe + ", " + tree.getClass)
       val origtreesym = tree.symbol
       if (tree.hasSymbolField && tree.symbol != NoSymbol
           && !tree.symbol.isLabel  // labels cannot be retyped by the type checker as LabelDef has no ValDef/return type trees
           && invalidSyms.isDefinedAt(tree.symbol)) {
-        debuglog("removed symbol " + tree.symbol)
         tree.symbol = NoSymbol
       }
 
@@ -227,7 +214,6 @@ abstract class Duplicators extends Analyzer {
           ttree modifyType fixType
 
         case Block(stats, res) =>
-          debuglog("invalidating block")
           invalidateAll(stats)
           invalidate(res)
           super.typed(tree.clearType(), mode, pt)
@@ -284,12 +270,10 @@ abstract class Duplicators extends Analyzer {
           super.typed(tree.clearType(), mode, pt)
 
         case Ident(_) if tree.symbol.isLabel =>
-          debuglog("Ident to labeldef " + tree + " switched to ")
           tree.symbol = updateSym(tree.symbol)
           super.typed(tree.clearType(), mode, pt)
 
         case Ident(_) if (origtreesym ne null) && origtreesym.isLazy =>
-          debuglog("Ident to a lazy val " + tree + ", " + tree.symbol + " updated to " + origtreesym)
           tree.symbol = updateSym(origtreesym)
           super.typed(tree.clearType(), mode, pt)
 
@@ -333,11 +317,9 @@ abstract class Duplicators extends Analyzer {
           // log("selection on this: " + tree)
           val tree1 = This(newClassOwner)
           // log("tree1: " + tree1)
-          debuglog("mapped " + tree + " to " + tree1)
           super.typedPos(tree.pos, mode, pt)(tree1)
 
         case This(_) =>
-          debuglog("selection on this, plain: " + tree)
           tree.symbol = updateSym(tree.symbol)
           val ntree = castType(tree, pt)
           val tree1 = super.typed(ntree, mode, pt)
@@ -378,8 +360,6 @@ abstract class Duplicators extends Analyzer {
           tree
 
         case _ =>
-          debuglog("Duplicators default case: " + tree.summaryString)
-          debuglog(" ---> " + tree)
           if (tree.hasSymbolField && tree.symbol.safeOwner == AnyClass)
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
 

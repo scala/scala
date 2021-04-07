@@ -233,7 +233,6 @@ trait Variances {
 
       tree match {
         case _: MemberDef if skip =>
-          debuglog(s"Skipping variance check of ${sym.defString}")
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           ValidateVarianceMap.validateDefinition(sym)
           tree.traverse(this)

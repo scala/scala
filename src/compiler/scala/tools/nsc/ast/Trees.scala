@@ -14,7 +14,6 @@ package scala.tools.nsc
 package ast
 
 import scala.reflect.ClassTag
-import java.lang.System.lineSeparator
 
 import scala.annotation.nowarn
 
@@ -247,16 +246,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *  (bq:) This transformer has mutable state and should be discarded after use
    */
   private class ResetAttrs(brutally: Boolean, leaveAlone: Tree => Boolean) {
-    // this used to be based on -Ydebug, but the need for logging in this code is so situational
-    // that I've reverted to a hard-coded constant here.
-    val debug = false
-    val trace = scala.tools.nsc.util.trace when debug
-
     val locals = util.HashSet[Symbol](8)
     val orderedLocals = scala.collection.mutable.ListBuffer[Symbol]()
     def registerLocal(sym: Symbol): Unit = {
       if (sym != null && sym != NoSymbol) {
-        if (debug && !(locals contains sym)) orderedLocals += sym
         locals addEntry sym
       }
     }
@@ -358,15 +351,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
     def transform(x: Tree): Tree = {
       new MarkLocals().traverse(x)
-
-      if (debug) {
-        assert(locals.size == orderedLocals.size, "Incongruent ordered locals")
-        val msg = orderedLocals.toList.filter{_ != NoSymbol}
-          .map("  " + _)
-          .mkString(lineSeparator)
-        trace("locals (%d total): %n".format(orderedLocals.size))(msg)
-      }
-
       new ResetTransformer().transform(x)
     }
   }

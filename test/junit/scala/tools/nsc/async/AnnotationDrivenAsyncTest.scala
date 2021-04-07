@@ -403,7 +403,6 @@ class AnnotationDrivenAsyncTest {
       settings.outdir.value = out.getAbsolutePath
       settings.embeddedDefaults(getClass.getClassLoader)
 
-      // settings.debug.value = true
       // settings.uniqid.value = true
       // settings.processArgumentString("-Xprint:typer,posterasure,async -nowarn")
       // settings.log.value = List("async")

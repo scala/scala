@@ -174,7 +174,6 @@ trait Namers extends MethodSynthesis {
       (moduleFlags & ModuleToClassFlags) | inConstructorFlag
 
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
-      debuglog("[overwrite] " + sym)
       val newFlags = (sym.flags & LOCKED) | flags
       // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
       // over this mutated symbol, and we witness a stale cache for `parents`.
@@ -1232,7 +1231,6 @@ trait Namers extends MethodSynthesis {
       // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
       val module = clazz.sourceModule
       for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
-        debuglog(s"Storing the template namer in the ConstructorDefaultsAttachment of ${module.debugLocationString}.")
         if (cda.defaults.nonEmpty) {
           for (sym <- cda.defaults) {
             decls.enter(sym)

@@ -242,8 +242,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def name: NameType = if (needsFlatClasses) flattenedName else _rawname.asInstanceOf[NameType]
     def name_=(n: Name): Unit = {
       if (shouldLogAtThisPhase) {
-        def msg = s"In $owner, renaming $name -> $n"
-        if (isSpecialized) debuglog(msg) else log(msg)
+        if (!isSpecialized) log(s"In $owner, renaming $name -> $n")
       }
     }
     protected[this] def flattenedName: NameType = rawname
@@ -292,8 +291,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def varianceString: String = variance.symbolicString
 
     override def flagMask =
-      if (settings.debug && !isAbstractType) AllFlags
-      else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
+      if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
     // make the error message more googlable
@@ -868,7 +866,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Conditions where we omit the prefix when printing a symbol, to avoid
      *  unpleasantries like Predef.String, $read.$iw.Foo and <empty>.Bippy.
      */
-    final def isOmittablePrefix = /*!settings.debug.value &&*/ {
+    final def isOmittablePrefix = {
       // scala/bug#5941 runtime reflection can have distinct symbols representing `package scala` (from different mirrors)
       // We check equality by FQN here to make sure we omit prefixes uniformly for all of them.
       def matches(sym1: Symbol, sym2: Symbol) = (sym1 eq sym2) || (sym1.hasPackageFlag && sym2.hasPackageFlag && sym1.name == sym2.name && sym1.fullNameString == sym2.fullNameString)
@@ -1092,17 +1090,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
 
     def exists: Boolean = !isTopLevel || {
-      val isSourceLoader = rawInfo match {
-        case sl: SymLoader => sl.fromSource
-        case _             => false
-      }
       def warnIfSourceLoader(): Unit = {
-        if (isSourceLoader)
-          // Predef is completed early due to its autoimport; we used to get here when type checking its
-          // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
-          // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
-          // get here anymore.
-          devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.")
+        // Predef is completed early due to its autoimport; we used to get here when type checking its
+        // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
+        // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
+        // get here anymore.
       }
 
       rawInfo load this
@@ -1200,7 +1192,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *   - call `safeOwner` if it is expected that the target may be NoSymbol
      *   - call `assertOwner` if it is an unrecoverable error if the target is NoSymbol
      *
-     * `owner` behaves like `safeOwner`, but logs NoSymbol.owner calls under -Xdev.
+     * `owner` behaves like `safeOwner`.
      * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
     def owner: Symbol = {
@@ -1515,12 +1507,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Alternate implementation of def tpe for warning about misuse,
     // disabled to keep the method maximally hotspot-friendly:
-    // def tpe: Type = {
-    //   val result = tpe_*
-    //   if (settings.debug.value && result.typeArgs.nonEmpty)
-    //     printCaller(s"""Call to ${this.tpe} created $result: call tpe_* or tpeHK""")("")
-    //   result
-    // }
+    // def tpe: Type = tpe_*
 
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
@@ -1538,7 +1525,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       rawInfo
     }
 
-    private def completeInfo(): Unit = try {
+    private def completeInfo(): Unit = {
       assert(infos ne null, this.name)
       assert(infos.prev eq null, this.name)
       val tp = infos.info
@@ -1570,10 +1557,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           unlock()
         }
       }
-    } catch {
-      case ex: CyclicReference =>
-        devWarning("... hit cycle trying to complete " + this.fullLocationString)
-        throw ex
     }
 
     def info_=(info: Type): Unit = {
@@ -1722,7 +1705,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     def maybeInitialize = {
       try   { initialize ; true }
-      catch { case _: CyclicReference => debuglog(s"Hit cycle in maybeInitialize of $this") ; false }
+      catch { case _: CyclicReference => false }
     }
 
     /** Was symbol's type updated during given phase? */
@@ -2184,7 +2167,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def outerClass: Symbol =
       if (this == NoSymbol) {
         // ideally we shouldn't get here, but it's better to harden against this than suffer the infinite loop in scala/bug#9133
-        devWarningDumpStack("NoSymbol.outerClass", 15)
         NoSymbol
       } else if (owner.isClass) owner
       else if (isClassLocalToConstructor) owner.enclClass.outerClass
@@ -2723,9 +2705,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     protected[scala] def abbreviatedKindString: String =
       symbolKind.abbreviation
 
-    final def kindString: String =
-      if (settings.debug.value) accurateKindString
-      else sanitizedKindString
+    final def kindString: String = sanitizedKindString
 
     /** If the name of the symbol's owner should be used when you care about
      *  seeing an interesting name: in such cases this symbol is e.g. a method
@@ -2741,14 +2721,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
 
     /** String representation of symbol's simple name.
-     *  If !settings.debug translates expansions of operators back to operator symbol.
      *  E.g. $eq => =.
      *  If settings.uniqid, adds id.
      *  If settings.Yshowsymowners, adds owner's id
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
-      val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
+      val name_s = unexpandedName.dropLocal.decode
       val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
 
       name_s + idString + kind_s
@@ -2775,13 +2754,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
     override def toString: String = {
-      val simplifyNames = !settings.debug
-      if (isPackageObjectOrClass && simplifyNames) s"package object ${owner.decodedName}"
+      if (isPackageObjectOrClass) s"package object ${owner.decodedName}"
       else {
         val kind = kindString
         val _name: String =
           if (hasMeaninglessName) owner.decodedName + idString
-          else if (simplifyNames && (kind == "variable" || kind == "value")) unexpandedName.getterName.decode.toString // TODO: make condition less gross?
+          else if (kind == "variable" || kind == "value") unexpandedName.getterName.decode // TODO: make condition less gross?
           else nameString
 
         compose(kind, _name)
@@ -2811,7 +2789,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         def isStructuralThisType = owner.isInitialized && owner.isStructuralRefinement && tp == owner.tpe // scala/bug#8158
         // colon+space, preceded by an extra space if needed to prevent the colon glomming onto a symbolic name
         def postnominalColon: String = if (!followsParens && name.isOperatorName) " : " else ": "
-        def parents = if (settings.debug) parentsString(tp.parents) else briefParentsString(tp.parents)
+        def parents = briefParentsString(tp.parents)
         def typeRest =
           if (isClass) " extends " + parents
           else if (isAliasType) " = " + tp.resultType
@@ -2871,7 +2849,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** String representation of existentially bound variable */
     def existentialToString =
-      if (isSingletonExistential && !settings.debug.value)
+      if (isSingletonExistential)
         "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.upperBound)
       else defString
   }
@@ -3326,10 +3304,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSkolem =
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
-
-    override def nameString: String =
-      if (settings.debug.value) (super.nameString + "&" + level)
-      else super.nameString
   }
 
   /** A class for class symbols */
@@ -3582,8 +3556,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
   }
   trait StubSymbol extends Symbol {
-    devWarning("creating stub symbol to defer error: " + missingMessage)
-
     def missingMessage: String
 
     /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
@@ -3597,8 +3569,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
         globalError(pos, missingMessage)
-        if (settings.debug.value)
-          (new Throwable).printStackTrace
 
         this setFlag IS_ERROR
       }
@@ -3665,10 +3635,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile
-    override def owner: Symbol = {
-      devWarningDumpStack("NoSymbol.owner", 15)
-      this
-    }
+    override def owner: Symbol = this
     override def ownerChain: List[Symbol] = Nil
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
@@ -3813,9 +3780,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
-  extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug) printStackTrace()
-  }
+  extends TypeError("illegal cyclic reference involving " + sym)
 
   /** A class for type histories */
   private final case class TypeHistory protected (private var _validFrom: Period, private var _info: Type, private var _prev: TypeHistory) {

@@ -367,21 +367,6 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           }
         }
 
-        /* For testing purposes, the dynamic application's condition
-         * can be printed-out in great detail. Remove? */
-        if (settings.debug) {
-          def paramsToString(xs: Any*) = xs map (_.toString) mkString ", "
-          val mstr = ad.symbol.tpe match {
-            case MethodType(mparams, resType) =>
-              sm"""|  with
-                   |  - declared parameter types: '${paramsToString(mparams)}'
-                   |  - passed argument types:    '${paramsToString(params)}'
-                   |  - result type:              '${resType.toString}'"""
-            case _ => ""
-          }
-          log(s"""Dynamically application '$qual.${ad.symbol.name}(${paramsToString(params)})' $mstr - resulting code: '$t'""")
-        }
-
         /* We return the dynamic call tree, after making sure no other
          * clean-up transformation are to be applied on it. */
         transform(t)

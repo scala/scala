@@ -323,8 +323,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean = true, saveErrors: Boolean = true): Tree =
       if (isPastTyper || from.isInstanceOf[MethodType] || from.isInstanceOf[OverloadedType] || from.isInstanceOf[PolyType]) EmptyTree
       else {
-        debuglog(s"Inferring view from $from to $to for $tree (reportAmbiguous= $reportAmbiguous, saveErrors=$saveErrors)")
-
         val fromNoAnnot = from.withoutAnnotations
         val toNorm = normalizeProtoForView(to)
         val result = inferImplicitView(fromNoAnnot, toNorm, tree, context, reportAmbiguous, saveErrors) match {
@@ -839,7 +837,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       fun.setSymbol(NoSymbol)
                   case _ =>
                 }
-                debuglog(s"fallback on implicits: $tree/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
                 // work during fallback typechecking below.
                 val resetContext: Context = {
@@ -1099,8 +1096,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
-          debuglog("error tree = " + tree)
-          if (settings.debug && settings.explaintypes) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
           else adaptMismatchedSkolems()
@@ -1157,7 +1152,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (coercion ne EmptyTree) {
                     def msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
                     if (settings.logImplicitConv) context.echo(tree.pos, msg)
-                    else debuglog(msg)
 
                     val viewApplied = new ApplyImplicitView(coercion, List(tree)) setPos tree.pos
                     val silentContext = context.makeImplicit(context.ambiguousErrors)
@@ -2171,7 +2165,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /** Analyze the super constructor call to record information used later to compute parameter aliases */
     def analyzeSuperConsructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
       val clazz = meth.owner
-      debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       val pending = ListBuffer[AbsTypeError]()
 
       // !!! This method is redundant with other, less buggy ones.
@@ -2932,15 +2925,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             else try {
               val ptFullyDefined = instantiateSamFromFunction(fun.tpe, pt, sam)
               if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
-                debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
                 ptFullyDefined
               } else {
-                debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
                 NoType
               }
             } catch {
               case e@(_: NoInstance | _: TypeError) =>
-                debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
                 NoType
             }
 
@@ -3205,8 +3195,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // (note that (3) does not call typed to do the polymorphic type instantiation --
     //  it is called after the tree has been typed with a polymorphic expected result type)
     def typedEtaExpansion(tree: Tree, mode: Mode, pt: Type): Tree = {
-      debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
-
       if (tree.tpe.isDependentMethodType) DependentMethodTpeConversionToFunctionError(tree, tree.tpe) // TODO: support this
       else {
         val expansion = etaExpand(tree, context.owner)
@@ -3833,7 +3821,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val args1 = map2(args, formals)(typedArgToPoly)
                 if (args1 exists { _.isErrorTyped }) duplErrTree
                 else {
-                  debuglog("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(_.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(_.tpe.lowerBound) + ", parambounds = " + tparams.map(_.info)) //debug
                   // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
                   // returns those undetparams which have not been instantiated.
                   val undetparams = inferMethodInstance(fun, tparams, args1, pt)
@@ -4252,7 +4239,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             else {
               if (pre.isVolatile) pre match {
                 case SingleType(_, sym) if sym.isSynthetic && isPastTyper =>
-                  debuglog(s"ignoring volatility of prefix in pattern matcher generated inferred type: $tp") // See pos/t7459c.scala
                 case _ =>
                   InferTypeWithVolatileTypeSelectionError(tree, pre)
               }
@@ -4323,9 +4309,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       existentialTransform(whereClauses1 map (_.symbol), tpt1.tpe)((tparams, tp) => {
         val original = tpt1 match {
           case tpt : TypeTree => atPos(tree.pos)(ExistentialTypeTree(tpt.original, tree.whereClauses))
-          case _ =>
-            debuglog(s"cannot reconstruct the original for $tree, because $tpt1 is not a TypeTree")
-            tree
+          case _ => tree
         }
         TypeTree(newExistentialType(tparams, tp)) setOriginal original
       }
@@ -4467,7 +4451,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     private def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
       val cxTree = context.enclosingNonImportContext.tree // scala/bug#8364
-      debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
       val treeInfo.Applied(treeSelection, _, _) = tree
       def isDesugaredApply = {
         val protoQual = macroExpandee(qual) orElse qual
@@ -5197,7 +5180,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (ps.isEmpty)
             ps = site.parents filter (_.typeSymbol.name == mix)
           if (ps.isEmpty) {
-            debuglog("Fatal: couldn't find site " + site + " in " + site.parents.map(_.typeSymbol.name))
             if (phase.erasedTypes && context.enclClass.owner.isTrait) {
               // the reference to super class got lost during erasure
               restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
@@ -5293,16 +5275,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     case tree1     => Some(typed1(tree1, mode, pt))
                   }
                 } else None
-
-              debuglog(s"""
-                |qual=$qual:${qual.tpe}
-                |symbol=${qual.tpe.termSymbol.defString}
-                |scope-id=${qual.tpe.termSymbol.info.decls.hashCode}
-                |members=${qual.tpe.members mkString ", "}
-                |name=$name
-                |found=$sym
-                |owner=${context.enclClass.owner}
-                """.stripMargin)
 
               // 1) Try converting a term selection on a java class into a type selection.
               // 2) Try expanding according to Dynamic rules.
@@ -5613,7 +5585,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             AppliedTypeNoParametersError(tree, tpt1.tpe)
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug) Console.println(s"$tpt1:${tpt1.symbol}:${tpt1.symbol.info}")//debug
             AppliedTypeWrongNumberOfArgsError(tree, tpt1, tparams)
           }
         }
@@ -6098,7 +6069,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     private def addStabilizers(newStabilizers: List[Tree], expr: Tree): Tree = {
       if (newStabilizers.isEmpty) expr else {
-        devWarningIf(newStabilizers.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(newStabilizers.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
         // Insert stabilizing ValDefs (if any) which might have been introduced during the typing of the original expression.
         Block(newStabilizers.reverse, expr).setPos(expr.pos).setType(expr.tpe)
       }
@@ -6347,9 +6317,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           )
         if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
           ownAcc match {
-            case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) =>
-              debuglog(s"$acc has alias ${alias.fullLocationString}")
-              acc setAlias alias
+            case acc: TermSymbol if !acc.isVariable && !isByNameParamType(acc.info) => acc setAlias alias
             case _ =>
           }
         }

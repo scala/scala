@@ -110,7 +110,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Xhelp              = BooleanSetting      ("-X", "Print a synopsis of advanced options.")
   val async              = BooleanSetting      ("-Xasync", "Enable the async phase for scala.async.Async.{async,await}.")
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
-  val developer          = BooleanSetting      ("-Xdev", "Issue warnings about anything which seems amiss in compiler internals. Intended for compiler developers")
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.") andThen (flag =>
                                                 if (flag) elidebelow.value = elidable.ASSERTION + 1)
   val elidebelow         = IntSetting          ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
@@ -459,6 +458,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
    */
   val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
   val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
+  @deprecated("Removed", "1.0.0")
   val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug"
   val YdebugTasty      = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
   val Ydocdebug          = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"

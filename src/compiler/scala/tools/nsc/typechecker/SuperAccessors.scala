@@ -100,7 +100,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val clazz              = qual.symbol
       val supername          = nme.superName(name, mixName)
       val superAcc = clazz.info.decl(supername).suchThat(_.alias == sym) orElse {
-        debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
         val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | ARTIFACT) setAlias sym
         val tpe = clazz.thisType memberType sym match {
           case t if sym.isModuleNotMethod => NullaryMethodType(t)
@@ -221,11 +220,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val sym = tree.symbol
 
       def mayNeedProtectedAccessor(sel: Select, args: List[Tree], goToSuper: Boolean) =
-        if (needsProtectedAccessor(sym, tree.pos)) {
-          debuglog("Adding protected accessor for " + tree)
-
-          transform(makeAccessor(sel, args))
-        }
+        if (needsProtectedAccessor(sym, tree.pos)) transform(makeAccessor(sel, args))
         else if (goToSuper) super.transform(tree)
         else tree
 
@@ -279,7 +274,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         // set a flag for all type parameters with `@specialized` annotation so it can be pickled
         case typeDef: TypeDef if typeDef.symbol.deSkolemize.hasAnnotation(definitions.SpecializedClass) =>
-          debuglog("setting SPECIALIZED flag on typeDef.symbol.deSkolemize where typeDef = " + typeDef)
           // we need to deSkolemize symbol so we get the same symbol as others would get when
           // inspecting type parameter from "outside"; see the discussion of skolems here:
           // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
@@ -333,7 +327,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   val result = (localTyper.typedPos(tree.pos) {
                     Select(Super(qual, tpnme.EMPTY) setPos qual.pos, sym.alias)
                   }).asInstanceOf[Select]
-                  debuglog(s"alias replacement: $sym --> ${sym.alias} / $tree ==> $result"); //debug
                   localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, beforeRefChecks = true))
                 } else {
                   /*
@@ -392,9 +385,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             if (lhs.symbol.isVariable &&
                 lhs.symbol.isJavaDefined &&
                 needsProtectedAccessor(lhs.symbol, tree.pos)) {
-              debuglog("Adding protected setter for " + tree)
               val setter = makeSetter(lhs)
-              debuglog("Replaced " + tree + " with " + setter)
               transform(localTyper.typed(Apply(setter, List(qual, rhs))))
             } else
               super.transform(tree)
@@ -460,7 +451,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val clazz = hostForAccessorOf(sym, currentClass)
 
       assert(clazz != NoSymbol, sym)
-      debuglog("Decided for host class: " + clazz)
 
       val accName    = nme.protName(sym.unexpandedName)
       val hasArgs    = sym.tpe.paramSectionCount > 0
@@ -492,7 +482,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
         })
 
-        debuglog("created protected accessor: " + code)
         storeAccessorDefinition(clazz, code)
         newAcc
       }
@@ -504,7 +493,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           case _          => mkApply(TypeApply(selection, targs))
         }
       }
-      debuglog(s"Replaced $tree with $res")
       if (hasArgs) localTyper.typedOperator(res) else localTyper.typed(res)
     }
 
@@ -539,7 +527,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val field = tree.symbol
       val clazz = hostForAccessorOf(field, currentClass)
       assert(clazz != NoSymbol, field)
-      debuglog("Decided for host class: " + clazz)
 
       val accName = nme.protSetterName(field.unexpandedName)
       val protectedAccessor = clazz.info decl accName orElse {

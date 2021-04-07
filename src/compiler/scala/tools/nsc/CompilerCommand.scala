@@ -33,7 +33,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   private def explainAdvanced = """
     |-- Note --
-    |Boolean settings generally are false unless set: -Xdev -Xcheck-init:true -Xprompt:false
+    |Boolean settings generally are false unless set: -verbose -Xcheck-init:true -Xprompt:false
     |Multi-valued settings are comma-separated: -Xlint:infer-any,unused,-missing-interpolator
     |Phases are a list of names, ids, or ranges of ids: -Vprint:parser,typer,5-10 -Ylog:-4
     |Use _ to enable all: -language:_ -Vprint:_
@@ -112,9 +112,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     else if (Xhelp)         xusageMsg
     else if (Yhelp)         yusageMsg
     else if (showPlugins)   global.pluginDescriptions
-    else if (showPhases)    global.phaseDescriptions + (
-      if (debug) "\n" + global.phaseFlagDescriptions else ""
-    )
+    else if (showPhases)    global.phaseDescriptions
     else if (genPhaseGraph.isSetByUser) {
       val components = global.phaseNames // global.phaseDescriptors // one initializes
       s"Phase graph of ${components.size} components output to ${genPhaseGraph.value}*.dot."

@@ -383,7 +383,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           (thisReferringMethods contains symbol) ||
             (liftedMethodReferences.contains(symbol) && liftedMethodReferences(symbol).exists(loop)) && {
               // add it early to memoize
-              debuglog(s"$symbol indirectly refers to 'this'")
               thisReferringMethods += symbol
               true
             }
@@ -416,7 +415,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         super.traverseTrees(rest)
       case This(_) =>
         if (currentMethod.exists && tree.symbol == currentMethod.enclClass) {
-          debuglog(s"$currentMethod directly refers to 'this'")
           thisReferringMethods add currentMethod
         }
       case _: ClassDef if !tree.symbol.isTopLevel =>

@@ -166,13 +166,8 @@ trait Interface extends ast.TreeDSL {
           override def apply(tp: Type): Unit =
             if (!result) {
               tp match {
-                case SingleType(_, sym) if from contains sym =>
-                  global.devWarningIf(to.exists(!_.isInstanceOf[Ident])) {
-                    s"Unexpected substitution of non-Ident into TypeTree, subst= $this"
-                  }
-                  result = true
-                case _ =>
-                    tp.foldOver(this)
+                case SingleType(_, sym) if from contains sym => result = true
+                case _ => tp.foldOver(this)
               }
             }
         }

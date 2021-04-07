@@ -117,11 +117,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   }
 
   private def handleMissing(e: MissingRequirementError) = {
-    if (settings.debug) e.printStackTrace
     throw new IOException(s"Missing dependency '${e.req}', required by $file")
   }
   private def handleError(e: Exception) = {
-    if (settings.debug) e.printStackTrace()
     throw new IOException(s"class file '$file' is broken\n(${e.getClass}/${e.getMessage})")
   }
   private def mismatchError(c: Symbol) = {
@@ -420,7 +418,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     //   - better owner than `NoSymbol`
     //   - remove eager warning
     val msg = s"Class $name not found - continuing with a stub."
-    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
+    if ((!settings.isScaladoc) && (settings.verbose)) loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
     NoSymbol.newStubSymbol(name.toTypeName, msg)
   }
 
@@ -471,8 +469,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     case ex: FatalError =>
       // getClassByName can throw a MissingRequirementError (which extends FatalError)
       // definitions.getMember can throw a FatalError, for example in pos/t5165b
-      if (settings.debug)
-        ex.printStackTrace()
       stubClassSymbol(newTypeName(name))
   }
 
@@ -600,7 +596,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         val enumClass = sym.owner.linkedClassOfClass
         enumClass match {
           case NoSymbol =>
-            devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
           case linked =>
             if (!linked.isSealed)
               // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also JavaParsers.
@@ -701,16 +696,13 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
                 }
                 accept('>')
                 assert(xs.length > 0, tp)
-                debuglogResult("new existential")(newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList)))
+                newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList))
               }
               // isMonomorphicType is false if the info is incomplete, as it usually is here
               // so have to check unsafeTypeParams.isEmpty before worrying about raw type case below,
               // or we'll create a boatload of needless existentials.
               else if (classSym.isMonomorphicType || classSym.unsafeTypeParams.isEmpty) tp
-              else debuglogResult(s"raw type from $classSym") {
-                // raw type - existentially quantify all type parameters
-                classExistentialType(pre, classSym)
-              }
+              else classExistentialType(pre, classSym) // raw type - existentially quantify all type parameters
             case tp =>
               assert(sig.charAt(index) != '<', s"sig=$sig, index=$index, tp=$tp")
               tp
@@ -908,10 +900,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           in.skip(attrLen)
 
         case tpnme.CodeATTR =>
-          if (sym.owner.isInterface) {
+          if (sym.owner.isInterface)
             sym setFlag JAVA_DEFAULTMETHOD
-            debuglog(s"$sym in ${sym.owner} is a java8+ default method.")
-          }
           in.skip(attrLen)
 
         case _ =>
@@ -1007,7 +997,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
       // and that should never be swallowed silently.
       loaders.warning(NoPosition, s"Caught: $ex while parsing annotations in ${file}", WarningCategory.Other, clazz.fullNameString)
-      if (settings.debug) ex.printStackTrace()
       None // ignore malformed annotations
   }
 
@@ -1314,10 +1303,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     def entries              = inners.values
 
     def add(entry: InnerClassEntry): Unit = {
-      devWarningIf(inners contains entry.externalName) {
-        val existing = inners(entry.externalName)
-        s"Overwriting inner class entry! Was $existing, now $entry"
-      }
       inners(entry.externalName) = entry
     }
     def innerSymbol(externalName: String): Symbol = this getEntry externalName match {
@@ -1419,10 +1404,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       if (constant != null) {
         val c1 = convertTo(constant, info.resultType)
         if (c1 ne null) sym.setInfo(ConstantType(c1))
-        else {
-          devWarning(s"failure to convert $constant to ${info.resultType}")
-          sym.setInfo(info)
-        }
+        else sym.setInfo(info)
       } else {
         sym.setInfo(if (sym.isMethod && jflags.isVarargs) arrayToRepeated(info) else info)
       }
@@ -1452,11 +1434,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
                 param.name = paramNames.names(i).name.toTermName.encode
                 param.resetFlag(SYNTHETIC)
               }
-          }
-          // there's not anything we can do, but it's slightly worrisome
-          devWarningIf(!sameLength(paramNamesNoOuter.toList, params)) {
-            sm"""MethodParameters length mismatch while parsing $sym:
-                |  rawInfo.params: ${sym.rawInfo.params}"""
           }
         }
       }

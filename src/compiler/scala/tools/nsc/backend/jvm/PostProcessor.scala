@@ -75,7 +75,6 @@ abstract class PostProcessor extends PerRunInit {
       case ex: InterruptedException => throw ex
       case ex: Throwable =>
         // TODO fail fast rather than continuing to write the rest of the class files?
-        if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
         backendReporting.error(NoPosition, s"Error while emitting $internalName\n${ex.getMessage}")
         null
     }

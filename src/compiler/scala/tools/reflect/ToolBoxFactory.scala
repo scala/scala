@@ -53,8 +53,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) {
       import definitions._
 
-      private val trace = scala.tools.nsc.util.trace when settings.debug.value
-
       private var wrapCount = 0
 
       private final val wrapperMethodName = "wrapper"
@@ -184,13 +182,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def typecheck(expr: Tree, pt: Type, mode: scala.reflect.internal.Mode, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
         transformDuringTyper(expr, mode, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
-            trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+            showAttributed(expr, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value)
             currentTyper.silent(_.typed(expr, mode, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
-                trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
+                showAttributed(result, true, true, settings.Yshowsymkinds.value)
                 result
               case error: analyzer.SilentTypeError =>
-                trace("failed: ")(error.err.errMsg)
+                error.err.errMsg
                 if (!silent) throw ToolBoxError("reflective typecheck has failed: %s".format(error.err.errMsg))
                 EmptyTree
             }
@@ -199,7 +197,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree =
         transformDuringTyper(tree, TERMmode, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
-            trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+            showAttributed(pt, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value)
             analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
@@ -245,7 +243,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             case Some(sym) if sym != null && sym != NoSymbol => sym.owner
             case _ => NoSymbol
           }
-          trace("wrapping ")(defOwner(expr) -> meth)
+          defOwner(expr) -> meth
           val methdef = DefDef(meth, expr.changeOwner(defOwner(expr), meth))
 
           val moduledef = ModuleDef(
@@ -257,10 +255,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   List(),
                   List(methdef),
                   NoPosition))
-          trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+          showAttributed(moduledef, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value)
 
           val cleanedUp = resetAttrs(moduledef)
-          trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+          showAttributed(cleanedUp, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value)
           cleanedUp.asInstanceOf[ModuleDef]
         }
 
@@ -268,7 +266,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val msym = wrapInPackageAndCompile(mdef.name, mdef)
 
         val className = msym.fullName
-        if (settings.debug) println("generated: "+className)
         def moduleFileName(className: String) = className + "$"
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get

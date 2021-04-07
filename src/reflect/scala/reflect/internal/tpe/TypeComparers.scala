@@ -65,11 +65,7 @@ trait TypeComparers {
   }
 
   private def isSubPre(pre1: Type, pre2: Type, sym: Symbol) =
-    if ((pre1 ne pre2) && (pre1 ne NoPrefix) && (pre2 ne NoPrefix) && pre1 <:< pre2) {
-      if (settings.debug) println(s"new isSubPre $sym: $pre1 <:< $pre2")
-      true
-    } else
-      false
+    (pre1 ne pre2) && (pre1 ne NoPrefix) && (pre2 ne NoPrefix) && pre1 <:< pre2
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean = (
     if (sym1 eq sym2)
@@ -387,7 +383,6 @@ trait TypeComparers {
 
     def isSubHKTypeVar(tp1: Type, tp2: Type) = (tp1, tp2) match {
       case (tv1: TypeVar, tv2: TypeVar) =>
-        devWarning(sm"Unexpected code path: testing two type variables for subtype relation: $tv1 <:< $tv2")
         tv1 eq tv2
       case (_, tv2: TypeVar) =>
         val ntp1 = tp1.normalize
@@ -421,8 +416,6 @@ trait TypeComparers {
           isSubType(et1.skolemizeExistential, tp2, depth)
         } finally { skolemizationLevel -= 1 }
       case _                                                                => // @assume !(both .isHigherKinded) thus cannot be subtypes
-        def tp_s(tp: Type): String = f"$tp%-20s ${util.shortClassOfInstance(tp)}%s"
-        devWarning(s"HK subtype check on $tp1 and $tp2, but both don't normalize to polytypes:\n  tp1=${tp_s(ntp1)}\n  tp2=${tp_s(ntp2)}")
         false
     }
 

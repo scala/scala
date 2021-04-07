@@ -3,7 +3,6 @@ import scala.reflect.macros.blackbox.Context
 
 object Impls {
   def foreach(c: Context)(f: c.Expr[Int => Unit]): c.Expr[Unit] = {
-    // todo. read the compiler config and print if -Ydebug is set
     //println("macro-expand, _this = "+ _this)
     object utils extends Utils { val context: c.type = c }
     import utils._
@@ -32,8 +31,6 @@ object Impls {
             ValDef(Modifiers(MUTABLE), iname, TypeTree(), lo),
             ValDef(Modifiers(), hname, TypeTree(), hi)),
           makeWhile(labelname, cond, body))
-        // todo. read the compiler config and print if -Ydebug is set
-        //tools.nsc.util.trace("generated: ")(generated)
         generated
       case _ =>
         Apply(

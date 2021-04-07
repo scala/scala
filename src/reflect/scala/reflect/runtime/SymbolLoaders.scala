@@ -29,7 +29,6 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   class TopClassCompleter(clazz: ClassSymbol, module: ModuleSymbol) extends SymLoader with FlagAssigningCompleter {
     markFlagsCompleted(clazz, module)(mask = ~TopLevelPickledFlags)
     override def complete(sym: Symbol) = {
-      debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass, "Must be class or module")
       slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
@@ -172,10 +171,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
                 enterIfNew(module)
                 (clazz, module)
               }
-            debugInfo(s"created $module/${module.moduleClass} in $pkgClass")
             lookupEntry(name)
           case none =>
-            debugInfo("*** not found : "+path)
             negatives += name
             null
         }

@@ -279,26 +279,16 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
    */
   def registerTopLevelSym(sym: Symbol): Unit = {}
 
-// ------------------ Debugging -------------------------------------
-
-  @inline final def ifDebug(body: => Unit): Unit = {
-    if (settings.debug)
-      body
-  }
-
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
    *  logging mechanism. !!! is prefixed to all messages issued via this route
    *  to make them visually distinct.
    */
-  @inline final override def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
+  @inline final def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
   @inline final def devWarning(pos: Position, msg: => String): Unit = {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
-    if (isDeveloper)
-      runReporting.warning(pos, "!!! " + msg, WarningCategory.OtherDebug, site = "")
-    else
-      log(s"!!!$pos_s $msg") // such warnings always at least logged
+    log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
 
   def logError(msg: String, t: Throwable): Unit = ()
@@ -312,7 +302,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       inform(s"[log $globalPhase$atPhaseStackMessage] $msg")
   }
 
-  @inline final override def debuglog(msg: => String): Unit = {
+  @deprecated("Removed", "1.0.0")
+  @inline final def debuglog(msg: => String): Unit = {
     if (settings.debug)
       log(msg)
   }
@@ -395,7 +386,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     phaseWithId(id) = this
 
     def run(): Unit = {
-      echoPhaseSummary(this)
       val units = currentRun.units
       while (units.hasNext)
         applyPhase(units.next())
@@ -416,9 +406,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def beforeUnit(unit: CompilationUnit): Unit = {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
-
-      if (settings.debug && (settings.verbose || currentRun.size < 5))
-        inform("[running phase " + name + " on " + unit + "]")
     }
 
     @deprecated("Unused, inlined in applyPhase", since="2.13")
@@ -713,7 +700,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   protected def computePhaseDescriptors: List[SubComponent] = {
     /* Allow phases to opt out of the phase assembly. */
     def cullPhases(phases: List[SubComponent]) = {
-      val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
+      val enabled = phases filter (_.enabled)
       def isEnabled(q: String) = enabled exists (_.phaseName == q)
       val (satisfied, unhappy) = enabled partition (_.requires forall isEnabled)
       unhappy foreach (u => globalError(s"Phase '${u.phaseName}' requires: ${u.requires filterNot isEnabled}"))
@@ -744,7 +731,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   }
 
   /** A description of the phases that will run in this configuration, or all if -Vdebug. */
-  def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.debug, phasesDescMap)
+  def phaseDescriptions: String = phaseHelp("description", phasesDescMap)
 
   /** Summary of the per-phase values of nextFlags and newFlags, shown under -Vphases -Vdebug. */
   def phaseFlagDescriptions: String = {
@@ -755,7 +742,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
       else fstr1 + fstr2
     }
-    phaseHelp("new flags", elliptically = !settings.debug, fmt)
+    phaseHelp("new flags", fmt)
   }
 
   /** Emit a verbose phase table.
@@ -767,13 +754,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
    *  @param elliptically whether to truncate the description with an ellipsis (...)
    *  @param describe how to describe a component
    */
-  private def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String): String = {
+  private def phaseHelp(title: String, describe: SubComponent => String): String = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
     val maxName = phaseNames.map(_.length).max
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
-    val fmt     = if (settings.verbose || !elliptically) s"%${maxName}s  %2s  %s%n"
+    val fmt     = if (settings.verbose) s"%${maxName}s  %2s  %s%n"
                   else s"%${width}.${width}s  %2s  %.${maxDesc}s%n"
 
     val line1 = fmt.format("phase name", "id", title)
@@ -810,8 +797,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       else p.ownPhase.id.toString
     )
     def mkText(p: SubComponent) = {
-      val (name, text) = if (elliptically) (dotfmt(p.phaseName), dotfmt(describe(p)))
-                         else (p.phaseName, describe(p))
+      val (name, text) = (dotfmt(p.phaseName), dotfmt(describe(p)))
       fmt.format(name, idOf(p), text)
     }
     (line1 :: line2 :: (phaseDescriptors map mkText)).mkString
@@ -943,8 +929,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   private def mergeNewEntries(packageClass: ClassSymbol, fullPackageName: String,
                               oldEntries: ClassPath, newEntries: ClassPath, fullClasspath: ClassPath,
                               invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]): Unit = {
-    ifDebug(informProgress(s"syncing $packageClass, $oldEntries -> $newEntries"))
-
     def packageExists(cp: ClassPath): Boolean = {
       val (parent, _) = PackageNameUtils.separatePkgAndClassNames(fullPackageName)
       cp.packages(parent).exists(_.name == fullPackageName)
@@ -1110,12 +1094,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   /** The id of the currently active run
    */
   override def currentRunId = curRunId
-
-  def echoPhaseSummary(ph: Phase) = {
-    /* Only output a summary message under debug if we aren't echoing each file. */
-    if (settings.debug && !(settings.verbose || currentRun.size < 5))
-      inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
-  }
 
   def newSourceFile(code: String, filename: String = "<console>") =
     new BatchSourceFile(filename, code)

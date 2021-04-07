@@ -228,10 +228,7 @@ abstract class TreeInfo {
       }
       def isWarnableSymbol = {
         val sym = tree.symbol
-        (sym == null) || !(sym.isModule || sym.isLazy || definitions.isByNameParamType(sym.tpe_*)) || {
-          debuglog("'Pure' but side-effecting expression in statement position: " + tree)
-          false
-        }
+        (sym == null) || !(sym.isModule || sym.isLazy || definitions.isByNameParamType(sym.tpe_*))
       }
 
       (    !tree.isErrorTyped
@@ -248,13 +245,7 @@ abstract class TreeInfo {
   def foreachMethodParamAndArg(params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => Unit): Boolean = {
     val plen   = params.length
     val alen   = args.length
-    def fail() = {
-      global.devWarning(
-        s"""|Mismatch trying to zip method parameters and argument list:
-            |  params = $params
-            |    args = $args""".stripMargin)
-      false
-    }
+    def fail() = false
 
     if (plen == alen) foreach2(params, args)(f)
     else if (params.isEmpty) return fail()

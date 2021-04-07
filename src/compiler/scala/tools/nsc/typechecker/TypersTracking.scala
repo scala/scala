@@ -28,16 +28,6 @@ trait TypersTracking {
   var lastTreeToTyper: Tree = EmptyTree
 
   def fullSiteString(context: Context): String = {
-    def owner_long_s = (
-      if (settings.debug.value) {
-        def flags_s = context.owner.debugFlagString match {
-          case "" => ""
-          case s  => " with flags " + inLightMagenta(s)
-        }
-        s", a ${context.owner.shortSymbolClass}$flags_s"
-      }
-      else ""
-    )
     def marker = if (context.bufferErrors) "silent" else "site"
     def undet_s = context.undetparams match {
       case Nil => ""
@@ -50,7 +40,7 @@ trait TypersTracking {
       else inLightRed("implicits disabled")
     )
 
-    s"($marker$undet_s: ${context.siteString}$owner_long_s) $implicits_s"
+    s"($marker$undet_s: ${context.siteString}) $implicits_s"
   }
 
   object typingStack {
@@ -70,7 +60,7 @@ trait TypersTracking {
 
     private def truncAndOneLine(s: String): String = {
       val s1 = s.replaceAll("\\s+", " ")
-      if (s1.length < 60 || settings.debug.value) s1 else s1.take(57) + "..."
+      if (s1.length < 60) s1 else s1.take(57) + "..."
     }
 
     private class Frame(val tree: Tree) { }
@@ -160,7 +150,7 @@ trait TypersTracking {
   // Some trees which are typed with mind-numbing frequency and
   // which add nothing by being printed. Did () type to Unit? Let's
   // gamble on yes.
-  def printingOk(t: Tree) = printTypings && (settings.debug.value || !noPrint(t))
+  def printingOk(t: Tree) = printTypings && !noPrint(t)
   def noPrintTyping(t: Tree) = (t.tpe ne null) || !printingOk(t)
   def noPrintAdapt(tree1: Tree, tree2: Tree) = !printingOk(tree1) || (
        (tree1.tpe == tree2.tpe)

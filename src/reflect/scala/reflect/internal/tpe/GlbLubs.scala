@@ -396,7 +396,7 @@ private[internal] trait GlbLubs {
             // parameters are not handled correctly.
             val ok = ts forall { t =>
               isSubType(t, lubRefined, depth.decr) || {
-                if (settings.debug || printLubs) {
+                if (printLubs) {
                   Console.println(
                     "Malformed lub: " + lubRefined + "\n" +
                       "Argument " + t + " does not conform.  Falling back to " + lubBase
@@ -574,10 +574,8 @@ private[internal] trait GlbLubs {
           else NothingTpe
       }
     }
-    // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nestedLubCount)
     glb0(ts)
-    // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
   }
 
   /** All types in list must be polytypes with type parameter lists of

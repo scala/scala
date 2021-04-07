@@ -130,11 +130,7 @@ abstract class TreeCheckers extends Analyzer {
       // new symbols
       if (newSyms.nonEmpty) {
         informFn("" + newSyms.size + " new symbols.")
-        val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
-
         newSyms.clear()
-        if (toPrint != "")
-          informFn(toPrint)
       }
 
       // moved symbols
@@ -177,7 +173,7 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
   def informFn(msg: Any): Unit = {
-    if (settings.verbose || settings.debug)
+    if (settings.verbose)
       println("[check: %s] %s".format(phase.prev, msg))
   }
 

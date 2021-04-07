@@ -90,9 +90,6 @@ trait Checkable {
     from.baseClasses foreach { bc => if (to.baseClasses.contains(bc)){
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
-      devWarningIf(!sameLength(tps1, tps2)) {
-        s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)"
-      }
 
       foreach2(tps1, tps2)(_ =:= _)
       // Alternate, variance respecting formulation causes
@@ -188,7 +185,6 @@ trait Checkable {
       else if (P3) RuntimeCheckable
       else if (uncheckableType == NoType) {
         // Avoid warning (except ourselves) if we can't pinpoint the uncheckable type
-        debuglog("Checkability checker says 'Uncheckable', but uncheckable type cannot be found:\n" + summaryString)
         CheckabilityError
       }
       else Uncheckable

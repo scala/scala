@@ -82,9 +82,9 @@ object ScalaOptionParser {
   }
 
   // TODO retrieve these data programmatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
-  private def booleanSettingNames = List("-X", "-Xasync", "-Xcheckinit", "-Xdev", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
+  private def booleanSettingNames = List("-X", "-Xasync", "-Xcheckinit", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
     "-Xno-forwarders", "-Xno-patmat-analysis", "-Xnon-strict-patmat-analysis", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xverify", "-Y",
-    "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
+    "-Ybreak-cycles", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
     "-Yide-debug",
     "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
     "-Yno-completion", "-Yno-generic-signatures", "-Yno-imports", "-Yno-predef", "-Ymacro-annotations",
@@ -93,7 +93,7 @@ object ScalaOptionParser {
     "-Yrepl-sync", "-Yshow-member-pos", "-Yshow-symkinds", "-Yshow-symowners", "-Yshow-syms", "-Yshow-trees", "-Yshow-trees-compact", "-Yshow-trees-stringified", "-Ytyper-debug",
     "-Ywarn-dead-code", "-Ywarn-numeric-widen", "-Ywarn-value-discard", "-Ywarn-extra-implicit", "-Ywarn-self-implicit",
     "-V",
-    "-Vclasspath", "-Vdebug", "-Vdebug-tasty", "-Vdoc", "-Vfree-terms", "-Vfree-types",
+    "-Vclasspath", "-Vdebug-tasty", "-Vdoc", "-Vfree-terms", "-Vfree-types",
     "-Vhot-statistics", "-Vide", "-Vimplicit-conversions", "-Vimplicits", "-Vissue",
     "-Vmacro", "-Vmacro-lite", "-Vpatmat", "-Vphases", "-Vpos", "-Vprint-pos",
     "-Vprint-types", "-Vquasiquote", "-Vreflective-calls", "-Vreify",

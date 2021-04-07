@@ -58,15 +58,6 @@ trait StructuredTypeStrings extends DestructureTypes {
     if (try1.length < threshold) try1
     else block(level, grouping)(name, nodes)
   }
-  private def shortClass(x: Any) = {
-    if (settings.debug) {
-      val name   = (x.getClass.getName split '.').last
-      val str    = if (TypeStrings.isAnonClass(x.getClass)) name else (name split '$').last
-
-      " // " + str
-    }
-    else ""
-  }
 
   sealed abstract class TypeNode {
     def grouping: Grouping
@@ -96,8 +87,7 @@ trait StructuredTypeStrings extends DestructureTypes {
   case class TypeAtom[T](atom: T) extends TypeNode {
     def grouping = NoGrouping
     def nodes = Nil
-    override protected def mkPrefix(showLabel: Boolean) =
-      super.mkPrefix(showLabel) + atom + shortClass(atom)
+    override protected def mkPrefix(showLabel: Boolean) = super.mkPrefix(showLabel) + atom
   }
   case class TypeProduct(nodes: List[TypeNode]) extends TypeNode {
     def grouping: Grouping = ProductGrouping

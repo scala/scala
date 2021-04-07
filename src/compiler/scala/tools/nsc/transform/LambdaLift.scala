@@ -171,7 +171,6 @@ abstract class LambdaLift extends InfoTransform {
     private def markFree(sym: Symbol, enclosure: Symbol): Boolean = {
 //      println(s"mark free: ${sym.fullLocationString} marked free in $enclosure")
       (enclosure == logicallyEnclosingMember(sym.owner)) || {
-        debuglog("%s != %s".format(enclosure, logicallyEnclosingMember(sym.owner)))
         if (enclosure.isPackageClass || !markFree(sym, logicallyEnclosingMember(enclosure.skipConstructor.owner))) false
         else {
           val ss = symSet(free, enclosure)
@@ -179,7 +178,6 @@ abstract class LambdaLift extends InfoTransform {
             ss += sym
             renamable += sym
             changedFreeVars = true
-            debuglog(s"$sym is free in $enclosure")
             if (sym.isVariable && !sym.hasStableFlag) // write-once synthetic case vars are marked STABLE
               sym setFlag CAPTURED
           }
@@ -249,11 +247,7 @@ abstract class LambdaLift extends InfoTransform {
           markFree(fv, caller)
       } while (changedFreeVars)
 
-      def renameSym(sym: Symbol): Unit = {
-        val originalName = sym.name
-        sym setName newName(sym)
-        debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
-      }
+      def renameSym(sym: Symbol): Unit = sym setName newName(sym)
 
       def newName(sym: Symbol): Name = {
         val originalName = sym.name
@@ -291,7 +285,6 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              debuglog(s"new proxy ${proxyName} in ${owner.fullLocationString}")
               val proxy =
                 if (owner.isTrait) {
                   val accessorFlags = newFlags.toLong | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS
@@ -317,17 +310,11 @@ abstract class LambdaLift extends InfoTransform {
       def searchIn(enclosure: Symbol): Symbol = {
         if (enclosure eq NoSymbol)
           throw new IllegalArgumentException("Could not find proxy for "+ sym.defString +" in "+ sym.ownerChain +" (currentOwner= "+ currentOwner +" )")
-        debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + logicallyEnclosingMember(enclosure))
 
         val proxyName = proxyNames.getOrElse(sym, sym.name)
         val ps = (proxies get logicallyEnclosingMember(enclosure)).toList.flatten find (_.name == proxyName)
         ps getOrElse searchIn(enclosure.skipConstructor.owner)
       }
-      debuglog("proxy %s from %s has logical enclosure %s".format(
-        sym.debugLocationString,
-        currentOwner.debugLocationString,
-        logicallyEnclosingMember(sym.owner).debugLocationString)
-      )
 
       if (isSameOwnerEnclosure(sym)) sym
       else searchIn(currentOwner)
@@ -460,7 +447,6 @@ abstract class LambdaLift extends InfoTransform {
 */
     private def liftDef(tree: Tree): Tree = {
       val sym = tree.symbol
-      val oldOwner = sym.owner
       if (sym.isMethod && isUnderConstruction(sym.owner.owner)) { // # bug 1909
          if (sym.isModule) { // Yes, it can be a module and a method, see comments on `isModuleNotMethod`!
            // TODO promote to an implementation restriction if we can reason that this *always* leads to VerifyError.
@@ -476,7 +462,6 @@ abstract class LambdaLift extends InfoTransform {
       // TODO: this modifies the ClassInfotype of the enclosing class, which is associated with another phase (explicitouter).
       // This breaks type history: in a phase travel to before lambda lift, the ClassInfoType will contain lifted classes.
       sym.owner.info.decls enterUnique sym
-      debuglog("lifted: " + sym + " from " + oldOwner + " to " + sym.owner)
       EmptyTree
     }
 
