@@ -590,6 +590,9 @@ Evaluation of the block entails evaluation of its
 statement sequence, followed by an evaluation of the final expression
 ´e´, which defines the result of the block.
 
+A block expression `{´c_1´; ´\ldots´; ´c_n´; ´}` where ´s_1 , \ldots , s_n´ are
+case clauses forms a [pattern matching anonymous function](08-pattern-matching.html#pattern-matching-anonymous-functions).
+
 ###### Example
 Assuming a class `Ref[T](x: T)`, the block
 
