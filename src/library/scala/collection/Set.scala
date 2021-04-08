@@ -28,6 +28,37 @@ trait Set[A]
 
   def canEqual(that: Any) = true
 
+  /**
+   * Equality of sets is implemented using the lookup method [[contains]]. This method returns `true` if
+   *   - the argument `that` is a `Set`,
+   *   - the two sets have the same [[size]], and
+   *   - for every `element` this set, `other.contains(element) == true`.
+   *
+   * The implementation of `equals` checks the [[canEqual]] method, so subclasses of `Set` can narrow down the equality
+   * to specific set types. The `Set` implementations in the standard library can all be compared, their `canEqual`
+   * methods return `true`.
+   *
+   * Note: The `equals` method only respects the equality laws (symmetry, transitivity) if the two sets use the same
+   * element equivalence function in their lookup operation. For example, the element equivalence operation in a
+   * [[scala.collection.immutable.TreeSet]] is defined by its ordering. Comparing a `TreeSet` with a `HashSet` leads
+   * to unexpected results if `ordering.equiv(e1, e2)` (used for lookup in `TreeSet`) is different from `e1 == e2`
+   * (used for lookup in `HashSet`).
+   *
+   * {{{
+   *   scala> import scala.collection.immutable._
+   *   scala> val ord: Ordering[String] = _ compareToIgnoreCase _
+   *
+   *   scala> TreeSet("A")(ord) == HashSet("a")
+   *   val res0: Boolean = false
+   *
+   *   scala> HashSet("a") == TreeSet("A")(ord)
+   *   val res1: Boolean = true
+   * }}}
+   *
+   *
+   * @param that The set to which this set is compared
+   * @return `true` if the two sets are equal according to the description
+   */
   override def equals(that: Any): Boolean =
     (this eq that.asInstanceOf[AnyRef]) || (that match {
       case set: Set[A] if set.canEqual(this) =>

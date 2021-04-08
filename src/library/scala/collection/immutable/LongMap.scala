@@ -63,9 +63,9 @@ object LongMap {
   private[immutable] case object Nil extends LongMap[Nothing] {
     // Important, don't remove this! See IntMap for explanation.
     override def equals(that : Any) = that match {
-      case (that: AnyRef) if (this eq that) => true
-      case (that: LongMap[_]) => false // The only empty LongMaps are eq Nil
-      case that => super.equals(that)
+      case _: this.type  => true
+      case _: LongMap[_] => false // The only empty LongMaps are eq Nil
+      case _             => super.equals(that)
     }
   }
 

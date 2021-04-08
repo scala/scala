@@ -29,6 +29,37 @@ trait Map[K, +V]
 
   def canEqual(that: Any): Boolean = true
 
+  /**
+   * Equality of maps is implemented using the lookup method [[get]]. This method returns `true` if
+   *   - the argument `o` is a `Map`,
+   *   - the two maps have the same [[size]], and
+   *   - for every `(key, value)` pair in this map, `other.get(key) == Some(value)`.
+   *
+   * The implementation of `equals` checks the [[canEqual]] method, so subclasses of `Map` can narrow down the equality
+   * to specific map types. The `Map` implementations in the standard library can all be compared, their `canEqual`
+   * methods return `true`.
+   *
+   * Note: The `equals` method only respects the equality laws (symmetry, transitivity) if the two maps use the same
+   * key equivalence function in their lookup operation. For example, the key equivalence operation in a
+   * [[scala.collection.immutable.TreeMap]] is defined by its ordering. Comparing a `TreeMap` with a `HashMap` leads
+   * to unexpected results if `ordering.equiv(k1, k2)` (used for lookup in `TreeMap`) is different from `k1 == k2`
+   * (used for lookup in `HashMap`).
+   *
+   * {{{
+   *   scala> import scala.collection.immutable._
+   *   scala> val ord: Ordering[String] = _ compareToIgnoreCase _
+   *
+   *   scala> TreeMap("A" -> 1)(ord) == HashMap("a" -> 1)
+   *   val res0: Boolean = false
+   *
+   *   scala> HashMap("a" -> 1) == TreeMap("A" -> 1)(ord)
+   *   val res1: Boolean = true
+   * }}}
+   *
+   *
+   * @param o The map to which this map is compared
+   * @return `true` if the two maps are equal according to the description
+   */
   override def equals(o: Any): Boolean =
     (this eq o.asInstanceOf[AnyRef]) || (o match {
       case map: Map[K, _] if map.canEqual(this) =>
