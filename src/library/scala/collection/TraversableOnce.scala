@@ -224,7 +224,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     //avoid the LazyRef as we don't have an @eager object
     class reducer extends AbstractFunction1[A, Unit] {
       var first = true
-      var acc: B = 0.asInstanceOf[B]
+      var acc: B = null.asInstanceOf[B]
 
       override def apply(x: A): Unit =
         if (first) {
