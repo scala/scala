@@ -137,7 +137,7 @@ trait Types {
      *  Unlike `members` this method doesn't returns inherited members.
      *
      *  Members in the returned scope might appear in arbitrary order.
-     *  Use `declarations.sorted` to get an ordered list of members.
+     *  Use `decls.sorted` to get an ordered list of members.
      */
     def decls: MemberScope
 
@@ -150,7 +150,7 @@ trait Types {
      *  Unlike `declarations` this method also returns inherited members.
      *
      *  Members in the returned scope might appear in arbitrary order.
-     *  Use `declarations.sorted` to get an ordered list of members.
+     *  Use `members.sorted` to get an ordered list of members.
      */
     def members: MemberScope
 
