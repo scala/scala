@@ -469,8 +469,8 @@ trait Scanners extends ScannersCommon {
           val msg = """|Line starts with an operator that in future
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
-                       |add an explicit `;`, add an empty line, or remove spaces after the operator.""".stripMargin
-          deprecationWarning(msg, "2.13.2")
+                       |add an explicit `;`, add an empty line, or remove spaces after the operator."""
+          deprecationWarning(msg.stripMargin, "2.13.2")
           insertNL(NEWLINE)
         }
       }
