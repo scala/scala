@@ -448,11 +448,11 @@ trait Scanners extends ScannersCommon {
        */
       def isLeadingInfixOperator =
         allowLeadingInfixOperators &&
-        (token == BACKQUOTED_IDENT ||
-         token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
-        (ch == ' ') && lookingAhead {
+        (token == BACKQUOTED_IDENT || token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
+        ch <= ' ' && lookingAhead {
           // force a NEWLINE after current token if it is on its own line
-          isSimpleExprIntroToken(token)
+          isSimpleExprIntroToken(token) ||
+          token == NEWLINE && { nextToken() ; isSimpleExprIntroToken(token) }
         }
 
       /* Insert NEWLINE or NEWLINES if
