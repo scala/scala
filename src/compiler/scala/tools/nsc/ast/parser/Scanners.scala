@@ -442,6 +442,23 @@ trait Scanners extends ScannersCommon {
         token = nl
       }
 
+      /* A leading infix operator must be followed by a lexically suitable expression.
+       * Usually any simple expr will do. However, if the op is backtick style, make
+       * sure it is not followed by a binary op, which suggests the backticked identifier
+       * is a reference.
+       */
+      def followedByInfixRHS: Boolean = {
+        val current = token
+        def isOp: Boolean = token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))
+        def isCandidateInfixRHS: Boolean =
+          isSimpleExprIntroToken(token) &&
+          (current != BACKQUOTED_IDENT || !isOp || nme.raw.isUnary(name))
+        lookingAhead {
+          isCandidateInfixRHS ||
+          token == NEWLINE && { nextToken() ; isCandidateInfixRHS }
+        }
+      }
+
       /* A leading symbolic or backquoted identifier is treated as an infix operator
        * if it is followed by at least one ' ' and a token on the same line
        * that can start an expression.
@@ -449,11 +466,7 @@ trait Scanners extends ScannersCommon {
       def isLeadingInfixOperator =
         allowLeadingInfixOperators &&
         (token == BACKQUOTED_IDENT || token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
-        ch <= ' ' && lookingAhead {
-          // force a NEWLINE after current token if it is on its own line
-          isSimpleExprIntroToken(token) ||
-          token == NEWLINE && { nextToken() ; isSimpleExprIntroToken(token) }
-        }
+        ch <= ' ' && followedByInfixRHS
 
       /* Insert NEWLINE or NEWLINES if
        * - we are after a newline
