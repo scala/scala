@@ -130,7 +130,13 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
-    case Constant(mt: Type) => methodBTypeFromMethodType(transformedType(mt), isConstructor = false).toASMType
+    case Constant(mt: Type) =>
+      transformedType(mt) match {
+        case mt1: MethodType =>
+          methodBTypeFromMethodType(mt1, isConstructor = false).toASMType
+        case t =>
+          typeToBType(t).toASMType
+      }
     case c @ Constant(sym: Symbol) if sym.owner.isJavaDefined && sym.isStaticMember => staticHandleFromSymbol(sym)
     case c @ Constant(sym: Symbol) => handleFromMethodSymbol(sym)
     case c @ Constant(value: String) => value
