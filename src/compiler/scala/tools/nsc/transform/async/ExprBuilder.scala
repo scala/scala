@@ -444,25 +444,28 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       def onCompleteHandler: Tree = {
         val transformState = currentTransformState
         def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
-        val throww = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
+
         val asyncStatesInit = asyncStates.init // drop the terminal state which has no code.
-        val body =
+        val throww          = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
+        val body            =
           typed(Match(stateMemberRef,
-                 asyncStatesInit.map(_.mkHandlerCaseForState) ++
-                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
-                   throww))))
-
-        val body1 = compactStates(body.asInstanceOf[Match])
-
-        val stateMatch = Try(
-          body1,
-          List(
-            CaseDef(
-              Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(definitions.ThrowableClass))),
-              EmptyTree,
-              Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
-            )
-          ), EmptyTree)
+                      asyncStatesInit.map(_.mkHandlerCaseForState) ++
+                        List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
+                                     throww))))
+        val body1      = compactStates(body.asInstanceOf[Match])
+        val stateMatch = if (transformState.allowExceptionsToPropagate) {
+          body1
+        } else {
+          Try(
+            body1,
+            List(
+              CaseDef(
+                Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(definitions.ThrowableClass))),
+                EmptyTree,
+                Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
+                )
+              ), EmptyTree)
+        }
         typed(LabelDef(transformState.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(transformState.whileLabel), Nil))))
       }
 

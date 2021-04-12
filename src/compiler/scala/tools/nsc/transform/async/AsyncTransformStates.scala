@@ -24,6 +24,7 @@ trait AsyncTransformStates extends TypingTransformers {
   class AsyncTransformState(val awaitSymbol: Symbol,
                             val postAnfTransform: Block => Block,
                             val dotDiagram: (Symbol, Tree) => Option[String => Unit],
+                            val allowExceptionsToPropagate: Boolean,
                             val typingTransformer: TypingTransformer,
                             val exteralFsmSelfParam: Symbol,
                             val applyTrParam: Symbol,

@@ -27,7 +27,9 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
   val phaseName: String = "async"
   override def enabled: Boolean = settings.async
 
-  private final case class AsyncAttachment(awaitSymbol: Symbol, postAnfTransform: Block => Block, stateDiagram: ((Symbol, Tree) => Option[String => Unit])) extends PlainAttachment
+  private final case class AsyncAttachment(awaitSymbol: Symbol, postAnfTransform: Block => Block,
+                                           stateDiagram: ((Symbol, Tree) => Option[String => Unit]),
+                                           allowExceptionsToPropagate: Boolean) extends PlainAttachment
 
   // Optimization: avoid the transform altogether if there are no async blocks in a unit.
   private val sourceFilesToTransform = perRunCaches.newSet[SourceFile]()
@@ -45,7 +47,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     sourceFilesToTransform += pos.source
     val postAnfTransform = config.getOrElse("postAnfTransform", (x: Block) => x).asInstanceOf[Block => Block]
     val stateDiagram = config.getOrElse("stateDiagram", (sym: Symbol, tree: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
-    method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram))
+    val allowExceptionsToPropagate = config.contains("allowExceptionsToPropagate")
+    method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram, allowExceptionsToPropagate))
     // Wrap in `{ expr: Any }` to force value class boxing before calling `completeSuccess`, see test/async/run/value-class.scala
     deriveDefDef(method) { rhs =>
       Block(Apply(gen.mkAttributedRef(definitions.Predef_locally), rhs :: Nil), Literal(Constant(())))
@@ -126,8 +129,16 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
             val trSym = dd.vparamss.head.last.symbol
             val selfSym = if (dd.symbol.owner.isTerm) dd.vparamss.head.head.symbol else NoSymbol
             val saved = currentTransformState
-            currentTransformState = new AsyncTransformState(asyncAttachment.awaitSymbol,
-              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, selfSym, trSym, asyncBody.tpe, asyncNames)
+            currentTransformState = new AsyncTransformState(
+              asyncAttachment.awaitSymbol,
+              asyncAttachment.postAnfTransform,
+              asyncAttachment.stateDiagram,
+              asyncAttachment.allowExceptionsToPropagate,
+              this,
+              selfSym,
+              trSym,
+              asyncBody.tpe,
+              asyncNames)
             try {
               val (newRhs, liftedTrees) = asyncTransform(asyncBody)
               liftableMap(currentTransformState.stateMachineClass) = (dd.symbol, liftedTrees)
