@@ -40,6 +40,15 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     }
   }
   final class AsyncState(var stats: List[Tree], val state: Int, var nextStates: Array[Int], val isEmpty: Boolean) {
+    def hasNonTerminalNextState: Boolean = {
+      var i = 0
+      val ns = nextStates
+      while (i < ns.length) {
+        if (ns(i) != StateAssigner.Terminal) return true
+        i += 1
+      }
+      false
+    }
     def mkHandlerCaseForState: CaseDef = {
       replaceResidualJumpsWithStateTransitions.transform(CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))).asInstanceOf[CaseDef]
     }

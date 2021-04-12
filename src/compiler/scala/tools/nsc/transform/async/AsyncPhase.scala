@@ -182,7 +182,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       if (nullOut) {
         for ((state, (preNulls, postNulls)) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
           val asyncState = asyncBlock.asyncStates.find(_.state == state).get
-          if (asyncState.nextStates.nonEmpty)
+          if (asyncState.hasNonTerminalNextState)
             asyncState.insertNullAssignments(preNulls.iterator, postNulls.iterator)
         }
       }
