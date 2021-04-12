@@ -538,15 +538,19 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   private def resumeTree(awaitableResult: ValDef): Tree = {
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
     deriveValDef(awaitableResult) { _ =>
-      val temp = awaitableResult.symbol.newTermSymbol(nme.trGetResult).setInfo(definitions.ObjectTpe)
-      val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
-      typed(Block(
-        tempVd :: Nil,
+      if (currentTransformState.tryGetIsIdentity) {
+        tryyReference
+      } else {
+        val temp = awaitableResult.symbol.newTermSymbol(nme.trGetResult).setInfo(definitions.ObjectTpe)
+        val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
+        typed(Block(
+          tempVd :: Nil,
         If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Object_eq), gen.mkAttributedIdent(temp) :: Nil),
-          Return(literalUnit),
-          gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
-        )
-      ))
+             Return(literalUnit),
+             gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
+             )
+          ))
+      }
     }
   }
 

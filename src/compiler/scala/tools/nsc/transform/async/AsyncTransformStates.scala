@@ -51,6 +51,9 @@ trait AsyncTransformStates extends TypingTransformers {
     lazy val stateTryGet: Symbol = stateMachineMember(TermName("tryGet"))
     lazy val whileLabel: Symbol = applySym.newLabel(nme.WHILE_PREFIX).setInfo(MethodType(Nil, definitions.UnitTpe))
 
+    lazy val tryGetIsIdentity: Boolean = exitingTyper {
+      stateTryGet.info.finalResultType.termSymbol == stateTryGet.firstParam
+    }
     def stateMachineMember(name: TermName): Symbol =
       stateMachineClass.info.member(name)
     def memberRef(sym: Symbol): Tree =
