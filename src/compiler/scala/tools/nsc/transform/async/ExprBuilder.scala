@@ -535,7 +535,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   private def resumeTree(awaitableResult: ValDef): Tree = {
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
     deriveValDef(awaitableResult) { _ =>
-      val temp = awaitableResult.symbol.newTermSymbol(TermName("tryGetResult$async")).setInfo(definitions.ObjectTpe)
+      val temp = awaitableResult.symbol.newTermSymbol(nme.trGetResult).setInfo(definitions.ObjectTpe)
       val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
       typed(Block(
         tempVd :: Nil,
@@ -560,16 +560,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     protected def mkStateTree(nextState: Int): Tree = {
       val transformState = currentTransformState
       val callSetter = Apply(transformState.memberRef(transformState.stateSetter), Literal(Constant(nextState)) :: Nil)
-      val printStateUpdates = false
-      val tree = if (printStateUpdates) {
-        Block(
-          callSetter :: Nil,
-          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")),
-            currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter)), definitions.ObjectTpe) :: Nil)
-        )
-      }
-      else callSetter
-      typed(tree.updateAttachment(StateTransitionTree))
+      typed(callSetter.updateAttachment(StateTransitionTree))
     }
   }
 
