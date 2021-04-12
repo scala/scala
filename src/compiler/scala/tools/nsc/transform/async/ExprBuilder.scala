@@ -539,7 +539,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
       typed(Block(
         tempVd :: Nil,
-        If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Any_==), gen.mkAttributedIdent(temp) :: Nil),
+        If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Object_eq), gen.mkAttributedIdent(temp) :: Nil),
           Return(literalUnit),
           gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
         )
