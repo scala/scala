@@ -6,7 +6,7 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1
+noinline/Main_1.scala
 *L
 1#1,11:1
 *E

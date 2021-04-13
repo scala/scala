@@ -6,31 +6,33 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1
+inline-02/Main_1.scala
 + 2 Utils_1.scala
+inline-02/Utils_1.scala
++ 3 Utils_1.scala
 Utils_1$
-+ 3 Tools_1.scala
-Tools_1$
-+ 4 List$
++ 4 Tools_1.scala
+inline-02/Tools_1.scala
++ 5 List$
 scala/collection/immutable/List$
 *L
 1#1,27:1
 5#2:28
-11#2,12:29
+11#3,12:29
 5#2:41
-11#2,12:42
-3#3,2:54
-6#3:56
-648#4:57,2
+11#3,12:42
+3#4,2:54
+6#4:56
+648#5:57,2
 6#2:59,4
-3#3,2:63
-6#3:65
-3#3,2:66
-6#3:68
-3#3,2:69
-6#3:71
-3#3,2:72
-6#3:74
+3#4,2:63
+6#4:65
+3#4,2:66
+6#4:68
+3#4,2:69
+6#4:71
+3#4,2:72
+6#4:74
 *E
 SourceFile: "Utils_1.scala"
 SourceDebugExtension:
@@ -40,11 +42,11 @@ Scala
 *S Scala
 *F
 + 1 Utils_1.scala
-Utils_1$
+inline-02/Utils_1.scala
 + 2 List
 scala/collection/immutable/List
 + 3 Tools_1.scala
-Tools_1$
+inline-02/Tools_1.scala
 *L
 1#1,10:1
 245#2,9:11
@@ -63,7 +65,7 @@ Scala
 *S Scala
 *F
 + 1 Tools_1.scala
-Tools_1$
+inline-02/Tools_1.scala
 *L
 1#1,9:1
 *E

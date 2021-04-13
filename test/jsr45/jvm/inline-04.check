@@ -6,22 +6,20 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1$
+inline-04/Main_1.scala
 + 2 Utils_1.scala
-Utils2$
+inline-04/Utils_1.scala
 + 3 BoxesRunTime
 scala/runtime/BoxesRunTime
 + 4 Predef$
 scala/Predef$
-+ 5 Utils_1.scala
-Utils1$
 *L
 1#1,14:1
 12#2:15,2
 63#3:17
 427#4:18
-3#5,2:19
-6#5:21
+3#2,2:19
+6#2:21
 14#2,2:22
 17#2:24
 *E
@@ -33,7 +31,7 @@ Scala
 *S Scala
 *F
 + 1 Utils_1.scala
-Utils1$
+inline-04/Utils_1.scala
 *L
 1#1,20:1
 *E
@@ -45,7 +43,7 @@ Scala
 *S Scala
 *F
 + 1 Utils_1.scala
-Utils2$
+inline-04/Utils_1.scala
 *L
 1#1,20:1
 *E

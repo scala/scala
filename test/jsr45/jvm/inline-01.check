@@ -6,13 +6,13 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1
+inline-01/Main_1.scala
 + 2 List$
 scala/collection/immutable/List$
 + 3 List
 scala/collection/immutable/List
 + 4 Utils_1.scala
-Utils_1$
+inline-01/Utils_1.scala
 *L
 1#1,12:1
 648#2:13
@@ -32,7 +32,7 @@ Scala
 *S Scala
 *F
 + 1 Utils_1.scala
-Utils_1$
+inline-01/Utils_1.scala
 *L
 1#1,9:1
 *E

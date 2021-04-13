@@ -6,11 +6,11 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1$
+inline-05/Main_1.scala
 + 2 Utils1_1.scala
+inline-05/Utils1_1.scala
++ 3 Utils1_1.scala
 Utils1_1$
-+ 3 Utils2_1.scala
-Utils2_1$
 + 4 BoxesRunTime
 scala/runtime/BoxesRunTime
 + 5 Predef$
@@ -20,11 +20,10 @@ java/lang/Integer
 *L
 1#1,11:1
 2#2,3:12
-3#3:15
-9#2,2:16
-63#4:18
-427#5:19
-615#6:20
+8#3,2:15
+63#4:17
+427#5:18
+615#6:19
 *E
 SourceFile: "Utils1_1.scala"
 SourceDebugExtension:
@@ -34,17 +33,18 @@ Scala
 *S Scala
 *F
 + 1 Utils1_1.scala
-Utils1_1$
+inline-05/Utils1_1.scala
 + 2 Utils2_1.scala
+inline-05/Utils2_1.scala
++ 3 Utils2_1.scala
 Utils2_1$
-+ 3 Integer
++ 4 Integer
 java/lang/Integer
 *L
 1#1,7:1
 3#2:8
-7#2:9
-6#2:10
-615#3:11
+6#3:9
+615#4:10
 *E
 SourceFile: "Utils2_1.scala"
 SourceDebugExtension:
@@ -54,13 +54,10 @@ Scala
 *S Scala
 *F
 + 1 Utils2_1.scala
-Utils2_1$
+inline-05/Utils2_1.scala
 + 2 Predef$
 scala/Predef$
-+ 3 BoxesRunTime
-scala/runtime/BoxesRunTime
 *L
 1#1,5:1
 406#2:6
-63#3:7
 *E

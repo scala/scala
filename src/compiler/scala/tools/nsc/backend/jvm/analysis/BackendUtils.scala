@@ -15,8 +15,7 @@ package backend.jvm
 package analysis
 
 import java.util.concurrent.ConcurrentHashMap
-
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{switch, tailrec}
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
@@ -25,12 +24,12 @@ import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.{ Handle, Opcodes, Type }
+import scala.tools.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.{NoStackTrace, NonFatal}
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -45,6 +44,7 @@ abstract class BackendUtils extends PerRunInit {
   import bTypes._
   import coreBTypes._
   import frontendAccess.{compilerSettings, recordPerRunJavaMapCache}
+  import DebugInfoBuilder.InlineMapping
 
   /**
    * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
@@ -171,7 +171,6 @@ abstract class BackendUtils extends PerRunInit {
                         calleeClass: ClassBType, calleeSource: String,
                         callsiteClass: ClassBType, callsitePos: Position,
                         keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], mutable.BitSet) = {
-    val debugInfoWriter = postProcessor.debugInfoBuilder.getWriter(callsiteClass.internalName)
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
@@ -200,16 +199,17 @@ abstract class BackendUtils extends PerRunInit {
         // that's when we are interested in writing JSR-45 debug information for inline methods
         // but, only if the callsite line number is valid (that is > 0)
         val instruction = ins.asInstanceOf[LineNumberNode]
-        val mapping = debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
+        val inlineEntry = InlineMapping(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
+        val mapping = postProcessor.debugInfoBuilder.addInlineEntry(callsiteClass.internalName, inlineEntry)
         // transfer the line number nodes, but with a patched line
         // the new line value corresponds to the artificial line where the inline line was mapped to
         val cloned = ins.clone(javaLabelMap).asInstanceOf[LineNumberNode]
-        cloned.line = mapping
+        mapping.foreach { cloned.line = _ }
         result add cloned
         map += ((ins, cloned))
       }
     }
-    debugInfoWriter.addSeparator()
+//    debugInfoWriter.addSeparator()
     (result, map, writtenLocals)
   }
 
