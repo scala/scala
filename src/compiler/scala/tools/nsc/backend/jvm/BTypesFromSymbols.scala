@@ -130,8 +130,15 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
-    case Constant(mt: Type) => methodBTypeFromMethodType(transformedType(mt), isConstructor = false).toASMType
-    case c @ Constant(sym: Symbol) => staticHandleFromSymbol(sym)
+    case Constant(mt: Type) =>
+      transformedType(mt) match {
+        case mt1: MethodType =>
+          methodBTypeFromMethodType(mt1, isConstructor = false).toASMType
+        case t =>
+          typeToBType(t).toASMType
+      }
+    case c @ Constant(sym: Symbol) if sym.owner.isJavaDefined && sym.isStaticMember => staticHandleFromSymbol(sym)
+    case c @ Constant(sym: Symbol) => handleFromMethodSymbol(sym)
     case c @ Constant(value: String) => value
     case c @ Constant(value) if c.isNonUnitAnyVal => c.value.asInstanceOf[AnyRef]
     case _ => reporter.error(pos, "Unable to convert static argument of ApplyDynamic into a classfile constant: " + t); null
@@ -147,6 +154,23 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val ownerInternalName = if (mustUseMirrorClass) rawInternalName stripSuffix nme.MODULE_SUFFIX_STRING else rawInternalName
     val isInterface = sym.owner.linkedClassOfClass.isTraitOrInterface
     new asm.Handle(asm.Opcodes.H_INVOKESTATIC, ownerInternalName, sym.name.encoded, descriptor, isInterface)
+  }
+
+  def handleFromMethodSymbol(sym: Symbol): asm.Handle = {
+    val isConstructor = (sym.isClassConstructor)
+    val descriptor = methodBTypeFromMethodType(sym.info, isConstructor).descriptor
+    val ownerBType = classBTypeFromSymbol(sym.owner)
+    val rawInternalName = ownerBType.internalName
+    val ownerInternalName = rawInternalName
+    val isInterface = sym.owner.isTraitOrInterface
+    val tag =
+              if (sym.isStaticMember) {
+                if (sym.owner.isJavaDefined) throw new UnsupportedOperationException("handled by staticHandleFromSymbol")
+                else asm.Opcodes.H_INVOKESTATIC
+              } else if (isConstructor) asm.Opcodes.H_NEWINVOKESPECIAL
+              else if (isInterface) asm.Opcodes.H_INVOKEINTERFACE
+              else asm.Opcodes.H_INVOKEVIRTUAL
+    new asm.Handle(tag, ownerInternalName, if (isConstructor) sym.name.toString else sym.name.encoded, descriptor, isInterface)
   }
 
   /**
