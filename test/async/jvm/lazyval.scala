@@ -5,9 +5,11 @@ package scala.async.run.lazyval {
 
   import org.junit.Test
   import org.junit.Assert._
+
   import scala.concurrent._
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
+  import scala.collection.mutable.ListBuffer
   import scala.tools.partest.async.Async.{async, await}
   object TestUtil {
     import language.implicitConversions
@@ -32,6 +34,34 @@ package scala.async.run.lazyval {
       })
 
       assertEquals(43, result)
+    }
+
+    @Test
+    def localObject(): Unit = {
+      val result = block(async {
+        val log = ListBuffer[String]()
+        object O {
+          log += "O"
+        }
+        await(1)
+        O
+        await(1)
+        O
+        var i = 0
+        while (i <= 2) {
+          object W {
+            log += "W(" + i + ")"
+          }
+          await(1)
+          W
+          await(1)
+          W
+          i += 1
+        }
+        log.mkString(",")
+      })
+
+      assertEquals("O,W(0),W(1),W(2)", result)
     }
   }
 
