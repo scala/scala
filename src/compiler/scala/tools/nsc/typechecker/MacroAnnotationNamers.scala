@@ -166,7 +166,17 @@ trait MacroAnnotationNamers { self: Analyzer =>
     protected def weakEnsureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
       val m = patchedCompanionSymbolOf(cdef.symbol, context)
       if (m != NoSymbol && currentRun.compiles(m)) m
-      else { val mdef = atPos(cdef.pos.focus)(creator(cdef)); enterSym(mdef); markWeak(mdef.symbol) }
+      else {
+        val existsVal = context.tree.children.find {
+          case ValDef(_, term, _, _) if cdef.getterName == term  => true
+          case _ => false
+        }
+        if (existsVal.isDefined) NoSymbol else {
+          val mdef = atPos(cdef.pos.focus)(creator(cdef))
+          enterSym(mdef)
+          markWeak(mdef.symbol)
+        }
+      }
     }
 
     protected def finishSymbol(tree: Tree): Unit = {
