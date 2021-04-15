@@ -105,11 +105,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   }
 
   private def handleMissing(e: MissingRequirementError) = {
-    if (settings.debug) e.printStackTrace
+    if (settings.isDebug) e.printStackTrace
     throw new IOException(s"Missing dependency '${e.req}', required by $file")
   }
   private def handleError(e: Exception) = {
-    if (settings.debug) e.printStackTrace()
+    if (settings.isDebug) e.printStackTrace()
     throw new IOException(s"class file '$file' is broken\n(${e.getClass}/${e.getMessage})")
   }
   private def mismatchError(c: Symbol) = {
@@ -399,7 +399,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     //   - better owner than `NoSymbol`
     //   - remove eager warning
     val msg = s"Class $name not found - continuing with a stub."
-    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
+    if ((!settings.isScaladoc) && (settings.verbose || settings.isDeveloper))
+      loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
     NoSymbol.newStubSymbol(name.toTypeName, msg)
   }
 
@@ -450,7 +451,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     case ex: FatalError =>
       // getClassByName can throw a MissingRequirementError (which extends FatalError)
       // definitions.getMember can throw a FatalError, for example in pos/t5165b
-      if (settings.debug)
+      if (settings.isDebug)
         ex.printStackTrace()
       stubClassSymbol(newTypeName(name))
   }
@@ -991,7 +992,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
       // and that should never be swallowed silently.
       loaders.warning(NoPosition, s"Caught: $ex while parsing annotations in ${file}", WarningCategory.Other, clazz.fullNameString)
-      if (settings.debug) ex.printStackTrace()
+      if (settings.isDebug) ex.printStackTrace()
       None // ignore malformed annotations
   }
 

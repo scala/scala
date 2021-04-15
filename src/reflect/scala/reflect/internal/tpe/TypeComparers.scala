@@ -66,7 +66,7 @@ trait TypeComparers {
 
   private def isSubPre(pre1: Type, pre2: Type, sym: Symbol) =
     if ((pre1 ne pre2) && (pre1 ne NoPrefix) && (pre2 ne NoPrefix) && pre1 <:< pre2) {
-      if (settings.debug) println(s"new isSubPre $sym: $pre1 <:< $pre2")
+      if (settings.isDebug) println(s"new isSubPre $sym: $pre1 <:< $pre2")
       true
     } else
       false

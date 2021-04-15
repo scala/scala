@@ -1198,7 +1198,7 @@ trait Types
     override def underlying: Type = sym.typeOfThis
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
-      if (settings.debug) sym.nameString + ".this."
+      if (settings.isDebug) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
       else if (sym.isOmittablePrefix) ""
       else if (sym.isModuleClass) sym.fullNameString + "."
@@ -1446,7 +1446,7 @@ trait Types
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
 
-    protected def shouldForceScope = settings.debug || parents.isEmpty || !decls.isEmpty
+    protected def shouldForceScope = settings.isDebug || parents.isEmpty || !decls.isEmpty
     protected def initDecls        = fullyInitializeScope(decls)
     protected def scopeString      = if (shouldForceScope) initDecls.mkString("{", "; ", "}") else ""
     override def safeToString      = parentsString(parents) + scopeString
@@ -1802,7 +1802,7 @@ trait Types
     /** A nicely formatted string with newlines and such.
      */
     def formattedToString = parents.mkString("\n        with ") + scopeString
-    override protected def shouldForceScope = settings.debug || decls.size > 1
+    override protected def shouldForceScope = settings.isDebug || decls.size > 1
     override protected def scopeString      = initDecls.mkString(" {\n  ", "\n  ", "\n}")
     override def safeToString               = if (shouldForceScope) formattedToString else super.safeToString
   }
@@ -2305,7 +2305,7 @@ trait Types
     }
     // ensure that symbol is not a local copy with a name coincidence
     private def needsPreString = (
-         settings.debug
+         settings.isDebug
       || !shorthands(sym.fullName)
       || (sym.ownersIterator exists (s => !s.isClass))
     )
@@ -2381,12 +2381,12 @@ trait Types
           ""
     }
     override def safeToString = {
-      val custom = if (settings.debug) "" else customToString
+      val custom = if (settings.isDebug) "" else customToString
       if (custom != "") custom
       else finishPrefix(preString + sym.nameString + argsString)
     }
     override def prefixString = "" + (
-      if (settings.debug)
+      if (settings.isDebug)
         super.prefixString
       else if (sym.isOmittablePrefix)
         ""
@@ -2772,11 +2772,11 @@ trait Types
     }
 
     override def nameAndArgsString: String = underlying match {
-      case TypeRef(_, sym, args) if !settings.debug && isRepresentableWithWildcards =>
-        sym.name + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
+      case TypeRef(_, sym, args) if !settings.isDebug && isRepresentableWithWildcards =>
+        sym.name.toString + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
       case TypeRef(_, sym, args) =>
-        sym.name + args.mkString("[", ",", "]") + existentialClauses
-      case _ => underlying.typeSymbol.name + existentialClauses
+        sym.name.toString + args.mkString("[", ",", "]") + existentialClauses
+      case _ => underlying.typeSymbol.name.toString + existentialClauses
     }
 
     private def existentialClauses = {
@@ -2813,7 +2813,7 @@ trait Types
 
     override def safeToString: String = {
       underlying match {
-        case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+        case TypeRef(pre, sym, args) if !settings.isDebug && isRepresentableWithWildcards =>
           "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
         case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
           "(" + underlying + ")" + existentialClauses
@@ -4652,7 +4652,7 @@ trait Types
     def this(msg: String) = this(NoPosition, msg)
 
     final override def fillInStackTrace() =
-      if (settings.debug) super.fillInStackTrace() else this
+      if (settings.isDebug) super.fillInStackTrace() else this
   }
 
   // TODO: RecoverableCyclicReference should be separated from TypeError,
@@ -4660,7 +4660,7 @@ trait Types
   /** An exception for cyclic references from which we can recover */
   case class RecoverableCyclicReference(sym: Symbol)
     extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug) printStackTrace()
+    if (settings.isDebug) printStackTrace()
   }
 
   class NoCommonType(tps: List[Type]) extends Throwable(

@@ -173,7 +173,7 @@ abstract class RefChecks extends Transform {
       }
 
       // This has become noisy with implicit classes.
-      if (settings.warnPolyImplicitOverload && settings.developer) {
+      if (settings.isDeveloper && settings.warnPolyImplicitOverload) {
         clazz.info.decls.foreach(sym => if (sym.isImplicit && sym.typeParams.nonEmpty) {
           // implicit classes leave both a module symbol and a method symbol as residue
           val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
@@ -352,7 +352,7 @@ abstract class RefChecks extends Transform {
                 infoStringWithLocation(other),
                 infoStringWithLocation(member)
               )
-            else if (settings.debug)
+            else if (settings.isDebug)
               analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
 
@@ -1934,7 +1934,7 @@ abstract class RefChecks extends Transform {
         result1
       } catch {
         case ex: TypeError =>
-          if (settings.debug) ex.printStackTrace()
+          if (settings.isDebug) ex.printStackTrace()
           reporter.error(tree.pos, ex.getMessage())
           tree
       } finally {

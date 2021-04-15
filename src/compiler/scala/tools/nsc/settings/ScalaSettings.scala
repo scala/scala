@@ -116,7 +116,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Xhelp              = BooleanSetting      ("-X", "Print a synopsis of advanced options.")
   val async              = BooleanSetting      ("-Xasync", "Enable the async phase for scala.async.Async.{async,await}.")
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
-  val developer          = BooleanSetting      ("-Xdev", "Indicates user is a developer - issue warnings about anything which seems amiss")
+  val developer          = BooleanSetting      ("-Xdev", "Indicates user is a developer - issue warnings about anything which seems amiss").withPostSetHook(s => if (s.value) StatisticsStatics.enableDeveloperAndDeoptimize())
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.") andThen (flag =>
                                                 if (flag) elidebelow.value = elidable.ASSERTION + 1)
   val elidebelow         = IntSetting          ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
@@ -208,7 +208,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Yshow           = PhasesSetting     ("-Yshow", "(Requires -Xshow-class or -Xshow-object) Show after")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
-  val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
+  val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.").withPostSetHook(s => if (s.value) StatisticsStatics.enableDebugAndDeoptimize())
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts.", List("package", "object", "error"), "error")
   val log             = PhasesSetting     ("-Ylog", "Log operations during")
   val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")

@@ -91,7 +91,7 @@ abstract class Erasure extends InfoTransform
       }
   }
 
-  override protected def verifyJavaErasure = settings.Xverify || settings.debug
+  override protected def verifyJavaErasure = settings.Xverify || settings.isDebug
   private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
     def needs(tp: Type) = NeedsSigCollector(sym.isClassConstructor).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
@@ -521,7 +521,7 @@ abstract class Erasure extends InfoTransform
         clashErrors += Tuple2(pos, msg)
       }
       for (bc <- root.baseClasses) {
-        if (settings.debug)
+        if (settings.isDebug)
           exitingPostErasure(println(
             sm"""check bridge overrides in $bc
                 |${bc.info.nonPrivateDecl(bridge.name)}

@@ -911,7 +911,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
       type ReaderMaker = Completer => InteractiveReader
 
       def instantiater(className: String): ReaderMaker = completer => {
-        if (settings.debug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
+        if (settings.isDebug) Console.println(s"Trying to instantiate an InteractiveReader from $className")
         Class.forName(className).getConstructor(classOf[Completer]).
           newInstance(completer).
           asInstanceOf[InteractiveReader]
@@ -927,7 +927,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
 
       val reader = (readers collect { case Success(reader) => reader } headOption) getOrElse SimpleReader()
 
-      if (settings.debug) {
+      if (settings.isDebug) {
         val readerDiags = (readerClasses, readers).zipped map {
           case (cls, Failure(e)) => s"  - $cls --> \n\t" + scala.tools.nsc.util.stackTraceString(e) + "\n"
           case (cls, Success(_)) => s"  - $cls OK"

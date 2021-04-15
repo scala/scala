@@ -39,6 +39,6 @@ trait Positions extends scala.reflect.internal.Positions {
   }
 
   override protected[this] lazy val posAssigner: PosAssigner =
-    if (settings.Yrangepos && settings.debug || settings.Yposdebug) new ValidatingPosAssigner
+    if (settings.Yrangepos && settings.isDebug || settings.Yposdebug) new ValidatingPosAssigner
     else new DefaultPosAssigner
 }

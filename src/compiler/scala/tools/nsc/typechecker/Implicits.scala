@@ -1420,7 +1420,7 @@ trait Implicits {
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
           val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
-          if (settings.debug) println("generated manifest: "+mani) // DEBUG
+          if (settings.isDebug) println("generated manifest: "+mani) // DEBUG
           mani
         }
 
@@ -1638,7 +1638,7 @@ trait Implicits {
         }
       }
 
-      if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
+      if (result.isFailure && settings.isDebug) // debuglog is not inlined for some reason
         log(s"no implicits found for ${pt} ${pt.typeSymbol.info.baseClasses} ${implicitsOfExpectedType}")
 
       result

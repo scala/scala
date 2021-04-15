@@ -1072,7 +1072,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
           debuglog("error tree = " + tree)
-          if (settings.debug && settings.explaintypes) explainTypes(tree.tpe, pt)
+          if (settings.isDebug && settings.explaintypes) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
           else adaptMismatchedSkolems()
@@ -5396,7 +5396,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             AppliedTypeNoParametersError(tree, tpt1.tpe)
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info)//debug
+            if (settings.isDebug) Console.println(s"$tpt1:${tpt1.symbol}:${tpt1.symbol.info}")//debug
             AppliedTypeWrongNumberOfArgsError(tree, tpt1, tparams)
           }
         }
