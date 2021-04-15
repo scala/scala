@@ -207,7 +207,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     )
 
     def printFlags(flags: Long, privateWithin: String) = {
-      val mask: Long = if (settings.debug) -1L else PrintableFlags
+      val mask: Long = if (settings.isDebug) -1L else PrintableFlags
       val s = flagsToString(flags & mask, privateWithin)
       if (s != "") print(s + " ")
     }
@@ -320,7 +320,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       if (qual.nonEmpty || (checkSymbol && tree.symbol != NoSymbol)) print(resultName + ".")
       print("super")
       if (mix.nonEmpty) print(s"[$mix]")
-      else if (settings.debug) tree.tpe match {
+      else if (settings.isDebug) tree.tpe match {
         case st: SuperType => print(s"[${st.supertpe}]")
         case tp: Type => print(s"[$tp]")
         case _ =>
@@ -479,7 +479,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case th @ This(qual) =>
           printThis(th, symName(tree, qual))
 
-        case Select(qual: New, name) if !settings.debug =>
+        case Select(qual: New, name) if !settings.isDebug =>
           print(qual)
 
         case Select(qualifier, name) =>

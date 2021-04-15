@@ -369,7 +369,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
         /* For testing purposes, the dynamic application's condition
          * can be printed-out in great detail. Remove? */
-        if (settings.debug) {
+        if (settings.isDebug) {
           def paramsToString(xs: Any*) = xs map (_.toString) mkString ", "
           val mstr = ad.symbol.tpe match {
             case MethodType(mparams, resType) =>

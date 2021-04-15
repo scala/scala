@@ -57,7 +57,7 @@ abstract class SymbolLoaders {
   }
 
   protected def signalError(root: Symbol, ex: Throwable): Unit = {
-    if (settings.debug) ex.printStackTrace()
+    if (settings.isDebug) ex.printStackTrace()
     globalError(ex.getMessage() match {
       case null => "i/o error while loading " + root.name
       case msg  => "error while loading " + root.name + ", " + msg

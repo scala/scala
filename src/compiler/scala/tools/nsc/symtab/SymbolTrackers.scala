@@ -133,7 +133,7 @@ trait SymbolTrackers {
           else " (" + Flags.flagsToString(masked) + ")"
       }
       def symString(sym: Symbol) = (
-        if (settings.debug && sym.hasCompleteInfo) {
+        if (settings.isDebug && sym.hasCompleteInfo) {
           val s = sym.defString take 240
           if (s.length == 240) s + "..." else s
         }

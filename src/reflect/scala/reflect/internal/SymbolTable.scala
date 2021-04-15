@@ -87,15 +87,16 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
-  final def isDeveloper: Boolean = settings.debug.value || settings.developer.value
-  def picklerPhase: Phase
 
+  @inline final def isDeveloper: Boolean = settings.isDebug || settings.isDeveloper
+
+  def picklerPhase: Phase
   def erasurePhase: Phase
 
   def settings: MutableSettings
 
   /** Override with final implementation for inlining. */
-  def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
+  def debuglog(msg:  => String): Unit = if (settings.isDebug) log(msg)
 
   /** dev-warns if dev-warning is enabled and `cond` is true; no-op otherwise */
   @inline final def devWarningIf(cond: => Boolean)(msg: => String): Unit =
