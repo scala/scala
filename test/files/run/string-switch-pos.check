@@ -1,11 +1,11 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
-[0:187]package [0:0]<empty> {
-  [0:187]class Switch extends [13:187][187]scala.AnyRef {
-    [187]def <init>(): [13]Switch = [187]{
-      [187][187][187]Switch.super.<init>();
+[0:216]package [0:0]<empty> {
+  [0:216]class Switch extends [13:216][216]scala.AnyRef {
+    [216]def <init>(): [13]Switch = [216]{
+      [216][216][216]Switch.super.<init>();
       [13]()
     };
-    [17:185]def switch([28:37]s: [31:37]<type: [31:37]scala.Predef.String>, [39:52]cond: [45:52]<type: [45:52]scala.Boolean>): [21]Int = [56:57]{
+    [17:214]def switch([28:37]s: [31:37]<type: [31:37]scala.Predef.String>, [39:52]cond: [45:52]<type: [45:52]scala.Boolean>): [21]Int = [56:57]{
       [56:57]case <synthetic> val x1: [56]String = [56:57]s;
       [56:57][56:57]x1 match {
         [56:57]case [75:81]"AaAa" => [93:94]1
@@ -14,6 +14,7 @@
           [151:152]3
         else
           [180:181]4
+        [56:57]case [56:57]([191:197]"CcCc"| [200:205]"Cc2") => [209:210]5
         [56:57]case [56:57]_ => [56:57]throw [56:57][56:57][56:57]new [56:57]MatchError([56:57]x1)
       }
     }
@@ -21,21 +22,29 @@
 }
 
 [[syntax trees at end of                   cleanup]] // newSource1.scala
-[0:187]package [0:0]<empty> {
-  [0:187]class Switch extends [13:187][13:187]Object {
-    [17:185]def switch([28:37]s: [31:37]<type: [31:37]scala.Predef.String>, [39:52]cond: [45:52]<type: [45:52]scala.Boolean>): [21]Int = [56:57]{
+[0:216]package [0:0]<empty> {
+  [0:216]class Switch extends [13:216][13:216]Object {
+    [17:214]def switch([28:37]s: [31:37]<type: [31:37]scala.Predef.String>, [39:52]cond: [45:52]<type: [45:52]scala.Boolean>): [21]Int = [56:57]{
       [56:57]case <synthetic> val x1: [56]String = [56:57]s;
       [56:57]{
         [56:139][56:57]if ([56][56]x1.eq([56]null))
           [56]0
         else
           [56][56]x1.hashCode() match {
+          [56:57]case [56]67506 => [56:57]if ([56][56][56]"Cc2".equals([56]x1))
+            [56][56]case4()
+          else
+            [56][56]matchEnd2()
           [75:81]case [56]2031744 => [75:81]if ([75][75][75]"AaAa".equals([75]x1))
             [75][75]case1()
           else
             [56][56]matchEnd2()
           [133:139]case [56]2062528 => [133:139]if ([133][133][133]"BbBb".equals([133]x1))
             [133][133]case3()
+          else
+            [56][56]matchEnd2()
+          [56:57]case [56]2093312 => [56:57]if ([56][56][56]"CcCc".equals([56]x1))
+            [56][56]case4()
           else
             [56][56]matchEnd2()
           [104:110]case [56]3003444 => [104:110]if ([104][104][104]"asdf".equals([104]x1))
@@ -56,6 +65,9 @@
           else
             [180:181]4)
         };
+        [56]case4(){
+          [56][56]matchEnd1([209:210]5)
+        };
         [56]matchEnd2(){
           [56][56]matchEnd1([56:57]throw [56:57][56:57][56:57]new [56:57]MatchError([56:57]x1))
         };
@@ -64,8 +76,8 @@
         }
       }
     };
-    [187]def <init>(): [13]Switch = [187]{
-      [187][187][187]Switch.super.<init>();
+    [216]def <init>(): [13]Switch = [216]{
+      [216][216][216]Switch.super.<init>();
       [13]()
     }
   }
