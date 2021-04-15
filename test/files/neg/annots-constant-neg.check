@@ -79,7 +79,7 @@ Test.scala:71: error: annotation argument needs to be a constant; found: new sca
 Test.scala:76: error: multiple constructors for Ann1 with alternatives:
   (s: String)Ann1 <and>
   (value: Int)Ann1
- cannot be invoked with (x: String)
+ [which have no such parameter x] cannot be invoked with (x: String)
   @Ann1(x = "") def v4 = 0 // err
    ^
 Test.scala:78: error: Ann1 does not take parameters

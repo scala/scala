@@ -16,6 +16,7 @@ package typechecker
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
 
+import scala.PartialFunction.cond
 import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
@@ -1166,9 +1167,15 @@ trait ContextErrors {
         val proscription =
           if (tree.symbol.isConstructor) " cannot be invoked with "
           else " cannot be applied to "
+        val junkNames = {
+          val bads = argtpes.collect {
+            case NamedType(name, _) if !alts.exists(cond(_) { case MethodType(params, _) => params.exists(_.name == name) }) => name.decoded
+          }
+          if (bads.isEmpty) "" else bads.mkString(" [which have no such parameter ", ",", "]")
+        }
 
         issueNormalTypeError(tree,
-          applyErrorMsg(tree, proscription, widenedArgtpes, pt))
+          applyErrorMsg(tree, junkNames + proscription, widenedArgtpes, pt))
         // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference.
