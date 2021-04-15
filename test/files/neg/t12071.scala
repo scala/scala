@@ -34,9 +34,18 @@ object C {
   def `test-2`: Int = 42
   def compareTo(x: Int) = println("lol")
 
-  var `test-3`: List[Int] = Nil
+  def yy = 1
+  /* fails in scala 3
+    +
+    `test-1`
+    +
+    `test-2`
+   */
+}
 
-  // since ++ is not unary, test-3 is not taken as an operator; this test doesn't fix y above.
-  def yy = List.empty[Int] ++
-    `test-3` ++ `test-3`
+object Test extends App {
+  println(C.x)
+  println(C.y)
+  println(C.z)
+  println(C.yy)
 }

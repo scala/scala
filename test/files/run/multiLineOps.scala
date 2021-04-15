@@ -6,8 +6,10 @@
 object Test extends App {
   val a = 7
   val x = 1
-    + //
-    `a` * 6
+    +
+    `a`
+    *
+    6
 
-  assert(x == 1 + 42, x)  // was: 1
+  assert(x == 1 + 7 * 6, x)  // was: 1, now: successor(42)
 }

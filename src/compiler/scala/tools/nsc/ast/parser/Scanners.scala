@@ -442,20 +442,23 @@ trait Scanners extends ScannersCommon {
         token = nl
       }
 
+      def isOperator: Boolean = token == BACKQUOTED_IDENT || token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))
+
       /* A leading infix operator must be followed by a lexically suitable expression.
-       * Usually any simple expr will do. However, if the op is backtick style, make
-       * sure it is not followed by a binary op, which suggests the backticked identifier
-       * is a reference.
+       * Usually any simple expr will do. However, a backquoted identifier may serve as
+       * either an op or a reference. So the additional constraint is that the following
+       * token can't be an assignment operator. (Dotty disallows binary ops, hence the
+       * test for unary.) See run/multiLineOps.scala for 42 + `x` on 3 lines, where +
+       * is not leading infix because backquoted x is non-unary op.
        */
       def followedByInfixRHS: Boolean = {
-        val current = token
-        def isOp: Boolean = token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))
-        def isCandidateInfixRHS: Boolean =
-          isSimpleExprIntroToken(token) &&
-          (current != BACKQUOTED_IDENT || !isOp || nme.raw.isUnary(name))
+        //def isCandidateInfixRHS: Boolean = isSimpleExprIntroToken(token) && (!isOperator || nme.raw.isUnary(name) || token == BACKQUOTED_IDENT)
+        def isAssignmentOperator: Boolean =
+          name.endsWith('=') && !name.startsWith('=') && isOperatorPart(name.startChar) &&
+          (name.length != 2 || (name.startChar match { case '!' | '<' | '>' => false case _ => true }))
+        def isCandidateInfixRHS: Boolean = isSimpleExprIntroToken(token) && (!isOperator || token == BACKQUOTED_IDENT || !isAssignmentOperator)
         lookingAhead {
-          isCandidateInfixRHS ||
-          token == NEWLINE && { nextToken() ; isCandidateInfixRHS }
+          isCandidateInfixRHS || token == NEWLINE && { nextToken() ; isCandidateInfixRHS }
         }
       }
 
@@ -465,8 +468,9 @@ trait Scanners extends ScannersCommon {
        */
       def isLeadingInfixOperator =
         allowLeadingInfixOperators &&
-        (token == BACKQUOTED_IDENT || token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
-        ch <= ' ' && followedByInfixRHS
+        isOperator &&
+        (isWhitespace(ch) || ch == LF) &&
+        followedByInfixRHS
 
       /* Insert NEWLINE or NEWLINES if
        * - we are after a newline
