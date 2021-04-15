@@ -864,6 +864,7 @@ trait StdNames {
     val state            : NameType       = "state"
     val tr               : NameType       = "tr$async"
     val t                : NameType       = "throwable$async"
+    val trGetResult      : NameType       = "tryGetResult$async"
 
     // quasiquote interpolators:
     val q: NameType  = "q"

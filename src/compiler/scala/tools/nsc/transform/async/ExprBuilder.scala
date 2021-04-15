@@ -40,6 +40,15 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     }
   }
   final class AsyncState(var stats: List[Tree], val state: Int, var nextStates: Array[Int], val isEmpty: Boolean) {
+    def hasNonTerminalNextState: Boolean = {
+      var i = 0
+      val ns = nextStates
+      while (i < ns.length) {
+        if (ns(i) != StateAssigner.Terminal) return true
+        i += 1
+      }
+      false
+    }
     def mkHandlerCaseForState: CaseDef = {
       replaceResidualJumpsWithStateTransitions.transform(CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))).asInstanceOf[CaseDef]
     }
@@ -444,25 +453,28 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       def onCompleteHandler: Tree = {
         val transformState = currentTransformState
         def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
-        val throww = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
+
         val asyncStatesInit = asyncStates.init // drop the terminal state which has no code.
-        val body =
+        val throww          = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
+        val body            =
           typed(Match(stateMemberRef,
-                 asyncStatesInit.map(_.mkHandlerCaseForState) ++
-                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
-                   throww))))
-
-        val body1 = compactStates(body.asInstanceOf[Match])
-
-        val stateMatch = Try(
-          body1,
-          List(
-            CaseDef(
-              Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(definitions.ThrowableClass))),
-              EmptyTree,
-              Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
-            )
-          ), EmptyTree)
+                      asyncStatesInit.map(_.mkHandlerCaseForState) ++
+                        List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
+                                     throww))))
+        val body1      = compactStates(body.asInstanceOf[Match])
+        val stateMatch = if (transformState.allowExceptionsToPropagate) {
+          body1
+        } else {
+          Try(
+            body1,
+            List(
+              CaseDef(
+                Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(definitions.ThrowableClass))),
+                EmptyTree,
+                Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
+                )
+              ), EmptyTree)
+        }
         typed(LabelDef(transformState.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(transformState.whileLabel), Nil))))
       }
 
@@ -535,15 +547,19 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   private def resumeTree(awaitableResult: ValDef): Tree = {
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
     deriveValDef(awaitableResult) { _ =>
-      val temp = awaitableResult.symbol.newTermSymbol(TermName("tryGetResult$async")).setInfo(definitions.ObjectTpe)
-      val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
-      typed(Block(
-        tempVd :: Nil,
-        If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Any_==), gen.mkAttributedIdent(temp) :: Nil),
-          Return(literalUnit),
-          gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
-        )
-      ))
+      if (currentTransformState.tryGetIsIdentity) {
+        tryyReference
+      } else {
+        val temp = awaitableResult.symbol.newTermSymbol(nme.trGetResult).setInfo(definitions.ObjectTpe)
+        val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
+        typed(Block(
+          tempVd :: Nil,
+        If(Apply(gen.mkAttributedSelect(currentTransformState.stateMachineRef(), definitions.Object_eq), gen.mkAttributedIdent(temp) :: Nil),
+             Return(literalUnit),
+             gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
+             )
+          ))
+      }
     }
   }
 
@@ -560,16 +576,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     protected def mkStateTree(nextState: Int): Tree = {
       val transformState = currentTransformState
       val callSetter = Apply(transformState.memberRef(transformState.stateSetter), Literal(Constant(nextState)) :: Nil)
-      val printStateUpdates = false
-      val tree = if (printStateUpdates) {
-        Block(
-          callSetter :: Nil,
-          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")),
-            currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter)), definitions.ObjectTpe) :: Nil)
-        )
-      }
-      else callSetter
-      typed(tree.updateAttachment(StateTransitionTree))
+      typed(callSetter.updateAttachment(StateTransitionTree))
     }
   }
 
