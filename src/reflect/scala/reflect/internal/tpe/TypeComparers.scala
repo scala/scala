@@ -404,7 +404,7 @@ trait TypeComparers {
     }
 
     def isSub(tp1: Type, tp2: Type) =
-      settings.isScala213 && isSubHKTypeVar(tp1, tp2) ||
+      isSubHKTypeVar(tp1, tp2) ||
         isSub2(tp1.normalize, tp2.normalize)  // @M! normalize reduces higher-kinded typeref to PolyType
 
     def isSub2(ntp1: Type, ntp2: Type) = (ntp1, ntp2) match {
