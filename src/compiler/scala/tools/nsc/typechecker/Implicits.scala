@@ -1087,18 +1087,11 @@ trait Implicits {
 
       /** Sorted list of eligible implicits.
        */
-      private def eligibleOld = Shadower.using(isLocalToCallsite){ shadower =>
-        val matches = iss flatMap { is =>
+      private def eligibleOld = Shadower.using(isLocalToCallsite) { shadower =>
+        iss flatMap { is =>
           val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
           shadower addInfos is
           result
-        }
-
-        if (currentRun.isScala213) matches
-        else {
-          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
-          // compilation order variation in whether a search succeeds or diverges.
-          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
         }
       }
 
@@ -1173,16 +1166,7 @@ trait Implicits {
         }
       }
 
-      val eligible: List[ImplicitInfo] = {
-        val matches = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
-        if (currentRun.isScala213) matches
-        else {
-          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
-          // compilation order variation in whether a search succeeds or diverges.
-          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
-        }
-      }
-
+      val eligible: List[ImplicitInfo] = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
       if (eligible.nonEmpty)
         printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
@@ -1222,7 +1206,7 @@ trait Implicits {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
             }
           }
-          if (typedFirstPending.isFailure && currentRun.isScala213)
+          if (typedFirstPending.isFailure)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
