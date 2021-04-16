@@ -17,14 +17,14 @@ import symtab._
 import Flags._
 import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   import global._
   import definitions._
   import CODE._
-  import treeInfo.StripCast
+  import treeInfo.{ SYNTH_CASE_FLAGS, isDefaultCase, StripCast }
 
-  /** the following two members override abstract members in Transform */
   val phaseName: String = "cleanup"
 
   /* used in GenBCode: collects ClassDef symbols owning a main(Array[String]) method */
@@ -398,105 +398,94 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       }
     }
 
-    // transform scrutinee of all matches to ints
-    def transformSwitch(sw: Match): Tree = { import CODE._
+    private def transformStringSwitch(sw: Match): Tree = { import CODE._
+      // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
+      val Match(Typed(selTree, _), cases) = sw: @unchecked
+      def selArg = selTree match {
+        case x: Ident   => REF(x.symbol)
+        case x: Literal => x
+        case x          => throw new MatchError(x)
+      }
+      val newSel = selTree match {
+        case x: Ident   => atPos(x.symbol.pos)(IF (x.symbol  OBJ_EQ NULL) THEN ZERO ELSE selArg.OBJ_##)
+        case x: Literal => atPos(x.pos)       (if (x.value.value == null)      ZERO else selArg.OBJ_##)
+        case x          => throw new MatchError(x)
+      }
+      val restpe  = sw.tpe
+      val resUnit = restpe =:= UnitTpe
+      val swPos   = sw.pos.focus
+
+      /* From this:
+       *     string match { case "AaAa" => 1 case "BBBB" | "c" => 2 case _ => 3 }
+       * Generate this:
+       *     string.## match {
+       *       case 2031744 =>
+       *              if ("AaAa" equals string) goto matchEnd (1)
+       *         else if ("BBBB" equals string) goto case2
+       *         else                           goto defaultCase
+       *       case 99 =>
+       *         if ("c" equals string) goto case2
+       *         else                   goto defaultCase
+       *       case _ => goto defaultCase
+       *     }
+       *     case2: goto matchEnd (2)
+       *     defaultCase: goto matchEnd (3) // or `goto matchEnd (throw new MatchError(string))` if no default was given
+       *     matchEnd(res: Int): res
+       * Extra labels are added for alternative patterns branches, since multiple branches in the
+       * resulting switch may need to correspond to a single case body.
+       */
+
+      val labels          = mutable.ListBuffer.empty[LabelDef]
+      var defaultCaseBody = Throw(New(MatchErrorClass.tpe_*, selArg)): Tree
+
+      def LABEL(name: String) = currentOwner.newLabel(unit.freshTermName(name), swPos).setFlag(SYNTH_CASE_FLAGS)
+      def newCase()           = LABEL(       "case").setInfo(MethodType(Nil, restpe))
+      val defaultCase         = LABEL("defaultCase").setInfo(MethodType(Nil, restpe))
+      val matchEnd            = LABEL("matchEnd").tap { lab =>
+        // genbcode isn't thrilled about seeing labels with Unit arguments, so `success`'s type is one of
+        // `${sw.tpe} => ${sw.tpe}` or `() => Unit` depending.
+        lab.setInfo(MethodType(if (resUnit) Nil else List(lab.newSyntheticValueParam(restpe)), restpe))
+      }
+      def goto(sym: Symbol, params: Tree*) = REF(sym) APPLY (params: _*)
+      def gotoEnd(body: Tree)              = if (resUnit) BLOCK(body, goto(matchEnd)) else goto(matchEnd, body)
+
+      val casesByHash = cases.flatMap {
+        case cd@CaseDef(StringsPattern(strs), _, body) =>
+          val jump = newCase() // always create a label so when its used it matches the source case (e.g. `case4()`)
+          strs match {
+            case str :: Nil => List((str, gotoEnd(body), cd.pat.pos))
+            case _          =>
+              labels += LabelDef(jump, Nil, gotoEnd(body))
+              strs.map((_, goto(jump), cd.pat.pos))
+          }
+        case cd if isDefaultCase(cd) => defaultCaseBody = gotoEnd(cd.body); None
+        case cd                      => globalError(s"unhandled in switch: $cd"); None
+      }.groupBy(_._1.##)
+
+      val newCases = casesByHash.toList.sortBy(_._1).map {
+        case (hash, cases) =>
+          val newBody = cases.foldRight(atPos(swPos)(goto(defaultCase): Tree)) {
+            case ((null, rhs, pos), next) => atPos(pos)(IF (NULL     OBJ_EQ selArg) THEN rhs ELSE next)
+            case ((str,  rhs, pos), next) => atPos(pos)(IF (LIT(str) OBJ_== selArg) THEN rhs ELSE next)
+          }
+          CASE(LIT(hash)) ==> newBody
+      }
+
+      labels += LabelDef(defaultCase, Nil, defaultCaseBody)
+      labels += LabelDef(matchEnd, matchEnd.info.params, matchEnd.info.params.headOption.fold(UNIT: Tree)(REF))
+
+      val stats = Match(newSel, newCases :+ (DEFAULT ==> goto(defaultCase))) :: labels.toList
+
+      val res = Block(stats: _*)
+      localTyper.typedPos(sw.pos)(res)
+    }
+
+    // transform scrutinee of all matches to switchable types (ints, strings)
+    def transformSwitch(sw: Match): Tree = {
       sw.selector.tpe.widen match {
-        case IntTpe => sw // can switch directly on ints
-        case StringTpe =>
-          // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
-          val Match(Typed(selTree, _), cases) = sw: @unchecked
-          def selArg = selTree match {
-            case x: Ident   => REF(x.symbol)
-            case x: Literal => x
-            case x          => throw new MatchError(x)
-          }
-          val restpe = sw.tpe
-          val swPos = sw.pos.focus
-
-          /* From this:
-           *     string match { case "AaAa" => 1 case "BBBB" | "c" => 2 case _ => 3}
-           * Generate this:
-           *     string.## match {
-           *       case 2031744 =>
-           *         if ("AaAa" equals string) goto match1
-           *         else if ("BBBB" equals string) goto match2
-           *         else goto matchFailure
-           *       case 99 =>
-           *         if ("c" equals string) goto match2
-           *         else goto matchFailure
-           *       case _ => goto matchFailure
-           *     }
-           *     match1: goto matchSuccess (1)
-           *     match2: goto matchSuccess (2)
-           *     matchFailure: goto matchSuccess (3) // would be throw new MatchError(string) if no default was given
-           *     matchSuccess(res: Int): res
-           * This proliferation of labels is needed to handle alternative patterns, since multiple branches in the
-           * resulting switch may need to correspond to a single case body.
-           */
-
-          val stats = mutable.ListBuffer.empty[Tree]
-          var failureBody = Throw(New(definitions.MatchErrorClass.tpe_*, selArg)) : Tree
-
-          // genbcode isn't thrilled about seeing labels with Unit arguments, so `success`'s type is one of
-          // `${sw.tpe} => ${sw.tpe}` or `() => Unit` depending.
-          val success = {
-            val lab = currentOwner.newLabel(unit.freshTermName("matchEnd"), swPos)
-            if (restpe =:= UnitTpe) {
-              lab.setInfo(MethodType(Nil, restpe))
-            } else {
-              lab.setInfo(MethodType(lab.newValueParameter(nme.x_1).setInfo(restpe) :: Nil, restpe))
-            }
-          }
-          def succeed(res: Tree): Tree =
-            if (restpe =:= UnitTpe) BLOCK(res, REF(success) APPLY Nil) else REF(success) APPLY res
-
-          val failure = currentOwner.newLabel(unit.freshTermName("matchEnd"), swPos).setInfo(MethodType(Nil, restpe))
-          def fail(): Tree = atPos(swPos) { Apply(REF(failure), Nil) }
-
-          val ifNull = LIT(0)
-          val noNull = Apply(selArg DOT Object_hashCode, Nil)
-
-          val newSel = selTree match {
-            case _: Ident   => atPos(selTree.symbol.pos) { IF(selTree.symbol OBJ_EQ NULL) THEN ifNull ELSE noNull }
-            case x: Literal => atPos(selTree.pos) { if (x.value.value == null) ifNull else noNull }
-            case x          => throw new MatchError(x)
-          }
-          val casesByHash =
-            cases.flatMap {
-              case cd@CaseDef(StringsPattern(strs), _, body) =>
-                val jump = currentOwner.newLabel(unit.freshTermName("case"), swPos).setInfo(MethodType(Nil, restpe))
-                stats += LabelDef(jump, Nil, succeed(body))
-                strs.map((_, jump, cd.pat.pos))
-              case cd@CaseDef(Ident(nme.WILDCARD), _, body) =>
-                failureBody = succeed(body)
-                None
-              case cd => globalError(s"unhandled in switch: $cd"); None
-            }.groupBy(_._1.##)
-          val newCases = casesByHash.toList.sortBy(_._1).map {
-            case (hash, cases) =>
-              val newBody = cases.foldLeft(fail()) {
-                case (next, (pat, jump, pos)) =>
-                  val comparison = if (pat == null) Object_eq else Object_equals
-                  atPos(pos) {
-                    IF(LIT(pat) DOT comparison APPLY selArg) THEN (REF(jump) APPLY Nil) ELSE next
-                  }
-              }
-              CaseDef(LIT(hash), EmptyTree, newBody)
-          }
-
-          stats += LabelDef(failure, Nil, failureBody)
-
-          stats += (if (restpe =:= UnitTpe) {
-            LabelDef(success, Nil, gen.mkLiteralUnit)
-          } else {
-            LabelDef(success, success.info.params.head :: Nil, REF(success.info.params.head))
-          })
-
-          stats prepend Match(newSel, newCases :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, fail()))
-
-          val res = Block(stats.result() : _*)
-          localTyper.typedPos(sw.pos)(res)
-        case _ => globalError(s"unhandled switch scrutinee type ${sw.selector.tpe}: $sw"); sw
+        case IntTpe    => sw // can switch directly on ints
+        case StringTpe => transformStringSwitch(sw)
+        case _         => globalError(s"unhandled switch scrutinee type ${sw.selector.tpe}: $sw"); sw
       }
     }
 

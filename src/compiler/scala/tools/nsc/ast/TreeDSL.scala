@@ -65,16 +65,14 @@ trait TreeDSL {
        *  a member called nme.EQ.  Not sure if that should happen, but we can be
        *  robust by dragging in Any regardless.
        */
-      def MEMBER_== (other: Tree)   = {
-        val opSym = if (target.tpe == null) NoSymbol else target.tpe member nme.EQ
-        if (opSym == NoSymbol) ANY_==(other)
-        else fn(target, opSym, other)
-      }
+      def MEMBER_== (other: Tree)   = fn(target, (if (target.tpe == null) NoSymbol else target.tpe member nme.EQ).orElse(Any_==), other)
       def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectTpe)
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
-      def OBJ_EQ  (other: Tree)     = fn(target, Object_eq, other)
-      def OBJ_NE  (other: Tree)     = fn(target, Object_ne, other)
+      def OBJ_EQ  (other: Tree)     = fn(target, Object_eq,     other)
+      def OBJ_NE  (other: Tree)     = fn(target, Object_ne,     other)
+      def OBJ_==  (other: Tree)     = fn(target, Object_equals, other)
+      def OBJ_##                    = fn(target, Object_hashCode)
 
       def INT_>=  (other: Tree)     = fn(target, getMember(IntClass, nme.GE), other)
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
