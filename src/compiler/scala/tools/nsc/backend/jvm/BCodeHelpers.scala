@@ -313,8 +313,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
                 "main methods cannot be generic"
               case MethodType(params, res) if res.typeSymbol :: params exists (_.isAbstractType) =>
                 "main methods cannot refer to type parameters or abstract types"
+              case MethodType(param :: Nil, _) if definitions.isArrayOfSymbol(param.tpe, StringClass) =>
+                "main methods must have the exact signature `(Array[String]): Unit`, though Scala runners will forgive a non-Unit result"
               case MethodType(_, _) =>
-                "main methods must have the exact signature (Array[String])Unit"
+                "main methods must have the exact signature `(Array[String]): Unit`"
               case tp =>
                 s"don't know what this is: $tp"
             }
