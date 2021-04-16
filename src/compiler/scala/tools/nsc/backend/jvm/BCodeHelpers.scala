@@ -14,14 +14,15 @@ package scala
 package tools.nsc
 package backend.jvm
 
-import scala.tools.asm
-import BackendReporting._
-import scala.tools.asm.ClassWriter
-import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
-import scala.tools.nsc.reporters.NoReporter
-import PartialFunction.cond
+import scala.PartialFunction.cond
 import scala.annotation.tailrec
+import scala.tools.asm
+import scala.tools.asm.{ClassWriter, Label}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.reporters.NoReporter
+import scala.util.chaining.scalaUtilChainingOps
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -31,9 +32,9 @@ import scala.tools.nsc.Reporting.WarningCategory
  */
 abstract class BCodeHelpers extends BCodeIdiomatic {
   import global._
-  import definitions._
   import bTypes._
   import coreBTypes._
+  import definitions._
   import genBCode.postProcessor.backendUtils
 
   /**
@@ -365,7 +366,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    */
   trait BCPickles {
 
-    import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+    import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
@@ -794,6 +795,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       mirrorMethod.visitCode()
 
+      val codeStart: Label = new Label().tap(mirrorMethod.visitLabel)
       mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, classBTypeFromSymbol(moduleClass).descriptor)
 
       var index = 0
@@ -805,6 +807,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, methodBTypeFromSymbol(m).descriptor, false)
       mirrorMethod.visitInsn(jReturnType.typedOpcode(asm.Opcodes.IRETURN))
+      val codeEnd = new Label().tap(mirrorMethod.visitLabel)
+
+      methodInfo.params.lazyZip(paramJavaTypes).foldLeft(0) {
+        case (idx, (p, tp)) =>
+          mirrorMethod.visitLocalVariable(p.name.encoded, tp.descriptor, null, codeStart, codeEnd, idx)
+          idx + tp.size
+      }
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       mirrorMethod.visitEnd()
