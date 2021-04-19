@@ -691,6 +691,10 @@ lazy val testkit = configureAsSubproject(project)
     )
   )
 
+// Jigsaw: reflective access between modules (`setAccessible(true)`) requires an `opens` directive.
+// This is enforced by error (not just by warning) since JDK 16. In our tests we use reflective access
+// from the unnamed package (the classpath) to JDK modules in testing utilities like `assertNotReachable`.
+val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
@@ -700,7 +704,7 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(publish / skip := true)
   .settings(
     Test / fork := true,
-    Test / javaOptions += "-Xss1M",
+    Test / javaOptions ++= "-Xss1M" +: addOpensForTesting,
     (Test / forkOptions) := (Test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     (Test / testOnly / forkOptions) := (Test / testOnly / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     Compile / scalacOptions ++= Seq(
@@ -743,7 +747,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     Test / fork := true,
     // Instead of forking above, it should be possible to set:
     // Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
-    Test / javaOptions += "-Xss1M",
+    Test / javaOptions ++= "-Xss1M" +: addOpensForTesting,
     Test / testOptions += Tests.Argument(
       // Full stack trace on failure:
       "-verbosity", "2"
@@ -788,7 +792,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     Test / Keys.test := (Test / Keys.test).dependsOn(Compile / packageBin).value,
     Test / Keys.testOnly := (Test / Keys.testOnly).dependsOn(Compile / packageBin).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
-    Test / javaOptions += "-Dscala.bundle.dir=" + (ThisBuild / buildDirectory).value / "osgi",
+    Test / javaOptions ++= ("-Dscala.bundle.dir=" + (ThisBuild / buildDirectory).value / "osgi") +: addOpensForTesting,
     Test / Keys.test / forkOptions := (Test / Keys.test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     Test / unmanagedSourceDirectories := List((ThisBuild / baseDirectory).value / "test" / "osgi" / "src"),
     Compile / unmanagedResourceDirectories := (Test / unmanagedSourceDirectories).value,
@@ -839,10 +843,10 @@ lazy val test = project
     IntegrationTest / sources := Nil,
     IntegrationTest / fork := true,
     Compile / scalacOptions += "-Yvalidate-pos:parser,typer",
-    IntegrationTest / javaOptions ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
+    IntegrationTest / javaOptions ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US") ++ addOpensForTesting,
     IntegrationTest / testOptions += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
-    IntegrationTest / testOptions += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
+    IntegrationTest / testOptions += Tests.Argument(s"-Dpartest.java_opts=-Xmx1024M -Xms64M ${addOpensForTesting.mkString(" ")}"),
     IntegrationTest / testOptions += Tests.Argument("-Dpartest.scalac_opts=" + (Compile / scalacOptions).value.mkString(" ")),
     (IntegrationTest / forkOptions) := (IntegrationTest / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     IntegrationTest / testOptions += {
