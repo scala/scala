@@ -109,8 +109,9 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     throw new UnsupportedOperationException()
   }
 
+  // TODO: `getPackage` is deprecated in JDK 9+ - what should be overridden instead?
   override def getPackage(name: String): Package = findAbstractDir(name) match {
-    case null => super.getPackage(name)
+    case null => super.getPackage(name): @nowarn("cat=deprecation")
     case file => packages.getOrElseUpdate(name, {
       val ctor = classOf[Package].getDeclaredConstructor(classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[URL], classOf[ClassLoader])
       ctor.setAccessible(true)
