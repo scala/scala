@@ -2564,19 +2564,27 @@ self =>
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent
         val selectors: List[ImportSelector] = in.token match {
-          case USCORE   => List(wildImportSelector()) // import foo.bar._;
-          case LBRACE   => importSelectors()      // import foo.bar.{ x, y, z }
-          case _        =>
-            val nameOffset = in.offset
-            val name = ident()
-            if (in.token == DOT) {
-              // import foo.bar.ident.<unknown> and so create a select node and recurse.
-              val t = atPos(start, if (name == nme.ERROR) in.offset else nameOffset)(Select(expr, name))
-              in.nextToken()
-              return loop(t)
+          case USCORE =>
+            List(wildImportSelector()) // import foo.bar._
+          case IDENTIFIER if currentRun.isScala3 && in.name == raw.STAR =>
+            List(wildImportSelector()) // import foo.bar.*
+          case LBRACE =>
+            importSelectors()          // import foo.bar.{ x, y, z }
+          case _ =>
+            if (settings.isScala3 && lookingAhead { isRawIdent && in.name == nme.as })
+              List(importSelector())  // import foo.bar as baz
+            else {
+              val nameOffset = in.offset
+              val name = ident()
+              if (in.token == DOT) {
+                // import foo.bar.ident.<unknown> and so create a select node and recurse.
+                val t = atPos(start, if (name == nme.ERROR) in.offset else nameOffset)(Select(expr, name))
+                in.nextToken()
+                return loop(t)
+              }
+              // import foo.bar.Baz;
+              else List(makeImportSelector(name, nameOffset))
             }
-            // import foo.bar.Baz;
-            else List(makeImportSelector(name, nameOffset))
         }
         // reaching here means we're done walking.
         atPos(start)(Import(expr, selectors))
@@ -2619,17 +2627,20 @@ self =>
       val bbq          = in.token == BACKQUOTED_IDENT
       val name         = wildcardOrIdent()
       var renameOffset = -1
-      val rename       = in.token match {
-        case ARROW =>
+
+      val rename =
+        if (in.token == ARROW || (settings.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           renameOffset = in.offset
           if (name == nme.WILDCARD && !bbq) syntaxError(renameOffset, "Wildcard import cannot be renamed")
           wildcardOrIdent()
-        case _ if name == nme.WILDCARD && !bbq => null
-        case _     =>
+        }
+        else if (name == nme.WILDCARD && !bbq) null
+        else {
           renameOffset = start
           name
-      }
+        }
+
       ImportSelector(name, start, rename, renameOffset)
     }
 

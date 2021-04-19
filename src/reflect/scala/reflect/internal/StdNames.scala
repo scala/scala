@@ -658,6 +658,9 @@ trait StdNames {
     val long2Long: NameType       = nameType("long2Long")
     val boolean2Boolean: NameType = nameType("boolean2Boolean")
 
+    // Scala 3 import syntax
+    val as: NameType              = nameType("as")
+
     // Compiler utilized names
 
     val AnnotatedType: NameType        = nameType("AnnotatedType")
