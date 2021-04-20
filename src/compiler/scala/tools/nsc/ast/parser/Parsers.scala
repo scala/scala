@@ -2863,8 +2863,7 @@ self =>
           t = Apply(t, argumentExprs())
           newLineOptWhenFollowedBy(LBRACE)
         }
-        if (classContextBounds.isEmpty) t
-        else Apply(t, vparamss.last.map(vp => Ident(vp.name)))
+        t
       }
 
     /** {{{
