@@ -91,9 +91,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
+    // note: classSym can be scala.Array, see https://github.com/scala/bug/issues/12225#issuecomment-729687859
     if (global.settings.debug) {
-      // OPT these assertions have too much performance overhead to run unconditionally
-      assertClassNotArrayNotPrimitive(classSym)
+      // OPT this assertion has too much performance overhead to run unconditionally
       assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
     }
 
@@ -219,11 +219,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def assertClassNotArray(sym: Symbol): Unit = {
     assert(sym.isClass, sym)
     assert(sym != definitions.ArrayClass || isCompilingArray, sym)
-  }
-
-  def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
-    assertClassNotArray(sym)
-    assert(!primitiveTypeToBType.contains(sym) || isCompilingPrimitive, sym)
   }
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
