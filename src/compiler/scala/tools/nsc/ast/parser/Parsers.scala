@@ -874,6 +874,16 @@ self =>
       }
     }
 
+    /** Is current ident a `*`, and is it followed by a `)` or `, )`? */
+    def followingIsScala3Vararg(): Boolean =
+      currentRun.isScala3 && isRawStar && lookingAhead {
+        in.token == RPAREN ||
+        in.token == COMMA && {
+          in.nextToken()
+          in.token == RPAREN
+        }
+      }
+
     /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
     /** Modes for infix types. */
@@ -1654,7 +1664,7 @@ self =>
       val start = in.offset
       val base  = opstack
 
-      def loop(top: Tree): Tree = if (!isIdent) top else {
+      def loop(top: Tree): Tree = if (!isIdent || followingIsScala3Vararg()) top else {
         pushOpInfo(reduceExprStack(base, top))
         newLineOptWhenFollowing(isExprIntroToken)
         if (isExprIntro)
@@ -1665,7 +1675,12 @@ self =>
         else finishPostfixOp(start, base, popOpInfo())
       }
 
-      reduceExprStack(base, loop(prefixExpr()))
+      val expr = reduceExprStack(base, loop(prefixExpr()))
+      if (followingIsScala3Vararg())
+        atPos(expr.pos.start) {
+          Typed(expr, atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
+        }
+      else expr
     }
 
     /** {{{
@@ -2020,7 +2035,12 @@ self =>
             if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
             else EmptyTree
           )
-          case _ => EmptyTree
+          case Ident(name) if isSequenceOK && followingIsScala3Vararg() =>
+            atPos(top.pos.start) {
+              Bind(name, atPos(in.skipToken()) { Star(Ident(nme.WILDCARD)) })
+            }
+          case _ =>
+            EmptyTree
         }
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
           case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(badPattern3))
