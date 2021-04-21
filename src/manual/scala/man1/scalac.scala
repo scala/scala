@@ -221,9 +221,6 @@ object scalac extends Command {
           CmdOption("Xlog-implicit-conversions"),
           "Print a message whenever an implicit conversion is inserted."),
         Definition(
-          CmdOption("Xlog-implicits"),
-          "Show more detail on why some implicits are not applicable."),
-        Definition(
           CmdOption("Xlog-reflective-calls"),
           "Print a message when a reflective method call is generated."),
         Definition(

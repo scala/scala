@@ -1,0 +1,47 @@
+newSource1.scala:28: error: implicit error;
+!I e: I1
+i1a invalid because
+!I p: I2
+――i2 invalid because
+  !I p: I3
+――――i3a invalid because
+    !I p: I4
+――――――i4 invalid because
+      !I p: I5
+――――――――i5 invalid because
+        !I p: I6
+――――――――――i6a invalid because
+          !I p: I7
+――――――――――――i7 invalid because
+            !I p: I8
+――――――――――――――i8 invalid because
+              !I p: I9
+
+――――――――――i6b invalid because
+          !I p: I8
+――――――――――――i8 invalid because
+            !I p: I9
+
+――――i3b invalid because
+    !I p: I4
+――――――i4 invalid because
+      !I p: I5
+――――――――i5 invalid because
+        !I p: I6
+――――――――――i6a invalid because
+          !I p: I7
+――――――――――――i7 invalid because
+            !I p: I8
+――――――――――――――i8 invalid because
+              !I p: I9
+
+i1b invalid because
+!I p: I6
+――i6a invalid because
+  !I p: I7
+――――i7 invalid because
+    !I p: I8
+――――――i8 invalid because
+      !I p: I9
+  implicitly[I1]
+            ^

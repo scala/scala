@@ -1,0 +1,114 @@
+newSource1.scala:13: error: implicit error;
+!I e: II
+ImplicitChain.g invalid because
+!I impPar3: I1
+⋮
+――ImplicitChain.i1 invalid because
+  !I impPar7: I3
+  implicitly[II]
+            ^
+newSource1.scala:6: error: type mismatch;
+  L|R
+  f(new L)
+    ^
+newSource1.scala:7: error: implicit error;
+!I e: F[Arg]
+  implicitly[F[Arg]]
+            ^
+newSource1.scala:4: error: implicit error;
+!I ec: ExecutionContext
+  Cannot find an implicit ExecutionContext. You might add
+  an (implicit ec: ExecutionContext) parameter to your method.
+
+  The ExecutionContext is used to configure how and on which
+  thread pools asynchronous tasks (such as Futures) will run,
+  so the specific ExecutionContext that is selected is important.
+
+  If your application does not define an ExecutionContext elsewhere,
+  consider using Scala's global ExecutionContext by defining
+  the following:
+
+  implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+
+  long
+  ^
+newSource1.scala:10: error: implicit error;
+!I e: String
+f invalid because
+!I impPar4:
+  List[
+    (
+      VeryLongTypeName ::::
+      VeryLongTypeName ::::
+      VeryLongTypeName ::::
+      VeryLongTypeName
+    )
+    ::::
+    (Short :::: Short) ::::
+    (
+      VeryLongTypeName ::::
+      VeryLongTypeName ::::
+      VeryLongTypeName ::::
+      VeryLongTypeName
+    )
+    ::::
+    VeryLongTypeName ::::
+    VeryLongTypeName ::::
+    VeryLongTypeName ::::
+    VeryLongTypeName
+  ]
+   (No implicit view available from Int => InfixBreak.T2.)
+
+  implicitly[String]
+            ^
+newSource1.scala:11: error: implicit error;
+!I e: C1[T3[T1[List[String], ?], T2[Id, C4, ?], ?]]
+  implicitly[C1[T3]]
+            ^
+newSource1.scala:9: error: implicit error;
+!I e: F.Aux[C, D]
+Aux.f invalid because
+!I impPar10: C
+  implicitly[F.Aux[C, D]]
+            ^
+newSource1.scala:11: error: type mismatch;
+  A with B with E|C with F|<none> {type X = Int|String; type Y = String; type Z = <none>|String}
+  f(x)
+    ^
+newSource1.scala:25: error: type mismatch;
+  C.X.Y.T|B.X.Y.T
+  f(x: C.X.Y.T)
+     ^
+newSource1.scala:6: error: type mismatch;
+  Int|(=> A) => B
+  f(1: Int)
+     ^
+newSource1.scala:3: error: type mismatch;
+  String|Tuple1[String]
+  val a: Tuple1[String] = "Tuple1": String
+                                  ^
+newSource1.scala:7: error: implicit error;
+!I e: a.type *** b.type
+  implicitly[a.type *** b.type]
+            ^
+newSource1.scala:8: error: implicit error;
+!I e: a.type *** b.type
+    implicitly[a.type *** b.type]
+              ^
+newSource1.scala:6: error: implicit error;
+!I e: a.type *** b.type
+    implicitly[a.type *** b.type]
+              ^
+newSource1.scala:5: error: implicit error;
+!I ev: Ordering[Object]
+  No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+
+Ordering.ordered invalid because
+!I asComparable: Object => Comparable[_$2]
+  No implicit view available from Object => Comparable[_ >: Object].
+
+⋮
+Ordering.comparatorToOrdering invalid because
+!I cmp: Comparator[Object]
+    ms.map(_ => o)
+          ^

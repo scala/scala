@@ -63,24 +63,7 @@ trait TypeDebugging {
 
   /** Light color wrappers.
    */
-  object typeDebug {
-    import scala.io.AnsiColor._
-
-    private[this] val colorsOk = scala.util.Properties.coloredOutputEnabled
-    private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
-    private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
-
-    def inLightRed(s: String)          = inColor(s, RED)
-    def inLightGreen(s: String)        = inColor(s, GREEN)
-    def inLightMagenta(s: String)      = inColor(s, MAGENTA)
-    def inLightCyan(s: String): String = inColor(s, CYAN)
-    def inGreen(s: String): String     = inBold(s, GREEN)
-    def inRed(s: String): String       = inBold(s, RED)
-    def inBlue(s: String): String      = inBold(s, BLUE)
-    def inCyan(s: String): String      = inBold(s, CYAN)
-    def inMagenta(s: String)           = inBold(s, MAGENTA)
-    def resetColor(s: String): String  = if (colorsOk) s + RESET else s
-
+  object typeDebug extends TypeDebugging.AnsiColor {
     private def to_s(x: Any): String = x match {
       // otherwise case classes are caught looking like products
       case _: Tree | _: Type     => "" + x
@@ -159,4 +142,34 @@ trait TypeDebugging {
   def paramString(tp: Type)      = typeDebug.str params tp.params
   def typeParamsString(tp: Type) = typeDebug.str brackets (tp.typeParams map (_.defString))
   def debugString(tp: Type)      = typeDebug debugString tp
+}
+
+object TypeDebugging {
+  object AnsiColor extends AnsiColor {
+    implicit class StringColorOps(private val s: String) extends AnyVal {
+      def red    = inLightRed(s)
+      def green  = inLightGreen(s)
+      def yellow = inLightYellow(s)
+      def blue   = inLightBlue(s)
+    }
+  }
+
+  trait AnsiColor extends scala.io.AnsiColor {
+    private[this] val colorsOk = scala.util.Properties.coloredOutputEnabled
+    private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
+    private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
+
+    def inLightRed(s: String)            = inColor(s, RED)
+    def inLightBlue(s: String)           = inColor(s, BLUE)
+    def inLightGreen(s: String)          = inColor(s, GREEN)
+    def inLightYellow(s: String): String = inColor(s, YELLOW)
+    def inLightMagenta(s: String)        = inColor(s, MAGENTA)
+    def inLightCyan(s: String): String   = inColor(s, CYAN)
+    def inGreen(s: String): String       = inBold(s, GREEN)
+    def inRed(s: String): String         = inBold(s, RED)
+    def inBlue(s: String): String        = inBold(s, BLUE)
+    def inCyan(s: String): String        = inBold(s, CYAN)
+    def inMagenta(s: String)             = inBold(s, MAGENTA)
+    def resetColor(s: String): String    = if (colorsOk) s + RESET else s
+  }
 }

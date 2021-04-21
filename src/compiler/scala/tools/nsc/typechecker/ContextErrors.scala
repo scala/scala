@@ -25,7 +25,7 @@ import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
 import scala.reflect.internal.util.NoSourceFile
 
-trait ContextErrors {
+trait ContextErrors extends splain.SplainErrors {
   self: Analyzer =>
 
   import global._
@@ -108,7 +108,7 @@ trait ContextErrors {
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
     def typeErrorMsg(context: Context, found: Type, req: Type) =
-      if (context.openImplicits.nonEmpty && !settings.XlogImplicits.value)
+      if (context.openImplicits.nonEmpty && !settings.Vimplicits)
          // OPT: avoid error string creation for errors that won't see the light of day, but predicate
         //       this on -Xsource:2.13 for bug compatibility with https://github.com/scala/scala/pull/7147#issuecomment-418233611
         "type mismatch"
@@ -152,8 +152,26 @@ trait ContextErrors {
   def MacroCantExpandIncompatibleMacrosError(internalMessage: String) =
     MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
+  /** The implicit not found message from the annotation, and whether it's a supplement message or not. */
+  def NoImplicitFoundAnnotation(tree: Tree, param: Symbol): (Boolean, String) = {
+    param match {
+      case ImplicitNotFoundMsg(msg) => (false, msg.formatParameterMessage(tree))
+      case _ =>
+        val paramTp = param.tpe
+        paramTp.typeSymbolDirect match {
+          case ImplicitNotFoundMsg(msg) => (false, msg.formatDefSiteMessage(paramTp))
+          case _ =>
+            val supplement = param.baseClasses.collectFirst {
+              case ImplicitNotFoundMsg(msg) => s" (${msg.formatDefSiteMessage(paramTp)})"
+            }.getOrElse("")
+            true -> supplement
+        }
+    }
+  }
+
   def NoImplicitFoundError(tree: Tree, param: Symbol)(implicit context: Context): Unit = {
-    def errMsg = {
+    val (isSupplement, annotationMsg) = NoImplicitFoundAnnotation(tree, param)
+    def defaultErrMsg = {
       val paramName = param.name
       val paramTp = param.tpe
       def evOrParam =
@@ -161,21 +179,11 @@ trait ContextErrors {
           "evidence parameter of type"
         else
           s"parameter $paramName:"
-
-      param match {
-        case ImplicitNotFoundMsg(msg) => msg.formatParameterMessage(tree)
-        case _ =>
-          paramTp.typeSymbolDirect match {
-            case ImplicitNotFoundMsg(msg) => msg.formatDefSiteMessage(paramTp)
-            case _ =>
-              val supplement = param.baseClasses.collectFirst {
-                case ImplicitNotFoundMsg(msg) => s" (${msg.formatDefSiteMessage(paramTp)})"
-              }.getOrElse("")
-              s"could not find implicit value for $evOrParam $paramTp$supplement"
-          }
-      }
+      if (isSupplement) s"could not find implicit value for $evOrParam $paramTp$annotationMsg"
+      else annotationMsg
     }
-    issueNormalTypeError(tree, errMsg)
+    val errMsg = splainPushOrReportNotFound(tree, param, annotationMsg)
+    issueNormalTypeError(tree, if (errMsg.isEmpty) defaultErrMsg else errMsg)
   }
 
   trait TyperContextErrors {

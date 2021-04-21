@@ -16,7 +16,7 @@ package typechecker
 /**
  *  @author Lukas Rytz
  */
-trait AnalyzerPlugins { self: Analyzer =>
+trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
   import global._
 
   trait AnalyzerPlugin {
@@ -179,6 +179,16 @@ trait AnalyzerPlugins { self: Analyzer =>
      * @param result The result to a given implicit search.
      */
     def pluginsNotifyImplicitSearchResult(result: SearchResult): Unit = ()
+
+    /**
+     * Construct a custom error message for implicit parameters that could not be resolved.
+     *
+     * @param param The implicit parameter that was resolved
+     * @param errors The chain of intermediate implicits that lead to this error
+     * @param previous The error message constructed by the previous analyzer plugin, or the builtin default
+     */
+    def noImplicitFoundError(param: Symbol, errors: List[ImplicitError], previous: String): String =
+      previous
   }
 
   /**
@@ -389,6 +399,13 @@ trait AnalyzerPlugins { self: Analyzer =>
     def default = ()
     def accumulate = (_, p) => p.pluginsNotifyImplicitSearchResult(result)
   })
+
+  /** @see AnalyzerPlugin.noImplicitFoundError */
+  def pluginsNoImplicitFoundError(param: Symbol, errors: List[ImplicitError], initial: String): String =
+    invoke(new CumulativeOp[String] {
+      def default = initial
+      def accumulate = (previous, p) => p.noImplicitFoundError(param, errors, previous)
+    })
 
   /** A list of registered macro plugins */
   private var macroPlugins: List[MacroPlugin] = Nil

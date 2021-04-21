@@ -102,8 +102,6 @@ abstract class Taggers {
     val tpe = tpeTree.tpe
     val PolyType(_, MethodType(_, tagTpe)) = fun.tpe: @unchecked
     val tagModule = tagTpe.typeSymbol.companionSymbol
-    if (c.compilerSettings.contains("-Xlog-implicits"))
-      c.echo(c.enclosingPosition, s"cannot materialize ${tagModule.name}[$tpe] as $result because:\n$reason")
     c.abort(c.enclosingPosition, "No %s available for %s".format(tagModule.name, tpe))
   }
 
