@@ -1438,6 +1438,8 @@ trait Scanners extends ScannersCommon {
 
   final val token2name = (allKeywords map (_.swap)).toMap
 
+  final val softModifierNames = Set(nme.open, nme.infix)
+
 // Token representation ----------------------------------------------------
 
   /** Returns the string representation of given token. */
