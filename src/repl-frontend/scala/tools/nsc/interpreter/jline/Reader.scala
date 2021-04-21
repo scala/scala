@@ -13,13 +13,19 @@
 package scala.tools.nsc.interpreter
 package jline
 
+import org.jline.builtins.InputRC
 import org.jline.reader.Parser.ParseContext
-import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
 import org.jline.reader._
+import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
 import org.jline.terminal.Terminal
 
+import java.io.{ByteArrayInputStream, File}
+import java.net.{MalformedURLException, URL}
 import java.util.{List => JList}
+import scala.io.Source
 import scala.tools.nsc.interpreter.shell.{Accumulator, ShellConfig}
+import scala.util.Using
+import scala.util.control.NonFatal
 
 /** A Reader that delegates to JLine3.
  */
@@ -68,6 +74,31 @@ object Reader {
 
     System.setProperty(LineReader.PROP_SUPPORT_PARSEDLINE, java.lang.Boolean.TRUE.toString())
 
+    def inputrcFileUrl(): Option[URL] = {
+      sys.props
+         .get("jline.inputrc")
+         .flatMap { path =>
+           try Some(new URL(path))
+           catch {
+             case _: MalformedURLException =>
+               Some(new File(path).toURI.toURL)
+           }
+         }.orElse {
+        sys.props.get("user.home").map { home =>
+          val f = new File(home).toPath.resolve(".inputrc").toFile
+          (if (f.isFile) f else new File("/etc/inputrc")).toURI.toURL
+        }
+      }
+    }
+
+    def urlByteArray(url: URL): Array[Byte] = {
+      Using.resource(Source.fromURL(url).bufferedReader()) {
+        bufferedReader =>
+          LazyList.continually(bufferedReader.read).takeWhile(_ != -1).map(_.toByte).toArray
+      }
+    }
+
+    lazy val inputrcFileContents: Option[Array[Byte]] = inputrcFileUrl().map(in => urlByteArray(in))
     val jlineTerminal = TerminalBuilder.builder().jna(true).build()
     val completer = new Completion(completion)
     val parser    = new ReplParser(repl)
@@ -94,6 +125,9 @@ object Reader {
     }
 
     val reader = builder.build()
+    try inputrcFileContents.foreach(f => InputRC.configure(reader, new ByteArrayInputStream(f))) catch {
+      case NonFatal(_) =>
+    } //ignore
     locally {
       import LineReader._
       // VIINS, VICMD, EMACS
