@@ -283,7 +283,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             |""".stripMargin,
         WarningCategory.Other,
         sym)
-      val possibles = (sym.tpe nonPrivateMember nme.main).alternatives
+      val possibles      = sym.tpe.nonPrivateMember(nme.main).alternatives
       val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
 
       // Before erasure so we can identify generic mains.
@@ -308,16 +308,19 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val mainAdvice =
           if (hasExact) Nil
           else possibles.map { m =>
-            m.info match {
+            val msg = m.info match {
               case PolyType(_, _) =>
-                ("main methods cannot be generic", m)
+                "main methods cannot be generic"
               case MethodType(params, res) if res.typeSymbol :: params exists (_.isAbstractType) =>
-                ("main methods cannot refer to type parameters or abstract types", m)
+                "main methods cannot refer to type parameters or abstract types"
+              case MethodType(param :: Nil, _) if definitions.isArrayOfSymbol(param.tpe, StringClass) =>
+                "main methods must have the exact signature `(Array[String]): Unit`, though Scala runners will forgive a non-Unit result"
               case MethodType(_, _) =>
-                ("main methods must have the exact signature (Array[String])Unit", m)
+                "main methods must have the exact signature `(Array[String]): Unit`"
               case tp =>
-                (s"don't know what this is: $tp", m)
+                s"don't know what this is: $tp"
             }
+            (msg, m)
           }
 
         companionAdvice.foreach(msg => warnNoForwarder(msg, hasExact, exactly.fold(alternate)(_.info)))

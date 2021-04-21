@@ -68,3 +68,9 @@ package p8 {
     def main(args: Array[Double]) = ()
   }
 }
+
+package t7448 {
+  object Main {
+    def main(args: Array[String]) = ???
+  }
+}

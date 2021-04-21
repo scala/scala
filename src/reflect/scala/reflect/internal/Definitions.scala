@@ -456,13 +456,13 @@ trait Definitions extends api.StandardDefinitions {
       else if (isScalaRepeatedParamType(tp)) elementExtract(RepeatedParamClass, tp) orElse tp
       else tp
     )
-    def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse elementExtract(JavaRepeatedParamClass, tp) orElse tp
+    def repeatedToSingle(tp: Type): Type               = elementExtract(RepeatedParamClass, tp) orElse elementExtract(JavaRepeatedParamClass, tp) orElse tp
      // We don't need to deal with JavaRepeatedParamClass here, as `repeatedToSeq` is only called in the patmat translation for Scala sources.
-    def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
-    def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
-    def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(elemtp => elemtp <:< AnyRefTpe || (elemtp eq ObjectTpeJava))
-    def isArrayOfSymbol(tp: Type, elem: Symbol)              = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
-    def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
+    def repeatedToSeq(tp: Type): Type                  = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
+    def seqToRepeated(tp: Type): Type                  = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
+    def isReferenceArray(tp: Type)                     = elementTest(ArrayClass, tp)(elemtp => elemtp <:< AnyRefTpe || (elemtp eq ObjectTpeJava))
+    def isArrayOfSymbol(tp: Type, elem: Symbol)        = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
+    def elementType(container: Symbol, tp: Type): Type = elementExtract(container, tp)
 
     // Classes treated specially with respect to -Ywarn-unused
     lazy val SubTypeClass       = requiredClass[scala.<:<[_,_]]
@@ -474,7 +474,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
-             def List_cons              = getMemberMethod(ListClass, nme.CONS)
+         def List_cons              = getMemberMethod(ListClass, nme.CONS)
     @migration("SeqClass now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqClass               = requiredClass[scala.collection.immutable.Seq[_]]
     lazy val SeqFactoryClass        = requiredModule[scala.collection.SeqFactory.type]
@@ -640,8 +640,7 @@ trait Definitions extends api.StandardDefinitions {
       case _                            => false
     })
     // The given class has a main method.
-    def hasJavaMainMethod(sym: Symbol): Boolean =
-      (sym.tpe member nme.main).alternatives exists isJavaMainMethod
+    def hasJavaMainMethod(sym: Symbol): Boolean = sym.tpe.member(nme.main).alternatives.exists(isJavaMainMethod)
 
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private[this] val offset = countFrom - init.size
