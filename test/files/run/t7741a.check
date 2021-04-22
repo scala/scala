@@ -1,3 +1,0 @@
-#partest !java8
-Note: t7741a/GroovyInterface$1Dump.java uses or overrides a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.

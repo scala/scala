@@ -32,7 +32,7 @@ u: List(@anns.Ann_0$Container(value={@anns.Ann_0(name="u", value="you"), @anns.A
 
 List(@anns.Ann_0$Container(value={@anns.Ann_0(name="<init>", value="constructor"), @anns.Ann_0(name="<init>", value="initializer")}))
 
-#partest java15
+#partest java15+
 A: List()
 B: List(@java.lang.Deprecated(forRemoval=false, since=""))
 C: List(@anns.Ann_0(name="C", value="see"))

@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
+import scala.annotation.nowarn
 
 /** This module contains additional higher-level assert statements
  *  that are ultimately based on junit.Assert primitives.
@@ -166,7 +167,7 @@ object AssertUtil {
   def assertZeroNetThreads(body: => Unit): Unit = {
     val group = new ThreadGroup("junit")
     try assertZeroNetThreads(group)(body)
-    finally group.destroy()
+    finally group.destroy(): @nowarn("cat=deprecation") // deprecated since JDK 16, will be removed
   }
   def assertZeroNetThreads[A](group: ThreadGroup)(body: => A): Try[A] = {
     val testDone = new CountDownLatch(1)
@@ -294,7 +295,7 @@ class NoTrace[A](body: => A) extends Runnable {
       case Success(a) => result = Some(a)
       case Failure(e) => synchronized { uncaught += ((Thread.currentThread, e)) }
     }
-    finally group.destroy()
+    finally group.destroy(): @nowarn("cat=deprecation") // deprecated since JDK 16, will be removed
   }
 
   private[testkit] lazy val errors: List[(Thread, Throwable)] = synchronized(uncaught.toList)
