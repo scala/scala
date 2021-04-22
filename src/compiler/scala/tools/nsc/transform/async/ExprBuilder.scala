@@ -303,7 +303,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
               buildStateAndOpenNextState(afterLabelState, style = StateTransitionStyle.None)
             }
           } else if (containsAwait(rhs)) {
-            // A while loop containg an await. We assuming that the the backward branch is reachable across the async
+            // A while loop containing an await. We assuming that the the backward branch is reachable across the async
             // code path and create a state for the `while` label.
             //
             // In theory we could avoid creating this state in code like:
