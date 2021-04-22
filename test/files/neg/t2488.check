@@ -7,19 +7,19 @@ t2488.scala:7: error: overloaded method f with alternatives:
 t2488.scala:8: error: overloaded method f with alternatives:
   ()Int <and>
   (a: Int,b: Int)Int
- cannot be applied to (a: Int, c: Int)
+ [which have no such parameter c] cannot be applied to (a: Int, c: Int)
   println(c.f(a = 2, c = 2))
             ^
 t2488.scala:9: error: overloaded method f with alternatives:
   ()Int <and>
   (a: Int,b: Int)Int
- cannot be applied to (Int, c: Int)
+ [which have no such parameter c] cannot be applied to (Int, c: Int)
   println(c.f(2, c = 2))
             ^
 t2488.scala:10: error: overloaded method f with alternatives:
   ()Int <and>
   (a: Int,b: Int)Int
- cannot be applied to (c: Int, Int)
+ [which have no such parameter c] cannot be applied to (c: Int, Int)
   println(c.f(c = 2, 2))
             ^
 t2488.scala:11: error: overloaded method f with alternatives:

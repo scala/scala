@@ -674,6 +674,24 @@ self =>
       case _ => false
     }
 
+    def isSoftModifier: Boolean =
+      currentRun.isScala3 && in.token == IDENTIFIER && softModifierNames.contains(in.name)
+
+    /** Is the current token a soft modifier in a position where such a modifier is allowed? */
+    def isValidSoftModifier: Boolean =
+      isSoftModifier && {
+        val mod = in.name
+        lookingAhead {
+          while (in.token == NEWLINE || isModifier || isSoftModifier) in.nextToken()
+
+          in.token match {
+            case CLASS | CASECLASS => true
+            case DEF | TRAIT | TYPE => mod == nme.infix
+            case _ => false
+          }
+        }
+      }
+
     def isAnnotation: Boolean = in.token == AT
 
     def isLocalModifier: Boolean = in.token match {
@@ -705,6 +723,10 @@ self =>
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER
 
+    def isWildcardType =
+      in.token == USCORE ||
+      settings.isScala3 && isRawIdent && in.name == raw.QMARK
+
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
 
@@ -715,12 +737,13 @@ self =>
     }
     def isLiteral = isLiteralToken(in.token)
 
-    def isExprIntroToken(token: Token): Boolean = isLiteralToken(token) || (token match {
-      case IDENTIFIER | BACKQUOTED_IDENT |
-           THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
-           DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
-      case _ => false
-    })
+    def isExprIntroToken(token: Token): Boolean =
+      !isValidSoftModifier && (isLiteralToken(token) || (token match {
+        case IDENTIFIER | BACKQUOTED_IDENT |
+             THIS | SUPER | IF | FOR | NEW | USCORE | TRY | WHILE |
+             DO | RETURN | THROW | LPAREN | LBRACE | XMLSTART => true
+        case _ => false
+      }))
 
     def isExprIntro: Boolean = isExprIntroToken(in.token)
 
@@ -918,6 +941,16 @@ self =>
         mkApply(Ident(op.encode), stripParens(left) :: arguments)
     }
 
+    /** Is current ident a `*`, and is it followed by a `)` or `, )`? */
+    def followingIsScala3Vararg(): Boolean =
+      currentRun.isScala3 && isRawStar && lookingAhead {
+        in.token == RPAREN ||
+        in.token == COMMA && {
+          in.nextToken()
+          in.token == RPAREN
+        }
+      }
+
     /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
 
     /** Modes for infix types. */
@@ -1105,12 +1138,14 @@ self =>
               }
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
-            case USCORE => wildcardType(in.skipToken())
             case _      =>
-              path(thisOK = false, typeOK = true) match {
-                case r @ SingletonTypeTree(_) => r
-                case r => convertToTypeId(r)
-              }
+              if (isWildcardType)
+                wildcardType(in.skipToken())
+              else
+                path(thisOK = false, typeOK = true) match {
+                  case r @ SingletonTypeTree(_) => r
+                  case r => convertToTypeId(r)
+                }
           })
         }
       }
@@ -1710,7 +1745,7 @@ self =>
       val base  = opstack
 
       @tailrec
-      def loop(top: Tree): Tree = if (!isIdent) top else {
+      def loop(top: Tree): Tree = if (!isIdent || followingIsScala3Vararg()) top else {
         pushOpInfo(reduceExprStack(base, top))
         newLineOptWhenFollowing(isExprIntroToken)
         if (isExprIntro)
@@ -1721,7 +1756,12 @@ self =>
         else finishPostfixOp(start, base, popOpInfo())
       }
 
-      reduceExprStack(base, loop(prefixExpr()))
+      val expr = reduceExprStack(base, loop(prefixExpr()))
+      if (followingIsScala3Vararg())
+        atPos(expr.pos.start) {
+          Typed(expr, atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
+        }
+      else expr
     }
 
     /** {{{
@@ -1926,6 +1966,12 @@ self =>
      */
     def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
       val start  = in.offset
+      val hasCase = in.token == CASE
+      if (hasCase) {
+        if (!currentRun.isScala3) syntaxError(in.offset, s"`case` keyword in for comprehension requires the -Xsource:3 flag.")
+        in.skipCASE()
+      }
+
       val hasVal = in.token == VAL
       if (hasVal)
         in.nextToken()
@@ -1944,7 +1990,7 @@ self =>
         else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
       }
 
-      if (hasEq && eqOK) in.nextToken()
+      if (hasEq && eqOK && !hasCase) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
 
@@ -1976,18 +2022,16 @@ self =>
       final def functionArgType(): Tree = argType()
       final def argType(): Tree = {
         val start = in.offset
-        in.token match {
-          case USCORE =>
+        if (isWildcardType) {
             in.nextToken()
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
-          case _ =>
-            typ() match {
-              case Ident(name: TypeName) if nme.isVariableName(name) =>
-                atPos(start) { Bind(name, EmptyTree) }
-              case t => t
-            }
-        }
+        } else
+          typ() match {
+            case Ident(name: TypeName) if nme.isVariableName(name) =>
+              atPos(start) { Bind(name, EmptyTree) }
+            case t => t
+          }
       }
 
       /** {{{
@@ -2076,7 +2120,12 @@ self =>
             if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
             else EmptyTree
           )
-          case _ => EmptyTree
+          case Ident(name) if isSequenceOK && followingIsScala3Vararg() =>
+            atPos(top.pos.start) {
+              Bind(name, atPos(in.skipToken()) { Star(Ident(nme.WILDCARD)) })
+            }
+          case _ =>
+            EmptyTree
         }
         @tailrec
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
@@ -2255,8 +2304,11 @@ self =>
      */
     def accessModifierOpt(): Modifiers = normalizeModifiers {
       in.token match {
-        case m @ (PRIVATE | PROTECTED)  => in.nextToken() ; accessQualifierOpt(Modifiers(flagTokens(m)))
-        case _                          => NoMods
+        case m @ (PRIVATE | PROTECTED) =>
+          in.nextToken()
+          accessQualifierOpt(Modifiers(flagTokens(m)))
+        case _ =>
+          NoMods
       }
     }
 
@@ -2278,7 +2330,10 @@ self =>
           in.nextToken()
           loop(mods)
         case _ =>
-          mods
+          if (isValidSoftModifier) {
+            in.nextToken()
+            loop(mods)
+          } else mods
       }
       loop(NoMods)
     }
@@ -2362,14 +2417,7 @@ self =>
         if (vds.isEmpty)
           syntaxError(start, s"case classes must have a parameter list; try 'case class $name()' or 'case object $name'")
         else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
-          if (currentRun.isScala213)
-            syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class $name()$elliptical'")
-          else {
-            deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class $name()$elliptical'", "2.12.2")
-            vds.insert(0, List.empty[ValDef])
-            vds(1) = vds(1).map(vd => copyValDef(vd)(mods = vd.mods & ~Flags.CASEACCESSOR))
-            if (implicitSection != -1) implicitSection += 1
-          }
+          syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class $name()$elliptical'")
         }
       }
       if (implicitSection != -1 && implicitSection != vds.length - 1)
@@ -2567,19 +2615,27 @@ self =>
       def loop(expr: Tree): Tree = {
         expr setPos expr.pos.makeTransparent
         val selectors: List[ImportSelector] = in.token match {
-          case USCORE   => List(wildImportSelector()) // import foo.bar._;
-          case LBRACE   => importSelectors()      // import foo.bar.{ x, y, z }
-          case _        =>
-            val nameOffset = in.offset
-            val name = ident()
-            if (in.token == DOT) {
-              // import foo.bar.ident.<unknown> and so create a select node and recurse.
-              val t = atPos(start, if (name == nme.ERROR) in.offset else nameOffset)(Select(expr, name))
-              in.nextToken()
-              return loop(t)
+          case USCORE =>
+            List(wildImportSelector()) // import foo.bar._
+          case IDENTIFIER if currentRun.isScala3 && in.name == raw.STAR =>
+            List(wildImportSelector()) // import foo.bar.*
+          case LBRACE =>
+            importSelectors()          // import foo.bar.{ x, y, z }
+          case _ =>
+            if (settings.isScala3 && lookingAhead { isRawIdent && in.name == nme.as })
+              List(importSelector())  // import foo.bar as baz
+            else {
+              val nameOffset = in.offset
+              val name = ident()
+              if (in.token == DOT) {
+                // import foo.bar.ident.<unknown> and so create a select node and recurse.
+                val t = atPos(start, if (name == nme.ERROR) in.offset else nameOffset)(Select(expr, name))
+                in.nextToken()
+                return loop(t)
+              }
+              // import foo.bar.Baz;
+              else List(makeImportSelector(name, nameOffset))
             }
-            // import foo.bar.Baz;
-            else List(makeImportSelector(name, nameOffset))
         }
         // reaching here means we're done walking.
         atPos(start)(Import(expr, selectors))
@@ -2622,17 +2678,20 @@ self =>
       val bbq          = in.token == BACKQUOTED_IDENT
       val name         = wildcardOrIdent()
       var renameOffset = -1
-      val rename       = in.token match {
-        case ARROW =>
+
+      val rename =
+        if (in.token == ARROW || (settings.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           renameOffset = in.offset
           if (name == nme.WILDCARD && !bbq) syntaxError(renameOffset, "Wildcard import cannot be renamed")
           wildcardOrIdent()
-        case _ if name == nme.WILDCARD && !bbq => null
-        case _     =>
+        }
+        else if (name == nme.WILDCARD && !bbq) null
+        else {
           renameOffset = start
           name
-      }
+        }
+
       ImportSelector(name, start, rename, renameOffset)
     }
 
@@ -2866,8 +2925,7 @@ self =>
           t = Apply(t, argumentExprs())
           newLineOptWhenFollowedBy(LBRACE)
         }
-        if (classContextBounds.isEmpty) t
-        else Apply(t, vparamss.last.map(vp => Ident(vp.name)))
+        t
       }
 
     /** {{{
@@ -3208,7 +3266,7 @@ self =>
       case IMPORT =>
         in.flushDoc()
         importClause()
-      case _ if isAnnotation || isTemplateIntro || isModifier =>
+      case _ if isAnnotation || isTemplateIntro || isModifier || isValidSoftModifier =>
         joinComment(topLevelTmplDef :: Nil)
     }
 
@@ -3258,7 +3316,7 @@ self =>
       case IMPORT =>
         in.flushDoc()
         importClause()
-      case _ if isDefIntro || isModifier || isAnnotation =>
+      case _ if isDefIntro || isModifier || isAnnotation || isValidSoftModifier =>
         joinComment(nonLocalDefOrDcl)
       case _ if isExprIntro =>
         in.flushDoc()

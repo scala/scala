@@ -1486,7 +1486,7 @@ abstract class RefChecks extends Transform {
           reporter.error(sym.pos, s"${sym.name}: Only concrete methods can be marked @elidable.$rest")
         }
       }
-      if (currentRun.isScala213) checkIsElidable(tree.symbol)
+      checkIsElidable(tree.symbol)
 
       def checkMember(sym: Symbol): Unit = {
         sym.setAnnotations(applyChecks(sym.annotations))

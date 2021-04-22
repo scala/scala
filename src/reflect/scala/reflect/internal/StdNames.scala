@@ -658,6 +658,13 @@ trait StdNames {
     val long2Long: NameType       = nameType("long2Long")
     val boolean2Boolean: NameType = nameType("boolean2Boolean")
 
+    // Scala 3 import syntax
+    val as: NameType              = nameType("as")
+
+    // Scala 3 soft keywords
+    val infix: NameType           = nameType("infix")
+    val open: NameType            = nameType("open")
+
     // Compiler utilized names
 
     val AnnotatedType: NameType        = nameType("AnnotatedType")
@@ -960,6 +967,7 @@ trait StdNames {
       final val PLUS : NameType  = nameType("+")
       final val STAR : NameType  = nameType("*")
       final val TILDE: NameType  = nameType("~")
+      final val QMARK: NameType  = nameType("?")
 
       final val isUnary: Set[Name] = Set(MINUS, PLUS, TILDE, BANG)
     }

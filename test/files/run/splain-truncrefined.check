@@ -1,0 +1,4 @@
+newSource1.scala:7: error: type mismatch;
+  D|C {...}
+  f(new D { type X = C; type Y = D })
+    ^

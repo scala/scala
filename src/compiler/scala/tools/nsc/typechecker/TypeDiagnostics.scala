@@ -40,7 +40,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *
  *  @author Paul Phillips
  */
-trait TypeDiagnostics {
+trait TypeDiagnostics extends splain.SplainDiagnostics {
   self: Analyzer with StdAttachments =>
 
   import global._
@@ -310,7 +310,7 @@ trait TypeDiagnostics {
   // when the message will never be seen.  I though context.reportErrors
   // being false would do that, but if I return "<suppressed>" under
   // that condition, I see it.
-  def foundReqMsg(found: Type, req: Type): String = {
+  def builtinFoundReqMsg(found: Type, req: Type): String = {
     val foundWiden = found.widen
     val reqWiden = req.widen
     val sameNamesDifferentPrefixes =
@@ -338,6 +338,11 @@ trait TypeDiagnostics {
         + explainAnyVsAnyRef(found, req)
         )
     }
+  }
+
+  def foundReqMsg(found: Type, req: Type): String = {
+    val errMsg = splainFoundReqMsg(found, req)
+    if (errMsg.isEmpty) builtinFoundReqMsg(found, req) else errMsg
   }
 
   def typePatternAdvice(sym: Symbol, ptSym: Symbol) = {

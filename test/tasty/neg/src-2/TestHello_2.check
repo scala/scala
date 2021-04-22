@@ -1,0 +1,7 @@
+TestHello_2_fail.scala:4: error: Unsupported Scala 3 inline value msg1; found in object helloworld.HelloWorld.
+  HelloWorld.acceptsOnlyMsg1(HelloWorld.msg1)
+                            ^
+TestHello_2_fail.scala:5: error: Unsupported Scala 3 inline method inlineMethod; found in object helloworld.HelloWorld.
+  HelloWorld.inlineMethod(1)
+             ^
+2 errors

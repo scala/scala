@@ -92,18 +92,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   } withAbbreviation "--release"
   def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
-  /*
-   * The previous "-Xsource" option is intended to be used mainly
-   * though this helper.
-   */
-  private[this] val version212 = ScalaVersion("2.12.0")
-  def isScala212: Boolean = source.value >= version212
-  private[this] val version213 = ScalaVersion("2.13.0")
-  def isScala213: Boolean = source.value >= version213
-  private[this] val version214 = ScalaVersion("2.14.0")
-  private[this] val version3 = ScalaVersion("3.0.0")
-  def isScala3: Boolean = source.value >= version3
-
   /**
    * -X "Advanced" settings
    */
@@ -145,10 +133,16 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = version213).withPostSetHook { s =>
-      if (s.value < version213) errorFn.apply(s"-Xsource must be at least the current major version (${version213.versionString})")
-      if (s.value >= version214 && s.value < version3) s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3").value = version3
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = ScalaVersion("2.13")).withPostSetHook { s =>
+    if (s.value >= ScalaVersion("3"))
+      isScala3.value = true
+    else if (s.value >= ScalaVersion("2.14"))
+      s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3").value = ScalaVersion("3")
+    else if (s.value < ScalaVersion("2.13"))
+      errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
   }
+  val isScala3           = BooleanSetting      ("isScala3", "Is -Xsource Scala 3?").internalOnly()
+  // The previous "-Xsource" option is intended to be used mainly though ^ helper
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
 
@@ -507,8 +501,10 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     .withAbbreviation("-Yhot-statistics")
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
-  val XlogImplicits      = BooleanSetting("-Vimplicits", "Show more detail on why some implicits are not applicable.")
-    .withAbbreviation("-Xlog-implicits")
+  val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")
+  val VimplicitsVerboseTree = BooleanSetting("-Vimplicits-verbose-tree", "Display all intermediate implicits in a chain.")
+  val VimplicitsMaxRefined  = IntSetting("-Vimplicits-max-refined", "max chars for printing refined types, abbreviate to `F {...}`", Int.MaxValue, Some((0, Int.MaxValue)), _ => None)
+  val VtypeDiffs            = BooleanSetting("-Vtype-diffs", "Print found/required error messages as colored diffs.")
   val logImplicitConv    = BooleanSetting("-Vimplicit-conversions", "Print a message whenever an implicit conversion is inserted.")
     .withAbbreviation("-Xlog-implicit-conversions")
   val logReflectiveCalls = BooleanSetting("-Vreflective-calls", "Print a message when a reflective method call is generated")

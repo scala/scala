@@ -153,7 +153,7 @@ scala> x1 + x2 + x3
 val res23: Int = 6
 
 scala> :reset
-Resetting interpreter state.
+Resetting REPL state.
 Forgetting this session history:
 
 var x = 10

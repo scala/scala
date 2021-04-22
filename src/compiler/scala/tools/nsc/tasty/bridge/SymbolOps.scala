@@ -46,7 +46,6 @@ trait SymbolOps { self: TastyUniverse =>
 
   implicit final class SymbolDecorator(val sym: Symbol) {
 
-    def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
     def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
     def isScala2Macro: Boolean = repr.originalFlagSet.is(Erased | Macro)
 

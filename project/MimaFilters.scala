@@ -17,7 +17,7 @@ object MimaFilters extends AutoPlugin {
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
-    // KEEP: we don't the reflect internal API isn't public API
+    // KEEP: the reflect internal API isn't public API
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
 
     // KEEP: java.util.Enumeration.asIterator only exists in later JDK versions (11 at least).  If you build
@@ -28,6 +28,15 @@ object MimaFilters extends AutoPlugin {
     // for the method this(Long)Unit in class scala.math.BigInt does not have a correspondent in other version
     // which is nevertheless private
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.math.BigInt.this"),
+
+    // PR: https://github.com/scala/scala/pull/9336; remove after re-STARR
+    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecatedOverriding"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecatedInheritance"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecated"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.elidable"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitAmbiguous"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitNotFound"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.migration"),
   )
 
   override val buildSettings = Seq(

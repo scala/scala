@@ -25,7 +25,7 @@ object TastyFormat {
   /**Natural number. Each increment of the `MajorVersion` begins a
    * new series of backward compatible TASTy versions.
    *
-   * A TASTy file in either the preceeding or succeeding series is
+   * A TASTy file in either the preceding or succeeding series is
    * incompatible with the current value.
    */
   final val MajorVersion: Int = 28
@@ -33,7 +33,7 @@ object TastyFormat {
   /**Natural number. Each increment of the `MinorVersion`, within
    * a series declared by the `MajorVersion`, breaks forward
    * compatibility, but remains backwards compatible, with all
-   * preceeding `MinorVersion`.
+   * preceding `MinorVersion`.
    */
   final val MinorVersion: Int = 0
 

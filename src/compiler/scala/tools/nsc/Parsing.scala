@@ -22,7 +22,6 @@ trait Parsing { self : Positions with Reporting =>
 
   trait RunParsing {
     val parsing: PerRunParsing = new PerRunParsing
-    def isScala213: Boolean
   }
 
   class PerRunParsing {

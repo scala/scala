@@ -29,4 +29,12 @@ object Test extends App {
   println(f"")
   println(f"${0}")
   println(f"${0}${0}")
+
+  println(s"$"everybody loves escaped quotes$" is a common sentiment.")
+  println(f"hi$"$$$"")
+  println(raw"hi$"$$$"")
+
+  println(s"""hi$"$$$"""")
+  println(f"""hi$"$$$"""")
+  println(raw"""hi$"$$$"""")
 }

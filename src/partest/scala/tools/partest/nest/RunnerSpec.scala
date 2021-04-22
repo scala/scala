@@ -25,7 +25,7 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   heading("Test categories:")
   val optPos          = "pos"          / "run compilation tests (success)"   --?
   val optNeg          = "neg"          / "run compilation tests (failure)"   --?
-  val optRun          = "run"          / "run interpreter and backend tests" --?
+  val optRun          = "run"          / "run REPL and backend tests" --?
   val optJvm          = "jvm"          / "run JVM backend tests"             --?
   val optRes          = "res"          / "run resident compiler tests"       --?
   val optScalap       = "scalap"       / "run scalap tests"                  --?

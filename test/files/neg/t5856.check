@@ -1,9 +1,6 @@
-t5856.scala:10: error: invalid string interpolation $", expected: $$, $identifier or ${expression}
-  val s9 = s"$"
-             ^
 t5856.scala:10: error: unclosed string literal
   val s9 = s"$"
-              ^
+             ^
 t5856.scala:2: error: error in interpolated string: identifier or block expected
   val s1 = s"$null"
               ^
@@ -28,4 +25,4 @@ t5856.scala:8: error: error in interpolated string: identifier or block expected
 t5856.scala:9: error: error in interpolated string: identifier or block expected
   val s8 = s"$super"
               ^
-10 errors
+9 errors

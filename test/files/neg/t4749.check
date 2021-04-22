@@ -1,5 +1,5 @@
 t4749.scala:5: warning: not a valid main method for bippy.Fail1,
-  because main methods must have the exact signature (Array[String])Unit.
+  because main methods must have the exact signature `(Array[String]): Unit`, though Scala runners will forgive a non-Unit result.
   To define an entry point, please define the main method as:
     def main(args: Array[String]): Unit
 
@@ -38,7 +38,7 @@ t4749.scala:28: warning: Fail6 has a valid main method (args: Array[String]): Un
   object Fail6 {
          ^
 t4749.scala:44: warning: not a valid main method for bippy.Win3,
-  because main methods must have the exact signature (Array[String])Unit.
+  because main methods must have the exact signature `(Array[String]): Unit`, though Scala runners will forgive a non-Unit result.
   To define an entry point, please define the main method as:
     def main(args: Array[String]): Unit
 

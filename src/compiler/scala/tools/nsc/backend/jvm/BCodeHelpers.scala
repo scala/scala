@@ -14,14 +14,15 @@ package scala
 package tools.nsc
 package backend.jvm
 
-import scala.tools.asm
-import BackendReporting._
-import scala.tools.asm.ClassWriter
-import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
-import scala.tools.nsc.reporters.NoReporter
-import PartialFunction.cond
+import scala.PartialFunction.cond
 import scala.annotation.tailrec
+import scala.tools.asm
+import scala.tools.asm.{ClassWriter, Label}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
+import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.reporters.NoReporter
+import scala.util.chaining.scalaUtilChainingOps
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -31,9 +32,9 @@ import scala.tools.nsc.Reporting.WarningCategory
  */
 abstract class BCodeHelpers extends BCodeIdiomatic {
   import global._
-  import definitions._
   import bTypes._
   import coreBTypes._
+  import definitions._
   import genBCode.postProcessor.backendUtils
 
   /**
@@ -282,7 +283,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             |""".stripMargin,
         WarningCategory.Other,
         sym)
-      val possibles = (sym.tpe nonPrivateMember nme.main).alternatives
+      val possibles      = sym.tpe.nonPrivateMember(nme.main).alternatives
       val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
 
       // Before erasure so we can identify generic mains.
@@ -307,16 +308,19 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val mainAdvice =
           if (hasExact) Nil
           else possibles.map { m =>
-            m.info match {
+            val msg = m.info match {
               case PolyType(_, _) =>
-                ("main methods cannot be generic", m)
+                "main methods cannot be generic"
               case MethodType(params, res) if res.typeSymbol :: params exists (_.isAbstractType) =>
-                ("main methods cannot refer to type parameters or abstract types", m)
+                "main methods cannot refer to type parameters or abstract types"
+              case MethodType(param :: Nil, _) if definitions.isArrayOfSymbol(param.tpe, StringClass) =>
+                "main methods must have the exact signature `(Array[String]): Unit`, though Scala runners will forgive a non-Unit result"
               case MethodType(_, _) =>
-                ("main methods must have the exact signature (Array[String])Unit", m)
+                "main methods must have the exact signature `(Array[String]): Unit`"
               case tp =>
-                (s"don't know what this is: $tp", m)
+                s"don't know what this is: $tp"
             }
+            (msg, m)
           }
 
         companionAdvice.foreach(msg => warnNoForwarder(msg, hasExact, exactly.fold(alternate)(_.info)))
@@ -365,7 +369,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    */
   trait BCPickles {
 
-    import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+    import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
@@ -794,6 +798,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       mirrorMethod.visitCode()
 
+      val codeStart: Label = new Label().tap(mirrorMethod.visitLabel)
       mirrorMethod.visitFieldInsn(asm.Opcodes.GETSTATIC, moduleName, strMODULE_INSTANCE_FIELD, classBTypeFromSymbol(moduleClass).descriptor)
 
       var index = 0
@@ -805,6 +810,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, methodBTypeFromSymbol(m).descriptor, false)
       mirrorMethod.visitInsn(jReturnType.typedOpcode(asm.Opcodes.IRETURN))
+      val codeEnd = new Label().tap(mirrorMethod.visitLabel)
+
+      methodInfo.params.lazyZip(paramJavaTypes).foldLeft(0) {
+        case (idx, (p, tp)) =>
+          mirrorMethod.visitLocalVariable(p.name.encoded, tp.descriptor, null, codeStart, codeEnd, idx)
+          idx + tp.size
+      }
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       mirrorMethod.visitEnd()

@@ -91,7 +91,7 @@ trait Typers {
    *
    *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
-   *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
+   *  Such errors don't vanish and can be inspected by turning on -Vimplicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    *
    *  @throws scala.reflect.macros.TypecheckException
@@ -103,7 +103,7 @@ trait Typers {
    *
    *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
-   *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
+   *  Such errors don't vanish and can be inspected by turning on -Vimplicits.
    *  Unlike in `typecheck`, `silent` is true by default.
    *
    *  @throws scala.reflect.macros.TypecheckException

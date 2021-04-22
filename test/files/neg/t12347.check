@@ -1,0 +1,10 @@
+t12347.scala:14: error: unknown parameter name: x
+  X.f(n = count, x = text)
+                   ^
+t12347.scala:15: error: overloaded method f with alternatives:
+  (s: String)String <and>
+  (n: Int,s: String)String
+ [which have no such parameter x] cannot be applied to (n: Int, x: String)
+  Y.f(n = count, x = text)
+    ^
+2 errors
