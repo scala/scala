@@ -694,7 +694,9 @@ lazy val testkit = configureAsSubproject(project)
 // Jigsaw: reflective access between modules (`setAccessible(true)`) requires an `opens` directive.
 // This is enforced by error (not just by warning) since JDK 16. In our tests we use reflective access
 // from the unnamed package (the classpath) to JDK modules in testing utilities like `assertNotReachable`.
-val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
+// `add-exports=jdk.jdeps/com.sun.tools.javap` is tests that use `:javap` in the REPL, see scala/bug#12378
+val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jdk.jdeps/com.sun.tools.javap=ALL-UNNAMED" +:
+  Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
