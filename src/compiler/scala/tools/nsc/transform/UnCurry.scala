@@ -435,7 +435,7 @@ abstract class UnCurry extends InfoTransform
         (sym ne null) && sym.elisionLevel.exists { level =>
           if (sym.isMethod) level < settings.elidebelow.value
           else {
-            if (settings.isScala213) reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable!")
+            if (currentRun.isScala213) reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable!")
             false
           }
         }

@@ -1113,7 +1113,7 @@ trait Implicits {
             if(isView || wildPtNotInstantiable || matchesPtInst(firstPending))
               typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
             else SearchFailure
-          if (typedFirstPending.isFailure && settings.isScala213)
+          if (typedFirstPending.isFailure && currentRun.isScala213)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
@@ -1214,7 +1214,7 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
-      val isScala213 = settings.isScala213
+      val isScala213 = currentRun.isScala213
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.
@@ -1626,9 +1626,9 @@ trait Implicits {
             val outSym = out.typeSymbol
 
             val fail =
-              if (out.annotations.isEmpty && (outSym == ObjectClass || (settings.isScala211 && outSym == AnyValClass)))
+              if (out.annotations.isEmpty && (outSym == ObjectClass || (currentRun.isScala211 && outSym == AnyValClass)))
                 maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than $out")
-              else if (settings.isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
+              else if (currentRun.isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
                 maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
               else false
 

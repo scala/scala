@@ -2298,7 +2298,7 @@ self =>
         if (vds.isEmpty)
           syntaxError(start, s"case classes must have a parameter list; try 'case class $name()' or 'case object $name'")
         else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
-          if (settings.isScala213)
+          if (currentRun.isScala213)
             syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class $name()$elliptical'")
           else {
             deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class $name()$elliptical'", "2.12.2")
