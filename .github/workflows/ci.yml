@@ -37,24 +37,11 @@ jobs:
             ~/.cache/coursier
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
-      - name: Setup
-        run: |
-          source scripts/common
-          java -version
-          javac -version
-          generateRepositoriesConfig
-          # Pass these environment vars to subsequent steps
-          echo "SBT=sbt -Dsbt.override.build.repos=true -Dsbt.repository.config=${sbtRepositoryConfig}" >> $GITHUB_ENV
-          echo "COURSIER_HOME=$HOME/.coursier" >> "$GITHUB_ENV"
-          echo "COURSIER_CACHE=$HOME/.cache/coursier/v1" >> "$GITHUB_ENV"
-
       - name: Build
         run: |
-          source scripts/common
-          $SBT -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
+          sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
 
       - name: Test
         run: |
-          source scripts/common
-          parseScalaProperties buildcharacter.properties
-          $SBT -Dstarr.version=$maven_version_number -warn setupValidateTest testAll
+          STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+          sbt -Dstarr.version=$STARR setupValidateTest test:compile info testAll
