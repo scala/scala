@@ -115,8 +115,25 @@ To run a single negative test from sbt shell:
 root> partest --verbose test/files/neg/delayed-init-ref.scala
 ```
 
-To specify compiler flags such as `-Werror -Xlint`, you can add a comment
-at the top of your source file of the form: `// scalac: -Werror -Xlint`.
+A test can be either a single `.scala` file or a directory containing multiple `.scala` and `.java` files.
+For testing separate compilation, files can be grouped using `_N` suffixes in the filename. For example, a test
+with files (`A.scala`, `B_1.scala`, `C_1.java`, `Test_2.scala`) does:
+```
+scalac         A.scala            -d out
+scalac -cp out B_1.scala C_1.java -d out
+javac  -cp out C_1.java           -d out
+scalac -cp out Test_2.scala       -d out
+scala  -cp out Test
+```
+
+**Flags**
+  - To specify compiler flags such as `-Werror -Xlint`, you can add a comment at the top of your source file of the form: `// scalac: -Werror -Xlint`.
+  - Similarly, a `// javac: <flags>` comment in a Java source file passes flags to the Java compiler.
+  - A `// filter: <regex>` comment eliminates output lines that match the filter before comparing to the `.check` file.
+  - A `// java: <flags>` comment makes a `run` test execute in a separate JVM and passes the additional flags to the `java` command.
+  - A `// javaVersion <N[+| - M]>` comment makes partest skip the test if the java version is outside the requested range (e.g. `8`, `15+`, `9 - 11`)
+
+**Common Usage**
 
 To test that no warnings are emitted while compiling a `pos` test, use `-Werror`.
 That will fail a `pos` test if there are warnings. Note that `pos` tests do not have `.check` files.
@@ -171,7 +188,7 @@ See `--help` for more info:
 root> partest --help
 ```
 
-Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
+Partests are compiled by the bootstrapped `quick` compiler (and `run` partests executed with the `quick` library),
 and therefore:
 
 * if you're working on the compiler, you must write a partest, or a `BytecodeTesting` JUnit test which invokes the compiler programmatically; however
