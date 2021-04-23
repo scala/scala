@@ -1,3 +1,5 @@
+// java: -Dneeds.forked.jvm
+
 import scala.tools.partest.ReplTest
 import scala.tools.nsc.{ GenericRunnerSettings, Settings }
 import scala.tools.nsc.settings.MutableSettings

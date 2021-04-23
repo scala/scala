@@ -130,25 +130,15 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   /** Fail the action. */
   def nextTestActionFailing(reason: String): TestState = nextTestActionExpectTrue(reason, false)
 
-  private def assembleTestCommand(outDir: File, logFile: File): List[String] = {
-    // check whether there is a ".javaopts" file
-    val argsFile  = testFile changeExtension "javaopts"
-    val javaopts = readOptionsFile(argsFile)
+  private def assembleTestCommand(outDir: File, javaopts: List[String]): List[String] = {
     if (javaopts.nonEmpty)
-      suiteRunner.verbose(s"Found javaopts file '$argsFile', using options: '${javaopts.mkString(",")}'")
+      suiteRunner.verbose(s"Using java options: '${javaopts.mkString(",")}'")
 
-    // Note! As this currently functions, suiteRunner.javaOpts must precede argString
-    // because when an option is repeated to java only the last one wins.
-    // That means until now all the .javaopts files were being ignored because
-    // they all attempt to change options which are also defined in
-    // partest.java_opts, leading to debug output like:
-    //
-    // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
-    // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
     val propertyOpts = propertyOptions(fork = true).map { case (k, v) => s"-D$k=$v" }
 
     val classpath = joinPaths(extraClasspath ++ testClassPath)
 
+    // `javaopts` last; for repeated arguments, the last one wins
     javaCmdPath +: (
       (suiteRunner.javaOpts.split(' ') ++ extraJavaOptions ++ javaopts).filter(_ != "").toList ++ Seq(
         "-classpath",
@@ -224,8 +214,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     }
   }
 
-  private def execTest(outDir: File, logFile: File): TestState = {
-    val cmd = assembleTestCommand(outDir, logFile)
+  private def execTest(outDir: File, logFile: File, javaopts: List[String]): TestState = {
+    val cmd = assembleTestCommand(outDir, javaopts)
 
     pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
     nextTestAction(runCommand(cmd, logFile)) {
@@ -666,10 +656,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   private def runRunTest(): TestState = {
-    val argsFile = testFile changeExtension "javaopts" // TODO: use `toolArgsFor` instead of a separate file
-    val javaopts = readOptionsFile(argsFile)
+    val javaopts = toolArgs("java")
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
-    def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile)
+    def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile, javaopts)
     def noexec() = genSkip("no-exec: tests compiled but not run")
     runTestCommon(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }

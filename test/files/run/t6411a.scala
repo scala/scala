@@ -1,3 +1,4 @@
+// java: -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt
 // filter: scala.runtime.BoxesRunTime.{1,2}unboxToInt
 //
 // noise from -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt

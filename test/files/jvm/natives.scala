@@ -1,3 +1,5 @@
+// java: -Dneeds.to.fork
+
 object Test {
 
   //println("java.library.path=" + System.getProperty("java.library.path"))

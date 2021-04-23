@@ -1,3 +1,5 @@
+// java: -Dneeds.forked.jvm.for.windows
+
 import java.io.File
 import scala.tools.partest.ReplTest
 import scala.util.Properties.propOrElse
