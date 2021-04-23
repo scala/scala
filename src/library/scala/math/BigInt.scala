@@ -150,7 +150,7 @@ object BigInt {
  *
  * It wraps `java.math.BigInteger`, with optimization for small values that can be encoded in a `Long`.
  */
-final class BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
+final class   BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
   extends ScalaNumber
     with ScalaNumericConversions
     with Serializable
@@ -191,7 +191,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
 
   def bigInteger: BigInteger = {
     val read = _bigInteger
-    if (read ne null) _bigInteger else {
+    if (read ne null) read else {
       val write = BigInteger.valueOf(_long)
       _bigInteger = write // reference assignment is atomic; this is multi-thread safe (if possibly wasteful)
       write
