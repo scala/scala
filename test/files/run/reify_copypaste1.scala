@@ -1,3 +1,5 @@
+// java: -Dneeds.forked.jvm
+
 import scala.reflect.runtime._
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._

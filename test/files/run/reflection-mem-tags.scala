@@ -1,3 +1,5 @@
+// java: -Xmx512m
+
 import scala.tools.partest.MemoryTest
 
 trait A { type T <: A }

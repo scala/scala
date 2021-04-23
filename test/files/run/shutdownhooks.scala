@@ -1,3 +1,5 @@
+// java: -Dneeds.forked.jvm
+
 object Test {
   scala.sys.addShutdownHook {
     // sleep is added here so main#shutdown happens before this hook.
