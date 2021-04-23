@@ -609,7 +609,7 @@ trait NamesDefaults { self: Analyzer =>
           case _ => false
         }
         params indexWhere (p => matchesName(p, name, argIndex)) match {
-          case -1 if positionalAllowed && !settings.isScala213 =>
+          case -1 if positionalAllowed && !currentRun.isScala213 =>
             if (isVariableInScope(context0, name)) {
               // only issue the deprecation warning if `name` is in scope, this avoids the warning when mis-spelling a parameter name.
               context0.deprecationWarning(
@@ -629,7 +629,7 @@ trait NamesDefaults { self: Analyzer =>
               case AssignOrNamedArg(Ident(oName), _) if oName != name => oName
             }
             DoubleParamNamesDefaultError(arg, name, existingArgIndex+1, otherName)
-          case paramPos if !settings.isScala213 && !invokesDefault && isAmbiguousAssignment(typer, params(paramPos), arg) =>
+          case paramPos if !currentRun.isScala213 && !invokesDefault && isAmbiguousAssignment(typer, params(paramPos), arg) =>
             AmbiguousReferenceInNamesDefaultError(arg, name)
           case paramPos if paramPos != argIndex =>
             positionalAllowed = false    // named arg is not in original parameter order: require names after this

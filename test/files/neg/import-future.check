@@ -1,0 +1,4 @@
+import-future.scala:15: error: not found: value unrelated
+    unrelated(1) // error
+    ^
+one error found

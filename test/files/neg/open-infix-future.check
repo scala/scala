@@ -1,0 +1,22 @@
+open-infix-future.scala:4: error: expected class or object definition
+open trait A // error
+^
+open-infix-future.scala:5: error: expected class or object definition
+open object B // error
+^
+open-infix-future.scala:8: error: ';' expected but 'val' found.
+  infix val a: Int = 1 // error
+        ^
+open-infix-future.scala:9: error: ';' expected but 'var' found.
+  infix var b: Int = 1 // error
+        ^
+open-infix-future.scala:11: error: ';' expected but 'type' found.
+  open type D // error
+       ^
+open-infix-future.scala:14: error: illegal start of statement
+    open class E // error
+    ^
+open-infix-future.scala:15: error: ';' expected but 'def' found.
+    open def bla(y: Int) = y // error
+         ^
+7 errors found

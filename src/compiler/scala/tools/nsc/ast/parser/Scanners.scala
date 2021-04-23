@@ -331,6 +331,16 @@ trait Scanners extends ScannersCommon {
       }
     }
 
+    /** Advance beyond a case token without marking the CASE in sepRegions.
+     *  This method should be called to skip beyond CASE tokens that are
+     *  not part of matches, i.e. no ARROW is expected after them.
+     */
+    def skipCASE(): Unit = {
+      assert(token == CASE, s"Internal error: skipCASE() called on non-case token $token")
+      nextToken()
+      sepRegions = sepRegions.tail
+    }
+
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken(): Unit = {
@@ -610,7 +620,7 @@ trait Scanners extends ScannersCommon {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
-                if (isEmptyCharLit && settings.isScala213)
+                if (isEmptyCharLit && currentRun.isScala213)
                   syntaxError("empty character literal (use '\\'' for single quote)")
                 else {
                   if (isEmptyCharLit)
@@ -1281,6 +1291,8 @@ trait Scanners extends ScannersCommon {
   }
 
   final val token2name = (allKeywords map (_.swap)).toMap
+
+  final val softModifierNames = Set(nme.open, nme.infix)
 
 // Token representation ----------------------------------------------------
 

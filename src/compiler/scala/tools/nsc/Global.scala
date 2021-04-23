@@ -1142,6 +1142,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val profiler: Profiler = Profiler(settings)
     keepPhaseStack = settings.log.isSetByUser
 
+    // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
+    val isScala211: Boolean = settings.isScala211
+    val isScala212: Boolean = settings.isScala212
+    val isScala213: Boolean = settings.isScala213
+    val isScala3: Boolean   = settings.isScala3
+
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
     // used in sbt

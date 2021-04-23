@@ -106,6 +106,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def isScala212: Boolean = source.value >= version212
   private[this] val version213 = ScalaVersion("2.13.0")
   def isScala213: Boolean = source.value >= version213
+  private[this] val version3 = ScalaVersion("3.0.0")
+  def isScala3: Boolean = source.value >= version3
 
   /**
    * -X "Advanced" settings
