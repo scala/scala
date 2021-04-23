@@ -301,7 +301,7 @@ quant)
   @inline final def enabled: Boolean = areColdStatsLocallyEnabled
   def enabled_=(cond: Boolean) = {
     if (cond && !enabled) {
-      StatisticsStatics.enableColdStats()
+      StatisticsStatics.enableColdStatsAndDeoptimize()
       areColdStatsLocallyEnabled = true
     }
   }
@@ -310,7 +310,7 @@ quant)
   @inline final def hotEnabled: Boolean = enabled && areHotStatsLocallyEnabled
   def hotEnabled_=(cond: Boolean) = {
     if (cond && enabled && !areHotStatsLocallyEnabled) {
-      StatisticsStatics.enableHotStats()
+      StatisticsStatics.enableHotStatsAndDeoptimize()
       areHotStatsLocallyEnabled = true
     }
   }
