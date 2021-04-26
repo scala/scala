@@ -34,6 +34,7 @@ trait FlagOps { self: TastyUniverse =>
     val SingletonEnumFlags: TastyFlagSet = SingletonEnumInitFlags | Stable
     val FieldAccessorFlags: TastyFlagSet = FieldAccessor | Stable
     val LocalFieldFlags: TastyFlagSet = Private | Local
+    val Scala2MacroFlags: TastyFlagSet = Erased | Macro
   }
 
   /**encodes a `TastyFlagSet` as `scala.reflect` flags and will ignore flags that can't be converted, such as

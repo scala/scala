@@ -99,11 +99,13 @@ trait Erasure {
   def erasedValueClassArg(tref: TypeRef): Type = {
     assert(!phase.erasedTypes, "Types are erased")
     val clazz = tref.sym
+    val isDotty = clazz.hasAttachment[DottyClass.type]
     if (valueClassIsParametric(clazz)) {
-      val underlying = tref.memberType(clazz.derivedValueClassUnbox).resultType
-      boxingErasure(underlying)
+      val erasureMap = if (isDotty) boxing3Erasure else boxingErasure
+      erasureMap(tref.memberType(clazz.derivedValueClassUnbox).resultType)
     } else {
-      scalaErasure(underlyingOfValueClass(clazz))
+      val erasureMap = if (isDotty) scala3Erasure else scalaErasure
+      erasureMap(underlyingOfValueClass(clazz))
     }
   }
 
@@ -250,7 +252,7 @@ trait Erasure {
       if (verifyJavaErasure && sym.isMethod) verifiedJavaErasure
       else javaErasure
     }
-    else if (sym.hasAttachment[DottyMethod.type]) scala3Erasure
+    else if (sym.hasAttachment[DottyTerm.type]) scala3Erasure
     else scalaErasure
 
   /** This is used as the Scala erasure during the erasure phase itself
@@ -376,7 +378,7 @@ trait Erasure {
   object specialScala3Erasure extends Scala3ErasureMap with SpecialScalaErasure
 
   def specialScalaErasureFor(sym: Symbol): ErasureMap = {
-    if (sym.hasAttachment[DottyMethod.type]) specialScala3Erasure
+    if (sym.hasAttachment[DottyTerm.type]) specialScala3Erasure
     else specialScalaErasure
   }
 
@@ -392,7 +394,8 @@ trait Erasure {
     }
   }
 
-  object boxingErasure extends ScalaErasureMap {
+  trait BoxingErasure extends ErasureMap {
+
     private[this] var boxPrimitives = true
 
     override def applyInArray(tp: Type): Type = {
@@ -405,9 +408,14 @@ trait Erasure {
     override def eraseNormalClassRef(tref: TypeRef) =
       if (boxPrimitives && isPrimitiveValueClass(tref.sym)) boxedClass(tref.sym).tpe
       else super.eraseNormalClassRef(tref)
+
     override def eraseDerivedValueClassRef(tref: TypeRef) =
       super.eraseNormalClassRef(tref)
+
   }
+
+  object boxingErasure extends ScalaErasureMap with BoxingErasure
+  object boxing3Erasure extends Scala3ErasureMap with BoxingErasure
 
   /** The intersection dominator (SLS 3.7) of a list of types is computed as follows.
    *

@@ -752,7 +752,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         val valueParamss = normalizeIfConstructor(vparamss, isCtor)
         val resType = effectiveResultType(sym, typeParams, tpt.tpe)
-        ctx.markAsMethod(sym)
         ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
       }
 
@@ -824,6 +823,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case VALDEF              => ValDef(repr, localCtx)
           case TYPEDEF | TYPEPARAM => TypeDef(repr, localCtx)
           case PARAM               => TermParam(repr, localCtx)
+        }
+        if (sym.isTerm) {
+          ctx.markAsTerm(sym)
         }
       }
 
@@ -906,6 +908,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         val parentTypes = ctx.adjustParents(cls, parents)
         setInfoWithParents(tparams, parentTypes)
+        ctx.markAsClass(cls)
       }
 
       inIndexScopedStatsContext(traverseTemplate()(_))

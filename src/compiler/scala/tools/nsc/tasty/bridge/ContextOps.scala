@@ -379,6 +379,7 @@ trait ContextOps { self: TastyUniverse =>
             if (decl.isParamAccessor) decl.makeNotPrivate(cls)
             if (!decl.isClassConstructor) {
               val extensionMeth = decl.newExtensionMethodSymbol(cls.companion, u.NoPosition)
+              markAsTerm(extensionMeth)
               extensionMeth setInfo u.extensionMethInfo(cls, extensionMeth, decl.info, cls)
             }
           }
@@ -429,8 +430,11 @@ trait ContextOps { self: TastyUniverse =>
     final def markAsEnumSingleton(sym: Symbol): Unit =
       sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
 
-    final def markAsMethod(sym: Symbol): Unit =
-      sym.updateAttachment(u.DottyMethod)
+    final def markAsTerm(sym: Symbol): Unit =
+      sym.updateAttachment(u.DottyTerm)
+
+    final def markAsClass(sym: Symbol): Unit =
+      sym.updateAttachment(u.DottyClass)
 
     final def markAsOpaqueType(sym: Symbol, alias: Type): Unit =
       sym.updateAttachment(new u.DottyOpaqueTypeAlias(alias))

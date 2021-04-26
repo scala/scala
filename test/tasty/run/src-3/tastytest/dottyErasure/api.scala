@@ -28,6 +28,11 @@ object OpaqueHolder {
 }
 import OpaqueHolder._
 
+enum Enumerated {
+  case C1 extends Enumerated with A
+  case C2 extends Enumerated with B
+}
+
 // The parameter type of `a_XX` should erase to A, `b_XX` to `B`, etc.
 // This is enforced by dottyApp/Main.scala
 class Z { self =>
@@ -255,5 +260,12 @@ class Z { self =>
   def intARRAYARRAY_130(x: Array[_ <: Array[Int]]): Unit = {}
   def objectARRAY_130(x: Array[_ <: Array[_ <: AnyVal]]): Unit = {}
   def intARRAY_131(x: Array[String] with Array[Int]): Unit = {}
+
+  def enumerated_132(x: Enumerated.C1.type with Enumerated.C2.type): Unit = {}
+  def enumerated_133(x: Enumerated.C2.type with Enumerated.C1.type): Unit = {}
+  def enumerated_134(x: Enumerated.C1.type): Unit = {}
+  def enumeratedARRAY_135(x: Array[Enumerated.C1.type]): Unit = {}
+  def enumeratedARRAY_136(x: Array[Enumerated.C2.type with Enumerated.C1.type]): Unit = {}
+  def enumeratedARRAY_137(x: Array[Enumerated.C1.type with Enumerated.C2.type]): Unit = {}
 
 }

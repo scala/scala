@@ -2,27 +2,22 @@ package tastytest
 
 object IntersectionErasure {
 
-  trait Universe {
+  trait A
+  trait B
 
-    type TreeShimSAM >: Null <: AnyRef with TreeShimSAMApi
-    trait TreeShimSAMApi extends Product { this: TreeShimSAM => }
-
-    val EmptyTree: TreeShimSAM
-
-    @FunctionalInterface
-    abstract class IntersectionSAM {
-      def apply(tree: TreeShimSAM): TreeShimSAM
-    }
-
+  @FunctionalInterface
+  abstract class IntersectionSAM {
+    def apply(arg: B with A): B with A
   }
 
-  object universe extends Universe {
-
-    abstract class TreeShimSAMImpl extends TreeShimSAMApi with Product
-    type TreeShimSAM = TreeShimSAMImpl
-    case object EmptyTree extends TreeShimSAMImpl
-
+  final class IntersectionVC(val unwrapped: B with A) extends AnyVal {
+    def matchesInternal(that: B with A): Boolean = that == unwrapped
+    def matches(that: IntersectionVC): Boolean = this == that
   }
 
+  final class IntersectionVCParametric[T <: B with A](val unwrapped: T) extends AnyVal {
+    def matchesInternal(that: T): Boolean = that == unwrapped
+    def matches(that: IntersectionVCParametric[T]): Boolean = this == that
+  }
 
 }

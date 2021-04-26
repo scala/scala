@@ -67,7 +67,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
     this.KnownDirectSubclassesCalled
-    this.DottyMethod
+    this.DottyTerm
+    this.DottyClass
     this.ConstructorNeedsFence
     this.MultiargInfixAttachment
     this.NullaryOverrideAdapted
@@ -527,5 +528,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     erasure.javaErasure
     erasure.verifiedJavaErasure
     erasure.boxingErasure
+    erasure.boxing3Erasure
   }
 }

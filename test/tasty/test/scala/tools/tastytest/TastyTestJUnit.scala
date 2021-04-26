@@ -67,7 +67,10 @@ class TastyTestJUnit {
   val propPkgName = "tastytest.packageName"
 
   def assertPropIsSet(prop: String): String = {
-    Properties.propOrNull(prop).ensuring(_ != null, s"-D$prop is not set")
+    Properties.propOrElse(prop, {
+      fail(s"-D$prop is not set")
+      "(unknown)"
+    })
   }
 }
 

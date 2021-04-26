@@ -422,6 +422,7 @@ trait TypeOps { self: TastyUniverse =>
     override final def complete(sym: Symbol): Unit = {
       underlying.ensureCompleted()
       sym.info = underlying.tpe
+      underlying.attachments.all.foreach(sym.updateAttachment(_))
     }
   }
 

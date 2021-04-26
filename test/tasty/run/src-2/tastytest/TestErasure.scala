@@ -155,6 +155,12 @@ object TestErasure extends Suite("TestErasure") {
     z.intARRAYARRAY_130(anyObj)
     z.objectARRAY_130(anyObj)
     z.intARRAY_131(anyObj)
+    z.enumerated_132(anyObj)
+    z.enumerated_133(anyObj)
+    z.enumerated_134(anyObj)
+    z.enumeratedARRAY_135(anyObj)
+    z.enumeratedARRAY_136(anyObj)
+    z.enumeratedARRAY_137(anyObj)
   }
 
   test("erasure matches name") {
