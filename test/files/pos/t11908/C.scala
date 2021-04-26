@@ -20,7 +20,7 @@ object C {
 
   def useR2 = {
     // constructor signature
-    val r2 = new R2(123, "hello")
+    val r2 = new R2.R(123, "hello")
 
     // accessors signature
     val i: Int = r2.i
