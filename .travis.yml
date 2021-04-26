@@ -170,7 +170,7 @@ notifications:
   slack:
     rooms:
       - typesafe:WoewGgHil2FkdGzJyV3phAhj
-    if: type = cron OR type = push
+    if: (type = cron OR type = push) AND repo = scala/scala
     on_success: never
     on_failure: change
   webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis
