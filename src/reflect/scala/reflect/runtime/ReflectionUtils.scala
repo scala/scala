@@ -47,7 +47,7 @@ object ReflectionUtils {
       isAbstractFileClassLoader(clazz.getSuperclass)
     }
     def inferClasspath(cl: ClassLoader): String = cl match {
-      case cl: java.net.URLClassLoader =>
+      case cl: java.net.URLClassLoader if cl.getURLs != null =>
         (cl.getURLs mkString ",")
       case cl if cl != null && isAbstractFileClassLoader(cl.getClass) =>
         cl.asInstanceOf[{val root: scala.reflect.io.AbstractFile}].root.canonicalPath
