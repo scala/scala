@@ -15,6 +15,7 @@ package reflect
 package runtime
 
 import scala.reflect.internal.settings.MutableSettings
+import scala.reflect.internal.util.StatisticsStatics
 
 /** The Settings class for runtime reflection.
  *  This should be refined, so that settings are settable via command
@@ -57,8 +58,8 @@ private[reflect] class Settings extends MutableSettings {
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
 
-  val YhotStatisticsEnabled = new BooleanSetting(false)
-  val YstatisticsEnabled    = new BooleanSetting(false)
+  val YhotStatisticsEnabled = new BooleanSetting(false) { override def postSetHook() = if (v && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize()  }
+  val YstatisticsEnabled    = new BooleanSetting(false) { override def postSetHook() = if (v)                       StatisticsStatics.enableColdStatsAndDeoptimize() }
 
   val Yrecursion        = new IntSetting(0)
   def isScala212        = true

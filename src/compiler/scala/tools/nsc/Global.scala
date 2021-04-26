@@ -1283,11 +1283,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
       checkPhaseSettings(including = false, exclusions map (_.value): _*)
 
-      // Enable or disable depending on the current setting -- useful for interactive behaviour
-      statistics.initFromSettings(settings)
-
       // Report the overhead of statistics measurements per every run
-      if (statistics.areStatisticsLocallyEnabled)
+      if (settings.areStatisticsEnabled)
         statistics.reportStatisticsOverhead(reporter)
 
       phase = first   //parserPhase
@@ -1512,7 +1509,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       warnDeprecatedAndConflictingSettings()
       globalPhase = fromPhase
 
-      val timePhases = statistics.areStatisticsLocallyEnabled
+      val timePhases = settings.areStatisticsEnabled
       val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
 
       while (globalPhase.hasNext && !reporter.hasErrors) {
