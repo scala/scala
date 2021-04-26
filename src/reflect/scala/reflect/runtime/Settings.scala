@@ -15,6 +15,7 @@ package reflect
 package runtime
 
 import scala.reflect.internal.settings.MutableSettings
+import scala.reflect.internal.util.StatisticsStatics
 
 /** The Settings class for runtime reflection.
  *  This should be refined, so that settings are settable via command

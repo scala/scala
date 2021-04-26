@@ -23,6 +23,7 @@ import scala.language.existentials
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
+import scala.reflect.internal.util.StatisticsStatics
 import scala.tools.nsc.util.DefaultJarFactory
 
 trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
@@ -426,9 +427,12 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
   val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
-  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
+    .withPostSetHook(s => if (s.value.nonEmpty) StatisticsStatics.enableColdStatsAndDeoptimize())
 
   val YhotStatistics = BooleanSetting("-Yhot-statistics-enabled", s"Enable `${Ystatistics.name}` to print hot statistics.")
+    .withPostSetHook(s => if (s && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize())
+
+  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
   override def YhotStatisticsEnabled = YhotStatistics.value
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")

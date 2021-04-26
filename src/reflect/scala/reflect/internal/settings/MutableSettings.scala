@@ -16,6 +16,8 @@ package scala
 package reflect.internal
 package settings
 
+import scala.reflect.internal.util.StatisticsStatics
+
 /** A mutable Settings object.
  */
 abstract class MutableSettings extends AbsSettings {
@@ -82,4 +84,8 @@ object MutableSettings {
   import scala.language.implicitConversions
   /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
+
+  implicit class SettingsOps(private val settings: MutableSettings) extends AnyVal {
+    @inline final def areStatisticsEnabled = StatisticsStatics.areSomeColdStatsEnabled && settings.YstatisticsEnabled
+  }
 }
