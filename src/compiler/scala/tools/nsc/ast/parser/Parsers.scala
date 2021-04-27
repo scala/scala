@@ -1008,13 +1008,14 @@ self =>
           else {
             ts foreach checkNotByNameOrVarargs
             val tuple = atPos(start) { makeSafeTupleType(ts, start) }
-            infixTypeRest(
+            val tpt = infixTypeRest(
               compoundTypeRest(
                 annotTypeRest(
                   simpleTypeRest(
                     tuple))),
               InfixMode.FirstOp
             )
+            if (currentRun.isScala3) andType(tpt) else tpt
           }
         }
       }
@@ -1163,12 +1164,44 @@ self =>
         else t
       }
 
+      def andType(tpt: Tree): Tree = {
+        val parents = ListBuffer.empty[Tree]
+        var otherInfixOp: Tree = EmptyTree
+        def collect(tpt: Tree): Unit = tpt match {
+          case AppliedTypeTree(op @ Ident(tpnme.AND), List(left, right)) =>
+            collect(left)
+            collect(right)
+          case AppliedTypeTree(op, args) if args.exists(arg => arg.pos.start < op.pos.point) =>
+            otherInfixOp = op
+            parents += treeCopy.AppliedTypeTree(tpt, op, args.map(andType))
+          case _ =>
+            parents += tpt
+          }
+        collect(tpt)
+        if (parents.lengthCompare(1) > 0) {
+          if (!otherInfixOp.isEmpty) {
+            // TODO: Unlike Scala 3, we do not take precedence into account when
+            // parsing infix types, there's an unmerged PR that attempts to
+            // change that (#6147), but until that's merged we cannot accurately
+            // parse things like `A Map B & C`, so give up and emit an error
+            // rather than continuing with an incorrect parse tree.
+            syntaxError(otherInfixOp.pos.point,
+            s"Cannot parse infix type combining `&` and `$otherInfixOp`, please use `$otherInfixOp` as the head of a regular type application.")
+          }
+          atPos(tpt.pos.start)(CompoundTypeTree(Template(parents.toList, noSelfType, Nil)))
+        }
+        else
+          parents.head
+      }
+
       /** {{{
        *  InfixType ::= CompoundType {id [nl] CompoundType}
        *  }}}
        */
-      def infixType(mode: InfixMode.Value): Tree =
-        placeholderTypeBoundary { infixTypeRest(compoundType(), mode) }
+      def infixType(mode: InfixMode.Value): Tree = {
+        val tpt = placeholderTypeBoundary { infixTypeRest(compoundType(), mode) }
+        if (currentRun.isScala3) andType(tpt) else tpt
+      }
 
       /** {{{
        *  Types ::= Type {`,' Type}

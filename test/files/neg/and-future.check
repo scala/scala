@@ -1,0 +1,7 @@
+and-future.scala:9: error: Cannot parse infix type combining `&` and `Map`, please use `Map` as the head of a regular type application.
+  val b: Int Map X & Int Map Y = Map[Int, X & Y]() // error: unsupported
+             ^
+and-future.scala:13: error: Cannot parse infix type combining `&` and `Map`, please use `Map` as the head of a regular type application.
+  val c: (Int Map X) & (Int Map Y) = Map[Int, X & Y]() // error: unsupported
+                            ^
+two errors found

@@ -319,6 +319,9 @@ trait StdNames {
 
     final val scala_ : NameType = "scala"
 
+    // Scala 3 special type
+    val AND: NameType = nme.AND.toTypeName
+
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
   }
