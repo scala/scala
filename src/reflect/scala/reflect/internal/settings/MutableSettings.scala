@@ -74,5 +74,7 @@ object MutableSettings {
 
   implicit class SettingsOps(private val settings: MutableSettings) extends AnyVal {
     @inline final def areStatisticsEnabled = StatisticsStatics.areSomeColdStatsEnabled && settings.YstatisticsEnabled
+    @inline final def isDebug: Boolean     = StatisticsStatics.isDebug                 && settings.debug
+    @inline final def isDeveloper: Boolean = StatisticsStatics.isDeveloper             && settings.developer
   }
 }

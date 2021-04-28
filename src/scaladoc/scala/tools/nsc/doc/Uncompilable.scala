@@ -12,7 +12,9 @@
 
 package scala.tools.nsc
 package doc
+
 import scala.language.implicitConversions
+
 import scala.reflect.internal.util.NoPosition
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -63,7 +65,7 @@ trait Uncompilable {
   def symbols   = pairs map (_._1)
   def templates = symbols.filter(x => x.isClass || x.isTrait || x == AnyRefClass/* which is now a type alias */).toSet
   def comments = {
-    if (settings.debug || settings.verbose)
+    if (settings.isDebug || settings.verbose)
       inform("Found %d uncompilable files: %s".format(files.size, files mkString ", "))
 
     if (pairs.isEmpty)

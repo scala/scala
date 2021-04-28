@@ -282,7 +282,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 // ------------------ Debugging -------------------------------------
 
   @inline final def ifDebug(body: => Unit): Unit = {
-    if (settings.debug)
+    if (settings.isDebug)
       body
   }
 
@@ -313,7 +313,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   }
 
   @inline final override def debuglog(msg: => String): Unit = {
-    if (settings.debug)
+    if (settings.isDebug)
       log(msg)
   }
 
@@ -417,7 +417,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
-      if (settings.debug && (settings.verbose || currentRun.size < 5))
+      if (settings.isDebug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
     }
 
@@ -713,7 +713,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   protected def computePhaseDescriptors: List[SubComponent] = {
     /* Allow phases to opt out of the phase assembly. */
     def cullPhases(phases: List[SubComponent]) = {
-      val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
+      val enabled = if (settings.isDebug && settings.isInfo) phases else phases filter (_.enabled)
       def isEnabled(q: String) = enabled exists (_.phaseName == q)
       val (satisfied, unhappy) = enabled partition (_.requires forall isEnabled)
       unhappy foreach (u => globalError(s"Phase '${u.phaseName}' requires: ${u.requires filterNot isEnabled}"))
@@ -744,7 +744,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   }
 
   /** A description of the phases that will run in this configuration, or all if -Vdebug. */
-  def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.debug, phasesDescMap)
+  def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.isDebug, phasesDescMap)
 
   /** Summary of the per-phase values of nextFlags and newFlags, shown under -Vphases -Vdebug. */
   def phaseFlagDescriptions: String = {
@@ -755,7 +755,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
       else fstr1 + fstr2
     }
-    phaseHelp("new flags", elliptically = !settings.debug, fmt)
+    phaseHelp("new flags", elliptically = !settings.isDebug, fmt)
   }
 
   /** Emit a verbose phase table.
@@ -1113,7 +1113,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def echoPhaseSummary(ph: Phase) = {
     /* Only output a summary message under debug if we aren't echoing each file. */
-    if (settings.debug && !(settings.verbose || currentRun.size < 5))
+    if (settings.isDebug && !(settings.verbose || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 

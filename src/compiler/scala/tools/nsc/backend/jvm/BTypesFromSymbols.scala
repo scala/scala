@@ -92,7 +92,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
     // note: classSym can be scala.Array, see https://github.com/scala/bug/issues/12225#issuecomment-729687859
-    if (global.settings.debug) {
+    if (global.settings.isDebug) {
       // OPT this assertion has too much performance overhead to run unconditionally
       assert(!primitiveTypeToBType.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
     }

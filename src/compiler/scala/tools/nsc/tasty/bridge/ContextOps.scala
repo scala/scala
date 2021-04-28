@@ -144,7 +144,6 @@ trait ContextOps { self: TastyUniverse =>
     final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
-    final def verboseDebug: Boolean = u.settings.debug
 
     def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Inline
     def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
