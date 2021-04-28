@@ -664,12 +664,13 @@ lazy val bench = project.in(file("test") / "benchmarks")
     name := "test-benchmarks",
     autoScalaLibrary := false,
     crossPaths := true, // needed to enable per-scala-version source directories (https://github.com/sbt/sbt/pull/1799)
+    compileOrder := CompileOrder.JavaThenScala, // to allow inlining from Java ("... is defined in a Java source (mixed compilation), no bytecode is available")
     libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.10",
     libraryDependencies ++= {
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
-    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala.**")
+    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
