@@ -21,7 +21,7 @@ package internal
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
-import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
+import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
@@ -3229,7 +3229,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
 
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typeSymbolCount)
+    if (settings.areStatisticsEnabled) statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -3441,7 +3441,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else super.toString
     )
 
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(classSymbolCount)
+    if (settings.areStatisticsEnabled) statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 

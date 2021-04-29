@@ -22,7 +22,7 @@ import mutable.{ListBuffer, LinkedHashSet}
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
-import util.{Statistics, StatisticsStatics}
+import util.Statistics
 import util.ThreeValues._
 import Variance._
 import Depth._
@@ -691,7 +691,7 @@ trait Types
      *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type = {
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, asSeenFromNanos)  else null
+      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, asSeenFromNanos)  else null
       try {
         val trivial = (
              this.isTrivial
@@ -707,7 +707,7 @@ trait Types
           if (m.capturedSkolems.isEmpty) tp1
           else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
         }
-      } finally if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+      } finally if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
     }
 
     /** The info of `sym`, seen as a member of this type.
@@ -813,7 +813,7 @@ trait Types
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) stat_<:<(that)
+      if (settings.areStatisticsEnabled) stat_<:<(that)
       else {
         (this eq that) ||
         (if (explainSwitch) explain("<:", isSubType(_: Type, _: Type), this, that)
@@ -845,26 +845,26 @@ trait Types
     })
 
     def stat_<:<(that: Type): Boolean = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(subtypeCount)
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
+      if (settings.areStatisticsEnabled) statistics.incCounter(subtypeCount)
+      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
       val result =
         (this eq that) ||
         (if (explainSwitch) explain("<:", isSubType(_: Type, _: Type), this, that)
          else isSubType(this, that))
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+      if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       result
     }
 
     /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
      */
     def weak_<:<(that: Type): Boolean = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(subtypeCount)
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
+      if (settings.areStatisticsEnabled) statistics.incCounter(subtypeCount)
+      val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, subtypeNanos) else null
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("weak_<:", isWeakSubType, this, that)
           else isWeakSubType(this, that)))
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+      if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
       result
     }
 
@@ -1517,8 +1517,8 @@ trait Types
 
           tpe.baseTypeSeqCache = tpWithoutTypeVars.baseTypeSeq lateMap paramToVar
         } else {
-          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(compoundBaseTypeSeqCount)
-          val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
+          if (settings.areStatisticsEnabled) statistics.incCounter(compoundBaseTypeSeqCount)
+          val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
           try {
             tpe.baseTypeSeqCache = undetBaseTypeSeq
             tpe.baseTypeSeqCache =
@@ -1527,7 +1527,7 @@ trait Types
               else
                 compoundBaseTypeSeq(tpe)
           } finally {
-            if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+            if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
           }
           // [Martin] suppressing memoization solves the problem with "same type after erasure" errors
           // when compiling with
@@ -1550,13 +1550,13 @@ trait Types
     if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
+        val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
         try {
           tpe.baseClassesCache = null
           tpe.baseClassesCache = tpe.memo(computeBaseClasses(tpe))(tpe.typeSymbol :: _.baseClasses.tail)
         }
         finally {
-          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+          if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
         }
       }
     }
@@ -2449,13 +2449,13 @@ trait Types
     if (period != currentPeriod) {
       tpe.baseTypeSeqPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typerefBaseTypeSeqCount)
-        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
+        if (settings.areStatisticsEnabled) statistics.incCounter(typerefBaseTypeSeqCount)
+        val start = if (settings.areStatisticsEnabled) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
         try {
           tpe.baseTypeSeqCache = undetBaseTypeSeq
           tpe.baseTypeSeqCache = tpe.baseTypeSeqImpl
         } finally {
-          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+          if (settings.areStatisticsEnabled) statistics.popTimer(typeOpsStack, start)
         }
       }
     }
