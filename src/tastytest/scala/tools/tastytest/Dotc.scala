@@ -76,18 +76,18 @@ object Dotc extends Script.Command {
   val describe: String = s"$commandName <out: Directory> <src: File>"
 
   def process(args: String*): Int = {
-    if (args.length != 2) {
-      println(red(s"please provide two arguments in sub-command: $describe"))
+    if (args.length < 2) {
+      println(red(s"please provide at least two arguments in sub-command: $describe"))
       return 1
     }
-    val Seq(out, src) = args: @unchecked
+    val Seq(out, src, additional @ _*) = args: @unchecked
     implicit val scala3classloader: Dotc.ClassLoader = initClassloader() match {
       case Success(cl) => cl
       case Failure(err) =>
         println(red(s"could not initialise Scala 3 classpath: $err"))
         return 1
     }
-    val success = dotc(out, out, Nil, src).get
+    val success = dotc(out, out, additional, src).get
     if (success) 0 else 1
   }
 

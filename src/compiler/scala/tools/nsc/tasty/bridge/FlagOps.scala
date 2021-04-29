@@ -39,7 +39,8 @@ trait FlagOps { self: TastyUniverse =>
     }
     val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
-    val FieldAccessor: TastyFlagSet = FieldAccessor | Stable
+    val FieldGetter: TastyFlagSet = FieldAccessor | Stable
+    val ParamGetter: TastyFlagSet = FieldGetter | ParamSetter
     val LocalField: TastyFlagSet = Private | Local
     val Scala2Macro: TastyFlagSet = Erased | Macro
   }

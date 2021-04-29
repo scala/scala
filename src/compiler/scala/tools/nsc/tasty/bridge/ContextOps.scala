@@ -192,6 +192,13 @@ trait ContextOps { self: TastyUniverse =>
     final def newWildcardSym(info: Type): Symbol =
       owner.newTypeParameter(u.nme.WILDCARD.toTypeName, u.NoPosition, FlagSets.Creation.Wildcard).setInfo(info)
 
+    final def newConstructor(owner: Symbol, resType: Type): Symbol = unsafeNewSymbol(
+      owner = owner,
+      name  = TastyName.Constructor,
+      flags = FlagSets.Creation.CtorDef,
+      info  = defn.DefDefType(Nil, Nil :: Nil, resType)
+    )
+
     final def findRootSymbol(roots: Set[Symbol], name: TastyName): Option[Symbol] = {
       import TastyName.TypeName
 
@@ -293,12 +300,12 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Unsafe to call for creation of a object val, prefer `delayCompletion` if info is a LazyType
       */
-    final def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
+    private def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       unsafeSetInfoAndPrivate(unsafeNewUntypedSymbol(owner, name, flags), info, privateWithin)
 
     /** Unsafe to call for creation of a object class, prefer `delayClassCompletion` if info is a LazyType
       */
-    final def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
+    private def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
       unsafeSetInfoAndPrivate(unsafeNewUntypedClassSymbol(owner, typeName, flags), info, privateWithin)
 
     private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol = {
@@ -307,8 +314,8 @@ trait ContextOps { self: TastyUniverse =>
           owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
         }
         else {
-          if (owner.isClass && flags.is(FlagSets.FieldAccessor)) {
-            val fieldFlags = flags &~ FlagSets.FieldAccessor | FlagSets.LocalField
+          if (owner.isClass && flags.is(FlagSets.FieldGetter)) {
+            val fieldFlags = flags &~ FlagSets.FieldGetter | FlagSets.LocalField
             val termName   = encodeTermName(name)
             val getter     = owner.newMethodSymbol(termName, u.NoPosition, newSymbolFlagSet(flags))
             val fieldSym   = owner.newValue(termName, u.NoPosition, newSymbolFlagSet(fieldFlags))

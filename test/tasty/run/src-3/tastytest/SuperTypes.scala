@@ -3,7 +3,7 @@ package tastytest
 object SuperTypes {
 
   class Foo {
-    final val foo = "Foo.foo"
+    final val foo: "Foo.foo" = "Foo.foo"
   }
 
   class Bar extends Foo {

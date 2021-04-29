@@ -765,12 +765,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           if (repr.originalFlagSet.is(FlagSets.SingletonEnum)) {
             val enumClass = sym.objectImplementation
             val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-            val ctor = ctx.unsafeNewSymbol(
-              owner = enumClass,
-              name  = TastyName.Constructor,
-              flags = FlagSets.Creation.CtorDef,
-              info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
-            )
+            val ctor = ctx.newConstructor(enumClass, selfTpe)
             enumClass.typeOfThis = selfTpe
             ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
             prefixedRef(sym.owner.thisPrefix, enumClass)

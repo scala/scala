@@ -10,14 +10,13 @@ object Reflection {
     def tree: ctx.TreeShim = root
   }
 
-  // TODO [tasty]: enable due to missing type ctx.TreeShim
-  // class InvokerSAM[C <: reflectshims.Context with Singleton](val ctx: C) {
+  class InvokerSAM[C <: reflectshims.Context with Singleton](val ctx: C) {
 
-  //   @FunctionalInterface
-  //   trait TreeFn {
-  //     def apply(tree: ctx.TreeShim): ctx.TreeShim
-  //   }
+    @FunctionalInterface
+    trait TreeFn {
+      def apply(tree: ctx.TreeShim): ctx.TreeShim
+    }
 
-  // }
+  }
 
 }

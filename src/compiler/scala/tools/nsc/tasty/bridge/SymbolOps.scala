@@ -56,7 +56,7 @@ trait SymbolOps { self: TastyUniverse =>
     def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
     def isParamGetter: Boolean =
-      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessor)
+      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.ParamGetter)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.
@@ -130,7 +130,11 @@ trait SymbolOps { self: TastyUniverse =>
           space.member(selector).orElse(lookInTypeCtor)
         }
       }
-      else space.member(encodeTermName(tname))
+      else {
+        val firstTry = space.member(encodeTermName(tname))
+        if (firstTry.isOverloaded) firstTry.filter(!_.isPrivateLocal)
+        else firstTry
+      }
     }
     if (isSymbol(member) && hasType(member)) member
     else errorMissing(space, tname)

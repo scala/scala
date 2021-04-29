@@ -148,7 +148,7 @@ trait Erasure {
         else if (sym eq UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
-        else if (isDottyEnumSingleton(sym)) apply(intersectionType(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
+        else if (isDottyEnumSingleton(sym)) apply(mergeParents(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
         else apply(transparentDealias(sym, pre, sym.owner)) // alias type or abstract type (including opaque type)
       case PolyType(tparams, restpe) =>

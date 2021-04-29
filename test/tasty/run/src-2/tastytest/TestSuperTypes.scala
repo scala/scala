@@ -11,11 +11,10 @@ object TestSuperTypes extends Suite("TestSuperTypes") {
     assert(("" match { case bar.A(x) => x: "Foo.foo" }) === "Foo.foo")
   }
 
-  // TODO [tasty]: what is happening here
-  // test("SUPERtype in type, version 2") {
-  //   val BarA = (new SuperTypes.Bar()).A
-  //   assert(("" match { case BarA(x) => x: "Foo.foo" }) === "Foo.foo")
-  // }
+  test("SUPERtype in type, version 2") {
+    val bar = new SuperTypes.Bar()
+    assert(("" match { case bar.A(x) => x : bar.foo.type }) === "Foo.foo")
+  }
 
   test("SUPER qualified in type tree") {
     assert((new SuperTypes.Baz().baz: "Foo.foo") === "Foo.foo")
