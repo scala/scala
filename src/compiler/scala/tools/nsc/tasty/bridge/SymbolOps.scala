@@ -48,7 +48,7 @@ trait SymbolOps { self: TastyUniverse =>
   implicit final class SymbolDecorator(val sym: Symbol) {
 
     def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
-    def isScala2Macro: Boolean = repr.originalFlagSet.is(FlagSets.Scala2MacroFlags)
+    def isScala2Macro: Boolean = repr.originalFlagSet.is(FlagSets.Scala2Macro)
 
     def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
     def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
@@ -56,7 +56,7 @@ trait SymbolOps { self: TastyUniverse =>
     def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
     def isParamGetter: Boolean =
-      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessorFlags)
+      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessor)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.
@@ -89,14 +89,14 @@ trait SymbolOps { self: TastyUniverse =>
     def set(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.addFlags(sym, mask)
     def reset(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.removeFlags(sym, mask)
 
-    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(encodeFlagSet(mask))
-    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(encodeFlagSet(mask))
+    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
+    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
     def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
       if (!butNot)
         sym.is(mask)
       else
         sym.is(mask) && sym.not(butNot)
-    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(encodeFlagSet(mask))
+    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */

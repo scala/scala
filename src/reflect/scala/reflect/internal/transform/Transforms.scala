@@ -51,7 +51,7 @@ trait Transforms { self: SymbolTable =>
 
   def transformedType(tpe: Type) = {
     val symbol = tpe.widen.typeSymbol
-    val erasureMap = if (symbol.hasAttachment[DottyTerm.type]) erasure.scala3Erasure else erasure.scalaErasure
+    val erasureMap = if (symbol.isScala3Defined) erasure.scala3Erasure else erasure.scalaErasure
     postErasure.elimErasedValueType(erasureMap(uncurry.uncurry(tpe)))
   }
 

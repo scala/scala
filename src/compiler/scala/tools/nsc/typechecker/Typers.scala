@@ -1803,10 +1803,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
                 pending += ParentSuperSubclassError(parent, superclazz, ps.head.typeSymbol, psym)
               if (!clazzIsTrait) {
+                def hasTraitParams(sym: Symbol) =
+                  sym.isScala3Defined && sym.isTrait && sym.hasAttachment[DottyParameterisedTrait]
                 // TODO perhaps there can be a flag to skip this when we know there can be no Scala 3 definitions
                 // or otherwise use an optimised representation for trait parameters
                 (parent.tpe :: ps).collectFirst {
-                  case p if p.typeSymbol.hasAttachment[DottyParameterisedTrait] =>
+                  case p if hasTraitParams(p.typeSymbol) =>
                     p.typeSymbol.attachments.get[DottyParameterisedTrait].foreach( attach =>
                       pending += ParentIsScala3TraitError(parent, p.typeSymbol, attach.params, psym)
                     )

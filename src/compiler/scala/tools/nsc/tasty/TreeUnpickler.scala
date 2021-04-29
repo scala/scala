@@ -36,7 +36,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     nameAtRef: NameRef => TastyName)(implicit
     val tasty: Tasty) { self =>
   import tasty._
-  import FlagSets._
   import TreeUnpickler._
   import MaybeCycle._
   import TastyModes._
@@ -415,20 +414,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (isType) prior.toTypeName else prior
     }
 
-    private def normalizeFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
+    private def addInferredFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
       var flags = tastyFlags
       val lacksDefinition =
         rhsIsEmpty &&
-          name.isTermName && !name.isConstructorName && !flags.isOneOf(TermParamOrAccessor) ||
+          name.isTermName && !name.isConstructorName && !flags.isOneOf(FlagSets.TermParamOrAccessor) ||
         isAbsType ||
         flags.is(Opaque) && !isClass
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
-        if (flags.is(Inline) || ctx.owner.is(Trait)) flags |= FieldAccessor
-        if (flags.not(Mutable)) flags |= Stable
-        if (flags.is(SingletonEnumInitFlags)) flags |= Object | Stable // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
+        if (flags.is(Inline) || ctx.owner.is(Trait))
+          flags |= FieldAccessor
+        if (flags.not(Mutable))
+          flags |= Stable
+        if (flags.is(Case | Static | Enum)) // singleton enum case
+          flags |= Object | Stable // encode as a module (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
@@ -439,7 +441,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
       else if (isParamTag(tag)) flags |= Param
-      if (flags.is(Object)) flags |= (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
+      if (flags.is(Object)) flags |= (if (tag === VALDEF) FlagSets.Creation.ObjectDef else FlagSets.Creation.ObjectClassDef)
       flags
     }
 
@@ -491,7 +493,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val (parsedFlags, annotations, privateWithin) =
           readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
         val name = normalizeName(isTypeTag, parsedName)
-        val flags = normalizeFlags(tag, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
+        val flags = addInferredFlags(tag, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
         (name, flags, annotations, privateWithin)
       }
       def isTypeParameter = flags.is(Param) && isTypeTag
@@ -515,7 +517,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val completer = new Completer(isClass, subReader(start, end), flags)(ctx.retractMode(IndexScopedStats))
           ctx.findRootSymbol(roots, name) match {
             case Some(rootd) =>
-              ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
+              ctx.redefineSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
               ctx.log(s"$start replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
@@ -524,7 +526,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
-      if (tag == VALDEF && flags.is(SingletonEnumFlags))
+      if (tag == VALDEF && flags.is(FlagSets.SingletonEnum))
         ctx.markAsEnumSingleton(sym)
       registerSym(start, sym)
       if (canEnterInClass && ctx.owner.isClass)
@@ -760,13 +762,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Extension | Exported))
         val tpe = readTpt()(localCtx).tpe
         ctx.setInfo(sym,
-          if (repr.originalFlagSet.is(SingletonEnumFlags)) {
+          if (repr.originalFlagSet.is(FlagSets.SingletonEnum)) {
             val enumClass = sym.objectImplementation
             val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
             val ctor = ctx.unsafeNewSymbol(
               owner = enumClass,
               name  = TastyName.Constructor,
-              flags = Method,
+              flags = FlagSets.Creation.CtorDef,
               info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
             )
             enumClass.typeOfThis = selfTpe
@@ -823,9 +825,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case VALDEF              => ValDef(repr, localCtx)
           case TYPEDEF | TYPEPARAM => TypeDef(repr, localCtx)
           case PARAM               => TermParam(repr, localCtx)
-        }
-        if (sym.isTerm) {
-          ctx.markAsTerm(sym)
         }
       }
 
@@ -908,7 +907,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         val parentTypes = ctx.adjustParents(cls, parents)
         setInfoWithParents(tparams, parentTypes)
-        ctx.markAsClass(cls)
       }
 
       inIndexScopedStatsContext(traverseTemplate()(_))

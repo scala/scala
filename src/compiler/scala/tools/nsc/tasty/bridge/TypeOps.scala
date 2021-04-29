@@ -619,7 +619,8 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val params: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newValueParameter(name, u.NoPosition, encodeFlagSet(defaultFlags)).setInfo(argInfo)
+      case (name, argInfo) =>
+        ctx.owner.newValueParameter(name, u.NoPosition, newSymbolFlagSet(defaultFlags)).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp()
@@ -647,7 +648,7 @@ trait TypeOps { self: TastyUniverse =>
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, bounds) =>
         val argInfo = normaliseIfBounds(bounds)
-        ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.HKTyParam).setInfo(argInfo)
     }
 
     val resType: Type = lambdaResultType(resultTypeOp())
@@ -674,7 +675,8 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
+      case (name, argInfo) =>
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.TyParam).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp() // potentially need to flatten? (probably not, happens in typer in dotty)

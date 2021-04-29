@@ -99,12 +99,11 @@ trait Erasure {
   def erasedValueClassArg(tref: TypeRef): Type = {
     assert(!phase.erasedTypes, "Types are erased")
     val clazz = tref.sym
-    val isDotty = clazz.hasAttachment[DottyClass.type]
     if (valueClassIsParametric(clazz)) {
-      val erasureMap = if (isDotty) boxing3Erasure else boxingErasure
+      val erasureMap = if (clazz.isScala3Defined) boxing3Erasure else boxingErasure
       erasureMap(tref.memberType(clazz.derivedValueClassUnbox).resultType)
     } else {
-      val erasureMap = if (isDotty) scala3Erasure else scalaErasure
+      val erasureMap = if (clazz.isScala3Defined) scala3Erasure else scalaErasure
       erasureMap(underlyingOfValueClass(clazz))
     }
   }
@@ -143,7 +142,7 @@ trait Erasure {
         apply(st.supertype)
       case tref @ TypeRef(pre, sym, args) =>
         def isDottyEnumSingleton(sym: Symbol): Boolean =
-          sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton]
+          sym.isScala3Defined && sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton.type]
         if (sym eq ArrayClass) eraseArray(tp, pre, args)
         else if ((sym eq AnyClass) || (sym eq AnyValClass) || (sym eq SingletonClass)) ObjectTpe
         else if (sym eq UnitClass) BoxedUnitTpe
@@ -151,10 +150,7 @@ trait Erasure {
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (isDottyEnumSingleton(sym)) apply(intersectionType(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
-        else sym.attachments.get[DottyOpaqueTypeAlias] match {
-          case Some(alias: DottyOpaqueTypeAlias) => apply(alias.tpe.asSeenFrom(pre, sym.owner)) // TODO [tasty]: refactor if we build-in opaque types
-          case _                                 => apply(sym.info.asSeenFrom(pre, sym.owner)) // alias type or abstract type
-        }
+        else apply(transparentDealias(sym, pre, sym.owner)) // alias type or abstract type (including opaque type)
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>
@@ -246,14 +242,16 @@ trait Erasure {
    *     parents |Ps|, but with duplicate references of Object removed.
    *   - for all other types, the type itself (with any sub-components erased)
    */
-  def erasure(sym: Symbol): ErasureMap =
-    if (sym == NoSymbol) scalaErasure
-    else if (sym.enclClass.isJavaDefined) {
+  def erasure(sym: Symbol): ErasureMap = {
+    if (sym == NoSymbol) return scalaErasure
+    val enclosing = sym.enclClass
+    if (enclosing.isJavaDefined) {
       if (verifyJavaErasure && sym.isMethod) verifiedJavaErasure
       else javaErasure
     }
-    else if (sym.hasAttachment[DottyTerm.type]) scala3Erasure
+    else if (enclosing.isScala3Defined) scala3Erasure
     else scalaErasure
+  }
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
@@ -378,7 +376,7 @@ trait Erasure {
   object specialScala3Erasure extends Scala3ErasureMap with SpecialScalaErasure
 
   def specialScalaErasureFor(sym: Symbol): ErasureMap = {
-    if (sym.hasAttachment[DottyTerm.type]) specialScala3Erasure
+    if (sym.isScala3Defined) specialScala3Erasure
     else specialScalaErasure
   }
 
@@ -532,6 +530,17 @@ trait Erasure {
     components.min((t, u) => compareErasedGlb(t, u))
   }
 
+  def transparentDealias(sym: Symbol, pre: Type, owner: Symbol) = {
+    @inline def visible(tp: Type) = tp.asSeenFrom(pre, owner)
+
+    if (sym.isScala3Defined && !sym.isClass)
+      sym.attachments.get[DottyOpaqueTypeAlias]
+        .map(alias => visible(alias.tpe))
+        .getOrElse(visible(sym.info))
+    else
+      visible(sym.info)
+  }
+
   /** Dotty implementation of Array Erasure:
    *
    *  Is `Array[tp]` a generic Array that needs to be erased to `Object`?
@@ -551,11 +560,7 @@ trait Erasure {
       }
 
       def translucentSuperType(tp: Type): Type = tp match {
-        case tp: TypeRef =>
-          tp.sym.attachments.get[DottyOpaqueTypeAlias] match {
-            case Some(alias) => alias.tpe.asSeenFrom(tp.pre, tp.sym.owner)
-            case None => tp.sym.info.asSeenFrom(tp.pre, tp.sym.owner)
-          }
+        case tp: TypeRef => transparentDealias(tp.sym, tp.pre, tp.sym.owner)
         case tp: SingleType => tp.underlying
         case tp: ThisType => tp.sym.typeOfThis
         case tp: ConstantType => tp.value.tpe
@@ -610,7 +615,7 @@ trait Erasure {
     /** Can one of the JVM Array type store all possible values of type `t`? */
     def fitsInJVMArray(tp: Type): Boolean = arrayUpperBound(tp) ne NoSymbol
 
-    def isOpaque(sym: Symbol) = !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
+    def isOpaque(sym: Symbol) = sym.isScala3Defined && !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
 
     tp.dealias match {
       case tp: TypeRef if !isOpaque(tp.sym) =>

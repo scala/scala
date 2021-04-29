@@ -23,24 +23,36 @@ trait FlagOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object FlagSets {
+
     val TastyOnlyFlags: TastyFlagSet = (
       Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
       | Enum | Infix | Open | ParamAlias | Invisible
     )
+
+    object Creation {
+      val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
+      val ObjectClassDef: TastyFlagSet = Object | Final
+      val CtorDef: TastyFlagSet = Method | Stable
+      val HKTyParam: u.FlagSet = newSymbolFlagSet(Deferred)
+      val TyParam: u.FlagSet = HKTyParam
+      val Wildcard: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+    }
+    val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
-    val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
-    val ObjectClassCreationFlags: TastyFlagSet = Object | Final
-    val SingletonEnumInitFlags: TastyFlagSet = Case | Static | Enum
-    val SingletonEnumFlags: TastyFlagSet = SingletonEnumInitFlags | Stable
-    val FieldAccessorFlags: TastyFlagSet = FieldAccessor | Stable
-    val LocalFieldFlags: TastyFlagSet = Private | Local
-    val Scala2MacroFlags: TastyFlagSet = Erased | Macro
+    val FieldAccessor: TastyFlagSet = FieldAccessor | Stable
+    val LocalField: TastyFlagSet = Private | Local
+    val Scala2Macro: TastyFlagSet = Erased | Macro
   }
 
-  /**encodes a `TastyFlagSet` as `scala.reflect` flags and will ignore flags that can't be converted, such as
-   * members of `FlagSets.TastyOnlyFlags`
+  /** Obtain a `symbolTable.FlagSet` that can be used to create a new Tasty definition. */
+  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
+    unsafeEncodeTastyFlagSet(tflags) | ModifierFlags.SCALA3X
+
+  /** **Do Not Use When Creating New Symbols**
+   *
+   *  encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
    */
-  private[bridge] def encodeFlagSet(tflags: TastyFlagSet): u.FlagSet = {
+  private[bridge] def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
     import u.Flag
     var flags = u.NoFlags
     if (tflags.is(Private)) flags |= Flag.PRIVATE

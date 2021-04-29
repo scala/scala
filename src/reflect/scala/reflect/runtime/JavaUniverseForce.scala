@@ -67,8 +67,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
     this.KnownDirectSubclassesCalled
-    this.DottyTerm
-    this.DottyClass
+    this.DottyEnumSingleton
     this.ConstructorNeedsFence
     this.MultiargInfixAttachment
     this.NullaryOverrideAdapted

@@ -116,14 +116,11 @@ trait StdAttachments {
     */
   case object KnownDirectSubclassesCalled extends PlainAttachment
 
-  class DottyEnumSingleton(val name: String) extends PlainAttachment
+  case object DottyEnumSingleton extends PlainAttachment
 
   class DottyParameterisedTrait(val params: List[Symbol])
 
   class DottyOpaqueTypeAlias(val tpe: Type)
-
-  case object DottyTerm extends PlainAttachment
-  case object DottyClass extends PlainAttachment
 
   class QualTypeSymAttachment(val sym: Symbol)
 
