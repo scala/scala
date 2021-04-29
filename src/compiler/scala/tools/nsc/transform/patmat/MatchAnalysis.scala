@@ -14,7 +14,6 @@ package scala.tools.nsc.transform.patmat
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.reflect.internal.util.StatisticsStatics
 import scala.tools.nsc.Reporting.WarningCategory
 
 trait TreeAndTypeAnalysis extends Debugging {
@@ -459,7 +458,7 @@ trait MatchAnalysis extends MatchApproximation {
     // or, equivalently, P \/ -C, or C => P
     def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
       debug.patmat("reachability analysis")
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaReach) else null
+      val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatAnaReach) else null
 
       // use the same approximator so we share variables,
       // but need different conditions depending on whether we're conservatively looking for failure or success
@@ -503,7 +502,7 @@ trait MatchAnalysis extends MatchApproximation {
           }
         }
 
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaReach, start)
+        if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.patmatAnaReach, start)
 
         if (reachable) None else Some(caseIndex)
       } catch {
@@ -521,7 +520,7 @@ trait MatchAnalysis extends MatchApproximation {
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
       //   otherwise the common (xs: List[Any]) match { case List() => case x :: xs => } is deemed unexhaustive
       // - back off (to avoid crying exhaustive too often) in unhandled cases
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
+      val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
       val strict = !settings.nonStrictPatmatAnalysis.value
 
@@ -578,7 +577,7 @@ trait MatchAnalysis extends MatchApproximation {
           // and make sure the strings are distinct, see Shmeez & TestSequence06 in run/patmatnew.scala
           val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString).distinct
 
-          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaExhaust, start)
+          if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.patmatAnaExhaust, start)
           pruned
         } catch {
           case ex: AnalysisBudget.Exception =>

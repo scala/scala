@@ -73,8 +73,9 @@ object MutableSettings {
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 
   implicit class SettingsOps(private val settings: MutableSettings) extends AnyVal {
-    @inline final def areStatisticsEnabled = StatisticsStatics.areSomeColdStatsEnabled && settings.YstatisticsEnabled
-    @inline final def isDebug: Boolean     = StatisticsStatics.isDebug                 && settings.debug
-    @inline final def isDeveloper: Boolean = StatisticsStatics.isDeveloper             && settings.developer
+    @inline final def areStatisticsEnabled = (StatisticsStatics.COLD_STATS_GETTER.invokeExact(): Boolean) && settings.YstatisticsEnabled
+    @inline final def areHotStatisticsEnabled = (StatisticsStatics.HOT_STATS_GETTER.invokeExact(): Boolean) && settings.YhotStatisticsEnabled
+    @inline final def isDebug: Boolean     = (StatisticsStatics.DEBUG_GETTER.invokeExact(): Boolean) && settings.debug
+    @inline final def isDeveloper: Boolean = (StatisticsStatics.DEVELOPER_GETTER.invokeExact(): Boolean) && settings.developer
   }
 }
