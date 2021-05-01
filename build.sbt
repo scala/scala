@@ -157,6 +157,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
   // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
   Compile / scalacOptions += "-Wconf:cat=optimizer:is",
+  Compile / scalacOptions ++= Seq("-deprecation", "-feature"),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -743,6 +744,7 @@ lazy val tasty = project.in(file("test") / "tasty")
 lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc)
   .settings(commonSettings)
+  .settings(fatalWarningsSettings)
   .settings(disableDocs)
   .settings(publish / skip := true)
   .settings(
@@ -755,7 +757,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
       // Full stack trace on failure:
       "-verbosity", "2"
     ),
-    libraryDependencies ++= Seq(scalacheckDep),
+    libraryDependencies ++= Seq(scalacheckDep, junitDep),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
@@ -813,6 +815,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
 
 lazy val partestJavaAgent = Project("partestJavaAgent", file(".") / "src" / "partest-javaagent")
   .settings(commonSettings)
+  .settings(fatalWarningsSettings)
   .settings(generatePropertiesFileSettings)
   .settings(disableDocs)
   .settings(

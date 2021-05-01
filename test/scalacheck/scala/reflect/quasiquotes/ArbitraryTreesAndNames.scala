@@ -1,6 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import scala.language.implicitConversions
 import scala.reflect.runtime.universe._, internal._, Flag._
 
 trait ArbitraryTreesAndNames {

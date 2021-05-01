@@ -25,9 +25,9 @@ object ArrayTest extends Properties("Array") {
   property("fill") = forAll(
     Gen.choose(-10, 100),
   ) { len =>
-    val xs = Vector.fill(len)(Random.nextInt)
+    val xs = Vector.fill(len)(Random.nextInt())
     val i = xs.iterator
-    Array.fill(len)(i.next).toVector == xs
+    Array.fill(len)(i.next()).toVector == xs
   }
 
   property("tabulate") = forAll(

@@ -7,8 +7,8 @@ import org.scalacheck.commands.Commands
 import scala.collection.mutable
 import scala.util.{Success, Try}
 
-
-object SetProperties extends Properties("immutable.Set builder implementations"){
+@annotation.nowarn("cat=deprecation&msg=Stream")
+object SetProperties extends Properties("immutable.Set builder implementations") {
 
   type A = Int
 
@@ -60,6 +60,7 @@ class SetBuilderStateProperties[A, To <: Set[A]](newBuilder: => mutable.Builder[
 
   override def genCommand(state: State): Gen[Command] = _genCommand
 
+  @annotation.nowarn("cat=deprecation&msg=Stream")
   override def shrinkState = Shrink.apply[State]( set => set.to(Stream).map(set - _) )
 
   case object Clear extends UnitCommand {

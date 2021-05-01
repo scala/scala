@@ -8,6 +8,7 @@ object IndexOfSliceTest extends Properties("indexOfSlice") {
 
   // The default arbitrary[Seq[Int]] picks only one Seq implementation.
   // Here we explicitly list all the implementations we want to test
+  @annotation.nowarn("msg=type WrappedArray")
   val genDifferentSeqs =
     Gen.oneOf[Seq[Int]](
       Arbitrary.arbitrary[collection.immutable.List[Int]],

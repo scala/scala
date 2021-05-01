@@ -24,7 +24,7 @@ abstract class RedBlackTreeTest(tname: String) extends Properties(tname) with Re
   import RB._
 
   def nodeAt[A](tree: Tree[String, A], n: Int): Option[(String, A)] = if (n < iterator(tree).size && n >= 0)
-    Some(iterator(tree).drop(n).next)
+    Some(iterator(tree).drop(n).next())
   else
     None
 

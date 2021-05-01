@@ -3,8 +3,7 @@ import Prop._
 import org.scalacheck.Gen._
 import collection._
 import collection.concurrent.TrieMap
-
-
+import scala.language.reflectiveCalls
 
 case class Wrap(i: Int) {
   override def hashCode = i // * 0x9e3775cd
@@ -192,8 +191,8 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
       idx =>
       (0 until sz) foreach {
         i =>
-        val v = ct.getOrElseUpdate(Wrap(i), idx + ":" + i)
-        if (v == idx + ":" + i) totalInserts.incrementAndGet()
+        val v = ct.getOrElseUpdate(Wrap(i), s"$idx:$i")
+        if (v == s"$idx:$i") totalInserts.incrementAndGet()
       }
     }
 
