@@ -11,6 +11,7 @@ import scala.util.{Success, Try}
 import org.scalacheck.Properties
 
 
+@annotation.nowarn("cat=deprecation&msg=Stream")
 object SeqProperties extends Properties("immutable.Seq builder implementations"){
 
   type A = Int

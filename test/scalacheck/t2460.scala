@@ -12,11 +12,11 @@ object SI2460Test extends Properties("Regex : Ticket 2460") {
   }
 
   val numberOfGroup = forAll(vowel) {
-    (s: String) => "\\s*([a-z])\\s*([a-z])\\s*".r("data").findAllMatchIn((1 to 20).map(_ => s).mkString).next.groupCount == 2
+    (s: String) => "\\s*([a-z])\\s*([a-z])\\s*".r("data").findAllMatchIn((1 to 20).map(_ => s).mkString).next().groupCount == 2
   }
 
   val nameOfGroup = forAll(vowel) {
-    (s: String) => "([a-z])".r("data").findAllMatchIn(s).next.group("data") == s
+    (s: String) => "([a-z])".r("data").findAllMatchIn(s).next().group("data") == s
   }
 
   val tests = List(

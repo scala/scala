@@ -142,19 +142,14 @@ object Plugin {
     ignoring: List[String],
     findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
   {
-    def targeted(targets: List[List[Path]]) = targets.map { path =>
-      val loader = findPluginClassloader(path)
+    def pluginResource(classpath: List[Path], loader: ClassLoader) =
       loader.getResource(PluginXML) match {
-        case null => Failure(new MissingPluginException(path))
+        case null => Failure(new MissingPluginException(classpath))
         case url =>
           val inputStream = url.openStream
-          try {
-            Try((PluginDescription.fromXML(inputStream), loader))
-          } finally {
-            inputStream.close()
-          }
+          try Try((PluginDescription.fromXML(inputStream), loader)) finally inputStream.close()
       }
-    }
+    def targeted(targets: List[List[Path]]) = targets.filter(_.nonEmpty).map(classpath => pluginResource(classpath, findPluginClassloader(classpath)))
     def dirList(dir: Path) = if (dir.isDirectory) dir.toDirectory.files.filter(Jar.isJarOrZip).toList.sortBy(_.name) else Nil
 
     // ask plugin loaders for plugin resources, but ignore if none in -Xpluginsdir
@@ -179,9 +174,8 @@ object Plugin {
   /** Instantiate a plugin class, given the class and
    *  the compiler it is to be used in.
    */
-  def instantiate(clazz: AnyClass, global: Global): Plugin = {
-    (clazz getConstructor classOf[Global] newInstance global).asInstanceOf[Plugin]
-  }
+  def instantiate(clazz: AnyClass, global: Global): Plugin =
+    clazz.getConstructor(classOf[Global]).newInstance(global).asInstanceOf[Plugin]
 }
 
 class PluginLoadException(val path: String, message: String, cause: Exception) extends Exception(message, cause) {

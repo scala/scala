@@ -70,7 +70,7 @@ object TreeSetTest extends Properties("TreeSet") {
     val half = elements.take(elements.size / 2)
     val subject = TreeSet(half: _*)
     elements.forall{e => {
-      val temp = subject.from(e)
+      val temp = subject.rangeFrom(e)
       if (temp.isEmpty) subject.minAfter(e).isEmpty
       else subject.minAfter(e).get == temp.min
     }}
@@ -80,7 +80,7 @@ object TreeSetTest extends Properties("TreeSet") {
     val half = elements.take(elements.size / 2)
     val subject = TreeSet(half: _*)
     elements.forall{e => {
-      val temp = subject.from(e)
+      val temp = subject.rangeFrom(e)
       if (temp.isEmpty) subject.minAfter(e).isEmpty
       else subject.minAfter(e).get == temp.min
     }}
@@ -144,7 +144,7 @@ object TreeSetTest extends Properties("TreeSet") {
   property("from is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val from = subject.drop(n).firstKey
-    subject.from(from).firstKey == from && subject.from(from).forall(_ >= from)
+    subject.rangeFrom(from).firstKey == from && subject.rangeFrom(from).forall(_ >= from)
   }}
 
   property("to is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
@@ -156,7 +156,7 @@ object TreeSetTest extends Properties("TreeSet") {
   property("until is exclusive") = forAll { (subject: TreeSet[Int]) => subject.size > 1 ==> {
     val n = choose(1, subject.size - 1).sample.get
     val until = subject.drop(n).firstKey
-    subject.until(until).lastKey == subject.take(n).lastKey && subject.until(until).forall(_ <= until)
+    subject.rangeUntil(until).lastKey == subject.take(n).lastKey && subject.rangeUntil(until).forall(_ <= until)
   }}
 
   property("remove single") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {

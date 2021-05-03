@@ -6,7 +6,7 @@ import java.io.{BufferedReader, StringReader}
 import org.scalacheck.{Gen, Properties}, Gen.{oneOf, listOf}
 import org.scalacheck.Prop._
 
-import JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object StringOpsTest extends Properties("StringOps") {
 

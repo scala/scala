@@ -43,9 +43,9 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     size <- choose(1, 100)
     step <- choose(1, 101)
   } yield {
-    val signum = if (boundary == 0) 1 else boundary.signum
-    if (isStart) Range(boundary, boundary - size * boundary.signum, - step * signum)
-    else         Range(boundary - size * boundary.signum, boundary, step * signum)
+    val signum = if (boundary == 0) 1 else boundary.sign
+    if (isStart) Range(boundary, boundary - size * boundary.sign, - step * signum)
+    else         Range(boundary - size * boundary.sign, boundary, step * signum)
   }
 
 
