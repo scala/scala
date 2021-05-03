@@ -1,0 +1,7 @@
+variant-placeholders-future.scala:4: error: `=', `>:', or `<:' expected
+  type -_ = Int // error -_ not allowed as a type def name without backticks
+        ^
+variant-placeholders-future.scala:5: error: `=', `>:', or `<:' expected
+  type +_ = Int // error +_ not allowed as a type def name without backticks
+        ^
+two errors found

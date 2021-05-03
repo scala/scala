@@ -1077,7 +1077,14 @@ self =>
         simpleTypeRest(in.token match {
           case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types()), start))
           case _        =>
-            if (isWildcardType)
+            if (currentRun.isScala3 && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+              val start = in.offset
+              val identName = in.name.encode.append("_").toTypeName
+              in.nextToken()
+              in.nextToken()
+              atPos(start)(Ident(identName))
+            }
+            else if (isWildcardType)
               wildcardType(in.skipToken())
             else
               path(thisOK = false, typeOK = true) match {
