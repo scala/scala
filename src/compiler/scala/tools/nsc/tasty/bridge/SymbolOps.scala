@@ -85,18 +85,6 @@ trait SymbolOps { self: TastyUniverse =>
     def termRef: Type = sym.preciseRef(u.NoPrefix)
     def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
-
-    def set(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.addFlags(sym, mask)
-    def reset(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.removeFlags(sym, mask)
-
-    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
-      if (!butNot)
-        sym.is(mask)
-      else
-        sym.is(mask) && sym.not(butNot)
-    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */

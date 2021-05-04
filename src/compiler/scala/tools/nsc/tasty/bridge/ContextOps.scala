@@ -397,11 +397,8 @@ trait ContextOps { self: TastyUniverse =>
       parentTypes
     }
 
-    final def removeFlags(symbol: Symbol, flags: TastyFlagSet): symbol.type =
-      symbol.resetFlag(unsafeEncodeTastyFlagSet(flags))
-
-    final def addFlags(symbol: Symbol, flags: TastyFlagSet): symbol.type =
-      symbol.setFlag(unsafeEncodeTastyFlagSet(flags))
+    private[bridge] final def resetFlag0(symbol: Symbol, flags: u.FlagSet): symbol.type =
+      symbol.resetFlag(flags)
 
     final def redefineSymbol(symbol: Symbol, flags: TastyFlagSet, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
       symbol.flags = newSymbolFlagSet(flags)

@@ -530,6 +530,10 @@ trait Erasure {
     components.min((t, u) => compareErasedGlb(t, u))
   }
 
+  /** For a type alias, get its info as seen from
+   *  the current prefix and owner.
+   *  Sees through opaque type aliases.
+   */
   def transparentDealias(sym: Symbol, pre: Type, owner: Symbol) = {
     @inline def visible(tp: Type) = tp.asSeenFrom(pre, owner)
 

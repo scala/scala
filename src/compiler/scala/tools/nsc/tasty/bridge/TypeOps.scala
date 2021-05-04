@@ -240,7 +240,7 @@ trait TypeOps { self: TastyUniverse =>
       bounds
   }
 
-  private[bridge] def sameErasure(sym: Symbol)(tpe: Type, ref: ErasedTypeRef)(implicit ctx: Context) =
+  private[bridge] def sameErasure(sym: Symbol)(tpe: Type, ref: ErasedTypeRef) =
     NameErasure.sigName(tpe, sym) === ref
 
   /** This is a port from Dotty of transforming a Method type to an ErasedTypeRef
@@ -254,9 +254,9 @@ trait TypeOps { self: TastyUniverse =>
      *  `from` and `to` must be static classes, both with one type parameter, and the same variance.
      *  Do the same for by name types => From[T] and => To[T]
      */
-    def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean = false)(implicit ctx: Context): Type = self match {
+    def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean): Type = self match {
       case self @ u.NullaryMethodType(tp) =>
-        u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg=false))
+        u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg = false))
       case _ =>
         if (self.typeSymbol.isSubClass(from)) {
           def elemType(tp: Type): Type = tp.dealiasWiden match {
@@ -271,25 +271,23 @@ trait TypeOps { self: TastyUniverse =>
         else self
     }
 
-    def translateFromRepeated(self: Type)(toArray: Boolean, translateWildcard: Boolean = false)(implicit ctx: Context): Type = {
+    def translateFromRepeated(self: Type)(toArray: Boolean): Type = {
       val seqClass = if (toArray) u.definitions.ArrayClass else u.definitions.SeqClass
-      if (translateWildcard && self === u.WildcardType)
-        seqClass.ref(u.WildcardType :: Nil)
-      else if (isRepeatedParam(self))
+      if (isRepeatedParam(self))
         // We want `Array[? <: T]` because arrays aren't covariant until after
         // erasure. See `tests/pos/i5140`.
         translateParameterized(self)(u.definitions.RepeatedParamClass, seqClass, wildcardArg = toArray)
       else self
     }
 
-    def sigName(tp: Type, sym: Symbol)(implicit ctx: Context): ErasedTypeRef = {
+    def sigName(tp: Type, sym: Symbol): ErasedTypeRef = {
       val normTp = translateFromRepeated(tp)(toArray = sym.isJavaDefined)
       erasedSigName(
         u.erasure.erasure(sym)(normTp)
       )
     }
 
-    private def erasedSigName(erased: Type)(implicit ctx: Context): ErasedTypeRef = erased match {
+    private def erasedSigName(erased: Type): ErasedTypeRef = erased match {
       case erased: u.ExistentialType => erasedSigName(erased.underlying)
       case erased: u.TypeRef =>
         import TastyName._

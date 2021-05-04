@@ -616,9 +616,7 @@ lazy val tastytest = configureAsSubproject(project)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
-    libraryDependencies ++= List(
-      diffUtilsDep,
-    ),
+    libraryDependencies += diffUtilsDep,
     Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
@@ -751,14 +749,14 @@ lazy val tasty = project.in(file("test") / "tasty")
     ),
     javaOptions ++= {
       import java.io.File.pathSeparator
-      val lib = (library / Compile / classDirectory).value.getAbsoluteFile()
-      val ref = (reflect / Compile / classDirectory).value.getAbsoluteFile()
-      val classpath = (TastySupport.CompilerClasspath / managedClasspath).value.seq.map(_.data) :+ lib
-      val libraryClasspath = (TastySupport.LibraryClasspath / managedClasspath).value.seq.map(_.data) :+ lib
+      val scalaLibrary = (library / Compile / classDirectory).value.getAbsoluteFile()
+      val scalaReflect = (reflect / Compile / classDirectory).value.getAbsoluteFile()
+      val dottyCompiler = (TastySupport.CompilerClasspath / managedClasspath).value.seq.map(_.data) :+ scalaLibrary
+      val dottyLibrary = (TastySupport.LibraryClasspath / managedClasspath).value.seq.map(_.data) :+ scalaLibrary
       Seq(
-        s"-Dtastytest.classpaths.dottyCompiler=${classpath.mkString(pathSeparator)}",
-        s"-Dtastytest.classpaths.dottyLibrary=${libraryClasspath.mkString(pathSeparator)}",
-        s"-Dtastytest.classpaths.scalaReflect=${ref}",
+        s"-Dtastytest.classpaths.dottyCompiler=${dottyCompiler.mkString(pathSeparator)}",
+        s"-Dtastytest.classpaths.dottyLibrary=${dottyLibrary.mkString(pathSeparator)}",
+        s"-Dtastytest.classpaths.scalaReflect=$scalaReflect",
       )
     },
   )

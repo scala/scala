@@ -45,15 +45,27 @@ trait FlagOps { self: TastyUniverse =>
     val Scala2Macro: TastyFlagSet = Erased | Macro
   }
 
-  /** Obtain a `symbolTable.FlagSet` that can be used to create a new Tasty definition. */
+  /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
   private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
     unsafeEncodeTastyFlagSet(tflags) | ModifierFlags.SCALA3X
 
-  /** **Do Not Use When Creating New Symbols**
-   *
-   *  encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
+  implicit final class SymbolFlagOps(val sym: Symbol) {
+    def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
+      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags))
+    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
+    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
+      if (!butNot)
+        sym.is(mask)
+      else
+        sym.is(mask) && sym.not(butNot)
+    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
+  }
+
+  /** encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
+   *  @note Do not use directly to initialise symbol flags, use `newSymbolFlagSet`
    */
-  private[bridge] def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
+  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
     import u.Flag
     var flags = u.NoFlags
     if (tflags.is(Private)) flags |= Flag.PRIVATE
