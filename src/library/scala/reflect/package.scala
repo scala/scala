@@ -57,13 +57,17 @@ package object reflect {
   def ensureAccessible[T <: jAccessibleObject](m: T): T = {
     // This calls `setAccessible` unnecessarily, because `isAccessible` is only `true` if `setAccessible(true)`
     // was called before, not if the reflected object is inherently accessible.
-    // TODO: replace by `canAccess` once we're on JDK 9+
-    if (!m.isAccessible: @nowarn("cat=deprecation")) {
-      try m setAccessible true
+    if (isAccessible(m): @nowarn("cat=deprecation")) {
+      try m.setAccessible(true)
       catch { case _: SecurityException => } // does nothing
     }
     m
   }
+
+  // TODO: replace by `canAccess` once we're on JDK 9+.  `isAccessible` isn't deprecated yet
+  // in 8, so we wrap the call in a method which is itself deprecated.
+  @deprecated("","") private def isAccessible(m: jAccessibleObject) =
+    m.isAccessible
 
   // anchor for the class tag materialization macro emitted during tag materialization in Implicits.scala
   // implementation is hardwired into `scala.reflect.reify.Taggers`
