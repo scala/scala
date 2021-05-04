@@ -96,7 +96,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         closeableRegistry.registerClosable(loader)
         loader
       case Right(paths) =>
-        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
+        cache.getOrCreate((), paths, newLoader, closeableRegistry, checkStamps)
     }
   }
 
@@ -973,7 +973,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
 object Macros {
   final val macroClassLoadersCache =
-    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader.URLClassLoader]()
+    new scala.tools.nsc.classpath.FileBasedCache[Unit, ScalaClassLoader.URLClassLoader]()
 }
 
 trait MacrosStats {
