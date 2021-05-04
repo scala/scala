@@ -199,15 +199,16 @@ abstract class SymbolLoaders {
     }
   }
   private def nameOf(classRep: ClassRepresentation): TermName = {
-    while(true) {
-      val len = classRep.nameChars(nameCharBuffer)
-      if (len == -1) nameCharBuffer = new Array[Char](nameCharBuffer.length * 2)
-      else return newTermName(nameCharBuffer, 0, len)
+    val name = classRep.name
+    val nameLength = name.length
+    if (nameLength <= nameCharBuffer.length) {
+      name.getChars(0, nameLength, nameCharBuffer, 0)
+      newTermName(nameCharBuffer, 0, nameLength)
+    } else {
+      newTermName(name)
     }
-    throw new IllegalStateException()
   }
-  private var nameCharBuffer = new Array[Char](256)
-
+  private val nameCharBuffer = new Array[Char](512)
 
   /**
    * A lazy type that completes itself by calling parameter doComplete.
