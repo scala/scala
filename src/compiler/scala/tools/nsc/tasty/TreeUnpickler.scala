@@ -69,8 +69,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
-  private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
-    ctx.log(s"$addr registered ${showSym(sym)} in ${location(sym.owner)}")
+  private def registerSym(addr: Addr, sym: Symbol, rejected: Boolean)(implicit ctx: Context) = {
+    assert(!(rejected && isSymbol(sym)), "expected no symbol when rejected")
+    ctx.log(
+      if (isSymbol(sym)) s"$addr registered ${showSym(sym)} in ${location(sym.owner)}"
+      else s"$addr registering symbol was rejected"
+    )
     symAtAddr(addr) = sym
   }
 
@@ -464,7 +468,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         createMemberSymbol()
       case TEMPLATE =>
         val localDummy = ctx.newLocalDummy
-        registerSym(currentAddr, localDummy)
+        registerSym(currentAddr, localDummy, rejected = false)
         localDummy
       case tag =>
         assert(tag != BIND, "bind pattern symbol creation from TASTy")
@@ -475,12 +479,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *  @return  the created symbol
      */
     def createMemberSymbol()(implicit ctx: Context): Symbol = {
+
+      def rejectSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Boolean = {
+        def isPureMixinCtor =
+          name == TastyName.MixinConstructor && owner.isTrait && flags.is(Stable)
+        def isInvisible =
+          flags.is(Invisible)
+
+        isPureMixinCtor || isInvisible
+      }
+
       val start = currentAddr
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
       val parsedName: TastyName = readTastyName()
-      ctx.log(s"$start ::: => create ${astTagToString(tag)} ${parsedName.debug}")
+      def debugSymCreate: String = s"${astTagToString(tag)} ${parsedName.debug}"
+      ctx.log(s"$start ::: => create $debugSymCreate")
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -489,13 +504,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (name, flags, annotations, privateWithin) = {
-        val (parsedFlags, annotations, privateWithin) =
-          readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-        val name = normalizeName(isTypeTag, parsedName)
-        val flags = addInferredFlags(tag, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
-        (name, flags, annotations, privateWithin)
-      }
+      val (parsedFlags0, annotations, privateWithin) =
+        readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
+      val name = normalizeName(isTypeTag, parsedName)
+      val flags = addInferredFlags(tag, parsedFlags0, name, isAbsType, isClass, rhsIsEmpty)
+      def mkCompleter = new Completer(isClass, subReader(start, end), flags)(ctx.retractMode(IndexScopedStats))
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isTypeParameter
       ctx.log {
@@ -509,34 +522,46 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         s"""$start parsed flags $debugFlags"""
       }
+      val rejected = rejectSymbol(ctx.owner, name, flags)
       val sym = {
         if (tag === TYPEPARAM && ctx.owner.isConstructor) {
+          // TASTy encodes type parameters for constructors
+          // nsc only has class type parameters
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = new Completer(isClass, subReader(start, end), flags)(ctx.retractMode(IndexScopedStats))
           ctx.findRootSymbol(roots, name) match {
             case Some(rootd) =>
-              ctx.redefineSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
-              ctx.log(s"$start replaced info of ${showSym(rootd)}")
-              rootd
+              roots -= rootd
+              if (rejected) {
+                ctx.evict(rootd)
+                noSymbol
+              }
+              else {
+                ctx.redefineSymbol(rootd, flags, mkCompleter, privateWithin)
+                ctx.log(s"$start replaced info of ${showSym(rootd)}")
+                rootd
+              }
             case _ =>
-              if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, completer, privateWithin)
-              else ctx.delayCompletion(ctx.owner, name, completer, privateWithin)
+              if (rejected) noSymbol
+              else if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, mkCompleter, privateWithin)
+              else ctx.delayCompletion(ctx.owner, name, mkCompleter, privateWithin)
           }
         }
-      }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
-      if (tag == VALDEF && flags.is(FlagSets.SingletonEnum))
-        ctx.markAsEnumSingleton(sym)
-      registerSym(start, sym)
-      if (canEnterInClass && ctx.owner.isClass)
-        ctx.enterIfUnseen(sym)
-      if (isClass) {
-        val localCtx = ctx.withOwner(sym)
-        forkAt(templateStart).indexTemplateParams()(localCtx)
+      }
+      registerSym(start, sym, rejected)
+      if (isSymbol(sym)) {
+        if (tag == VALDEF && flags.is(FlagSets.SingletonEnum))
+          ctx.markAsEnumSingleton(sym)
+        if (canEnterInClass && ctx.owner.isClass)
+          ctx.enterIfUnseen(sym)
+        if (isClass) {
+          val localCtx = ctx.withOwner(sym)
+          forkAt(templateStart).indexTemplateParams()(localCtx)
+        }
+        ctx.adjustAnnotations(sym, annotations)
       }
       goto(start)
-      ctx.adjustAnnotations(sym, annotations)
       sym
     }
 
@@ -1026,7 +1051,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               tpd.SeqLiteral(until(end)(readTerm()), elemtpt)
             case REFINEDtpt =>
               val refineCls = symAtAddr.getOrElse(start, ctx.newRefinementClassSymbol)
-              registerSym(start, refineCls)
+              registerSym(start, refineCls, rejected = false)
               typeAtAddr(start) = refineCls.ref
               val parent = readTpt()
               ctx.withOwner(refineCls).enterRefinement(parent.tpe) { refinedCtx =>

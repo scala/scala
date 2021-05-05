@@ -49,10 +49,6 @@ trait SymbolOps { self: TastyUniverse =>
 
     def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
     def isScala2Macro: Boolean = repr.originalFlagSet.is(FlagSets.Scala2Macro)
-
-    def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
-    def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
-
     def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
     def isParamGetter: Boolean =
@@ -176,10 +172,12 @@ trait SymbolOps { self: TastyUniverse =>
           val paramSyms = meth0.paramss.flatten
           val resTpe = meth0.finalResultType
           val sameParamSize = paramSyms.length === paramRefs.length
-          def sameTyParamSize = tyParamCount === (
-            if (qual === TastyName.Constructor) member.owner.typeParams.length
-            else sym.typeParams.length
-          )
+          def sameTyParamSize = tyParamCount === ({
+            // the signature of a class/mixin constructor includes
+            // type parameters, in nsc these come from the parent.
+            val tyParamOwner = if (qual.isConstructorName) member.owner else sym
+            tyParamOwner.typeParams.length
+          })
           def sameParams = paramSyms.lazyZip(paramRefs).forall({
             case (paramSym, paramRef) => sameErasure(sym)(paramSym.tpe, paramRef)
           })

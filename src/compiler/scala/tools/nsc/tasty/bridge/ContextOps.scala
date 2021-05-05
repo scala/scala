@@ -59,7 +59,8 @@ trait ContextOps { self: TastyUniverse =>
   }
 
   final def location(owner: Symbol): String = {
-    if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
+    if (!isSymbol(owner)) "<NoSymbol>"
+    else if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
     else s"${describeOwner(owner)} in ${location(owner.owner)}"
   }
 
@@ -148,7 +149,6 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
 
     def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Inline
-    def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
 
     def canEnterOverload(decl: Symbol): Boolean = {
       !(decl.isModule && isSymbol(findObject(thisCtx.owner, decl.name)))
@@ -285,11 +285,16 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
+    def evict(sym: Symbol): Unit = {
+      sym.owner.rawInfo.decls.unlink(sym)
+      sym.info = u.NoType
+    }
+
     final def enterIfUnseen(sym: Symbol): Unit = {
-      if (mode.is(IndexScopedStats))
-        initialContext.collectLatentEvidence(owner, sym)
       val decl = declaringSymbolOf(sym)
-      if (!(requiresLatentEntry(decl) || neverEntered(decl)))
+      if (mode.is(IndexScopedStats))
+        initialContext.collectLatentEvidence(owner, decl)
+      if (!requiresLatentEntry(decl))
         enterIfUnseen0(owner.rawInfo.decls, decl)
     }
 
