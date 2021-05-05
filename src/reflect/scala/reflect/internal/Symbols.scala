@@ -2098,18 +2098,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // handling of non-public parameters seems to change the order (see scala/bug#7035.)
       //
       // Luckily, the constrParamAccessors are still sorted properly, so sort the field-accessors using them
-      // (need to undo name-mangling, including the sneaky trailing whitespace)
+      // (need to undo name-mangling, including the sneaky trailing whitespace, and match longest first)
       //
       // The slightly more principled approach of using the paramss of the
       // primary constructor leads to cycles in, for example, pos/t5084.scala.
       val primaryNames = constrParamAccessors map (_.name.dropLocal)
       def nameStartsWithOrigDollar(name: Name, prefix: Name) =
         name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
-      caseFieldAccessorsUnsorted.sortBy { acc =>
-        primaryNames indexWhere { orig =>
-          (acc.name == orig) || nameStartsWithOrigDollar(acc.name, orig)
+
+      def rec(remaningAccessors: List[Symbol], foundAccessors: List[(Symbol, Int)], remainingNames: List[(Name, Int)]): List[Symbol] = {
+        remaningAccessors match {
+          case Nil => foundAccessors.sortBy(_._2).map(_._1)
+          case acc :: tail => {
+            val i = remainingNames.collectFirst { case (name, i) if acc.name == name || nameStartsWithOrigDollar(acc.name, name) => i}
+            rec(tail, (acc, i.get) :: foundAccessors, remainingNames.filterNot { case (_, ii) => Some(ii) == i} )
+          }
         }
       }
+
+      rec(caseFieldAccessorsUnsorted.sortBy(s => -s.name.length), Nil, primaryNames.zipWithIndex.sortBy{ case (n, _) => -n.length})
+ 
     }
     private final def caseFieldAccessorsUnsorted: List[Symbol] = info.decls.toList.filter(_.isCaseAccessorMethod)
 

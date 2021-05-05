@@ -1,0 +1,47 @@
+case class Right(a: Int, `a b`: Int)
+case class VeryRight(a: Int, `a b`: String)
+
+case class Wrong(`a b`: Int, a: Int)
+case class VeryWrong(`a b`: Int, a: String)
+case class WrongDollar(a$: Int, a: Int)
+case class VeryWrongDollar(a$: Int, a: String)
+case class WrongQuotedDollar(`a$`: Int, a: Int)
+case class WrongHyphenated(val `foo-bar`: Int, `foo`: Int)
+case class VeryWrongHyphenated(val `foo-bar`: Int, `foo`: String)
+case class WrongPlus(a_+ : Int, a_ : Int)
+case class VeryWrongPlus(a_+ : Int, a_ : String)
+
+case class Right5(b: Int, `a b`: Int, a: Int, `a `: Int, `a b c`: Int)
+
+object Test {
+  def main(args: Array[String]): Unit = {
+    val r = Right(1, 2)
+    val w = Wrong(1, 2)
+    val wd = WrongDollar(1, 2)
+    val wh = WrongHyphenated(1, 2)
+    val wp = WrongPlus(1, 2)
+    assert(r.a == w.`a b`)
+    assert(r.a == wd.a$)
+    assert(r.a == wh.`foo-bar`)
+    assert(r.a == wp.a_+)
+    assert(r.`a b` == w.a)
+    assert(r.`a b` == wd.a)
+    assert(r.`a b` == wh.foo)
+    assert(r.`a b` == wp.a_)
+
+    val vr = VeryRight(1, "one")
+    val vw = VeryWrong(1, "one")
+    val vwd = VeryWrongDollar(1, "one")
+    val vwh = VeryWrongHyphenated(1, "one")
+    val vwp = VeryWrongPlus(1, "one")
+    assert(vr.a == vw.`a b`)
+    assert(vr.a == vwd.a$)
+    assert(vr.a == vwh.`foo-bar`)
+    assert(vr.a == vwp.a_+)
+    assert(vr.`a b` == vw.a)
+    assert(vr.`a b` == vwd.a)
+    assert(vr.`a b` == vwh.foo)
+    assert(vr.`a b` == vwp.a_)
+    println(Right5(1, 2, 3, 4, 5).toString())
+  }
+}
