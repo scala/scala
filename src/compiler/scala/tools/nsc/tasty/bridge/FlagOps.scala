@@ -32,11 +32,11 @@ trait FlagOps { self: TastyUniverse =>
     object Creation {
       val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
       val ObjectClassDef: TastyFlagSet = Object | Final
-      val CtorDef: TastyFlagSet = Method | Stable
-      val HKTyParam: u.FlagSet = newSymbolFlagSet(Deferred)
-      val TyParam: u.FlagSet = HKTyParam
-      val Wildcard: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+      val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+      val BoundedType: u.FlagSet = newSymbolFlagSet(Deferred)
     }
+    def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
+      flags | (inheritedAccess & (Private | Local | Protected))
     val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
     val FieldGetter: TastyFlagSet = FieldAccessor | Stable

@@ -1,0 +1,4 @@
+TestDelayedPrivate_fail.scala:7: error: value Deeper is not a member of object tastytest.DelayedPrivate.Nested
+    DelayedPrivate.Nested.Deeper
+                          ^
+1 error

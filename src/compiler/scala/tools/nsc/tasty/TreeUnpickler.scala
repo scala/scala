@@ -763,12 +763,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val tpe = readTpt()(localCtx).tpe
         ctx.setInfo(sym,
           if (repr.originalFlagSet.is(FlagSets.SingletonEnum)) {
-            val enumClass = sym.objectImplementation
-            val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-            val ctor = ctx.newConstructor(enumClass, selfTpe)
-            enumClass.typeOfThis = selfTpe
-            ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
-            prefixedRef(sym.owner.thisPrefix, enumClass)
+            ctx.completeEnumSingleton(sym, tpe)
+            prefixedRef(sym.owner.thisPrefix, sym.objectImplementation)
           }
           else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
           else if (sym.isMethod) defn.ExprType(tpe)
@@ -1079,7 +1075,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case UNAPPLY     => unsupportedTermTreeError("unapply pattern")
             case INLINED     => unsupportedTermTreeError("inlined expression")
             case SELECTouter => metaprogrammingIsUnsupported // only within inline
-            case HOLE        => assertNoMacroHole
+            case HOLE        => abortMacroHole
             case _           => readPathTerm()
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
@@ -1096,7 +1092,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           forkAt(readAddr()).readTpt()
         case BLOCK => // BLOCK appears in type position when quoting a type, but only in the body of a method
           metaprogrammingIsUnsupported
-        case HOLE => assertNoMacroHole
+        case HOLE => abortMacroHole
         case tag  =>
           if (isTypeTreeTag(tag)) readTerm()(ctx.retractMode(OuterTerm))
           else {
@@ -1110,7 +1106,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /**
       * A HOLE should never appear in TASTy for a top level class, only in quotes.
       */
-    private def assertNoMacroHole[T]: T = assertError("Scala 3 macro hole in pickled TASTy")
+    private def abortMacroHole[T]: T = abortWith(msg = "Scala 3 macro hole in pickled TASTy")
 
     private def metaprogrammingIsUnsupported[T](implicit ctx: Context): T =
       unsupportedError("Scala 3 metaprogramming features")

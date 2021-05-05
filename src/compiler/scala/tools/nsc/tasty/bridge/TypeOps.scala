@@ -192,7 +192,7 @@ trait TypeOps { self: TastyUniverse =>
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
         val syms = mutable.ListBuffer.empty[Symbol]
         def bindWildcards(tpe: Type) = tpe match {
-          case tpe: u.TypeBounds   => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+          case tpe: u.TypeBounds   => ctx.newWildcard(tpe).tap(syms += _).pipe(_.ref)
           case tpe: LambdaPolyType => tpe.toNested
           case tpe                 => tpe
         }
@@ -646,7 +646,7 @@ trait TypeOps { self: TastyUniverse =>
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, bounds) =>
         val argInfo = normaliseIfBounds(bounds)
-        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.HKTyParam).setInfo(argInfo)
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
     }
 
     val resType: Type = lambdaResultType(resultTypeOp())
@@ -674,7 +674,7 @@ trait TypeOps { self: TastyUniverse =>
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, argInfo) =>
-        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.TyParam).setInfo(argInfo)
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp() // potentially need to flatten? (probably not, happens in typer in dotty)

@@ -65,20 +65,22 @@ trait ContextOps { self: TastyUniverse =>
 
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
 
-  @inline final def assertError[T](msg: String): T =
-    throw new AssertionError(s"assertion failed: ${u.supplementErrorMessage(msg)}")
+  final def abortWith[T](msg: String): T = {
+    u.assert(false, msg)
+    ???
+  }
 
   @inline final def assert(assertion: Boolean, msg: => Any): Unit =
-    if (!assertion) assertError(String.valueOf(msg))
+    u.assert(assertion, msg)
 
   @inline final def assert(assertion: Boolean): Unit =
-    if (!assertion) assertError("")
+    u.assert(assertion, "")
 
   private final def findObject(owner: Symbol, name: u.Name): Symbol = {
     val scope =
       if (owner != null && owner.isClass) owner.rawInfo.decls
       else u.EmptyScope
-    val it = scope.lookupAll(name).filter(_.isModule)
+    val it = scope.lookupAll(name).withFilter(_.isModule)
     if (it.hasNext) it.next()
     else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
   }
@@ -189,14 +191,18 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newLocalDummy: Symbol = owner.newLocalDummy(u.NoPosition)
 
-    final def newWildcardSym(info: Type): Symbol =
-      owner.newTypeParameter(u.nme.WILDCARD.toTypeName, u.NoPosition, FlagSets.Creation.Wildcard).setInfo(info)
+    final def newWildcard(info: Type): Symbol =
+      owner.newTypeParameter(
+        name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
+        pos      = u.NoPosition,
+        newFlags = FlagSets.Creation.Default
+      ).setInfo(info)
 
-    final def newConstructor(owner: Symbol, resType: Type): Symbol = unsafeNewSymbol(
+    final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
       owner = owner,
       name  = TastyName.Constructor,
-      flags = FlagSets.Creation.CtorDef,
-      info  = defn.DefDefType(Nil, Nil :: Nil, resType)
+      flags = Method,
+      info  = info
     )
 
     final def findRootSymbol(roots: Set[Symbol], name: TastyName): Option[Symbol] = {
@@ -328,22 +334,20 @@ trait ContextOps { self: TastyUniverse =>
           }
         }
       }
+      else if (flags.is(FlagSets.Creation.ObjectDef)) {
+        log(s"!!! visited module value $name first")
+        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+        module.moduleClass.info = defn.DefaultInfo
+        module
+      }
+      else if (name.isTypeName) {
+        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
+      }
       else if (name === TastyName.Constructor) {
         owner.newConstructor(u.NoPosition, newSymbolFlagSet(flags &~ Stable))
       }
       else if (name === TastyName.MixinConstructor) {
         owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable))
-      }
-      else if (flags.is(FlagSets.Creation.ObjectDef)) {
-        log(s"!!! visited module value $name first")
-        assert(!owner.rawInfo.decls.lookupAll(encodeTermName(name)).exists(_.isModule))
-        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
-        module.moduleClass.info = defn.DefaultInfo
-        module.moduleClass.flags = newSymbolFlagSet(FlagSets.Creation.ObjectClassDef)
-        module
-      }
-      else if (name.isTypeName) {
-        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
       }
       else {
         owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
@@ -353,8 +357,7 @@ trait ContextOps { self: TastyUniverse =>
     private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet): Symbol = {
       if (flags.is(FlagSets.Creation.ObjectClassDef)) {
         log(s"!!! visited module class $typeName first")
-        // TODO [tasty]: test private access modifiers here
-        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, newSymbolFlagSet(FlagSets.Creation.ObjectDef))
+        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.Default)
         module.info = defn.DefaultInfo
         module.moduleClass.flags = newSymbolFlagSet(flags)
         module.moduleClass
@@ -399,6 +402,20 @@ trait ContextOps { self: TastyUniverse =>
 
     private[bridge] final def resetFlag0(symbol: Symbol, flags: u.FlagSet): symbol.type =
       symbol.resetFlag(flags)
+
+    final def completeEnumSingleton(sym: Symbol, tpe: Type): Unit = {
+      val moduleCls = sym.moduleClass
+      val moduleClsFlags = FlagSets.withAccess(
+        flags = FlagSets.Creation.ObjectClassDef,
+        inheritedAccess = sym.repr.originalFlagSet
+      )
+      val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
+      val ctor = newConstructor(moduleCls, selfTpe)
+      moduleCls.typeOfThis = selfTpe
+      moduleCls.flags = newSymbolFlagSet(moduleClsFlags)
+      moduleCls.info = defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, moduleCls)
+      moduleCls.privateWithin = sym.privateWithin
+    }
 
     final def redefineSymbol(symbol: Symbol, flags: TastyFlagSet, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
       symbol.flags = newSymbolFlagSet(flags)

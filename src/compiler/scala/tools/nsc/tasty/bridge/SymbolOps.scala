@@ -197,5 +197,5 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   def showSig(sig: MethodSignature[ErasedTypeRef]): String = sig.map(_.signature).show
-  def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.id})"
+  def showSym(sym: Symbol): String = s"Symbol(${sym.accurateKindString} ${sym.name}, #${sym.id})"
 }
