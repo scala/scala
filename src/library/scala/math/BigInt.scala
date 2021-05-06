@@ -175,10 +175,10 @@ final class   BigInt private (private var _bigInteger: BigInteger, private val _
   // Additionally, we know that if this.isValidLong is true, then _long is the encoded value.
 
   /** Public constructor present for compatibility. Use the BigInt.apply companion object method instead. */
-  def this(bi: BigInteger) = this(
-    bi, // even if it is a short BigInteger, we cache the instance
-    if (bi.bitLength <= 63)
-      bi.longValue // if _bigInteger is actually equal to Long.MinValue, no big deal, we'll take the slow path then
+  def this(bigInteger: BigInteger) = this(
+    bigInteger, // even if it is a short BigInteger, we cache the instance
+    if (bigInteger.bitLength <= 63)
+      bigInteger.longValue // if _bigInteger is actually equal to Long.MinValue, no big deal, we'll take the slow path then
     else
       Long.MinValue
   )
