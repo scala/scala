@@ -315,7 +315,10 @@ final class   BigInt private (private var _bigInteger: BigInteger, private val _
    */
   def /  (that: BigInt): BigInt = {
     if (this.longEncoding && that.longEncoding) { // fast path
-      if (this._long != Long.MinValue || that._long != -1) return BigInt(this._long / that._long)
+      // original code to avoid storing -Long.MinValue in a long
+      // if (this._long != Long.MinValue || that._long != -1) return BigInt(this._long / that._long)
+      // but we know this._long cannot be Long.MinValue, because Long.MinValue is the marker of the use of BigInteger
+      return BigInt(this._long / that._long)
     }
     new BigInt(this.bigInteger.divide(that.bigInteger))
   }
