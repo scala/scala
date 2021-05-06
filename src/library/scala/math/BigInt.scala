@@ -213,10 +213,10 @@ final class   BigInt private (private var _bigInteger: BigInteger, private val _
     case x                => isValidLong && unifiedPrimitiveEquals(x)
   }
 
-  override def isValidByte: Boolean = isValidLong && _long >= Byte.MinValue && _long <= Byte.MaxValue
-  override def isValidShort: Boolean = isValidLong && _long >= Short.MinValue && _long <= Short.MaxValue
-  override def isValidChar: Boolean = isValidLong && _long >= Char.MinValue && _long <= Char.MaxValue
-  override def isValidInt: Boolean = isValidLong && _long >= Int.MinValue && _long <= Int.MaxValue
+  override def isValidByte: Boolean = longEncoding && _long >= Byte.MinValue && _long <= Byte.MaxValue
+  override def isValidShort: Boolean = longEncoding && _long >= Short.MinValue && _long <= Short.MaxValue
+  override def isValidChar: Boolean = longEncoding && _long >= Char.MinValue && _long <= Char.MaxValue
+  override def isValidInt: Boolean = longEncoding && _long >= Int.MinValue && _long <= Int.MaxValue
            def isValidLong: Boolean = longEncoding || _bigInteger.bitLength() <= 63 // rhs of || tests == Long.MinValue
 
   /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
