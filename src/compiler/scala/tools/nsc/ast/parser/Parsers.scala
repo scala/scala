@@ -1127,12 +1127,6 @@ self =>
           val start = in.offset
           in.nextToken()
           atPos(start)(SingletonTypeTree(literal(isNegated = true, start = start)))
-        } else if ((in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
-          val start = in.offset
-          val identName = in.name.encode.append("_").toTypeName
-          in.nextToken()
-          in.nextToken()
-          atPos(start)(Ident(identName))
         } else {
           val start = in.offset
           simpleTypeRest(in.token match {
@@ -1146,7 +1140,13 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if (isWildcardType)
+              if ((in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+                val start = in.offset
+                val identName = in.name.encode.append("_").toTypeName
+                in.nextToken()
+                in.nextToken()
+                atPos(start)(Ident(identName))
+              } else if (isWildcardType)
                 wildcardType(in.skipToken())
               else
                 path(thisOK = false, typeOK = true) match {

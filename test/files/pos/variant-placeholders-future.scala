@@ -24,4 +24,10 @@ object Test {
       val optErr: - _ = opt.get
       val opt2: Int = opt1
   }
+
+  locally {
+    type `-_`[A] = A
+    type `+_`[A] = Option[A]
+    val optOpt: Option[ + _ [+_[-_[Int]]]] = Some(Some(Some(1)))
+  }
 }
