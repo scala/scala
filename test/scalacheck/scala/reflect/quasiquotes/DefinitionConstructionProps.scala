@@ -1,6 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import scala.language.reflectiveCalls
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.ScalaDot
 
 object DefinitionConstructionProps
@@ -34,6 +35,7 @@ trait ClassConstruction { self: QuasiquoteProperties =>
   val emptyConstructor =
     DefDef(Modifiers(), termNames.CONSTRUCTOR, List(),
       List(List()), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
+  @annotation.nowarn("cat=deprecation&msg=emptyValDef")
   def classWith(name: TypeName, parents: List[Tree] = List(anyRef), body: List[DefDef] = Nil) =
     ClassDef(
       Modifiers(), name, List(),

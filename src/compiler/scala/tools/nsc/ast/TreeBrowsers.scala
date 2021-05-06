@@ -15,16 +15,14 @@ package tools.nsc
 package ast
 
 import scala.language.implicitConversions
-
 import java.awt.{List => _, _}
 import java.awt.event._
 import java.io.{StringWriter, Writer}
 import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
-
 import java.util.concurrent.CountDownLatch
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /**
  * Tree browsers can show the AST in a graphical and interactive
@@ -217,8 +215,8 @@ abstract class TreeBrowsers {
     }
 
     class ASTMenuBar extends JMenuBar {
-      val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()
-      val shiftKey = InputEvent.SHIFT_MASK
+      val menuKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask(): @nowarn("cat=deprecation") // deprecated since JDK 10, replacement only available in 10+
+      val shiftKey = InputEvent.SHIFT_DOWN_MASK
       val jmFile = new JMenu("File")
       // val jmiSaveImage = new JMenuItem(
       //   new AbstractAction("Save Tree Image") {

@@ -33,6 +33,7 @@ object MapProperties extends Properties("mutable.Map") {
     override def addOne(elem: (K, V)): this.type = { _elems += elem; this }
   }
 
+  @annotation.nowarn("cat=deprecation&msg=ListMap")
   implicit val arbMap: Arbitrary[Map[K, V]] =
     Arbitrary {
       for {

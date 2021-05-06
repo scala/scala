@@ -20,7 +20,7 @@ package internal
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
-import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
+import util.{ Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
@@ -292,7 +292,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def varianceString: String = variance.symbolicString
 
     override def flagMask =
-      if (settings.debug && !isAbstractType) AllFlags
+      if (settings.isDebug && !isAbstractType) AllFlags
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
@@ -2724,7 +2724,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       symbolKind.abbreviation
 
     final def kindString: String =
-      if (settings.debug.value) accurateKindString
+      if (settings.isDebug) accurateKindString
       else sanitizedKindString
 
     /** If the name of the symbol's owner should be used when you care about
@@ -2748,7 +2748,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
-      val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
+      val name_s = if (settings.isDebug) "" + unexpandedName else unexpandedName.dropLocal.decode
       val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
 
       name_s + idString + kind_s
@@ -2775,7 +2775,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
     override def toString: String = {
-      val simplifyNames = !settings.debug
+      val simplifyNames = !settings.isDebug
       if (isPackageObjectOrClass && simplifyNames) s"package object ${owner.decodedName}"
       else {
         val kind = kindString
@@ -2811,7 +2811,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         def isStructuralThisType = owner.isInitialized && owner.isStructuralRefinement && tp == owner.tpe // scala/bug#8158
         // colon+space, preceded by an extra space if needed to prevent the colon glomming onto a symbolic name
         def postnominalColon: String = if (!followsParens && name.isOperatorName) " : " else ": "
-        def parents = if (settings.debug) parentsString(tp.parents) else briefParentsString(tp.parents)
+        def parents = if (settings.isDebug) parentsString(tp.parents) else briefParentsString(tp.parents)
         def typeRest =
           if (isClass) " extends " + parents
           else if (isAliasType) " = " + tp.resultType
@@ -2871,7 +2871,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** String representation of existentially bound variable */
     def existentialToString =
-      if (isSingletonExistential && !settings.debug.value)
+      if (isSingletonExistential && !settings.isDebug)
         "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.upperBound)
       else defString
   }
@@ -3278,7 +3278,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
 
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typeSymbolCount)
+    if (settings.areStatisticsEnabled) statistics.incCounter(typeSymbolCount)
   }
   implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
@@ -3328,7 +3328,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
 
     override def nameString: String =
-      if (settings.debug.value) (super.nameString + "&" + level)
+      if ((settings.isDebug)) (super.nameString + "&" + level)
       else super.nameString
   }
 
@@ -3498,7 +3498,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else super.toString
     )
 
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(classSymbolCount)
+    if (settings.areStatisticsEnabled) statistics.incCounter(classSymbolCount)
   }
   implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
@@ -3597,7 +3597,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
         globalError(pos, missingMessage)
-        if (settings.debug.value)
+        if (settings.isDebug)
           (new Throwable).printStackTrace
 
         this setFlag IS_ERROR
@@ -3814,7 +3814,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
-    if (settings.debug) printStackTrace()
+    if (settings.isDebug) printStackTrace()
   }
 
   /** A class for type histories */

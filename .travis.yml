@@ -8,120 +8,148 @@ stages:
   - build
   - test
 
+templates: # this has no effect on travis, it's just a place to put our templates
+  pr-jdk8: &pr-jdk8
+    if: type = pull_request OR repo != scala/scala
+
+  cron-jdk16: &cron-jdk16
+    if: type = cron AND repo = scala/scala
+    env: ADOPTOPENJDK=16
+
+  build-for-testing: &build-for-testing
+    # pull request validation (w/ bootstrap)
+    # differs from the build that publishes releases / integration builds:
+    # - not using bash script setup, but just the underlying sbt calls
+    # - publishing locally rather than to Artifactory
+    # the bootstrap above is older historically; this way of doing it is newer
+    # and also simpler. we should aim to reduce/eliminate the duplication.
+    stage: build
+    name: build, publishLocal, build again
+    script:
+      - set -e
+      - sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+      - sbt -Dstarr.version=$STARR setupValidateTest compile
+    workspaces:
+      create:
+        name: bootstrapped
+        paths:
+          # so new STARR will be available
+          - "buildcharacter.properties"
+          - "$HOME/.ivy2/local/org.scala-lang"
+          # so build products built using new STARR are kept
+          - "target"
+          - "project/target"
+          - "project/project/target"
+          - "project/project/project/target"
+          - "dist"
+          - "build"
+
+  test1: &test1
+    stage: test
+    name: tests (junit, scalacheck, et al)
+    workspaces:
+      use: bootstrapped
+    script:
+      - set -e
+      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+      - sbt -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
+
+  test2: &test2
+    stage: test
+    name: tests (partest)
+    workspaces:
+      use: bootstrapped
+    script:
+      - set -e
+      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+      - sbt -Dstarr.version=$STARR setupValidateTest testAll2
+
 jobs:
-    include:
-      - stage: build
-        if: type != pull_request AND repo = scala/scala
-        name: bootstrap and publish
-        script:
-          # see comment in `bootstrap_fun` for details on the procedure
-          # env available in each stage
-          #  - by travis config (see below): secret env vars
-          #  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
-          #  - by `bootstrap_fun`: publishPrivateTask, ...
-          - set -e
-          - (cd admin && ./init.sh)
-          - source scripts/common
-          - source scripts/bootstrap_fun
-          - determineScalaVersion
-          - removeExistingBuilds $integrationRepoUrl
-          - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-          - buildLocker
-          - buildQuick
-          - triggerScalaDist
+  include:
+    - stage: build
+      if: (type = push OR type = api) AND repo = scala/scala # api for manually triggered release builds
+      name: publish (bootstrapped) to scala-integration or sonatype
+      script:
+        # see comment in `bootstrap_fun` for details on the procedure
+        # env available in each stage
+        #  - by travis config (see below): secret env vars
+        #  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
+        #  - by `bootstrap_fun`: publishPrivateTask, ...
+        - set -e
+        - (cd admin && ./init.sh)
+        - source scripts/common
+        - source scripts/bootstrap_fun
+        - determineScalaVersion
+        - removeExistingBuilds $integrationRepoUrl
+        - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+        - buildLocker
+        - buildQuick
+        - triggerScalaDist
 
-      # pull request validation (w/ bootstrap)
-      # differs from the bootstrap above by:
-      # - not using bash script setup, but just the underlying sbt calls
-      # - publishing locally rather than to Artifactory
-      # the bootstrap above is older historically; this way of doing it is newer
-      # and also simpler. we should aim to reduce/eliminate the duplication.
-      - stage: build
-        name: build, publishLocal, build again
-        if: type = pull_request OR repo != scala/scala
-        script:
-          - set -e
-          - sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR setupValidateTest compile
-        workspaces:
-          create:
-            name: bootstrapped
-            paths:
-              # so new STARR will be available
-              - "buildcharacter.properties"
-              - "$HOME/.ivy2/local/org.scala-lang"
-              # so build products built using new STARR are kept
-              - "target"
-              - "project/target"
-              - "project/project/target"
-              - "project/project/project/target"
-              - "dist"
-              - "build"
+    - <<: *build-for-testing
+      <<: *pr-jdk8
 
-      - stage: test
-        name: tests (junit, scalacheck, et al)
-        if: type = pull_request OR repo != scala/scala
-        workspaces:
-          use: bootstrapped
-        script:
-          - set -e
-          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
+    - <<: *test1
+      <<: *pr-jdk8
 
-      - name: tests (partest)
-        if: type = pull_request OR repo != scala/scala
-        workspaces:
-          use: bootstrapped
-        script:
-          - set -e
-          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR setupValidateTest testAll2
+    - <<: *test2
+      <<: *pr-jdk8
 
-      - name: ensure standard library is buildable by Scala 3
-        if: type = pull_request OR repo != scala/scala
-        workspaces:
-          use: bootstrapped
-        script:
-          - set -e
-          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dscala.build.compileWithDotty=true library/compile
+    - <<: *build-for-testing
+      <<: *cron-jdk16
 
-      - stage: test
-        name: build benchmarks (bootstrapped)
-        if: type = pull_request OR repo != scala/scala
-        workspaces:
-          use: bootstrapped
-        script:
-          - set -e
-          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt bench/Jmh/compile
+    - <<: *test1
+      <<: *cron-jdk16
 
-      - stage: build
-        name: language spec (Jekyll)
-        # wkhtmltopdf requires libssl1.1, which we can't install on xenial
-        dist: bionic
-        language: ruby
-        install:
-          - ruby -v
-          - gem install bundler
-          - bundler --version
-          - bundle install
-          # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
-          - sudo apt-get update
-          - sudo apt-get install -y build-essential xorg xfonts-75dpi libpng16-16 libssl1.1
-          - wget --quiet "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb"
-          - sudo dpkg -i "wkhtmltox_0.12.6-1.bionic_amd64.deb"
-          - rm "wkhtmltox_0.12.6-1.bionic_amd64.deb"
-        script:
-          - set -e
-          - (cd admin && ./init.sh)
-          - bundle exec jekyll build -s spec/ -d build/spec
-          - export JEKYLL_ENV=spec-pdf
-          - bundle exec jekyll build -s spec/ -d build/spec-pdf
-          - ./scripts/generate-spec-pdf.sh
-        after_success:
-          - ./scripts/travis-publish-spec.sh
+    - <<: *test2
+      <<: *cron-jdk16
+
+    - stage: test
+      name: build library with Scala 3
+      if: type = pull_request OR repo != scala/scala
+      workspaces:
+        use: bootstrapped
+      script:
+        - set -e
+        - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+        - sbt -Dscala.build.compileWithDotty=true library/compile
+
+    - name: build benchmarks
+      if: type = pull_request OR repo != scala/scala
+      workspaces:
+        use: bootstrapped
+      script:
+        - set -e
+        - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+        - sbt bench/Jmh/compile
+
+    - stage: build
+      if: type = pull_request OR type = push
+      name: language spec
+      # wkhtmltopdf requires libssl1.1, which we can't install on xenial
+      dist: bionic
+      language: ruby
+      install:
+        - ruby -v
+        - gem install bundler
+        - bundler --version
+        - bundle install
+        # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
+        - sudo apt-get update
+        - sudo apt-get install -y build-essential xorg xfonts-75dpi libpng16-16 libssl1.1
+        - wget --quiet "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb"
+        - sudo dpkg -i "wkhtmltox_0.12.6-1.bionic_amd64.deb"
+        - rm "wkhtmltox_0.12.6-1.bionic_amd64.deb"
+      script:
+        - set -e
+        - (cd admin && ./init.sh)
+        - bundle exec jekyll build -s spec/ -d build/spec
+        - export JEKYLL_ENV=spec-pdf
+        - bundle exec jekyll build -s spec/ -d build/spec-pdf
+        - ./scripts/generate-spec-pdf.sh
+      after_success:
+        - ./scripts/travis-publish-spec.sh
 
 env:
   global:
@@ -139,4 +167,10 @@ cache:
     - $HOME/.rvm
 
 notifications:
+  slack:
+    rooms:
+      - typesafe:WoewGgHil2FkdGzJyV3phAhj
+    if: (type = cron OR type = push) AND repo = scala/scala
+    on_success: never
+    on_failure: change
   webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis

@@ -11,14 +11,13 @@ else
 fi
 
 SBT_CMD=${SBT_CMD-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 1.5.0"
+SBT_CMD="$SBT_CMD -sbt-version 1.5.1"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
 # only used on jenkins
 sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
-jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
 
 # used by `checkAvailability`
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
@@ -92,11 +91,9 @@ function generateRepositoriesConfig() {
   fi
 
   cat >> "$sbtRepositoryConfig" << EOF
-  jcenter-cache: $jcenterCacheUrl
   local
   maven-central
-  typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  typesafe-ivy-releases: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext]
   sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
 EOF
 }

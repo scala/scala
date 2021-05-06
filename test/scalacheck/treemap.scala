@@ -71,21 +71,21 @@ object TreeMapTest extends Properties("TreeMap") {
   property("minAfter") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
     val half = elements.take(elements.size / 2)
     val subject = TreeMap((half zip half): _*)
-    elements.forall{e => {
-      val temp = subject.from(e)
+    elements.forall { e =>
+      val temp = subject.rangeFrom(e)
       if (temp.isEmpty) subject.minAfter(e).isEmpty
       else subject.minAfter(e).get == temp.min
-    }}
+    }
   }}
 
   property("maxBefore") = forAll { (elements: List[Int]) => elements.nonEmpty ==> {
     val half = elements.take(elements.size / 2)
     val subject = TreeMap((half zip half): _*)
-    elements.forall{e => {
-      val temp = subject.until(e)
+    elements.forall { e =>
+      val temp = subject.rangeUntil(e)
       if (temp.isEmpty) subject.maxBefore(e).isEmpty
       else subject.maxBefore(e).get == temp.max
-    }}
+    }
   }}
 
   property("head/tail identity") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
@@ -146,7 +146,7 @@ object TreeMapTest extends Properties("TreeMap") {
   property("from is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
     val n = choose(0, subject.size - 1).sample.get
     val from = subject.drop(n).firstKey
-    subject.from(from).firstKey == from && subject.from(from).forall(_._1 >= from)
+    subject.rangeFrom(from).firstKey == from && subject.rangeFrom(from).forall(_._1 >= from)
   }}
 
   property("to is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
@@ -158,7 +158,7 @@ object TreeMapTest extends Properties("TreeMap") {
   property("until is exclusive") = forAll { (subject: TreeMap[Int, String]) => subject.size > 1 ==> {
     val n = choose(1, subject.size - 1).sample.get
     val until = subject.drop(n).firstKey
-    subject.until(until).lastKey == subject.take(n).lastKey && subject.until(until).forall(_._1 <= until)
+    subject.rangeUntil(until).lastKey == subject.take(n).lastKey && subject.rangeUntil(until).forall(_._1 <= until)
   }}
 
   property("remove single") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {

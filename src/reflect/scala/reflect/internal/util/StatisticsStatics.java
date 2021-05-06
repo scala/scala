@@ -12,7 +12,6 @@
 
 package scala.reflect.internal.util;
 
-import scala.reflect.internal.util.AlmostFinalValue;
 import java.lang.invoke.MethodHandle;
 
 /**
@@ -22,46 +21,18 @@ import java.lang.invoke.MethodHandle;
  * which helps performance (see docs to find out why).
  */
 public final class StatisticsStatics {
-  private static final AlmostFinalValue COLD_STATS = new AlmostFinalValue() {
-    @Override
-    protected boolean initialValue() {
-        return false;
-    }
-  };
+  private static final AlmostFinalValue COLD_STATS = new AlmostFinalValue();
+  private static final AlmostFinalValue  HOT_STATS = new AlmostFinalValue();
+  private static final AlmostFinalValue DEBUG      = new AlmostFinalValue();
+  private static final AlmostFinalValue DEVELOPER  = new AlmostFinalValue();
 
-  private static final AlmostFinalValue HOT_STATS = new AlmostFinalValue() {
-    @Override
-    protected boolean initialValue() {
-        return false;
-    }
-  };
+  public static final MethodHandle COLD_STATS_GETTER = COLD_STATS.invoker;
+  public static final MethodHandle  HOT_STATS_GETTER =  HOT_STATS.invoker;
+  public static final MethodHandle      DEBUG_GETTER =      DEBUG.invoker;
+  public static final MethodHandle  DEVELOPER_GETTER =  DEVELOPER.invoker;
 
-  private static final MethodHandle COLD_STATS_GETTER = COLD_STATS.createGetter();
-  private static final MethodHandle HOT_STATS_GETTER = HOT_STATS.createGetter();
-  
-  public static boolean areSomeColdStatsEnabled() throws Throwable {
-    return (boolean) COLD_STATS_GETTER.invokeExact();
-  }
-
-  public static boolean areSomeHotStatsEnabled() throws Throwable {
-    return (boolean) HOT_STATS_GETTER.invokeExact();
-  }
-
-  public static void enableColdStats() throws Throwable {
-    if (!areSomeColdStatsEnabled())
-      COLD_STATS.setValue(true);
-  }
-
-  public static void disableColdStats() {
-    COLD_STATS.setValue(false);
-  }
-
-  public static void enableHotStats() throws Throwable {
-    if (!areSomeHotStatsEnabled())
-      HOT_STATS.setValue(true);
-  }
-
-  public static void disableHotStats() {
-    HOT_STATS.setValue(false);
-  }
+  public static void enableColdStatsAndDeoptimize() { COLD_STATS.toggleOnAndDeoptimize(); }
+  public static void  enableHotStatsAndDeoptimize() {  HOT_STATS.toggleOnAndDeoptimize(); }
+  public static void     enableDebugAndDeoptimize() {      DEBUG.toggleOnAndDeoptimize(); }
+  public static void enableDeveloperAndDeoptimize() {  DEVELOPER.toggleOnAndDeoptimize(); }
 }

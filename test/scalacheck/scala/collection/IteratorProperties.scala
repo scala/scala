@@ -34,12 +34,12 @@ object IteratorProperties extends Properties("Iterator") {
     val indexed = s.toIndexedSeq // IndexedSeqs and their Iterators have a knownSize
     val simple = new SimpleIterable(s) // SimpleIterable and its Iterator don't
     val stream = LazyList.from(s) // Lazy
-    val indexed1 = f(indexed, n).toSeq
-    val indexed2 = f(indexed.iterator, n).toSeq
-    val simple1 = f(simple, n).toSeq
-    val simple2 = f(simple.iterator, n).toSeq
-    val stream1 = f(stream, n).toSeq
-    val stream2 = f(stream.iterator, n).toSeq
+    val indexed1 = f(indexed, n).iterator.to(Seq)
+    val indexed2 = f(indexed.iterator, n).iterator.to(Seq)
+    val simple1 = f(simple, n).iterator.to(Seq)
+    val simple2 = f(simple.iterator, n).iterator.to(Seq)
+    val stream1 = f(stream, n).iterator.to(Seq)
+    val stream2 = f(stream.iterator, n).iterator.to(Seq)
     (indexed1 == indexed2) :| s"indexed: $indexed1 != $indexed2" &&
       (simple1 == simple2) :| s"simple: $simple1 != $simple2" &&
       (stream1 == stream2) :| s"stream: $stream1 != $stream2" &&

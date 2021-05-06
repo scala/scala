@@ -1,3 +1,5 @@
+// java: -Xmx192M -XX:+ExitOnOutOfMemoryError
+
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
 import scala.tools.nsc.interpreter._

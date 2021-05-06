@@ -97,7 +97,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
               case ArrayClass => assert(pt.typeSymbol != ArrayClass, "array") ; tree
               case _          =>
                 val unboxer = currentRun.runDefinitions.unboxMethod(pt.typeSymbol)
-                if (settings.developer) assert(boxedClass(pt.typeSymbol).tpe <:< tree.tpe, s"${tree.tpe} is not a boxed ${pt}")
+                if (settings.isDeveloper) assert(boxedClass(pt.typeSymbol).tpe <:< tree.tpe, s"${tree.tpe} is not a boxed ${pt}")
                 Apply(unboxer, tree)  // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
             }
         }
@@ -116,7 +116,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
       *  @note Pre-condition: pt eq pt.normalize
      */
     final def cast(tree: Tree, pt: Type): Tree = {
-      if (settings.debug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
+      if (settings.isDebug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
         def word =
           if (tree.tpe <:< pt) "upcast"
           else if (pt <:< tree.tpe) "downcast"

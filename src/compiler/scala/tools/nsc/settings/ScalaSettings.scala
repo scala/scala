@@ -23,7 +23,7 @@ import scala.language.existentials
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
-import scala.reflect.internal.util.StringContextStripMarginOps
+import scala.reflect.internal.util.{ StatisticsStatics, StringContextStripMarginOps }
 import scala.tools.nsc.util.DefaultJarFactory
 import scala.util.chaining._
 
@@ -98,7 +98,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Xhelp              = BooleanSetting      ("-X", "Print a synopsis of advanced options.")
   val async              = BooleanSetting      ("-Xasync", "Enable the async phase for scala.async.Async.{async,await}.")
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
-  val developer          = BooleanSetting      ("-Xdev", "Issue warnings about anything which seems amiss in compiler internals. Intended for compiler developers")
+  val developer          = BooleanSetting      ("-Xdev", "Issue warnings about anything which seems amiss in compiler internals. Intended for compiler developers").withPostSetHook(s => if (s.value) StatisticsStatics.enableDeveloperAndDeoptimize())
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.") andThen (flag =>
                                                 if (flag) elidebelow.value = elidable.ASSERTION + 1)
   val elidebelow         = IntSetting          ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
@@ -453,7 +453,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
    */
   val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
   val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
-  val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug"
+  val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug" withPostSetHook (s => if (s.value) StatisticsStatics.enableDebugAndDeoptimize())
   val YdebugTasty      = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
   val Ydocdebug          = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"
   val Yidedebug          = BooleanSetting("-Vide", "Generate, validate and output trees using the interactive compiler.") withAbbreviation "-Yide-debug"
@@ -496,9 +496,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Ystatistics = PhasesSetting("-Vstatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
     .withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
     .withAbbreviation("-Ystatistics")
-  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly()
+  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s) StatisticsStatics.enableColdStatsAndDeoptimize())
   val YhotStatisticsEnabled = BooleanSetting("-Vhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
-    .withAbbreviation("-Yhot-statistics")
+    .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize())
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
   val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")

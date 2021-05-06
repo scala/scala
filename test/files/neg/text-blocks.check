@@ -1,0 +1,13 @@
+text-blocks/Invalid1.java:4: error: illegal text block open delimiter sequence, missing line terminator
+    public static final String badOpeningDelimiter = """non-whitespace
+                                                        ^
+text-blocks/Invalid1.java:4: error: <identifier> expected
+    public static final String badOpeningDelimiter = """non-whitespace
+                                                           ^
+text-blocks/Invalid1.java:6: error: illegal text block open delimiter sequence, missing line terminator
+    """;
+       ^
+text-blocks/Invalid2.java:6: error: unclosed string literal
+      foo"""";
+            ^
+4 errors

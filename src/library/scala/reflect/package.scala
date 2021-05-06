@@ -12,7 +12,8 @@
 
 package scala
 
-import java.lang.reflect.{ AccessibleObject => jAccessibleObject }
+import java.lang.reflect.{AccessibleObject => jAccessibleObject}
+import scala.annotation.nowarn
 
 package object reflect {
 
@@ -54,7 +55,10 @@ package object reflect {
    *  attempt, it is caught and discarded.
    */
   def ensureAccessible[T <: jAccessibleObject](m: T): T = {
-    if (!m.isAccessible) {
+    // This calls `setAccessible` unnecessarily, because `isAccessible` is only `true` if `setAccessible(true)`
+    // was called before, not if the reflected object is inherently accessible.
+    // TODO: replace by `canAccess` once we're on JDK 9+
+    if (!m.isAccessible: @nowarn("cat=deprecation")) {
       try m setAccessible true
       catch { case _: SecurityException => } // does nothing
     }

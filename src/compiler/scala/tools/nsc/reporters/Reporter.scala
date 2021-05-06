@@ -119,7 +119,7 @@ abstract class FilteringReporter extends Reporter {
     // Invoked when an error or warning is filtered by position.
     @inline def suppress = {
       if (settings.prompt) doReport(pos, msg, severity)
-      else if (settings.debug) doReport(pos, s"[ suppressed ] $msg", severity)
+      else if (settings.isDebug) doReport(pos, s"[ suppressed ] $msg", severity)
       Suppress
     }
     if (!duplicateOk(pos, severity, msg)) suppress else if (!maxOk) Count else Display

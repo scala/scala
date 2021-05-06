@@ -152,7 +152,7 @@ trait Kinds {
       def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit =
         if (!cond) kindErrors = f(kindErrors)
 
-      if (settings.debug) {
+      if (settings.isDebug) {
         log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramOwner)
         log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ argOwner)
         log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
@@ -215,7 +215,7 @@ trait Kinds {
       else NoKindErrors
     }
 
-    if (settings.debug && (tparams.nonEmpty || targs.nonEmpty)) log(
+    if (settings.isDebug && (tparams.nonEmpty || targs.nonEmpty)) log(
       "checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", "
       + owner + ", " + explainErrors + ")"
     )

@@ -99,7 +99,8 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
       diffed ::: logged
     }
     if (terse) {
-      if (state.isOk) { printDot() ; Nil }
+      if (state.isSkipped) { printS(); Nil }
+      else if (state.isOk) { printDot() ; Nil }
       else { printEx() ; statusLine(state, durationMs) :: errInfo }
     } else {
       echo(statusLine(state, durationMs))

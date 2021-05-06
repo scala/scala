@@ -129,8 +129,6 @@ package object partest {
   def fileSeparator = java.io.File.separator
   def pathSeparator = java.io.File.pathSeparator
 
-  def words(s: String): List[String] = (s.trim split "\\s+").toList
-
   def timed[T](body: => T): (T, Long) = {
     val t1 = System.currentTimeMillis
     val result = body
@@ -142,18 +140,6 @@ package object partest {
   def callable[T](body: => T): Callable[T] = new Callable[T] { override def call() = body }
 
   def basename(name: String): String = Path(name).stripExtension
-
-  /** In order to allow for spaces in flags/options, this
-   *  parses .flags, .javaopts, javacopts etc files as follows:
-   *  If it is exactly one line, it is split (naively) on spaces.
-   *  If it contains more than one line, each line is its own
-   *  token, spaces and all.
-   */
-  def readOptionsFile(file: File): List[String] =
-    file.fileLines match {
-      case x :: Nil   => words(x)
-      case xs         => xs
-    }
 
   def findProgram(name: String): Option[File] = {
     val pathDirs = sys.env("PATH") match {

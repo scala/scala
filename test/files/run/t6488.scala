@@ -1,3 +1,5 @@
+// java: -Dforked.test=yes.please
+
 import scala.sys.process._
 import scala.util.Try
 import scala.util.Properties.{javaHome, javaClassPath, userDir}

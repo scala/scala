@@ -1,3 +1,4 @@
+// java: -Ddummy=fresh_jvm_needed_to_test_security_manager
 // filter: WARNING.*
 // for now, ignore warnings due to reflective invocation
 import java.security._

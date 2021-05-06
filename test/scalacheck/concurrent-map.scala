@@ -1,6 +1,6 @@
 import java.util.concurrent._
 import scala.collection._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
@@ -26,6 +26,7 @@ object ConcurrentMapTest extends Properties("concurrent.TrieMap") {
   /* helpers */
 
   def inParallel[T](totalThreads: Int)(body: Int => T): Seq[T] = {
+    import scala.language.reflectiveCalls
     val threads = for (idx <- 0 until totalThreads) yield new Thread {
       setName("ParThread-" + idx)
       private var res: T = _

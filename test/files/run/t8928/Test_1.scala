@@ -1,3 +1,4 @@
+// java: -Dneeds.forked.jvm
 import test._
 
 object Test extends App {

@@ -1,3 +1,5 @@
+// java: -Xmx512m
+
 import java.io._
 
 import java.net.URLClassLoader

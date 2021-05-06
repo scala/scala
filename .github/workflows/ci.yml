@@ -1,0 +1,47 @@
+name: Scala Merge CI
+
+on:
+  push:
+    branches: ['2.*.x']
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build_and_test:
+    name: Windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - run: git config --global core.autocrlf false
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Note that we don't use olafurpg/setup-scala; it wouldn't buy us anything
+      # over setup-java. (We don't want csbt or xsbt; we prefer the standard
+      # sbt launch script, which comes preinstalled on Windows (and Ubuntu).)
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: 8
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Build
+        run: |
+          sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+
+      - name: Test
+        run: |
+          STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+          sbt -Dstarr.version=$STARR setupValidateTest test:compile info testAll

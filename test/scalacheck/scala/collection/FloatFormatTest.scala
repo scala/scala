@@ -81,8 +81,8 @@ object FloatFormatTest extends Properties("FloatFormat") {
         10 -> right
       ))
     
-    // type annotation shouldn't be necessary? see typelevel/scalacheck#721
-    Gen.sequence[List[String], String](bogoparts).map(_.mkString)
+    import scala.jdk.CollectionConverters._
+    Gen.sequence(bogoparts).map(_.asScala.mkString)
   }
 
   //compare NaN equal
