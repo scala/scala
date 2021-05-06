@@ -343,7 +343,8 @@ final class   BigInt private (private var _bigInteger: BigInteger, private val _
     if (this.longEncoding && that.longEncoding) {
       val x = this._long
       val y = that._long
-      if (x != Long.MinValue || y != -1) return (BigInt(x / y), BigInt(x % y))
+      // original line: if (x != Long.MinValue || y != -1) return (BigInt(x / y), BigInt(x % y))
+      return (BigInt(x / y), BigInt(x % y))
     }
     val dr = this.bigInteger.divideAndRemainder(that.bigInteger)
     (new BigInt(dr(0)), new BigInt(dr(1)))
