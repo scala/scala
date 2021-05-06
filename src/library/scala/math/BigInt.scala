@@ -306,7 +306,9 @@ final class   BigInt private (private var _bigInteger: BigInteger, private val _
       val x = this._long
       val y = that._long
       val z = x * y
-      if (x == 0 || (y == z / x && !(x == -1 && y == Long.MinValue))) return BigInt(z)
+      // original code checks the y != Long.MinValue, but when longEncoding is true, that is never the case
+      // if (x == 0 || (y == z / x && !(x == -1 && y == Long.MinValue))) return BigInt(z)
+      if (x == 0 || y == z / x) return BigInt(z)
     }
     new BigInt(this.bigInteger.multiply(that.bigInteger))
   }
