@@ -722,9 +722,8 @@ self =>
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER
 
-    def isWildcardType =
-      in.token == USCORE ||
-      currentRun.isScala3 && isRawIdent && in.name == raw.QMARK
+    def isWildcardType = in.token == USCORE || isScala3WildcardType
+    def isScala3WildcardType = currentRun.isScala3 && isRawIdent && in.name == raw.QMARK
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -1083,10 +1082,10 @@ self =>
               in.nextToken()
               in.nextToken()
               atPos(start)(Ident(identName))
-            }
-            else if (isWildcardType)
-              wildcardType(in.skipToken())
-            else
+            } else if (isWildcardType) {
+              val scala3Wildcard = isScala3WildcardType
+              wildcardType(in.skipToken(), scala3Wildcard)
+            } else
               path(thisOK = false, typeOK = true) match {
                 case r @ SingletonTypeTree(_) => r
                 case r => convertToTypeId(r)
@@ -1483,8 +1482,8 @@ self =>
      *  WildcardType ::= `_' TypeBounds
      *  }}}
      */
-    def wildcardType(start: Offset) = {
-      val pname = freshTypeName("_$")
+    def wildcardType(start: Offset, qmark: Boolean) = {
+      val pname = if (qmark) freshTypeName("?$") else freshTypeName("_$")
       val t = atPos(start)(Ident(pname))
       val bounds = typeBounds()
       val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
@@ -1996,8 +1995,9 @@ self =>
       def argType(): Tree = {
         val start = in.offset
         if (isWildcardType) {
+            val scala3Wildcard = isScala3WildcardType
             in.nextToken()
-            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
+            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else
           typ() match {
@@ -2364,7 +2364,7 @@ self =>
       val vds   = new ListBuffer[List[ValDef]]
       val start = in.offset
       def paramClause(): List[ValDef] = if (in.token == RPAREN) Nil else {
-        val implicitmod = 
+        val implicitmod =
           if (in.token == IMPLICIT) {
             if (implicitOffset == -1) { implicitOffset = in.offset ; implicitSection = vds.length }
             else if (warnAt == -1) warnAt = in.offset
