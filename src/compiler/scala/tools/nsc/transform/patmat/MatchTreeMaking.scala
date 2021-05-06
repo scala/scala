@@ -369,7 +369,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               withOuterTest(withOuterTest(orig)(testedBinder, parent))(testedBinder, copyRefinedType(rt, rest, scope))
             case expectedTp =>
               val expectedClass = expectedTp.typeSymbol
-              assert(!expectedClass.isRefinementClass, orig)
               // .typeSymbol dealiases, so look at the prefix of the base type at the dealiased symbol,
               // not of expectedTp itself.
               val expectedPrefix = expectedTp.baseType(expectedClass).prefix

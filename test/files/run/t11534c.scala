@@ -85,6 +85,19 @@ object Test {
     case _ =>
       false
   }
+
+  trait ScalaProvider { def loader: Int }
+  type ScalaProvider2 = { def loaderLibraryOnly: Int }
+  import scala.language.reflectiveCalls
+
+  def cb1400(provider: ScalaProvider) = try {
+    provider match {
+      case p: ScalaProvider2 @unchecked => p.loaderLibraryOnly
+    }
+  } catch {
+    case _: NoSuchMethodException => provider.loader
+  }
+
   def assertOuter(expected: Int, actual: Int): Unit = {
     if (expected != actual) throw WrongOuter(expected, actual)
   }
@@ -113,5 +126,10 @@ object Test {
 
     assert(pat5(new m1.B2))
     assert(pat5(new m2.B2))
+
+    class SP1 extends ScalaProvider { def loader = 1 }
+    class SP2 extends ScalaProvider { def loader = 1; def loaderLibraryOnly = 2 }
+    assert(cb1400(new SP1()) == 1)
+    assert(cb1400(new SP2()) == 2)
   }
 }
