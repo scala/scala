@@ -58,7 +58,7 @@ object BigInt {
    */
   def apply(l: Long): BigInt =
     if (minCached <= l && l <= maxCached) getCached(l.toInt) else {
-      if (l == Long.MinValue) longMinValue else new BigInt(null, l)
+      if (l == bigTag) longMinValue else new BigInt(null, l)
   }
 
   /** Translates a byte array containing the two's-complement binary
@@ -169,7 +169,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
     with Serializable
     with Ordered[BigInt]
 {
-  // The class has a special encoding for integer that fit in a Long *and* are not equal to Long.MinValue.
+  // The class has a special encoding for integer that fit in a Long *and* are not equal to BigInt.bigTag == Long.MinValue.
   //
   // The Long value Long.MinValue is a tag specifying that the integer is encoded in the BigInteger field.
   //
