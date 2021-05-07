@@ -150,7 +150,7 @@ object BigInt {
  *
  * It wraps `java.math.BigInteger`, with optimization for small values that can be encoded in a `Long`.
  */
-final class   BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
+final class BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
   extends ScalaNumber
     with ScalaNumericConversions
     with Serializable
