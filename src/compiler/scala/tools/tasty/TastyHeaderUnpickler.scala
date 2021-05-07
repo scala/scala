@@ -51,7 +51,7 @@ class TastyHeaderUnpickler(reader: TastyReader) {
         compilerMajor        = MajorVersion,
         compilerMinor        = MinorVersion,
         compilerExperimental = ExperimentalVersion
-      )
+      ) || scala3finalException(fileMajor, fileMinor, fileExperimental)
 
       check(validVersion, {
         val signature = signatureString(fileMajor, fileMinor, fileExperimental)
@@ -69,14 +69,26 @@ class TastyHeaderUnpickler(reader: TastyReader) {
     }
   }
 
-  def isAtEnd: Boolean = reader.isAtEnd
-
   private def check(cond: Boolean, msg: => String): Unit = {
     if (!cond) throw new UnpickleException(msg)
   }
 }
 
 object TastyHeaderUnpickler {
+
+  /** This escape hatch allows 28.0.3 compiler to read
+   *  28.0.0 TASTy files (aka produced by Scala 3.0.0 final)
+   *  @note this should be removed if we are able to test against
+   *        Scala 3.0.0 before releasing Scala 2.13.6
+   */
+  private def scala3finalException(
+      fileMajor: Int,
+      fileMinor: Int,
+      fileExperimental: Int): Boolean = (
+    MajorVersion == 28 && fileMajor == 28
+      && MinorVersion == 0 && fileMinor == 0
+      && ExperimentalVersion == 3 && fileExperimental == 0
+  )
 
   private def toolingAddendum = (
     if (ExperimentalVersion > 0)
