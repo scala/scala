@@ -127,7 +127,7 @@ trait ShellConfig {
   val powerInitCode   = Prop[File]("scala.repl.power.initcode")
   val powerBanner     = Prop[File]("scala.repl.power.banner")
 
-  val maxPrintString = int("scala.repl.maxprintstring")
+  val maxPrintString = int("scala.repl.maxprintstring").option.getOrElse(800)
 
   def isReplInfo: Boolean  = info || isReplDebug
   def replinfo(msg: => String)   = if (isReplInfo)  echo(msg)

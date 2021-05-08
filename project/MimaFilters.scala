@@ -44,6 +44,11 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#*"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
+
+    // internal use by REPL or case class under -Vcase
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime._toString0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.stringOf"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.replStringOf"),
   )
 
   override val buildSettings = Seq(

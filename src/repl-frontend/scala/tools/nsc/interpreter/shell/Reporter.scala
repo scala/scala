@@ -31,8 +31,15 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   val out: PrintWriter = new ReplStrippingWriter(writer)
   private class ReplStrippingWriter(out: PrintWriter) extends PrintWriter(out) {
-    override def write(str: String): Unit =
-      super.write(unmangleInterpreterOutput(str))
+    override def write(str0: String): Unit = {
+      val str = unmangleInterpreterOutput(str0)
+      if (truncationOK && (maxPrintString != 0 && str.length > maxPrintString)) {
+        super.append(str, 0, maxPrintString)
+        super.append("...")
+      }
+      else
+        super.write(str)
+    }
   }
 
   override def flush() = out.flush()
@@ -92,7 +99,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     *  more than this number of characters, then the printout is
     *  truncated.
     */
-  var maxPrintString = config.maxPrintString.option getOrElse 800
+  var maxPrintString = config.maxPrintString
 
   /** Whether very long lines can be truncated.  This exists so important
     *  debugging information (like printing the classpath) is not rendered
@@ -123,7 +130,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     if (unwrapStrings) Naming.unmangle(str)
     else str
 
-  def unmangleInterpreterOutput(str: String): String = truncate(unwrap(str))
+  def unmangleInterpreterOutput(str: String): String = unwrap(str)
 
   var currentRequest: ReplRequest = _
 
