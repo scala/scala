@@ -24,6 +24,6 @@ scala> typed(m).tpe                              // typed is in scope
 val res2: $r.treedsl.global.Type = Int(10)
 
 scala> """escaping is hard, m'kah"""
-val res3: String = escaping is hard, m'kah
+val res3: String = "escaping is hard, m'kah"
 
 scala> :quit

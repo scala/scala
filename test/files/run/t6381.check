@@ -12,6 +12,6 @@ scala> def pos: String = macro pos_impl
 def pos: String
 
 scala> pos
-val res0: String = class scala.reflect.internal.util.RangePosition
+val res0: String = "class scala.reflect.internal.util.RangePosition"
 
 scala> :quit

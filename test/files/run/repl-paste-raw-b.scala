@@ -8,7 +8,7 @@ s"""|
     |Pasting file $pastie...
     |
     |scala> val favoriteThing = brown_paper.Gift(true)
-    |val favoriteThing: brown_paper.Gift = Gift(true)
+    |val favoriteThing: brown_paper.Gift = Gift(hasString = true)
     |
     |scala> favoriteThing.hasString
     |val res0: Boolean = true
