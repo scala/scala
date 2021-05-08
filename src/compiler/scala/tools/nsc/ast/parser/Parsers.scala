@@ -1140,7 +1140,7 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if ((in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+              if (settings.isScala3 && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
                 val start = in.offset
                 val identName = in.name.encode.append("_").toTypeName
                 in.nextToken()
