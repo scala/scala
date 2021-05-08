@@ -47,7 +47,7 @@ scala> val x = dingus
        error: not found: value dingus
 
 scala> val x = "dingus"
-val x: String = dingus
+val x: String = "dingus"
 
 scala> x.length
 val res2: Int = 6

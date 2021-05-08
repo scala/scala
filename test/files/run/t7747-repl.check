@@ -82,13 +82,13 @@ scala> 5 ;   (  (2 + 2 )  ) ; ((5))
 val res11: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-val res12: (Int, Int) = (4,4)
+val res12: (Int, Int) = (4, 4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-val res13: (Int, Int, Int) = (4,4,2)
+val res13: (Int, Int, Int) = (4, 4, 2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
-val res14: String = 4423
+val res14: String = "4423"
 
 scala> 
 
@@ -97,7 +97,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-val res15: (Int, Int, Int) = (1,2,3)
+val res15: (Int, Int, Int) = (1, 2, 3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
        ^
@@ -268,7 +268,7 @@ object $eval {
   lazy val $print: _root_.java.lang.String =  {
     val _ = $line10.$read.INSTANCE.$iw
 
-""  + "val res3: List[Product with java.io.Serializable]" + " = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.res3, 0)
+""  + "val res3: List[Product with java.io.Serializable]" + " = " + { val s = _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.res3, 0, true) ; (if (s.indexOf('\n') >= 0) "\n" else "") + s + "\n" }
 
   }
 }}
@@ -278,13 +278,13 @@ scala> case class Sum(exp: String, exp2: String)
 class Sum
 
 scala> val a = Sum("A", "B")
-val a: Sum = Sum(A,B)
+val a: Sum = Sum(exp = "A", exp2 = "B")
 
 scala> def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
 def b(a: Sum): String
 
 scala> b(a)
-val res4: String = Found Sum
+val res4: String = "Found Sum"
 
 scala> :power
 Power mode enabled. :phase is at typer.

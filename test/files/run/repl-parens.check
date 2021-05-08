@@ -25,13 +25,13 @@ scala> 5 ;   (  (2 + 2 )  ) ; ((5))
 val res6: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-val res7: (Int, Int) = (4,4)
+val res7: (Int, Int) = (4, 4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-val res8: (Int, Int, Int) = (4,4,2)
+val res8: (Int, Int, Int) = (4, 4, 2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
-val res9: String = 4423
+val res9: String = "4423"
 
 scala> 
 
@@ -40,7 +40,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-val res10: (Int, Int, Int) = (1,2,3)
+val res10: (Int, Int, Int) = (1, 2, 3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
        ^

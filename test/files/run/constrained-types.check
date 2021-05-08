@@ -60,24 +60,24 @@ def m(x: String): String @Annot(x)
 scala> 
 
 scala> val three = "three"
-val three: String = three
+val three: String = "three"
 
 scala> val three2 = m(three:three.type)  // should change x to three
-val three2: String @Annot(three) = three
+val three2: String @Annot(three) = "three"
 
 scala> var four = "four"
-var four: String = four
+var four: String = "four"
 
 scala> val four2 = m(four) // should have an existential bound
 warning: 1 feature warning; for details, enable `:setting -feature` or `:replay -feature`
-val four2: String @Annot(x) forSome { val x: String } = four
+val four2: String @Annot(x) forSome { val x: String } = "four"
 
 scala> val four3 = four2   // should have the same type as four2
 warning: 1 feature warning; for details, enable `:setting -feature` or `:replay -feature`
-val four3: String @Annot(x) forSome { val x: String } = four
+val four3: String @Annot(x) forSome { val x: String } = "four"
 
 scala> val stuff = m("stuff") // should not crash
-val stuff: String @Annot("stuff") = stuff
+val stuff: String @Annot("stuff") = "stuff"
 
 scala> 
 
@@ -128,7 +128,7 @@ Companions must be defined together; you may wish to use :paste mode for this.
 scala> 
 
 scala> val y = a.x // should drop the annotation
-val y: String = hello
+val y: String = "hello"
 
 scala> 
 

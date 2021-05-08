@@ -64,7 +64,7 @@ val fish: S = fish
 scala> // Test that arrays pretty print nicely.
 
 scala> val arr = Array("What's", "up", "doc?")
-val arr: Array[String] = Array(What's, up, doc?)
+val arr: Array[String] = Array("What's", "up", "doc?")
 
 scala> // Test that arrays pretty print nicely, even when we give them type Any
 
@@ -255,14 +255,14 @@ scala> xs filter (_ == 2)
 val res4: Array[_] = Array(2)
 
 scala> xs map (_ => "abc")
-val res5: Array[String] = Array(abc, abc)
+val res5: Array[String] = Array("abc", "abc")
 
 scala> xs map (x => x)
 val res6: Array[_] = Array(1, 2)
 
 scala> xs map (x => (x, x))
 warning: 1 feature warning; for details, enable `:setting -feature` or `:replay -feature`
-val res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
+val res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1, 1), (2, 2))
 
 scala> 
 
@@ -301,10 +301,10 @@ hello
 there
 """
 val res8: String =
-"
+"""
 hello
 there
-"
+"""
 
 scala> (1 +   // give up early by typing two blank lines
 
@@ -339,6 +339,6 @@ def f(e: Exp): Int
 scala> :quit
 def plusOne(x: Int): Int
 val res0: Int = 6
-val res0: String = after reset
+val res0: String = "after reset"
        ^
        error: not found: value plusOne

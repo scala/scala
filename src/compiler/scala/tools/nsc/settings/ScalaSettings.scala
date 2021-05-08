@@ -542,6 +542,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     .withAbbreviation("-Xlog-free-terms")
   val logFreeTypes       = BooleanSetting("-Vfree-types", "Print a message when reification resorts to generating a free type.")
     .withAbbreviation("-Xlog-free-types")
+  val verboseCaseString  = BooleanSetting("-Vcase", "Enhanced toString method for case classes and REPL.")
 
   /** Groups of Settings.
    */

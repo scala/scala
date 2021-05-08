@@ -8,15 +8,15 @@ val res1: Double = 1.0
 scala> ()
 
 scala> "abc"
-val res3: String = abc
+val res3: String = "abc"
 
 scala> (1, 2)
-val res4: (Int, Int) = (1,2)
+val res4: (Int, Int) = (1, 2)
 
 scala> 
 
 scala> { import scala.Predef.ArrowAssoc; 1 -> 2 }
-val res5: (Int, Int) = (1,2)
+val res5: (Int, Int) = (1, 2)
 
 scala> 1 -> 2
          ^
@@ -29,7 +29,7 @@ scala> val answer = 42
 val answer: Int = 42
 
 scala> { import scala.StringContext; s"answer: $answer" }
-val res7: String = answer: 42
+val res7: String = "answer: 42"
 
 scala> s"answer: $answer"
        ^
@@ -38,7 +38,7 @@ scala> s"answer: $answer"
 scala> 
 
 scala> "abc" + true
-val res9: String = abctrue
+val res9: String = "abctrue"
 
 scala> 
 
@@ -131,13 +131,13 @@ scala> 5 ;   (  (2 + 2 )  ) ; ((5))
 val res22: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-val res23: (Int, Int) = (4,4)
+val res23: (Int, Int) = (4, 4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-val res24: (Int, Int, Int) = (4,4,2)
+val res24: (Int, Int, Int) = (4, 4, 2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ scala.Iterator(3)).mkString)
-val res25: String = 4423
+val res25: String = "4423"
 
 scala> 
 
@@ -146,7 +146,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-val res26: (Int, Int, Int) = (1,2,3)
+val res26: (Int, Int, Int) = (1, 2, 3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
        ^

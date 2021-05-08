@@ -3,8 +3,8 @@ scala> """a
 | b
 c"""
 val res0: String =
-a
+"""a
 | b
-c
+c"""
 
 scala> :quit

@@ -6,8 +6,8 @@ scala> val x = s"""
   y = $y
 """
 val x: String =
-"
+"""
   y = 55
-"
+"""
 
 scala> :quit

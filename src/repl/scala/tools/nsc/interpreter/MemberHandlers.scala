@@ -131,10 +131,47 @@ trait MemberHandlers {
       val isInternal = isUserVarName(name) && req.lookupTypeOf(name) == "Unit"
       if (!mods.isPublic || isInternal) ""
       else {
-        // if this is a lazy val we avoid evaluating it here
         val resultString =
-          if (mods.isLazy) quotedString(" // unevaluated")
-          else quotedString(" = ") + " + " + any2stringOf(path, intp.reporter.maxPrintString)
+          if (mods.isLazy) {
+            // if this is a lazy val we avoid evaluating it here
+            quotedString(" // unevaluated")
+          } else {
+            // Whether to "verbose print" Products and in particular case classes. (Also quotes around String.)
+            // `replStringOf` drills into types reflectively; ideally, we would determine printing statically here.
+            // prefer verbose print to Tuple's generated toString, which is not synthetic.
+            // otherwise, verbose print Product if it doesn't have a user-written toString.
+            // case classes that simply wrap a boolean or disable param names are not verbosely printed.
+            val verboseProduct = {
+              val resultType = symbol.info.finalResultType
+              def userFlag   = settings.verboseCaseString.valueSetByUser.getOrElse(true)
+              def isTuple    = resultType.baseClasses.exists(definitions.isTupleSymbol)
+              def isProduct  = resultType.baseClasses.exists(definitions.isProductNSymbol)
+              def isCase     = resultType.typeSymbol.isCaseClass
+              def printable  = {
+                resultType == definitions.StringTpe ||
+                elementExtract(definitions.ArrayClass, resultType) != NoType ||
+                definitions.isIterableType(resultType)
+              }
+              def userToString = {
+                val strfun = resultType.member(nme.toString_)
+                !strfun.isSynthetic && strfun != definitions.Object_toString
+              }
+              def caseCtorOK = exitingTyper {
+                val ctor = resultType.typeSymbol.primaryConstructor
+                val ps   = ctor.paramLists.headOption.getOrElse(Nil)
+                ps.size match {
+                  case 0 => false
+                  case 1 => ps.head.info =:= definitions.BooleanTpe
+                  case _ => !ps.exists(p => p.deprecatedParamName.exists(_ == p.name))
+                }
+              }
+              def useVerbose = printable || isTuple || (isCase && caseCtorOK || isProduct) && !userToString
+              userFlag && useVerbose
+            }
+            val limit = intp.reporter.maxPrintString
+            val augmentedS = """(if (s.indexOf('\n') >= 0) "\n" else "") + s + "\n""""
+            s"${quotedString(" = ")} + { val s = ${any2stringOf(path, limit, verboseProduct)} ; $augmentedS }"
+          }
 
         val varOrValOrLzy =
           if (mods.isMutable) "var"
