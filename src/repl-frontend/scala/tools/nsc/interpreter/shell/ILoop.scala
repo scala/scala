@@ -989,7 +989,7 @@ object ILoop {
     override val colorOk = delegate.colorOk
 
     // No truncated output, because the result changes on Windows because of line endings
-    override val maxPrintString = sys.Prop[Int]("wtf").tap(_.set("0"))
+    override val maxPrintString = 0
   }
   object TestConfig {
     def apply(settings: Settings) = new TestConfig(ShellConfig(settings))

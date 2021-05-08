@@ -39,6 +39,11 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#SeqCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
+
+    // internal use by REPL or case class under -Vcase
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime._toString0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.stringOf"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.replStringOf"),
   )
 
   override val buildSettings = Seq(

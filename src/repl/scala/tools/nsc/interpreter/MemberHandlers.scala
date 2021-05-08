@@ -125,7 +125,6 @@ trait MemberHandlers {
 
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
-    val maxStringElements = 1000  // no need to mkString billions of elements
     override def definesValue = true
 
     override def resultExtractionCode(req: Request): String = {
@@ -135,7 +134,7 @@ trait MemberHandlers {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
           if (mods.isLazy) quotedString(" // unevaluated")
-          else quotedString(" = ") + " + " + any2stringOf(path, maxStringElements)
+          else quotedString(" = ") + " + " + any2stringOf(path, intp.reporter.maxPrintString)
 
         val varOrValOrLzy =
           if (mods.isMutable) "var"
