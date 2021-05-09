@@ -628,11 +628,11 @@ private final class BitmapIndexedMapNode[K, +V](
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      if (key == getKey(index)) getValue(index) else throw new NoSuchElementException("key not found: " + key)
+      if (key == getKey(index)) getValue(index) else throw new NoSuchElementException(s"key not found: $key")
     } else if ((nodeMap & bitpos) != 0) {
       getNode(indexFrom(nodeMap, mask, bitpos)).apply(key, originalHash, keyHash, shift + BitPartitionSize)
     } else {
-      throw new NoSuchElementException("key not found: " + key)
+      throw new NoSuchElementException(s"key not found: $key")
     }
   }
 
