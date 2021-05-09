@@ -339,4 +339,16 @@ class HashMapTest extends AllocationTest{
     check(cs => TreeMap(cs: _*)) // exercise special case for HashMap/HasForEachEntry
     check(cs => HashMap(cs: _*).withDefault(_ => ???)) // default cases
   }
+
+  @Test
+  def noSuchElement(): Unit = {
+    val m = HashMap[Int, Int](1 -> 1)
+    try {
+      m(2)
+    } catch {
+      case e: NoSuchElementException =>
+        assertEquals("key not found: 2", e.getMessage())
+      case e: Throwable => throw e
+    }
+  }
 }
