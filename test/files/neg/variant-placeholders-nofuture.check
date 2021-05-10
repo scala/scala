@@ -1,0 +1,7 @@
+variant-placeholders-nofuture.scala:5: error: ';' expected but '_' found.
+  val fnMinusPlus1: -_ => +_ = (_: Int).toLong // error -_/+_ won't parse without -Xsource:3
+                     ^
+variant-placeholders-nofuture.scala:6: error: ')' expected but '_' found.
+  val fnMinusPlus2: (-_) => +_ = fnMinusPlus1  // error -_/+_ won't parse without -Xsource:3
+                      ^
+two errors found
