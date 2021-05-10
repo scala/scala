@@ -11,7 +11,7 @@ object t12349b {
     protected[t12349]  override def a6(): Unit = println("Inner12349b#a6()") // weaker access privileges
       private[t12349]  override def a7(): Unit = println("Inner12349b#a7()") // weaker access privileges
     protected[this]    override def a8(): Unit = println("Inner12349b#a8()") // weaker access privileges
-      private[this]    override def a9(): Unit = println("Inner12349b#a9()") // [#9334]
+      private[this]    override def a9(): Unit = println("Inner12349b#a9()") // weaker access privileges
 
                        override def b1(): Unit = println("Inner12349b#b1()")
     protected          override def b2(): Unit = println("Inner12349b#b2()")
@@ -21,7 +21,7 @@ object t12349b {
     protected[t12349]  override def b6(): Unit = println("Inner12349b#b6()")
       private[t12349]  override def b7(): Unit = println("Inner12349b#b7()") // weaker access privileges
     protected[this]    override def b8(): Unit = println("Inner12349b#b8()") // [#12349] - not fixed by PR #9525
-      private[this]    override def b9(): Unit = println("Inner12349b#b9()") // [#9334]
+      private[this]    override def b9(): Unit = println("Inner12349b#b9()") // weaker access privileges
 
                        override def c1(): Unit = println("Inner12349b#c1()")
     protected          override def c2(): Unit = println("Inner12349b#c2()") // weaker access privileges
@@ -31,7 +31,7 @@ object t12349b {
     protected[t12349]  override def c6(): Unit = println("Inner12349b#c6()")
       private[t12349]  override def c7(): Unit = println("Inner12349b#c7()")
     protected[this]    override def c8(): Unit = println("Inner12349b#c8()") // weaker access privileges
-      private[this]    override def c9(): Unit = println("Inner12349b#c9()") // [#9334]
+      private[this]    override def c9(): Unit = println("Inner12349b#c9()") // weaker access privileges
 
                        override def d1(): Unit = println("Inner12349b#d1()") // overrides nothing
     protected          override def d2(): Unit = println("Inner12349b#d2()") // overrides nothing

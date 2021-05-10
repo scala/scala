@@ -3508,7 +3508,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   class ModuleClassSymbol protected[Symbols] (owner: Symbol, pos: Position, name: TypeName)
   extends ClassSymbol(owner, pos, name) {
-    private[this] var module: Symbol        = _
+    private[this] var moduleSymbol: Symbol  = _
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
 
@@ -3541,8 +3541,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       implicitMembersCacheValue
     }
     // The null check seems to be necessary for the reifier.
-    override def sourceModule = if (module ne null) module else companionModule
-    override def sourceModule_=(module: Symbol): Unit = { this.module = module }
+    override def sourceModule = if (moduleSymbol ne null) moduleSymbol else companionModule
+    override def sourceModule_=(module: Symbol): Unit = { this.moduleSymbol = module }
   }
 
   class PackageObjectClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)
