@@ -652,7 +652,7 @@ abstract class Erasure extends InfoTransform
       val rhs = member.tpe match {
         case MethodType(Nil, FoldableConstantType(c)) => Literal(c)
         case _                                =>
-          val sel: Tree    = Select(This(root), member)
+          val sel: Tree    = gen.mkAttributedSelect(gen.mkAttributedThis(root), member)
           val bridgingCall = bridge.paramss.foldLeft(sel)((fun, vparams) => Apply(fun, vparams map Ident))
 
           maybeWrap(bridgingCall)

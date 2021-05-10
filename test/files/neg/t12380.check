@@ -1,0 +1,8 @@
+Test.scala:1: error: incompatible type in overriding
+def m(): String (defined in trait I)
+  with def m(): Object (defined in class C);
+ found   : (): Object
+ required: (): String
+object Test extends p.J.C with p.J.I {
+       ^
+1 error

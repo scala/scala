@@ -120,8 +120,11 @@ object NumericStringGenerators {
       if (n >= 0) Gen.oneOf(digitsByValue(n))
       else Gen.const(ch)
     })
-    // type annotation shouldn't be necessary? see typelevel/scalacheck#721
-    Gen.sequence[List[Char], Char](listOfGens).map(_.mkString)
+
+    import scala.jdk.CollectionConverters._
+
+    val sequenced = Gen.sequence(listOfGens)
+    sequenced.map(_.asScala.mkString)
   }
 
 }

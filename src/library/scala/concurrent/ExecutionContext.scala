@@ -106,13 +106,13 @@ trait ExecutionContext {
 
 /**
  * An [[ExecutionContext]] that is also a
- * Java [[https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Executor.html Executor]].
+ * Java [[java.util.concurrent.Executor Executor]].
  */
 trait ExecutionContextExecutor extends ExecutionContext with Executor
 
 /**
  * An [[ExecutionContext]] that is also a
- * Java [[https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ExecutorService.html ExecutorService]].
+ * Java [[java.util.concurrent.ExecutorService ExecutorService]].
  */
 trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
 
@@ -287,7 +287,7 @@ object ExecutionContext {
    */
   def fromExecutor(e: Executor): ExecutionContextExecutor = fromExecutor(e, defaultReporter)
 
-  /** The default reporter simply prints the stack trace of the `Throwable` to [[https://docs.oracle.com/javase/8/docs/api/java/lang/System.html#err System.err]].
+  /** The default reporter simply prints the stack trace of the `Throwable` to [[java.lang.System#err System.err]].
    *
    *  @return the function for error reporting
    */

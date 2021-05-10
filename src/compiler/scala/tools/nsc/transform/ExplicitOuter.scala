@@ -488,6 +488,31 @@ abstract class ExplicitOuter extends InfoTransform
             transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
           }
 
+        // (t12312) C.this.a().X().isInstanceOf[C.this.a.X.type]() -->
+        // D.this.$outer().a().X().isInstanceOf[D.this.$outer.a.X.type]()
+        case TypeApply(fun, targs) =>
+          val rewriteTypeToExplicitOuter = new TypeMap { typeMap =>
+            def apply(tp: Type) = tp map {
+              case ThisType(sym) if sym != currentClass && !(sym.hasModuleFlag && sym.isStatic) =>
+                var cls = currentClass
+                var tpe = cls.thisType
+                do {
+                  tpe = singleType(tpe, outerAccessor(cls))
+                  cls = cls.outerClass
+                } while (cls != NoSymbol && sym != cls)
+                tpe.mapOver(typeMap)
+              case tp => tp.mapOver(typeMap)
+            }
+          }
+          val fun2   = transform(fun)
+          val targs2 = targs.mapConserve { targ0 =>
+            val targ    = transform(targ0)
+            val targTp  = targ.tpe
+            val targTp2 = rewriteTypeToExplicitOuter(targTp.dealias)
+            if (targTp eq targTp2) targ else TypeTree(targTp2).setOriginal(targ)
+          }
+          treeCopy.TypeApply(tree, fun2, targs2)
+
         case _ =>
           val x = super.transform(tree)
           if (x.tpe eq null) x
