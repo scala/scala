@@ -61,8 +61,6 @@ abstract class UnPickler {
   class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
-    protected def debug = settings.debug.value
-
     checkVersion()
 
     private val loadingMirror = mirrorThatLoaded(classRoot)

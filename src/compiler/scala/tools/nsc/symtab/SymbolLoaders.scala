@@ -19,7 +19,7 @@ import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
-import scala.reflect.internal.util.{ReusableInstance, StatisticsStatics}
+import scala.reflect.internal.util.ReusableInstance
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** This class ...
@@ -57,8 +57,8 @@ abstract class SymbolLoaders {
     member
   }
 
-  protected def signalError(root: Symbol, ex: Throwable) {
-    if (settings.debug) ex.printStackTrace()
+  protected def signalError(root: Symbol, ex: Throwable): Unit = {
+    if (settings.isDebug) ex.printStackTrace()
     globalError(ex.getMessage() match {
       case null => "i/o error while loading " + root.name
       case msg  => "error while loading " + root.name + ", " + msg
@@ -337,12 +337,12 @@ abstract class SymbolLoaders {
 
     protected def description = "class file "+ classfile.toString
 
-    protected def doComplete(root: Symbol) {
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.classReadNanos) else null
+    protected def doComplete(root: Symbol): Unit = {
+      val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.classReadNanos) else null
       classfileParser.parse(classfile, clazz, module)
       if (clazz.associatedFile eq NoAbstractFile) clazz.associatedFile = classfile
       if (module.associatedFile eq NoAbstractFile) module.associatedFile = classfile
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
+      if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
     override def associatedFile(self: Symbol): AbstractFile = classfile

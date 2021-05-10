@@ -109,7 +109,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
       debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
             " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
       while (!bcs.isEmpty && sym == NoSymbol) {
-        if (settings.debug) {
+        if (settings.isDebug) {
           val other = bcs.head.info.nonPrivateDecl(member.name)
           debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
               " " + other.isDeferred)

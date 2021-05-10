@@ -191,7 +191,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
 
       // Logging
-      if ((settings.debug.value && shouldLogAtThisPhase))
+      if ((settings.isDebug && shouldLogAtThisPhase))
         logDiagnostics(anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
       // Offer async frontends a change to produce the .dot diagram
       transformState.dotDiagram(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))

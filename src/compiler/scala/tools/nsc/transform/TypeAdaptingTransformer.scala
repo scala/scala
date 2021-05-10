@@ -116,7 +116,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
       *  @pre pt eq pt.normalize
      */
     final def cast(tree: Tree, pt: Type): Tree = {
-      if (settings.debug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
+      if (settings.isDebug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
         def word =
           if (tree.tpe <:< pt) "upcast"
           else if (pt <:< tree.tpe) "downcast"

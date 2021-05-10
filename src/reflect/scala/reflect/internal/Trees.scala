@@ -1138,7 +1138,7 @@ trait Trees extends api.Trees {
     private def requireLegal(value: Any, allowed: Any, what: String) = (
       if (value != allowed) {
         log(s"can't set $what for $self to value other than $allowed")
-        if (settings.debug && settings.developer)
+        if (settings.isDebug && settings.isDeveloper)
           (new Throwable).printStackTrace
       }
     )

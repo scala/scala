@@ -15,7 +15,7 @@ package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
-import scala.reflect.internal.util.{HashSet, Position, StatisticsStatics}
+import scala.reflect.internal.util.{HashSet, Position}
 
 trait Logic extends Debugging  {
   import global._
@@ -392,7 +392,7 @@ trait Logic extends Debugging  {
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     // may throw an AnalysisBudget.Exception
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaVarEq) else null
+      val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatAnaVarEq) else null
 
       val vars = new mutable.HashSet[Var]
 
@@ -461,7 +461,7 @@ trait Logic extends Debugging  {
       debug.patmat(s"eqAxioms:\n${eqAxioms.mkString("\n")}")
       debug.patmat(s"pure:${pure.mkString("\n")}")
 
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaVarEq, start)
+      if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.patmatAnaVarEq, start)
 
       (And(eqAxioms: _*), pure)
     }

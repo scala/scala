@@ -130,8 +130,8 @@ abstract class TreeCheckers extends Analyzer {
     def reportChanges(): Unit = {
       // new symbols
       if (newSyms.nonEmpty) {
-        informFn(newSyms.size + " new symbols.")
-        val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
+        informFn("" + newSyms.size + " new symbols.")
+        val toPrint = if (settings.isDebug) sortedNewSyms mkString " " else ""
 
         newSyms.clear()
         if (toPrint != "")
@@ -177,8 +177,8 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(pos: Position, msg: Any): Unit = runReporting.warning(pos, "[check: %s] %s".format(phase.prev, msg), WarningCategory.OtherDebug, site = "")
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
-  def informFn(msg: Any) {
-    if (settings.verbose || settings.debug)
+  def informFn(msg: Any): Unit = {
+    if (settings.verbose || settings.isDebug)
       println("[check: %s] %s".format(phase.prev, msg))
   }
 

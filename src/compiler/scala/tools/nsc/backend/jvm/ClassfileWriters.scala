@@ -63,7 +63,7 @@ abstract class ClassfileWriters {
 
     def apply(global: Global): ClassfileWriter = {
       //Note dont import global._ - its too easy to leak non threadsafe structures
-      import global.{cleanup, log, settings, statistics}
+      import global.{ cleanup, log, settings }
       def jarManifestMainClass: Option[String] = settings.mainClass.valueSetByUser.orElse {
         cleanup.getEntryPoints match {
           case List(name) => Some(name)
@@ -91,7 +91,7 @@ abstract class ClassfileWriters {
         new DebugClassWriter(basicClassWriter, asmp, dump)
       }
 
-      val enableStats = statistics.enabled && settings.YaddBackendThreads.value == 1
+      val enableStats = settings.areStatisticsEnabled && settings.YaddBackendThreads.value == 1
       if (enableStats) new WithStatsWriter(withAdditionalFormats) else withAdditionalFormats
     }
 

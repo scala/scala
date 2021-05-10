@@ -15,6 +15,7 @@ package reflect
 package runtime
 
 import scala.reflect.internal.settings.MutableSettings
+import scala.reflect.internal.util.StatisticsStatics
 
 /** The Settings class for runtime reflection.
  *  This should be refined, so that settings are settable via command
@@ -53,8 +54,8 @@ private[reflect] class Settings extends MutableSettings {
   val Yshowsymowners    = new BooleanSetting(false)
   val Yshowsymkinds     = new BooleanSetting(false)
   val breakCycles       = new BooleanSetting(false)
-  val debug             = new BooleanSetting(false)
-  val developer         = new BooleanSetting(false)
+  val debug             = new BooleanSetting(false) { override def postSetHook() = if (v) StatisticsStatics.enableDebugAndDeoptimize()     }
+  val developer         = new BooleanSetting(false) { override def postSetHook() = if (v) StatisticsStatics.enableDeveloperAndDeoptimize() }
   val explaintypes      = new BooleanSetting(false)
   val overrideObjects   = new BooleanSetting(false)
   val printtypes        = new BooleanSetting(false)

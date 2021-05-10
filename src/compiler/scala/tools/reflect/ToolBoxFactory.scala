@@ -52,7 +52,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) {
       import definitions._
 
-      private val trace = scala.tools.nsc.util.trace when settings.debug.value
+      private val trace = scala.tools.nsc.util.trace when settings.isDebug
 
       private var wrapCount = 0
 
@@ -267,7 +267,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val msym = wrapInPackageAndCompile(mdef.name, mdef)
 
         val className = msym.fullName
-        if (settings.debug) println("generated: "+className)
+        if (settings.isDebug) println("generated: "+className)
         def moduleFileName(className: String) = className + "$"
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get

@@ -13,8 +13,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.reflect.internal.util.StatisticsStatics
-
 /** The main attribution phase.
  */
 trait Analyzer extends AnyRef
@@ -96,8 +94,8 @@ trait Analyzer extends AnyRef
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
-      override def run() {
-        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.typerNanos) else null
+      override def run(): Unit = {
+        val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.typerNanos) else null
         global.echoPhaseSummary(this)
         val units = currentRun.units
         while (units.hasNext) {
@@ -107,7 +105,7 @@ trait Analyzer extends AnyRef
         finishComputeParamAlias()
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
+        if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.typerNanos, start)
       }
 
       def apply(unit: CompilationUnit) {

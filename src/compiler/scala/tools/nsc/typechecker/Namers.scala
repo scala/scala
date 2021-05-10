@@ -1934,11 +1934,12 @@ trait Namers extends MethodSynthesis {
     }
 
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
-      val enabled = settings.debug.value
       @inline final def apply[T](entity: S)(body: => T): T = {
-        if (enabled) log(onEnter(entity))
-        try body
-        finally if (enabled) log(onExit(entity))
+        if (settings.isDebug) {
+          log(onEnter(entity))
+          try body
+          finally log(onExit(entity))
+        } else body
       }
     }
     private val logDefinition = new LogTransitions[Symbol](

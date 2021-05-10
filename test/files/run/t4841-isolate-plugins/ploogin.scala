@@ -23,7 +23,7 @@ class Ploogin(val global: Global, val name: String = "ploogin") extends Plugin {
     class TestPhase(prev: Phase) extends StdPhase(prev) {
       override def description = TestComponent.this.description
       def apply(unit: CompilationUnit) {
-        if (settings.developer) inform(s"My phase name is $phaseName")
+        if (settings.isDeveloper) inform(s"My phase name is $phaseName")
       }
     }
   }

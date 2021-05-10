@@ -16,7 +16,7 @@ package internal
 
 import scala.annotation.tailrec
 import scala.collection.generic.Clearable
-import scala.reflect.internal.util.{Statistics, StatisticsStatics}
+import scala.reflect.internal.util.Statistics
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
 
@@ -496,22 +496,22 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** Create a new scope nested in another one with which it shares its elements */
   final def newNestedScope(outer: Scope): Scope = {
-    val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
+    val startTime = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val nested = newScope // not `new Scope`, we must allow the runtime reflection universe to mixin SynchronizedScopes!
     nested.elems = outer.elems
     nested.nestinglevel = outer.nestinglevel + 1
     if (outer.hashtable ne null)
       nested.hashtable = java.util.Arrays.copyOf(outer.hashtable, outer.hashtable.length)
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
+    if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     nested
   }
 
   /** Create a new scope with given initial elements */
   def newScopeWith(elems: Symbol*): Scope = {
-    val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
+    val startTime = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val scope = newScope
     elems foreach scope.enter
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
+    if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     scope
   }
 

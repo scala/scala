@@ -59,7 +59,7 @@ private[jvm] object GeneratedClassHandler {
         new SyncWritingClassHandler(postProcessor)
 
       case maxThreads =>
-        if (statistics.enabled)
+        if (settings.areStatisticsEnabled)
           runReporting.warning(NoPosition, "jvm statistics are not reliable with multi-threaded jvm class writing", WarningCategory.Other, site = "")
         val additionalThreads = maxThreads - 1
         // The thread pool queue is limited in size. When it's full, the `CallerRunsPolicy` causes

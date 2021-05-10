@@ -14,7 +14,6 @@ package scala.tools.nsc.transform.patmat
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable,mutable}
-import scala.reflect.internal.util.StatisticsStatics
 
 // a literal is a (possibly negated) variable
 class Lit(val v: Int) extends AnyVal {
@@ -485,11 +484,11 @@ trait Solving extends Logic {
     def findTseitinModelFor(clauses: Array[Clause]): TseitinModel = {
       debug.patmat(s"DPLL\n${cnfString(clauses)}")
 
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
+      val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatAnaDPLL) else null
 
       val satisfiableWithModel = findTseitinModel0((clauses, Set.empty[Lit]) :: Nil)
 
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
+      if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.patmatAnaDPLL, start)
       satisfiableWithModel
     }
 

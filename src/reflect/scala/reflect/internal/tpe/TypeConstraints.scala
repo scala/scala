@@ -61,8 +61,8 @@ private[internal] trait TypeConstraints {
       log ::= UndoPair(tv, tv.constr.cloneInternal)
     }
 
-    def clear() {
-      if (settings.debug)
+    def clear(): Unit = {
+      if (settings.isDebug)
         self.log("Clearing " + log.size + " entries from the undoLog.")
       log = Nil
     }

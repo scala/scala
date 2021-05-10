@@ -217,7 +217,7 @@ trait Infer extends Checkable {
 
     // When filtering sym down to the accessible alternatives leaves us empty handed.
     private def checkAccessibleError(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
-      if (settings.debug) {
+      if (settings.isDebug) {
         Console.println(context)
         Console.println(tree)
         Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))

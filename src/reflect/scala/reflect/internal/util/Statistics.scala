@@ -21,57 +21,49 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import scala.runtime.LongRef
 
 abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSettings) {
-
-  initFromSettings(settings)
-
-  def initFromSettings(currentSettings: MutableSettings): Unit = {
-    enabled = currentSettings.YstatisticsEnabled
-    hotEnabled = currentSettings.YhotStatisticsEnabled
-  }
-
   type TimerSnapshot = (Long, Long)
 
   /** If enabled, increment counter by one */
-  @inline final def incCounter(c: Counter) {
-    if (areStatisticsLocallyEnabled && c != null) c.value += 1
+  @inline final def incCounter(c: Counter): Unit = {
+    if (enabled && c != null) c.value += 1
   }
 
   /** If enabled, increment counter by given delta */
-  @inline final def incCounter(c: Counter, delta: Int) {
-    if (areStatisticsLocallyEnabled && c != null) c.value += delta
+  @inline final def incCounter(c: Counter, delta: Int): Unit = {
+    if (enabled && c != null) c.value += delta
   }
 
   /** If enabled, increment counter in map `ctrs` at index `key` by one */
   @inline final def incCounter[K](ctrs: QuantMap[K, Counter], key: K) =
-    if (areStatisticsLocallyEnabled && ctrs != null) ctrs(key).value += 1
+    if (enabled && ctrs != null) ctrs(key).value += 1
 
   /** If enabled, start subcounter. While active it will track all increments of
    *  its base counter.
    */
   @inline final def startCounter(sc: SubCounter): (Int, Int) =
-    if (areStatisticsLocallyEnabled && sc != null) sc.start() else null
+    if (enabled && sc != null) sc.start() else null
 
   /** If enabled, stop subcounter from tracking its base counter. */
-  @inline final def stopCounter(sc: SubCounter, start: (Int, Int)) {
-    if (areStatisticsLocallyEnabled && sc != null) sc.stop(start)
+  @inline final def stopCounter(sc: SubCounter, start: (Int, Int)): Unit = {
+    if (enabled && sc != null) sc.stop(start)
   }
 
   /** If enabled, start timer */
   @inline final def startTimer(tm: Timer): TimerSnapshot =
-    if (areStatisticsLocallyEnabled && tm != null) tm.start() else null
+    if (enabled && tm != null) tm.start() else null
 
   /** If enabled, stop timer */
-  @inline final def stopTimer(tm: Timer, start: TimerSnapshot) {
-    if (areStatisticsLocallyEnabled && tm != null) tm.stop(start)
+  @inline final def stopTimer(tm: Timer, start: TimerSnapshot): Unit = {
+    if (enabled && tm != null) tm.stop(start)
   }
 
   /** If enabled, push and start a new timer in timer stack */
   @inline final def pushTimer(timers: TimerStack, timer: => StackableTimer): TimerSnapshot =
-    if (areStatisticsLocallyEnabled && timers != null) timers.push(timer) else null
+    if (enabled && timers != null) timers.push(timer) else null
 
   /** If enabled, stop and pop timer from timer stack */
-  @inline final def popTimer(timers: TimerStack, prev: TimerSnapshot) {
-    if (areStatisticsLocallyEnabled && timers != null) timers.pop(prev)
+  @inline final def popTimer(timers: TimerStack, prev: TimerSnapshot): Unit = {
+    if (enabled && timers != null) timers.pop(prev)
   }
 
   /** Create a new counter that shows as `prefix` and is active in given phases */
@@ -288,30 +280,9 @@ quant)
     }
   }
 
-  private val qs = new mutable.HashMap[String, Quantity]
-  private[scala] var areColdStatsLocallyEnabled: Boolean = false
-  private[scala] var areHotStatsLocallyEnabled: Boolean = false
+  private[this] val qs = new mutable.HashMap[String, Quantity]
 
-  /** Represents whether normal statistics can or cannot be enabled. */
-  @inline final def enabled: Boolean = areColdStatsLocallyEnabled
-  def enabled_=(cond: Boolean) = {
-    if (cond && !enabled) {
-      StatisticsStatics.enableColdStats()
-      areColdStatsLocallyEnabled = true
-    }
-  }
-
-  /** Represents whether hot statistics can or cannot be enabled. */
-  @inline final def hotEnabled: Boolean = enabled && areHotStatsLocallyEnabled
-  def hotEnabled_=(cond: Boolean) = {
-    if (cond && enabled && !areHotStatsLocallyEnabled) {
-      StatisticsStatics.enableHotStats()
-      areHotStatsLocallyEnabled = true
-    }
-  }
-
-  /** Tells whether statistics should be definitely reported to the user for this `Global` instance. */
-  @inline final def areStatisticsLocallyEnabled: Boolean = areColdStatsLocallyEnabled
+  @inline final def enabled: Boolean = settings.areStatisticsEnabled
 
   import scala.reflect.internal.Reporter
   /** Reports the overhead of measuring statistics via the nanoseconds variation. */
