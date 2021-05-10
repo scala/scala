@@ -47,8 +47,7 @@ object TastyFlags {
   final val Deferred              = Param.next
   final val Method                = Deferred.next
   final val Erased                = Method.next
-  final val Internal              = Erased.next
-  final val Inline                = Internal.next
+  final val Inline                = Erased.next
   final val InlineProxy           = Inline.next
   final val Opaque                = InlineProxy.next
   final val Extension             = Opaque.next
@@ -124,7 +123,6 @@ object TastyFlags {
         if (is(Deferred))      sb += "Deferred"
         if (is(Method))        sb += "Method"
         if (is(Erased))        sb += "Erased"
-        if (is(Internal))      sb += "Internal"
         if (is(Inline))        sb += "Inline"
         if (is(InlineProxy))   sb += "InlineProxy"
         if (is(Opaque))        sb += "Opaque"

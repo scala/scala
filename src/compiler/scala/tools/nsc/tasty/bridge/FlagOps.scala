@@ -25,7 +25,7 @@ trait FlagOps { self: TastyUniverse =>
   object FlagSets {
 
     val TastyOnlyFlags: TastyFlagSet = (
-      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
+      Erased | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
         | Enum | Infix | Open | ParamAlias | Invisible
     )
 
@@ -108,7 +108,6 @@ trait FlagOps { self: TastyUniverse =>
     else {
       val sb = collection.mutable.ArrayBuffer.empty[String]
       if (flags.is(Erased))      sb += "erased"
-      if (flags.is(Internal))    sb += "<internal>"
       if (flags.is(Inline))      sb += "inline"
       if (flags.is(InlineProxy)) sb += "<inlineproxy>"
       if (flags.is(Opaque))      sb += "opaque"

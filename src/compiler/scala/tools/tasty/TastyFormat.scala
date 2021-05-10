@@ -187,7 +187,6 @@ object TastyFormat {
   final val TRUEconst = 4
   final val NULLconst = 5
   final val PRIVATE = 6
-  final val INTERNAL = 7
   final val PROTECTED = 8
   final val ABSTRACT = 9
   final val FINAL = 10
@@ -352,7 +351,6 @@ object TastyFormat {
 
   def isModifierTag(tag: Int): Boolean = tag match {
     case PRIVATE
-       | INTERNAL
        | PROTECTED
        | ABSTRACT
        | FINAL
@@ -416,7 +414,6 @@ object TastyFormat {
     case TRUEconst => "TRUEconst"
     case NULLconst => "NULLconst"
     case PRIVATE => "PRIVATE"
-    case INTERNAL => "INTERNAL"
     case PROTECTED => "PROTECTED"
     case ABSTRACT => "ABSTRACT"
     case FINAL => "FINAL"

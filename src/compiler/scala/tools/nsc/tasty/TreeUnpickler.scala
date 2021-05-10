@@ -581,7 +581,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         nextByte match {
           case PRIVATE => addFlag(Private)
-          case INTERNAL => addFlag(Internal)
           case PROTECTED => addFlag(Protected)
           case ABSTRACT =>
             readByte()
