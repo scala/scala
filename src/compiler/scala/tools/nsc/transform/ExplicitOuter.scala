@@ -492,7 +492,7 @@ abstract class ExplicitOuter extends InfoTransform
         // D.this.$outer().a().X().isInstanceOf[D.this.$outer.a.X.type]()
         case TypeApply(fun, targs) =>
           val rewriteTypeToExplicitOuter = new TypeMap { typeMap =>
-            def apply(tp: Type) = tp map {
+            def apply(tp: Type) = tp match {
               case ThisType(sym) if sym != currentClass && !(sym.hasModuleFlag && sym.isStatic) =>
                 var cls = currentClass
                 var tpe = cls.thisType
