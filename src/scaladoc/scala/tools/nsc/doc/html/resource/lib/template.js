@@ -61,7 +61,7 @@ $(document).ready(function() {
         return $(elem).attr("data-hidden") == 'true';
     };
 
-    $("#linearization li:gt(0)").filter(function(){
+    $("#linearization li").slice(1).filter(function(){
         return isHiddenClass($(this).attr("name"));
     }).removeClass("in").addClass("out");
 
@@ -440,7 +440,7 @@ function filter() {
     var orderingAlphabetic = $("#order > ol > li.alpha").hasClass("in");
     var orderingInheritance = $("#order > ol > li.inherit").hasClass("in");
     var orderingGroups = $("#order > ol > li.group").hasClass("in");
-    var hiddenSuperclassElementsLinearization = orderingInheritance ? $("#linearization > li:gt(0)") : $("#linearization > li.out");
+    var hiddenSuperclassElementsLinearization = orderingInheritance ? $("#linearization > li").slice(1) : $("#linearization > li.out");
     var hiddenSuperclassesLinearization = hiddenSuperclassElementsLinearization.map(function() {
       return $(this).attr("name");
     }).get();
