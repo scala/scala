@@ -394,6 +394,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                     false
                   case TypeRef(pre, sym, args) =>
                     val testedBinderClass = testedBinder.info.upperBound.typeSymbol
+                    // alternatively..... = testedBinder.info.baseClasses.find(_.isClass).getOrElse(NoSymbol)
                     val testedBinderType = testedBinder.info.baseType(testedBinderClass)
 
                     val testedPrefixIsExpectedTypePrefix = pre =:= testedBinderType.prefix
@@ -402,7 +403,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                         case ThisType(thissym) =>
                           ThisType(thissym.cloneSymbol(thissym.owner))
                         case _ =>
-                          val preSym = pre.termSymbol
+                          val preSym = pre.termSymbol.orElse(pre.typeSymbol)
                           val freshPreSym = preSym.cloneSymbol(preSym.owner).setInfo(preSym.info)
                           singleType(pre.prefix, freshPreSym)
                       }
