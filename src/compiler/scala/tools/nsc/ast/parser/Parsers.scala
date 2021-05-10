@@ -1139,11 +1139,16 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if (isWildcardType) {
+              if (settings.isScala3 && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+                val start = in.offset
+                val identName = in.name.encode.append("_").toTypeName
+                in.nextToken()
+                in.nextToken()
+                atPos(start)(Ident(identName))
+              } else if (isWildcardType) {
                 val scala3Wildcard = isScala3WildcardType
                 wildcardType(in.skipToken(), scala3Wildcard)
-              }
-              else
+              } else
                 path(thisOK = false, typeOK = true) match {
                   case r @ SingletonTypeTree(_) => r
                   case r => convertToTypeId(r)
