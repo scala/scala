@@ -1,0 +1,42 @@
+qmark-deprecated.scala:4: warning: using `?` as a type name will require backticks in the future.
+class Foo[?] // error
+          ^
+qmark-deprecated.scala:6: warning: using `?` as a type name will require backticks in the future.
+class Bar[M[?] <: List[?]] // errors
+            ^
+qmark-deprecated.scala:6: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+class Bar[M[?] <: List[?]] // errors
+                       ^
+qmark-deprecated.scala:10: warning: using `?` as a type name will require backticks in the future.
+  class ? { val x = 1 } // error
+        ^
+qmark-deprecated.scala:16: warning: using `?` as a type name will require backticks in the future.
+  trait ? // error
+        ^
+qmark-deprecated.scala:22: warning: using `?` as a type name will require backticks in the future.
+  type ? = Int // error
+       ^
+qmark-deprecated.scala:27: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+  val x: Array[?] = new Array[?](0) // errors
+               ^
+qmark-deprecated.scala:27: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+  val x: Array[?] = new Array[?](0) // errors
+                              ^
+qmark-deprecated.scala:30: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+  def foo1[T <: Array[?]](x: T): Array[?] = x // errors
+                      ^
+qmark-deprecated.scala:30: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+  def foo1[T <: Array[?]](x: T): Array[?] = x // errors
+                                       ^
+qmark-deprecated.scala:33: warning: using `?` as a type name will require backticks in the future.
+  def bar1[?] = {} // error
+           ^
+qmark-deprecated.scala:35: warning: using `?` as a type name will require backticks in the future.
+  def bar3[M[?]] = {} // error
+             ^
+qmark-deprecated.scala:38: warning: using `?` as a type name will require backticks in the future.
+  type A[?] = Int // error
+         ^
+error: No warnings can be incurred under -Werror.
+13 warnings
+1 error
