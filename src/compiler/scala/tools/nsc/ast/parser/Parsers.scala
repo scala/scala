@@ -723,9 +723,8 @@ self =>
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER
 
-    def isWildcardType =
-      in.token == USCORE ||
-      settings.isScala3 && isRawIdent && in.name == raw.QMARK
+    def isWildcardType = in.token == USCORE || isScala3WildcardType
+    def isScala3WildcardType = settings.isScala3 && isRawIdent && in.name == raw.QMARK
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -1140,8 +1139,10 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if (isWildcardType)
-                wildcardType(in.skipToken())
+              if (isWildcardType) {
+                val scala3Wildcard = isScala3WildcardType
+                wildcardType(in.skipToken(), scala3Wildcard)
+              }
               else
                 path(thisOK = false, typeOK = true) match {
                   case r @ SingletonTypeTree(_) => r
@@ -1539,8 +1540,8 @@ self =>
      *  WildcardType ::= `_` TypeBounds
      *  }}}
      */
-    def wildcardType(start: Offset) = {
-      val pname = freshTypeName("_$")
+    def wildcardType(start: Offset, qmark: Boolean) = {
+      val pname = if (qmark) freshTypeName("?$") else freshTypeName("_$")
       val t = atPos(start)(Ident(pname))
       val bounds = typeBounds()
       val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
@@ -2055,8 +2056,9 @@ self =>
       final def argType(): Tree = {
         val start = in.offset
         if (isWildcardType) {
+            val scala3Wildcard = isScala3WildcardType
             in.nextToken()
-            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
+            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else
           typ() match {
