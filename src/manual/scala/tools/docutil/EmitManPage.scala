@@ -93,7 +93,7 @@ object EmitManPage {
         case BlockQuote(text) =>
           out println ".TP"
           emitText(text)
-          out.println
+          out.println()
 
         case CodeSample(text) =>
           out println "\n.nf"
@@ -104,7 +104,7 @@ object EmitManPage {
           for (item <- lst.items) {
             out println ".IP"
             emitText(item)
-            out.println
+            out.println()
           }
 
         case lst:NumberedList =>
@@ -114,7 +114,7 @@ object EmitManPage {
             val item = lst.items(idx)
             out.println(".IP \"   " + (idx+1) + ".\"")
             emitText(item)
-            out.println
+            out.println()
           }
 
         case TitledPara(title, text) =>
