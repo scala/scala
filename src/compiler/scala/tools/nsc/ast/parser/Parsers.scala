@@ -723,9 +723,16 @@ self =>
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER
 
-    def isWildcardType =
-      in.token == USCORE ||
-      settings.isScala3 && isRawIdent && in.name == raw.QMARK
+    def isWildcardType = in.token == USCORE || isScala3WildcardType
+    def isScala3WildcardType = settings.isScala3 && isRawIdent && in.name == raw.QMARK
+    def checkQMarkUsage() =
+      if (!settings.isScala3 && isRawIdent && in.name == raw.QMARK)
+        deprecationWarning(in.offset,
+          "`?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.", "2.13.6")
+    def checkQMarkDefinition() =
+      if (isRawIdent && in.name == raw.QMARK)
+        deprecationWarning(in.offset,
+          "using `?` as a type name will require backticks in the future.", "2.13.6")
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -1140,13 +1147,22 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if (isWildcardType)
-                wildcardType(in.skipToken())
-              else
+              if (settings.isScala3 && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+                val start = in.offset
+                val identName = in.name.encode.append("_").toTypeName
+                in.nextToken()
+                in.nextToken()
+                atPos(start)(Ident(identName))
+              } else if (isWildcardType) {
+                val scala3Wildcard = isScala3WildcardType
+                wildcardType(in.skipToken(), scala3Wildcard)
+              } else {
+                checkQMarkUsage()
                 path(thisOK = false, typeOK = true) match {
                   case r @ SingletonTypeTree(_) => r
                   case r => convertToTypeId(r)
                 }
+              }
           })
         }
       }
@@ -1290,8 +1306,11 @@ self =>
     def rawIdent(): Name = try in.name finally in.nextToken()
 
     /** For when it's known already to be a type name. */
-    def identForType(): TypeName = ident().toTypeName
-    def identForType(skipIt: Boolean): TypeName = ident(skipIt).toTypeName
+    def identForType(): TypeName = identForType(skipIt = true)
+    def identForType(skipIt: Boolean): TypeName = {
+      checkQMarkDefinition()
+      ident(skipIt).toTypeName
+    }
 
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
@@ -1421,8 +1440,7 @@ self =>
       else if (in.token == SYMBOLLIT) {
         def msg(what: String) =
           s"""symbol literal is $what; use Symbol("${in.strVal}") instead"""
-        if (settings.isScala3) syntaxError(in.offset, msg("unsupported"))
-        else deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
+        deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       }
       else finish(in.token match {
@@ -1540,8 +1558,8 @@ self =>
      *  WildcardType ::= `_` TypeBounds
      *  }}}
      */
-    def wildcardType(start: Offset) = {
-      val pname = freshTypeName("_$")
+    def wildcardType(start: Offset, qmark: Boolean) = {
+      val pname = if (qmark) freshTypeName("?$") else freshTypeName("_$")
       val t = atPos(start)(Ident(pname))
       val bounds = typeBounds()
       val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
@@ -2056,15 +2074,18 @@ self =>
       final def argType(): Tree = {
         val start = in.offset
         if (isWildcardType) {
+            val scala3Wildcard = isScala3WildcardType
             in.nextToken()
-            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
+            if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
-        } else
+        } else {
+          checkQMarkUsage()
           typ() match {
             case Ident(name: TypeName) if nme.isVariableName(name) =>
               atPos(start) { Bind(name, EmptyTree) }
             case t => t
           }
+        }
       }
 
       /** {{{
@@ -2563,6 +2584,7 @@ self =>
           }
         }
         val nameOffset = in.offset
+        checkQMarkDefinition()
         // TODO AM: freshTermName(o2p(in.skipToken()), "_$$"), will need to update test suite
         val pname: TypeName = wildcardOrIdent().toTypeName
         val param = atPos(start, nameOffset) {

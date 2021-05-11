@@ -37,7 +37,7 @@ abstract class OverridingPairs extends SymbolPairs {
      *  including bridges. But it may be refined in subclasses.
      */
     override protected def exclude(sym: Symbol) = (
-         sym.isPrivateLocal
+        (sym.isPrivateLocal && sym.isParamAccessor)
       || sym.isArtifact
       || sym.isConstructor
       || (sym.isPrivate && sym.owner != base) // Privates aren't inherited. Needed for pos/t7475a.scala
@@ -53,9 +53,6 @@ abstract class OverridingPairs extends SymbolPairs {
       && !exclude(low)                 // this admits private, as one can't have a private member that matches a less-private member.
       && (lowMemberType matches (self memberType high))
     ) // TODO we don't call exclude(high), should we?
-
-    override def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean =
-      lowClass.isJavaDefined && highClass.isJavaDefined // javac is already checking this better than we could
   }
 
   private def bothJavaOwnedAndEitherIsField(low: Symbol, high: Symbol): Boolean = {

@@ -614,6 +614,39 @@ sealed abstract class List[+A]
     }
   }
 
+  // TODO: uncomment once bincompat allows (reference: scala/scala#9365)
+  /*
+  // Override for performance: traverse only as much as needed
+  // and share tail when nothing needs to be filtered out anymore
+  override def diff[B >: A](that: collection.Seq[B]): AnyRef = {
+    if (that.isEmpty || this.isEmpty) this
+    else if (tail.isEmpty) if (that.contains(head)) Nil else this
+    else {
+      val occ = occCounts(that)
+      val b = new ListBuffer[A]()
+      @tailrec
+      def rec(remainder: List[A]): List[A] = {
+        if(occ.isEmpty) b.prependToList(remainder)
+        else remainder match {
+          case Nil => b.result()
+          case head :: next => {
+            occ.updateWith(head){
+              case None => {
+                b.append(head)
+                None
+              }
+              case Some(1) => None
+              case Some(n) => Some(n - 1)
+            }
+            rec(next)
+          }
+        }
+      }
+      rec(this)
+    }
+  }
+  */
+
 }
 
 // Internal code that mutates `next` _must_ call `Statics.releaseFence()` if either immediately, or

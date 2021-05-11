@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.testkit.AllocationTest
+import scala.tools.testkit.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 class HashMapTest extends AllocationTest{
@@ -338,5 +339,11 @@ class HashMapTest extends AllocationTest{
     check(cs => HashMap(cs: _*)) // exercise special case for HashMap/HashMap
     check(cs => TreeMap(cs: _*)) // exercise special case for HashMap/HasForEachEntry
     check(cs => HashMap(cs: _*).withDefault(_ => ???)) // default cases
+  }
+
+  @Test
+  def noSuchElement(): Unit = {
+    assertThrows[NoSuchElementException](HashMap(1->1)(2), _ == "key not found: 2")
+    assertThrows[NoSuchElementException](HashMap.empty(3), _ == "key not found: 3")
   }
 }

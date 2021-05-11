@@ -4,6 +4,10 @@ t4762.scala:17: warning: private[this] value x in class B shadows mutable x inhe
 t4762.scala:50: warning: private[this] value x in class Derived shadows mutable x inherited from class Base.  Changes to x will not be visible within class Derived - you may want to give them distinct names.
   class Derived( x : Int ) extends Base( x ) { override def toString = x.toString }
                                                                        ^
-error: No warnings can be incurred under -Werror.
+t4762.scala:13: error: weaker access privileges in overriding
+val y: Int (defined in class A)
+  override should not be private
+  private[this] def y: Int = 99
+                    ^
 2 warnings
 1 error
