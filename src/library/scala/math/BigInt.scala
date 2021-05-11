@@ -14,7 +14,8 @@ package scala
 package math
 
 import java.math.BigInteger
-import scala.annotation.{nowarn, unused}
+
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 import scala.collection.immutable.NumericRange
 
@@ -111,11 +112,6 @@ object BigInt {
    */
   def probablePrime(bitLength: Int, rnd: scala.util.Random): BigInt =
     apply(BigInteger.probablePrime(bitLength, rnd.self))
-
-  // disable the implicit conversions in our code to avoid recursion loops
-  @unused private implicit def disable_int2bigInt(i: Int): BigInt = apply(i)
-  @unused private implicit def disable_long2bigInt(l: Long): BigInt = apply(l)
-  @unused private implicit def disable_javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 
   /** Implicit conversion from `Int` to `BigInt`.
    */
