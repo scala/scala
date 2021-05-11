@@ -132,7 +132,7 @@ object BigInt {
   /**
    * Returns the greatest common divisor of a and b. Returns 0 if a == 0 && b == 0.
    */
-  private[this] def longGcd(a: Long, b: Long): Long = {
+  private def longGcd(a: Long, b: Long): Long = {
     // code adapted from Google Guava LongMath.java / gcd
     if (a == 0) { // 0 % b == 0, so b divides a, but the converse doesn't hold.
       // BigInteger.gcd is consistent with this decision.
