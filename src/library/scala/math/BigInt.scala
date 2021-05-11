@@ -129,30 +129,43 @@ object BigInt {
    */
   implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 
-  /** Computes the GCD of the two positive Long arguments, according to the binary GCD algorithm.
-   * Taken from the Spire library. */
-  private def longGcd(_x: Long, _y: Long): Long = {
-    if (_x == 1L || _y == 1L) return 1L
-
-    var x = _x
-    val xz = java.lang.Long.numberOfTrailingZeros(x)
-    x >>= xz
-
-    var y = _y
-    val yz = java.lang.Long.numberOfTrailingZeros(y)
-    y >>= yz
-
-    while (x != y) {
-      if (x > y) {
-        x -= y
-        x >>= java.lang.Long.numberOfTrailingZeros(x)
-      } else {
-        y -= x
-        y >>= java.lang.Long.numberOfTrailingZeros(y)
-      }
+  /**
+   * Returns the greatest common divisor of a and b. Returns 0 if a == 0 && b == 0.
+   */
+  private[this] def longGcd(a: Long, b: Long): Long = {
+    // code adapted from Google Guava LongMath.java / gcd
+    if (a == 0) { // 0 % b == 0, so b divides a, but the converse doesn't hold.
+      // BigInteger.gcd is consistent with this decision.
+      return b
     }
+    else if (b == 0) return a // similar logic
+    /*
+     * Uses the binary GCD algorithm; see http://en.wikipedia.org/wiki/Binary_GCD_algorithm. This is
+     * >60% faster than the Euclidean algorithm in benchmarks.
+     */
+    val aTwos = java.lang.Long.numberOfTrailingZeros(a)
+    var a1 = a >> aTwos // divide out all 2s
 
-    if (xz < yz) x << xz else x << yz
+    val bTwos = java.lang.Long.numberOfTrailingZeros(b)
+    var b1 = b >> bTwos
+    while (a1 != b1) { // both a, b are odd
+      // The key to the binary GCD algorithm is as follows:
+      // Both a1 and b1 are odd. Assume a1 > b1; then gcd(a1 - b1, b1) = gcd(a1, b1).
+      // But in gcd(a1 - b1, b1), a1 - b1 is even and b1 is odd, so we can divide out powers of two.
+      // We bend over backwards to avoid branching, adapting a technique from
+      // http://graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax
+      val delta          = a1 - b1 // can't overflow, since a1 and b1 are nonnegative
+      val minDeltaOrZero = delta & (delta >> (java.lang.Long.SIZE - 1))
+      // equivalent to Math.min(delta, 0)
+      a1 = delta - minDeltaOrZero - minDeltaOrZero // sets a to Math.abs(a - b)
+
+      // a is now nonnegative and even
+      b1 += minDeltaOrZero // sets b to min(old a, b)
+
+      a1 >>= java.lang.Long.numberOfTrailingZeros(a1) // divide out all 2s, since 2 doesn't divide b
+
+    }
+    a1 << scala.math.min(aTwos, bTwos)
   }
 
 }
