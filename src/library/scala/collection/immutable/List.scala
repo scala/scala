@@ -614,9 +614,11 @@ sealed abstract class List[+A]
     }
   }
 
+  // TODO: uncomment once bincompat allows (reference: scala/scala#9365)
+  /*
   // Override for performance: traverse only as much as needed
   // and share tail when nothing needs to be filtered out anymore
-  override def diff[B >: A](that: collection.Seq[B]): List[A] = {
+  override def diff[B >: A](that: collection.Seq[B]): AnyRef = {
     if (that.isEmpty || this.isEmpty) this
     else if (tail.isEmpty) if (that.contains(head)) Nil else this
     else {
@@ -643,6 +645,7 @@ sealed abstract class List[+A]
       rec(this)
     }
   }
+  */
 
 }
 
