@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.util.{CharArrayReader, CharArrayReaderData}
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
@@ -403,6 +404,9 @@ trait Scanners extends ScannersCommon {
       sepRegions = sepRegions.tail
     }
 
+    /** True to warn about migration change in infix syntax. */
+    private val infixMigration = settings.Xmigration.value <= ScalaVersion("2.13.2")
+
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken(): Unit = {
@@ -487,7 +491,7 @@ trait Scanners extends ScannersCommon {
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
                        |add an explicit `;`, add an empty line, or remove spaces after the operator."""
-          deprecationWarning(msg.stripMargin, "2.13.2")
+          if (infixMigration) deprecationWarning(msg.stripMargin, "2.13.2")
           insertNL(NEWLINE)
         }
       }

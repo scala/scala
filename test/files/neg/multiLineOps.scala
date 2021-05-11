@@ -3,5 +3,5 @@
 class Test {
   val x = 1
     + 2
-    +3 // error: Expected a toplevel definition (or pure expr warning, here)
+    +3 // warning: a pure expression does nothing in statement position
 }
