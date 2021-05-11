@@ -890,6 +890,7 @@ lazy val test = project
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(publish / skip := true)
+  .settings(fatalWarningsSettings)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     Compile / classDirectory := (Compile / target).value / "classes"
