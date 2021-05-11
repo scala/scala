@@ -664,20 +664,31 @@ private[internal] trait TypeMaps {
   }
 
   /** A base class to compute all substitutions */
-  abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
-    // OPT this check was 2-3% of some profiles, demoted to -Xdev
-    if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
+  abstract class AbstractSubstMap[T >: Null] extends TypeMap {
+    protected def from: List[Symbol] = Nil
+    protected def to: List[T] = Nil
 
     private[this] var fromHasTermSymbol = false
     private[this] var fromMin = Int.MaxValue
     private[this] var fromMax = Int.MinValue
     private[this] var fromSize = 0
-    from.foreach {
-      sym =>
+
+    protected def reload(): Unit = {
+      // OPT this check was 2-3% of some profiles, demoted to -Xdev
+      if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
+
+      fromHasTermSymbol = false
+      fromMin = Int.MaxValue
+      fromMax = Int.MinValue
+      fromSize = 0
+
+      from.foreach {
+        sym =>
         fromMin = math.min(fromMin, sym.id)
         fromMax = math.max(fromMax, sym.id)
         fromSize += 1
         if (sym.isTerm) fromHasTermSymbol = true
+      }
     }
 
     /** Are `sym` and `sym1` the same? Can be tuned by subclasses. */
@@ -759,9 +770,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to implement the `substSym` method. */
-  class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
-    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+  abstract class AbstractSubstSymMap extends AbstractSubstMap[Symbol] {
 
     protected def toType(fromTpe: Type, sym: Symbol) = fromTpe match {
       case TypeRef(pre, _, args) => copyTypeRef(fromTpe, pre, sym, args)
@@ -821,9 +830,31 @@ private[internal] trait TypeMaps {
       mapTreeSymbols.transform(tree)
   }
 
+  /** A map to implement the `substSym` method. */
+  class SubstSymMap(override val from: List[Symbol], override val to: List[Symbol]) extends AbstractSubstSymMap {
+    reload()
+
+    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+  }
+
+  class MutableSubstSymMap extends AbstractSubstSymMap {
+    private[this] var _from: List[Symbol] = Nil
+    private[this] var _to: List[Symbol] = Nil
+
+    override def from: List[Symbol] = _from
+    override def to  : List[Symbol] =   _to
+
+    def reset(nfrom: List[Symbol], nto: List[Symbol]): Unit = {
+      _from = nfrom
+      _to   = nto
+      reload()
+    }
+  }
+
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(val from: List[Symbol], val to: List[Type]) extends SubstMap(from, to) {
-    protected def toType(fromtp: Type, tp: Type) = tp
+  class SubstTypeMap(override val from: List[Symbol], override val to: List[Type]) extends AbstractSubstMap[Type] {
+    super.reload()
+    override protected def toType(fromtp: Type, tp: Type) = tp
 
     override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
       object trans extends TypeMapTransformer {
