@@ -20,9 +20,8 @@ import scala.collection.immutable.NumericRange
 
 object BigInt {
 
-  private final val bigTag = java.lang.Long.MIN_VALUE
-
-  private val longMinValue = new BigInt(BigInteger.valueOf(Long.MinValue), Long.MinValue)
+  private val longMinValueBigInteger = BigInteger.valueOf(Long.MinValue)
+  private val longMinValue = new BigInt(longMinValueBigInteger, Long.MinValue)
 
   private[this] val minCached = -1024
   private[this] val maxCached = 1024
@@ -57,7 +56,7 @@ object BigInt {
    */
   def apply(l: Long): BigInt =
     if (minCached <= l && l <= maxCached) getCached(l.toInt) else {
-      if (l == bigTag) longMinValue else new BigInt(null, l)
+      if (l == Long.MinValue) longMinValue else new BigInt(null, l)
   }
 
   /** Translates a byte array containing the two's-complement binary
@@ -105,7 +104,7 @@ object BigInt {
     if (x.bitLength <= 63) {
       val l = x.longValue
       if (minCached <= l && l <= maxCached) getCached(l.toInt) else new BigInt(x, l)
-    } else new BigInt(x, bigTag)
+    } else new BigInt(x, Long.MinValue)
   }
 
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
@@ -168,7 +167,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
     with Serializable
     with Ordered[BigInt]
 {
-  // The class has a special encoding for integer that fit in a Long *and* are not equal to BigInt.bigTag == Long.MinValue.
+  // The class has a special encoding for integer that fit in a Long *and* are not equal to Long.MinValue.
   //
   // The Long value Long.MinValue is a tag specifying that the integer is encoded in the BigInteger field.
   //
@@ -191,13 +190,12 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
     bigInteger, // even if it is a short BigInteger, we cache the instance
     if (bigInteger.bitLength <= 63)
       bigInteger.longValue // if _bigInteger is actually equal to Long.MinValue, no big deal, its value acts as a tag
-    else
-      BigInt.bigTag
+    else Long.MinValue
   )
 
   /** Returns whether the integer is encoded in the Long. Returns true for all values fitting in a Long except
    *  Long.MinValue. */
-  private def longEncoding: Boolean = _long != BigInt.bigTag
+  private def longEncoding: Boolean = _long != Long.MinValue
 
   def bigInteger: BigInteger = {
     val read = _bigInteger
@@ -223,11 +221,11 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
     case x                => isValidLong && unifiedPrimitiveEquals(x)
   }
 
-  override def isValidByte: Boolean = longEncoding && _long >= Byte.MinValue && _long <= Byte.MaxValue
-  override def isValidShort: Boolean = longEncoding && _long >= Short.MinValue && _long <= Short.MaxValue
-  override def isValidChar: Boolean = longEncoding && _long >= Char.MinValue && _long <= Char.MaxValue
-  override def isValidInt: Boolean = longEncoding && _long >= Int.MinValue && _long <= Int.MaxValue
-           def isValidLong: Boolean = longEncoding || _bigInteger.bitLength() <= 63 // rhs of || tests == Long.MinValue
+  override def isValidByte: Boolean = _long >= Byte.MinValue && _long <= Byte.MaxValue /* && longEncoding */
+  override def isValidShort: Boolean = _long >= Short.MinValue && _long <= Short.MaxValue /* && longEncoding */
+  override def isValidChar: Boolean = _long >= Char.MinValue && _long <= Char.MaxValue /* && longEncoding */
+  override def isValidInt: Boolean = _long >= Int.MinValue && _long <= Int.MaxValue /* && longEncoding */
+           def isValidLong: Boolean = longEncoding || _bigInteger == BigInt.longMinValueBigInteger // rhs of || tests == Long.MinValue
 
   /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
     */
@@ -328,7 +326,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
   def /(that: BigInt): BigInt =
   // in the fast path, note that the original code avoided storing -Long.MinValue in a long:
   //    if (this._long != Long.MinValue || that._long != -1) return BigInt(this._long / that._long)
-  // but we know this._long cannot be Long.MinValue, because Long.MinValue is the BigInt.bigTag
+  // but we know this._long cannot be Long.MinValue, because Long.MinValue is the tag for bigger integers
     if (this.longEncoding && that.longEncoding) BigInt(this._long / that._long)
     else BigInt(this.bigInteger.divide(that.bigInteger))
 
@@ -567,7 +565,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
    */
-  def intValue: Int = if (longEncoding) _long.intValue else this.bigInteger.intValue
+  def intValue: Int = if (longEncoding) _long.toInt else this.bigInteger.intValue
 
   /** Converts this BigInt to a <tt>long</tt>.
    *  If the BigInt is too big to fit in a long, only the low-order 64 bits
