@@ -130,6 +130,7 @@ object BigInt {
    */
   private def longGcd(a: Long, b: Long): Long = {
     // code adapted from Google Guava LongMath.java / gcd
+    // both a and b must be >= 0
     if (a == 0) { // 0 % b == 0, so b divides a, but the converse doesn't hold.
       // BigInteger.gcd is consistent with this decision.
       return b
