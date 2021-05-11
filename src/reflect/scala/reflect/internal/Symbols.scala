@@ -3696,7 +3696,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     if (syms.isEmpty) Nil
     else {
       val syms1 = mapList(syms)(symFn)
-      val map = new SubstSymMap(syms, syms1)
+      val map = SubstSymMap(syms, syms1)
       syms1.foreach(_.modifyInfo(map))
       syms1
     }
@@ -3763,15 +3763,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     if (syms.isEmpty) Nil
     else {
       val syms1 = mapList(syms)(_.cloneSymbol)
-      cloneSymbolsSubstSymMap.using { (msm: MutableSubstSymMap) =>
-        msm.reset(syms, syms1)
+      cloneSymbolsSubstSymMap.using { (msm: SubstSymMap) =>
+        msm.reload(syms, syms1)
         syms1.foreach(_.modifyInfo(msm))
       }
       syms1
     }
 
-  private[this] val cloneSymbolsSubstSymMap: ReusableInstance[MutableSubstSymMap] =
-    ReusableInstance[MutableSubstSymMap]( new MutableSubstSymMap())
+  private[this] val cloneSymbolsSubstSymMap: ReusableInstance[SubstSymMap] =
+    ReusableInstance[SubstSymMap](SubstSymMap(), enabled = isCompilerUniverse)
 
   def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
     deriveSymbols(syms, _ cloneSymbol owner)

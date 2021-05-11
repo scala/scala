@@ -1439,11 +1439,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                               to: List[Symbol],
                               targetClass: Symbol,
                               addressFields: Boolean) extends TreeSymSubstituter(from, to) {
-    override val symSubst = new SubstSymMap(from, to) {
-      override def matches(sym1: Symbol, sym2: Symbol) =
-        if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
-        else sym1 eq sym2
-    }
+    private def matcher(sym1: Symbol, sym2: Symbol) =
+      if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
+      else sym1 eq sym2
+    override val symSubst = SubstSymMap(from, to, matcher)
 
     private def isAccessible(sym: Symbol): Boolean =
       if (currentOwner.isAnonymousFunction) {
