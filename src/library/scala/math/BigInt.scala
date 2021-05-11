@@ -21,6 +21,9 @@ import scala.collection.immutable.NumericRange
 
 object BigInt {
 
+  private val longMinValueBigInteger = BigInteger.valueOf(Long.MinValue)
+  private val longMinValue = new BigInt(longMinValueBigInteger, Long.MinValue)
+
   private[this] val minCached = -1024
   private[this] val maxCached = 1024
   private[this] val cache = new Array[BigInt](maxCached - minCached + 1)
@@ -29,7 +32,7 @@ object BigInt {
     val offset = i - minCached
     var n = cache(offset)
     if (n eq null) {
-      n = new BigInt(BigInteger.valueOf(i.toLong))
+      n = new BigInt(null, i.toLong)
       cache(offset) = n
     }
     n
@@ -44,7 +47,7 @@ object BigInt {
    *  @return  the constructed `BigInt`
    */
   def apply(i: Int): BigInt =
-    if (minCached <= i && i <= maxCached) getCached(i) else new BigInt(BigInteger.valueOf(i.toLong))
+    if (minCached <= i && i <= maxCached) getCached(i) else apply(i: Long)
 
   /** Constructs a `BigInt` whose value is equal to that of the
    *  specified long value.
@@ -53,8 +56,9 @@ object BigInt {
    *  @return  the constructed `BigInt`
    */
   def apply(l: Long): BigInt =
-    if (minCached <= l && l <= maxCached) getCached(l.toInt)
-      else new BigInt(BigInteger.valueOf(l))
+    if (minCached <= l && l <= maxCached) getCached(l.toInt) else {
+      if (l == Long.MinValue) longMinValue else new BigInt(null, l)
+  }
 
   /** Translates a byte array containing the two's-complement binary
    *  representation of a BigInt into a BigInt.
@@ -97,8 +101,12 @@ object BigInt {
 
   /** Translates a `java.math.BigInteger` into a BigInt.
    */
-  def apply(x: BigInteger): BigInt =
-    new BigInt(x)
+  def apply(x: BigInteger): BigInt = {
+    if (x.bitLength <= 63) {
+      val l = x.longValue
+      if (minCached <= l && l <= maxCached) getCached(l.toInt) else new BigInt(x, l)
+    } else new BigInt(x, Long.MinValue)
+  }
 
   /** Returns a positive BigInt that is probably prime, with the specified bitLength.
    */
@@ -118,12 +126,51 @@ object BigInt {
   implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 }
 
-final class BigInt(val bigInteger: BigInteger)
+/** A type with efficient encoding of arbitrary integers.
+ *
+ * It wraps `java.math.BigInteger`, with optimization for small values that can be encoded in a `Long`.
+ */
+final class BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
   extends ScalaNumber
     with ScalaNumericConversions
     with Serializable
     with Ordered[BigInt]
 {
+  // The class has a special encoding for integer that fit in a Long *and* are not equal to Long.MinValue.
+  //
+  // The Long value Long.MinValue is a tag specifying that the integer is encoded in the BigInteger field.
+  //
+  // There are three possible states for the class fields (_bigInteger, _long)
+  // 1. (null, l) where l != Long.MinValue, encodes the integer "l"
+  // 2. (b, l) where l != Long.MinValue; then b is a BigInteger with value l, encodes "l" == "b"
+  // 3a. (b, Long.MinValue) where b == Long.MinValue, encodes Long.MinValue
+  // 3b. (b, Long.MinValue) where b does not fit in a Long, encodes "b"
+  //
+  // There is only one possible transition 1. -> 2., when the method .bigInteger is called, then the field
+  // _bigInteger caches the result.
+  //
+  // The case 3a. is the only one where the BigInteger could actually fit in a Long, but as its value is used as a
+  // tag, we'll take the slow path instead.
+  //
+  // Additionally, we know that if this.isValidLong is true, then _long is the encoded value.
+
+  /** Public constructor present for compatibility. Use the BigInt.apply companion object method instead. */
+  def this(bigInteger: BigInteger) = this(
+    bigInteger, // even if it is a short BigInteger, we cache the instance
+    if (bigInteger.bitLength <= 63)
+      bigInteger.longValue // if _bigInteger is actually equal to Long.MinValue, no big deal, its value acts as a tag
+    else Long.MinValue
+  )
+
+  def bigInteger: BigInteger = {
+    val read = _bigInteger
+    if (read ne null) read else {
+      val write = BigInteger.valueOf(_long)
+      _bigInteger = write // reference assignment is atomic; this is multi-thread safe (if possibly wasteful)
+      write
+    }
+  }
+
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
     if (isValidLong) unifiedPrimitiveHashcode
