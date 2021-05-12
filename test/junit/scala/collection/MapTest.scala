@@ -123,4 +123,9 @@ class MapTest {
     check(mutable.CollisionProofHashMap(1 -> 1))
   }
 
+  @Test
+  def t12228(): Unit = {
+    assertFalse(Set("") == immutable.BitSet(1))
+    assertFalse(Map("" -> 2) == scala.collection.immutable.LongMap(1L -> 2))
+  }
 }

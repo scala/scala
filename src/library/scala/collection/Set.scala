@@ -62,7 +62,10 @@ trait Set[A]
   override def equals(that: Any): Boolean =
     (this eq that.asInstanceOf[AnyRef]) || (that match {
       case set: Set[A] if set.canEqual(this) =>
-        (this.size == set.size) && this.subsetOf(set)
+        (this.size == set.size) && {
+          try this.subsetOf(set)
+          catch { case _: ClassCastException => false } // PR #9565 / scala/bug#12228
+        }
       case _ =>
         false
     })
