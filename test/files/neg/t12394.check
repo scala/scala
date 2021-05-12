@@ -1,0 +1,11 @@
+Test.scala:2: error: cannot override final member:
+final def m(): Int (defined in class C)
+  with <defaultmethod> def m(): Int (defined in trait J)
+class S2 extends p.A.C with p.A.J
+      ^
+Test.scala:4: error: cannot override final member:
+final def m(): Int (defined in class C)
+  with <defaultmethod> def m(): Int (defined in trait J)
+class S3 extends p.A.C with K
+      ^
+2 errors
