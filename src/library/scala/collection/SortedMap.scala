@@ -30,14 +30,17 @@ trait SortedMap[K, +V]
 
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case sm: SortedMap[k, v] if sm.ordering == this.ordering =>
+    case sm: SortedMap[K, _] if sm.ordering == this.ordering =>
       (sm canEqual this) &&
         (this.size == sm.size) && {
         val i1 = this.iterator
         val i2 = sm.iterator
         var allEqual = true
-        while (allEqual && i1.hasNext)
-          allEqual = i1.next() == i2.next()
+        while (allEqual && i1.hasNext) {
+          val kv1 = i1.next()
+          val kv2 = i2.next()
+          allEqual = ordering.equiv(kv1._1, kv2._1) && kv1._2 == kv2._2
+        }
         allEqual
       }
     case _ => super.equals(that)

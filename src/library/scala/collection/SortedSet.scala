@@ -29,14 +29,14 @@ trait SortedSet[A] extends Set[A]
 
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case ss: SortedSet[_] if ss.ordering == this.ordering =>
+    case ss: SortedSet[A] if ss.ordering == this.ordering =>
       (ss canEqual this) &&
         (this.size == ss.size) && {
         val i1 = this.iterator
         val i2 = ss.iterator
         var allEqual = true
         while (allEqual && i1.hasNext)
-          allEqual = i1.next() == i2.next()
+          allEqual = ordering.equiv(i1.next(), i2.next())
         allEqual
       }
     case _ =>

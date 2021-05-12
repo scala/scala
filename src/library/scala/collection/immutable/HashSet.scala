@@ -176,7 +176,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   override def equals(that: Any): Boolean =
     that match {
-      case set: HashSet[A] => (this eq set) || (this.rootNode == set.rootNode)
+      case set: HashSet[_] => (this eq set) || (this.rootNode == set.rootNode)
       case _ => super.equals(that)
     }
 

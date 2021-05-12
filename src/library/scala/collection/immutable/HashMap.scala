@@ -254,7 +254,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def equals(that: Any): Boolean =
     that match {
-      case map: HashMap[K, V] => (this eq map) || (this.rootNode == map.rootNode)
+      case map: HashMap[_, _] => (this eq map) || (this.rootNode == map.rootNode)
       case _ => super.equals(that)
     }
 
