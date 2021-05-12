@@ -97,6 +97,11 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
     else throw new NoSuchElementException("tail on empty queue")
 
+  override def last: A =
+    if (in.nonEmpty) in.head
+    else if (out.nonEmpty) out.last
+    else throw new NoSuchElementException("last on empty queue")
+
   /* This is made to avoid inefficient implementation of iterator. */
   override def forall(p: A => Boolean): Boolean =
     in.forall(p) && out.forall(p)
