@@ -256,18 +256,14 @@ trait Erasure {
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
-   *
-   * @param symOfTp used to determine the erasure mode for the type,
-   *        e.g. in `SymbolPair#highErased`, `sym` may be an anonymous class for a SAM type,
-   *        but `symOfTp` may be the a bridge method for the SAM method being erased.
    */
-  def specialErasure(sym: Symbol)(tp: Type, symOfTp: Symbol): Type =
+  def specialErasure(sym: Symbol)(tp: Type): Type =
     if (sym != NoSymbol && sym.enclClass.isJavaDefined)
       erasure(sym)(tp)
     else if (sym.isClassConstructor)
-      specialConstructorErasure(sym.owner, symOfTp, tp)
+      specialConstructorErasure(sym.owner, sym, tp)
     else {
-      specialScalaErasureFor(symOfTp)(tp)
+      specialScalaErasureFor(sym)(tp)
     }
 
   def specialConstructorErasure(clazz: Symbol, ctor: Symbol, tpe: Type): Type = {
@@ -654,15 +650,15 @@ trait Erasure {
     if (sym == Object_asInstanceOf || synchronizedPrimitive(sym))
       sym.info
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
-      PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType, sym))
+      PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType))
     else if (sym.isAbstractType)
       TypeBounds(WildcardType, WildcardType) // TODO why not use the erasure of the type's bounds, as stated in the doc?
     else if (sym.isTerm && sym.owner == ArrayClass) {
       if (sym.isClassConstructor) // TODO: switch on name for all branches -- this one is sym.name == nme.CONSTRUCTOR
         tp match {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
-            MethodType(cloneSymbolsAndModify(params, tp => specialErasure(sym)(tp, sym)),
-                       typeRef(specialErasure(sym)(pre, sym), sym1, args))
+            MethodType(cloneSymbolsAndModify(params, tp => specialErasure(sym)(tp)),
+                       typeRef(specialErasure(sym)(pre), sym1, args))
           case x => throw new MatchError(x)
         }
       else if (sym.name == nme.apply)
@@ -670,9 +666,9 @@ trait Erasure {
       else if (sym.name == nme.update)
         (tp: @unchecked) match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe, sym)), tvar), UnitTpe)
+            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe)), tvar), UnitTpe)
         }
-      else specialErasure(sym)(tp, sym)
+      else specialErasure(sym)(tp)
     } else if (
       sym.owner != NoSymbol &&
       sym.owner.owner == ArrayClass &&
@@ -684,7 +680,7 @@ trait Erasure {
     } else {
       // TODO OPT: altogether, there are 9 symbols that we special-case.
       // Could we get to the common case more quickly by looking them up in a set?
-      specialErasure(sym)(tp, sym)
+      specialErasure(sym)(tp)
     }
   }
 }

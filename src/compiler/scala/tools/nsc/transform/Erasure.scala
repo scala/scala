@@ -575,7 +575,7 @@ abstract class Erasure extends InfoTransform
       debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
         other, flagsToString(newFlags),
         otpe, other.locationString, member,
-        specialErasure(root)(member.tpe, root), member.locationString)
+        specialErasure(root)(member.tpe), member.locationString)
       )
 
       // the parameter symbols need to have the new owner
@@ -1120,7 +1120,7 @@ abstract class Erasure extends InfoTransform
                   gen.mkMethodCall(
                     qual1(),
                     fun.symbol,
-                    List(specialErasure(fun.symbol)(arg.tpe, fun.symbol)),
+                    List(specialErasure(fun.symbol)(arg.tpe)),
                     Nil
                   ),
                   isArrayTest(qual1())
@@ -1355,7 +1355,7 @@ abstract class Erasure extends InfoTransform
                 fields.dropFieldAnnotationsFromGetter(tree.symbol)
 
               try super.transform(tree1).clearType()
-              finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe, tree1.symbol).resultType
+              finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
             case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: _) =>
               tree
             case _: Apply if tree1 ne tree =>
