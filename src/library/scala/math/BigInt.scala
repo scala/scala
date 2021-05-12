@@ -125,11 +125,16 @@ object BigInt {
    */
   implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 
+  // this method is adapted from Google Guava's version at
+  //   https://github.com/google/guava/blob/master/guava/src/com/google/common/math/LongMath.java
+  // that code carries the following notice:
+  //   * Copyright (C) 2011 The Guava Authors
+  //   *
+  //   * Licensed under the Apache License, Version 2.0 (the "License")
   /**
    * Returns the greatest common divisor of a and b. Returns 0 if a == 0 && b == 0.
    */
   private def longGcd(a: Long, b: Long): Long = {
-    // code adapted from Google Guava LongMath.java / gcd
     // both a and b must be >= 0
     if (a == 0) { // 0 % b == 0, so b divides a, but the converse doesn't hold.
       // BigInteger.gcd is consistent with this decision.
