@@ -61,6 +61,7 @@ object BigIntProperties extends Properties("BigInt") {
   property("longValue") = forAll { (l: Long) => BigInt(l).longValue ?= l }
   property("toLong") = forAll { (l: Long) => BigInt(l).toLong ?= l }
 
+  property("new BigInt(bigInteger = BigInteger.ZERO)") = (new BigInt(bigInteger = BigInteger.ZERO)) == 0
   property("BigInt.apply(i: Int)") = forAll { (i: Int) => BigInt(i) ?= BigInt(BigInteger.valueOf(i)) }
   property("BigInt.apply(l: Long)") = forAll { (l: Long) => BigInt(l) ?= BigInt(BigInteger.valueOf(l)) }
   property("BigInt.apply(x: Array[Byte])") = forAll(bigInteger) { bi => BigInt(bi) ?= BigInt(bi.toByteArray) }
