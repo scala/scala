@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.util.{CharArrayReader, CharArrayReaderData}
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
@@ -403,6 +404,9 @@ trait Scanners extends ScannersCommon {
       sepRegions = sepRegions.tail
     }
 
+    /** True to warn about migration change in infix syntax. */
+    private val infixMigration = settings.Xmigration.value <= ScalaVersion("2.13.2")
+
     /** Produce next token, filling TokenData fields of Scanner.
      */
     def nextToken(): Unit = {
@@ -442,18 +446,35 @@ trait Scanners extends ScannersCommon {
         token = nl
       }
 
+      def isOperator: Boolean = token == BACKQUOTED_IDENT || token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))
+
+      /* A leading infix operator must be followed by a lexically suitable expression.
+       * Usually any simple expr will do. However, a backquoted identifier may serve as
+       * either an op or a reference. So the additional constraint is that the following
+       * token can't be an assignment operator. (Dotty disallows binary ops, hence the
+       * test for unary.) See run/multiLineOps.scala for 42 + `x` on 3 lines, where +
+       * is not leading infix because backquoted x is non-unary op.
+       */
+      def followedByInfixRHS: Boolean = {
+        //def isCandidateInfixRHS: Boolean = isSimpleExprIntroToken(token) && (!isOperator || nme.raw.isUnary(name) || token == BACKQUOTED_IDENT)
+        def isAssignmentOperator: Boolean =
+          name.endsWith('=') && !name.startsWith('=') && isOperatorPart(name.startChar) &&
+          (name.length != 2 || (name.startChar match { case '!' | '<' | '>' => false case _ => true }))
+        def isCandidateInfixRHS: Boolean = isSimpleExprIntroToken(token) && (!isOperator || token == BACKQUOTED_IDENT || !isAssignmentOperator)
+        lookingAhead {
+          isCandidateInfixRHS || token == NEWLINE && { nextToken() ; isCandidateInfixRHS }
+        }
+      }
+
       /* A leading symbolic or backquoted identifier is treated as an infix operator
        * if it is followed by at least one ' ' and a token on the same line
        * that can start an expression.
        */
       def isLeadingInfixOperator =
         allowLeadingInfixOperators &&
-        (token == BACKQUOTED_IDENT ||
-         token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
-        (ch == ' ') && lookingAhead {
-          // force a NEWLINE after current token if it is on its own line
-          isSimpleExprIntroToken(token)
-        }
+        isOperator &&
+        (isWhitespace(ch) || ch == LF) &&
+        followedByInfixRHS
 
       /* Insert NEWLINE or NEWLINES if
        * - we are after a newline
@@ -469,8 +490,8 @@ trait Scanners extends ScannersCommon {
           val msg = """|Line starts with an operator that in future
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
-                       |add an explicit `;`, add an empty line, or remove spaces after the operator.""".stripMargin
-          deprecationWarning(msg, "2.13.2")
+                       |add an explicit `;`, add an empty line, or remove spaces after the operator."""
+          if (infixMigration) deprecationWarning(msg.stripMargin, "2.13.2")
           insertNL(NEWLINE)
         }
       }

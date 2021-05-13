@@ -246,8 +246,12 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         && parentFileName(pos.source).getOrElse("") == "xsbt"
         && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt."))
       )
-      if (required && !isSbtCompat) reporter.error(pos, msg)
-      else warning(pos, msg, featureCategory(featureTrait.nameString), site)
+      // on postfix error, include interesting infix warning
+      def isXfix = featureName == "postfixOps" && suspendedMessages.get(pos.source).map(_.exists(w => pos.includes(w.pos))).getOrElse(false)
+      if (required && !isSbtCompat) {
+        val amended = if (isXfix) s"$msg\n${suspendedMessages(pos.source).filter(pos includes _.pos).map(_.msg).mkString("\n")}" else msg
+        reporter.error(pos, amended)
+      } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
 
     // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.

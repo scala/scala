@@ -1,0 +1,41 @@
+t12071.scala:15: error: not found: value c c
+    `c c` i
+    ^
+t12071.scala:15: error: postfix operator i needs to be enabled
+by making the implicit value scala.language.postfixOps visible.
+This can be achieved by adding the import clause 'import scala.language.postfixOps'
+or by setting the compiler option -language:postfixOps.
+See the Scaladoc for value scala.language.postfixOps for a discussion
+why the feature needs to be explicitly enabled.
+Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    `c c` i
+          ^
+t12071.scala:20: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    + 2
+    ^
+t12071.scala:25: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    + 1
+    ^
+t12071.scala:28: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    `test-1` + `test-2`
+    ^
+t12071.scala:31: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    `compareTo` (2 - 1)
+    ^
+4 warnings
+2 errors
