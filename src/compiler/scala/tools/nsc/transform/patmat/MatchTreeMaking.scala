@@ -394,21 +394,28 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                     false
                   case TypeRef(pre, sym, args) =>
                     val testedBinderClass = testedBinder.info.upperBound.typeSymbol
+                    // alternatively..... = testedBinder.info.baseClasses.find(_.isClass).getOrElse(NoSymbol)
                     val testedBinderType = testedBinder.info.baseType(testedBinderClass)
 
                     val testedPrefixIsExpectedTypePrefix = pre =:= testedBinderType.prefix
                     val testedPrefixAndExpectedPrefixAreStaticallyIdentical: Boolean = {
-                      val freshPrefix = pre match {
-                        case ThisType(thissym) =>
-                          ThisType(thissym.cloneSymbol(thissym.owner))
-                        case _ =>
-                          val preSym = pre.termSymbol
-                          val freshPreSym = preSym.cloneSymbol(preSym.owner).setInfo(preSym.info)
-                          singleType(pre.prefix, freshPreSym)
+                      def check(freshPrefix: Type): Boolean = {
+                        val expectedTpFromFreshPrefix = TypeRef(freshPrefix, sym, args)
+                        val baseTypeFromFreshPrefix = expectedTpFromFreshPrefix.baseType(testedBinderClass)
+                        freshPrefix eq baseTypeFromFreshPrefix.prefix
                       }
-                      val expectedTpFromFreshPrefix = TypeRef(freshPrefix, sym, args)
-                      val baseTypeFromFreshPrefix = expectedTpFromFreshPrefix.baseType(testedBinderClass)
-                      freshPrefix eq baseTypeFromFreshPrefix.prefix
+                      pre match {
+                        case ThisType(thissym) =>
+                          check(ThisType(thissym.cloneSymbol(thissym.owner)))
+                        case _ =>
+                          pre.termSymbol match {
+                            case NoSymbol => false
+                            case preSym =>
+                              val freshPreSym = preSym.cloneSymbol(preSym.owner).setInfo(preSym.info)
+                              check(singleType(pre.prefix, freshPreSym))
+                          }
+                      }
+
                     }
                     testedPrefixAndExpectedPrefixAreStaticallyIdentical && testedPrefixIsExpectedTypePrefix
                   case _ =>
