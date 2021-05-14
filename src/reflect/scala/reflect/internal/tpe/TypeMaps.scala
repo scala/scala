@@ -20,7 +20,6 @@ import Flags._
 import scala.annotation.{nowarn, tailrec}
 import Variance._
 import scala.collection.mutable.ListBuffer
-import scala.util.chaining._
 
 private[internal] trait TypeMaps {
   self: SymbolTable =>
@@ -665,24 +664,27 @@ private[internal] trait TypeMaps {
   }
 
   /** A base class to compute all substitutions. */
-  sealed abstract class SubstMap[T >: Null] extends TypeMap {
-    private[this] var _from: List[Symbol] = Nil
-    private[this] var _to: List[T] = Nil
+  abstract class SubstMap[T >: Null](from0: List[Symbol], to0: List[T]) extends TypeMap {
+    private[this] var from: List[Symbol] = from0
+    private[this] var to: List[T]        = to0
 
     private[this] var fromHasTermSymbol = false
     private[this] var fromMin = Int.MaxValue
     private[this] var fromMax = Int.MinValue
     private[this] var fromSize = 0
 
-    final def from: List[Symbol] = _from
-    final def to:   List[T]      = _to
+    // So SubstTypeMap can expose them publicly
+    // while SubstMap can continue to access them as private fields
+    protected[this] final def accessFrom: List[Symbol] = from
+    protected[this] final def accessTo: List[T]        = to
 
-    def reload(from0: List[Symbol], to0: List[T]): this.type = {
+    reset(from0, to0)
+    def reset(from0: List[Symbol], to0: List[T]): this.type = {
       // OPT this check was 2-3% of some profiles, demoted to -Xdev
       if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
-      _from = from0
-      _to   = to0
+      from = from0
+      to   = to0
 
       fromHasTermSymbol = false
       fromMin = Int.MaxValue
@@ -783,7 +785,11 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `substSym` method. */
-  sealed class SubstSymMap private () extends SubstMap[Symbol] {
+  class SubstSymMap(from0: List[Symbol], to0: List[Symbol]) extends SubstMap[Symbol](from0, to0) {
+    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+
+    private[this] final def from: List[Symbol] = accessFrom
+    private[this] final def to: List[Symbol]   = accessTo
 
     protected def toType(fromTpe: Type, sym: Symbol) = fromTpe match {
       case TypeRef(pre, _, args) => copyTypeRef(fromTpe, pre, sym, args)
@@ -845,19 +851,14 @@ private[internal] trait TypeMaps {
 
   object SubstSymMap {
     def apply(): SubstSymMap = new SubstSymMap()
-    def apply(from: List[Symbol], to: List[Symbol]): SubstSymMap = new SubstSymMap().tap(_.reload(from, to))
-    def apply(from: List[Symbol], to: List[Symbol], cmp: (Symbol, Symbol) => Boolean): SubstSymMap = {
-      val ssm = new SubstSymMap() {
-        override protected def matches(sym: Symbol, sym1: Symbol): Boolean = cmp(sym, sym1)
-      }
-      ssm.tap(_.reload(from, to))
-    }
-    def apply(fromto: (Symbol, Symbol)): SubstSymMap = apply(List(fromto._1), List(fromto._2))
+    def apply(from: List[Symbol], to: List[Symbol]): SubstSymMap = new SubstSymMap(from, to)
+    def apply(fromto: (Symbol, Symbol)): SubstSymMap = new SubstSymMap(fromto)
   }
 
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(from0: List[Symbol], to0: List[Type]) extends SubstMap[Type] {
-    super.reload(from0, to0)
+  class SubstTypeMap(from0: List[Symbol], to0: List[Type]) extends SubstMap[Type](from0, to0) {
+    final def from: List[Symbol] = accessFrom
+    final def to: List[Type]     = accessTo
 
     override protected def toType(fromtp: Type, tp: Type) = tp
 
