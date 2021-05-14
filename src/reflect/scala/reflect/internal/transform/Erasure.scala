@@ -261,27 +261,27 @@ trait Erasure {
     if (sym != NoSymbol && sym.enclClass.isJavaDefined)
       erasure(sym)(tp)
     else if (sym.isClassConstructor)
-      specialConstructorErasure(sym.owner, sym, tp)
+      specialConstructorErasure(sym.owner, tp)
     else {
       specialScalaErasureFor(sym)(tp)
     }
 
-  def specialConstructorErasure(clazz: Symbol, ctor: Symbol, tpe: Type): Type = {
+  def specialConstructorErasure(clazz: Symbol, tpe: Type): Type = {
     tpe match {
       case PolyType(tparams, restpe) =>
-        specialConstructorErasure(clazz, ctor, restpe)
+        specialConstructorErasure(clazz, restpe)
       case ExistentialType(tparams, restpe) =>
-        specialConstructorErasure(clazz, ctor, restpe)
+        specialConstructorErasure(clazz, restpe)
       case mt @ MethodType(params, restpe) =>
         MethodType(
-          cloneSymbolsAndModify(params, specialScalaErasureFor(ctor)),
-          specialConstructorErasure(clazz, ctor, restpe))
+          cloneSymbolsAndModify(params, specialScalaErasureFor(clazz)),
+          specialConstructorErasure(clazz, restpe))
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case tp =>
         if (!(clazz == ArrayClass || tp.isError))
           assert(clazz == ArrayClass || tp.isError, s"!!! unexpected constructor erasure $tp for $clazz")
-        specialScalaErasureFor(ctor)(tp)
+        specialScalaErasureFor(clazz)(tp)
     }
   }
 
@@ -337,6 +337,177 @@ trait Erasure {
     def eraseArray(arrayRef: Type, pre: Type, args: List[Type]): Type = {
       if (isGenericArrayElement(args.head)) ObjectTpe
       else typeRef(self(pre), ArrayClass, args map applyInArray)
+    }
+
+    /** Scala 3 implementation of erasure for intersection types.
+     *  @param components the erased component types of the intersection.
+     */
+    private def erasedGlb(components: List[Type]): Type = {
+
+      /** A comparison function that induces a total order on erased types,
+       *  where `A <= B` implies that the erasure of `A & B` should be A.
+       *
+       *  This order respects the following properties:
+       *  - ErasedValueTypes <= non-ErasedValueTypes
+       *  - arrays <= non-arrays
+       *  - primitives <= non-primitives
+       *  - real classes <= traits
+       *  - subtypes <= supertypes
+       *
+       *  Since this isn't enough to order to unrelated classes, we use
+       *  lexicographic ordering of the class symbol full name as a tie-breaker.
+       *  This ensure that `A <= B && B <= A` iff `A =:= B`.
+       */
+      def compareErasedGlb(tp1: Type, tp2: Type): Int = {
+        // this check is purely an optimization.
+        if (tp1 eq tp2) return 0
+
+        val isEVT1 = tp1.isInstanceOf[ErasedValueType]
+        val isEVT2 = tp2.isInstanceOf[ErasedValueType]
+        if (isEVT1 && isEVT2) {
+          return compareErasedGlb(
+            tp1.asInstanceOf[ErasedValueType].valueClazz.tpe_*,
+            tp2.asInstanceOf[ErasedValueType].valueClazz.tpe_*)
+        }
+        else if (isEVT1)
+          return -1
+        else if (isEVT2)
+          return 1
+
+        val sym1 = tp1.baseClasses.head
+        val sym2 = tp2.baseClasses.head
+
+        def compareClasses: Int = {
+          if (sym1.isSubClass(sym2))
+            -1
+          else if (sym2.isSubClass(sym1))
+            1
+          else
+            sym1.fullName.compareTo(sym2.fullName)
+        }
+
+        val isArray1 = tp1.typeArgs.nonEmpty && sym1.isSubClass(definitions.ArrayClass)
+        val isArray2 = tp2.typeArgs.nonEmpty && sym2.isSubClass(definitions.ArrayClass)
+        if (isArray1 && isArray2)
+          return compareErasedGlb(tp1.typeArgs.head, tp2.typeArgs.head)
+        else if (isArray1)
+          return -1
+        else if (isArray2)
+          return 1
+
+        val isPrimitive1 = sym1.isPrimitiveValueClass
+        val isPrimitive2 = sym2.isPrimitiveValueClass
+        if (isPrimitive1 && isPrimitive2)
+          return compareClasses
+        else if (isPrimitive1)
+          return -1
+        else if (isPrimitive2)
+          return 1
+
+        val isRealClass1 = sym1.isClass && !sym1.isTrait
+        val isRealClass2 = sym2.isClass && !sym2.isTrait
+        if (isRealClass1 && isRealClass2)
+          return compareClasses
+        else if (isRealClass1)
+          return -1
+        else if (isRealClass2)
+          return 1
+
+        compareClasses
+      }
+
+      components.min((t, u) => compareErasedGlb(t, u))
+    }
+
+    /** Dotty implementation of Array Erasure:
+     *
+     *  Is `Array[tp]` a generic Array that needs to be erased to `Object`?
+     *  This is true if among the subtypes of `Array[tp]` there is either:
+     *  - both a reference array type and a primitive array type
+     *    (e.g. `Array[_ <: Int | String]`, `Array[_ <: Any]`)
+     *  - or two different primitive array types (e.g. `Array[_ <: Int | Double]`)
+     *  In both cases the erased lub of those array types on the JVM is `Object`.
+     */
+    private def isGenericArrayElement(tp: Type): Boolean = {
+
+      object DottyTypeProxy {
+
+        def unapply(tp: Type): Option[Type] = {
+          val superTpe = translucentSuperType(tp)
+          if (superTpe ne NoType) Some(superTpe) else None
+        }
+
+        def translucentSuperType(tp: Type): Type = tp match {
+          case tp: TypeRef => transparentDealias(tp.sym, tp.pre, tp.sym.owner)
+          case tp: SingleType => tp.underlying
+          case tp: ThisType => tp.sym.typeOfThis
+          case tp: ConstantType => tp.value.tpe
+          case tp: RefinedType if tp.decls.nonEmpty => intersectionType(tp.parents)
+          case tp: PolyType => tp.resultType
+          case tp: ExistentialType => tp.underlying
+          case tp: TypeBounds => tp.hi
+          case tp: AnnotatedType => tp.underlying
+          case tp: SuperType => tp.thistpe.baseType(tp.supertpe.typeSymbol)
+          case tp => NoType
+        }
+
+      }
+
+      object DottyAndType {
+        def unapply(tp: RefinedType): Boolean = tp.decls.isEmpty
+      }
+
+      /** A symbol that represents the sort of JVM array that values of type `t` can be stored in:
+       *  - If we can always store such values in a reference array, return Object
+       *  - If we can always store them in a specific primitive array, return the
+       *    corresponding primitive class
+       *  - Otherwise, return `NoSymbol`.
+       */
+      def arrayUpperBound(tp: Type): Symbol = tp.dealias match {
+        case tp: TypeRef if tp.sym.isClass =>
+          val cls = tp.sym
+          // Only a few classes have both primitives and references as subclasses.
+          if ((cls eq AnyClass) || (cls eq AnyValClass) || (cls eq SingletonClass))
+            NoSymbol
+          // We only need to check for primitives because derived value classes in arrays are always boxed.
+          else if (cls.isPrimitiveValueClass)
+            cls
+          else
+            ObjectClass
+        case DottyTypeProxy(unwrapped) =>
+          arrayUpperBound(unwrapped)
+        case tp @ DottyAndType() =>
+          // Find first `p` in `parents` where `arrayUpperBound(p) ne NoSymbol`
+          @tailrec def loop(tps: List[Type]): Symbol = tps match {
+            case tp :: tps1 =>
+              val ub = arrayUpperBound(tp)
+              if (ub ne NoSymbol) ub
+              else loop(tps1)
+            case nil => NoSymbol
+          }
+          loop(tp.parents)
+        case _ =>
+          NoSymbol
+      }
+
+      /** Can one of the JVM Array type store all possible values of type `t`? */
+      def fitsInJVMArray(tp: Type): Boolean = arrayUpperBound(tp) ne NoSymbol
+
+      def isOpaque(sym: Symbol) = sym.isScala3Defined && !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
+
+      tp.dealias match {
+        case tp: TypeRef if !isOpaque(tp.sym) =>
+          !tp.sym.isClass &&
+          !tp.sym.isJavaDefined && // In Java code, Array[T] can never erase to Object
+          !fitsInJVMArray(tp)
+        case DottyTypeProxy(unwrapped) =>
+          isGenericArrayElement(unwrapped)
+        case tp @ DottyAndType() =>
+          tp.parents.forall(isGenericArrayElement)
+        case tp =>
+          false
+      }
+
     }
 
   }
@@ -446,86 +617,6 @@ trait Erasure {
     }
   }
 
-  /** Scala 3 implementation of erasure for intersection types.
-   *  @param components the erased component types of the intersection.
-   */
-  def erasedGlb(components: List[Type]): Type = {
-
-    /** A comparison function that induces a total order on erased types,
-     *  where `A <= B` implies that the erasure of `A & B` should be A.
-     *
-     *  This order respects the following properties:
-     *  - ErasedValueTypes <= non-ErasedValueTypes
-     *  - arrays <= non-arrays
-     *  - primitives <= non-primitives
-     *  - real classes <= traits
-     *  - subtypes <= supertypes
-     *
-     *  Since this isn't enough to order to unrelated classes, we use
-     *  lexicographic ordering of the class symbol full name as a tie-breaker.
-     *  This ensure that `A <= B && B <= A` iff `A =:= B`.
-     */
-    def compareErasedGlb(tp1: Type, tp2: Type): Int = {
-      // this check is purely an optimization.
-      if (tp1 eq tp2) return 0
-
-      val isEVT1 = tp1.isInstanceOf[ErasedValueType]
-      val isEVT2 = tp2.isInstanceOf[ErasedValueType]
-      if (isEVT1 && isEVT2) {
-        return compareErasedGlb(
-          tp1.asInstanceOf[ErasedValueType].valueClazz.tpe_*,
-          tp2.asInstanceOf[ErasedValueType].valueClazz.tpe_*)
-      }
-      else if (isEVT1)
-        return -1
-      else if (isEVT2)
-        return 1
-
-      val sym1 = tp1.baseClasses.head
-      val sym2 = tp2.baseClasses.head
-
-      def compareClasses: Int = {
-        if (sym1.isSubClass(sym2))
-          -1
-        else if (sym2.isSubClass(sym1))
-          1
-        else
-          sym1.fullName.compareTo(sym2.fullName)
-      }
-
-      val isArray1 = tp1.typeArgs.nonEmpty && sym1.isSubClass(definitions.ArrayClass)
-      val isArray2 = tp2.typeArgs.nonEmpty && sym2.isSubClass(definitions.ArrayClass)
-      if (isArray1 && isArray2)
-        return compareErasedGlb(tp1.typeArgs.head, tp2.typeArgs.head)
-      else if (isArray1)
-        return -1
-      else if (isArray2)
-        return 1
-
-      val isPrimitive1 = sym1.isPrimitiveValueClass
-      val isPrimitive2 = sym2.isPrimitiveValueClass
-      if (isPrimitive1 && isPrimitive2)
-        return compareClasses
-      else if (isPrimitive1)
-        return -1
-      else if (isPrimitive2)
-        return 1
-
-      val isRealClass1 = sym1.isClass && !sym1.isTrait
-      val isRealClass2 = sym2.isClass && !sym2.isTrait
-      if (isRealClass1 && isRealClass2)
-        return compareClasses
-      else if (isRealClass1)
-        return -1
-      else if (isRealClass2)
-        return 1
-
-      compareClasses
-    }
-
-    components.min((t, u) => compareErasedGlb(t, u))
-  }
-
   /** For a type alias, get its info as seen from
    *  the current prefix and owner.
    *  Sees through opaque type aliases.
@@ -539,96 +630,6 @@ trait Erasure {
         .getOrElse(visible(sym.info))
     else
       visible(sym.info)
-  }
-
-  /** Dotty implementation of Array Erasure:
-   *
-   *  Is `Array[tp]` a generic Array that needs to be erased to `Object`?
-   *  This is true if among the subtypes of `Array[tp]` there is either:
-   *  - both a reference array type and a primitive array type
-   *    (e.g. `Array[_ <: Int | String]`, `Array[_ <: Any]`)
-   *  - or two different primitive array types (e.g. `Array[_ <: Int | Double]`)
-   *  In both cases the erased lub of those array types on the JVM is `Object`.
-   */
-  def isGenericArrayElement(tp: Type): Boolean = {
-
-    object DottyTypeProxy {
-
-      def unapply(tp: Type): Option[Type] = {
-        val superTpe = translucentSuperType(tp)
-        if (superTpe ne NoType) Some(superTpe) else None
-      }
-
-      def translucentSuperType(tp: Type): Type = tp match {
-        case tp: TypeRef => transparentDealias(tp.sym, tp.pre, tp.sym.owner)
-        case tp: SingleType => tp.underlying
-        case tp: ThisType => tp.sym.typeOfThis
-        case tp: ConstantType => tp.value.tpe
-        case tp: RefinedType if tp.decls.nonEmpty => intersectionType(tp.parents)
-        case tp: PolyType => tp.resultType
-        case tp: ExistentialType => tp.underlying
-        case tp: TypeBounds => tp.hi
-        case tp: AnnotatedType => tp.underlying
-        case tp: SuperType => tp.thistpe.baseType(tp.supertpe.typeSymbol)
-        case tp => NoType
-      }
-
-    }
-
-    object DottyAndType {
-      def unapply(tp: RefinedType): Boolean = tp.decls.isEmpty
-    }
-
-    /** A symbol that represents the sort of JVM array that values of type `t` can be stored in:
-     *  - If we can always store such values in a reference array, return Object
-     *  - If we can always store them in a specific primitive array, return the
-     *    corresponding primitive class
-     *  - Otherwise, return `NoSymbol`.
-     */
-    def arrayUpperBound(tp: Type): Symbol = tp.dealias match {
-      case tp: TypeRef if tp.sym.isClass =>
-        val cls = tp.sym
-        // Only a few classes have both primitives and references as subclasses.
-        if ((cls eq AnyClass) || (cls eq AnyValClass) || (cls eq SingletonClass))
-          NoSymbol
-        // We only need to check for primitives because derived value classes in arrays are always boxed.
-        else if (cls.isPrimitiveValueClass)
-          cls
-        else
-          ObjectClass
-      case DottyTypeProxy(unwrapped) =>
-        arrayUpperBound(unwrapped)
-      case tp @ DottyAndType() =>
-        // Find first `p` in `parents` where `arrayUpperBound(p) ne NoSymbol`
-        @tailrec def loop(tps: List[Type]): Symbol = tps match {
-          case tp :: tps1 =>
-            val ub = arrayUpperBound(tp)
-            if (ub ne NoSymbol) ub
-            else loop(tps1)
-          case nil => NoSymbol
-        }
-        loop(tp.parents)
-      case _ =>
-        NoSymbol
-    }
-
-    /** Can one of the JVM Array type store all possible values of type `t`? */
-    def fitsInJVMArray(tp: Type): Boolean = arrayUpperBound(tp) ne NoSymbol
-
-    def isOpaque(sym: Symbol) = sym.isScala3Defined && !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
-
-    tp.dealias match {
-      case tp: TypeRef if !isOpaque(tp.sym) =>
-        !tp.sym.isClass &&
-        !tp.sym.isJavaDefined && // In Java code, Array[T] can never erase to Object
-        !fitsInJVMArray(tp)
-      case DottyTypeProxy(unwrapped) =>
-        isGenericArrayElement(unwrapped)
-      case tp @ DottyAndType() =>
-        tp.parents.forall(isGenericArrayElement)
-      case tp =>
-        false
-    }
   }
 
   /** The symbol's erased info. This is the type's erasure, except for the following primitive symbols:
