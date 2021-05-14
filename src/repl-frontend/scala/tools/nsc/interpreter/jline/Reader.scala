@@ -17,7 +17,7 @@ import org.jline.builtins.InputRC
 import org.jline.reader.Parser.ParseContext
 import org.jline.reader._
 import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
-import org.jline.terminal.{Size, Terminal}
+import org.jline.terminal.Terminal
 
 import java.io.{ByteArrayInputStream, File}
 import java.net.{MalformedURLException, URL}
@@ -104,9 +104,6 @@ object Reader {
     val parser    = new ReplParser(repl)
     val history   = new DefaultHistory
 
-    if (jlineTerminal.getWidth() == 0 || jlineTerminal.getHeight() == 0) {
-      jlineTerminal.setSize(new Size(120, 40))
-    }
     val builder =
       LineReaderBuilder.builder()
       .appName("scala")
@@ -116,7 +113,8 @@ object Reader {
       .terminal(jlineTerminal)
 
     locally {
-      import LineReader._, Option._
+      import LineReader._
+      import Option._
       builder
         .option(AUTO_GROUP, false)
         .option(LIST_PACKED, true)  // TODO
