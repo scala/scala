@@ -19,19 +19,19 @@ final class RichLong(private val self: Long) extends AnyVal {
   @deprecated("statically known to be true", "2.14.0")
   def isWhole: Boolean = true
 
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toChar: Char = self.toChar
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toByte: Byte = self.toByte
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toShort: Short = self.toShort
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toInt: Int = self.toInt
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toLong: Long = self.toLong
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toFloat: Float = self.toFloat
-  @deprecated("use the method available on Int itself", "2.14.0")
+  @deprecated("use the method available on Long itself", "2.14.0")
   def toDouble: Double = self.toDouble
 
   @deprecated("use toByte instead", "2.14.0")
