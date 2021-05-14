@@ -4059,7 +4059,7 @@ trait Types
         val resultThis = result.typeSymbol.thisType
         val substThisMap = new SubstThisMap(original.typeSymbol, resultThis)
         copyRefinedTypeSSM.using { (msm: SubstSymMap) =>
-          msm.reload(syms1, syms2)
+          msm.reset(syms1, syms2)
           syms2.foreach(_.modifyInfo(info => msm.apply(substThisMap.apply(info))))
         }
       }

@@ -3764,7 +3764,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     else {
       val syms1 = mapList(syms)(_.cloneSymbol)
       cloneSymbolsSubstSymMap.using { (msm: SubstSymMap) =>
-        msm.reload(syms, syms1)
+        msm.reset(syms, syms1)
         syms1.foreach(_.modifyInfo(msm))
       }
       syms1
