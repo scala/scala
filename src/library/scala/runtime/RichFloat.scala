@@ -13,59 +13,105 @@
 package scala
 package runtime
 
-final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float] {
-  protected def num: Fractional[Float] = scala.math.Numeric.FloatIsFractional
-  protected def ord: Ordering[Float]   = scala.math.Ordering.Float.TotalOrdering
-
-  override def doubleValue = self.toDouble
-  override def floatValue  = self
-  override def longValue   = self.toLong
-  override def intValue    = self.toInt
-  override def byteValue   = self.toByte
-  override def shortValue  = self.toShort
-
-  override def isWhole = {
+final class RichFloat(private val self: Float) extends AnyVal {
+  /** `'''true'''` if this number has no decimal component, `'''false'''` otherwise. */
+  def isWhole: Boolean = {
     val l = self.toLong
     l.toFloat == self || l == Long.MaxValue && self < Float.PositiveInfinity || l == Long.MinValue && self > Float.NegativeInfinity
   }
-  override def isValidByte  = self.toByte.toFloat == self
-  override def isValidShort = self.toShort.toFloat == self
-  override def isValidChar  = self.toChar.toFloat == self
-  override def isValidInt   = { val i = self.toInt; i.toFloat == self && i != Int.MaxValue }
-  // override def isValidLong = { val l = self.toLong; l.toFloat == self && l != Long.MaxValue }
-  // override def isValidFloat = !java.lang.Float.isNaN(self)
-  // override def isValidDouble = !java.lang.Float.isNaN(self)
 
-  def isNaN: Boolean         = java.lang.Float.isNaN(self)
-  def isInfinity: Boolean    = java.lang.Float.isInfinite(self)
-  def isFinite: Boolean      = java.lang.Float.isFinite(self)
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toChar: Char = self.toChar
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toByte: Byte = self.toByte
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toShort: Short = self.toShort
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toInt: Int = self.toInt
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toLong: Long = self.toLong
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toFloat: Float = self.toFloat
+  @deprecated("use the method available on Char itself", "2.14.0")
+  def toDouble: Double = self.toDouble
+
+  @deprecated("use toByte instead", "2.14.0")
+  def byteValue: Byte = self.toByte
+  @deprecated("use toShort instead", "2.14.0")
+  def shortValue: Short = self.toShort
+  @deprecated("use toInt instead", "2.14.0")
+  def intValue: Int = self.toInt
+  @deprecated("use toLong instead", "2.14.0")
+  def longValue: Long = self.toLong
+  @deprecated("statically known to be an identity", "2.14.0")
+  def floatValue: Float = self
+  @deprecated("use toDouble instead", "2.14.0")
+  def doubleValue: Double = self.toDouble
+
+  /** Returns `true` if this has a zero fractional part, and is within the
+   * range of [[scala.Byte]] MinValue and MaxValue; otherwise returns `false`.
+   */
+  def isValidByte: Boolean = self.toByte.toDouble == self
+
+  /** Returns `true` if this has a zero fractional part, and is within the
+   * range of [[scala.Short]] MinValue and MaxValue; otherwise returns `false`.
+   */
+  def isValidShort: Boolean = self.toShort.toDouble == self
+
+  /** Returns `true` if this has a zero fractional part, and is within the
+   * range of [[scala.Int]] MinValue and MaxValue; otherwise returns `false`.
+   */
+  def isValidInt: Boolean = self.toInt.toDouble == self
+
+  /** Returns `true` if this has a zero fractional part, and is within the
+   * range of [[scala.Char]] MinValue and MaxValue; otherwise returns `false`.
+   */
+  def isValidChar: Boolean = self.toChar.toDouble == self
+
+  def isNaN: Boolean = java.lang.Float.isNaN(self)
+  def isInfinity: Boolean = java.lang.Float.isInfinite(self)
+  def isFinite: Boolean = java.lang.Float.isFinite(self)
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
-  // These method are all overridden and redefined to call out to scala.math to avoid 3 allocations:
-  // the primitive boxing, the value class boxing and instantiation of the Numeric num.
-  // We'd like to redefine sign too but forwards binary compatibility doesn't allow us to.
-  override def abs: Float              = math.abs(self)
-  override def max(that: Float): Float = math.max(self, that)
-  override def min(that: Float): Float = math.min(self, that)
-  @deprecated("signum does not handle -0.0f or Float.NaN; use `sign` method instead", since = "2.13.0")
-  override def signum: Int             = math.signum(self).toInt
+  /** Returns `'''this'''` if `'''this''' < that` or `that` otherwise. */
+  def min(that: Float): Float = Math.min(self, that)
 
-  def round: Int   = math.round(self)
-  def ceil: Float  = math.ceil(self.toDouble).toFloat
-  def floor: Float = math.floor(self.toDouble).toFloat
+  /** Returns `'''this'''` if `'''this''' > that` or `that` otherwise. */
+  def max(that: Float): Float = Math.max(self, that)
+
+  /** Returns the absolute value of `'''this'''`. */
+  def abs: Float = Math.abs(self)
+
+  /**
+   * Returns the sign of `'''this'''`.
+   * zero if the argument is zero, -zero if the argument is -zero,
+   * one if the argument is greater than zero, -one if the argument is less than zero,
+   * and NaN if the argument is NaN where applicable.
+   */
+  def sign: Double = Math.signum(self)
+
+  /** Returns the signum of `'''this'''`. */
+  @deprecated("signum does not handle -0.0 or Float.NaN; use `sign` method instead", since = "2.13.0")
+  def signum: Int = sign.toInt
+
+  def round: Int = Math.round(self)
+  def ceil: Float = Math.ceil(self.toDouble).toFloat
+  def floor: Float = Math.floor(self.toDouble).toFloat
 
   /** Converts an angle measured in degrees to an approximately equivalent
-   *  angle measured in radians.
+   * angle measured in radians.
    *
-   *  @return the measurement of the angle `x` in radians.
+   * @return the measurement of the angle `x` in radians.
    */
-  def toRadians: Float = math.toRadians(self.toDouble).toFloat
+  def toRadians: Float = Math.toRadians(self.toDouble).toFloat
 
   /** Converts an angle measured in radians to an approximately equivalent
-   *  angle measured in degrees.
+   * angle measured in degrees.
    *
-   *  @return the measurement of the angle `x` in degrees.
+   * @return the measurement of the angle `x` in degrees.
    */
-  def toDegrees: Float = math.toDegrees(self.toDouble).toFloat
+  def toDegrees: Float = Math.toDegrees(self.toDouble).toFloat
+
+  override def toString(): String = java.lang.Float.toString(self)
 }
