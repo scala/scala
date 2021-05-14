@@ -953,12 +953,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             mbt.descriptor
           )
         }
-        module.attachments.get[DottyEnumSingleton] match { // TODO [tasty]: dotty enum singletons are not modules.
-          case Some(enumAttach) =>
-            val enumCompanion = symInfoTK(module.originalOwner).asClassBType
-            visitAccess(enumCompanion, enumAttach.name)
-
-          case _ => visitAccess(mbt, strMODULE_INSTANCE_FIELD)
+        if (module.isScala3Defined && module.hasAttachment[DottyEnumSingleton.type]) { // TODO [tasty]: dotty enum singletons are not modules.
+          val enumCompanion = symInfoTK(module.originalOwner).asClassBType
+          visitAccess(enumCompanion, module.rawname.toString)
+        } else {
+          visitAccess(mbt, strMODULE_INSTANCE_FIELD)
         }
       }
     }

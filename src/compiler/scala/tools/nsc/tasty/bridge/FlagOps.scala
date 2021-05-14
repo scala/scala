@@ -16,29 +16,59 @@ import scala.tools.tasty.TastyFlags._
 import scala.tools.nsc.tasty.TastyUniverse
 import scala.reflect.internal.{Flags, ModifierFlags}
 
-/**Handles encoding of `TastyFlagSet` to `scala.reflect` flags and witnessing which flags do not map directly
- * from TASTy.
+/** Handles encoding of `TastyFlagSet` to `scala.reflect` flags and witnessing which flags do not map directly
+ *  from TASTy.
  */
 trait FlagOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object FlagSets {
+
     val TastyOnlyFlags: TastyFlagSet = (
-      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent | Enum | Infix
-      | Open | ParamAlias
+      Erased | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
+        | Enum | Infix | Open | ParamAlias | Invisible
     )
+
+    object Creation {
+      val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
+      val ObjectClassDef: TastyFlagSet = Object | Final
+      val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+      val BoundedType: u.FlagSet = newSymbolFlagSet(Deferred)
+    }
+    def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
+      flags | (inheritedAccess & (Private | Local | Protected))
+    val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
-    val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
-    val ObjectClassCreationFlags: TastyFlagSet = Object | Final
-    val SingletonEnumFlags: TastyFlagSet = Case | Static | Enum | Stable
-    val FieldAccessorFlags: TastyFlagSet = FieldAccessor | Stable
-    val LocalFieldFlags: TastyFlagSet = Private | Local
+    val FieldGetter: TastyFlagSet = FieldAccessor | Stable
+    val ParamGetter: TastyFlagSet = FieldGetter | ParamSetter
+    val LocalField: TastyFlagSet = Private | Local
+    val Scala2Macro: TastyFlagSet = Erased | Macro
   }
 
-  /**encodes a `TastyFlagSet` as `scala.reflect` flags and will ignore flags that can't be converted, such as
-   * members of `FlagSets.TastyOnlyFlags`
+  /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
+  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
+    unsafeEncodeTastyFlagSet(tflags) | ModifierFlags.SCALA3X
+
+  implicit final class SymbolFlagOps(val sym: Symbol) {
+    def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
+      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags))
+    def isOneOf(mask: TastyFlagSet): Boolean =
+      sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
+    def is(mask: TastyFlagSet): Boolean =
+      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
+      if (!butNot)
+        sym.is(mask)
+      else
+        sym.is(mask) && sym.not(butNot)
+    def not(mask: TastyFlagSet): Boolean =
+      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
+  }
+
+  /** encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
+   *  @note Do not use directly to initialise symbol flags, use `newSymbolFlagSet`
    */
-  private[bridge] def encodeFlagSet(tflags: TastyFlagSet): u.FlagSet = {
+  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
     import u.Flag
     var flags = u.NoFlags
     if (tflags.is(Private)) flags |= Flag.PRIVATE
@@ -78,7 +108,6 @@ trait FlagOps { self: TastyUniverse =>
     else {
       val sb = collection.mutable.ArrayBuffer.empty[String]
       if (flags.is(Erased))      sb += "erased"
-      if (flags.is(Internal))    sb += "<internal>"
       if (flags.is(Inline))      sb += "inline"
       if (flags.is(InlineProxy)) sb += "<inlineproxy>"
       if (flags.is(Opaque))      sb += "opaque"
@@ -90,6 +119,7 @@ trait FlagOps { self: TastyUniverse =>
       if (flags.is(Open))        sb += "open"
       if (flags.is(ParamAlias))  sb += "<paramalias>"
       if (flags.is(Infix))       sb += "infix"
+      if (flags.is(Invisible))   sb += "<invisible>"
       sb.mkString(" | ")
     }
   }

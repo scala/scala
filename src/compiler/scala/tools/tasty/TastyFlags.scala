@@ -47,8 +47,7 @@ object TastyFlags {
   final val Deferred              = Param.next
   final val Method                = Deferred.next
   final val Erased                = Method.next
-  final val Internal              = Erased.next
-  final val Inline                = Internal.next
+  final val Inline                = Erased.next
   final val InlineProxy           = Inline.next
   final val Opaque                = InlineProxy.next
   final val Extension             = Opaque.next
@@ -60,8 +59,7 @@ object TastyFlags {
   final val Open                  = Enum.next
   final val ParamAlias            = Open.next
   final val Infix                 = ParamAlias.next
-
-  private[TastyFlags] final val maxFlag: Long = ParamAlias.shift
+  final val Invisible             = Infix.next
 
   def optFlag(cond: Boolean)(flag: TastyFlagSet): TastyFlagSet = if (cond) flag else EmptyTastyFlags
 
@@ -125,7 +123,6 @@ object TastyFlags {
         if (is(Deferred))      sb += "Deferred"
         if (is(Method))        sb += "Method"
         if (is(Erased))        sb += "Erased"
-        if (is(Internal))      sb += "Internal"
         if (is(Inline))        sb += "Inline"
         if (is(InlineProxy))   sb += "InlineProxy"
         if (is(Opaque))        sb += "Opaque"
@@ -138,23 +135,9 @@ object TastyFlags {
         if (is(Open))          sb += "Open"
         if (is(ParamAlias))    sb += "ParamAlias"
         if (is(Infix))         sb += "Infix"
+        if (is(Invisible))     sb += "Invisible"
         sb.mkString(" | ")
       }
-    }
-  }
-
-  case class SingletonSets(val toLong: Long) extends AnyVal {
-    def map[A](f: TastyFlagSet => A): Iterable[A] = {
-      val buf = Iterable.newBuilder[A]
-      val orig = TastyFlagSet(toLong)
-      var flag = EmptyTastyFlags
-      while (flag.shift <= maxFlag) {
-        flag = flag.next
-        if (orig.is(flag)) {
-          buf += f(flag)
-        }
-      }
-      buf.result()
     }
   }
 

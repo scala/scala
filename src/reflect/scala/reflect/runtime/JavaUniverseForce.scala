@@ -67,6 +67,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
     this.KnownDirectSubclassesCalled
+    this.DottyEnumSingleton
     this.ConstructorNeedsFence
     this.MultiargInfixAttachment
     this.NullaryOverrideAdapted
@@ -521,9 +522,12 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     uncurry.DesugaredParameterType
     erasure.GenericArray
     erasure.scalaErasure
+    erasure.scala3Erasure
     erasure.specialScalaErasure
+    erasure.specialScala3Erasure
     erasure.javaErasure
     erasure.verifiedJavaErasure
     erasure.boxingErasure
+    erasure.boxing3Erasure
   }
 }

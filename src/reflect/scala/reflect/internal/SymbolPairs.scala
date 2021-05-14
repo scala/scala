@@ -43,12 +43,12 @@ abstract class SymbolPairs {
     def rootType: Type      = self
 
     def lowType: Type       = self memberType low
-    def lowErased: Type     = erasure.specialErasure(base)(low.tpe)
+    def lowErased: Type     = erasure.specialErasure(low)(low.tpe)
     def lowClassBound: Type = classBoundAsSeen(low.tpe.typeSymbol)
 
     def highType: Type       = self memberType high
     def highInfo: Type       = self memberInfo high
-    def highErased: Type     = erasure.specialErasure(base)(high.tpe)
+    def highErased: Type     = erasure.specialErasure(high)(high.tpe)
     def highClassBound: Type = classBoundAsSeen(high.tpe.typeSymbol)
 
     def isErroneous = low.tpe.isErroneous || high.tpe.isErroneous

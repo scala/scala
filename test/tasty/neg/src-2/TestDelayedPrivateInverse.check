@@ -1,0 +1,4 @@
+TestDelayedPrivateInverse_fail.scala:6: error: value Internal is not a member of object tastytest.DelayedPrivateInverse
+    val _ = DelayedPrivateInverse.Internal
+                                  ^
+1 error

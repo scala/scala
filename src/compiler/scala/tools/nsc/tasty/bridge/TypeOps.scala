@@ -192,7 +192,7 @@ trait TypeOps { self: TastyUniverse =>
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
         val syms = mutable.ListBuffer.empty[Symbol]
         def bindWildcards(tpe: Type) = tpe match {
-          case tpe: u.TypeBounds   => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+          case tpe: u.TypeBounds   => ctx.newWildcard(tpe).tap(syms += _).pipe(_.ref)
           case tpe: LambdaPolyType => tpe.toNested
           case tpe                 => tpe
         }
@@ -240,6 +240,9 @@ trait TypeOps { self: TastyUniverse =>
       bounds
   }
 
+  private[bridge] def sameErasure(sym: Symbol)(tpe: Type, ref: ErasedTypeRef) =
+    NameErasure.sigName(tpe, sym) === ref
+
   /** This is a port from Dotty of transforming a Method type to an ErasedTypeRef
    */
   private[bridge] object NameErasure {
@@ -251,9 +254,9 @@ trait TypeOps { self: TastyUniverse =>
      *  `from` and `to` must be static classes, both with one type parameter, and the same variance.
      *  Do the same for by name types => From[T] and => To[T]
      */
-    def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean = false)(implicit ctx: Context): Type = self match {
+    def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean): Type = self match {
       case self @ u.NullaryMethodType(tp) =>
-        u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg=false))
+        u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg = false))
       case _ =>
         if (self.typeSymbol.isSubClass(from)) {
           def elemType(tp: Type): Type = tp.dealiasWiden match {
@@ -268,23 +271,23 @@ trait TypeOps { self: TastyUniverse =>
         else self
     }
 
-    def translateFromRepeated(self: Type)(toArray: Boolean, translateWildcard: Boolean = false)(implicit ctx: Context): Type = {
+    def translateFromRepeated(self: Type)(toArray: Boolean): Type = {
       val seqClass = if (toArray) u.definitions.ArrayClass else u.definitions.SeqClass
-      if (translateWildcard && self === u.WildcardType)
-        seqClass.ref(u.WildcardType :: Nil)
-      else if (isRepeatedParam(self))
+      if (isRepeatedParam(self))
         // We want `Array[? <: T]` because arrays aren't covariant until after
         // erasure. See `tests/pos/i5140`.
         translateParameterized(self)(u.definitions.RepeatedParamClass, seqClass, wildcardArg = toArray)
       else self
     }
 
-    def sigName(tp: Type, isJava: Boolean)(implicit ctx: Context): ErasedTypeRef = {
-      val normTp = translateFromRepeated(tp)(toArray = isJava)
-      erasedSigName(normTp.erasure)
+    def sigName(tp: Type, sym: Symbol): ErasedTypeRef = {
+      val normTp = translateFromRepeated(tp)(toArray = sym.isJavaDefined)
+      erasedSigName(
+        u.erasure.erasure(sym)(normTp)
+      )
     }
 
-    private def erasedSigName(erased: Type)(implicit ctx: Context): ErasedTypeRef = erased match {
+    private def erasedSigName(erased: Type): ErasedTypeRef = erased match {
       case erased: u.ExistentialType => erasedSigName(erased.underlying)
       case erased: u.TypeRef =>
         import TastyName._
@@ -417,6 +420,7 @@ trait TypeOps { self: TastyUniverse =>
     override final def complete(sym: Symbol): Unit = {
       underlying.ensureCompleted()
       sym.info = underlying.tpe
+      underlying.attachments.all.foreach(sym.updateAttachment(_))
     }
   }
 
@@ -613,7 +617,8 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val params: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newValueParameter(name, u.NoPosition, encodeFlagSet(defaultFlags)).setInfo(argInfo)
+      case (name, argInfo) =>
+        ctx.owner.newValueParameter(name, u.NoPosition, newSymbolFlagSet(defaultFlags)).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp()
@@ -641,7 +646,7 @@ trait TypeOps { self: TastyUniverse =>
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, bounds) =>
         val argInfo = normaliseIfBounds(bounds)
-        ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
     }
 
     val resType: Type = lambdaResultType(resultTypeOp())
@@ -668,7 +673,8 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
+      case (name, argInfo) =>
+        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp() // potentially need to flatten? (probably not, happens in typer in dotty)

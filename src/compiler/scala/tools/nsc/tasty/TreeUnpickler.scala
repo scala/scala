@@ -36,7 +36,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     nameAtRef: NameRef => TastyName)(implicit
     val tasty: Tasty) { self =>
   import tasty._
-  import FlagSets._
   import TreeUnpickler._
   import MaybeCycle._
   import TastyModes._
@@ -70,8 +69,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
-  private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
-    ctx.log(s"$addr registered ${showSym(sym)} in ${location(sym.owner)}")
+  private def registerSym(addr: Addr, sym: Symbol, rejected: Boolean)(implicit ctx: Context) = {
+    assert(!(rejected && isSymbol(sym)), "expected no symbol when rejected")
+    ctx.log(
+      if (isSymbol(sym)) s"$addr registered ${showSym(sym)} in ${location(sym.owner)}"
+      else s"$addr registering symbol was rejected"
+    )
     symAtAddr(addr) = sym
   }
 
@@ -415,20 +418,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (isType) prior.toTypeName else prior
     }
 
-    private def normalizeFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
+    private def addInferredFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
       var flags = tastyFlags
       val lacksDefinition =
         rhsIsEmpty &&
-          name.isTermName && !name.isConstructorName && !flags.isOneOf(TermParamOrAccessor) ||
+          name.isTermName && !name.isConstructorName && !flags.isOneOf(FlagSets.TermParamOrAccessor) ||
         isAbsType ||
         flags.is(Opaque) && !isClass
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
-        if (flags.is(Inline) || ctx.owner.is(Trait)) flags |= FieldAccessor
-        if (flags.not(Mutable)) flags |= Stable
-        if (flags.is(SingletonEnumFlags)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
+        if (flags.is(Inline) || ctx.owner.is(Trait))
+          flags |= FieldAccessor
+        if (flags.not(Mutable))
+          flags |= Stable
+        if (flags.is(Case | Static | Enum)) // singleton enum case
+          flags |= Object | Stable // encode as a module (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
@@ -439,7 +445,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
       else if (isParamTag(tag)) flags |= Param
-      if (flags.is(Object)) flags |= (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
+      if (flags.is(Object)) flags |= (if (tag === VALDEF) FlagSets.Creation.ObjectDef else FlagSets.Creation.ObjectClassDef)
       flags
     }
 
@@ -462,7 +468,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         createMemberSymbol()
       case TEMPLATE =>
         val localDummy = ctx.newLocalDummy
-        registerSym(currentAddr, localDummy)
+        registerSym(currentAddr, localDummy, rejected = false)
         localDummy
       case tag =>
         assert(tag != BIND, "bind pattern symbol creation from TASTy")
@@ -473,12 +479,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *  @return  the created symbol
      */
     def createMemberSymbol()(implicit ctx: Context): Symbol = {
+
+      def rejectSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Boolean = {
+        def isPureMixinCtor =
+          name == TastyName.MixinConstructor && owner.isTrait && flags.is(Stable)
+        def isInvisible =
+          flags.is(Invisible)
+
+        isPureMixinCtor || isInvisible
+      }
+
       val start = currentAddr
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
       val parsedName: TastyName = readTastyName()
-      ctx.log(s"$start ::: => create ${astTagToString(tag)} ${parsedName.debug}")
+      def debugSymCreate: String = s"${astTagToString(tag)} ${parsedName.debug}"
+      ctx.log(s"$start ::: => create $debugSymCreate")
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -487,13 +504,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (name, flags, annotations, privateWithin) = {
-        val (parsedFlags, annotations, privateWithin) =
-          readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-        val name = normalizeName(isTypeTag, parsedName)
-        val flags = normalizeFlags(tag, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
-        (name, flags, annotations, privateWithin)
-      }
+      val (parsedFlags0, annotations, privateWithin) =
+        readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
+      val name = normalizeName(isTypeTag, parsedName)
+      val flags = addInferredFlags(tag, parsedFlags0, name, isAbsType, isClass, rhsIsEmpty)
+      def mkCompleter = new Completer(isClass, subReader(start, end), flags)(ctx.retractMode(IndexScopedStats))
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isTypeParameter
       ctx.log {
@@ -507,34 +522,46 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         s"""$start parsed flags $debugFlags"""
       }
+      val rejected = rejectSymbol(ctx.owner, name, flags)
       val sym = {
         if (tag === TYPEPARAM && ctx.owner.isConstructor) {
+          // TASTy encodes type parameters for constructors
+          // nsc only has class type parameters
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = new Completer(isClass, subReader(start, end), flags)(ctx.retractMode(IndexScopedStats))
           ctx.findRootSymbol(roots, name) match {
             case Some(rootd) =>
-              ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
-              ctx.log(s"$start replaced info of ${showSym(rootd)}")
-              rootd
+              roots -= rootd
+              if (rejected) {
+                ctx.evict(rootd)
+                noSymbol
+              }
+              else {
+                ctx.redefineSymbol(rootd, flags, mkCompleter, privateWithin)
+                ctx.log(s"$start replaced info of ${showSym(rootd)}")
+                rootd
+              }
             case _ =>
-              if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, completer, privateWithin)
-              else ctx.delayCompletion(ctx.owner, name, completer, privateWithin)
+              if (rejected) noSymbol
+              else if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, mkCompleter, privateWithin)
+              else ctx.delayCompletion(ctx.owner, name, mkCompleter, privateWithin)
           }
         }
-      }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
-      if (tag == VALDEF && flags.is(SingletonEnumFlags))
-        ctx.markAsEnumSingleton(sym)
-      registerSym(start, sym)
-      if (canEnterInClass && ctx.owner.isClass)
-        ctx.enterIfUnseen(sym)
-      if (isClass) {
-        val localCtx = ctx.withOwner(sym)
-        forkAt(templateStart).indexTemplateParams()(localCtx)
+      }
+      registerSym(start, sym, rejected)
+      if (isSymbol(sym)) {
+        if (tag == VALDEF && flags.is(FlagSets.SingletonEnum))
+          ctx.markAsEnumSingleton(sym)
+        if (canEnterInClass && ctx.owner.isClass)
+          ctx.enterIfUnseen(sym)
+        if (isClass) {
+          val localCtx = ctx.withOwner(sym)
+          forkAt(templateStart).indexTemplateParams()(localCtx)
+        }
+        ctx.adjustAnnotations(sym, annotations)
       }
       goto(start)
-      ctx.adjustAnnotations(sym, annotations)
       sym
     }
 
@@ -554,7 +581,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         nextByte match {
           case PRIVATE => addFlag(Private)
-          case INTERNAL => addFlag(Internal)
           case PROTECTED => addFlag(Protected)
           case ABSTRACT =>
             readByte()
@@ -595,6 +621,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case PARAMalias => addFlag(ParamAlias)
           case EXPORTED => addFlag(Exported)
           case OPEN => addFlag(Open)
+          case INVISIBLE => addFlag(Invisible)
           case PRIVATEqualified =>
             readByte()
             privateWithin = readWithin(ctx)
@@ -759,18 +786,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Extension | Exported))
         val tpe = readTpt()(localCtx).tpe
         ctx.setInfo(sym,
-          if (repr.originalFlagSet.is(SingletonEnumFlags)) {
-            val enumClass = sym.objectImplementation
-            val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-            val ctor = ctx.unsafeNewSymbol(
-              owner = enumClass,
-              name  = TastyName.Constructor,
-              flags = Method,
-              info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
-            )
-            enumClass.typeOfThis = selfTpe
-            ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
-            prefixedRef(sym.owner.thisPrefix, enumClass)
+          if (repr.originalFlagSet.is(FlagSets.SingletonEnum)) {
+            ctx.completeEnumSingleton(sym, tpe)
+            prefixedRef(sym.owner.thisPrefix, sym.objectImplementation)
           }
           else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
           else if (sym.isMethod) defn.ExprType(tpe)
@@ -1001,7 +1019,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           (tag: @switch) match {
             case SELECTin =>
               val name = readTastyName()
-              val qual  = readTerm()
+              val qual = readTerm()
               if (inParentCtor) {
                 assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
                 skipTree()
@@ -1032,7 +1050,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               tpd.SeqLiteral(until(end)(readTerm()), elemtpt)
             case REFINEDtpt =>
               val refineCls = symAtAddr.getOrElse(start, ctx.newRefinementClassSymbol)
-              registerSym(start, refineCls)
+              registerSym(start, refineCls, rejected = false)
               typeAtAddr(start) = refineCls.ref
               val parent = readTpt()
               ctx.withOwner(refineCls).enterRefinement(parent.tpe) { refinedCtx =>
@@ -1081,7 +1099,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case UNAPPLY     => unsupportedTermTreeError("unapply pattern")
             case INLINED     => unsupportedTermTreeError("inlined expression")
             case SELECTouter => metaprogrammingIsUnsupported // only within inline
-            case HOLE        => assertNoMacroHole
+            case HOLE        => abortMacroHole
             case _           => readPathTerm()
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
@@ -1098,7 +1116,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           forkAt(readAddr()).readTpt()
         case BLOCK => // BLOCK appears in type position when quoting a type, but only in the body of a method
           metaprogrammingIsUnsupported
-        case HOLE => assertNoMacroHole
+        case HOLE => abortMacroHole
         case tag  =>
           if (isTypeTreeTag(tag)) readTerm()(ctx.retractMode(OuterTerm))
           else {
@@ -1112,7 +1130,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /**
       * A HOLE should never appear in TASTy for a top level class, only in quotes.
       */
-    private def assertNoMacroHole[T]: T = assertError("Scala 3 macro hole in pickled TASTy")
+    private def abortMacroHole[T]: T = abortWith(msg = "Scala 3 macro hole in pickled TASTy")
 
     private def metaprogrammingIsUnsupported[T](implicit ctx: Context): T =
       unsupportedError("Scala 3 metaprogramming features")

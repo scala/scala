@@ -4,6 +4,29 @@ import scala.reflect.macros.blackbox.Context
 
 package object tastytest {
 
+  def anyObj[T]: T = null.asInstanceOf[T]
+
+  trait Aspect {
+    def applyTo(op: => Unit): Unit
+  }
+
+  implicit class AspectOps(op: => Unit) {
+    def @@(aspect: Aspect): Unit = aspect.applyTo(op)
+  }
+
+  object ExpectCastOrNull extends Aspect {
+    def applyTo(op: => Unit): Unit = {
+      try {
+        op
+        throw new AssertionError("expected a failure")
+      }
+      catch {
+        case npe: NullPointerException => // swallow
+        case cce: ClassCastException => // swallow
+      }
+    }
+  }
+
   implicit final class SafeEq[T](private val t: T) extends AnyVal {
     final def ===[U](u: U)(implicit ev: T =:= U): Boolean = t == u
   }

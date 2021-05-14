@@ -51,14 +51,31 @@ object TastyFormat {
    * is able to read final TASTy documents if the file's
    * `MinorVersion` is strictly less than the current value.
    */
-  final val ExperimentalVersion: Int = 1
+  final val ExperimentalVersion: Int = 0
 
   /**This method implements a binary relation (`<:<`) between two TASTy versions.
+   *
    * We label the lhs `file` and rhs `compiler`.
    * if `file <:< compiler` then the TASTy file is valid to be read.
    *
-   * TASTy versions have a partial order,
-   * for example `a <:< b` and `b <:< a` are both false if `a` and `b` have different major versions.
+   * A TASTy version, e.g. `v := 28.0-3` is composed of three fields:
+   *   - v.major == 28
+   *   - v.minor == 0
+   *   - v.experimental == 3
+   *
+   * TASTy versions have a partial order, for example,
+   * `a <:< b` and `b <:< a` are both false if
+   *   - `a` and `b` have different `major` fields.
+   *   - `a` and `b` have the same `major` & `minor` fields,
+   *     but different `experimental` fields, both non-zero.
+   *
+   * A TASTy version with a zero value for its `experimental` field
+   * is considered to be stable. Files with a stable TASTy version
+   * can be read by a compiler with an unstable TASTy version,
+   * (where the compiler's TASTy version has a higher `minor` field).
+   *
+   * A compiler with a stable TASTy version can never read a file
+   * with an unstable TASTy version.
    *
    * We follow the given algorithm:
    * ```
@@ -187,7 +204,6 @@ object TastyFormat {
   final val TRUEconst = 4
   final val NULLconst = 5
   final val PRIVATE = 6
-  final val INTERNAL = 7
   final val PROTECTED = 8
   final val ABSTRACT = 9
   final val FINAL = 10
@@ -223,8 +239,9 @@ object TastyFormat {
   final val PARAMalias = 41
   final val TRANSPARENT = 42
   final val INFIX = 43
-  final val EMPTYCLAUSE = 44
-  final val SPLITCLAUSE = 45
+  final val INVISIBLE = 44
+  final val EMPTYCLAUSE = 45
+  final val SPLITCLAUSE = 46
 
   // Cat. 2:    tag Nat
 
@@ -351,7 +368,6 @@ object TastyFormat {
 
   def isModifierTag(tag: Int): Boolean = tag match {
     case PRIVATE
-       | INTERNAL
        | PROTECTED
        | ABSTRACT
        | FINAL
@@ -387,6 +403,7 @@ object TastyFormat {
        | PARAMalias
        | EXPORTED
        | OPEN
+       | INVISIBLE
        | ANNOTATION
        | PRIVATEqualified
        | PROTECTEDqualified => true
@@ -414,7 +431,6 @@ object TastyFormat {
     case TRUEconst => "TRUEconst"
     case NULLconst => "NULLconst"
     case PRIVATE => "PRIVATE"
-    case INTERNAL => "INTERNAL"
     case PROTECTED => "PROTECTED"
     case ABSTRACT => "ABSTRACT"
     case FINAL => "FINAL"
@@ -449,6 +465,7 @@ object TastyFormat {
     case PARAMsetter => "PARAMsetter"
     case EXPORTED => "EXPORTED"
     case OPEN => "OPEN"
+    case INVISIBLE => "INVISIBLE"
     case PARAMalias => "PARAMalias"
     case EMPTYCLAUSE => "EMPTYCLAUSE"
     case SPLITCLAUSE => "SPLITCLAUSE"

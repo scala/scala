@@ -1,0 +1,13 @@
+TestInvisibleDefs_fail.scala:5: error: type argIsHello is not a member of package tastytest
+  def foo: tastytest.argIsHello = ??? // has invisible flag so should not be seen
+                     ^
+TestInvisibleDefs_fail.scala:6: error: type argIsHello is not a member of package tastytest
+  def bar: tastytest.argIsHello = ??? // second try on same type
+                     ^
+TestInvisibleDefs_fail.scala:11: error: value getStatus is not a member of tastytest.InvisibleDefs.MyBean
+    mybean.getStatus() // error
+           ^
+TestInvisibleDefs_fail.scala:12: error: value setStatus is not a member of tastytest.InvisibleDefs.MyBean
+    mybean.setStatus("closed") // error
+           ^
+4 errors

@@ -17,6 +17,7 @@ import scala.tools.nsc.tasty.SafeEq
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
+import scala.util.chaining._
 
 /**This layer deals with selecting a member symbol from a type using a `TastyName`,
  * also contains factories for making type references to symbols.
@@ -47,15 +48,11 @@ trait SymbolOps { self: TastyUniverse =>
   implicit final class SymbolDecorator(val sym: Symbol) {
 
     def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
-    def isScala2Macro: Boolean = repr.originalFlagSet.is(Erased | Macro)
-
-    def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
-    def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
-
+    def isScala2Macro: Boolean = repr.originalFlagSet.is(FlagSets.Scala2Macro)
     def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
     def isParamGetter: Boolean =
-      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessorFlags)
+      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.ParamGetter)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.
@@ -84,18 +81,6 @@ trait SymbolOps { self: TastyUniverse =>
     def termRef: Type = sym.preciseRef(u.NoPrefix)
     def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
-
-    def set(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.addFlags(sym, mask)
-    def reset(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.removeFlags(sym, mask)
-
-    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(encodeFlagSet(mask))
-    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(encodeFlagSet(mask))
-    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
-      if (!butNot)
-        sym.is(mask)
-      else
-        sym.is(mask) && sym.not(butNot)
-    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(encodeFlagSet(mask))
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
@@ -129,7 +114,11 @@ trait SymbolOps { self: TastyUniverse =>
           space.member(selector).orElse(lookInTypeCtor)
         }
       }
-      else space.member(encodeTermName(tname))
+      else {
+        val firstTry = space.member(encodeTermName(tname))
+        if (firstTry.isOverloaded) firstTry.filter(!_.isPrivateLocal)
+        else firstTry
+      }
     }
     if (isSymbol(member) && hasType(member)) member
     else errorMissing(space, tname)
@@ -143,13 +132,13 @@ trait SymbolOps { self: TastyUniverse =>
     val kind = if (tname.isTypeName) "type" else "term"
     def typeToString(tpe: Type) = {
       def inner(sb: StringBuilder, tpe: Type): StringBuilder = tpe match {
-        case u.SingleType(pre, sym) => inner(sb, pre) append '.' append (
-          if (sym.isPackageObjectOrClass) s"`${sym.name}`"
-          else String valueOf sym.name
-        )
-        case u.TypeRef(pre, sym, _) if sym.isTerm =>
-          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.name
-          else inner(sb, pre) append '.' append sym.name
+        case u.ThisType(cls) => sb append cls.fullNameString
+        case u.SingleType(pre, sym) =>
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
+          else inner(sb, pre) append '.' append sym.nameString
+        case u.TypeRef(pre, sym, _) =>
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
+          else inner(sb, pre) append '.' append sym.nameString
         case tpe => sb append tpe
       }
       inner(new StringBuilder(), tpe).toString
@@ -170,7 +159,7 @@ trait SymbolOps { self: TastyUniverse =>
       ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
       val member = space.member(encodeTermName(qual))
       if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
-      val (tyParamCount, argTpeRefs) = {
+      val (tyParamCount, paramRefs) = {
         val (tyParamCounts, params) = sig.params.partitionMap(identity)
         if (tyParamCounts.length > 1) {
           unsupportedError(s"method with unmergeable type parameters: $qual")
@@ -179,27 +168,32 @@ trait SymbolOps { self: TastyUniverse =>
       }
       def compareSym(sym: Symbol): Boolean = sym match {
         case sym: u.MethodSymbol =>
-          val method = sym.tpe.asSeenFrom(space, sym.owner)
-          ctx.log(s">>> trying $sym: $method")
-          val params = method.paramss.flatten
-          val isJava = sym.isJavaDefined
-          NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
-          params.length === argTpeRefs.length &&
-          (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
-            || tyParamCount === sym.typeParams.length) &&
-          params.zip(argTpeRefs).forall { case (param, tpe) => NameErasure.sigName(param.tpe, isJava) === tpe } && {
-            ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
-            true
-          }
+          val meth0 = u.unwrapWrapperTypes(sym.tpe.asSeenFrom(space, sym.owner))
+          val paramSyms = meth0.paramss.flatten
+          val resTpe = meth0.finalResultType
+          val sameParamSize = paramSyms.length === paramRefs.length
+          def sameTyParamSize = tyParamCount === ({
+            // the signature of a class/mixin constructor includes
+            // type parameters, in nsc these come from the parent.
+            val tyParamOwner = if (qual.isConstructorName) member.owner else sym
+            tyParamOwner.typeParams.length
+          })
+          def sameParams = paramSyms.lazyZip(paramRefs).forall({
+            case (paramSym, paramRef) => sameErasure(sym)(paramSym.tpe, paramRef)
+          })
+          sameParamSize && sameTyParamSize && sameParams && sameErasure(sym)(resTpe, sig.result)
         case _ =>
           ctx.log(s"""! member[$space]("$qual") ${showSym(sym)} is not a method""")
           false
       }
       member.asTerm.alternatives.find(compareSym).getOrElse(
-        typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}"))
+        typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}")
+      ).tap(overload =>
+        ctx.log(s">>> selected ${showSym(overload)}: ${overload.tpe}")
+      )
     }
   }
 
   def showSig(sig: MethodSignature[ErasedTypeRef]): String = sig.map(_.signature).show
-  def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.id})"
+  def showSym(sym: Symbol): String = s"Symbol(${sym.accurateKindString} ${sym.name}, #${sym.id})"
 }

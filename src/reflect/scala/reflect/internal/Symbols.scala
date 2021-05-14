@@ -970,6 +970,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isModuleVar = hasFlag(MODULEVAR)
 
+    final def isScala3Defined = hasFlag(SCALA3X)
+
     /**
      * Is this symbol static (i.e. with no outer instance)?
      * Q: When exactly is a sym marked as STATIC?
