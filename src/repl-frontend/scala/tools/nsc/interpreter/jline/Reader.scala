@@ -113,8 +113,7 @@ object Reader {
       .terminal(jlineTerminal)
 
     locally {
-      import LineReader._
-      import Option._
+      import LineReader._, Option._
       builder
         .option(AUTO_GROUP, false)
         .option(LIST_PACKED, true)  // TODO
