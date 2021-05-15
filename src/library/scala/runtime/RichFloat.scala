@@ -74,6 +74,19 @@ final class RichFloat(private val self: Float) extends AnyVal {
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
+  /** Result of comparing `this` with operand `that`.
+   *
+   * Returns `x` where:
+   *
+   *  - `x < 0` when `this < that`
+   *  - `x == 0` when `this == that`
+   *  - `x > 0` when  `this > that`
+   *
+   * For the purposes of this method, `NaN` is considered equal to itself and
+   * greater than all other values. `-0.0` is considered less than `+0.0`.
+   */
+  def compare(y: Float): Int = java.lang.Float.compare(self, y)
+
   /** Returns `'''this'''` if `'''this''' < that` or `that` otherwise. */
   def min(that: Float): Float = Math.min(self, that)
 

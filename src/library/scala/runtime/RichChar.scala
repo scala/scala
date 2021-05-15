@@ -67,6 +67,8 @@ final class RichChar(val self: Char) extends AnyVal {
   def isIdentifierIgnorable: Boolean = Character.isIdentifierIgnorable(self)
   def isMirrored: Boolean = Character.isMirrored(self)
 
+  def compare(y: Char): Int = java.lang.Character.compare(self, y)
+
   def isLower: Boolean = Character.isLowerCase(self)
   def isUpper: Boolean = Character.isUpperCase(self)
   def isTitleCase: Boolean = Character.isTitleCase(self)

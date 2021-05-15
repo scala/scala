@@ -70,6 +70,17 @@ final class RichLong(private val self: Long) extends AnyVal {
 
   def isValidLong = true
 
+
+  /** Result of comparing `this` with operand `that`.
+   *
+   * Returns `x` where:
+   *
+   *  - `x < 0` when `this < that`
+   *  - `x == 0` when `this == that`
+   *  - `x > 0` when  `this > that`
+   */
+  def compare(y: Long): Int = java.lang.Long.compare(self, y)
+
   def abs: Long = Math.abs(self)
   def max(that: Long): Long = Math.max(self, that)
   def min(that: Long): Long = Math.min(self, that)
@@ -91,7 +102,7 @@ final class RichLong(private val self: Long) extends AnyVal {
    * @param end The final bound of the range to make.
    * @return the range
    */
-  def until(end: Long): NumericRange.Exclusive[Long] = Range.Long(self, end, 1)
+  def until(end: Long): NumericRange.Exclusive[Long] = Range.Long(self, end, 1L)
 
   /** Create a `NumericRange[Long]` in range `[start;end]`
    * with the specified step, where start is the target Long.
@@ -107,7 +118,7 @@ final class RichLong(private val self: Long) extends AnyVal {
    * @param end The final bound of the range to make.
    * @return the range
    */
-  def to(end: Long): NumericRange.Inclusive[Long] = Range.Long.inclusive(self, end, 1)
+  def to(end: Long): NumericRange.Inclusive[Long] = Range.Long.inclusive(self, end, 1L)
 
   /** like `until`, but includes the last index.
    *
@@ -116,4 +127,6 @@ final class RichLong(private val self: Long) extends AnyVal {
    * @return the range
    */
   def to(end: Long, step: Long): NumericRange.Inclusive[Long] = Range.Long.inclusive(self, end, step)
+
+  override def toString(): String = java.lang.Long.toString(self)
 }

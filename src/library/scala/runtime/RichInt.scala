@@ -75,6 +75,7 @@ final class RichInt(private val self: Int) extends AnyVal {
    *  - `x > 0` when  `this > that`
    */
   def compare(y: Int): Int = Integer.compare(self, y)
+
   /** Returns `'''this'''` if `'''this''' < that` or `that` otherwise. */
   def min(that: Int): Int = Math.min(self, that)
   /** Returns `'''this'''` if `'''this''' > that` or `that` otherwise. */

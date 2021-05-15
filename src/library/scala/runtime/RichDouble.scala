@@ -107,23 +107,23 @@ final class RichDouble(private val self: Double) extends AnyVal {
   @deprecated("signum does not handle -0.0 or Double.NaN; use `sign` method instead", since = "2.13.0")
   def signum: Int = sign.toInt
 
-  def round: Long = math.round(self)
-  def ceil: Double = math.ceil(self)
-  def floor: Double = math.floor(self)
+  def round: Long = Math.round(self)
+  def ceil: Double = Math.ceil(self)
+  def floor: Double = Math.floor(self)
 
   /** Converts an angle measured in degrees to an approximately equivalent
    * angle measured in radians.
    *
    * @return the measurement of the angle x in radians.
    */
-  def toRadians: Double = math.toRadians(self)
+  def toRadians: Double = Math.toRadians(self)
 
   /** Converts an angle measured in radians to an approximately equivalent
    * angle measured in degrees.
    *
    * @return the measurement of the angle x in degrees.
    */
-  def toDegrees: Double = math.toDegrees(self)
+  def toDegrees: Double = Math.toDegrees(self)
 
   override def toString(): String = java.lang.Double.toString(self)
 }

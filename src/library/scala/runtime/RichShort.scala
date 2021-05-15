@@ -47,9 +47,19 @@ final class RichShort(private val self: Short) extends AnyVal {
 
   def isValidShort: Boolean = true
 
-  def abs: Short = Math.abs(self.toInt).toShort
-  def max(that: Short): Short = Math.max(self.toInt, that.toInt).toShort
-  def min(that: Short): Short = Math.min(self.toInt, that.toInt).toShort
+  /** Result of comparing `this` with operand `that`.
+   *
+   * Returns `x` where:
+   *
+   *  - `x < 0` when `this < that`
+   *  - `x == 0` when `this == that`
+   *  - `x > 0` when  `this > that`
+   */
+  def compare(y: Short): Int = java.lang.Short.compare(self, y)
+
+  def abs: Short = Math.abs(self).toShort
+  def max(that: Short): Short = Math.max(self, that).toShort
+  def min(that: Short): Short = Math.min(self, that).toShort
 
   /**
    * Returns the sign of `'''this'''`.
