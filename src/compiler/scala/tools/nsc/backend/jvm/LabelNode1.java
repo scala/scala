@@ -13,7 +13,6 @@
 package scala.tools.nsc.backend.jvm;
 
 import scala.tools.asm.Label;
-import scala.tools.asm.tree.ClassNode;
 import scala.tools.asm.tree.LabelNode;
 
 /**
