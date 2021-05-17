@@ -16,8 +16,6 @@ import java.io.Serializable;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.HashSet;
-import java.util.Set;
 
 /** A serialization proxy for singleton objects */
 public final class ModuleSerializationProxy implements Serializable {
