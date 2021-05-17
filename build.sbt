@@ -661,7 +661,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
     libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.6",
     compileOrder := CompileOrder.JavaThenScala, // to allow inlining from Java ("... is defined in a Java source (mixed compilation), no bytecode is available")
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
-  )
+  ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partest, scaladoc)

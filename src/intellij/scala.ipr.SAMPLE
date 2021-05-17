@@ -241,7 +241,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jol/jol-core/jars/jol-core-0.13.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.ow2.asm/asm/jars/asm-5.0.3.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/net.sf.jopt-simple/jopt-simple/jars/jopt-simple-4.6.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.2.27.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.4.2.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -489,7 +489,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-utils/jars/wss-agent-utils-2.9.9.02.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-via-api/jars/wss-agent-via-api-2.9.9.02.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/pecoff4j/jars/pecoff4j-0.0.2.1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.2.27.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.4.2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.typesafe/sbt-mima-plugin/jars/sbt-mima-plugin-0.6.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/de.heikoseeberger/sbt-header/jars/sbt-header-5.0.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/pl.project13.scala/sbt-jmh/jars/sbt-jmh.jar!/" />
