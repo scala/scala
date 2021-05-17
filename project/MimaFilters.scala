@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.5"),
+    mimaReferenceVersion := Some("2.13.6"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -25,21 +25,7 @@ object MimaFilters extends AutoPlugin {
     // don't publish the artifact built with JDK 11 anyways
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#IteratorWrapper.asIterator"),
 
-    // for the method this(Long)Unit in class scala.math.BigInt does not have a correspondent in other versions
-    // this new constructor is nevertheless private, and can only be called from the BigInt class and its companion
-    // object
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.math.BigInt.this"),
-
-    // PR: https://github.com/scala/scala/pull/9336; remove after re-STARR
-    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecatedOverriding"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecatedInheritance"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.deprecated"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.elidable"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitAmbiguous"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitNotFound"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.migration"),
-
-    // when building on a recent JDK, classes implementing `CharSequence` get a mixin forwarder for
+    // KEEP: when building on a recent JDK, classes implementing `CharSequence` get a mixin forwarder for
     // the `isEmpty` default method that was added in JDK 15
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#SeqCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
