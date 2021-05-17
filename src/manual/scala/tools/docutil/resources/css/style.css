@@ -2,7 +2,10 @@
 	font-family: Arial, Helvetica, sans-serif;
 }
 
-.ContentList { font-size: 90%; style: margin-left: 3.4em; }
+.ContentList { 
+	font-size: 90%; 
+	margin-left: 3.4em; 
+}
 
 .Note {
 	margin-left: 4em;
