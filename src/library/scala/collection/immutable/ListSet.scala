@@ -81,14 +81,16 @@ sealed class ListSet[A] extends AbstractSet[A]
   def -(elem: A): ListSet[A] = this
 
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
-   xs match {
-        // we want to avoid to use of iterator as it causes allocations
-        // during reverseList
+    xs match {
+      // we want to avoid to use of iterator as it causes allocations
+      // during reverseList
       case ls: ListSet[A] =>
         if (ls eq this) this
         else {
           val lsSize = ls.size
-          if (lsSize == 0) this else {
+          if (lsSize == 0) this
+          else if (isEmpty) ls
+          else {
             @tailrec def skip(ls: ListSet[A], count: Int): ListSet[A] = {
               if (count == 0) ls else skip(ls.next, count - 1)
             }
@@ -96,32 +98,67 @@ sealed class ListSet[A] extends AbstractSet[A]
             @tailrec def containsLimited(n: ListSet[A], e: A, end: ListSet[A]): Boolean =
               (n ne end) && (e == n.elem || containsLimited(n.next, e, end))
 
+            @tailrec def distanceTo(n: ListSet[A], end: ListSet[A], soFar: Int): Int =
+              if (n eq end) soFar else distanceTo(n.next, end, soFar + 1)
+
             // We hope to get some structural sharing so find the tail of the
             // ListSet that are `eq` (or if there are not any then the ends of the lists),
             // and we optimise the add to only iterate until we reach the common end
-            val thisSize = this.size
+            val thisSize  = this.size
             val remaining = Math.min(thisSize, lsSize)
-            var thisTail = skip(this, thisSize - remaining)
-            var lsTail = skip(ls, lsSize - remaining)
+            var thisTail  = skip(this, thisSize - remaining)
+            var lsTail    = skip(ls, lsSize - remaining)
+            //find out what part of the the ListSet is sharable
+            //as we can ignore the shared elements
             while ((thisTail ne lsTail) && !lsTail.isEmpty) {
               thisTail = thisTail.next
               lsTail = lsTail.next
             }
-            var toAdd = ls
+            var toAdd              = ls
             var result: ListSet[A] = this
 
+            // Its quite a common case that we are just adding a few elements, so it there are less than 5 elements we
+            // hold them in pending0..3
+            // if there are more than these 4 we hold the rest in pending
+            var pending                               : Array[A] = null
+            var pending0, pending1, pending2, pending3: A        = null.asInstanceOf[A]
+            var pendingCount                                     = 0
             while (toAdd ne lsTail) {
               val elem = toAdd.elem
               if (!containsLimited(result, elem, lsTail)) {
-                val r = result
-                result = new r.Node(elem)
+                pendingCount match {
+                  case 0 => pending0 = elem
+                  case 1 => pending1 = elem
+                  case 2 => pending2 = elem
+                  case 3 => pending3 = elem
+                  case _ =>
+                    if (pending eq null)
+                      pending = new Array[AnyRef](distanceTo(toAdd, lsTail, 0)).asInstanceOf[Array[A]]
+                    pending(pendingCount - 4) = elem
+                }
+                pendingCount += 1
               }
               toAdd = toAdd.next
+            }
+            // add the extra values. They are added in reverse order so as to ensure that the iteration order is correct
+            // remembering that the content is in the reverse order to the iteration order
+            // i.e. this.next is really the previous value
+            while (pendingCount > 0) {
+              val elem: A = pendingCount match {
+                case 1 => pending0
+                case 2 => pending1
+                case 3 => pending2
+                case 4 => pending3
+                case _ => pending(pendingCount - 5)
+              }
+              val r       = result
+              result = new r.Node(elem)
+              pendingCount -= 1
             }
             result
           }
         }
-      case _ =>
+      case _              =>
         if (xs.isEmpty) this
         else (repr /: xs) (_ + _)
     }
