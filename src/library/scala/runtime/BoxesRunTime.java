@@ -115,8 +115,7 @@ public final class BoxesRunTime
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
     public static boolean equals(Object x, Object y) {
-        if (x == y) return true;
-        return equals2(x, y);
+        return (x == y) || equals2(x, y);
     }
 
     /** Since all applicable logic has to be present in the equals method of a ScalaNumber
