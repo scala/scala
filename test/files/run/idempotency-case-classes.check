@@ -40,7 +40,7 @@ C(2,3)
   case _ => false
 }.&&({
       <synthetic> val C$1: C = x$1.asInstanceOf[C];
-      C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
+      C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y).&&(C$1.canEqual(C.this)))
     }))
   };
   <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with java.io.Serializable {
