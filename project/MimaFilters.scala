@@ -28,6 +28,11 @@ object MimaFilters extends AutoPlugin {
 
     // #9166 add missing serialVersionUID
     ProblemFilters.exclude[MissingFieldProblem]("*.serialVersionUID"),
+
+    // private[scala] Internal API
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
   )
 
   override val buildSettings = Seq(

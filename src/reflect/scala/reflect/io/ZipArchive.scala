@@ -17,14 +17,13 @@ package io
 import java.net.URL
 import java.io.{ByteArrayInputStream, FilterInputStream, IOException, InputStream}
 import java.io.{File => JFile}
+import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
 import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import java.util.jar.Manifest
-
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.annotation.tailrec
 import scala.reflect.internal.JDK9Reflectors
-
 import ZipArchive._
 
 /** An abstraction for zip files and streams.  Everything is written the way
@@ -146,6 +145,31 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArchive(file, release) {
   def this(file: JFile) = this(file, None)
+  private object zipFilePool {
+    private[this] val zipFiles = new ArrayBlockingQueue[ZipFile](Runtime.getRuntime.availableProcessors())
+
+    def acquire: ZipFile = {
+      val zf = zipFiles.poll(0, TimeUnit.MILLISECONDS)
+      zf match {
+        case null =>
+          openZipFile()
+        case _ =>
+          zf
+      }
+    }
+
+    def release(zf: ZipFile): Unit = {
+      if (!zipFiles.offer(zf, 0, TimeUnit.MILLISECONDS))
+        zf.close()
+    }
+
+    def close(): Unit = {
+      val zipFilesToClose = new java.util.ArrayList[ZipFile]
+      zipFiles.drainTo(zipFilesToClose)
+      zipFilesToClose.iterator().forEachRemaining(_.close())
+    }
+  }
+
   private[this] def openZipFile(): ZipFile = try {
     release match {
       case Some(r) if file.getName.endsWith(".jar") =>
@@ -175,18 +199,28 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def sizeOption: Option[Int] = Some(size) // could be stale
   }
 
-  // keeps a file handle open to ZipFile, which forbids file mutation
-  // on Windows, and leaks memory on all OS (typically by stopping
-  // classloaders from being garbage collected). But is slightly
-  // faster than LazyEntry.
+  // keeps file handle(s) open to ZipFile in the pool this.zipFiles,
+  // which forbids file mutation on Windows, and leaks memory on all OS (typically by stopping
+  // classloaders from being garbage collected). But is slightly faster than LazyEntry.
+  //
+  // Note: scala/scala#7366 / scala/scala#7644, LeakyEntry _does_ close the file when `Global.close` is called,
+  // or after a short delay specified by FileBasedCache.deferCloseMs if classpath caching is enabled.
+  // So the file handle "leak" is far less a problem than it used do be.
   private[this] class LeakyEntry(
-    zipFile: ZipFile,
-    zipEntry: ZipEntry,
-    name: String
+    name: String,
+    time: Long,
+    size: Int
   ) extends Entry(name) {
-    override def lastModified: Long = zipEntry.getTime
-    override def input: InputStream = zipFile.getInputStream(zipEntry)
-    override def sizeOption: Option[Int] = Some(zipEntry.getSize.toInt)
+    override def lastModified: Long = time // could be stale
+    override def input: InputStream = {
+      val zipFile  = zipFilePool.acquire
+      val entry    = zipFile.getEntry(name) // with `-release`, returns the correct version under META-INF/versions
+      val delegate = zipFile.getInputStream(entry)
+      new FilterInputStream(delegate) {
+        override def close(): Unit = { zipFilePool.release(zipFile) }
+      }
+    }
+    override def sizeOption: Option[Int] = Some(size) // could be stale
   }
 
   private[this] val dirs = new java.util.HashMap[String, DirEntry]()
@@ -200,10 +234,6 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
       while (enum.hasMoreElements) {
         val zipEntry = enum.nextElement
         if (!zipEntry.getName.startsWith("META-INF/versions/")) {
-          val zipEntryVersioned = if (release.isDefined) {
-            // JARFile will return the entry for the corresponding release-dependent version here under META-INF/versions
-            zipFile.getEntry(zipEntry.getName)
-          } else zipEntry
           if (!zipEntry.isDirectory) {
             val dir = getDir(dirs, zipEntry)
             val f =
@@ -213,15 +243,17 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
                   zipEntry.getTime,
                   zipEntry.getSize.toInt)
               else
-                new LeakyEntry(zipFile, zipEntryVersioned, zipEntry.getName)
+                new LeakyEntry(zipEntry.getName,
+                               zipEntry.getTime,
+                               zipEntry.getSize.toInt)
 
             dir.entries(f.name) = f
           }
         }
       }
     } finally {
-      if (ZipArchive.closeZipFile) zipFile.close()
-      else closeables ::= zipFile
+      if (!ZipArchive.closeZipFile)
+        zipFilePool.release(zipFile)
     }
     root
   }
@@ -242,9 +274,8 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     case x: FileZipArchive => file.getAbsoluteFile == x.file.getAbsoluteFile
     case _                 => false
   }
-  private[this] var closeables: List[java.io.Closeable] = Nil
   override def close(): Unit = {
-    closeables.foreach(_.close)
+    zipFilePool.close()
   }
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */

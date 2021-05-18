@@ -106,7 +106,7 @@ trait Plugins { global: Global =>
         closeableRegistry.registerClosable(loader)
         loader
       case Right(paths) =>
-        cache.getOrCreate(classpath.map(_.jfile.toPath()), newLoader, closeableRegistry, checkStamps)
+        cache.getOrCreate((), classpath.map(_.jfile.toPath()), newLoader, closeableRegistry, checkStamps)
     }
   }
 

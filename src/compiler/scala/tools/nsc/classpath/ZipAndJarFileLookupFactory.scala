@@ -14,16 +14,18 @@ package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
 import java.net.URL
-import java.nio.file.Files
+import java.nio.file.{Files, InvalidPathException}
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
+import java.nio.file.spi.FileSystemProvider
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
-
+import java.util.zip.ZipError
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils._
+import scala.reflect.internal.FatalError
 import scala.tools.nsc.io.Jar
 
 /**
@@ -32,21 +34,23 @@ import scala.tools.nsc.io.Jar
  * when there are a lot of projects having a lot of common dependencies.
  */
 sealed trait ZipAndJarFileLookupFactory {
-  private val cache = new FileBasedCache[ClassPath with Closeable]
+  case class ZipSettings(releaseValue: Option[String])
+  private val cache = new FileBasedCache[ZipSettings, ClassPath with Closeable]
 
   def create(zipFile: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry): ClassPath = {
     val disabled = (settings.YdisableFlatCpCaching.value && !settings.YforceFlatCpCaching.value) || zipFile.file == null
+    val zipSettings = ZipSettings(settings.releaseValue)
     cache.checkCacheability(zipFile.toURL :: Nil, checkStamps = true, disableCache = disabled) match {
       case Left(_) =>
-        val result: ClassPath with Closeable = createForZipFile(zipFile, settings.releaseValue)
+        val result: ClassPath with Closeable = createForZipFile(zipFile, zipSettings)
         closeableRegistry.registerClosable(result)
         result
       case Right(Seq(path)) =>
-        cache.getOrCreate(List(path), () => createForZipFile(zipFile, settings.releaseValue), closeableRegistry, checkStamps = true)
+        cache.getOrCreate(zipSettings, List(path), () => createForZipFile(zipFile, zipSettings), closeableRegistry, checkStamps = true)
     }
   }
 
-  protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable
+  protected def createForZipFile(zipFile: AbstractFile, zipSettings: ZipSettings): ClassPath with Closeable
 }
 
 /**
@@ -158,9 +162,9 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
     case class PackageInfo(packageName: String, subpackages: List[AbstractFile])
   }
 
-  override protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable =
+  override protected def createForZipFile(zipFile: AbstractFile, zipSettings: ZipSettings): ClassPath with Closeable =
     if (zipFile.file == null) createWithoutUnderlyingFile(zipFile)
-    else ZipArchiveClassPath(zipFile.file, release)
+    else ZipArchiveClassPath(zipFile.file, zipSettings.releaseValue)
 
   private def createWithoutUnderlyingFile(zipFile: AbstractFile) = zipFile match {
     case manifestRes: ManifestResources =>
@@ -189,13 +193,13 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
     override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isScalaOrJavaSource
   }
 
-  override protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable = ZipArchiveSourcePath(zipFile.file)
+  override protected def createForZipFile(zipFile: AbstractFile, zipSettings: ZipSettings): ClassPath with Closeable = ZipArchiveSourcePath(zipFile.file)
 }
 
-final class FileBasedCache[T] {
+final class FileBasedCache[K, T] {
   import java.nio.file.Path
   private case class Stamp(lastModified: FileTime, size: Long, fileKey: Object)
-  private case class Entry(stamps: Seq[Stamp], t: T) {
+  private case class Entry(k: K, stamps: Seq[Stamp], t: T) {
     val referenceCount: AtomicInteger = new AtomicInteger(1)
     var timerTask: TimerTask = null
     def cancelTimer(): Unit = {
@@ -205,9 +209,9 @@ final class FileBasedCache[T] {
       }
     }
   }
-  private val cache = collection.mutable.Map.empty[Seq[Path], Entry]
+  private val cache = collection.mutable.Map.empty[(K, Seq[Path]), Entry]
 
-  private def referenceCountDecrementer(e: Entry, paths: Seq[Path]): Closeable = {
+  private def referenceCountDecrementer(e: Entry, key: (K, Seq[Path])): Closeable = {
     // Cancel the deferred close timer (if any) that was started when the reference count
     // last dropped to zero.
     e.cancelTimer()
@@ -227,7 +231,7 @@ final class FileBasedCache[T] {
                       override def run(): Unit = {
                         cache.synchronized {
                           if (e.referenceCount.compareAndSet(0, -1)) {
-                            cache.remove(paths)
+                            cache.remove(key)
                             cl.close()
                           }
                         }
@@ -259,7 +263,7 @@ final class FileBasedCache[T] {
     }
   }
 
-  def getOrCreate(paths: Seq[Path], create: () => T, closeableRegistry: CloseableRegistry, checkStamps: Boolean): T = cache.synchronized {
+  def getOrCreate(k: K, paths: Seq[Path], create: () => T, closeableRegistry: CloseableRegistry, checkStamps: Boolean): T = cache.synchronized {
     val stamps = if (!checkStamps) Nil else paths.map { path =>
       try {
       val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
@@ -273,14 +277,15 @@ final class FileBasedCache[T] {
           Stamp(FileTime.fromMillis(0), -1, new Object)
       }
     }
+    val key = (k, paths)
 
-    cache.get(paths) match {
-      case Some(e@Entry(cachedStamps, cached)) =>
+    cache.get(key) match {
+      case Some(e@Entry(k1, cachedStamps, cached)) =>
         if (!checkStamps || cachedStamps == stamps) {
           // Cache hit
           val count = e.referenceCount.incrementAndGet()
           assert(count > 0, (stamps, count))
-          closeableRegistry.registerClosable(referenceCountDecrementer(e, paths))
+          closeableRegistry.registerClosable(referenceCountDecrementer(e, (k1, paths)))
           cached
         } else {
           // Cache miss: we found an entry but the underlying files have been modified
@@ -293,17 +298,17 @@ final class FileBasedCache[T] {
               }
           }
           val value = create()
-          val entry = Entry(stamps, value)
-          cache.put(paths, entry)
-          closeableRegistry.registerClosable(referenceCountDecrementer(entry, paths))
+          val entry = Entry(k, stamps, value)
+          cache.put(key, entry)
+          closeableRegistry.registerClosable(referenceCountDecrementer(entry, key))
           value
         }
       case _ =>
         // Cache miss
         val value = create()
-        val entry = Entry(stamps, value)
-        cache.put(paths, entry)
-        closeableRegistry.registerClosable(referenceCountDecrementer(entry, paths))
+        val entry = Entry(k, stamps, value)
+        cache.put(key, entry)
+        closeableRegistry.registerClosable(referenceCountDecrementer(entry, key))
         value
     }
   }

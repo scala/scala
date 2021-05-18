@@ -112,7 +112,7 @@ object Plugin {
 
   val PluginXML = "scalac-plugin.xml"
 
-  private[nsc] val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader.URLClassLoader]()
+  private[nsc] val pluginClassLoadersCache = new FileBasedCache[Unit, ScalaClassLoader.URLClassLoader]()
 
   type AnyClass = Class[_]
 

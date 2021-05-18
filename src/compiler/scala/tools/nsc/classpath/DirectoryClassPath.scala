@@ -14,7 +14,6 @@ package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
 import java.net.URL
-import java.nio.file.{FileSystems, Files}
 import java.util
 
 import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
@@ -130,6 +129,8 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 
 object JrtClassPath {
   import java.nio.file._, java.net.URI
+  private val jrtClassPathCache = new FileBasedCache[Unit, JrtClassPath]()
+  private val ctSymClassPathCache = new FileBasedCache[Unit, CtSymClassPath]()
   def apply(release: Option[String], closeableRegistry: CloseableRegistry): Option[ClassPath] = {
     import scala.util.Properties._
     if (!isJavaAtLeast("9")) None
@@ -148,8 +149,7 @@ object JrtClassPath {
             val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
             if (Files.notExists(ctSym)) None
             else {
-              val classPath = new CtSymClassPath(ctSym, v.toInt)
-              closeableRegistry.registerClosable(classPath)
+              val classPath = ctSymClassPathCache.getOrCreate((), ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, true)
               Some(classPath)
             }
           } catch {
@@ -158,7 +158,8 @@ object JrtClassPath {
         case _ =>
           try {
             val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-            Some(new JrtClassPath(fs))
+            val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, false)
+            Some(classPath)
           } catch {
             case _: ProviderNotFoundException | _: FileSystemNotFoundException => None
           }
