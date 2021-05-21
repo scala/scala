@@ -2719,10 +2719,9 @@ self =>
       selectors
     }
 
-    def wildcardOrIdent() = {
-      if (in.token == USCORE) { in.nextToken() ; nme.WILDCARD }
+    def wildcardOrIdent() =
+      if (in.token == USCORE || settings.isScala3 && isRawStar) { in.nextToken() ; nme.WILDCARD }
       else ident()
-    }
 
     /** {{{
      *  ImportSelector ::= Id [`=>` Id | `=>` `_`]
