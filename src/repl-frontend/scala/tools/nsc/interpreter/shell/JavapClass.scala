@@ -331,7 +331,7 @@ object Javap {
   private def massage(arg: String): Seq[String] = {
     require(arg startsWith "-")
     // arg matches opt "-foo/-f" if prefix of -foo or exactly -f
-    val r = """(-[[^-/]|[a-z]]*)(?:/(-[a-z]))?""".r
+    val r = """(-[a-z]*)(?:/(-[a-z]))?""".r
     def maybe(opt: String, s: String): Option[String] = opt match {
       // disambiguate by preferring short form
       case r(lf, sf) if s == sf          => Some(sf)
