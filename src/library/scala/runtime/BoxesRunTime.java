@@ -80,7 +80,7 @@ public final class BoxesRunTime
 /* UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING ... UNBOXING */
 
     public static boolean unboxToBoolean(Object b) {
-        return b == null ? false : ((java.lang.Boolean)b).booleanValue();
+        return b != null && ((java.lang.Boolean)b).booleanValue();
     }
 
     public static char unboxToChar(Object c) {
@@ -409,16 +409,13 @@ public final class BoxesRunTime
     public static Object negate(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            int val = unboxCharOrInt(arg, code);
-            return boxToInteger(-val);
+            return boxToInteger(-unboxCharOrInt(arg, code));
         }
         if (code <= LONG) {
-            long val = unboxCharOrLong(arg, code);
-            return boxToLong(-val);
+            return boxToLong(-unboxCharOrLong(arg, code));
         }
         if (code <= FLOAT) {
-            float val = unboxCharOrFloat(arg, code);
-            return boxToFloat(-val);
+            return boxToFloat(-unboxCharOrFloat(arg, code));
         }
         if (code <= DOUBLE) {
             double val = unboxCharOrDouble(arg, code);
@@ -431,16 +428,16 @@ public final class BoxesRunTime
     public static Object positive(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            return boxToInteger(+unboxCharOrInt(arg, code));
+            return boxToInteger(unboxCharOrInt(arg, code));
         }
         if (code <= LONG) {
-            return boxToLong(+unboxCharOrLong(arg, code));
+            return boxToLong(unboxCharOrLong(arg, code));
         }
         if (code <= FLOAT) {
-            return boxToFloat(+unboxCharOrFloat(arg, code));
+            return boxToFloat(unboxCharOrFloat(arg, code));
         }
         if (code <= DOUBLE) {
-            return boxToDouble(+unboxCharOrDouble(arg, code));
+            return boxToDouble(unboxCharOrDouble(arg, code));
         }
         throw new NoSuchMethodException();
     }
