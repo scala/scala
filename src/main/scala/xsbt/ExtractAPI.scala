@@ -740,7 +740,7 @@ class ExtractAPI[GlobalType <: Global](
         if (sym.isPackageObjectClass) DefinitionType.PackageModule
         else DefinitionType.Module
       } else DefinitionType.ClassDef
-    val childrenOfSealedClass = sort(sym.children.toArray).map(c => processType(c, c.tpe))
+    val childrenOfSealedClass = sort(sym.sealedDescendants.toArray).map(c => processType(c, c.tpe))
     val topLevel = sym.owner.isPackageClass
     val anns = annotations(in, c)
     val modifiers = getModifiers(c)
