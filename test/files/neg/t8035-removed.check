@@ -13,4 +13,11 @@ t8035-removed.scala:11: error: adaptation of an empty argument list by inserting
   given arguments: <none>
   sdf.format()
             ^
+t8035-removed.scala:14: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
+        signature: List.::[B >: A](elem: B): List[B]
+  given arguments: 42, 27
+ after adaptation: List.::((42, 27): (Int, Int))
+  Nil.::(42, 27)      // yeswarn
+        ^
+1 warning
 3 errors
