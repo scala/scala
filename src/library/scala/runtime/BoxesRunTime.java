@@ -428,16 +428,16 @@ public final class BoxesRunTime
     public static Object positive(Object arg) throws NoSuchMethodException {
         int code = typeCode(arg);
         if (code <= INT) {
-            return boxToInteger(unboxCharOrInt(arg, code));
+            return boxToInteger(java.lang.StrictMath.abs(unboxCharOrInt(arg, code)));
         }
         if (code <= LONG) {
-            return boxToLong(unboxCharOrLong(arg, code));
+            return boxToLong(java.lang.StrictMath.abs(unboxCharOrLong(arg, code)));
         }
         if (code <= FLOAT) {
-            return boxToFloat(unboxCharOrFloat(arg, code));
+            return boxToFloat(+unboxCharOrFloat(arg, code));
         }
         if (code <= DOUBLE) {
-            return boxToDouble(unboxCharOrDouble(arg, code));
+            return boxToDouble(+unboxCharOrDouble(arg, code));
         }
         throw new NoSuchMethodException();
     }
