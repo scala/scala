@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert.{assertEquals, assertTrue}
 
 import scala.annotation.nowarn
-import scala.tools.testkit.AssertUtil.{assertThrows, fail}
+import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows, fail}
 import scala.tools.testkit.ReflectUtil.{getMethodAccessible, _}
 
 class ArrayBufferTest {
@@ -446,5 +446,13 @@ class ArrayBufferTest {
     assertEquals(17, resizeDown(17, 3))
     assertEquals(32, resizeDown(64, 30))
     assertEquals(21, resizeDown(42, 17))
+  }
+
+  // scala/bug#12121
+  @Test
+  def insertAll_self(): Unit = {
+    val buf = ArrayBuffer(1, 2, 3)
+    buf.insertAll(1, buf)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), buf)
   }
 }

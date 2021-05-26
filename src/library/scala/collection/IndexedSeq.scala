@@ -47,15 +47,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
     s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-    private[this] var i = self.length
-    def hasNext: Boolean = 0 < i
-    def next(): A =
-      if (0 < i) {
-        i -= 1
-        self(i)
-      } else Iterator.empty.next()
-  }
+  override def reverseIterator: Iterator[A] = view.reverseIterator
 
   override def foldRight[B](z: B)(op: (A, B) => B): B = {
     val it = reverseIterator

@@ -18,34 +18,40 @@ import java.util.ConcurrentModificationException
 import org.junit.Test
 
 import scala.annotation.nowarn
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.tools.testkit.AssertUtil.assertThrows
 
 abstract class MutationTrackingTest[+C <: Iterable[_]](factory: Factory[Int, C]) {
-  private def runOp(op: C => Any, viewOrIterator: C => IterableOnceOps[_, AnyConstr, _]): Unit = {
-    val coll = (factory.newBuilder += 1 += 2 += 3 += 4).result()
+  private[this] type VoI = C => IterableOnceOps[_, AnyConstr, _]
+  // if you do bad things with this by returning a different builder, it WILL bite you
+  protected[this] type BuildSequence = Builder[Int, C @uV] => Builder[Int, C @uV]
+  protected[this] val defaultBuildSequence: BuildSequence = _ += 1 += 2 += 3 += 4
+
+  private[this] def runOp(op: C => Any, bs: BuildSequence, viewOrIterator: VoI): Unit = {
+    val coll = bs(factory.newBuilder).result()
     val it = viewOrIterator(coll)
     op(coll)
     it.foreach(_ => ())
   }
 
-  private def runOpMaybeThrowing(op: C => Any,
-                                 throws: Boolean,
-                                 viewOrIterator: C => IterableOnceOps[_, AnyConstr, _]): Unit = {
-    if (throws) assertThrows[ConcurrentModificationException](runOp(op, viewOrIterator), _ contains "iteration")
-    else runOp(op, viewOrIterator)
+  private[this] def runOpMaybeThrowing(op: C => Any, bs: BuildSequence, throws: Boolean, viewOrIterator: VoI): Unit = {
+    if (throws) assertThrows[ConcurrentModificationException](runOp(op, bs, viewOrIterator), _ contains "iteration")
+    else runOp(op, bs, viewOrIterator)
   }
 
-  private def runOpForViewAndIterator(op: C => Any, throws: Boolean): Unit = {
-    runOp(op, _.view) // never throws
-    runOpMaybeThrowing(op, throws, _.iterator)
-    runOpMaybeThrowing(op, throws, _.view.iterator)
+  private[this] def runOpForViewAndIterator(op: C => Any, bs: BuildSequence, throws: Boolean): Unit = {
+    runOp(op, bs, _.view) // never throws
+    runOpMaybeThrowing(op, bs, throws, _.iterator)
+    runOpMaybeThrowing(op, bs, throws, _.view.iterator)
   }
 
   /** Checks that no exception is thrown by an operation. */
-  def checkFine(op: C => Any): Unit = runOpForViewAndIterator(op, throws = false)
+  protected[this] def checkFine(op: C => Any, buildSequence: BuildSequence = defaultBuildSequence): Unit =
+    runOpForViewAndIterator(op, buildSequence, throws = false)
 
   /** Checks that an exception is thrown by an operation. */
-  def checkThrows(op: C => Any): Unit = runOpForViewAndIterator(op, throws = true)
+  protected[this] def checkThrows(op: C => Any, buildSequence: BuildSequence = defaultBuildSequence): Unit =
+    runOpForViewAndIterator(op, buildSequence, throws = true)
 
   @Test
   def nop(): Unit = checkFine { _ => () }
@@ -92,6 +98,29 @@ object MutationTrackingTest {
     @Test
     @nowarn("cat=deprecation")
     def transform(): Unit = checkThrows { _.transform(_ + 1) }
+  }
+
+  trait IndexedSeqTest { self: MutationTrackingTest[IndexedSeq[Int]] =>
+    @Test
+    def mapInPlace(): Unit = checkThrows { _.mapInPlace(_ + 1) }
+
+    @Test
+    def sortInPlace(): Unit = {
+      checkThrows { _.sortInPlace() }
+      checkFine   (_.sortInPlace(), _ += 1)
+    }
+
+    @Test
+    def sortInPlaceWith(): Unit = {
+      checkThrows { _.sortInPlaceWith(_ > _) }
+      checkFine   (_.sortInPlaceWith(_ > _), _ += 1)
+    }
+
+    @Test
+    def sortInPlaceBy(): Unit = {
+      checkThrows { _.sortInPlaceBy(_ * -1) }
+      checkFine   (_.sortInPlaceBy(_ * -1), _ += 1)
+    }
   }
 
   trait BufferTest extends GrowableTest with ShrinkableTest with SeqTest { self: MutationTrackingTest[Buffer[Int]] =>
@@ -209,5 +238,16 @@ package MutationTrackingTestImpl {
 
     @Test
     def filterInPlace(): Unit = checkThrows { _.filterInPlace(_ => true) }
+  }
+
+  class ArrayBufferTest extends MutationTrackingTest(ArrayBuffer) with BufferTest with IndexedSeqTest {
+    @Test
+    def clearAndShrink(): Unit = checkThrows { _ clearAndShrink 2 }
+
+    @Test
+    def trimToSize(): Unit = checkThrows { _.trimToSize() }
+
+    @Test
+    def sizeHint(): Unit = checkThrows { _ sizeHint 16 }
   }
 }
