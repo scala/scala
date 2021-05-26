@@ -49,14 +49,15 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 object IndexedSeqView {
 
   @SerialVersionUID(3L)
-  private final class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
+  private[collection] class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
     private[this] var current = 0
-    private[this] var remainder = self.size
+    private[this] var remainder = self.length
     override def knownSize: Int = remainder
-    def hasNext = remainder > 0
+    @inline private[this] def _hasNext: Boolean = remainder > 0
+    def hasNext: Boolean = _hasNext
     def next(): A =
-      if (hasNext) {
-        val r = self.apply(current)
+      if (_hasNext) {
+        val r = self(current)
         current += 1
         remainder -= 1
         r
@@ -82,18 +83,18 @@ object IndexedSeqView {
     }
   }
   @SerialVersionUID(3L)
-  private final class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
-    private[this] var pos = self.size - 1
-    private[this] var remainder = self.size
-    def hasNext: Boolean = remainder > 0
+  private[collection] class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
+    private[this] var pos = self.length - 1
+    private[this] var remainder = self.length
+    @inline private[this] def _hasNext: Boolean = remainder > 0
+    def hasNext: Boolean = _hasNext
     def next(): A =
-      if (pos < 0) throw new NoSuchElementException
-      else {
+      if (_hasNext) {
         val r = self(pos)
         pos -= 1
         remainder -= 1
         r
-      }
+      } else Iterator.empty.next()
 
     override def drop(n: Int): Iterator[A] = {
       if (n > 0) {
@@ -102,7 +103,6 @@ object IndexedSeqView {
       }
       this
     }
-
 
     override def sliceIterator(from: Int, until: Int): Iterator[A] = {
       val startCutoff = pos

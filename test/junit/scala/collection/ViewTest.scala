@@ -113,4 +113,11 @@ class ViewTest {
   def _toString(): Unit = {
     assertEquals("View(<not computed>)", View(1, 2, 3).toString)
   }
+
+  // see https://github.com/scala/scala/pull/9388/files#r630681050
+  @Test
+  def patch(): Unit = {
+    val view = List(2).view.patch(1, List(3, 4, 5).iterator, 0)
+    assertEquals(view.toList, view.toList)
+  }
 }
