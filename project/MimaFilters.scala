@@ -13,26 +13,12 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.12.13"),
+    mimaReferenceVersion := Some("2.12.14"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
     // KEEP: scala.reflect.internal isn't public API
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
-
-    // #9314 introduced private[this] object
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$unitsIterator$"),
-
-    // #9314 #9315 #9507 NewRedBlackTree is private[collection]
-    ProblemFilters.exclude[Problem]("scala.collection.immutable.NewRedBlackTree*"),
-
-    // #9166 add missing serialVersionUID
-    ProblemFilters.exclude[MissingFieldProblem]("*.serialVersionUID"),
-
-    // private[scala] Internal API
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
   )
 
   override val buildSettings = Seq(
