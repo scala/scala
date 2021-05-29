@@ -1,47 +1,26 @@
-case class CaseClass(a: String, b: Int)
+// scalac: -Xsource:3
+import scala.tools.testkit.AssertUtil.assertThrown
+import scala.util.chaining.*
+
+case class CaseClass[A: Ordering](a: String, b: Int)(c: A)
 case object CaseObject
-case class ImplicitParamsCaseClass[A: Ordering](a: A)
-case class CurriedCaseClass(i: Int)(s: String)
 
 object Test extends App {
 
-  try {
-    CaseClass("foo", 123).productElementName(99)
-  } catch {
-    case e: IndexOutOfBoundsException =>
-      println(e)
-      e.getStackTrace.take(4).foreach(s => println(s.toString.takeWhile(_ != '(')))
+  def check(t: Throwable)(msg: String)(ms: String*): Boolean =
+    (t.getMessage == msg).tap(if (_) () else println(s"expected [$msg], got [${t.getMessage}]"))
+    &&
+    ms.forall(m => t.getStackTrace.exists(f => m == s"${f.getClassName}.${f.getMethodName}"))
+
+  //java.lang.IndexOutOfBoundsException: 99
+  assertThrown[IndexOutOfBoundsException](check(_)("99")("scala.runtime.Statics.ioobe", "CaseClass.productElementName")) {
+    CaseClass("foo", 123)(42).productElementName(99)
   }
-
-  println()
-
-  try {
+  assertThrown[IndexOutOfBoundsException](_ => true) {
+    CaseClass("foo", 123)(42).productElementName(2)
+  }
+  //java.lang.IndexOutOfBoundsException: 99 is out of bounds (min 0, max -1
+  assertThrown[IndexOutOfBoundsException](check(_)(s"99 is out of bounds (min 0, max -1)")("scala.Product.productElementName", "CaseObject$.productElementName")) {
     CaseObject.productElementName(99)
-  } catch {
-    case e: IndexOutOfBoundsException =>
-      println(e)
-      e.getStackTrace.take(4).foreach(s => println(s.toString.takeWhile(_ != '(')))
   }
-
-  println()
-
-  try {
-    ImplicitParamsCaseClass(42).productElementName(1)
-  } catch {
-    case e: IndexOutOfBoundsException =>
-      println(e)
-      e.getStackTrace.take(4).foreach(s => println(s.toString.takeWhile(_ != '(')))
-  }
-
-  println()
-
-  try {
-    CurriedCaseClass(42)("").productElementName(1)
-  } catch {
-    case e: IndexOutOfBoundsException =>
-      println(e)
-      e.getStackTrace.take(4).foreach(s => println(s.toString.takeWhile(_ != '(')))
-  }
-
 }
-
