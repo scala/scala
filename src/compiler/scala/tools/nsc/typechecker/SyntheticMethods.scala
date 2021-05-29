@@ -126,7 +126,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
     def productElementNameMethod = {
-      val constrParamAccessors = clazz.constrParamAccessors
+      val constrParamAccessors = clazz.constrParamAccessors.take(arity)
       createSwitchMethod(nme.productElementName, constrParamAccessors.indices, StringTpe)(idx => LIT(constrParamAccessors(idx).name.dropLocal.decode))
     }
 
