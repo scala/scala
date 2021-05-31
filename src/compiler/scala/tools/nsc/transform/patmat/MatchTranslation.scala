@@ -123,17 +123,9 @@ trait MatchTranslation {
             // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val typeTest = TypeTestTreeMaker(binder, binder, paramType, paramType)(pos, extractorArgTypeTest = true)
-            val binderKnownNonNull = typeTest impliesBinderNonNull binder
-            assert(binderKnownNonNull, s"$binder")
-            // skip null test if it's implied
-            if (binderKnownNonNull) {
-              val unappBinder = typeTest.nextBinder
-              (typeTest :: treeMakers(unappBinder, pos), unappBinder)
-            } else {
-              val nonNullTest = NonNullTestTreeMaker(typeTest.nextBinder, paramType, pos)
-              val unappBinder = nonNullTest.nextBinder
-              (typeTest :: nonNullTest :: treeMakers(unappBinder, pos), unappBinder)
-            }
+            // binder is known non-null because the type test would not succeed on `null`
+            val unappBinder = typeTest.nextBinder
+            (typeTest :: treeMakers(unappBinder, pos), unappBinder)
           }
         }
 
