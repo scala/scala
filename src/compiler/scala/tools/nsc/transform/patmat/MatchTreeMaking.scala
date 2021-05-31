@@ -214,11 +214,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val nullCheck = REF(prevBinder) OBJ_NE NULL
       lazy val localSubstitution = Substitution(Nil, Nil)
 
-      def isExpectedPrimitiveType = isPrimitiveValueType(expectedTp)
+      def skipNullTest = isPrimitiveValueType(expectedTp) || expectedTp.typeSymbol.isDerivedValueClass
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree =
         atPos(pos) {
-          if (isExpectedPrimitiveType) next
+          if (skipNullTest) next
           else casegen.ifThenElseZero(nullCheck, next)
         }
 
