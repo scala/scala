@@ -1,0 +1,6 @@
+t7052b.scala:15: error: method apply overrides nothing.
+Note: the super classes of class C contain the following, non final members named apply:
+def apply(xs: Int*): Int
+  override def apply(xs: Seq[Int]) = 17
+               ^
+1 error
