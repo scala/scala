@@ -1,3 +1,4 @@
+BREAK
 /*
  * The new, sbt-based build definition for Scala.
  *
