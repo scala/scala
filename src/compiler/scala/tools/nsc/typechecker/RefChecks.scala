@@ -1215,14 +1215,18 @@ abstract class RefChecks extends Transform {
       finally popLevel()
     }
 
+    private def showCurrentRef: String = {
+      val refsym = currentLevel.refsym
+      s"$refsym defined on line ${refsym.pos.line}"
+    }
+
     def transformStat(tree: Tree, index: Int): Tree = tree match {
       case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
         try transform(tree)
         finally if (currentLevel.maxindex > 0) {
-          // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
-          debuglog("refsym = " + currentLevel.refsym)
-          reporter.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
+          // An implementation restriction to avoid VerifyErrors and lazy vals mishaps; see scala/bug#4717
+          reporter.error(currentLevel.refpos, s"forward reference to $showCurrentRef not allowed from self constructor invocation")
         }
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree) // important to do before forward reference check
@@ -1230,8 +1234,7 @@ abstract class RefChecks extends Transform {
         else {
           val sym = tree.symbol
           if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
-            debuglog("refsym = " + currentLevel.refsym)
-            reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
+            reporter.error(currentLevel.refpos, s"forward reference to $showCurrentRef extends over definition of $sym")
           }
           tree1
         }
