@@ -1,3 +1,4 @@
+// scalac: -Werror
 import scala.reflect.api.Universe
 
 object Test {
