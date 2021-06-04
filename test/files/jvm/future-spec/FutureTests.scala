@@ -147,6 +147,7 @@ class FutureTests extends MinimalScalaTest {
       assert( ECNotUsed(ec => f.filter(_ => fail("filter should not have been called"))(ec)) eq f)
       assert( ECNotUsed(ec => f.collect({ case _ => fail("collect should not have been called")})(ec)) eq f)
       assert( ECNotUsed(ec => f.zipWith(f)({ (_,_) => fail("zipWith should not have been called")})(ec)) eq f)
+
     }
   }
 
