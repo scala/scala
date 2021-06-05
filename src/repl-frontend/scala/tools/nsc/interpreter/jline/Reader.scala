@@ -170,6 +170,7 @@ object Reader {
         true
       }
       def show(text: String): Unit = {
+        reader.callWidget(LineReader.CLEAR)
         reader.getTerminal.writer.println()
         reader.getTerminal.writer.println(text)
         reader.callWidget(LineReader.REDRAW_LINE)
@@ -354,6 +355,7 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
       case exacts =>
         val declStrings = exacts.map(_.declString()).filterNot(_ == "")
         if (declStrings.nonEmpty) {
+          lineReader.callWidget(LineReader.CLEAR)
           lineReader.getTerminal.writer.println()
           for (declString <- declStrings)
             lineReader.getTerminal.writer.println(declString)
