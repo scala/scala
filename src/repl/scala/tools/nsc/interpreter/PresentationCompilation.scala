@@ -60,7 +60,7 @@ trait PresentationCompilation { self: IMain =>
       }
       val importer = global.mkImporter(pc)
       //println(s"pc: [[$line1]], <<${trees.size}>>")
-      val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true)
+      val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true, storeResultInVal = false)
       val origUnit = request.mkUnit
       val unit = new pc.CompilationUnit(origUnit.source)
       unit.body = pc.mkImporter(global).importTree(origUnit.body)

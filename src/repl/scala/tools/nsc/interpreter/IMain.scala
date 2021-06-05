@@ -775,7 +775,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** One line of code submitted by the user for interpretation */
-  class Request(val line: String, origTrees: List[Tree], firstXmlPos: Position = NoPosition, generousImports: Boolean = false, synthetic: Boolean = false) extends ReplRequest {
+  class Request(val line: String, origTrees: List[Tree], firstXmlPos: Position = NoPosition,
+                generousImports: Boolean = false, synthetic: Boolean = false, storeResultInVal: Boolean = true) extends ReplRequest {
     def defines    = defHandlers flatMap (_.definedSymbols)
     def definesTermNames: List[String] = defines collect { case s: TermSymbol => s.decodedName.toString }
     def imports    = importedSymbols
@@ -801,6 +802,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     // Wrap last tree in a valdef to give user a nice handle for it (`resN`)
     val trees: List[Tree] = origTrees match {
+      case xs if !storeResultInVal => xs
       case init :+ tree =>
         @tailrec def loop(scrut: Tree): Tree = scrut match {
           case _: Assign                => tree
