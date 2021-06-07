@@ -107,7 +107,13 @@ object ScriptCommands {
       Global / baseVersionSuffix := "SPLIT",
       Global / resolvers += "scala-pr" at url,
       Global / publishTo := Some("sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
-      Global / credentials += Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", env("SONA_USER"), env("SONA_PASS"))
+      Global / credentials ++= {
+        val user = env("SONA_USER")
+        val pass = env("SONA_PASS")
+        if (user != "" && pass != "")
+         List(Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", user, pass))
+        else Nil
+      }
       // pgpSigningKey and pgpPassphrase are set externally by travis / the bootstrap script, as the sbt-pgp plugin is not enabled by default
     ) ++ enableOptimizer
   }
@@ -168,7 +174,12 @@ object ScriptCommands {
 
     Seq(
       Global / publishTo := Some("scala-pr-publish" at url2),
-      Global / credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
+      Global / credentials ++= {
+        val pass = env("PRIVATE_REPO_PASS")
+        if (pass != "")
+          List(Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", pass))
+        else Nil
+      }
     )
   }
 
