@@ -302,18 +302,15 @@ trait NamesDefaults { self: Analyzer =>
         case _ =>
           val byName   = isByNameParamType(paramTpe)
           val repeated = isScalaRepeatedParamType(paramTpe)
-          val argTpe = (
-            if (repeated) arg match {
+          // TODO In 83c9c764b, we tried to a stable type here to fix scala/bug#7234. But the resulting TypeTree over a
+          //      singleton type without an original TypeTree fails to retypecheck after a resetAttrs (scala/bug#7516),
+          //      which is important for (at least) macros.
+          val argTpe =
+            arg match {
+              case _ if !repeated        => arg.tpe
               case WildcardStarArg(expr) => expr.tpe
-              case _                     => seqType(arg.tpe)
+              case _                     => seqType(arg.tpe.widen)      // avoid constant type
             }
-            else {
-              // TODO In 83c9c764b, we tried to a stable type here to fix scala/bug#7234. But the resulting TypeTree over a
-              //      singleton type without an original TypeTree fails to retypecheck after a resetAttrs (scala/bug#7516),
-              //      which is important for (at least) macros.
-              arg.tpe
-            }
-          )
           val s = context.owner.newValue(freshTermName(nme.NAMEDARG_PREFIX)(typer.fresh), arg.pos, newFlags = ARTIFACT) setInfo {
             val tp = if (byName) functionType(Nil, argTpe) else argTpe
             uncheckedBounds(tp)
@@ -330,10 +327,11 @@ trait NamesDefaults { self: Analyzer =>
               res
             } else {
               new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
-              if (repeated) arg match {
+              arg match {
+                case _ if !repeated        => arg
                 case WildcardStarArg(expr) => expr
-                case _                     => blockTyper typed gen.mkSeqApply(resetAttrs(arg))
-              } else arg
+                case _                     => blockTyper.typed(gen.mkSeqApply(resetAttrs(arg)))
+              }
             }
           Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))
       }
