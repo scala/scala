@@ -152,11 +152,27 @@ trait PresentationCompilation { self: IMain =>
 
     override def print = {
       val tree = treeAt(inputRange)
-      val tpString = typeString(tree) match {
+      import compiler._
+      object makeCodePrinterPrintInferredTypes extends Transformer {
+        private def printableTypeTree(tp: Type): TypeTree = {
+          val tree = TypeTree(tp)
+          tree.wasEmpty = false
+          tree
+        }
+        override def transform(tree: Tree): Tree = super.transform(tree) match {
+          case ValDef(mods, name, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
+            treeCopy.ValDef(tree, mods, name, printableTypeTree(tt.tpe), rhs)
+          case DefDef(mods, name, tparams, vparamss, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
+            treeCopy.DefDef(tree, mods, name, tparams, vparamss, printableTypeTree(tt.tpe), rhs)
+          case t => t
+        }
+      }
+      val tree1    = makeCodePrinterPrintInferredTypes.transform(tree)
+      val tpString = typeString(tree1) match {
         case "" => ""
         case s => " // : "  + s
       }
-      treeString(tree) + tpString
+      treeString(tree1) + tpString
     }
 
 
