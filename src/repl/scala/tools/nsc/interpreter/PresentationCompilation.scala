@@ -143,6 +143,7 @@ trait PresentationCompilation { self: IMain =>
     def typeString(tree: compiler.Tree): String = {
       tree.tpe match {
         case null | compiler.NoType | compiler.ErrorType => ""
+        case tp if compiler.nme.isReplWrapperName(tp.typeSymbol.name) => ""
         case tp => compiler.exitingTyper(tp.toString)
       }
     }
@@ -161,11 +162,16 @@ trait PresentationCompilation { self: IMain =>
         }
         override def transform(tree: Tree): Tree = super.transform(tree) match {
           case ValDef(mods, name, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
-            treeCopy.ValDef(tree, mods, name, printableTypeTree(tt.tpe), rhs)
+            if (tree.symbol != null && tree.symbol != NoSymbol && nme.isReplWrapperName(tree.symbol.owner.name)) {
+              treeCopy.ValDef(tree, mods &~ (Flag.PRIVATE | Flag.LOCAL), name.dropLocal, printableTypeTree(tt.tpe), rhs)
+            } else {
+              treeCopy.ValDef(tree, mods, name, printableTypeTree(tt.tpe), rhs)
+            }
           case DefDef(mods, name, tparams, vparamss, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
             treeCopy.DefDef(tree, mods, name, tparams, vparamss, printableTypeTree(tt.tpe), rhs)
           case t => t
         }
+
       }
       val tree1    = makeCodePrinterPrintInferredTypes.transform(tree)
       val tpString = typeString(tree1) match {

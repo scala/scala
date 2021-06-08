@@ -169,7 +169,7 @@ object Reader {
         }
         true
       }
-      def show(text: String): Unit = {
+      def show(text: String): Unit = if (text != "") {
         reader.callWidget(LineReader.CLEAR)
         reader.getTerminal.writer.println()
         reader.getTerminal.writer.println(text)
