@@ -9,3 +9,15 @@ scala.Product.productElementName
 scala.Product.productElementName$
 CaseObject$.productElementName
 Test$.delayedEndpoint$Test$1
+
+java.lang.IndexOutOfBoundsException: 1
+scala.runtime.Statics.ioobe
+ImplicitParamsCaseClass.productElementName
+Test$.delayedEndpoint$Test$1
+Test$delayedInit$body.apply
+
+java.lang.IndexOutOfBoundsException: 1
+scala.runtime.Statics.ioobe
+CurriedCaseClass.productElementName
+Test$.delayedEndpoint$Test$1
+Test$delayedInit$body.apply
