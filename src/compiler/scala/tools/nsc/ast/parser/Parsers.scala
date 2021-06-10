@@ -2648,7 +2648,7 @@ self =>
     }
 
     def wildcardOrIdent() = {
-      if (in.token == USCORE) { in.nextToken() ; nme.WILDCARD }
+      if (in.token == USCORE || currentRun.isScala3 && isRawStar) { in.nextToken() ; nme.WILDCARD }
       else ident()
     }
 

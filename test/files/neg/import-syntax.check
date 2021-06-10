@@ -1,0 +1,4 @@
+import-syntax.scala:13: error: not found: value should fail
+  `should fail`()
+  ^
+one error found
