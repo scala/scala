@@ -52,6 +52,7 @@ trait Analyzer extends AnyRef
   object packageObjects extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
   } with SubComponent {
+    val deferredOpen = perRunCaches.newMap[Symbol, Symbol]()
     val phaseName = "packageobjects"
     val runsAfter = List[String]()
     val runsRightAfter= Some("namer")
@@ -64,6 +65,9 @@ trait Analyzer extends AnyRef
         override def traverse(tree: Tree): Unit = tree match {
           case ModuleDef(_, _, _) =>
             if (tree.symbol.name == nme.PACKAGEkw) {
+              // we've actually got a source file
+              deferredOpen.remove(tree.symbol.owner)
+
               openPackageModule(tree.symbol, tree.symbol.owner)
             }
           case ClassDef(_, _, _, _) => () // make it fast
@@ -73,6 +77,10 @@ trait Analyzer extends AnyRef
 
       def apply(unit: CompilationUnit): Unit = {
         openPackageObjectsTraverser(unit.body)
+        deferredOpen.foreach {
+          case (dest, container) =>
+            openPackageModule(container, dest)
+        }
       }
     }
   }

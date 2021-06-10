@@ -339,6 +339,9 @@ abstract class SymbolTable extends macros.Universe
     }
   }
 
+  def deferredOpenPackageModule(container: Symbol, dest: Symbol): Unit = {
+    openPackageModule(container, dest)
+  }
   def openPackageModule(container: Symbol, dest: Symbol): Unit = {
     // unlink existing symbols in the package
     for (member <- container.info.decls.iterator) {
@@ -396,7 +399,7 @@ abstract class SymbolTable extends macros.Universe
       case _ => false
     }
     if (pkgModule.isModule && !fromSource) {
-      openPackageModule(pkgModule, pkgClass)
+      deferredOpenPackageModule(pkgModule, pkgClass)
     }
   }
 

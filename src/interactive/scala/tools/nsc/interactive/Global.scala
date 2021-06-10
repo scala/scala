@@ -1355,6 +1355,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
+  override def isPastPackageObjects = {
+    (if (currentTyperRun == null) NoCompilationUnit else currentTyperRun.currentUnit) match {
+      case unit: RichCompilationUnit => unit.isParsed
+      case _                         => super.isPastPackageObjects
+    }
+  }
+
   def newTyperRun(): Unit = {
     currentTyperRun = new TyperRun
   }
