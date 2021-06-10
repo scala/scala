@@ -5,7 +5,6 @@ class D {
   def unrelated(y: Int): Int = y
 }
 
-// TODO
 object nope {
   val d = new D
   import d.{* => huh}
@@ -13,7 +12,7 @@ object nope {
   `should fail`()
 }
 
-// OK
+// OK, except previous syntax errors bail early
 object rename {
   val d = new D
   import d.{unrelated => f, *}

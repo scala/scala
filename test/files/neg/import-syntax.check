@@ -1,4 +1,7 @@
-import-syntax.scala:13: error: not found: value should fail
-  `should fail`()
-  ^
-one error found
+import-syntax.scala:10: error: Wildcard import cannot be renamed
+  import d.{* => huh}
+                 ^
+import-syntax.scala:11: error: Wildcard import cannot be renamed
+  import d.{_ => also_no}
+                 ^
+two errors found

@@ -2669,6 +2669,7 @@ self =>
         if (in.token == ARROW || (currentRun.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           renameOffset = in.offset
+          if (name == nme.WILDCARD) syntaxError(renameOffset, "Wildcard import cannot be renamed")
           wildcardOrIdent()
         }
         else if (name == nme.WILDCARD) null
