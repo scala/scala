@@ -80,7 +80,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   import definitions.findNamedMember
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
-
+  override def deferredOpenPackageModule(container: Symbol, dest: Symbol): Unit = {
+    if (isPast(currentRun.packageobjectsPhase)) {
+      super.openPackageModule(container, dest)
+    } else {
+      analyzer.packageObjects.deferredOpen(dest) = container
+    }
+  }
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
@@ -1338,7 +1344,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
      */
     val parserPhase                  = phaseNamed("parser")
     val namerPhase                   = phaseNamed("namer")
-    // val packageobjectsPhase          = phaseNamed("packageobjects")
+    val packageobjectsPhase          = phaseNamed("packageobjects")
     val typerPhase                   = phaseNamed("typer")
     // val inlineclassesPhase           = phaseNamed("inlineclasses")
     // val superaccessorsPhase          = phaseNamed("superaccessors")
