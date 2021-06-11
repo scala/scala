@@ -467,17 +467,6 @@ trait Namers extends MethodSynthesis {
 
       val existingModule = context.scope lookupModule tree.name
       if (existingModule.isModule && !existingModule.hasPackageFlag && inCurrentScope(existingModule) && (currentRun.canRedefine(existingModule) || existingModule.isSynthetic)) {
-        // This code accounts for the way the package objects found in the classpath are opened up
-        // early by the completer of the package itself. If the `packageobjects` phase then finds
-        // the same package object in sources, we have to clean the slate and remove package object
-        // members from the package class.
-        //
-        // TODO scala/bug#4695 Pursue the approach in https://github.com/scala/scala/pull/2789 that avoids
-        //      opening up the package object on the classpath at all if one exists in source.
-        if (existingModule.isPackageObject) {
-          val packageScope = existingModule.enclosingPackageClass.rawInfo.decls
-          packageScope.foreach(mem => if (mem.owner != existingModule.enclosingPackageClass) packageScope unlink mem)
-        }
         updatePosFlags(existingModule, tree.pos, moduleFlags)
         setPrivateWithin(tree, existingModule)
         existingModule.moduleClass andAlso (setPrivateWithin(tree, _))
