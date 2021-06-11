@@ -1,0 +1,7 @@
+import-syntax.scala:10: error: Wildcard import cannot be renamed
+  import d.{* => huh}
+                 ^
+import-syntax.scala:11: error: Wildcard import cannot be renamed
+  import d.{_ => also_no}
+                 ^
+two errors found
