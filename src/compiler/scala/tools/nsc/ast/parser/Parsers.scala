@@ -1810,7 +1810,7 @@ self =>
       val expr = reduceExprStack(base, loop(prefixExpr()))
       if (followingIsScala3Vararg())
         atPos(expr.pos.start) {
-          Typed(expr, atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
+          Typed(stripParens(expr), atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
         }
       else expr
     }
@@ -2171,7 +2171,7 @@ self =>
         }
         def checkWildStar: Tree = top match {
           case Ident(nme.WILDCARD) if isSequenceOK && isRawStar => peekingAhead (
-            if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
+            if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(top))
             else EmptyTree
           )
           case Ident(name) if isSequenceOK && followingIsScala3Vararg() =>

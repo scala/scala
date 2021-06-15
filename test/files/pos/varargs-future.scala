@@ -6,6 +6,7 @@ class Test {
 
   val s: Seq[Int] = Seq(1, 2, 3)
   foo(s*)
+  foo((s ++ s)*)
 
   // not very useful, but supported by Scala 3 (and matches what works with `: _*` syntax)
   foo(
