@@ -20,4 +20,24 @@ class Test {
   s match {
     case Seq(x, rest*) => println(rest)
   }
+
+  // regression tests for comparison
+  s match {
+    case Seq(elems @ _*) => println(elems)
+  }
+
+  s match {
+    case Seq(x, rest @ _*) => println(rest)
+  }
+
+  // more parens
+  s match {
+    case Seq((xs) @ _*) => xs
+  }
+
+  /* also disallowed in Scala 3
+  s match {
+    case Seq((xs)*) => xs
+  }
+  */
 }
