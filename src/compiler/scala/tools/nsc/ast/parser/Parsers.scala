@@ -307,25 +307,6 @@ self =>
       }
     }
 
-    /** Perform an operation while peeking ahead.
-     *  Pushback if the operation yields an empty tree or blows to pieces.
-     */
-    @inline def peekingAhead(tree: => Tree): Tree = {
-      @inline def peekahead() = {
-        in.prev copyFrom in
-        in.nextToken()
-      }
-      @inline def pushback() = {
-        in.next copyFrom in
-        in copyFrom in.prev
-      }
-      peekahead()
-      // try it, in case it is recoverable
-      val res = try tree catch { case e: Exception => pushback() ; throw e }
-      if (res.isEmpty) pushback()
-      res
-    }
-
     class ParserTreeBuilder extends TreeBuilder {
       val global: self.global.type = self.global
       def unit = parser.unit
@@ -1810,7 +1791,7 @@ self =>
       val expr = reduceExprStack(base, loop(prefixExpr()))
       if (followingIsScala3Vararg())
         atPos(expr.pos.start) {
-          Typed(expr, atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
+          Typed(stripParens(expr), atPos(in.skipToken()) { Ident(tpnme.WILDCARD_STAR) })
         }
       else expr
     }
@@ -2169,18 +2150,19 @@ self =>
           case COMMA  => !isXML && in.isTrailingComma(RPAREN)
           case _      => false
         }
-        def checkWildStar: Tree = top match {
-          case Ident(nme.WILDCARD) if isSequenceOK && isRawStar => peekingAhead (
-            if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
-            else EmptyTree
-          )
-          case Ident(name) if isSequenceOK && followingIsScala3Vararg() =>
-            atPos(top.pos.start) {
-              Bind(name, atPos(in.skipToken()) { Star(Ident(nme.WILDCARD)) })
+        def checkWildStar: Tree =
+          if (isSequenceOK) {
+            top match {
+              case Ident(nme.WILDCARD) if isRawStar && lookingAhead(isCloseDelim) =>
+                atPos(top.pos.start, in.skipToken()) { Star(top) }
+              case Ident(name) if followingIsScala3Vararg() =>
+                atPos(top.pos.start) {
+                  Bind(name, atPos(in.skipToken()) { Star(Ident(nme.WILDCARD)) })
+                }
+              case _ => EmptyTree
             }
-          case _ =>
-            EmptyTree
-        }
+          }
+          else EmptyTree
         @tailrec
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
           case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(() => badPattern3()))
