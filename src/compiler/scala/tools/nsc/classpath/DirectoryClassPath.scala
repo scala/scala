@@ -130,7 +130,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 object JrtClassPath {
   import java.nio.file._, java.net.URI
   private val jrtClassPathCache = new FileBasedCache[Unit, JrtClassPath]()
-  private val ctSymClassPathCache = new FileBasedCache[Unit, CtSymClassPath]()
+  private val ctSymClassPathCache = new FileBasedCache[String, CtSymClassPath]()
   def apply(release: Option[String], closeableRegistry: CloseableRegistry): Option[ClassPath] = {
     import scala.util.Properties._
     if (!isJavaAtLeast("9")) None
@@ -149,7 +149,7 @@ object JrtClassPath {
             val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
             if (Files.notExists(ctSym)) None
             else {
-              val classPath = ctSymClassPathCache.getOrCreate((), ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, true)
+              val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, true)
               Some(classPath)
             }
           } catch {
