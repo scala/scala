@@ -59,7 +59,7 @@ trait Product extends Any with Equals {
    */
   def productElementName(n: Int): String =
     if (n >= 0 && n < productArity) ""
-    else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${productArity-1}")
+    else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${productArity-1})")
 
   /** An iterator over the names of all the elements of this product.
    */
