@@ -1273,7 +1273,7 @@ trait Infer extends Checkable {
         return ErrorType
       }
 
-      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
+      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy = canRemedy)
       if (pattp <:< pt) ()
       else {
         debuglog("free type params (1) = " + tpparams)

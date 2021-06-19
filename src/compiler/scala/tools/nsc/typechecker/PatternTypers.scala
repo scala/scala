@@ -316,13 +316,12 @@ trait PatternTypers {
                 case OverloadedType(_, _)      => OverloadedUnapplyError(funOverloadResolved); ErrorType
                 case _                         => UnapplyWithSingleArgError(funOverloadResolved); ErrorType
               }
-
               val GenPolyType(freeVars, unappFormal) = freshArgType(unapplyType.skolemizeExistential(context.owner, tree))
               val unapplyContext = context.makeNewScope(tree, context.owner)
-              freeVars foreach unapplyContext.scope.enter
-              val pattp = newTyper(unapplyContext).infer.inferTypedPattern(tree, unappFormal, pt, canRemedy)
+              freeVars.foreach(unapplyContext.scope.enter)
+              val pattp = newTyper(unapplyContext).infer.inferTypedPattern(tree, unappFormal, pt, canRemedy = canRemedy)
               // turn any unresolved type variables in freevars into existential skolems
-              val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
+              val skolems = freeVars.map(fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
               pattp.substSym(freeVars, skolems)
             }
           }
