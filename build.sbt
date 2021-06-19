@@ -673,6 +673,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
+    Jmh / bspEnabled := false // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
