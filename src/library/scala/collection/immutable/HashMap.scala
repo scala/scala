@@ -20,7 +20,7 @@ import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-import scala.collection.mutable.ReusableBuilder
+import scala.collection.mutable, mutable.ReusableBuilder
 import scala.collection.{Iterator, MapFactory, MapFactoryDefaults, Stepper, StepperShape, mutable}
 import scala.runtime.AbstractFunction2
 import scala.runtime.Statics.releaseFence
@@ -169,7 +169,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
         if (newNode eq hm.rootNode) hm
         else newHashMapOrThis(rootNode.concat(hm.rootNode, 0))
       }
-    case hm: collection.mutable.HashMap[K, V] =>
+    case hm: mutable.HashMap[K @unchecked, V @unchecked] =>
       val iter = hm.nodeIterator
       var current = rootNode
       while (iter.hasNext) {
@@ -1270,7 +1270,7 @@ private final class BitmapIndexedMapNode[K, +V](
           index += 1
         }
       }
-    case _: HashCollisionMapNode[K, V] =>
+    case _: HashCollisionMapNode[_, _] =>
       throw new Exception("Cannot merge BitmapIndexedMapNode with HashCollisionMapNode")
   }
 

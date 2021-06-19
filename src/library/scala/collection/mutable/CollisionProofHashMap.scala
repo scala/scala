@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.{unchecked => uc}
 import scala.annotation.{implicitNotFound, tailrec, unused}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
@@ -72,8 +73,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   def get(key: K): Option[V] = findNode(key) match {
     case null => None
     case nd => Some(nd match {
-      case nd: LLNode => nd.value
-      case nd: RBNode => nd.value
+      case nd: LLNode @uc => nd.value
+      case nd: RBNode @uc => nd.value
     })
   }
 
@@ -81,15 +82,15 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   override def apply(key: K): V = findNode(key) match {
     case null => default(key)
     case nd => nd match {
-      case nd: LLNode => nd.value
-      case nd: RBNode => nd.value
+      case nd: LLNode @uc => nd.value
+      case nd: RBNode @uc => nd.value
     }
   }
 
   override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
     val nd = findNode(key)
     if (nd eq null) default else nd match {
-      case nd: LLNode => nd.value
+      case nd: LLNode @uc => nd.value
       case n => n.asInstanceOf[RBNode].value
     }
   }
@@ -98,7 +99,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     val hash = computeHash(elem)
     table(index(hash)) match {
       case null => null
-      case n: LLNode => n.getNode(elem, hash)
+      case n: LLNode @uc => n.getNode(elem, hash)
       case n => n.asInstanceOf[RBNode].getNode(elem, hash)
     }
   }
@@ -129,7 +130,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
 
   private[this] def put0(key: K, value: V, getOld: Boolean, hash: Int, idx: Int): Some[V] = {
     val res = table(idx) match {
-      case n: RBNode =>
+      case n: RBNode @uc =>
         insert(n, idx, key, hash, value)
       case _old =>
         val old: LLNode = _old.asInstanceOf[LLNode]
@@ -184,16 +185,16 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     val idx = index(hash)
     table(idx) match {
       case null => Statics.pfMarker
-      case t: RBNode =>
+      case t: RBNode @uc =>
         val v = delete(t, idx, elem, hash)
         if(v.asInstanceOf[AnyRef] ne Statics.pfMarker) contentSize -= 1
         v
-      case nd: LLNode if nd.hash == hash && nd.key == elem =>
+      case nd: LLNode @uc if nd.hash == hash && nd.key == elem =>
         // first element matches
         table(idx) = nd.next
         contentSize -= 1
         nd.value
-      case nd: LLNode =>
+      case nd: LLNode @uc =>
         // find an element that matches
         var prev = nd
         var next = nd.next
@@ -226,10 +227,10 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
           i += 1
           n match {
             case null =>
-            case n: RBNode =>
+            case n: RBNode @uc =>
               node = CollisionProofHashMap.minNodeNonNull(n)
               return true
-            case n: LLNode =>
+            case n: LLNode @uc =>
               node = n
               return true
           }
@@ -241,11 +242,11 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     def next(): R =
       if(!hasNext) Iterator.empty.next()
       else node match {
-        case n: RBNode =>
+        case n: RBNode @uc =>
           val r = extract(n)
           node = CollisionProofHashMap.successor(n )
           r
-        case n: LLNode =>
+        case n: LLNode @uc =>
           val r = extract(n)
           node = n.next
           r
@@ -289,8 +290,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   }
 
   @`inline` private[this] def splitBucket(tree: Node, lowBucket: Int, highBucket: Int, mask: Int): Unit = tree match {
-    case t: LLNode => splitBucket(t, lowBucket, highBucket, mask)
-    case t: RBNode => splitBucket(t, lowBucket, highBucket, mask)
+    case t: LLNode @uc => splitBucket(t, lowBucket, highBucket, mask)
+    case t: RBNode @uc => splitBucket(t, lowBucket, highBucket, mask)
   }
 
   private[this] def splitBucket(list: LLNode, lowBucket: Int, highBucket: Int, mask: Int): Unit = {
@@ -361,8 +362,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     while(i < len) {
       val n = table(i)
       if(n ne null) n match {
-        case n: LLNode => n.foreach(f)
-        case n: RBNode => n.foreach(f)
+        case n: LLNode @uc => n.foreach(f)
+        case n: RBNode @uc => n.foreach(f)
       }
       i += 1
     }
@@ -374,8 +375,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     while(i < len) {
       val n = table(i)
       if(n ne null) n match {
-        case n: LLNode => n.foreachEntry(f)
-        case n: RBNode => n.foreachEntry(f)
+        case n: LLNode @uc => n.foreachEntry(f)
+        case n: RBNode @uc => n.foreachEntry(f)
       }
       i += 1
     }
@@ -390,7 +391,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     val idx = index(hash)
     table(idx) match {
       case null => ()
-      case n: LLNode =>
+      case n: LLNode @uc =>
         val nd = n.getNode(key, hash)
         if(nd != null) return nd.value
       case n =>
@@ -711,8 +712,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
       case 1 =>
         val nn = xs.next()
         val (key, hash, value) = nn match {
-          case nn: LLNode => (nn.key, nn.hash, nn.value)
-          case nn: RBNode => (nn.key, nn.hash, nn.value)
+          case nn: LLNode @uc => (nn.key, nn.hash, nn.value)
+          case nn: RBNode @uc => (nn.key, nn.hash, nn.value)
         }
         new RBNode(key, hash, value, level == maxUsedDepth && level != 1, null, null, null)
       case n =>
@@ -721,8 +722,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
         val nn = xs.next()
         val right = f(level+1, size-1-leftSize)
         val (key, hash, value) = nn match {
-          case nn: LLNode => (nn.key, nn.hash, nn.value)
-          case nn: RBNode => (nn.key, nn.hash, nn.value)
+          case nn: LLNode @uc => (nn.key, nn.hash, nn.value)
+          case nn: RBNode @uc => (nn.key, nn.hash, nn.value)
         }
         val n = new RBNode(key, hash, value, false, left, right, null)
         if(left ne null) left.parent = n
