@@ -14,18 +14,15 @@ package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
 import java.net.URL
-import java.nio.file.{Files, InvalidPathException}
+import java.nio.file.Files
 import java.nio.file.attribute.{BasicFileAttributes, FileTime}
-import java.nio.file.spi.FileSystemProvider
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.zip.ZipError
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils._
-import scala.reflect.internal.FatalError
 import scala.tools.nsc.io.Jar
 
 /**
