@@ -15,7 +15,6 @@ package scala.tools.nsc
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.settings.DefaultPathFactory
-import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 
 /** The main class for scaladoc, a front-end for the Scala compiler
