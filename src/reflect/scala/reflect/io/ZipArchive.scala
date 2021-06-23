@@ -220,7 +220,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
         override def close(): Unit = { zipFilePool.release(zipFile) }
       }
     }
-    override def sizeOption: Option[Int] = Some(size) // could be stale
+    override def sizeOption: Option[Int] = Some(size)
   }
 
   private[this] val dirs = new java.util.HashMap[String, DirEntry]()
@@ -236,16 +236,19 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
         if (!zipEntry.getName.startsWith("META-INF/versions/")) {
           if (!zipEntry.isDirectory) {
             val dir = getDir(dirs, zipEntry)
+            val mrEntry = if (release.isDefined) {
+              zipFile.getEntry(zipEntry.getName)
+            } else zipEntry
             val f =
               if (ZipArchive.closeZipFile)
                 new LazyEntry(
                   zipEntry.getName,
-                  zipEntry.getTime,
-                  zipEntry.getSize.toInt)
+                  mrEntry.getTime,
+                  mrEntry.getSize.toInt)
               else
                 new LeakyEntry(zipEntry.getName,
-                               zipEntry.getTime,
-                               zipEntry.getSize.toInt)
+                               mrEntry.getTime,
+                               mrEntry.getSize.toInt)
 
             dir.entries(f.name) = f
           }
