@@ -72,6 +72,14 @@ trait PatternTypers {
       case tp                        => tp
     }
 
+    def applyTypeToWildcards(tp: Type) = tp match {
+      case tr @ TypeRef(pre, sym, args) if args.nonEmpty =>
+        // similar to `typedBind`
+        def wld = context.owner.newAbstractType(tpnme.WILDCARD, sym.pos) setInfo TypeBounds.empty
+        copyTypeRef(tr, pre, sym, args.map(_ => wld.tpe))
+      case t => t
+    }
+
     def typedConstructorPattern(fun0: Tree, pt: Type): Tree = {
       // Do some ad-hoc overloading resolution and update the tree's symbol and type
       // do not update the symbol if the tree's symbol's type does not define an unapply member
@@ -168,7 +176,7 @@ trait PatternTypers {
         case _                                                       => extractor.nonEmpty
       }
 
-      val ownType   = inferTypedPattern(tptTyped, tpe, pt, canRemedy)
+      val ownType   = inferTypedPattern(tptTyped, tpe, pt, canRemedy, isUnapply = false)
       val treeTyped = treeCopy.Typed(tree, exprTyped, tptTyped) setType ownType
 
       extractor match {
@@ -299,7 +307,7 @@ trait PatternTypers {
               val GenPolyType(freeVars, unappFormal) = freshArgType(unapplyType.skolemizeExistential(context.owner, tree))
               val unapplyContext = context.makeNewScope(context.tree, context.owner)
               freeVars foreach unapplyContext.scope.enter
-              val pattp = newTyper(unapplyContext).infer.inferTypedPattern(tree, unappFormal, pt, canRemedy)
+              val pattp = newTyper(unapplyContext).infer.inferTypedPattern(tree, unappFormal, pt, canRemedy, isUnapply = true)
               // turn any unresolved type variables in freevars into existential skolems
               val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
               pattp.substSym(freeVars, skolems)
@@ -369,9 +377,9 @@ trait PatternTypers {
         }
         // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
         // but at least make a proper type before passing it elsewhere
-        val pt1 = pt.dealiasWiden match {
-          case tr @ TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
-          case pt1                                           => pt1
+        val pt1 = if (settings.isScala213) applyTypeToWildcards(pt.dealiasWiden) else pt.dealiasWiden match {
+          case tr@TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
+          case pt1 => pt1
         }
         if (isCheckable(pt1)) EmptyTree
         else resolveClassTag(pos, pt1) match {

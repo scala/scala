@@ -117,10 +117,10 @@ trait Checkable {
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (
-       sym.isTypeParameter                     // dummy
-    || (sym.name.toTermName == nme.WILDCARD)   // _
-    || nme.isVariableName(sym.name)            // type variable
-  )
+    (!settings.isScala213 && sym.isTypeParameter) || // dummy
+    sym.name.toTermName == nme.WILDCARD || // don't warn for `case l: List[_]`. Here, `List[_]` is a TypeRef, the arg refers an abstract type symbol `_`
+    nme.isVariableName(sym.name) // don't warn for `x.isInstanceOf[List[_]]`. Here, `List[_]` is an existential, quantified sym has `isVariableName`
+    )
   private def isUnwarnableTypeArg(arg: Type) = (
        uncheckedOk(arg)                                 // @unchecked T
     || isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)  // has to be direct: see pos/t1439

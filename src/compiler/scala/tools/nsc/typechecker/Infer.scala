@@ -1154,7 +1154,7 @@ trait Infer extends Checkable {
       }
     }
 
-    def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
+    def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean, isUnapply: Boolean): Type = {
       val pt        = abstractTypesToBounds(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
       val tpparams  = freeTypeParamsOfTerms(pattp)
@@ -1171,7 +1171,7 @@ trait Infer extends Checkable {
         return ErrorType
       }
 
-      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
+      checkCheckable(tree0, if (isUnapply && settings.isScala213) typer.applyTypeToWildcards(pattp) else pattp, pt, inPattern = true, canRemedy)
       if (pattp <:< pt) ()
       else {
         debuglog("free type params (1) = " + tpparams)
