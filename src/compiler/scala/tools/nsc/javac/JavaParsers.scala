@@ -840,7 +840,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       var generateCanonicalCtor = true
       var generateAccessors = header
         .view
-        .map { case ValDef(_, name, tpt, _) => name -> tpt }
+        .map { case ValDef(mods, name, tpt, _) => (name, (tpt, mods.annotations)) }
         .toMap
       for (DefDef(_, name, List(), List(params), _, _) <- body) {
         if (name == nme.CONSTRUCTOR && params.size == header.size) {
@@ -856,8 +856,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
       // Generate canonical constructor and accessors, if not already manually specified
       val accessors = generateAccessors
-        .map { case (name, tpt) =>
-          DefDef(Modifiers(Flags.JAVA), name, List(), List(), tpt.duplicate, blankExpr)
+        .map { case (name, (tpt, annots)) =>
+          DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
         }
         .toList
       val canonicalCtor = Option.when(generateCanonicalCtor) {
