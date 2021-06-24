@@ -63,10 +63,14 @@ class StringLikeTest {
     assertTrue("no trim toDouble", sOk.toDouble == 2.0d)
     assertTrue("no trim toFloat", sOk.toFloat == 2.0f)
 
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"})
+    // JDK 17 gives the nicer message
+    def isNullStringMessage(s: String) =
+      s == "null" || s == "Cannot parse null string"
+
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, isNullStringMessage)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, isNullStringMessage)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, isNullStringMessage)
+    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, isNullStringMessage)
 
     AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toDouble)
     AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toFloat)
