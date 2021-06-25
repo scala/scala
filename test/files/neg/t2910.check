@@ -1,16 +1,16 @@
-t2910.scala:3: error: forward reference extends over definition of value ret
+t2910.scala:3: error: forward reference to value MyMatch defined on line 4 extends over definition of value ret
     val ret = l.collect({ case MyMatch(id) => id })
                                ^
-t2910.scala:9: error: forward reference extends over definition of value z
+t2910.scala:9: error: forward reference to lazy value s defined on line 11 extends over definition of value z
     println(s.length)
             ^
-t2910.scala:16: error: forward reference extends over definition of value z
+t2910.scala:16: error: forward reference to lazy value x defined on line 18 extends over definition of value z
       x
       ^
-t2910.scala:30: error: forward reference extends over definition of value x
+t2910.scala:30: error: forward reference to value x defined on line 31 extends over definition of value x
     lazy val f: Int = x
                       ^
-t2910.scala:35: error: forward reference extends over definition of variable x
+t2910.scala:35: error: forward reference to lazy value g defined on line 37 extends over definition of variable x
     lazy val f: Int = g
                       ^
 5 errors

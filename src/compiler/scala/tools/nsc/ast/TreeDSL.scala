@@ -140,7 +140,17 @@ trait TreeDSL {
     def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
 
     def NOT(tree: Tree)   = Select(tree, Boolean_not)
-    def AND(guards: Tree*) = if (guards.isEmpty) EmptyTree else guards reduceLeft gen.mkAnd
+    def AND(guards: Tree*) = {
+      def binaryTreeAnd(tests: Seq[Tree]): Tree = tests match{
+        case Seq() => EmptyTree
+        case Seq(single) => single
+        case multiple =>
+          val (before, after) = multiple.splitAt(tests.size / 2)
+          gen.mkAnd(binaryTreeAnd(before), binaryTreeAnd(after))
+      }
+
+      binaryTreeAnd(guards)
+    }
 
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)

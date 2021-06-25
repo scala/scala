@@ -126,8 +126,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
     def productElementNameMethod = {
-      val constrParamAccessors = clazz.constrParamAccessors
-      createSwitchMethod(nme.productElementName, constrParamAccessors.indices, StringTpe)(idx => LIT(constrParamAccessors(idx).name.dropLocal.decode))
+      val elementAccessors = clazz.constrParamAccessors.take(arity)
+      createSwitchMethod(nme.productElementName, elementAccessors.indices, StringTpe)(idx => LIT(elementAccessors(idx).name.dropLocal.decode))
     }
 
     var syntheticCanEqual = false
@@ -283,10 +283,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         case sym => (sym, () => productElementNameMethod) :: Nil
       }
 
-      List(
-        productMethods,
-        elementName
-      ).flatten
+      productMethods ::: elementName
     }
 
     def hashcodeImplementation(sym: Symbol): Tree = {

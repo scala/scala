@@ -36,6 +36,10 @@ trait Adaptations {
         case Apply(_, arg :: Nil) => arg
         case _                    => EmptyTree
       }
+      def isInfix = t match {
+        case Apply(_, arg :: Nil) => t.hasAttachment[MultiargInfixAttachment.type]
+        case _                    => false
+      }
       def callString = (
         ( if (t.symbol.isConstructor) "new " else "" ) +
         ( t.symbol.owner.decodedName ) +
@@ -86,15 +90,17 @@ trait Adaptations {
         true // keep adaptation
       }
       @inline def warnAdaptation = {
-        if (settings.warnAdaptedArgs) context.warning(t.pos, adaptWarningMessage(
+        if (settings.warnAdaptedArgs && !isInfix) context.warning(t.pos, adaptWarningMessage(
           s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"),
           WarningCategory.LintAdaptedArgs)
         true // keep adaptation
       }
-      if (args.isEmpty) {
-        if (currentRun.isScala3) noAdaptation else deprecatedAdaptation
-      } else
+      if (args.nonEmpty)
         warnAdaptation
+      else if (currentRun.isScala3)
+        noAdaptation
+      else
+        deprecatedAdaptation
     }
   }
 }

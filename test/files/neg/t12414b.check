@@ -1,0 +1,6 @@
+b_2.scala:6: warning: fruitless type test: a value of type Trait1 cannot also be a Trait2
+      case y: Trait2 =>
+              ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

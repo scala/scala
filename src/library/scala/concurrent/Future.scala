@@ -383,10 +383,11 @@ trait Future[+T] extends Awaitable[T] {
   /** Zips the values of `this` and `that` future, and creates
    *  a new future holding the tuple of their results.
    *
-   *  If `this` future fails, the resulting future is failed
-   *  with the throwable stored in `this`.
-   *  Otherwise, if `that` future fails, the resulting future is failed
-   *  with the throwable stored in `that`.
+   *  If either input future fails, the resulting future is failed with the same
+   *  throwable, without waiting for the other input future to complete.
+   *
+   *  If the application of `f` throws a non-fatal throwable, the resulting future
+   *  is failed with that throwable.
    *
    * @tparam U      the type of the other `Future`
    * @param that    the other `Future`
@@ -399,12 +400,11 @@ trait Future[+T] extends Awaitable[T] {
   /** Zips the values of `this` and `that` future using a function `f`,
    *  and creates a new future holding the result.
    *
-   *  If `this` future fails, the resulting future is failed
-   *  with the throwable stored in `this`.
-   *  Otherwise, if `that` future fails, the resulting future is failed
-   *  with the throwable stored in `that`.
-   *  If the application of `f` throws a throwable, the resulting future
-   *  is failed with that throwable if it is non-fatal.
+   *  If either input future fails, the resulting future is failed with the same
+   *  throwable, without waiting for the other input future to complete.
+   *
+   *  If the application of `f` throws a non-fatal throwable, the resulting future
+   *  is failed with that throwable.
    *
    * @tparam U      the type of the other `Future`
    * @tparam R      the type of the resulting `Future`
@@ -413,8 +413,14 @@ trait Future[+T] extends Awaitable[T] {
    * @return        a `Future` with the result of the application of `f` to the results of `this` and `that`
    * @group Transformations
    */
-  def zipWith[U, R](that: Future[U])(f: (T, U) => R)(implicit executor: ExecutionContext): Future[R] =
+  def zipWith[U, R](that: Future[U])(f: (T, U) => R)(implicit executor: ExecutionContext): Future[R] = {
+    // This is typically overriden by the implementation in DefaultPromise, which provides
+    // symmetric fail-fast behavior regardless of which future fails first.
+    //
+    // TODO: remove this implementation and make Future#zipWith abstract
+    //  when we're next willing to make a binary incompatible change
     flatMap(r1 => that.map(r2 => f(r1, r2)))(if (executor.isInstanceOf[BatchingExecutor]) executor else parasitic)
+  }
 
   /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
    *  the result of the `that` future if `that` is completed successfully.

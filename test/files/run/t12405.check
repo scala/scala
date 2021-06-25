@@ -1,0 +1,96 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty> {
+  final class C[A] extends scala.AnyVal {
+    <paramaccessor> private[this] val x: A = _;
+    <stable> <accessor> <paramaccessor> def x: A = C.this.x;
+    def <init>(x: A): C[A] = {
+      C.super.<init>();
+      ()
+    };
+    def isEmpty: Boolean = C.isEmpty$extension[A](C.this);
+    def get: A = C.get$extension[A](C.this);
+    override <synthetic> def hashCode(): Int = C.hashCode$extension[A](C.this)();
+    override <synthetic> def equals(x$1: Any): Boolean = C.equals$extension[A](C.this)(x$1)
+  };
+  object C extends scala.AnyRef {
+    def <init>(): C.type = {
+      C.super.<init>();
+      ()
+    };
+    def unapply[T](c: C[T]): C[T] = c;
+    final def isEmpty$extension[A]($this: C[A]): Boolean = scala.Predef.???;
+    final def get$extension[A]($this: C[A]): A = scala.Predef.???;
+    final <synthetic> def hashCode$extension[A]($this: C[A])(): Int = $this.x.hashCode();
+    final <synthetic> def equals$extension[A]($this: C[A])(x$1: Any): Boolean = {
+  case <synthetic> val x1: Any = x$1;
+  case5(){
+    if (x1.isInstanceOf[C[A]])
+      matchEnd4(true)
+    else
+      case6()
+  };
+  case6(){
+    matchEnd4(false)
+  };
+  matchEnd4(x: Boolean){
+    x
+  }
+}.&&({
+      <synthetic> val C$1: C[A] = x$1.asInstanceOf[C[A]];
+      $this.x.==(C$1.x)
+    })
+  };
+  class Test extends scala.AnyRef {
+    def <init>(): Test = {
+      Test.super.<init>();
+      ()
+    };
+    def m1(a: Any): Any = {
+      case <synthetic> val x1: Any = a;
+      case6(){
+        if (x1.isInstanceOf[C[T]])
+          {
+            <synthetic> val x2: C[T] = (x1.asInstanceOf[C[T]]: C[T]);
+            {
+              <synthetic> val o8: C[T] = C.unapply[T](x2);
+              if (o8.isEmpty.unary_!)
+                {
+                  val x: T = o8.get;
+                  matchEnd5(x)
+                }
+              else
+                case7()
+            }
+          }
+        else
+          case7()
+      };
+      case7(){
+        matchEnd5(null)
+      };
+      matchEnd5(x: Any){
+        x
+      }
+    };
+    def m2(c: C[String]): String = {
+      case <synthetic> val x1: C[String] = c;
+      case5(){
+        <synthetic> val o7: C[String] = C.unapply[String](x1);
+        if (o7.isEmpty.unary_!)
+          {
+            val x: String = o7.get;
+            matchEnd4(x)
+          }
+        else
+          case6()
+      };
+      case6(){
+        matchEnd4("")
+      };
+      matchEnd4(x: String){
+        x
+      }
+    }
+  }
+}
+

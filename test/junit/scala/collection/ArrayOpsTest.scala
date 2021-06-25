@@ -122,4 +122,24 @@ class ArrayOpsTest {
     val a: Array[Byte] = new Array[Byte](1000).sortWith { _ < _ }
     assertEquals(0, a(0))
   }
+
+  @Test
+  def `empty intersection has correct component type for array`(): Unit = {
+    val something = Array(3.14)
+    val nothing   = Array[Double]()
+    val empty     = Array.empty[Double]
+
+    assertEquals(classOf[Double], nothing.intersect(something).getClass.getComponentType)
+    assertTrue(nothing.intersect(something).isEmpty)
+
+    assertEquals(classOf[Double], empty.intersect(something).getClass.getComponentType)
+    assertTrue(empty.intersect(something).isEmpty)
+    assertEquals(classOf[Double], empty.intersect(nothing).getClass.getComponentType)
+    assertTrue(empty.intersect(nothing).isEmpty)
+
+    assertEquals(classOf[Double], something.intersect(nothing).getClass.getComponentType)
+    assertTrue(something.intersect(nothing).isEmpty)
+    assertEquals(classOf[Double], something.intersect(empty).getClass.getComponentType)
+    assertTrue(something.intersect(empty).isEmpty)
+  }
 }

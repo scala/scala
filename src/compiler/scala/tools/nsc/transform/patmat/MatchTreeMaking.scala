@@ -214,11 +214,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       val nullCheck = REF(prevBinder) OBJ_NE NULL
       lazy val localSubstitution = Substitution(Nil, Nil)
 
-      def isExpectedPrimitiveType = isPrimitiveValueType(expectedTp)
+      def skipNullTest = isPrimitiveValueType(expectedTp) || expectedTp.typeSymbol.isDerivedValueClass
 
       def chainBefore(next: Tree)(casegen: Casegen): Tree =
         atPos(pos) {
-          if (isExpectedPrimitiveType) next
+          if (skipNullTest) next
           else casegen.ifThenElseZero(nullCheck, next)
         }
 
@@ -393,8 +393,9 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                   case TypeRef(pre, _, _) if !pre.isStable => // e.g. _: Outer#Inner
                     false
                   case TypeRef(pre, sym, args) =>
-                    val testedBinderClass = testedBinder.info.upperBound.typeSymbol
-                    // alternatively..... = testedBinder.info.baseClasses.find(_.isClass).getOrElse(NoSymbol)
+                    val testedBinderClass = testedBinder.info.baseClasses.find { sym =>
+                      sym.isClass && !sym.isRefinementClass
+                    }.getOrElse(NoSymbol)
                     val testedBinderType = testedBinder.info.baseType(testedBinderClass)
 
                     val testedPrefixIsExpectedTypePrefix = pre =:= testedBinderType.prefix
@@ -453,17 +454,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def eqTest(pat: Tree, testedBinder: Symbol): Result           = false
         def and(a: Result, b: Result): Result                         = false // we don't and type tests, so the conjunction must include at least one false
         def tru                                                       = true
-      }
-
-      def nonNullImpliedByTestChecker(binder: Symbol) = new TypeTestCondStrategy {
-        type Result = Boolean
-
-        def typeTest(testedBinder: Symbol, expectedTp: Type): Result  = testedBinder eq binder
-        def nonNullTest(testedBinder: Symbol): Result                 = testedBinder eq binder
-        def equalsTest(pat: Tree, testedBinder: Symbol): Result       = false // could in principle analyse pat and see if it's statically known to be non-null
-        def eqTest(pat: Tree, testedBinder: Symbol): Result           = false // could in principle analyse pat and see if it's statically known to be non-null
-        def and(a: Result, b: Result): Result                         = a || b
-        def tru                                                       = false
       }
     }
 
@@ -560,8 +550,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       // is this purely a type test, e.g. no outer check, no equality tests (used in switch emission)
       def isPureTypeTest = renderCondition(pureTypeTestChecker)
-
-      def impliesBinderNonNull(binder: Symbol) = renderCondition(nonNullImpliedByTestChecker(binder))
 
       override def toString = "TT"+((expectedTp, testedBinder.name, nextBinderTp))
     }

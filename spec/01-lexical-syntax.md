@@ -19,7 +19,7 @@ classes (Unicode general category given in parentheses):
 
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
 1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
-   title case letters (`Lt`), other letters (`Lo`), modifier letters (`Ml`), 
+   title case letters (`Lt`), other letters (`Lo`), modifier letters (`Lm`), 
    letter numerals (`Nl`) and the two characters `\u0024 ‘$’` and `\u005F ‘_’`.
 1. Digits `‘0’ | … | ‘9’`.
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.

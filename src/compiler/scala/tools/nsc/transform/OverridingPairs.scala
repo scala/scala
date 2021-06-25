@@ -55,15 +55,15 @@ abstract class OverridingPairs extends SymbolPairs {
     ) // TODO we don't call exclude(high), should we?
 
     override protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = {
-      // Two Java-defined methods can be skipped in most cases, as javac will check the overrides; skipping is
-      // actually necessary to avoid false errors, as Java doesn't have the Scala's linearization rules. However, when
-      // a Java interface is mixed into a Scala class, mixed-in default methods need to go through override checking
-      // (neg/t12394). Checking is also required if the "mixed-in" Java interface method is abstract (neg/t12380).
-      lowClass.isJavaDefined && highClass.isJavaDefined && {
-        !lowClass.isJavaInterface && !highClass.isJavaInterface || {
-          !base.info.parents.tail.exists(p => {
-            val psym = p.typeSymbol
-            psym.isNonBottomSubClass(lowClass) || psym.isNonBottomSubClass(highClass)
+      // Two Java-defined methods can be skipped if javac will check the overrides. Skipping is actually necessary to
+      // avoid false errors, as Java doesn't have the Scala's linearization rules and subtyping rules
+      // (`Array[String] <:< Array[Object]`). However, when a Java interface is mixed into a Scala class, mixed-in
+      // methods need to go through override checking (neg/t12394, neg/t12380).
+      lowClass.isJavaDefined && highClass.isJavaDefined && { // skip if both are java-defined, and
+        lowClass.isNonBottomSubClass(highClass) || {         //  - low <:< high, which means they are overrides in Java and javac is doing the check; or
+          base.info.parents.tail.forall(p => {               //  - every mixin parent is unrelated to (not a subclass of) low and high, i.e.,
+            val psym = p.typeSymbol                          //    we're not mixing in high or low, both are coming from the superclass
+            !psym.isNonBottomSubClass(lowClass) && !psym.isNonBottomSubClass(highClass)
           })
         }
       }

@@ -1,13 +1,13 @@
-t4098.scala:3: error: forward reference not allowed from self constructor invocation
+t4098.scala:3: error: forward reference to method b defined on line 4 not allowed from self constructor invocation
     this(b)
          ^
-t4098.scala:8: error: forward reference not allowed from self constructor invocation
+t4098.scala:8: error: forward reference to lazy value b defined on line 9 not allowed from self constructor invocation
     this(b)
          ^
-t4098.scala:13: error: forward reference not allowed from self constructor invocation
+t4098.scala:13: error: forward reference to value b defined on line 14 not allowed from self constructor invocation
     this(b)
          ^
-t4098.scala:18: error: forward reference not allowed from self constructor invocation
+t4098.scala:18: error: forward reference to method b defined on line 20 not allowed from self constructor invocation
     this(b)
          ^
 4 errors

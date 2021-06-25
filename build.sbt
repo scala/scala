@@ -54,12 +54,13 @@ val fatalWarnings = settingKey[Boolean]("whether or not warnings should be fatal
 // enable fatal warnings automatically on CI
 Global / fatalWarnings := insideCI.value
 
+Global / credentials ++= {
+  val file = Path.userHome / ".credentials"
+  if (file.exists && !file.isDirectory) List(Credentials(file))
+  else Nil
+}
+
 lazy val publishSettings : Seq[Setting[_]] = Seq(
-  credentials ++= {
-    val file = Path.userHome / ".credentials"
-    if (file.exists && !file.isDirectory) List(Credentials(file))
-    else Nil
-  },
   // Add a "default" Ivy configuration because sbt expects the Scala distribution to have one:
   ivyConfigurations += Configuration.of("Default", "default", "Default", true, Vector(Configurations.Runtime), true),
   publishMavenStyle := true
@@ -672,6 +673,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
+    Jmh / bspEnabled := false // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 

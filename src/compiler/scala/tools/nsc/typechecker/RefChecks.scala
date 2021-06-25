@@ -1215,14 +1215,18 @@ abstract class RefChecks extends Transform {
       finally popLevel()
     }
 
+    private def showCurrentRef: String = {
+      val refsym = currentLevel.refsym
+      s"$refsym defined on line ${refsym.pos.line}"
+    }
+
     def transformStat(tree: Tree, index: Int): Tree = tree match {
       case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
         try transform(tree)
         finally if (currentLevel.maxindex > 0) {
-          // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
-          debuglog("refsym = " + currentLevel.refsym)
-          reporter.error(currentLevel.refpos, "forward reference not allowed from self constructor invocation")
+          // An implementation restriction to avoid VerifyErrors and lazy vals mishaps; see scala/bug#4717
+          reporter.error(currentLevel.refpos, s"forward reference to $showCurrentRef not allowed from self constructor invocation")
         }
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree) // important to do before forward reference check
@@ -1230,8 +1234,7 @@ abstract class RefChecks extends Transform {
         else {
           val sym = tree.symbol
           if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
-            debuglog("refsym = " + currentLevel.refsym)
-            reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
+            reporter.error(currentLevel.refpos, s"forward reference to $showCurrentRef extends over definition of $sym")
           }
           tree1
         }
@@ -1404,14 +1407,14 @@ abstract class RefChecks extends Transform {
         false
     }
 
-    private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
+    private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean): Unit = tp match {
       case TypeRef(pre, sym, args) =>
         tree match {
           case tt: TypeTree if tt.original == null => // scala/bug#7783 don't warn about inferred types
                                                       // FIXME: reconcile this check with one in resetAttrs
           case _ => checkUndesiredProperties(sym, tree.pos)
         }
-        if(sym.isJavaDefined)
+        if (sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
         if (!tp.isHigherKinded && !skipBounds)
           checkBounds(tree, pre, sym.owner, sym.typeParams, args)
@@ -1434,8 +1437,18 @@ abstract class RefChecks extends Transform {
     }
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
+      def checkVarArgs(tp: Type, tree: Tree): Unit = tp match {
+        case TypeRef(_, VarargsClass, _) =>
+          tree match {
+            case tt: TypeTree if tt.original == null => // same exception as in checkTypeRef
+            case _: DefDef =>
+            case _ => reporter.error(tree.pos, s"Only methods can be marked @varargs")
+          }
+        case _ =>
+      }
       def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = if (annots.isEmpty) Nil else {
         annots.foreach { ann =>
+          checkVarArgs(ann.atp, tree)
           checkTypeRef(ann.atp, tree, skipBounds = false)
           checkTypeRefBounds(ann.atp, tree)
           if (ann.original != null && ann.original.hasExistingSymbol)

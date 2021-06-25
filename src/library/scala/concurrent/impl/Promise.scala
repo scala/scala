@@ -130,6 +130,42 @@ private[concurrent] object Promise {
     override final def transformWith[S](f: Try[T] => Future[S])(implicit executor: ExecutionContext): Future[S] =
       dispatchOrAddCallbacks(get(), new Transformation[T, S](Xform_transformWith, f, executor))
 
+    override final def zipWith[U, R](that: Future[U])(f: (T, U) => R)(implicit executor: ExecutionContext): Future[R] = {
+      val state = get()
+      if (state.isInstanceOf[Try[T]]) {
+        if (state.asInstanceOf[Try[T]].isFailure) this.asInstanceOf[Future[R]]
+        else {
+          val l = state.asInstanceOf[Success[T]].get
+          that.map(r => f(l, r))
+        }
+      } else {
+        val buffer = new AtomicReference[Success[Any]]()
+        val zipped = new DefaultPromise[R]()
+
+        val thisF: Try[T] => Unit = {
+          case left: Success[T] =>
+            val right = buffer.getAndSet(left).asInstanceOf[Success[U]]
+            if (right ne null)
+              zipped.tryComplete(try Success(f(left.get, right.get)) catch { case e if NonFatal(e) => Failure(e) })
+          case f => // Can only be Failure
+            zipped.tryComplete(f.asInstanceOf[Failure[R]])
+        }
+
+        val thatF: Try[U] => Unit = {
+          case right: Success[U] =>
+            val left = buffer.getAndSet(right).asInstanceOf[Success[T]]
+            if (left ne null)
+              zipped.tryComplete(try Success(f(left.get, right.get)) catch { case e if NonFatal(e) => Failure(e) })
+          case f => // Can only be Failure
+            zipped.tryComplete(f.asInstanceOf[Failure[R]])
+        }
+        // Cheaper than this.onComplete since we already polled the state
+        this.dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_onComplete, thisF, executor))
+        that.onComplete(thatF)
+        zipped.future
+      }
+    }
+
     override final def foreach[U](f: T => U)(implicit executor: ExecutionContext): Unit = {
       val state = get()
       if (!state.isInstanceOf[Failure[T]]) dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_foreach, f, executor))

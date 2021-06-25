@@ -1903,32 +1903,35 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       debuglog("specializing body of" + symbol.defString)
       val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree: @unchecked
       val env = typeEnv(symbol)
-      val origtparams = source.typeParams.filter(tparam => !env.contains(tparam) || !isPrimitiveValueType(env(tparam)))
-      if (origtparams.nonEmpty || symbol.typeParams.nonEmpty)
-        debuglog("substituting " + origtparams + " for " + symbol.typeParams)
+
+      val srcVparams = parameters(source)
+      val srcTparams = source.typeParams.filter(tparam => !env.contains(tparam) || !isPrimitiveValueType(env(tparam)))
+      if (settings.isDebug && (srcTparams.nonEmpty || symbol.typeParams.nonEmpty))
+        debuglog("substituting " + srcTparams + " for " + symbol.typeParams)
 
       // skolemize type parameters
-      val oldtparams = tparams map (_.symbol)
-      val newtparams = deriveFreshSkolems(oldtparams)
-      map2(tparams, newtparams)(_ setSymbol _)
+      val oldTparams = tparams.map(_.symbol)
+      val newTparams = deriveFreshSkolems(oldTparams)
+      map2(tparams, newTparams)(_ setSymbol _)
 
       // create fresh symbols for value parameters to hold the skolem types
-      val newSyms = cloneSymbolsAtOwnerAndModify(vparams map (_.symbol), symbol, _.substSym(oldtparams, newtparams))
+      val oldVparams = vparams.map(_.symbol)
+      val newVparams = cloneSymbolsAtOwnerAndModify(oldVparams, symbol, _.substSym(oldTparams, newTparams))
+
+      val srcParams = srcVparams ::: srcTparams
+      val oldParams = oldVparams ::: oldTparams
+      val newParams = newVparams ::: newTparams
 
       // replace value and type parameters of the old method with the new ones
       // log("Adding body for " + tree.symbol + " - origtparams: " + origtparams + "; tparams: " + tparams)
       // log("Type vars of: " + source + ": " + source.typeParams)
       // log("Type env of: " + tree.symbol + ": " + boundTvars)
       // log("newtparams: " + newtparams)
-      val symSubstituter = new ImplementationAdapter(
-        parameters(source) ::: origtparams,
-        newSyms ::: newtparams,
-        source.enclClass,
-        false) // don't make private fields public
-
-      val newBody = symSubstituter(body(source).duplicate)
-      tpt modifyType (_.substSym(oldtparams, newtparams))
-      copyDefDef(tree)(vparamss = List(newSyms map ValDef.apply), rhs = newBody)
+      // don't make private fields public
+      val substituter = new ImplementationAdapter(srcParams, newParams, source.enclClass, false)
+      val newRhs = substituter(body(source).duplicate)
+      tpt.modifyType(_.substSym(oldParams, newParams))
+      copyDefDef(tree)(vparamss = newVparams.map(ValDef.apply) :: Nil, rhs = newRhs)
     }
 
     /** Create trees for specialized members of 'sClass', based on the
