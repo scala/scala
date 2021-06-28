@@ -837,22 +837,12 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val (statics, body) = typeBody(RECORD)
 
       // Records generate a canonical constructor and accessors, unless they are manually specified
-      var generateCanonicalCtor = true
       var generateAccessors = header
         .view
         .map { case ValDef(mods, name, tpt, _) => (name, (tpt, mods.annotations)) }
         .toMap
-      for (DefDef(_, name, List(), List(params), _, _) <- body) {
-        if (name == nme.CONSTRUCTOR && params.size == header.size) {
-          val ctorParamsAreCanonical = params.lazyZip(header).forall {
-            case (ValDef(_, _, tpt1, _), ValDef(_, _, tpt2, _)) => tpt1 equalsStructure tpt2
-            case _ => false
-          }
-          if (ctorParamsAreCanonical) generateCanonicalCtor = false
-        } else if (generateAccessors.contains(name) && params.isEmpty) {
-          generateAccessors -= name
-        }
-      }
+      for (DefDef(_, name, List(), List(params), _, _) <- body if generateAccessors.contains(name) && params.isEmpty)
+        generateAccessors -= name
 
       // Generate canonical constructor and accessors, if not already manually specified
       val accessors = generateAccessors
@@ -860,23 +850,21 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
         }
         .toList
-      val canonicalCtor = Option.when(generateCanonicalCtor) {
-        DefDef(
-          mods,
-          nme.CONSTRUCTOR,
-          List(),
-          List(header.map(_.duplicate)),
-          TypeTree(),
-          blankExpr
-        )
-      }
+      val canonicalCtor = DefDef(
+        mods | Flags.SYNTHETIC,
+        nme.CONSTRUCTOR,
+        List(),
+        List(header.map(_.duplicate)),
+        TypeTree(),
+        blankExpr
+      )
 
       addCompanionObject(statics, atPos(pos) {
         ClassDef(
           mods | Flags.FINAL,
           name,
           tparams,
-          makeTemplate(superclass :: interfaces, canonicalCtor.toList ++ accessors ++ body)
+          makeTemplate(superclass :: interfaces, canonicalCtor :: accessors ::: body)
         )
       })
     }

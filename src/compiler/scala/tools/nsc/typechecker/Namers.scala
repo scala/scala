@@ -1487,7 +1487,13 @@ trait Namers extends MethodSynthesis {
       }
 
       val methSig = deskolemizedPolySig(vparamSymssOrEmptyParamsFromOverride, resTp)
-      pluginsTypeSig(methSig, typer, ddef, resTpGiven)
+      val unlink = methOwner.isJava && meth.isSynthetic && meth.isConstructor && methOwner.superClass == JavaRecordClass &&
+        methOwner.info.decl(meth.name).alternatives.exists(c => c != meth && c.tpe.matches(methSig))
+      if (unlink) {
+        methOwner.info.decls.unlink(meth)
+        ErrorType
+      } else
+        pluginsTypeSig(methSig, typer, ddef, resTpGiven)
     }
 
     /**

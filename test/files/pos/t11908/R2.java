@@ -6,7 +6,7 @@ public class R2 {
         }
 
         // Canonical constructor
-        public R(int i, String s) {
+        public R(int i, java.lang.String s) {
             this.i = i;
             this.s = s.intern();
         }
