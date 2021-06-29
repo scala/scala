@@ -221,7 +221,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case that: TreeSet[A] if ordering == that.ordering => RB.keysEqual(tree, that.tree)
+    case that: TreeSet[A @unchecked] if ordering == that.ordering => RB.keysEqual(tree, that.tree)
     case _ => super.equals(obj)
   }
 

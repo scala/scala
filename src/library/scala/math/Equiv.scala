@@ -87,7 +87,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that  => true
-      case that: IterableEquiv[CC, T]    => this.eqv == that.eqv
+      case that: IterableEquiv[_, _]     => this.eqv == that.eqv
       case _                             => false
     }
     override def hashCode(): Int = eqv.hashCode() * iterableSeed
@@ -256,7 +256,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: OptionEquiv[T]         => this.eqv == that.eqv
+      case that: OptionEquiv[_]         => this.eqv == that.eqv
       case _                            => false
     }
     override def hashCode(): Int = eqv.hashCode() * optionSeed
@@ -273,7 +273,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple2Equiv[T1, T2] =>
+      case that: Tuple2Equiv[_, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2
       case _ => false
@@ -294,7 +294,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple3Equiv[T1, T2, T3] =>
+      case that: Tuple3Equiv[_, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3
@@ -319,7 +319,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple4Equiv[T1, T2, T3, T4] =>
+      case that: Tuple4Equiv[_, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&
@@ -347,7 +347,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple5Equiv[T1, T2, T3, T4, T5] =>
+      case that: Tuple5Equiv[_, _, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&
@@ -378,7 +378,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple6Equiv[T1, T2, T3, T4, T5, T6] =>
+      case that: Tuple6Equiv[_, _, _, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&
@@ -412,7 +412,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple7Equiv[T1, T2, T3, T4, T5, T6, T7] =>
+      case that: Tuple7Equiv[_, _, _, _, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&
@@ -449,7 +449,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple8Equiv[T1, T2, T3, T4, T5, T6, T7, T8] =>
+      case that: Tuple8Equiv[_, _, _, _, _, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&
@@ -489,7 +489,7 @@ object Equiv extends LowPriorityEquiv {
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
-      case that: Tuple9Equiv[T1, T2, T3, T4, T5, T6, T7, T8, T9] =>
+      case that: Tuple9Equiv[_, _, _, _, _, _, _, _, _] =>
         this.eqv1 == that.eqv1 &&
         this.eqv2 == that.eqv2 &&
         this.eqv3 == that.eqv3 &&

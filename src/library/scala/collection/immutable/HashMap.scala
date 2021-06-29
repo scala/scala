@@ -1171,7 +1171,7 @@ private final class BitmapIndexedMapNode[K, +V](
   }
 
   override def mergeInto[V1 >: V](that: MapNode[K, V1], builder: HashMapBuilder[K, V1], shift: Int)(mergef: ((K, V), (K, V1)) => (K, V1)): Unit = that match {
-    case bm: BitmapIndexedMapNode[K, V] =>
+    case bm: BitmapIndexedMapNode[K, V] @unchecked =>
       if (size == 0) {
         that.buildTo(builder)
         return
@@ -1276,7 +1276,7 @@ private final class BitmapIndexedMapNode[K, +V](
 
   override def equals(that: Any): Boolean =
     that match {
-      case node: BitmapIndexedMapNode[K, V] =>
+      case node: BitmapIndexedMapNode[_, _] =>
         (this eq node) ||
           (this.cachedJavaKeySetHashCode == node.cachedJavaKeySetHashCode) &&
           (this.nodeMap == node.nodeMap) &&
@@ -1307,7 +1307,7 @@ private final class BitmapIndexedMapNode[K, +V](
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): BitmapIndexedMapNode[K, V1] = that match {
-    case bm: BitmapIndexedMapNode[K, V] =>
+    case bm: BitmapIndexedMapNode[K, V] @unchecked =>
       if (size == 0) return bm
       else if (bm.size == 0 || (bm eq this)) return this
       else if (bm.size == 1) {
@@ -1821,7 +1821,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   releaseFence()
 
-  private[immutable] def indexOf(key: K): Int = {
+  private[immutable] def indexOf(key: Any): Int = {
     val iter = content.iterator
     var i = 0
     while (iter.hasNext) {
@@ -1944,7 +1944,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   override def equals(that: Any): Boolean =
     that match {
-      case node: HashCollisionMapNode[K, V] =>
+      case node: HashCollisionMapNode[_, _] =>
         (this eq node) ||
           (this.hash == node.hash) &&
             (this.content.length == node.content.length) && {

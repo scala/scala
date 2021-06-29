@@ -30,7 +30,7 @@ trait SortedMap[K, +V]
 
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case sm: SortedMap[K, _] if sm.ordering == this.ordering =>
+    case sm: SortedMap[K @unchecked, _] if sm.ordering == this.ordering =>
       (sm canEqual this) &&
         (this.size == sm.size) && {
         val i1 = this.iterator
