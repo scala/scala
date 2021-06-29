@@ -498,7 +498,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   def withFilter(p: A => Boolean): Iterator[A] = filter(p)
 
-  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
+  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] with (A => B) {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: B = _
 
@@ -508,12 +508,14 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     // BE REALLY CAREFUL TO KEEP COMMENTS AND NUMBERS IN SYNC!
     private[this] var status = 0/*Seek*/
 
+    def apply(value: A): B = Statics.pfMarker.asInstanceOf[B]
+
     def hasNext = {
       val marker = Statics.pfMarker
       while (status == 0/*Seek*/) {
         if (self.hasNext) {
           val x = self.next()
-          val v = pf.applyOrElse(x, ((x: A) => marker).asInstanceOf[A => B])
+          val v = pf.applyOrElse(x, this)
           if (marker ne v.asInstanceOf[AnyRef]) {
             hd = v
             status = 1/*Found*/
