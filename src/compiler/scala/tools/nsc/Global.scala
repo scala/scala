@@ -80,15 +80,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   import definitions.findNamedMember
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
-  override def deferredOpenPackageModule(container: Symbol, dest: Symbol): Unit = {
-    // Some compiler runs (e.g. Toolbox and the PC) just initialise Global and then discard the Run
-    // such that the scala package object decls never get entered into the scala package
-    if ((curRun eq null) || !isGlobalInitialized || isPastPackageObjects) {
-      super.openPackageModule(container, dest)
-    } else {
-      analyzer.packageObjects.deferredOpen(dest) = container
-    }
+
+  override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
+    if (force || isPast(currentRun.namerPhase)) super.openPackageModule(pkgClass, true)
+    else analyzer.packageObjects.deferredOpen.add(pkgClass)
   }
+
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
@@ -1025,7 +1022,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   )
   override def isPastTyper = isPast(currentRun.typerPhase)
   def isBeforeErasure      = isBefore(currentRun.erasurePhase)
-  def isPastPackageObjects = isPast(currentRun.packageobjectsPhase)
   def isPast(phase: Phase) = (
        (curRun ne null)
     && isGlobalInitialized // defense against init order issues
@@ -1347,7 +1343,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
      */
     val parserPhase                  = phaseNamed("parser")
     val namerPhase                   = phaseNamed("namer")
-    val packageobjectsPhase          = phaseNamed("packageobjects")
+    // val packageobjectsPhase          = phaseNamed("packageobjects")
     val typerPhase                   = phaseNamed("typer")
     // val inlineclassesPhase           = phaseNamed("inlineclasses")
     // val superaccessorsPhase          = phaseNamed("superaccessors")

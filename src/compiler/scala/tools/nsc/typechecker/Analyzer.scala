@@ -52,7 +52,7 @@ trait Analyzer extends AnyRef
   object packageObjects extends {
     val global: Analyzer.this.global.type = Analyzer.this.global
   } with SubComponent {
-    val deferredOpen = perRunCaches.newMap[Symbol, Symbol]()
+    val deferredOpen = perRunCaches.newSet[Symbol]()
     val phaseName = "packageobjects"
     val runsAfter = List[String]()
     val runsRightAfter= Some("namer")
@@ -77,10 +77,7 @@ trait Analyzer extends AnyRef
 
       def apply(unit: CompilationUnit): Unit = {
         openPackageObjectsTraverser(unit.body)
-        deferredOpen.foreach {
-          case (dest, container) =>
-            openPackageModule(container, dest)
-        }
+        deferredOpen.foreach(openPackageModule(_))
       }
     }
   }

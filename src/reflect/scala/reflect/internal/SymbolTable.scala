@@ -339,9 +339,6 @@ abstract class SymbolTable extends macros.Universe
     }
   }
 
-  def deferredOpenPackageModule(container: Symbol, dest: Symbol): Unit = {
-    openPackageModule(container, dest)
-  }
   def openPackageModule(container: Symbol, dest: Symbol): Unit = {
     // unlink existing symbols in the package
     for (member <- container.info.decls.iterator) {
@@ -391,7 +388,7 @@ abstract class SymbolTable extends macros.Universe
   }
 
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
-  def openPackageModule(pkgClass: Symbol): Unit = {
+  def openPackageModule(pkgClass: Symbol, force: Boolean = false): Unit = {
 
     val pkgModule = pkgClass.packageObject
     def fromSource = pkgModule.rawInfo match {
@@ -399,7 +396,7 @@ abstract class SymbolTable extends macros.Universe
       case _ => false
     }
     if (pkgModule.isModule && !fromSource) {
-      deferredOpenPackageModule(pkgModule, pkgClass)
+      openPackageModule(pkgModule, pkgClass)
     }
   }
 

@@ -398,6 +398,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val platform: Global.this.platform.type = Global.this.platform
   } with BrowsingLoaders
 
+  override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
+    val isPastNamer = force || currentTyperRun == null || (currentTyperRun.currentUnit match {
+      case unit: RichCompilationUnit => unit.isParsed
+      case _                         => true
+    })
+    if (isPastNamer) super.openPackageModule(pkgClass, true)
+    else analyzer.packageObjects.deferredOpen.add(pkgClass)
+  }
+
   // ----------------- Polling ---------------------------------------
 
   case class WorkEvent(atNode: Int, atMillis: Long)
@@ -1352,13 +1361,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit): Unit = {
       enteringPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
-    }
-  }
-
-  override def isPastPackageObjects = {
-    (if (currentTyperRun == null) NoCompilationUnit else currentTyperRun.currentUnit) match {
-      case unit: RichCompilationUnit => unit.isParsed
-      case _                         => super.isPastPackageObjects
     }
   }
 
