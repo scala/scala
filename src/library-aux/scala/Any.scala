@@ -110,13 +110,28 @@ abstract class Any {
    */
   final def ## : Int = sys.error("##")
 
-  /** Test whether the dynamic type of the receiver object is `T0`.
+  /** Test whether the dynamic type of the receiver object has the same erasure to `T0`.
    *
-   *  Note that the result of the test is modulo Scala's erasure semantics.
-   *  Therefore the expression `1.isInstanceOf[String]` will return `false`, while the
-   *  expression `List(1).isInstanceOf[List[String]]` will return `true`.
-   *  In the latter example, because the type argument is erased as part of compilation it is
-   *  not possible to check whether the contents of the list are of the specified type.
+   *  Depending on what `T0` is, the test is done in one of the below ways:
+   *
+   *  - `T0` is a non-parameterized class type, e.g. `BigDecimal`: this method returns `true` if
+   *    the value of the receiver object is a `BigDecimal` or a subtype of `BigDecimal`.
+   *  - `T0` is a parameterized class type, e.g. `List[Int]`: this method returns `true` if
+   *    the value of the receiver object is some `List[X]` for any `X`.
+   *    For example, `List(1, 2, 3).isInstanceOf[List[String]]` will return true.
+   *  - `T0` is some singleton type `x.type` or literal `x`: this method returns `this.eq(x)`.
+   *    For example, `x.isInstanceOf[1]` is equivalent to `x.eq(1)`
+   *  - `T0` is a union `X with Y`: this method is equivalent to `x.isInstanceOf[X] && x.isInstanceOf[Y]`
+   *  - `T0` is a type parameter or an abstract type member: this method is equivalent
+   *    to `isInstanceOf[U]` where `U` is `A`'s upper bound, `Any` if `A` is unbounded.
+   *    For example, `x.isInstanceOf[A]` where `A` is an unbounded type parameter
+   *    will return true for any value of `x`.
+   *
+   *  This is exactly equivalent to the type pattern `_: T0`
+   * 
+   *  @note due to the unexpectedness of `List(1, 2, 3).isInstanceOf[List[String]]` returning true and
+   *  `x.isInstanceOf[A]` where `A` is a type parameter or abstract member returning true,
+   *  these forms issue a warning.
    *
    *  @return `true` if the receiver object is an instance of erasure of type `T0`; `false` otherwise.
    */
