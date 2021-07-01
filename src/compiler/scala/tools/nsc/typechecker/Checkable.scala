@@ -37,7 +37,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *
  *  There are four possibilities to consider:
  *     [P1] X will always conform to P
- *     [P2] X will never conform to P
+ *     [P2] x will never be a P, because it is an X
  *     [P3] X will conform to P if some runtime test is true
  *     [P4] X cannot be checked against P
  *
@@ -82,7 +82,7 @@ trait Checkable {
     final val RuntimeCheckable  = 2
     final val Uncheckable       = 3
     final val CheckabilityError = 4
-    lazy val describe: (Int => String) = List(
+    lazy val describe: (Checkability => String) = List(
       "statically true",
       "statically false",
       "runtime checkable",
@@ -175,7 +175,7 @@ trait Checkable {
     private def typeArgsInTopLevelType(tp: Type): Set[Type] = {
       def isUnwarnableTypeArg(arg: Type) = {
         def isUnwarnableTypeArgSymbol(sym: Symbol) = {
-          sym.isTypeParameter ||                  // dummy
+          sym.isTypeParameter                 ||  // dummy
           sym.name.toTermName == nme.WILDCARD ||  // _
           nme.isVariableName(sym.name)            // type variable
         }
@@ -200,28 +200,25 @@ trait Checkable {
       loop(tp)
       res
     }
-    lazy val uncheckableType = if (Psym.isAbstractType) P else {
-      val possibles = typeArgsInTopLevelType(P)
-      val opt = possibles find { targ =>
+    lazy val (uncheckableType, uncheckableCard) =
+      if (Psym.isAbstractType) (P, 1)
+      else {
+        val possibles = typeArgsInTopLevelType(P)
         // Create a derived type with every possibly uncheckable type replaced
         // with a WildcardType, except for 'targ'. If !(XR <: derived) then
         // 'targ' is uncheckable.
-        val derived = P map (tp => if (possibles(tp) && !(tp =:= targ)) WildcardType else tp)
-        !(XR <:< derived)
+        def candidate(targ: Type) = {
+          val derived = P.map(tp => if (possibles(tp) && !(tp =:= targ)) WildcardType else tp)
+          !(XR <:< derived)
+        }
+        val opt = possibles.find(candidate)
+        opt.map(res => (res, possibles.iterator.map(candidate).take(2).size)).getOrElse((NoType, 0))
       }
-      opt getOrElse NoType
-    }
 
     def neverSubClass = isNeverSubClass(Xsym, Psym)
     def neverMatches  = result == StaticallyFalse
     def isUncheckable = result == Uncheckable
     def isCheckable   = !isUncheckable
-    def uncheckableMessage = uncheckableType match {
-      case NoType                                   => "something"
-      case tp @ RefinedType(_, _)                   => "refinement " + tp
-      case TypeRef(_, sym, _) if sym.isAbstractType => "abstract type " + sym.name
-      case tp                                       => "non-variable type argument " + tp
-    }
 
     /** Is it impossible for the given symbols to be parents in the same class?
      *  This means given A and B, can there be an instance of A with B? This is the
@@ -348,12 +345,24 @@ trait Checkable {
             if (checker.neverMatches)
               neverMatchesWarning(checker)
             else if (checker.isUncheckable) {
+              def uncheckableMessage = checker.uncheckableType match {
+                case NoType                                   => "something"
+                case tp @ RefinedType(_, _)                   => "refinement " + tp
+                case TypeRef(_, sym, _) if sym.isAbstractType => "abstract type " + sym.name
+                case tp                                       => "non-variable type argument " + tp
+              }
               val msg = {
                 val where = if (inPattern) "pattern " else ""
-                if (checker.uncheckableType =:= P) s"abstract type $where$PString"
-                else s"${checker.uncheckableMessage} in type $where$PString"
+                if (checker.uncheckableCard == 2)
+                  s"the type test for $where$PString cannot be checked at runtime because it has type parameters eliminated by erasure"
+                else {
+                  val thing =
+                    if (checker.uncheckableType =:= P) s"abstract type $where$PString"
+                    else s"$uncheckableMessage in type $where$PString"
+                  s"$thing is unchecked since it is eliminated by erasure"
+                }
               }
-              context.warning(tree.pos, s"$msg is unchecked since it is eliminated by erasure", WarningCategory.Unchecked)
+              context.warning(tree.pos, msg, WarningCategory.Unchecked)
             }
             else if (checker.result == RuntimeCheckable) {
               // register deferred checking for sealed types in current run

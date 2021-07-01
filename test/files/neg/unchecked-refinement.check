@@ -1,7 +1,7 @@
-unchecked-refinement.scala:19: warning: abstract type U in type pattern Foo[U,U,V] is unchecked since it is eliminated by erasure
+unchecked-refinement.scala:19: warning: the type test for pattern Foo[U,U,V] cannot be checked at runtime because it has type parameters eliminated by erasure
     /*   warn */ case _: Foo[U, U, V] if b       => ()
                          ^
-unchecked-refinement.scala:21: warning: non-variable type argument Any in type pattern Foo[Any,U,V] is unchecked since it is eliminated by erasure
+unchecked-refinement.scala:21: warning: the type test for pattern Foo[Any,U,V] cannot be checked at runtime because it has type parameters eliminated by erasure
     /*   warn */ case _: Foo[Any, U, V] if b     => ()
                          ^
 unchecked-refinement.scala:25: warning: a pattern match on a refinement type is unchecked
