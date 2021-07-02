@@ -121,7 +121,8 @@ abstract class Any {
    *    For example, `List(1, 2, 3).isInstanceOf[List[String]]` will return true.
    *  - `T0` is some singleton type `x.type` or literal `x`: this method returns `this.eq(x)`.
    *    For example, `x.isInstanceOf[1]` is equivalent to `x.eq(1)`
-   *  - `T0` is a union `X with Y`: this method is equivalent to `x.isInstanceOf[X] && x.isInstanceOf[Y]`
+   *  - `T0` is an intersection `X with Y` or `X & Y: this method is equivalent to `x.isInstanceOf[X] && x.isInstanceOf[Y]`
+   *  - `T0` is a union `X | Y`: this method is equivalent to `x.isInstanceOf[X] || x.isInstanceOf[Y]`
    *  - `T0` is a type parameter or an abstract type member: this method is equivalent
    *    to `isInstanceOf[U]` where `U` is `A`'s upper bound, `Any` if `A` is unbounded.
    *    For example, `x.isInstanceOf[A]` where `A` is an unbounded type parameter
