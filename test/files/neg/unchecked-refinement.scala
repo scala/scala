@@ -22,7 +22,7 @@ class A {
   }
 
   def f4(xs: List[Int]) = xs match {
-    /* nowarn - todo */ case x: AnyRef { def bippy: Int } if b => x.bippy  // this could/should do an instance check and not warn
+    /* nowarn - todo */ case x: AnyRef { def bippy: Int } if b => x.bippy  // this could/should do an instance check and not warn // dotty warns under reflectiveSelectable
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
     /* nowarn */ case x: ((AnyRef { def size: Int }) @unchecked) if b  => x.size
   }

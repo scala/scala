@@ -173,13 +173,12 @@ trait Checkable {
       }
     // collect type args which are candidates for warning because uncheckable
     private def typeArgsInTopLevelType(tp: Type): Set[Type] = {
-      def isUnwarnableTypeArg(arg: Type) = {
-        def isUnwarnableTypeArgSymbol(sym: Symbol) =
+      def isUnwarnableTypeArg(arg: Type) =
+        uncheckedOk(arg) || {                     // @unchecked T
+          val sym = arg.typeSymbolDirect          // has to be direct: see pos/t1439
           sym.name.toTermName == nme.WILDCARD ||  // don't warn for `case l: List[_]`. Here, `List[_]` is a TypeRef, the arg refers an abstract type symbol `_`
           nme.isVariableName(sym.name)            // don't warn for `x.isInstanceOf[List[_]]`. Here, `List[_]` is an existential, quantified sym has `isVariableName`
-        uncheckedOk(arg) ||                              // @unchecked T
-        isUnwarnableTypeArgSymbol(arg.typeSymbolDirect)  // has to be direct: see pos/t1439
-      }
+        }
       var res: Set[Type] = Set.empty[Type]
       def add(t: Type): Unit = if (!isUnwarnableTypeArg(t)) res += t
       def loop(tp: Type): Unit = tp match {
@@ -364,13 +363,13 @@ trait Checkable {
             }
             else if (checker.result == RuntimeCheckable) {
               // register deferred checking for sealed types in current run
-              @`inline` def Xsym = X.typeSymbol
-              @`inline` def Psym = P.typeSymbol
-              @`inline` def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
               def recheckFruitless(): Unit = {
                 val rechecker = new CheckabilityChecker(X, P, isRecheck = true)
                 if (rechecker.neverMatches) neverMatchesWarning(rechecker)
               }
+              def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
+              val Xsym = X.typeSymbol
+              val Psym = P.typeSymbol
               if (isSealedOrFinal(Xsym) && isSealedOrFinal(Psym) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym)))
                 context.unit.toCheck += (() => recheckFruitless())
             }

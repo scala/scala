@@ -191,7 +191,7 @@ trait PatternTypers {
         case _                                                       => extractor.nonEmpty
       }
 
-      val ownType   = inferTypedPattern(tptTyped, tpe, pt, canRemedy, isUnapply = false)
+      val ownType   = inferTypedPattern(tptTyped, tpe, pt, canRemedy = canRemedy, isUnapply = false)
       val treeTyped = treeCopy.Typed(tree, exprTyped, tptTyped) setType ownType
 
       extractor match {

@@ -5,7 +5,7 @@ unchecked-refinement.scala:21: warning: the type test for pattern Foo[Any,U,V] c
     /*   warn */ case _: Foo[Any, U, V] if b     => ()
                          ^
 unchecked-refinement.scala:25: warning: a pattern match on a refinement type is unchecked
-    /* nowarn - todo */ case x: AnyRef { def bippy: Int } if b => x.bippy  // this could/should do an instance check and not warn
+    /* nowarn - todo */ case x: AnyRef { def bippy: Int } if b => x.bippy  // this could/should do an instance check and not warn // dotty warns under reflectiveSelectable
                                 ^
 unchecked-refinement.scala:26: warning: a pattern match on a refinement type is unchecked
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
