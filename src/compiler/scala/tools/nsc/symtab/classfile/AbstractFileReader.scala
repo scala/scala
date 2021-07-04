@@ -27,9 +27,7 @@ import scala.tools.nsc.io.AbstractFile
  */
 final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
   @deprecated("Use other constructor", "2.13.0")
-  def this(file: AbstractFile) = {
-    this(file.toByteArray)
-  }
+  def this(file: AbstractFile) = this(file.toByteArray)
 
   /** the current input pointer
    */
@@ -67,9 +65,8 @@ final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
   def getByte(mybp: Int): Byte =
     buf(mybp)
 
-  def getBytes(mybp: Int, bytes: Array[Byte]): Unit = {
+  def getBytes(mybp: Int, bytes: Array[Byte]): Unit =
     System.arraycopy(buf, mybp, bytes, 0, bytes.length)
-  }
 
   /** extract a character at position bp from buf
    */
@@ -95,9 +92,8 @@ final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
    */
   def getDouble(mybp: Int): Double = longBitsToDouble(getLong(mybp))
 
-  def getUTF(mybp: Int, len: Int): String = {
+  def getUTF(mybp: Int, len: Int): String =
     new DataInputStream(new ByteArrayInputStream(buf, mybp, len)).readUTF
-  }
 
   /** skip next 'n' bytes
    */

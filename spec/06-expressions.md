@@ -659,7 +659,7 @@ character. Characters are listed below in increasing order of
 precedence, with characters on the same line having the same precedence.
 
 ```scala
-(all letters)
+(all letters, as defined in [chapter 1](01-lexical-syntax.html), including `_` and `$`)
 |
 ^
 &
@@ -668,7 +668,7 @@ precedence, with characters on the same line having the same precedence.
 :
 + -
 * / %
-(all other special characters)
+(other operator characters, as defined in [chapter 1](01-lexical-syntax.html), including Unicode categories `Sm` and `So`)
 ```
 
 That is, operators starting with a letter have lowest precedence,

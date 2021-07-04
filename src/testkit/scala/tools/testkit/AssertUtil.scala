@@ -51,6 +51,25 @@ object AssertUtil {
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)
 
+  private val printable = raw"\p{Print}".r
+
+  def hexdump(s: String): Iterator[String] = {
+    import scala.io.Codec
+    val codec: Codec = Codec.UTF8
+    var offset = 0
+    def hex(bytes: Array[Byte])   = bytes.map(b => f"$b%02x").mkString(" ")
+    def charFor(byte: Byte): Char = byte.toChar match { case c @ printable() => c ; case _ => '.' }
+    def ascii(bytes: Array[Byte]) = bytes.map(charFor).mkString
+    def format(bytes: Array[Byte]): String =
+      f"$offset%08x  ${hex(bytes.slice(0, 8))}%-24s ${hex(bytes.slice(8, 16))}%-24s |${ascii(bytes)}|"
+        .tap(_ => offset += bytes.length)
+    s.getBytes(codec.charSet).grouped(16).map(format)
+  }
+
+  private def dump(s: String) = hexdump(s).mkString("\n")
+  def assertEqualStrings(expected: String)(actual: String) =
+    assert(expected == actual, s"Expected:\n${dump(expected)}\nActual:\n${dump(actual)}")
+
   private final val timeout = 60 * 1000L                 // wait a minute
 
   private implicit class `ref helper`[A](val r: Reference[A]) extends AnyVal {
