@@ -6,13 +6,11 @@ chapter: 1
 
 # Lexical Syntax
 
-Scala programs are written using the Unicode Basic Multilingual Plane
-(_BMP_) character set; Unicode supplementary characters are not
-presently supported.  This chapter defines the two modes of Scala's
-lexical syntax, the Scala mode, and the _XML mode_. If not
-otherwise mentioned, the following descriptions of Scala tokens refer
-to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment
-`\u0000` – `\u007F`.
+Scala source code consists of Unicode text.
+
+The program text is tokenized as described in this chapter.
+See the last section for special support for XML literals,
+which are parsed in _XML mode_.
 
 To construct tokens, characters are distinguished according to the following
 classes (Unicode general category given in parentheses):
@@ -74,7 +72,7 @@ or `_`, and _constant identifiers_, which do not.
 For this purpose, lower case letters include not only a-z,
 but also all characters in Unicode category Ll (lowercase letter),
 as well as all letters that have contributory property
-Other_Lowercase, except characters in category Nl (letter numerals)
+Other_Lowercase, except characters in category Nl (letter numerals),
 which are never taken as lower case.
 
 The following are examples of variable identifiers:
