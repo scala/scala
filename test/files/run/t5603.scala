@@ -7,7 +7,7 @@ import scala.tools.nsc.reporters.ConsoleReporter
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Vprint:parser -Ystop-after:parser -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Vprint:parser -Ystop-after:parser"
 
   override def code = """
     trait Greeting {
@@ -24,13 +24,7 @@ object Test extends DirectTest {
     object Test extends App {}
   """.trim
 
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    compile()
-    System.setErr(prevErr)
-  }
+  override def show(): Unit = compile()
 
   override def newCompiler(args: String*): Global = {
 

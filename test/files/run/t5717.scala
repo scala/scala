@@ -2,12 +2,10 @@ import scala.tools.partest._
 import java.io.File
 
 object Test extends StoreReporterDirectTest {
-  def code = ???
+  def code = "package a { class B }"
 
-  def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
-  }
+  override def extraSettings: String = s"-cp ${pathOf(sys.props("partest.lib"), testOutput.path)}"
+
   // TODO
   // Don't assume output is on physical disk
   // Let the compiler tell us output dir
@@ -16,7 +14,7 @@ object Test extends StoreReporterDirectTest {
   def show(): Unit = {
     // Don't crash when we find a file 'a' where package 'a' should go.
     scala.reflect.io.File(testOutput.path + "/a").writeAll("a")
-    compileCode("package a { class B }")
+    compile()
     val List(i) = filteredInfos
     // for some reason, nio doesn't throw the same exception on windows and linux/mac
     import File.separator

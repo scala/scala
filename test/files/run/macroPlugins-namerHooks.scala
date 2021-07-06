@@ -2,7 +2,6 @@ import scala.tools.partest._
 import scala.tools.nsc._
 
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp"
 
   def code = """
     case class C(x: Int, y: Int)

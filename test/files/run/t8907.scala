@@ -5,7 +5,7 @@ object Test extends StoreReporterDirectTest {
   def code = ???
 
   def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    val classpath = pathOf(sys.props("partest.lib"), testOutput.path)
     compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
   }
 

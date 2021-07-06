@@ -6,7 +6,7 @@ object Test extends StoreReporterDirectTest {
   def code = ???
 
   private def compileCode(code: String, jarFileName: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    val classpath = pathOf(sys.props("partest.lib"), testOutput.path)
     compileString(newCompiler("-cp", classpath, "-d", s"${testOutput.path}/$jarFileName"))(code)
   }
   private def runAdded(codeToRun: String): String = {
@@ -15,7 +15,6 @@ object Test extends StoreReporterDirectTest {
     assert(added.nonEmpty, lines)
     output.mkString("\n")
   }
-
 
   def app1 = """
     package test

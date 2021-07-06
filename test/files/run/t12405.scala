@@ -24,7 +24,5 @@ object Test extends DirectTest {
       |}
       |""".stripMargin
 
-  override def show(): Unit = Console.withErr(System.out) {
-    compile()
-  }
+  override def show(): Unit = compile()
 }

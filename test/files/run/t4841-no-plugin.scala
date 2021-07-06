@@ -7,8 +7,6 @@ import java.io.File
 object Test extends DirectTest {
   override def code = "class Code"
 
-  override def extraSettings = s"-usejavacp"
-
   override def show() = {
     val tmp = new File(testOutput.jfile, "plugins.partest").getAbsolutePath
     compile("-Xdev", s"-Xplugin:$tmp", "-Xpluginsdir", tmp)

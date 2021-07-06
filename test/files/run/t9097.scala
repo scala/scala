@@ -9,7 +9,7 @@ object Test extends StoreReporterDirectTest {
     "-Ydelambdafy:method",
     "-Vprint:delambdafy",
     s"-d ${testOutput.path}"
-  ) mkString " "
+  ).mkString(" ")
 
   override def code = """package o
                         |package a {

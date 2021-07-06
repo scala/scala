@@ -12,7 +12,7 @@ import Opcodes._
 // that uses the class with named arguments.
 // Any failure will be dumped to std out.
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = s"-usejavacp -cp ${testOutput.path}"
 
   def generateCode(): Unit = {
     val className =  "Foo"
@@ -78,15 +78,8 @@ class Driver {
 """
 
   override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    try {
-      generateCode()
-      compile()
-      Class.forName("Driver").getDeclaredConstructor().newInstance()
-    }
-    finally
-      System.setErr(prevErr)
+    generateCode()
+    compile()
+    Class.forName("Driver").getDeclaredConstructor().newInstance()
   }
 }

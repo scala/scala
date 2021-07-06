@@ -4,6 +4,9 @@ import scala.tools.nsc.Settings
 object Test extends StoreReporterDirectTest {
   def code = ???
 
+  // differs for two compilations
+  override def extraSettings: String = ""
+
   def library = """
     import scala.reflect.runtime.universe._
 
@@ -13,8 +16,8 @@ object Test extends StoreReporterDirectTest {
     }
   """
   def compileLibrary() = {
-    val classpath = List(sys.props("partest.lib"), sys.props("partest.reflect")) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(library)
+    val classpath = pathOf(sys.props("partest.lib"), sys.props("partest.reflect"))
+    compileString(newCompiler("-cp", classpath))(library)
   }
 
   def app = """
@@ -29,19 +32,17 @@ object Test extends StoreReporterDirectTest {
     }
   """
   def compileApp() = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    val global = newCompiler("-cp", classpath, "-d", testOutput.path)
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(app)
-    //global.reporter.ERROR.foreach(println)
+    val classpath = pathOf(sys.props("partest.lib"), testOutput.path)
+    compileString(newCompiler("-cp", classpath))(app)
   }
 
   def show(): Unit = {
     compileLibrary();
     println(filteredInfos.mkString("\n"))
     storeReporter.infos.clear()
-    compileApp();
+    compileApp()
     // we should get "missing or invalid dependency detected" errors, because we're trying to use an implicit that can't be unpickled
     // but we don't know the number of these errors and their order, so I just ignore them all
-    println(filteredInfos.filterNot (_.msg.contains("is missing from the classpath")).mkString("\n"))
+    println(filteredInfos.filterNot(_.msg.contains("is missing from the classpath")).mkString("\n"))
   }
 }

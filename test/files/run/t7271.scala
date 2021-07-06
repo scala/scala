@@ -16,13 +16,7 @@ object Test extends DirectTest {
     }
   """.trim
 
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    compile()
-    System.setErr(prevErr)
-  }
+  override def show(): Unit = compile()
 
   override def newCompiler(args: String*): Global = {
 
