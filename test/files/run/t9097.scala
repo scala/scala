@@ -28,6 +28,6 @@ object Test extends StoreReporterDirectTest {
     assert(!storeReporter.hasErrors, message = filteredInfos map (_.msg) mkString "; ")
     val out = baos.toString("UTF-8")
     // was 2 before the fix, the two PackageDefs for a would both contain the ClassDef for the closure
-    assert(out.lines.count(_ contains "def $anonfun$hihi$1(x$1: Int): String") == 1, out)
+    assert(out.linesIterator.count(_ contains "def $anonfun$hihi$1(x$1: Int): String") == 1, out)
   }
 }

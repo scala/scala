@@ -175,7 +175,7 @@ public class GroovyInterface$1Dump implements Opcodes {
         {
             mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$createCallSiteArray", "()Lorg/codehaus/groovy/runtime/callsite/CallSiteArray;", null, null);
             mv.visitCode();
-            mv.visitLdcInsn(new Integer(0));
+            mv.visitLdcInsn(Integer.valueOf(0));
             mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
             mv.visitVarInsn(ASTORE, 0);
             mv.visitTypeInsn(NEW, "org/codehaus/groovy/runtime/callsite/CallSiteArray");

@@ -52,7 +52,7 @@ object Test extends StoreReporterDirectTest {
     Console.withOut(baos)(Console.withErr(baos)(compile()))
     val out = baos.toString("UTF-8")
 
-    val unapplySelectorDummies = out.lines.filter(_.contains("<unapply-selector>")).map(_.trim).toList
+    val unapplySelectorDummies = out.linesIterator.filter(_.contains("<unapply-selector>")).map(_.trim).toList
     assert(unapplySelectorDummies.isEmpty, unapplySelectorDummies)
   }
 }

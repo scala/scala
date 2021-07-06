@@ -7,15 +7,14 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.scaladoc.HtmlFactoryTest.RESOURCES
 
 object SettingsUtil {
+  /* If the context CL is the application (system) CL, use "java.class.path";
+   * otherwise call the hook to set the parent CL to use, assume we're running under SBT.
+   */
   def configureClassAndSourcePath(settings: Settings): Settings = {
-    val ourClassLoader = HtmlFactoryTest.getClass.getClassLoader
-    Thread.currentThread.getContextClassLoader match {
-      case loader: URLClassLoader =>
-        val paths = loader.getURLs.map(u => URLDecoder.decode(u.getPath))
-        settings.classpath.value = paths mkString java.io.File.pathSeparator
-      case loader =>
-        settings.embeddedDefaults(ourClassLoader) // Running in SBT without forking, we have to ask the SBT classloader for the classpath
-    }
+    if (Thread.currentThread.getContextClassLoader == ClassLoader.getSystemClassLoader)
+      settings.usejavacp.value = true
+    else
+      settings.embeddedDefaults[HtmlFactoryTest.type]
 
     settings
   }

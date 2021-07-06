@@ -4,9 +4,7 @@
  */
 
 trait Test1 {
-  def testFunc(i:Int): Unit = {
-    (i:Int) => i + 5
-  }
+  def testFunc(i: Int): Unit = (i: Int) => i + 5
 }
 
 /* getName

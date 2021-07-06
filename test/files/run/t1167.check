@@ -1,3 +1,8 @@
+#partest java9+
+
+
+
+#partest java8
 anon$1
 anon$2
 $anonfun$testFunc$1

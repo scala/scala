@@ -1,5 +1,5 @@
 // scalac: -deprecation
-
+import scala.tools.partest.Util.ArrayDeep
 import scala.language.{ higherKinds, reflectiveCalls }
 
 object Test1 {
@@ -181,7 +181,7 @@ object Test5 {
       getClass().getMethod("setCount", classOf[Integer])
 
     def get = getter.invoke(this).asInstanceOf[Integer].intValue
-    def set(n: Int) = setter.invoke(this, new Integer(n))
+    def set(n: Int) = setter.invoke(this, Integer.valueOf(n))
   }
   def run {
     val count = new Count

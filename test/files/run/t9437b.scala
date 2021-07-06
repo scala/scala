@@ -84,7 +84,7 @@ class Driver {
     try {
       generateCode()
       compile()
-      Class.forName("Driver").newInstance()
+      Class.forName("Driver").getDeclaredConstructor().newInstance()
     }
     finally
       System.setErr(prevErr)

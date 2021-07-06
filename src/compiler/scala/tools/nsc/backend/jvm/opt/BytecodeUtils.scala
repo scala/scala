@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{tailrec, switch}
 import scala.collection.JavaConverters._
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.Opcodes._

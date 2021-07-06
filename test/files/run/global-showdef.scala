@@ -39,7 +39,7 @@ object Bippy {
 
     def interesting(line: String) = (line contains "def showdefTestMember") || (line startsWith "<<-- ")
 
-    def run(args: String*) = slurp(args: _*).lines filter interesting foreach println
+    def run(args: String*) = slurp(args: _*).linesIterator filter interesting foreach println
 
     classes.zipAll(objects, "", "") foreach {
       case (c, "") => run("-Xshow-class", c)
