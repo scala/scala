@@ -175,7 +175,7 @@ trait PatternTypers {
       val tptTyped  = typedType(tpt, mode)
       val tpe       = tptTyped.tpe
       val exprTyped = typed(expr, mode, tpe.deconst)
-      val extractor = extractorForUncheckedType(tpt.pos, tpe)
+      val extractor = extractorForUncheckedType(tpt.pos, tpe, pt)
 
       val canRemedy = tpe match {
         case RefinedType(_, decls) if !decls.isEmpty                 => false
@@ -303,7 +303,7 @@ trait PatternTypers {
         val unapplyMethod = unapplyMember(extractorTp)
         val unapplyType = extractorTp memberType unapplyMethod
 
-        lazy val remedyUncheckedWithClassTag = extractorForUncheckedType(extractorPos, firstParamType(unapplyType))
+        lazy val remedyUncheckedWithClassTag = extractorForUncheckedType(extractorPos, firstParamType(unapplyType), pt)
         def canRemedy = remedyUncheckedWithClassTag != EmptyTree
 
         val selectorDummySym =
@@ -382,20 +382,15 @@ trait PatternTypers {
 
     // if there's a ClassTag that allows us to turn the unchecked type test for `pt` into a checked type test
     // return the corresponding extractor (an instance of ClassTag[`pt`])
-    def extractorForUncheckedType(pos: Position, pt: Type): Tree = {
-      if (isPastTyper || (pt eq NoType)) EmptyTree else {
-        pt match {
-          case RefinedType(parents, decls) if !decls.isEmpty || (parents exists isUncheckable) => return EmptyTree
-          case _                                                                               =>
-        }
+    def extractorForUncheckedType(pos: Position, pt: Type, pt0: Type): Tree = {
+      if (isPastTyper || !isRuntimeCheckable(pt, pt0)) EmptyTree else {
         // only look at top-level type, can't (reliably) do anything about unchecked type args (in general)
         // but at least make a proper type before passing it elsewhere
         val pt1 = pt.dealiasWiden match {
           case tr @ TypeRef(pre, sym, args) if args.nonEmpty => copyTypeRef(tr, pre, sym, sym.typeParams map (_.tpeHK)) // replace actual type args with dummies
           case pt1                                           => pt1
         }
-        if (isCheckable(pt1)) EmptyTree
-        else resolveClassTag(pos, pt1) match {
+        resolveClassTag(pos, pt1) match {
           case tree if unapplyMember(tree.tpe).exists => tree
           case _                                      => devWarning(s"Cannot create runtime type test for $pt1") ; EmptyTree
         }

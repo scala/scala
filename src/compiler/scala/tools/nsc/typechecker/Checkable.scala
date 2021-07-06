@@ -297,6 +297,13 @@ trait Checkable {
       })
     )
 
+    def isRuntimeCheckable(P0: Type, X: Type = AnyTpe): Boolean = P0.widen match {
+      case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
+      case RefinedType(_, decls) if !decls.isEmpty               => false
+      case RefinedType(parents, _)                               => parents.forall(isRuntimeCheckable(_, X))
+      case p                                                     => new CheckabilityChecker(X, p).result == RuntimeCheckable
+    }
+
     /** TODO: much better error positions.
       * Kind of stuck right now because they just pass us the one tree.
       * TODO: Eliminate inPattern, canRemedy, which have no place here.

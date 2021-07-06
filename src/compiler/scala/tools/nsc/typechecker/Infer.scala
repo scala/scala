@@ -1273,7 +1273,9 @@ trait Infer extends Checkable {
         return ErrorType
       }
 
-      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
+      // use the possibly abstract type `pt0` rather than `pt` so that `: T` given pt0=T is StaticallyTrue scala/bug#12406
+      checkCheckable(tree0, pattp, pt0, inPattern = true, canRemedy)
+
       if (pattp <:< pt) ()
       else {
         debuglog("free type params (1) = " + tpparams)
