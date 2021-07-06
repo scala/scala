@@ -110,7 +110,7 @@ abstract class Any {
    */
   final def ## : Int = sys.error("##")
 
-  /** Test whether the dynamic type of the receiver object has the same erasure to `T0`.
+  /** Test whether the dynamic type of the receiver object has the same erasure as `T0`.
    *
    *  Depending on what `T0` is, the test is done in one of the below ways:
    *
