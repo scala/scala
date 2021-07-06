@@ -13,9 +13,5 @@ object t10344 {
 }
   """
 
-  override def show(): Unit = {
-    Console.withErr(System.out) {
-      compile()
-    }
-  }
+  override def show(): Unit = compile()
 }

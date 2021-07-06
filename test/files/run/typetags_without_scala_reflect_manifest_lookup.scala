@@ -2,7 +2,7 @@ import scala.tools.partest._
 import scala.tools.nsc.Settings
 
 object Test extends DirectTest {
-  override def extraSettings = "-cp " + sys.props("partest.lib") + " -d \"" + testOutput.path + "\""
+  override def extraSettings = "-cp " + sys.props("partest.lib")
 
   def code = """
     object Test extends App {

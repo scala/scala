@@ -24,7 +24,7 @@ package p1 {
   """
 
   override def extraSettings = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    val classpath = pathOf(sys.props("partest.lib"), testOutput.path)
     s"-cp $classpath"
   }
 

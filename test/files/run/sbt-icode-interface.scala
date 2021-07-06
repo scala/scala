@@ -9,7 +9,7 @@ object Test extends DirectTest {
   """.trim
 
   def show(): Unit = {
-    val global = newCompiler("-usejavacp")
+    val global = newCompiler()
     import global._
     val r = new Run
     r.compileSources(newSourceFile(code) :: Nil)

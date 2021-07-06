@@ -35,7 +35,7 @@ object Test extends DirectTest {
   private def fakeSbt = new sbt.FakeSbt
 
   override def show() = {
-    val global = newCompiler("-usejavacp", "-feature")
+    val global = newCompiler("-feature")
 
     def checkMsg(): Unit =
       assert(global.reporter.asInstanceOf[StoreReporter].infos.head.msg.contains("postfix operator"))

@@ -2,7 +2,6 @@ import scala.tools.partest._
 
 // Type constructors for FunctionN and TupleN should not be considered as function type / tuple types.
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp"
 
   def code = ""
 

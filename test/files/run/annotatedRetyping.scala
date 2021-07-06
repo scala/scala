@@ -2,8 +2,6 @@ import scala.tools.partest._
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp"
-
   def code = """
     class testAnn extends annotation.Annotation
 

@@ -9,5 +9,5 @@ abstract class A[T] {
   val bar: Set[_ <: T]
 }""".trim
 
-  override def show(): Unit = Console.withErr(System.out)(compile())
+  override def show(): Unit = compile()
 }

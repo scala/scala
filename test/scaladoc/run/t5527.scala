@@ -137,11 +137,8 @@ object Test extends DirectTest {
     }
   """.trim
 
-  // redirect err to out, for logging
-  override def show(): Unit = StreamCapture.savingSystem {
-    System.setErr(System.out)
-    compile()
-  }
+  override def show(): Unit = compile()
+
   // doc.Settings
   override def newSettings(args: List[String]) = new doc.Settings(_ => ()).tap(_.processArguments(args, true))
   // ScaladocGlobal yielded by DocFactory#compiler, requires doc.Settings

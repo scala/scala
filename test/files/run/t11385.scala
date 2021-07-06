@@ -12,7 +12,7 @@ object Test extends DirectTest {
   def show() = assert {
     val tmp = createTempDirectory("t11385")
     val pkg = createDirectories(tmp.resolve("acme").resolve("C").resolve("sub"))
-    compile("-usejavacp", "-classpath", tmp.toString)
+    compile("-classpath", tmp.toString)
   }
 }
 

@@ -3,7 +3,7 @@ import scala.tools.partest.DirectTest
 object Test extends DirectTest {
 
   override def extraSettings: String =
-    s"-usejavacp -d ${testOutput.path} -cp ${testOutput.path} -d ${testOutput.path}"
+    s"-usejavacp -cp ${testOutput.path}"
 
   override def code = """
 object O extends C {
@@ -15,11 +15,9 @@ object O extends C {
 
   override def show(): Unit = {
     val global = newCompiler()
-    Console.withErr(System.out) {
-      compileString(global)(code)
-      compileString(global)(code)
-      loadClass // was "duplicate name and signature in class X"
-    }
+    compileString(global)(code)
+    compileString(global)(code)
+    loadClass // was "duplicate name and signature in class X"
   }
 
   def loadClass: Class[_] = {

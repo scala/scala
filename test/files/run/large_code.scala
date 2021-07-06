@@ -2,7 +2,6 @@ import scala.tools.partest._
 
 // a cold run of partest takes about 15s for this test on my laptop
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp"
 
   // test that we hit the code size limit and error out gracefully
   // 5958 is the magic number (2^16/11 -- each `a(1,2,3,4,5,6)` is 11 bytes of bytecode)
@@ -15,9 +14,5 @@ object Test extends DirectTest {
       |  }
       |}""".stripMargin.trim
 
-  override def show(): Unit = {
-    Console.withErr(System.out) {
-      compile()
-    }
-  }
+  override def show(): Unit = compile()
 }

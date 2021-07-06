@@ -12,7 +12,7 @@ object Test extends DirectTest {
 
     val classpath = List(sys.props("partest.lib"), jarpath, testOutput.path) mkString sys.props("path.separator")
     try {
-      compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
+      compileString(newCompiler("-cp", classpath))(code)
       throw new Error("Compilation should have failed");
     } catch {
       case ex: FatalError => // this is expected

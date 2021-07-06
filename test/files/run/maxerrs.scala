@@ -14,8 +14,6 @@ object Test extends DirectTest {
     }
   """.trim
 
-  override def extraSettings = "-usejavacp"
-
   // a reporter that ignores all limits
   lazy val store = new UnfilteredStoreReporter
 

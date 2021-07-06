@@ -24,8 +24,8 @@ object Test extends DirectTest {
       |}
     """.stripMargin
 
-  def show(): Unit = Console.withErr(System.out) {
-    compileString(newCompiler("-usejavacp"))(depCode)
-    compileString(newCompiler("-usejavacp", "-cp", testOutput.path, "-Vprint:patmat"))(code)
+  def show(): Unit = {
+    compileString(newCompiler())(depCode)
+    compileString(newCompiler("-cp", testOutput.path, "-Vprint:patmat"))(code)
   }
 }
