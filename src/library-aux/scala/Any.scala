@@ -124,7 +124,7 @@ abstract class Any {
    *  - `T0` is an intersection `X with Y` or `X & Y: this method is equivalent to `x.isInstanceOf[X] && x.isInstanceOf[Y]`
    *  - `T0` is a union `X | Y`: this method is equivalent to `x.isInstanceOf[X] || x.isInstanceOf[Y]`
    *  - `T0` is a type parameter or an abstract type member: this method is equivalent
-   *    to `isInstanceOf[U]` where `U` is `A`'s upper bound, `Any` if `A` is unbounded.
+   *    to `isInstanceOf[U]` where `U` is `T0`'s upper bound, `Any` if `T0` is unbounded.
    *    For example, `x.isInstanceOf[A]` where `A` is an unbounded type parameter
    *    will return true for any value of `x`.
    *
