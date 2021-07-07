@@ -9,25 +9,27 @@ import scala.concurrent.{
   Awaitable,
   blocking
 }
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
-import scala.reflect.{ classTag, ClassTag }
-import scala.tools.testkit.AssertUtil.assertThrows
 import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.reflect.{classTag, ClassTag}
+import scala.tools.testkit.AssertUtil.{Fast, Slow, assertThrows, waitFor, waitForIt}
+import scala.util.{Try, Success, Failure}
+import scala.util.chaining._
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit.{MILLISECONDS => Milliseconds, SECONDS => Seconds}
 
 trait TestBase {
-  import scala.tools.testkit.AssertUtil.{Fast, Slow, waitForIt}
+
   trait Done { def apply(proof: => Boolean): Unit }
+
   def once(body: Done => Unit): Unit = {
-    import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
-    import TimeUnit.{MILLISECONDS => Milliseconds}
+    import java.util.concurrent.LinkedBlockingQueue
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
     var tried: Try[Boolean] = null
-    def check = { tried = q.poll(5000, Milliseconds) ; tried != null }
+    def check = { tried = q.poll(5000L, Milliseconds) ; tried != null }
     waitForIt(check, progress = Slow, label = "concurrent-tck")
     assert(tried.isSuccess)
     assert(tried.get)
@@ -37,22 +39,17 @@ trait TestBase {
 
   def test[T](name: String)(body: => T): T = {
     println(s"starting $name")
-    val r = body
-    println(s"finished $name")
-    r
+    body.tap(_ => println(s"finished $name"))
   }
 
   def await[A](value: Awaitable[A]): A = {
-    var a: A = null.asInstanceOf[A]
-    def check = {
+    def check: Option[A] =
       Try(Await.result(value, Duration(500, "ms"))) match {
-        case Success(x) => a = x ; true
-        case Failure(_: TimeoutException) => false
+        case Success(x) => Some(x)
+        case Failure(_: TimeoutException) => None
         case Failure(t) => throw t
       }
-    }
-    waitForIt(check, progress = Fast, label = "concurrent-tck test result")
-    a
+    waitFor(check, progress = Fast, label = "concurrent-tck test result")
   }
 }
 
@@ -989,36 +986,34 @@ class CustomExecutionContext extends TestBase {
     assert(count >= 1)
   }
 
-  def testUncaughtExceptionReporting(): Unit = once {
-    done =>
-      import java.util.concurrent.TimeUnit.SECONDS
-      val example = new InterruptedException()
-      val latch = new java.util.concurrent.CountDownLatch(1)
-      @volatile var thread: Thread = null
-      @volatile var reported: Throwable = null
-      val ec = ExecutionContext.fromExecutorService(null, t => {
-        reported = t
-        latch.countDown()
+  def testUncaughtExceptionReporting(): Unit = once { done =>
+    val example = new InterruptedException
+    val latch = new CountDownLatch(1)
+    @volatile var thread: Thread = null
+    @volatile var reported: Throwable = null
+    val ec = ExecutionContext.fromExecutorService(null, t => {
+      reported = t
+      latch.countDown()
+    })
+
+    @tailrec def waitForThreadDeath(turns: Int): Boolean =
+      turns > 0 && (thread != null && !thread.isAlive || { Thread.sleep(10L) ; waitForThreadDeath(turns - 1) })
+
+    def truthfully(b: Boolean): Option[Boolean] = if (b) Some(true) else None
+
+    // jdk17 thread receives pool exception handler, so wait for thread to die slow and painful expired keepalive
+    def threadIsDead =
+      waitFor(truthfully(waitForThreadDeath(turns = 100)), progress = Slow, label = "concurrent-tck-thread-death")
+
+    try {
+      ec.execute(() => {
+        thread = Thread.currentThread
+        throw example
       })
-
-      @tailrec def waitForThreadDeath(turns: Int): Boolean =
-          if (turns <= 0) false
-          else if ((thread ne null) && thread.isAlive == false) true
-          else {
-            Thread.sleep(10)
-            waitForThreadDeath(turns - 1)
-          }
-
-      try {
-        ec.execute(() => {
-          thread = Thread.currentThread
-          throw example
-        })
-        latch.await(2, SECONDS)
-        done(waitForThreadDeath(turns = 100) && (reported eq example))
-      } finally {
-        ec.shutdown()
-      }
+      latch.await(2, Seconds)
+      done(threadIsDead && (reported eq example))
+    }
+    finally ec.shutdown()
   }
 
   test("testUncaughtExceptionReporting")(testUncaughtExceptionReporting())

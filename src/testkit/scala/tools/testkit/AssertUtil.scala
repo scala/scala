@@ -233,6 +233,12 @@ object AssertUtil {
    *  takes a long time, so long as we can verify progress.
    */
   def waitForIt(terminated: => Boolean, progress: Progress = Fast, label: => String = "test"): Unit = {
+    def value: Option[Boolean] = if (terminated) Some(true) else None
+    assertTrue(waitFor(value, progress, label))
+  }
+  /** Wait for a value or eventually throw.
+   */
+  def waitFor[A](value: => Option[A], progress: Progress = Fast, label: => String = "test"): A = {
     val limit = 5
     var n = 1
     var (dormancy, factor) = progress match {
@@ -240,14 +246,13 @@ object AssertUtil {
       case Fast => (250L, 4)
     }
     var period = 0L
+    var result: Option[A] = None
     var done = false
-    var ended = false
     while (!done && n < limit) {
       try {
-        ended = terminated
-        if (ended) {
-          done = true
-        } else {
+        result = value
+        done = result.nonEmpty
+        if (!done) {
           //println(s"Wait for test condition: $label")
           Thread.sleep(dormancy)
           period += dormancy
@@ -258,7 +263,10 @@ object AssertUtil {
       n += 1
       dormancy *= factor
     }
-    assertTrue(s"Expired after dormancy period $period waiting for termination condition $label", ended)
+    result match {
+      case Some(v) => v
+      case _ => fail(s"Expired after dormancy period $period waiting for termination condition $label")
+    }
   }
 
   /** How frequently to check a termination condition. */
