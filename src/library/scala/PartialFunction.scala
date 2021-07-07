@@ -14,17 +14,16 @@ package scala
 
 import scala.annotation.nowarn
 
-
 /** A partial function of type `PartialFunction[A, B]` is a unary function
  *  where the domain does not necessarily include all values of type `A`.
- *  The function `isDefinedAt` allows to test dynamically if a value is in
+ *  The function [[isDefinedAt]] allows to test dynamically if a value is in
  *  the domain of the function.
  *
  *  Even if `isDefinedAt` returns true for an `a: A`, calling `apply(a)` may
  *  still throw an exception, so the following code is legal:
  *
  *  {{{
- *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
+ *  val f: PartialFunction[Int, Any] = { case x => x / 0 }   // ArithmeticException: / by zero
  *  }}}
  *
  *  It is the responsibility of the caller to call `isDefinedAt` before
@@ -32,26 +31,52 @@ import scala.annotation.nowarn
  *  `apply` will throw an exception to indicate an error condition. If an
  *  exception is not thrown, evaluation may result in an arbitrary value.
  *
+ *  The usual way to respect this contract is to call [[applyOrElse]],
+ *  which is expected to be more efficient than calling both `isDefinedAt`
+ *  and `apply`.
+ *
  *  The main distinction between `PartialFunction` and [[scala.Function1]] is
  *  that the user of a `PartialFunction` may choose to do something different
  *  with input that is declared to be outside its domain. For example:
  *
  *  {{{
  *  val sample = 1 to 10
- *  val isEven: PartialFunction[Int, String] = {
- *    case x if x % 2 == 0 => x+" is even"
+ *  def isEven(n: Int) = n % 2 == 0
+ *  val eveningNews: PartialFunction[Int, String] = {
+ *    case x if isEven(x) => s"\$x is even"
  *  }
  *
- *  // the method collect can use isDefinedAt to select which members to collect
- *  val evenNumbers = sample collect isEven
+ *  // The method collect is described as "filter + map"
+ *  // because it uses a PartialFunction to select elements
+ *  // to which the function is applied.
+ *  val evenNumbers = sample.collect(eveningNews)
  *
- *  val isOdd: PartialFunction[Int, String] = {
- *    case x if x % 2 == 1 => x+" is odd"
+ *  val oddlyEnough: PartialFunction[Int, String] = {
+ *    case x if !isEven(x) => s"\$x is odd"
  *  }
  *
- *  // the method orElse allows chaining another partial function to handle
- *  // input outside the declared domain
- *  val numbers = sample map (isEven orElse isOdd)
+ *  // The method orElse allows chaining another PartialFunction
+ *  // to handle input outside the declared domain.
+ *  val numbers = sample.map(eveningNews orElse oddlyEnough)
+ *
+ *  // same as
+ *  val numbers = sample.map(n => eveningNews.applyOrElse(n, oddlyEnough))
+ *
+ *  val half: PartialFunction[Int, Int] = {
+ *    case x if isEven(x) => x / 2
+ *  }
+ *
+ *  // Calculating the domain of a composition can be expensive.
+ *  val oddByHalf = half.andThen(oddlyEnough)
+ *
+ *  // Invokes `half.apply` on even elements!
+ *  val oddBalls = sample.filter(oddByHalf.isDefinedAt)
+ *
+ *  // Better than filter(oddByHalf.isDefinedAt).map(oddByHalf)
+ *  val oddBalls = sample.collect(oddByHalf)
+ *
+ *  // Providing "default" values.
+ *  val oddsAndEnds = sample.map(n => oddByHalf.applyOrElse(n, (i: Int) => s"[\$i]"))
  *  }}}
  *
  *  @note Optional [[Function]]s, [[PartialFunction]]s and extractor objects
@@ -63,6 +88,10 @@ import scala.annotation.nowarn
  * | from optional [[Function]] | [[Function1.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function1.UnliftOps#unlift]] |
  * | from an extractor | `{ case extractor(x) => x }` | `extractor.unapply _` | [[Predef.identity]] |
  *  &nbsp;
+ *
+ * @define applyOrElseOrElse Note that calling [[isDefinedAt]] on the resulting partial function
+ *                           may apply the first partial function and execute its side effect.
+ *                           For efficiency, it is recommended to call [[applyOrElse]] instead of [[isDefinedAt]] or [[apply]].
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
   import PartialFunction._
@@ -125,9 +154,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    * Composes this partial function with another partial function that
    * gets applied to results of this partial function.
    *
-   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
-   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
-   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   * $applyOrElseOrElse
    *
    * @param  k  the transformation function
    * @tparam C  the result type of the transformation function.
@@ -141,9 +168,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    * Composes another partial function `k` with this partial function so that this
    * partial function gets applied to results of `k`.
    *
-   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
-   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
-   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   * $applyOrElseOrElse
    *
    * @param  k  the transformation function
    * @tparam R  the parameter type of the transformation function.
