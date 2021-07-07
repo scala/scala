@@ -2,13 +2,13 @@ package scala.build
 
 import sbt._
 import Keys._
+
 import java.util.{Date, Locale, Properties, TimeZone}
-import java.io.{File, FileInputStream}
+import java.io.{File, FileInputStream, StringWriter}
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.{TemporalAccessor, TemporalQueries, TemporalQuery}
-
 import scala.collection.JavaConverters._
 import BuildSettings.autoImport._
 
@@ -173,13 +173,18 @@ object VersionUtil {
   }
 
   private def writeProps(m: Map[String, String], propFile: File): File = {
-    val props = new Properties
-    m.foreach { case (k, v) => props.put(k, v) }
-    // unfortunately, this will write properties in arbitrary order
-    // this makes it harder to test for stability of generated artifacts
-    // consider using https://github.com/etiennestuder/java-ordered-properties
-    // instead of java.util.Properties
-    IO.write(props, null, propFile)
+    // Like:
+    // IO.write(props, null, propFile)
+    // But with deterministic key ordering and no timestamp
+    val fullWriter = new StringWriter()
+    for (k <- m.keySet.toVector.sorted) {
+      val writer = new StringWriter()
+      val props = new Properties()
+      props.put(k, m(k))
+      props.store(writer, null)
+      writer.toString.linesIterator.drop(1).foreach{line => fullWriter.write(line); fullWriter.write("\n")}
+    }
+    IO.write(propFile, fullWriter.toString)
     propFile
   }
 
