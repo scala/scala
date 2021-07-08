@@ -20,6 +20,7 @@ object JavaTokens extends ast.parser.CommonTokens {
 
   /** identifiers */
   final val IDENTIFIER = 10
+  final val RECORD = 12 // restricted identifier, so not lexed directly
   def isIdentifier(code: Int) =
     code == IDENTIFIER
 

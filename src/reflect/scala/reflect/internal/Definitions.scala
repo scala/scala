@@ -411,6 +411,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaEnumClass           = requiredClass[java.lang.Enum[_]]
     lazy val JavaUtilMap             = requiredClass[java.util.Map[_, _]]
     lazy val JavaUtilHashMap         = requiredClass[java.util.HashMap[_, _]]
+    lazy val JavaRecordClass         = getClassIfDefined("java.lang.Record")
 
     lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyTpe)
     lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.tpe))

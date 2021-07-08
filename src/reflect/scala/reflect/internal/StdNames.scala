@@ -236,6 +236,7 @@ trait StdNames {
     final val keywords = kw.result
   } with CommonNames {
     final val javaKeywords = new JavaKeywords()
+    final val javaRestrictedIdentifiers = new JavaRestrictedIdentifiers()
   }
 
   abstract class TypeNames extends Keywords with TypeNamesApi {
@@ -264,6 +265,7 @@ trait StdNames {
     final val Object: NameType          = nameType("Object")
     final val PrefixType: NameType      = nameType("PrefixType")
     final val Product: NameType         = nameType("Product")
+    final val Record: NameType          = nameType("Record")
     final val Serializable: NameType    = nameType("Serializable")
     final val Singleton: NameType       = nameType("Singleton")
     final val Throwable: NameType       = nameType("Throwable")
@@ -1256,6 +1258,15 @@ trait StdNames {
     final val WHILEkw: TermName        = kw("while")
 
     final val keywords = kw.result
+  }
+
+  // "The identifiers var, yield, and record are restricted identifiers because they are not allowed in some contexts"
+  // A type identifier is an identifier that is not the character sequence var, yield, or record.
+  // An unqualified method identifier is an identifier that is not the character sequence yield.
+  class JavaRestrictedIdentifiers {
+    final val RECORD: TermName = TermName("record")
+    final val VAR: TermName = TermName("var")
+    final val YIELD: TermName = TermName("yield")
   }
 
   sealed abstract class SymbolNames {

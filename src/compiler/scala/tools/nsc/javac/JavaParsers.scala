@@ -118,6 +118,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def javaLangObject(): Tree = javaLangDot(tpnme.Object)
 
+    def javaLangRecord(): Tree = javaLangDot(tpnme.Record)
+
     def arrayOf(tpt: Tree) =
       AppliedTypeTree(scalaDot(tpnme.Array), List(tpt))
 
@@ -564,6 +566,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def definesInterface(token: Int) = token == INTERFACE || token == AT
 
+    /** If the next token is the identifier "record", convert it into a proper
+      * token. Technically, "record" is just a restricted identifier. However,
+      * once we've figured out that it is in a position where it identifies a
+      * "record" class, it is much more convenient to promote it to a token.
+      */
+    def adaptRecordIdentifier(): Unit = {
+      if (in.token == IDENTIFIER && in.name == nme.javaRestrictedIdentifiers.RECORD)
+        in.token = RECORD
+    }
+
     def termDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
       val inInterface = definesInterface(parentToken)
       val tparams = if (in.token == LT) typeParams() else List()
@@ -587,6 +599,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
           }
         }
+      } else if (in.token == LBRACE && rtptName != nme.EMPTY && parentToken == RECORD) {
+        // compact constructor
+        methodBody()
+        List.empty
       } else {
         var mods1 = mods
         if (mods hasFlag Flags.ABSTRACT) mods1 = mods &~ Flags.ABSTRACT | Flags.DEFERRED
@@ -721,11 +737,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       }
     }
 
-    def memberDecl(mods: Modifiers, parentToken: Int): List[Tree] = in.token match {
-      case CLASS | ENUM | INTERFACE | AT =>
-        typeDecl(if (definesInterface(parentToken)) mods | Flags.STATIC else mods)
-      case _ =>
-        termDecl(mods, parentToken)
+    def memberDecl(mods: Modifiers, parentToken: Int): List[Tree] = {
+      in.token match {
+        case CLASS | ENUM | RECORD | INTERFACE | AT =>
+          typeDecl(mods)
+        case _ =>
+          termDecl(mods, parentToken)
+      }
     }
 
     def makeCompanionObject(cdef: ClassDef, statics: List[Tree]): Tree =
@@ -802,9 +820,54 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           javaLangObject()
         }
       val interfaces = interfacesOpt()
-      val (statics, body) = typeBody(CLASS, name)
+      val (statics, body) = typeBody(CLASS)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body))
+      })
+    }
+
+    def recordDecl(mods: Modifiers): List[Tree] = {
+      accept(RECORD)
+      val pos = in.currentPos
+      val name = identForType()
+      val tparams = typeParams()
+      val header = formalParams()
+      val superclass = javaLangRecord()
+      val interfaces = interfacesOpt()
+      val (statics, body) = typeBody(RECORD)
+
+      // Generate accessors, if not already manually specified
+      var generateAccessors = header
+        .view
+        .map { case ValDef(mods, name, tpt, _) => (name, (tpt, mods.annotations)) }
+        .toMap
+      for (DefDef(_, name, List(), List(params), _, _) <- body if generateAccessors.contains(name) && params.isEmpty)
+        generateAccessors -= name
+
+      val accessors = generateAccessors
+        .map { case (name, (tpt, annots)) =>
+          DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
+        }
+        .toList
+
+      // Generate canonical constructor. During parsing this is done unconditionally but the symbol
+      // is unlinked in Namer if it is found to clash with a manually specified constructor.
+      val canonicalCtor = DefDef(
+        mods | Flags.SYNTHETIC,
+        nme.CONSTRUCTOR,
+        List(),
+        List(header.map(_.duplicate)),
+        TypeTree(),
+        blankExpr
+      )
+
+      addCompanionObject(statics, atPos(pos) {
+        ClassDef(
+          mods | Flags.FINAL,
+          name,
+          tparams,
+          makeTemplate(superclass :: interfaces, canonicalCtor :: accessors ::: body)
+        )
       })
     }
 
@@ -820,7 +883,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else {
           List(javaLangObject())
         }
-      val (statics, body) = typeBody(INTERFACE, name)
+      val (statics, body) = typeBody(INTERFACE)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
                  name, tparams,
@@ -828,14 +891,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       })
     }
 
-    def typeBody(leadingToken: Int, parentName: Name): (List[Tree], List[Tree]) = {
+    def typeBody(leadingToken: Int): (List[Tree], List[Tree]) = {
       accept(LBRACE)
-      val defs = typeBodyDecls(leadingToken, parentName)
+      val defs = typeBodyDecls(leadingToken)
       accept(RBRACE)
       defs
     }
 
-    def typeBodyDecls(parentToken: Int, parentName: Name): (List[Tree], List[Tree]) = {
+    def typeBodyDecls(parentToken: Int): (List[Tree], List[Tree]) = {
       val inInterface = definesInterface(parentToken)
       val statics = new ListBuffer[Tree]
       val members = new ListBuffer[Tree]
@@ -847,7 +910,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken()
         } else {
-          if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
+
+          // See "14.3. Local Class and Interface Declarations"
+          adaptRecordIdentifier()
+          if (in.token == ENUM || in.token == RECORD || definesInterface(in.token))
+            mods |= Flags.STATIC
           val decls = joinComment(memberDecl(mods, parentToken))
 
           @tailrec
@@ -871,7 +938,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
-      val (statics, body) = typeBody(AT, name)
+      val (statics, body) = typeBody(AT)
       val templ = makeTemplate(annotationParents, body)
       addCompanionObject(statics, atPos(pos) {
         import Flags._
@@ -908,7 +975,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val (statics, body) =
         if (in.token == SEMI) {
           in.nextToken()
-          typeBodyDecls(ENUM, name)
+          typeBodyDecls(ENUM)
         } else {
           (List(), List())
         }
@@ -956,12 +1023,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       (res, hasClassBody)
     }
 
-    def typeDecl(mods: Modifiers): List[Tree] = in.token match {
-      case ENUM      => joinComment(enumDecl(mods))
-      case INTERFACE => joinComment(interfaceDecl(mods))
-      case AT        => annotationDecl(mods)
-      case CLASS     => joinComment(classDecl(mods))
-      case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+    def typeDecl(mods: Modifiers): List[Tree] = {
+      adaptRecordIdentifier()
+      in.token match {
+        case ENUM      => joinComment(enumDecl(mods))
+        case INTERFACE => joinComment(interfaceDecl(mods))
+        case AT        => annotationDecl(mods)
+        case CLASS     => joinComment(classDecl(mods))
+        case RECORD    => joinComment(recordDecl(mods))
+        case _         => in.nextToken(); syntaxError("illegal start of type declaration", skipIt = true); List(errorTypeTree)
+      }
     }
 
     def tryLiteral(negate: Boolean = false): Option[Constant] = {

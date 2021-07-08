@@ -292,6 +292,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaEnumClass
     definitions.JavaUtilMap
     definitions.JavaUtilHashMap
+    definitions.JavaRecordClass
     definitions.ByNameParamClass
     definitions.JavaRepeatedParamClass
     definitions.RepeatedParamClass
