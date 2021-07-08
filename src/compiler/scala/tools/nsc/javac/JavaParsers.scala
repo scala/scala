@@ -572,7 +572,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       * "record" class, it is much more convenient to promote it to a token.
       */
     def adaptRecordIdentifier(): Unit = {
-      if (in.token == IDENTIFIER && in.name.toString == "record")
+      if (in.token == IDENTIFIER && in.name == nme.javaRestrictedIdentifiers.RECORD)
         in.token = RECORD
     }
 
@@ -836,7 +836,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val interfaces = interfacesOpt()
       val (statics, body) = typeBody(RECORD)
 
-      // Records generate a canonical constructor and accessors, unless they are manually specified
+      // Generate accessors, if not already manually specified
       var generateAccessors = header
         .view
         .map { case ValDef(mods, name, tpt, _) => (name, (tpt, mods.annotations)) }
@@ -844,12 +844,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       for (DefDef(_, name, List(), List(params), _, _) <- body if generateAccessors.contains(name) && params.isEmpty)
         generateAccessors -= name
 
-      // Generate canonical constructor and accessors, if not already manually specified
       val accessors = generateAccessors
         .map { case (name, (tpt, annots)) =>
           DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
         }
         .toList
+
+      // Generate canonical constructor. During parsing this is done unconditionally but the symbol
+      // is unlinked in Namer if it is found to clash with a manually specified constructor.
       val canonicalCtor = DefDef(
         mods | Flags.SYNTHETIC,
         nme.CONSTRUCTOR,
