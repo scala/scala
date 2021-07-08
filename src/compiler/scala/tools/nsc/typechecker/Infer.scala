@@ -1076,7 +1076,7 @@ trait Infer extends Checkable {
      */
     def inferMethodInstance(fn: Tree, undetParams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
-      case mt @ MethodType(params0, _) =>
+      case mt @ MethodType(_, _) =>
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(mt.paramTypes, args.length)
@@ -1094,17 +1094,17 @@ trait Infer extends Checkable {
             adjusted.undetParams match {
               case Nil  => Nil
               case xs   =>
-                // #3890
+                // scala/bug#3890
                 val xs1 = treeSubst.typeMap mapOver xs
                 if (xs ne xs1)
                   new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
                 enhanceBounds(adjusted.okParams, adjusted.okArgs, xs1)
                 xs1
             }
-          } else Nil
-        }
-        catch ifNoInstance { msg =>
-          NoMethodInstanceError(fn, args, msg); List()
+          } else undetParams
+        } catch ifNoInstance { msg =>
+          NoMethodInstanceError(fn, args, msg)
+          undetParams
         }
       case x => throw new MatchError(x)
     }

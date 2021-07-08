@@ -19,9 +19,4 @@ t8463.scala:5: error: type mismatch;
  required: T[Long]
   insertCell(Foo(5))
                  ^
-t8463.scala:5: error: type mismatch;
- found   : Test.Foo[T]
- required: Test.Foo[Test.Cell]
-  insertCell(Foo(5))
-                ^
-4 errors
+3 errors
