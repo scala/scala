@@ -1,10 +1,10 @@
 scalacOptions ++= Seq("-unchecked", "-feature"/*, "-deprecation", "-Xlint" , "-Xfatal-warnings"*/)
 
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
-libraryDependencies += "org.pantsbuild" % "jarjar" % "1.6.5"
+libraryDependencies += "org.pantsbuild" % "jarjar" % "1.7.2"
 
-libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bnd" % "2.4.1"
+libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bndlib" % "5.3.0"
 
 enablePlugins(BuildInfoPlugin)
 
@@ -22,9 +22,9 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
-  "org.slf4j" % "slf4j-nop" % "1.7.23",
+  "org.slf4j" % "slf4j-nop" % "1.7.31",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
-)
+  )
 
 concurrentRestrictions in Global := Seq(
   Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970

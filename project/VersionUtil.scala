@@ -2,13 +2,13 @@ package scala.build
 
 import sbt._
 import Keys._
+
 import java.util.{Date, Locale, Properties, TimeZone}
-import java.io.{File, FileInputStream}
+import java.io.{File, FileInputStream, StringWriter}
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.{TemporalAccessor, TemporalQueries, TemporalQuery}
-
 import scala.collection.JavaConverters._
 import BuildSettings.autoImport._
 
@@ -24,9 +24,9 @@ object VersionUtil {
 
   lazy val globalVersionSettings = Seq[Setting[_]](
     // Set the version properties globally (they are the same for all projects)
-    versionProperties in Global := versionPropertiesImpl.value,
+    (Global / versionProperties) := versionPropertiesImpl.value,
     gitProperties := gitPropertiesImpl.value,
-    version in Global := versionProperties.value.mavenVersion
+    (Global / version) := versionProperties.value.mavenVersion
   )
 
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
@@ -37,12 +37,12 @@ object VersionUtil {
       |  __\ \/ /__/ __ |/ /__/ __ |
       | /____/\___/_/ |_/____/_/ | |
       |                          |/  %s""".stripMargin.linesIterator.drop(1).map(s => s"${ "%n" }${ s }").mkString,
-    resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
+    (Compile / resourceGenerators) += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
   )
 
   lazy val generateBuildCharacterFileSettings = Seq[Setting[_]](
-    buildCharacterPropertiesFile := ((baseDirectory in ThisBuild).value / "buildcharacter.properties"),
+    buildCharacterPropertiesFile := ((ThisBuild / baseDirectory).value / "buildcharacter.properties"),
     generateBuildCharacterPropertiesFile := generateBuildCharacterPropertiesFileImpl.value
   )
 
@@ -161,7 +161,7 @@ object VersionUtil {
         "copyright.string" -> copyrightString.value,
         "shell.welcome"    -> shellWelcomeString.value
       ),
-      (resourceManaged in Compile).value / s"${thisProject.value.id}.properties")
+      (Compile / resourceManaged).value / s"${thisProject.value.id}.properties")
   }
 
   private lazy val generateBuildCharacterPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {
@@ -173,13 +173,18 @@ object VersionUtil {
   }
 
   private def writeProps(m: Map[String, String], propFile: File): File = {
-    val props = new Properties
-    m.foreach { case (k, v) => props.put(k, v) }
-    // unfortunately, this will write properties in arbitrary order
-    // this makes it harder to test for stability of generated artifacts
-    // consider using https://github.com/etiennestuder/java-ordered-properties
-    // instead of java.util.Properties
-    IO.write(props, null, propFile)
+    // Like:
+    // IO.write(props, null, propFile)
+    // But with deterministic key ordering and no timestamp
+    val fullWriter = new StringWriter()
+    for (k <- m.keySet.toVector.sorted) {
+      val writer = new StringWriter()
+      val props = new Properties()
+      props.put(k, m(k))
+      props.store(writer, null)
+      writer.toString.linesIterator.drop(1).foreach{line => fullWriter.write(line); fullWriter.write("\n")}
+    }
+    IO.write(propFile, fullWriter.toString)
     propFile
   }
 
