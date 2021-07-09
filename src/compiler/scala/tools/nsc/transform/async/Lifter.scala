@@ -150,15 +150,19 @@ trait Lifter extends ExprBuilder {
         val treeLifted = t match {
           case vd@ValDef(_, _, tpt, rhs)                    =>
             val isLazy = sym.isLazy
-            sym.setFlag(STABLE | PRIVATE | LOCAL)
-            if (isLazy) sym.resetFlag(LAZY) else sym.setFlag(MUTABLE)
+            sym.setFlag(STABLE)
+            if (currentTransformState.exteralFsmSelfParam == NoSymbol)
+              sym.setFlag(PRIVATE | LOCAL)
+
+            if (isLazy) sym.resetFlag(LAZY)
+            sym.setFlag(MUTABLE)
             sym.setName(currentTransformState.name.freshenIfNeeded(sym.name.toTermName))
             sym.setInfo(sym.info.deconst)
-            val rhs1 = if (isLazy) rhs else EmptyTree
-            treeCopy.ValDef(vd, Modifiers(sym.flags), sym.name, TypeTree(sym.info).setPos(t.pos), rhs1)
+            treeCopy.ValDef(vd, Modifiers(sym.flags), sym.name, TypeTree(sym.info).setPos(t.pos), EmptyTree)
           case dd@DefDef(_, _, tparams, vparamss, tpt, rhs) =>
             sym.setName(currentTransformState.name.freshen(sym.name.toTermName))
-            sym.setFlag(PRIVATE | LOCAL)
+            if (currentTransformState.exteralFsmSelfParam == NoSymbol)
+              sym.setFlag(PRIVATE | LOCAL)
             // Was `DefDef(sym, rhs)`, but this ran afoul of `ToughTypeSpec.nestedMethodWithInconsistencyTreeAndInfoParamSymbols`
             // due to the handling of type parameter skolems in `thisMethodType` in `Namers`
             treeCopy.DefDef(dd, Modifiers(sym.flags), sym.name, tparams, vparamss, tpt, rhs)

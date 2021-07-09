@@ -1,6 +1,6 @@
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
 
     val xml = <top><a>apple</a><b>boy</b><c>child</c></top>
     // This is the more likely typo, and the uglier parse.

@@ -5,7 +5,6 @@ import java.io.File
 import java.lang.reflect.InvocationTargetException
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.CompletableFuture
-
 import org.junit.Assert.assertEquals
 import org.junit.{Assert, Ignore, Test}
 
@@ -453,11 +452,9 @@ class AnnotationDrivenAsyncTest {
       }
     } catch {
       case ve: VerifyError =>
-        val asm = out.listFiles().filter(_.getName.contains("stateMachine")).flatMap { file =>
-          import scala.sys.process._
-          val javap = List("/usr/local/bin/javap", "-v", file.getAbsolutePath).!!
+        val asm = out.listFiles().flatMap { file =>
           val asmp = AsmUtils.textify(AsmUtils.readClass(file.getAbsolutePath))
-          javap :: asmp :: Nil
+          asmp :: Nil
         }.mkString("\n\n")
         throw new AssertionError(asm, ve)
     } finally {
@@ -495,18 +492,33 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
           case dd: DefDef if dd.symbol.hasAnnotation(customAsyncSym) =>
             deriveDefDef(dd) {
               rhs =>
-                val applyMethod =
-                  q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = $rhs"""
-                val applyMethodMarked = global.async.markForAsyncTransform(dd.symbol, applyMethod, awaitSym, Map.empty)
+                val fsmImplName = currentUnit.freshTermName("fsm$")
+                val externalFsmMethod = true
                 @nowarn("cat=lint-missing-interpolator")
                 val name = TypeName("stateMachine$async")
-                val wrapped =
+                val wrapped = if (!externalFsmMethod) {
+                  val applyMethod       =
+                    q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = $rhs"""
+                  val applyMethodMarked = global.async.markForAsyncTransform(dd.symbol, applyMethod, awaitSym, Map.empty)
                   q"""
                     class $name extends _root_.scala.tools.nsc.async.CustomFutureStateMachine {
-                     $applyMethodMarked
+                      $applyMethodMarked
                     }
                     new $name().start()
                    """
+                } else {
+                  val applyMethod       =
+                    q"""def $fsmImplName(self: $name, tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = $rhs"""
+                  val applyMethodMarked = global.async.markForAsyncTransform(dd.symbol, applyMethod, awaitSym, Map.empty)
+                  q"""
+                    $applyMethodMarked
+                    class $name extends _root_.scala.tools.nsc.async.CustomFutureStateMachine {
+                       def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit =
+                         $fsmImplName(this, tr)
+                    }
+                    new $name().start()
+                   """
+                }
 
                 val tree =
                   q"""

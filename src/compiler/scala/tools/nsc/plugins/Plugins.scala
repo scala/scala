@@ -102,7 +102,7 @@ trait Plugins { global: Global =>
         closeableRegistry.registerCloseable(loader)
         loader
       case Right(paths) =>
-        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
+        cache.getOrCreate((), paths, newLoader, closeableRegistry, checkStamps)
     }
   }
 
@@ -202,7 +202,7 @@ trait Plugins { global: Global =>
         closeableRegistry.registerCloseable(loader)
         loader
       case Right(paths) =>
-        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
+        cache.getOrCreate((), paths, newLoader, closeableRegistry, checkStamps)
     }
   }
 }
