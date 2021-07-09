@@ -36,7 +36,13 @@ object MimaFilters extends AutoPlugin {
 
     // this is an internal class and adding a final override here should not be a problem
     ProblemFilters.exclude[FinalMethodProblem]("scala.concurrent.impl.Promise#DefaultPromise.zipWith"),
-  )
+
+    // private[scala] Internal API
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
+
+    )
 
   override val buildSettings = Seq(
     mimaFailOnNoPrevious := false, // we opt everything out, knowing we only check library/reflect
