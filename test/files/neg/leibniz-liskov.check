@@ -55,8 +55,8 @@ leibniz-liskov.scala:21: error: type mismatch;
  required: F[U]
   def convert1[T, U](l: List[T])(ev: T =:= U): List[U] = ev.substituteContra(l)
                                                                              ^
-leibniz-liskov.scala:21: error: type mismatch;
- found   : F[T]
+leibniz-liskov.scala:21: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [F[_]]F[T]
  required: List[U]
   def convert1[T, U](l: List[T])(ev: T =:= U): List[U] = ev.substituteContra(l)
                                                                             ^
@@ -72,8 +72,8 @@ leibniz-liskov.scala:22: error: type mismatch;
  required: F[T]
   def convert2[T, U](l: List[U])(ev: T =:= U): List[T] = ev.substituteCo(l)
                                                                          ^
-leibniz-liskov.scala:22: error: type mismatch;
- found   : F[U]
+leibniz-liskov.scala:22: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [F[_]]F[U]
  required: List[T]
   def convert2[T, U](l: List[U])(ev: T =:= U): List[T] = ev.substituteCo(l)
                                                                         ^
@@ -111,8 +111,8 @@ leibniz-liskov.scala:35: error: type mismatch;
  required: F[U]
   def convertConsume2[U, T](c: Consumes[T])(ev: U <:< T): Consumes[U] = ev.substituteCo(c)
                                                                                         ^
-leibniz-liskov.scala:35: error: type mismatch;
- found   : F[T]
+leibniz-liskov.scala:35: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [F[+_]]F[T]
  required: LeibnizLiskov.this.Consumes[U]
     (which expands to)  U => Unit
   def convertConsume2[U, T](c: Consumes[T])(ev: U <:< T): Consumes[U] = ev.substituteCo(c)

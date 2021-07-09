@@ -1,0 +1,16 @@
+t12413.scala:13: error: inferred type arguments [AnyRef] do not conform to method close's type parameter bounds [Phantom >: AnyRef <: Open]
+  println(door.close.toString())
+               ^
+t12413.scala:14: error: inferred type arguments [AnyRef] do not conform to method close's type parameter bounds [Phantom >: AnyRef <: Open]
+  println(door.close == 0)
+               ^
+t12413.scala:15: error: inferred type arguments [AnyRef] do not conform to method open's type parameter bounds [Phantom >: AnyRef <: Open]
+  println(door.open().toString)
+               ^
+t12413.scala:16: error: inferred type arguments [AnyRef] do not conform to method open's type parameter bounds [Phantom >: AnyRef <: Open]
+  println(door.open().toString())
+               ^
+t12413.scala:17: error: inferred type arguments [AnyRef] do not conform to method open's type parameter bounds [Phantom >: AnyRef <: Open]
+  println(door.open() == 0)
+               ^
+5 errors
