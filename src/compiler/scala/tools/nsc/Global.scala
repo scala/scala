@@ -81,6 +81,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   import definitions.findNamedMember
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
 
+  override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
+    if (force || isPast(currentRun.namerPhase)) super.openPackageModule(pkgClass, true)
+    else analyzer.packageObjects.deferredOpen.add(pkgClass)
+  }
+
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
@@ -1649,8 +1654,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileLate(new CompilationUnit(scripted(getSourceFile(file))))
     }
 
-    /** Compile abstract file until `globalPhase`, but at least to phase "namer".
-     */
+    /** Compile the unit until `globalPhase`, but at least to phase "typer". */
     def compileLate(unit: CompilationUnit): Unit = {
       addUnit(unit)
 

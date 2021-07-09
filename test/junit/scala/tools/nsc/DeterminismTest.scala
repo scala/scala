@@ -330,6 +330,14 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testPackageObjectUserLand(): Unit = {
+    def code = List[SourceFile](
+      source("package.scala", "package userland; object `package` { type Throwy = java.lang.Throwable }"),
+      source("th.scala", "package userland; class th[T <: Throwy](cause: T = null)")
+      )
+    test(code :: Nil)
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 
