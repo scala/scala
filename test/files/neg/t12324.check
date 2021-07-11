@@ -13,4 +13,7 @@ t12324.scala:12: error: `@throws` only allowed for methods and constructors
 t12324.scala:14: error: `@throws` only allowed for methods and constructors
   def g(): Unit = (): @throws[Exception]
                        ^
-5 errors
+t12324.scala:16: error: `@throws` only allowed for methods and constructors
+  def n(i: Int) = i match { case 42 => 27: @throws[Exception] }  // not all cruft reaches refchecks
+                                            ^
+6 errors
