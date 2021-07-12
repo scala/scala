@@ -12,7 +12,7 @@ enablePlugins(BuildInfoPlugin)
 
 lazy val buildClasspath = taskKey[String]("Colon-separated (or semicolon-separated in case of Windows) list of entries on the sbt build classpath.")
 
-buildClasspath := (externalDependencyClasspath in Compile).value.map(_.data).mkString(java.io.File.pathSeparator)
+buildClasspath := (Compile / externalDependencyClasspath).value.map(_.data).mkString(java.io.File.pathSeparator)
 
 buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
