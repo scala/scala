@@ -1401,7 +1401,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator = new SpecializeBodyDuplicator(context)
+    private class SpecializeNamer(context: Context) extends Namer(context) {
+      // Avoid entering synthetic trees during specialization because the duplicated trees already contain them.
+      override def enterSyntheticSym(tree: Tree): Symbol = tree.symbol
+    }
+
+    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
+      new SpecializeBodyDuplicator(context)
+
+    override def newNamer(context: Context): Namer =
+      new SpecializeNamer(context)
   }
 
   /** Introduced to fix scala/bug#7343: Phase ordering problem between Duplicators and Specialization.
