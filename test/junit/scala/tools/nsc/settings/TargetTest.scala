@@ -65,8 +65,11 @@ class TargetTest {
     check("-target:jvm-17", "17")
     check("-target:17", "17")
 
+    check("-target:jvm-18", "18")
+    check("-target:18", "18")
+
     checkFail("-target:jvm-6")    // no longer
-    checkFail("-target:jvm-18")   // not yet...
+    checkFail("-target:jvm-19")   // not yet...
     checkFail("-target:jvm-3000") // not in our lifetime
     checkFail("-target:msil")     // really?
 
