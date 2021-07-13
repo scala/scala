@@ -180,6 +180,7 @@ trait TypeOps { self: TastyUniverse =>
     }
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
+    def InitialTypeInfo: Type = u.TypeBounds.empty
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
     def ExprType(res: Type): Type = u.NullaryMethodType(res)
     def InlineExprType(res: Type): Type = res match {

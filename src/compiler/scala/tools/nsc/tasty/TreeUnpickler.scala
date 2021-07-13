@@ -861,6 +861,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         else {
           checkUnsupportedFlags(repr.unsupportedFlags &~ allowedTypeFlags)
+          sym.info = defn.InitialTypeInfo // needed to avoid cyclic references when unpickling rhs, see dotty_i3816.scala
           val rhs = readTpt()(if (repr.tflags.is(Opaque)) localCtx.addMode(OpaqueTypeDef) else localCtx)
           val info =
             if (repr.tflags.is(Opaque)) {

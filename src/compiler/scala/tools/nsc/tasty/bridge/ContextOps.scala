@@ -337,8 +337,10 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     def evict(sym: Symbol): Unit = {
-      sym.owner.rawInfo.decls.unlink(sym)
-      sym.info = u.NoType
+      if (isSymbol(sym)) {
+        sym.owner.rawInfo.decls.unlink(sym)
+        sym.info = u.NoType
+      }
     }
 
     final def enterIfUnseen(sym: Symbol): Unit = {
@@ -430,10 +432,15 @@ trait ContextOps { self: TastyUniverse =>
 
     final def enterClassCompletion(): Symbol = {
       val cls = globallyVisibleOwner.asClass
-      val assumedSelfType =
-        if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
-        else u.NoType
-      cls.info = u.ClassInfoType(cls.repr.parents, cls.repr.decls, assumedSelfType.typeSymbolDirect)
+      val assumedSelfSym = {
+        if (cls.is(Object) && cls.owner.isClass) {
+          cls.sourceModule
+        }
+        else {
+          u.NoSymbol
+        }
+      }
+      cls.info = u.ClassInfoType(cls.repr.parents, cls.repr.decls, assumedSelfSym)
       cls
     }
 
