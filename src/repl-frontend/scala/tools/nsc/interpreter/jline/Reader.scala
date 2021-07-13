@@ -44,7 +44,7 @@ class Reader private (
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
     }
   }
-  def redrawLine(): Unit = ???
+  def redrawLine(): Unit = () //see https://github.com/scala/bug/issues/12395, SimpleReader#redrawLine also use `()`
   def reset(): Unit = accumulator.reset()
   override def close(): Unit = terminal.close()
 
