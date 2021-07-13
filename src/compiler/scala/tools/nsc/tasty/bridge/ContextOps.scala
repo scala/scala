@@ -132,7 +132,22 @@ trait ContextOps { self: TastyUniverse =>
     for (annot <- sym.annotations) {
       annot.completeInfo()
       if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
-        val child = lookupChild(annot.tpe.typeArgs.head)
+        val child = {
+          val child0 = lookupChild(annot.tpe.typeArgs.head)
+          if (child0 eq sym) {
+            // dotty represents a local sealed child of `C` with a child annotation
+            // that directly references `C`, this causes an infinite loop in
+            // `sealedDescendants`. See the tests:
+            // - test/tasty/neg/src-3/dottyi3149/dotty_i3149.scala
+            // - test/tasty/neg/src-2/Testdotty_i3149_fail.scala
+            // TODO [tasty] - fix assumption in compiler that sealed children cannot
+            // contain the parent class
+            ctx.newLocalSealedChildProxy(sym)
+          }
+          else {
+            child0
+          }
+        }
         ctx.log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
         sym.addChild(child)
       }
@@ -255,6 +270,17 @@ trait ContextOps { self: TastyUniverse =>
       flags = Method,
       info  = info
     )
+
+    final def newLocalSealedChildProxy(cls: Symbol): Symbol = {
+      val tflags = Private | Local
+      unsafeNewClassSymbol(
+        owner = cls,
+        typeName = TastyName.SimpleName(cls.fullName('$') + "$$localSealedChildProxy").toTypeName,
+        flags = tflags,
+        info = defn.LocalSealedChildProxyInfo(cls, tflags),
+        privateWithin = u.NoSymbol
+      )
+    }
 
     final def findRootSymbol(roots: Set[Symbol], name: TastyName): Option[Symbol] = {
       import TastyName.TypeName
