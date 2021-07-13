@@ -30,6 +30,8 @@ object ForceKinds {
   final val CopySym: ForceKinds.Single = of(1 << 4)
   /** When forcing the underlying symbol of some type space */
   final val SpaceForce: ForceKinds.Single = of(1 << 5)
+  /** When forcing the enum singleton from its "fake" module class */
+  final val EnumProxy: ForceKinds.Single = of(1 << 6)
 
   private def of(mask: Int): ForceKinds.Single = new ForceKinds.Single(mask)
 
@@ -55,6 +57,7 @@ class ForceKinds(val toInt: Int) extends AnyVal {
     if (is(OverloadedSym)) xs ::= "overload resolution"
     if (is(CopySym)) xs ::= "copying its info"
     if (is(SpaceForce)) xs ::= "space"
+    if (is(EnumProxy)) xs ::= "forcing enum value from fake object"
     xs
   }
 }

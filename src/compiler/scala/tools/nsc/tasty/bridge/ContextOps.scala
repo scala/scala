@@ -116,12 +116,25 @@ trait ContextOps { self: TastyUniverse =>
    * sealed child.
    */
   private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
+
+    def lookupChild(childTpe: Type): Symbol = {
+      val child = symOfType(childTpe)
+      assert(isSymbol(child), s"did not find symbol of sealed child ${showType(childTpe)}")
+      if (child.isClass) {
+        child
+      }
+      else {
+        assert(child.isModule, s"sealed child was not class or object ${showSym(child)}")
+        child.moduleClass
+      }
+    }
+
     for (annot <- sym.annotations) {
       annot.completeInfo()
       if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
-        val child = annot.tpe.typeArgs.head.typeSymbolDirect
-        sym.addChild(child)
+        val child = lookupChild(annot.tpe.typeArgs.head)
         ctx.log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
+        sym.addChild(child)
       }
     }
   }
@@ -378,9 +391,14 @@ trait ContextOps { self: TastyUniverse =>
         }
       }
       else if (flags.is(FlagSets.Creation.ObjectDef)) {
-        log(s"!!! visited module value $name first")
+        val isEnum = flags.is(FlagSets.SingletonEnum)
+        if (!isEnum) {
+          log(s"!!! visited module value $name first")
+        }
         val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
-        module.moduleClass.info = defn.DefaultInfo
+        module.moduleClass.info =
+          if (isEnum) defn.SingletonEnumClassInfo(module, flags)
+          else defn.DefaultInfo
         module
       }
       else if (name.isTypeName) {

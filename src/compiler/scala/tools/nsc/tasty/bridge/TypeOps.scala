@@ -160,6 +160,12 @@ trait TypeOps { self: TastyUniverse =>
     private[bridge] def CopyInfo(underlying: u.TermSymbol, tflags: TastyFlagSet)(implicit ctx: Context): TastyRepr =
       new CopyCompleter(underlying, tflags)
 
+    private[bridge] def SingletonEnumClassInfo(
+        enumValue: u.TermSymbol,
+        originalFlagSet: TastyFlagSet
+    )(implicit ctx: Context): TastyRepr =
+      new SingletonEnumModuleClassCompleter(enumValue, originalFlagSet)
+
     def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
       case u.PolyType(tparams, tpe) =>
         val (bounds, alias) = OpaqueTypeToBounds(tpe)
@@ -470,6 +476,20 @@ trait TypeOps { self: TastyUniverse =>
       underlying.ensureCompleted(CopySym)
       sym.info = underlying.tpe
       underlying.attachments.all.foreach(sym.updateAttachment(_))
+    }
+  }
+
+  /** This completer ensures that if the "fake" singleton enum module class
+   *  is completed first, that it completes the module symbol which
+   *  then completes the module class.
+   */
+  private[TypeOps] class SingletonEnumModuleClassCompleter(
+      enumValue: u.TermSymbol,
+      tflags: TastyFlagSet
+  )(implicit ctx: Context)
+      extends BaseTastyCompleter(tflags) {
+    def computeInfo(sym: Symbol)(implicit ctx: Context): Unit = {
+      enumValue.ensureCompleted(EnumProxy)
     }
   }
 
