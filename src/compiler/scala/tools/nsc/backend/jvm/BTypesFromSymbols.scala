@@ -761,6 +761,6 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     javaFlags(sym) |
       ( if (sym hasAnnotation TransientAttr) asm.Opcodes.ACC_TRANSIENT else 0) |
       ( if (sym hasAnnotation VolatileAttr)  asm.Opcodes.ACC_VOLATILE  else 0) |
-      ( if (sym.isMutable) 0 else asm.Opcodes.ACC_FINAL)
+      ( if (sym.isMutable || sym.hasFlag(symtab.Flags.notPRIVATE)) 0 else asm.Opcodes.ACC_FINAL)
   }
 }
