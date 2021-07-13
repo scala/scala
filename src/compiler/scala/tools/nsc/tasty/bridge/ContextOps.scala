@@ -13,12 +13,17 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.annotation.tailrec
+
+import scala.collection.mutable
 import scala.reflect.io.AbstractFile
+import scala.reflect.internal.MissingRequirementError
 
 import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._, TastyName.ObjectName
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
-import scala.reflect.internal.MissingRequirementError
-import scala.collection.mutable
+import scala.tools.nsc.tasty.{cyan, yellow, magenta, blue, green}
+
+import scala.util.chaining._
+
 
 /**This contains the definition for `Context`, along with standard error throwing capabilities with user friendly
  * formatted errors that can change their output depending on the context mode.
@@ -121,6 +126,8 @@ trait ContextOps { self: TastyUniverse =>
     }
   }
 
+  final case class TraceInfo[-T](query: String, qual: String, res: T => String, modifiers: List[String] = Nil)
+
   /**Maintains state through traversal of a TASTy file, such as the outer scope of the defintion being traversed, the
    * traversal mode, and the root owners and source path for the TASTy file.
    * It also provides all operations for manipulation of the symbol table, such as creating/updating symbols and
@@ -155,11 +162,33 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def log(str: => String): Unit = {
-      if (u.settings.YdebugTasty)
-        u.reporter.echo(
-          pos = u.NoPosition,
-          msg = str.linesIterator.map(line => s"${showSymStable(classRoot)}: $line").mkString(System.lineSeparator)
+      if (u.settings.YdebugTasty) {
+        logImpl(str)
+      }
+    }
+
+    private final def logImpl(str: => String): Unit = u.reporter.echo(
+      pos = u.NoPosition,
+      msg = str
+              .linesIterator
+              .map(line => s"${blue(s"${showSymStable(classRoot)}:")} $line")
+              .mkString(System.lineSeparator)
+    )
+
+    @inline final def trace[T](info: => TraceInfo[T])(op: => T): T = {
+
+      def withTrace(info: => TraceInfo[T], op: => T)(traceId: String): T = {
+        val i = info
+        val modStr = (
+          if (i.modifiers.isEmpty) ""
+          else " " + green(i.modifiers.mkString("[", ",", "]"))
         )
+        logImpl(s"${yellow(s"$traceId")} ${cyan(s"<<< ${i.query}:")} ${magenta(i.qual)}$modStr")
+        op.tap(eval => logImpl(s"${yellow(s"$traceId")} ${cyan(s">>>")} ${magenta(i.res(eval))}$modStr"))
+      }
+
+      if (u.settings.YdebugTasty) initialContext.addFrame(withTrace(info, op))
+      else op
     }
 
     def owner: Symbol
@@ -509,6 +538,35 @@ trait ContextOps { self: TastyUniverse =>
   final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {
     def mode: TastyMode = EmptyTastyMode
     def owner: Symbol = topLevelClass.owner
+
+    private class TraceFrame(val id: Int, val next: TraceFrame) {
+
+      var nextChild: Int = 0
+
+      def show: String = {
+        val buf = mutable.ArrayDeque.empty[String]
+        var cur = this
+        while (cur.id != -1) {
+          buf.prepend(cur.id.toString)
+          cur = cur.next
+        }
+        buf.mkString("[", " ", ")")
+      }
+
+    }
+
+    private[this] var _trace: TraceFrame = new TraceFrame(id = -1, next = null)
+
+    private[ContextOps] def addFrame[T](op: String => T): T = {
+      val oldFrame  = _trace
+      val newFrame = new TraceFrame(id = oldFrame.nextChild, next = oldFrame)
+      _trace = newFrame
+      try op(newFrame.show)
+      finally {
+        _trace = oldFrame
+        _trace.nextChild += 1
+      }
+    }
 
     private[this] var mySymbolsToForceAnnots: mutable.LinkedHashSet[Symbol] = _
 

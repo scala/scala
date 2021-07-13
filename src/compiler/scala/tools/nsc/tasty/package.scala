@@ -22,4 +22,11 @@ package object tasty {
     @inline final def !==(u: T): Boolean = t != u
   }
 
+  def cyan(str: String): String = Console.CYAN + str + Console.RESET
+  def yellow(str: String): String = Console.YELLOW + str + Console.RESET
+  def magenta(str: String): String = Console.MAGENTA + str + Console.RESET
+  def red(str: String): String = Console.RED + str + Console.RESET
+  def green(str: String): String = Console.GREEN + str + Console.RESET
+  def blue(str: String): String = Console.BLUE + str + Console.RESET
+
 }
