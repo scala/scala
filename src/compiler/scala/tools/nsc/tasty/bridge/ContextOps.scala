@@ -191,6 +191,15 @@ trait ContextOps { self: TastyUniverse =>
       else op
     }
 
+    /** Trace only when `-Vdebug` is set
+     */
+    @inline final def traceV[T](info: => TraceInfo[T])(op: => T): T = {
+      if (u.settings.debug.value) {
+        trace(info)(op)
+      }
+      else op
+    }
+
     def owner: Symbol
     def source: AbstractFile
     def mode: TastyMode
@@ -410,13 +419,8 @@ trait ContextOps { self: TastyUniverse =>
       cls
     }
 
-    /** Normalises the parents and sets up value class machinery */
-    final def adjustParents(cls: Symbol, parents: List[Type]): List[Type] = {
-      val parentTypes = parents.map { tp =>
-        val tpe = tp.dealias
-        if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
-        else tpe
-      }
+    /** sets up value class machinery */
+    final def processParents(cls: Symbol, parentTypes: List[Type]): parentTypes.type = {
       if (parentTypes.head.typeSymbolDirect === u.definitions.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
         withPhaseNoLater("extmethods") { ctx0 =>
@@ -590,12 +594,19 @@ trait ContextOps { self: TastyUniverse =>
         val toForce = mySymbolsToForceAnnots.toList
         mySymbolsToForceAnnots.clear()
         for (sym <- toForce) {
-          log(s"!!! forcing annotations on ${showSym(sym)}")
-          analyseAnnotations(sym)
+          trace(traceForceAnnotations(sym)) {
+            analyseAnnotations(sym)
+          }
         }
         assert(mySymbolsToForceAnnots.isEmpty, "more symbols added while forcing")
       }
     }
+
+    private def traceForceAnnotations(sym: Symbol) = TraceInfo[Unit](
+      query = "forcing annotations of symbol",
+      qual = s"${showSym(sym)}",
+      res = _ => s"annotations were forced on ${showSym(sym)}"
+    )
 
     private[this] var myInlineDefs: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
     private[this] var myMacros: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
@@ -636,7 +647,7 @@ trait ContextOps { self: TastyUniverse =>
      * Reports illegal definitions:
      *   - trait constructors with parameters
      *
-     *  @param cls should be a symbol associated with a non-empty scope
+     *  @param cls should be a class symbol associated with a non-empty scope
      */
     private[ContextOps] def enterLatentDefs(cls: Symbol): Unit = {
 

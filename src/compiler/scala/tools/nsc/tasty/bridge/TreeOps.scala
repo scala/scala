@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, ForceKinds}, TastyModes._, ForceKinds._
 
 import scala.tools.tasty.TastyName
 import scala.reflect.internal.Flags
@@ -72,7 +72,7 @@ trait TreeOps { self: TastyUniverse =>
 
       if (ctx.mode.is(ReadAnnotation) && name.isSignedConstructor) {
         val cls = qual.tpe.typeSymbol
-        cls.ensureCompleted() // need to force flags
+        cls.ensureCompleted(AnnotCtor)
         if (cls.isJavaAnnotation)
           selectCtor(qual)
         else

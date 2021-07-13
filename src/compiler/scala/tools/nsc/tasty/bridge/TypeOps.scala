@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyModes}, TastyModes._
+import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyModes, ForceKinds}, TastyModes._, ForceKinds._
 
 import scala.tools.tasty.{TastyName, ErasedTypeRef, TastyFlags}, TastyFlags._
 
@@ -143,6 +143,12 @@ trait TypeOps { self: TastyUniverse =>
 
     final val NoType: Type = u.NoType
 
+    def adjustParent(tp: Type): Type = {
+      val tpe = tp.dealias
+      if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
+      else tpe
+    }
+
     /** Represents a symbol that has been initialised by TastyUnpickler, but can not be in a state of completion
      *  because its definition has not yet been seen.
      */
@@ -151,7 +157,7 @@ trait TypeOps { self: TastyUniverse =>
       def tflags: TastyFlagSet = EmptyTastyFlags
     }
 
-    private[bridge] def CopyInfo(underlying: u.TermSymbol, tflags: TastyFlagSet): TastyRepr =
+    private[bridge] def CopyInfo(underlying: u.TermSymbol, tflags: TastyFlagSet)(implicit ctx: Context): TastyRepr =
       new CopyCompleter(underlying, tflags)
 
     def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
@@ -447,10 +453,32 @@ trait TypeOps { self: TastyUniverse =>
     final def unsupportedFlags: TastyFlagSet = tflags & FlagSets.TastyOnlyFlags
   }
 
-  abstract class TastyCompleter(isClass: Boolean, final val tflags: TastyFlagSet)(implicit
-      capturedCtx: Context) extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
-
+  abstract class TastyCompleter(
+      isClass: Boolean,
+      tflags: TastyFlagSet
+  )(implicit capturedCtx: Context)
+      extends BaseTastyCompleter(tflags) {
     override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope
+  }
+
+  private[TypeOps] class CopyCompleter(
+      underlying: u.TermSymbol,
+      tflags: TastyFlagSet
+  )(implicit ctx: Context)
+      extends BaseTastyCompleter(tflags) {
+    def computeInfo(sym: Symbol)(implicit ctx: Context): Unit = {
+      underlying.ensureCompleted(CopySym)
+      sym.info = underlying.tpe
+      underlying.attachments.all.foreach(sym.updateAttachment(_))
+    }
+  }
+
+  abstract class BaseTastyCompleter(
+      final val tflags: TastyFlagSet
+  )(implicit capturedCtx: Context)
+      extends u.LazyType
+      with TastyRepr
+      with u.FlagAgnosticCompleter {
 
     override final def load(sym: Symbol): Unit =
       complete(sym)
@@ -463,15 +491,6 @@ trait TypeOps { self: TastyUniverse =>
     /**Compute and set the info for the symbol in the given Context
      */
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
-  }
-
-  private[TypeOps] class CopyCompleter(underlying: u.TermSymbol, final val tflags: TastyFlagSet)
-      extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
-    override final def complete(sym: Symbol): Unit = {
-      underlying.ensureCompleted()
-      sym.info = underlying.tpe
-      underlying.attachments.all.foreach(sym.updateAttachment(_))
-    }
   }
 
   def prefixedRef(prefix: Type, sym: Symbol): Type = {
