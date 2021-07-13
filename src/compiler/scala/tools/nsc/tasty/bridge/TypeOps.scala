@@ -52,9 +52,59 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
-  def lzyShow(tpe: Type): String = tpe match {
-    case u.TypeRef(_, sym, args) => s"$sym${if (args.nonEmpty) args.map(lzyShow).mkString("[", ",","]") else ""}"
-    case tpe                     => tpe.typeSymbolDirect.toString
+  def lzyShow(tpe: Type): String = {
+    val sym = symOfType(tpe)
+    if (isSymbol(sym)) {
+      val args = tpe.typeArgs
+      s"${sym.fullName}${if (args.nonEmpty) args.map(lzyShow).mkString("[", ",", "]") else ""}"
+    }
+    else {
+      s"${tpe.typeSymbolDirect.fullName}"
+    }
+  }
+
+  def showType(tpe: Type, wrap: Boolean = true): String = {
+    def prefixed(prefix: String)(op: => String) = {
+      val raw = op
+      if (wrap) s"""$prefix"$raw""""
+      else raw
+    }
+    def parameterised(tparams: List[Symbol], prefix: String)(f: String => String) = prefixed(prefix) {
+      f(if (tparams.isEmpty) "" else tparams.map(p => s"${p.name}").mkString("[", ", ", "]"))
+    }
+    def cls(tparams: List[Symbol], tpe: u.ClassInfoType) = parameterised(tparams, "cls") { paramStr =>
+      s"$paramStr${tpe.typeSymbol.fullName}$paramStr"
+    }
+    def meth(tparams: List[Symbol], tpe: u.MethodType) = parameterised(tparams, "meth") { paramStr =>
+      s"$paramStr$tpe"
+    }
+    def preStr(pre: Type): String = {
+      val preSym = symOfType(pre)
+      if (isSymbol(preSym)) s"${preSym.fullName}." else ""
+    }
+    tpe match {
+      case tpe: u.ClassInfoType                      => cls(Nil, tpe)
+      case u.PolyType(tparams, tpe: u.ClassInfoType) => cls(tparams, tpe)
+      case u.PolyType(tparams, tpe: u.MethodType)    => meth(tparams, tpe)
+      case tpe: u.MethodType                         => meth(Nil, tpe)
+      case tpe: u.ThisType                           => prefixed("path") { s"${tpe.sym.fullName}.this" }
+
+      case tpe: u.SingleType =>
+        prefixed("path") { s"${preStr(tpe.prefix)}${tpe.sym.name}.type" }
+
+      case tpe: u.TypeRef =>
+        val pre = preStr(tpe.prefix)
+        if (tpe.sym.is(Object)) prefixed("path") {
+          s"$pre${tpe.sym.name}.type"
+        }
+        else prefixed("tpelazy") {
+          val argsStrs = tpe.args.map(showType(_, wrap = false))
+          val argsStr = if (argsStrs.nonEmpty) argsStrs.mkString("[", ", ", "]") else ""
+          s"$pre${tpe.sym.name}$argsStr"
+        }
+
+      case tpe => prefixed("tpe") { s"$tpe" }
+    }
   }
 
   def fnResult(fn: Type): Type = fn.dealiasWiden.finalResultType
@@ -98,11 +148,11 @@ trait TypeOps { self: TastyUniverse =>
      */
     object DefaultInfo extends TastyRepr {
       override def isTrivial: Boolean = true
-      def originalFlagSet: TastyFlagSet = EmptyTastyFlags
+      def tflags: TastyFlagSet = EmptyTastyFlags
     }
 
-    private[bridge] def CopyInfo(underlying: u.TermSymbol, originalFlagSet: TastyFlagSet): TastyRepr =
-      new CopyCompleter(underlying, originalFlagSet)
+    private[bridge] def CopyInfo(underlying: u.TermSymbol, tflags: TastyFlagSet): TastyRepr =
+      new CopyCompleter(underlying, tflags)
 
     def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
       case u.PolyType(tparams, tpe) =>
@@ -393,11 +443,11 @@ trait TypeOps { self: TastyUniverse =>
   private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol
 
   sealed abstract trait TastyRepr extends u.Type {
-    def originalFlagSet: TastyFlagSet
-    final def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
+    def tflags: TastyFlagSet
+    final def unsupportedFlags: TastyFlagSet = tflags & FlagSets.TastyOnlyFlags
   }
 
-  abstract class TastyCompleter(isClass: Boolean, final val originalFlagSet: TastyFlagSet)(implicit
+  abstract class TastyCompleter(isClass: Boolean, final val tflags: TastyFlagSet)(implicit
       capturedCtx: Context) extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
 
     override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope
@@ -415,7 +465,7 @@ trait TypeOps { self: TastyUniverse =>
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
-  private[TypeOps] class CopyCompleter(underlying: u.TermSymbol, final val originalFlagSet: TastyFlagSet)
+  private[TypeOps] class CopyCompleter(underlying: u.TermSymbol, final val tflags: TastyFlagSet)
       extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
     override final def complete(sym: Symbol): Unit = {
       underlying.ensureCompleted()

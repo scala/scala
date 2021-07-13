@@ -12,9 +12,8 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.SafeEq
-
-import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
+import scala.annotation.tailrec
+import scala.tools.nsc.tasty.{SafeEq, TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
 import scala.util.chaining._
@@ -45,14 +44,29 @@ trait SymbolOps { self: TastyUniverse =>
     }
   }
 
+  /** Fetch the symbol of a path type without forcing the symbol,
+   * `NoSymbol` if not a path.
+   */
+  @tailrec
+  private[bridge] final def symOfType(tpe: Type): Symbol = tpe match {
+    case tpe: u.TypeRef => tpe.sym
+    case tpe: u.SingleType => tpe.sym
+    case tpe: u.ThisType => tpe.sym
+    case tpe: u.ConstantType => symOfType(tpe.value.tpe)
+    case tpe: u.ClassInfoType => tpe.typeSymbol
+    case tpe: u.RefinedType0 => tpe.typeSymbol
+    case tpe: u.ExistentialType => symOfType(tpe.underlying)
+    case _ => u.NoSymbol
+  }
+
   implicit final class SymbolDecorator(val sym: Symbol) {
 
-    def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
-    def isScala2Macro: Boolean = repr.originalFlagSet.is(FlagSets.Scala2Macro)
-    def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
+    def isScala3Inline: Boolean = repr.tflags.is(Inline)
+    def isScala2Macro: Boolean = repr.tflags.is(FlagSets.Scala2Macro)
+    def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.tflags.is(FieldAccessor|ParamSetter)
 
     def isParamGetter: Boolean =
-      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.ParamGetter)
+      sym.isMethod && sym.repr.tflags.is(FlagSets.ParamGetter)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.
@@ -70,8 +84,13 @@ trait SymbolOps { self: TastyUniverse =>
     }
 
     def ensureCompleted(): Unit = {
-      sym.info
-      sym.annotations.foreach(_.completeInfo())
+      val raw = sym.rawInfo
+      if (raw.isInstanceOf[u.LazyType]) {
+        sym.info
+        sym.annotations.foreach(_.completeInfo())
+      } else {
+        assert(!raw.isInstanceOf[TastyRepr], s"${showSym(sym)} has incorrectly initialised info $raw")
+      }
     }
     def objectImplementation: Symbol = sym.moduleClass
     def sourceObject: Symbol = sym.sourceModule
@@ -195,5 +214,6 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   def showSig(sig: MethodSignature[ErasedTypeRef]): String = sig.map(_.signature).show
-  def showSym(sym: Symbol): String = s"Symbol(${sym.accurateKindString} ${sym.name}, #${sym.id})"
+  def showSym(sym: Symbol): String = s"`(#${sym.id}) ${sym.accurateKindString} ${sym.name}`"
+  def showSymStable(sym: Symbol): String = s"#[${sym.id}, ${sym.name}]"
 }

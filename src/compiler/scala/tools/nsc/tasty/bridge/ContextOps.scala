@@ -158,7 +158,7 @@ trait ContextOps { self: TastyUniverse =>
       if (u.settings.YdebugTasty)
         u.reporter.echo(
           pos = u.NoPosition,
-          msg = str.linesIterator.map(line => s"#[$classRoot]: $line").mkString(System.lineSeparator)
+          msg = str.linesIterator.map(line => s"${showSymStable(classRoot)}: $line").mkString(System.lineSeparator)
         )
     }
 
@@ -256,11 +256,11 @@ trait ContextOps { self: TastyUniverse =>
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
     final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyCompleter, privateWithin: Symbol = noSymbol): Symbol = {
-      def default() = unsafeNewSymbol(owner, name, completer.originalFlagSet, completer, privateWithin)
-      if (completer.originalFlagSet.is(Object)) {
+      def default() = unsafeNewSymbol(owner, name, completer.tflags, completer, privateWithin)
+      if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject, completer.originalFlagSet, completer, privateWithin)
+          redefineSymbol(sourceObject, completer.tflags, completer, privateWithin)
         else
           default()
       }
@@ -272,11 +272,11 @@ trait ContextOps { self: TastyUniverse =>
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
     final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyCompleter, privateWithin: Symbol): Symbol = {
-      def default() = unsafeNewClassSymbol(owner, typeName, completer.originalFlagSet, completer, privateWithin)
-      if (completer.originalFlagSet.is(Object)) {
+      def default() = unsafeNewClassSymbol(owner, typeName, completer.tflags, completer, privateWithin)
+      if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject.objectImplementation, completer.originalFlagSet, completer, privateWithin)
+          redefineSymbol(sourceObject.objectImplementation, completer.tflags, completer, privateWithin)
         else
           default()
       }
@@ -412,7 +412,7 @@ trait ContextOps { self: TastyUniverse =>
       val moduleCls = sym.moduleClass
       val moduleClsFlags = FlagSets.withAccess(
         flags = FlagSets.Creation.ObjectClassDef,
-        inheritedAccess = sym.repr.originalFlagSet
+        inheritedAccess = sym.repr.tflags
       )
       val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
       val ctor = newConstructor(moduleCls, selfTpe)

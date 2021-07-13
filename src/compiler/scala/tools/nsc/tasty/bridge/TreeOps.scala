@@ -35,6 +35,19 @@ trait TreeOps { self: TastyUniverse =>
     }
   }
 
+  def showTree(tree: Tree): String = {
+    // here we want to avoid forcing the symbols of type trees,
+    // so instead substitute the type tree with an Identifier
+    // of the `showType`, which does not force.
+    val tree1 = tree.transform(new u.Transformer {
+      override def transform(tree: Tree) = tree match {
+        case tree: u.TypeTree => u.Ident(s"${showType(tree.tpe, wrap = false)}") // ident prints its name directly
+        case tree => super.transform(tree)
+      }
+    })
+    u.show(tree1)
+  }
+
   object tpd {
 
     @inline final def Constant(value: Any): Constant =
