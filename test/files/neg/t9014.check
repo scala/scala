@@ -1,0 +1,4 @@
+t9014.scala:4: error: Inner is already defined as case class Inner
+    case class Inner(default: T)
+               ^
+1 error
