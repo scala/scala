@@ -13,7 +13,6 @@
 package scala.runtime;
 
 import java.io.Serializable;
-import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
@@ -25,9 +24,10 @@ public final class ModuleSerializationProxy implements Serializable {
     private final Class<?> moduleClass;
     private static final ClassValue<Object> instances = new ClassValue<Object>() {
         @Override
+        @SuppressWarnings("removal")  // JDK 17 deprecates AccessController
         protected Object computeValue(Class<?> type) {
             try {
-                return AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> type.getField("MODULE$").get(null));
+                return java.security.AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> type.getField("MODULE$").get(null));
             } catch (PrivilegedActionException e) {
                 return rethrowRuntime(e.getCause());
             }
