@@ -16,6 +16,7 @@ import java.io.FileDescriptor
 import java.net.InetAddress
 import java.security.Permission
 
+@deprecated("JDK 17 deprecates SecurityManager", since="2.13.7")
 class DelegatingSecurityManager(delegate: SecurityManager) extends SecurityManager {
   override def checkExit(status: Int): Unit = if (delegate ne null) delegate.checkExit(status)
   override def checkPermission(perm: Permission): Unit = if (delegate ne null) delegate.checkPermission(perm)
