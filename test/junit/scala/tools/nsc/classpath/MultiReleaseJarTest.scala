@@ -7,28 +7,24 @@ import java.util.jar.Attributes.Name
 import org.junit.{Assert, Test}
 
 import scala.tools.nsc.{CloseableRegistry, Global, Settings}
-import scala.tools.testkit.BytecodeTesting
-import scala.util.Properties
+import scala.tools.testkit.{BytecodeTesting, ForDeletion}
+import scala.util.{Properties, Using}
 
 class MultiReleaseJarTest extends BytecodeTesting {
   import compiler._
   @Test
   def mrJar(): Unit = {
-    if (!Properties.isJavaAtLeast("9")) { println("skipping mrJar() on old JDK"); return} // TODO test that the compiler warns that --release is unsupported.
+    if (!Properties.isJavaAtLeast("9")) return // TODO test that the compiler warns that --release is unsupported.
 
-    val temp1 = Files.createTempFile("mr-jar-test-", ".jar")
+    // TODO test fails if both Global runs look at the same JAR on disk. Caching problem in our classpath implementation? So use two JARs.
+    def makeTemp() = Files.createTempFile("mr-jar-test-", ".jar")
+    Using.resources(ForDeletion(makeTemp()), ForDeletion(makeTemp())) { (temp1, temp2) =>
 
-    // TODO test fails if both Global runs look at the same JAR on disk. Caching problem in our classpath implementation?
-    // val temp2 = temp1
-    val temp2 = Files.createTempFile("mr-jar-test-", ".jar")
-    val cleanup = new CloseableRegistry
-
-    try {
       def code(newApi: String) = s"package p1; abstract class Versioned { def oldApi: Int; $newApi }"
 
       val oldC = compileToBytes(code("")).head._2
       val newC = compileToBytes(code("def newApi: Int")).head._2
-      List(temp1, temp2).foreach(temp => createZip(temp, List(
+      List(temp1.path, temp2.path).foreach(temp => createZip(temp, List(
         "/p1/Versioned.class" -> oldC,
         "/META-INF/versions/9/p1/Versioned.class" -> newC,
         "/META-INF/MANIFEST.MF" -> createManifest)
@@ -39,24 +35,21 @@ class MultiReleaseJarTest extends BytecodeTesting {
         settings.usejavacp.value = true
         settings.classpath.value = jarPath.toAbsolutePath.toString
         val g = new Global(settings)
-        cleanup.registerCloseable(g)
         settings.release.value = release
         new g.Run
         val decls = g.rootMirror.staticClass("p1.Versioned").info.decls.filterNot(_.isConstructor).map(_.name.toString).toList.sorted
+        g.close()
         decls
       }
 
-      Assert.assertEquals(List("newApi", "oldApi"), declsOfC(temp1, "9"))
-      Assert.assertEquals(List("oldApi"), declsOfC(temp2, "8"))
-    } finally {
-      cleanup.close()
-      List(temp1, temp2).foreach(Files.deleteIfExists)
+      Assert.assertEquals(List("newApi", "oldApi"), declsOfC(temp1.path, "9"))
+      Assert.assertEquals(List("oldApi"), declsOfC(temp2.path, "8"))
     }
   }
 
   @Test
   def ctSymTest(): Unit = {
-    if (!Properties.isJavaAtLeast("9")) { println("skipping mrJar() on old JDK"); return} // TODO test that the compiler warns that --release is unsupported.
+    if (!Properties.isJavaAtLeast("9")) return // TODO test that the compiler warns that --release is unsupported.
     val cleanup = new CloseableRegistry
 
     def lookup(className: String, release: String): Boolean = {
