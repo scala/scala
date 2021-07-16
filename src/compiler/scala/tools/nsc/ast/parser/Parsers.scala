@@ -264,7 +264,7 @@ self =>
       if (syntaxErrors.isEmpty) firstTry
       else in.healBraces() match {
         case Nil      => showSyntaxErrors() ; firstTry
-        case patches  => (this withPatches patches).parse()
+        case patches  => withPatches(patches).parse()
       }
     }
   }

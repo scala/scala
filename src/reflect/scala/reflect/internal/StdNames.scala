@@ -424,8 +424,17 @@ trait StdNames {
 
     /** Is name a variable name? */
     def isVariableName(name: Name): Boolean = {
+      import Character.{isHighSurrogate, isLowSurrogate, isLetter, isLowerCase, isValidCodePoint, toCodePoint}
       val first = name.startChar
-      (    ((first.isLower && first.isLetter) || first == '_')
+      def isLowerLetterSupplementary: Boolean =
+        first == '$' && {
+          val decoded = name.decoded
+          isHighSurrogate(decoded.charAt(0)) && decoded.length > 1 && isLowSurrogate(decoded.charAt(1)) && {
+            val codepoint = toCodePoint(decoded.charAt(0), decoded.charAt(1))
+            isValidCodePoint(codepoint) && isLetter(codepoint) && isLowerCase(codepoint)
+          }
+        }
+      (    ((first.isLower && first.isLetter) || first == '_' || isLowerLetterSupplementary)
         && (name != nme.false_)
         && (name != nme.true_)
         && (name != nme.null_)

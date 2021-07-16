@@ -1,6 +1,7 @@
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.{ILoop, ShellConfig}
-import scala.tools.partest.{hexdump, ReplTest}
+import scala.tools.partest.ReplTest
+import scala.tools.testkit.AssertUtil.hexdump
 
 object Test extends ReplTest {
   def code = s"""
