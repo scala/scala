@@ -228,7 +228,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         .map(d => CompletionResult(buffer, i, d.toDirectory.list.map(x => CompletionCandidate(x.name)).toList))
         .getOrElse(NoCompletions)
     def listedIn(dir: Directory, name: String) = dir.list.filter(_.name.startsWith(name)).map(_.name).toList
-    def complete(buffer: String, cursor: Int): CompletionResult =
+    def complete(buffer: String, cursor: Int, filter: Boolean): CompletionResult =
       buffer.substring(0, cursor) match {
         case emptyWord(s)        => listed(buffer, cursor, Directory.Current)
         case directorily(s)      => listed(buffer, cursor, Option(Path(s)))
@@ -247,13 +247,13 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   // complete settings name
   val settingsCompletion: Completion = new Completion {
     val trailingWord = """(\S+)$""".r.unanchored
-    def complete(buffer: String, cursor: Int): CompletionResult = {
+    def complete(buffer: String, cursor: Int, filter: Boolean): CompletionResult = {
       buffer.substring(0, cursor) match {
         case trailingWord(s) =>
-          val maybes = intp.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
+          val maybes = intp.visibleSettings.filter(x => if (filter) x.name.startsWith(s) else true).map(_.name)
                                .filterNot(cond(_) { case "-"|"-X"|"-Y" => true }).sorted
           if (maybes.isEmpty) NoCompletions
-          else CompletionResult(buffer, cursor - s.length, maybes.map(CompletionCandidate(_)))
+          else CompletionResult(buffer, cursor - s.length, maybes.map(CompletionCandidate(_)), "", "")
         case _ => NoCompletions
       }
     }
@@ -541,8 +541,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     MultiCompletion(shellCompletion, rc)
   }
   val shellCompletion = new Completion {
-    override def complete(buffer: String, cursor: Int) =
-      if (buffer.startsWith(":")) colonCompletion(buffer, cursor).complete(buffer, cursor)
+    override def complete(buffer: String, cursor: Int, filter: Boolean) =
+      if (buffer.startsWith(":")) colonCompletion(buffer, cursor).complete(buffer, cursor, filter)
       else NoCompletions
   }
 
@@ -554,13 +554,13 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     // condition here is a bit weird because of the weird hack we have where
     // the first candidate having an empty defString means it's not really
     // completion, but showing the method signature instead
-    if (candidates.headOption.exists(_.defString.nonEmpty)) {
+    if (candidates.headOption.exists(_.name.nonEmpty)) {
       val prefix =
         if (completions == NoCompletions) ""
         else what.substring(0, completions.cursor)
       // hvesalai (emacs sbt-mode maintainer) says it's important to echo only once and not per-line
       echo(
-        candidates.map(c => s"[completions] $prefix${c.defString}")
+        candidates.map(c => s"[completions] $prefix${c.name}")
           .mkString("\n")
       )
     }

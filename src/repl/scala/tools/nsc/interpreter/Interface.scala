@@ -323,21 +323,24 @@ trait PresentationCompilationResult {
   def candidates(tabCount: Int): (Int, List[String]) =
     completionCandidates(tabCount) match {
       case (cursor, cands) =>
-        (cursor, cands.map(_.defString))
+        (cursor, cands.map(_.name))
     }
 
-  def completionCandidates(tabCount: Int = -1): (Int, List[CompletionCandidate])
+  final def completionCandidates(tabCount: Int = -1): (Int, List[CompletionCandidate]) = completionCandidates(filter = true, tabCount)
+  def completionCandidates(filter: Boolean, tabCount: Int): (Int, List[CompletionCandidate])
 }
 
 case class CompletionCandidate(
-  defString: String,
+  name: String,
   arity: CompletionCandidate.Arity = CompletionCandidate.Nullary,
   isDeprecated: Boolean = false,
-  isUniversal: Boolean = false)
+  isUniversal: Boolean = false,
+  declString: () => String = () => "")
 object CompletionCandidate {
   sealed trait Arity
   case object Nullary extends Arity
   case object Nilary extends Arity
+  case object Infix extends Arity
   case object Other extends Arity
   // purely for convenience
   def fromStrings(defStrings: List[String]): List[CompletionCandidate] =
