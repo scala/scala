@@ -1480,7 +1480,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  in order to be accessible from specialized subclasses.
      */
     override def transform(tree: Tree): Tree = tree match {
-      case Select(qual, name) =>
+      case Select(_, _) =>
         val sym = tree.symbol
         if (sym.isPrivate) debuglog(
           "seeing private member %s, currentClass: %s, owner: %s, isAccessible: %b, isLocalName: %b".format(
