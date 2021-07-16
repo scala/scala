@@ -1,6 +1,9 @@
 package scala.tools.testing
 
 import java.io.{IOException, File}
+import java.nio.file.{Path, Files}
+import scala.util.{Properties, Try}
+import Using.Releasable
 
 object TempDir {
   final val TEMP_DIR_ATTEMPTS = 10000
@@ -14,5 +17,15 @@ object TempDir {
       c += 1
     }
     throw new IOException(s"Failed to create directory")
+  }
+}
+
+/* Turn a path into a temp file for purposes of Using it as a resource.
+ * On Windows, avoid "file is in use" errors by not attempting to delete it.
+ */
+case class ForDeletion(path: Path)
+object ForDeletion {
+  implicit val deleteOnRelease: Releasable[ForDeletion] = new Releasable[ForDeletion] {
+    override def release(releasee: ForDeletion) = if (!Properties.isWin) Files.delete(releasee.path)
   }
 }
