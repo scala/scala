@@ -363,39 +363,38 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         adapter.transform(tree)
       }
 
-      log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
-      for (s <- originalStats; stat = s.duplicate) yield {
-        log("merge: looking at " + stat)
-        val stat1 = stat match {
-          case Assign(sel @ Select(This(_), field), _) =>
-            specializedAssignFor(sel.symbol).getOrElse(stat)
-          case _ => stat
-        }
-        if (stat1 ne stat) {
-          log("replaced " + stat + " with " + stat1)
-          specBuf -= stat1
-        }
-
-        if (stat1 eq stat) {
-          assert(ctorParams(genericClazz).length == primaryConstrParams.length, "Bad param len")
-          // this is just to make private fields public
-          (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat1)
-
-          val stat2 = rewriteArrayUpdate(stat1)
-          // statements coming from the original class need retyping in the current context
-          debuglog("retyping " + stat2)
-
-          val d = new specializeTypes.Duplicator(Map[Symbol, Type]())
-          d.retyped(localTyper.context1.asInstanceOf[d.Context],
-                    stat2,
-                    genericClazz,
-                    clazz,
-                    Map.empty)
-        } else
-          stat1
+      def rewriteUnspecialized(assignee: Symbol, stat: Tree): Tree = {
+        assert(ctorParams(genericClazz).length == primaryConstrParams.length, "Bad param len")
+        // this is just to make private fields public
+        (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat)
+        // also make assigned fields mutable so they don't end up final in bytecode
+        if (assignee.isField) assignee.setFlag(MUTABLE)
+        val rewritten = rewriteArrayUpdate(stat)
+        // statements coming from the original class need retyping in the current context
+        debuglog("retyping " + rewritten)
+        val duplicator = new specializeTypes.Duplicator(Map.empty)
+        val context = localTyper.context1.asInstanceOf[duplicator.Context]
+        duplicator.retyped(context, rewritten, genericClazz, clazz, Map.empty)
       }
-//      if (specBuf.nonEmpty)
-//        println("residual specialized constructor statements: " + specBuf)
+
+      log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
+      for (stat <- originalStats) yield {
+        log("merge: looking at " + stat)
+        stat.duplicate match {
+          case assign @ Assign(select @ Select(This(_), _), _) =>
+            val assignee = select.symbol
+            specializedAssignFor(assignee) match {
+              case Some(specialized) =>
+                log("replaced " + assign + " with " + specialized)
+                specBuf -= specialized
+                specialized
+              case None =>
+                rewriteUnspecialized(assignee, assign)
+            }
+          case other =>
+            rewriteUnspecialized(NoSymbol, other)
+        }
+      }
     }
 
     /* Add an 'if' around the statements coming after the super constructor. This
