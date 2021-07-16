@@ -16,7 +16,7 @@ package internal
 
 import java.util.Objects
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.ref.WeakReference
 import mutable.{ListBuffer, LinkedHashSet}
 import Flags._
@@ -98,7 +98,7 @@ trait Types
   import statistics._
 
   private[this] var explainSwitch = false
-  @unused private final val emptySymbolSet = immutable.Set.empty[Symbol]
+  @unused private final val emptySymbolSet = Set.empty[Symbol]
 
   @unused private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn on type parameter bounds being used
@@ -836,7 +836,7 @@ trait Types
           case _                   => false
         }
       case TypeRef(_, sym, args) =>
-        val that1 = existentialAbstraction(args map (_.typeSymbol), that)
+        val that1 = existentialAbstraction(args.map(_.typeSymbol), that)
         (that ne that1) && (this <:< that1) && {
           debuglog(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
           true
@@ -1913,7 +1913,7 @@ trait Types
     private final val Initializing = 1
     private final val Initialized = 2
 
-    private type RefMap = Map[Symbol, immutable.Set[Symbol]]
+    private type RefMap = Map[Symbol, Set[Symbol]]
 
     /** All type parameters reachable from given type parameter
      *  by a path which contains at least one expansive reference.
@@ -4298,14 +4298,14 @@ trait Types
          *  - closed: already in closure, and we already searched for new elements.
          *
          * Invariant: pending, closed, and border form a partition of `tparams`.
-         * Each element in tparams goes from pending to border, and from border to closed
+         * Each element in tparams goes from pending to border, and from border to closed.
          * We separate border from closed to avoid recomputing `Type.contains` for same elements.
          */
-        val pending = mutable.ListBuffer.empty[Symbol]
-        var border  = mutable.ListBuffer.empty[Symbol]
+        val pending = ListBuffer.empty[Symbol]
+        var border  = ListBuffer.empty[Symbol]
         partitionInto(tparams, tpe.contains, border, pending)
-        val closed    = mutable.ListBuffer.empty[Symbol]
-        var nextBorder = mutable.ListBuffer.empty[Symbol]
+        val closed     = ListBuffer.empty[Symbol]
+        var nextBorder = ListBuffer.empty[Symbol]
         while (!border.isEmpty) {
           nextBorder.clear()
           pending.filterInPlace { paramTodo =>
@@ -4322,15 +4322,15 @@ trait Types
         if (closed.length == tparams.length) tparams else closed.toList
     }
 
-    if (tparams.isEmpty || (tpe0 eq NoType) ) tpe0
+    if (tparams.isEmpty || (tpe0 eq NoType)) tpe0
     else {
-      val tpe      = normalizeAliases(tpe0)
+      val tpe           = normalizeAliases(tpe0)
       val extrapolation = new ExistentialExtrapolation(tparams)
       if (flipVariance) extrapolation.variance = Contravariant
-      val tpe1     = extrapolation extrapolate tpe
+      val tpe1          = extrapolation.extrapolate(tpe)
       newExistentialType(transitiveReferredFrom(tpe1), tpe1)
     }
-  }
+  } // end existentialAbstraction
 
 
 // Hash consing --------------------------------------------------------------
@@ -5043,8 +5043,8 @@ trait Types
     }
     if (!needsStripping) (ts, Nil) // fast path for common case
     else {
-      val tparams = mutable.ListBuffer[Symbol]()
-      val stripped = mutable.ListBuffer[Type]()
+      val tparams  = ListBuffer[Symbol]()
+      val stripped = ListBuffer[Type]()
       def stripType(tp: Type): Unit = tp match {
         case rt: RefinedType if isIntersectionTypeForLazyBaseType(rt) =>
           if (expandLazyBaseType)

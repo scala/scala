@@ -29,7 +29,7 @@ trait SortedSet[A] extends Set[A]
 
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case ss: SortedSet[A] if ss.ordering == this.ordering =>
+    case ss: SortedSet[A @unchecked] if ss.ordering == this.ordering =>
       (ss canEqual this) &&
         (this.size == ss.size) && {
         val i1 = this.iterator

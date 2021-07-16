@@ -1,0 +1,30 @@
+t12408.scala:6: warning: abstract type pattern B is unchecked since it is eliminated by erasure
+    def f1[B] = a match { case _: B => }                        // warn
+                                  ^
+t12408.scala:7: warning: abstract type B in type pattern t12408.Renderer[B] is unchecked since it is eliminated by erasure
+    def f2[B] = a match { case _: Renderer[B] => }              // warn
+                                  ^
+t12408.scala:8: warning: non-variable type argument Int in type pattern List[Int] (the underlying of List[Int]) is unchecked since it is eliminated by erasure
+    def f3[B](xs: List[A]) = xs match { case _: List[Int] => }  // warn
+                                                ^
+t12408.scala:9: warning: abstract type A in type pattern t12408.Renderer[A] is unchecked since it is eliminated by erasure
+    def g = a match { case _: Renderer[A] => }                  // now also warn
+                              ^
+t12408.scala:14: warning: the type test for pattern (A, B, C, D, E, F, G, H, I, J, K, L, M) cannot be checked at runtime because it has type parameters eliminated by erasure
+      case _: (A,B,C,D,E,F,G,H,I,J,K,L,M) =>
+              ^
+t12408.scala:17: warning: the type test for pattern (A, B, C, D, E, F, G, H, I, J, K, L, M) cannot be checked at runtime because it has type parameters eliminated by erasure
+      case _: (A,B,C,D,E,F,G,H,I,J,K,L,M) =>
+              ^
+t12408.scala:22: warning: the type test for pattern (A, B, C, D, E, F, G, H, I, J, K, L, M) cannot be checked at runtime because it has type parameters eliminated by erasure
+      case _: (A,B,C,D,E,F,G,H,I,J,K,L,M) =>
+              ^
+t12408.scala:47: warning: the type test for pattern t12408c.C[A,B] cannot be checked at runtime because it has type parameters eliminated by erasure
+    def test(t: T[A]) = t match { case _: C[A, B] => }          // warn on B
+                                          ^
+t12408.scala:65: warning: the type test for pattern reported.Renderer[Page,Props] cannot be checked at runtime because it has type parameters eliminated by erasure
+        case r: Renderer[Page, Props] => 1    // warn as above
+                ^
+error: No warnings can be incurred under -Werror.
+9 warnings
+1 error

@@ -62,7 +62,7 @@ trait Map[K, +V]
    */
   override def equals(o: Any): Boolean =
     (this eq o.asInstanceOf[AnyRef]) || (o match {
-      case map: Map[K, _] if map.canEqual(this) =>
+      case map: Map[K @unchecked, _] if map.canEqual(this) =>
         (this.size == map.size) && {
           try this.forall(kv => map.getOrElse(kv._1, Map.DefaultSentinelFn()) == kv._2)
           catch { case _: ClassCastException => false } // PR #9565 / scala/bug#12228

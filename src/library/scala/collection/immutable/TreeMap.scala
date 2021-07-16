@@ -140,7 +140,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   override def concat[V1 >: V](that: collection.IterableOnce[(K, V1)]): TreeMap[K, V1] =
     newMapOrSelf(that match {
-      case tm: TreeMap[K, V] if ordering == tm.ordering =>
+      case tm: TreeMap[K, V] @unchecked if ordering == tm.ordering =>
         RB.union(tree, tm.tree)
       case ls: LinearSeq[(K,V1)] =>
         if (ls.isEmpty) tree //to avoid the creation of the adder
@@ -283,7 +283,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     }
   }
   override def equals(obj: Any): Boolean = obj match {
-    case that: TreeMap[K, _] if ordering == that.ordering => RB.entriesEqual(tree, that.tree)
+    case that: TreeMap[K @unchecked, _] if ordering == that.ordering => RB.entriesEqual(tree, that.tree)
     case _ => super.equals(obj)
   }
 

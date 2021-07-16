@@ -1,4 +1,4 @@
-// scalac: -deprecation
+// scalac: -Werror -Xlint
 //
 
 import scala.language.{ implicitConversions }
@@ -31,7 +31,7 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    println((5: Expr[Int]) + 10 + 15 * 20)
+    assert("((5 + 10) + 300)" == ((5: Expr[Int]) + 10 + 15 * 20).toString)
   }
 }
 
@@ -156,7 +156,7 @@ trait Pattern {
       if (f.isDefinedAt(this)) (f(this) :: a) else a
     }
 
-    def leaves: List[Leaf[T]] = collect { case l: Leaf[T] => l }
+    def leaves: List[Leaf[T]] = collect { case l: Leaf[T @unchecked] => l }
 
     def + (other: Expr[T])(implicit n: NumericOps[T]) = Add(List(this, other))
     def - (other: Expr[T])(implicit n: NumericOps[T]) = Sub(this, other)
@@ -301,7 +301,7 @@ trait Pattern {
 
     private def optimizeWith(f: Expr[T] => Expr[T]): Expr[T] = {
       f(mapArgs(EndoFunction[Expr[_]](
-        a => a match { case x: Expr[T] => x.optimizeWith(f) }
+        a => a match { case x: Expr[T @unchecked] => x.optimizeWith(f) }
       )))
     }
 
@@ -512,9 +512,7 @@ trait Pattern {
     override lazy val hashCode = ScalaRunTime._hashCode(this);
   }
 
-
-  abstract class Compare[T](left: Expr[T], right: Expr[T], cmp: (T, T) => Boolean)(implicit num: NumericOps[T])
-    extends Expr[Boolean] {
+  abstract class Compare[T: NumericOps](left: Expr[T], right: Expr[T], cmp: (T, T) => Boolean) extends Expr[Boolean] {
     def derivative(v: Var[Boolean]) = throw new IllegalStateException("Derivative of Boolean not allowed")
     def eval(f: Any => Any) = cmp(left.eval(f), right.eval(f))
     val args = List(left, right)
