@@ -737,7 +737,7 @@ abstract class UnPickler {
         completeInternal(sym)
         if (!isCompilerUniverse) markAllCompleted(sym)
       }
-      override def load(sym: Symbol): Unit = { complete(sym) }
+      override def load(sym: Symbol): Unit = { complete(sym); symbolInfoCompleted(sym) }
     }
 
     /** A lazy type which when completed returns type at index `i` and sets alias
