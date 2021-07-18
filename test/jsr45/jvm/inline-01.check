@@ -1,0 +1,38 @@
+SourceFile: "Main_1.scala"
+SourceDebugExtension:
+SMAP
+Main_1.scala
+Scala
+*S Scala
+*F
++ 1 Main_1.scala
+inline-01/Main_1.scala
++ 2 List$
+scala/collection/immutable/List$
++ 3 List
+scala/collection/immutable/List
++ 4 Utils_1.scala
+inline-01/Utils_1.scala
+*L
+1#1,12:1
+648#2:13
+245#3,9:14
+249#3:23
+255#3,2:24
+3#4,2:26
+6#4:28
+3#4,2:29
+6#4:31
+*E
+SourceFile: "Utils_1.scala"
+SourceDebugExtension:
+SMAP
+Utils_1.scala
+Scala
+*S Scala
+*F
++ 1 Utils_1.scala
+inline-01/Utils_1.scala
+*L
+1#1,9:1
+*E

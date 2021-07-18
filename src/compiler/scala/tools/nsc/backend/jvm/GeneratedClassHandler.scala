@@ -54,7 +54,7 @@ private[jvm] object GeneratedClassHandler {
     import global._
     import genBCode.postProcessor
 
-    val handler = settings.YaddBackendThreads.value match {
+    val writingHandler = settings.YaddBackendThreads.value match {
       case 1 =>
         new SyncWritingClassHandler(postProcessor)
 
@@ -72,19 +72,47 @@ private[jvm] object GeneratedClassHandler {
         new AsyncWritingClassHandler(postProcessor, javaExecutor)
     }
 
-    if (settings.optInlinerEnabled || settings.optClosureInvocations)
-      new GlobalOptimisingGeneratedClassHandler(postProcessor, handler)
-    else handler
+    // If emitSource is enabled, add a handler for emitting debug info (JSR-45).
+    val debugInfoEmittingHandler =
+      if (settings.debuginfo.indexOfChoice >= 1) // emitSource ?
+        new DebugInfoEmittingClassHandler(postProcessor, writingHandler)
+      else writingHandler
+
+    val optimisingClassHandler =
+      if (settings.optInlinerEnabled || settings.optClosureInvocations)
+        new GlobalOptimisingGeneratedClassHandler(postProcessor, debugInfoEmittingHandler)
+      else debugInfoEmittingHandler
+
+    // If emitSource is enabled, add a handler for bootstrapping debug info emission (JSR-45).
+    if (settings.debuginfo.indexOfChoice >= 1) // emitSource ?
+      new DebugInfoBootstrappingClassHandler(postProcessor, optimisingClassHandler)
+    else optimisingClassHandler
+  }
+
+  private class DebugInfoBootstrappingClassHandler(val postProcessor: PostProcessor,
+                                                   underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+    override def process(unit: GeneratedCompilationUnit): Unit = {
+      postProcessor.debugInfoBuilder.registerCUnitClasses(unit)
+      underlying.process(unit)
+    }
+
+    override def complete(): Unit = {
+      underlying.complete()
+    }
+
+    override def close(): Unit = underlying.close()
   }
 
   private class GlobalOptimisingGeneratedClassHandler(
       val postProcessor: PostProcessor,
-      underlying: WritingClassHandler)
+      underlying: GeneratedClassHandler)
     extends GeneratedClassHandler {
 
     private val generatedUnits = ListBuffer.empty[GeneratedCompilationUnit]
 
-    def process(unit: GeneratedCompilationUnit): Unit = generatedUnits += unit
+    def process(unit: GeneratedCompilationUnit): Unit = {
+      generatedUnits += unit
+    }
 
     def complete(): Unit = {
       val allGeneratedUnits = generatedUnits.result()
@@ -97,6 +125,20 @@ private[jvm] object GeneratedClassHandler {
     override def close(): Unit = underlying.close()
 
     override def toString: String = s"GloballyOptimising[$underlying]"
+  }
+
+  private class DebugInfoEmittingClassHandler(val postProcessor: PostProcessor,
+                                              underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+    override def process(unit: GeneratedCompilationUnit): Unit = {
+      postProcessor.debugInfoBuilder putDebugInfoTo unit
+      underlying.process(unit)
+    }
+
+    override def complete(): Unit = {
+      underlying.complete()
+    }
+
+    override def close(): Unit = underlying.close()
   }
 
   sealed abstract class WritingClassHandler(val javaExecutor: Executor) extends GeneratedClassHandler {

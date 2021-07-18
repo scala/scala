@@ -43,6 +43,7 @@ abstract class PostProcessor extends PerRunInit {
   val callGraph           : CallGraph           { val postProcessor: self.type } = new { val postProcessor: self.type = self } with CallGraph
   val bTypesFromClassfile : BTypesFromClassfile { val postProcessor: self.type } = new { val postProcessor: self.type = self } with BTypesFromClassfile
   val classfileWriters    : ClassfileWriters    { val postProcessor: self.type } = new { val postProcessor: self.type = self } with ClassfileWriters
+  val debugInfoBuilder    : DebugInfoBuilder    { val postProcessor: self.type } = new { val postProcessor: self.type = self } with DebugInfoBuilder
 
   var classfileWriter: classfileWriters.ClassfileWriter = _
 

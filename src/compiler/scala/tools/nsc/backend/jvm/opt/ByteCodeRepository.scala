@@ -269,14 +269,12 @@ abstract class ByteCodeRepository extends PerRunInit {
     }
   }
 
-  private def removeLineNumbersAndAddLMFImplMethods(classNode: ClassNode): Unit = {
+  private def addLMFImplMethods(classNode: ClassNode): Unit = {
     for (m <- classNode.methods.asScala) {
       val iter = m.instructions.iterator
       while (iter.hasNext) {
         val insn = iter.next()
         insn.getType match {
-          case AbstractInsnNode.LINE =>
-            iter.remove()
           case AbstractInsnNode.INVOKE_DYNAMIC_INSN => insn match {
             case LambdaMetaFactoryCall(indy, _, implMethod, _, _) =>
               postProcessor.backendUtils.addIndyLambdaImplMethod(classNode.name, m, indy, implMethod)
@@ -308,9 +306,9 @@ abstract class ByteCodeRepository extends PerRunInit {
         // TODO: we need to remove them also for classes that are not parsed from classfiles, why not simplify and do it once when inlining?
         // OR: instead of skipping line numbers for inlined code, use write a SourceDebugExtension
         // attribute that contains JSR-45 data that encodes debugging info.
-      //   https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
+        //   https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
         //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
-        removeLineNumbersAndAddLMFImplMethods(classNode)
+        addLMFImplMethods(classNode)
         Some(classNode)
       } catch {
         case ex: Exception =>
