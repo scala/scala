@@ -1,5 +1,6 @@
-// scalac: -Yrangepos
-//
+
+import scala.util.chaining._
+
 class LazyList[+A](expr: => LazyList.Evaluated[A]) {
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))
   def ##:: [B >: A](elem: B): LazyList[B] = new LazyList(Some((elem, this)))
@@ -68,8 +69,8 @@ object Test extends App {
       def :: (x: Int): C = this
       def :: (x: => String): C = { saved += (() => x); this }
     }
-    def genI(i: Int): Int = { println("Int "+i); i }
-    def genS(s: String): String = { println("String "+s); s }
+    def genI(i: Int): Int = i.tap(x => println(s"Int $x"))
+    def genS(s: String): String = s.tap(x => println(s"String $x"))
     val c = genI(1) :: genS("2") :: genI(3) :: genS("4") :: (new C)
     println("5. forcing")
     c.force

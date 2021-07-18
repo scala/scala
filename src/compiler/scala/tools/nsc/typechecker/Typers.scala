@@ -23,6 +23,7 @@ import scala.util.chaining._
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
+import PartialFunction.cond
 
 /** A provider of methods to assign types to trees.
  *
@@ -40,11 +41,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   final val shortenImports = false
 
-  // All typechecked RHS of ValDefs for right-associative operator desugaring
-  private val rightAssocValDefs = new mutable.AnyRefMap[Symbol, Tree]
-  // Symbols of ValDefs for right-associative operator desugaring which are passed by name and have been inlined
-  private val inlinedRightAssocValDefs = new mutable.HashSet[Symbol]
-
   // For each class, we collect a mapping from constructor param accessors that are aliases of their superclass
   // param accessors. At the end of the typer phase, when this information is available all the way up the superclass
   // chain, this is used to determine which are true aliases, ones where the field can be elided from this class.
@@ -60,8 +56,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     resetContexts()
     resetImplicits()
     resetDocComments()
-    rightAssocValDefs.clear()
-    inlinedRightAssocValDefs.clear()
     superConstructorCalls.clear()
   }
 
@@ -2160,14 +2154,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else tpt1.tpe
           transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
-      val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
-      if (sym.isSynthetic && sym.name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX))
-        rightAssocValDefs += ((sym, vdef1.rhs))
       if (sym.isSynthetic && sym.owner.isClass && (tpt1.tpe eq UnitTpe) && vdef.hasAttachment[PatVarDefAttachment.type] && sym.isPrivateThis && vdef.mods.isPrivateLocal && !sym.enclClassChain.exists(_.isInterpreterWrapper)) {
         context.warning(vdef.pos, s"Pattern definition introduces Unit-valued member of ${sym.owner.name}; consider wrapping it in `locally { ... }`.", WarningCategory.OtherMatchAnalysis)
         vdef.removeAttachment[PatVarDefAttachment.type]
       }
-      vdef1
+      treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
     }
 
     /** Analyze the super constructor call to record information used later to compute parameter aliases */
@@ -2564,13 +2555,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val statsTyped = typedStats(block.stats, context.owner)
         val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode | APPSELmode), pt)
 
-        // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
-        val statsTyped2 = statsTyped match {
-          case (vd: ValDef) :: Nil if inlinedRightAssocValDefs.remove(vd.symbol) => Nil
-          case _ => statsTyped
-        }
-
-        treeCopy.Block(block, statsTyped2, expr1)
+        treeCopy.Block(block, statsTyped, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
         // enable escaping privates checking from the outside and recycle
@@ -3767,29 +3752,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ => tp
                 }
 
-                // Inline RHS of ValDef for right-associative by-value operator desugaring.
-                // Remove the ValDef also if the argument is a constant-folded reference to it.
                 var (args2, pos2) = (args1, tree.pos)
-                args1 match {
-                  case List(lit: Literal) =>
-                    lit.attachments.get[OriginalTreeAttachment] match {
-                      case Some(OriginalTreeAttachment(id: Ident)) if rightAssocValDefs.contains(id.symbol) =>
-                        inlinedRightAssocValDefs += id.symbol
-                        rightAssocValDefs.remove(id.symbol)
-                      case _ =>
-                    }
-
-                  case List(id: Ident) if rightAssocValDefs.contains(id.symbol) =>
-                    mt.params match {
-                      case List(p) if p.isByNameParam =>
-                        inlinedRightAssocValDefs += id.symbol
-                        val rhs = rightAssocValDefs.remove(id.symbol).get
-                        args2 = rhs.changeOwner(id.symbol -> context.owner) :: Nil
-                        pos2 = wrappingPos(tree :: rhs :: Nil)
-                      case _ =>
-                    }
-                  case _ =>
-                }
 
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && currentRun.runDefinitions.isListApply(fun))
                   atPos(tree.pos)(gen.mkNil setType restpe)
@@ -5077,6 +5040,54 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         )
         silentResult match {
           case SilentResultValue(fun1) =>
+            // if fun takes a single eager param, the arg is hoisted when written as right-associative infix
+            def liftArg(funtpe: Type): Boolean = funtpe match {
+              case MethodType(p :: Nil, _) if !p.isByNameParam => true
+              case PolyType(_, restpe)                         => liftArg(restpe)
+              case OverloadedType(_, alts)                     => alts.exists(sym => liftArg(sym.tpe))
+              case _                                           => false
+            }
+            def rewriteRightAssoc(arg1: Tree): Tree = {
+              val vsym = context.owner.newValue(freshTermName(nme.RIGHT_ASSOC_OP_PREFIX), arg1.pos.focus, FINAL | SYNTHETIC | ARTIFACT)
+              vsym.setInfo(arg1.tpe)
+              val vdef = atPos(arg1.pos) { ValDef(vsym, arg1) setType NoType }
+              context.pendingStabilizers ::= vdef
+              arg1.changeOwner(context.owner -> vsym)
+              Ident(vsym).setType(singleType(NoPrefix, vsym)).setPos(arg1.pos.focus)
+            }
+            def transformRassoc(applied: Tree): Tree = {
+              applied.removeAttachment[RightAssociative.type]
+              val Apply(fn, arg :: Nil) = applied: @unchecked
+              def needsRewrite(arg0: Tree) = liftArg(fn.tpe) && (!treeInfo.isStableIdentifier(arg0, allowVolatile = false) || !treeInfo.isExprSafeToInline(arg0))
+              def isRassocArg(t: Tree) = t.hasAttachment[RightAssociativeArg.type]
+              // hoist the arg expr, with adapted apply, but not conversions
+              val rewriter = new Transformer {
+                override def transform(tree: Tree): Tree = tree match {
+                  case _ if isRassocArg(tree) =>
+                    tree.removeAttachment[RightAssociativeArg.type]
+                    if (needsRewrite(tree)) rewriteRightAssoc(tree) else tree
+                  case Apply(fn, adapted :: Nil) if isRassocArg(adapted) =>
+                    adapted.removeAttachment[RightAssociativeArg.type]
+                    val adapted1 = if (needsRewrite(adapted)) rewriteRightAssoc(adapted) else adapted
+                    treeCopy.Apply(tree, fn, adapted1 :: Nil)
+                  case Apply(fn, _) if fn.exists(isRassocArg) =>
+                    val actual = fn.find(isRassocArg).getOrElse(EmptyTree)
+                    actual.removeAttachment[RightAssociativeArg.type]
+                    if (needsRewrite(actual)) rewriteRightAssoc(tree) else tree
+                  case Block(stats, res) if isRassocArg(res) =>
+                    res.removeAttachment[RightAssociativeArg.type]
+                    def isStab(prefix: String)(x: Tree) = cond(x) { case ValDef(_, nm, _, _) => nm.startsWith(prefix) }
+                    def hasRassocs = stats.exists(isStab(nme.RIGHT_ASSOC_OP_PREFIX))
+                    if (hasRassocs && needsRewrite(res)) rewriteRightAssoc(tree)
+                    else super.transform(tree)
+                  case _ => super.transform(tree)
+                }
+              }
+              treeCopy.Apply(applied, fn, rewriter.transform(arg) :: Nil)
+            }
+            val isRightAssoc = args.lengthCompare(1) == 0 && tree.hasAttachment[RightAssociative.type]
+            val needsRassoc = fun1.symbol != null && !isPastTyper && !mode.inPatternMode && isRightAssoc && liftArg(fun1.symbol.tpe)
+            if (needsRassoc) args.head.updateAttachment(RightAssociativeArg)
             val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
             if (settings.areStatisticsEnabled) statistics.incCounter(typedApplyCount)
             val noSecondTry = (
@@ -5089,15 +5100,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case Select(_, _) => !noSecondTry && mode.inExprMode
               case _            => false
             }
-            if (isFirstTry)
-              tryTypedApply(fun2, args)
+            val applied =
+              if (isFirstTry)
+                tryTypedApply(fun2, args)
+              else
+                doTypedApply(tree, fun2, args, mode, pt)
+            if (needsRassoc && !applied.isErroneous)
+              transformRassoc(applied)
             else
-              doTypedApply(tree, fun2, args, mode, pt)
+              applied
           case err: SilentTypeError => onError(err)
         }
       }
 
-      def typedApply(tree: Apply) = tree match {
+      def typedApply(tree: Apply): Tree = tree match {
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
         case Apply(fun, args) =>
@@ -5123,8 +5139,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               tree1
             case tree1 @ Apply(_, args1) if settings.multiargInfix && tree.hasAttachment[MultiargInfixAttachment.type] && args1.lengthCompare(1) > 0 =>
               context.warning(tree1.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+              tree.removeAttachment[MultiargInfixAttachment.type]
               tree1
-            case tree1                                                               => tree1
+            case tree1 => tree1
           }
       }
 
@@ -6097,12 +6114,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    private def addStabilizers(newStabilizers: List[Tree], expr: Tree): Tree = {
-      if (newStabilizers.isEmpty) expr else {
-        devWarningIf(newStabilizers.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(newStabilizers.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
-        // Insert stabilizing ValDefs (if any) which might have been introduced during the typing of the original expression.
-        Block(newStabilizers.reverse, expr).setPos(expr.pos).setType(expr.tpe)
-      }
+    // Insert stabilizing ValDefs (if any) introduced during the typing of the original expression.
+    private def addStabilizers(newStabilizers: List[Tree], expr: Tree): Tree = if (newStabilizers.isEmpty) expr else {
+      devWarningIf(newStabilizers.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(newStabilizers.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
+      def isStab(prefix: String)(x: Tree) = cond(x) { case ValDef(_, nm, _, _) => nm.startsWith(prefix) }
+      val (stabs, rassocs) = newStabilizers.partition(isStab(nme.STABILIZER_PREFIX))
+      Block(rassocs ++ stabs.reverse, expr).setPos(expr.pos).setType(expr.tpe)
     }
 
     def atOwner(owner: Symbol): Typer =
