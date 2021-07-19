@@ -230,6 +230,10 @@ lazy val fatalWarningsSettings = Seq(
     if (fatalWarnings.value) Seq("-Werror", "-Wconf:cat=unused-nowarn:is")
     else Nil
   },
+  Compile / javacOptions ++= {
+    if (fatalWarnings.value) Seq("-Werror")
+    else Nil
+  },
   Compile / doc / scalacOptions -= "-Werror", // there are too many doc errors to enable this right now
 )
 
