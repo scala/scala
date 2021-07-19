@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package transform
 
-import scala.annotation.nowarn
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.Reporting.WarningCategory
@@ -744,6 +744,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         enterMember(om)
       }
 
+      @tailrec def isTraitValSetter(sym: Symbol): Boolean =
+        sym.isSetter && sym.getterIn(sym.owner).isStable &&
+          (sym.hasFlag(SYNTHESIZE_IMPL_IN_SUBCLASS) || isTraitValSetter(sym.nextOverriddenSymbol))
+
       for (m <- normMembers if needsSpecialization(fullEnv, m) && satisfiable(fullEnv)) {
         if (!m.isDeferred)
           addConcreteSpecMethod(m)
@@ -791,7 +795,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           specMember.asInstanceOf[TermSymbol].referenced = m.alias
 
           info(specMember) = SpecialSuperAccessor(specMember)
-        } else if (m.isMethod && !m.hasFlag(DEFERRED) && (!m.hasFlag(ACCESSOR) || m.hasFlag(LAZY))) { // other concrete methods
+        } else if (m.isMethod && !m.isDeferred && (!m.isAccessor || m.isLazy || isTraitValSetter(m))) { // other concrete methods
           forwardToOverload(m)
         } else if (m.isValue && !m.isMethod) { // concrete value definition
           def mkAccessor(field: Symbol, name: Name) = {
