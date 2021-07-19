@@ -1,0 +1,28 @@
+patmat-sealed-reachable.scala:28: error: pattern type is incompatible with expected type;
+ found   : Foo
+ required: scala.collection.immutable.Map[String,Foo]
+  def d() = Map("outer" -> Map("inner" -> new Foo)).collect { case (_, foo: Foo) => "should error" }
+                                                                            ^
+patmat-sealed-reachable.scala:31: error: scrutinee is incompatible with pattern type;
+ found   : Bar
+ required: Foo
+  def e() = Map(1 -> new Foo).collect { case (_, bar: Bar) => "should error" }
+                                                      ^
+patmat-sealed-reachable.scala:34: error: scrutinee is incompatible with pattern type;
+ found   : Int
+ required: String
+  def f(c: O1) = Map("outer" -> Map("inner" -> new Foo)).collect { case (_: Int, foo: Foo) => "should error" }
+                                                                            ^
+patmat-sealed-reachable.scala:34: error: pattern type is incompatible with expected type;
+ found   : Foo
+ required: scala.collection.immutable.Map[String,Foo]
+  def f(c: O1) = Map("outer" -> Map("inner" -> new Foo)).collect { case (_: Int, foo: Foo) => "should error" }
+                                                                                      ^
+patmat-sealed-reachable.scala:23: warning: fruitless type test: a value of type Option[Int] cannot also be a SomeClass
+  def b(c: Option[Int]) = c match { case _: SomeClass => ; case _  =>}
+                                            ^
+patmat-sealed-reachable.scala:20: warning: fruitless type test: a value of type Option[Int] cannot also be a SealedTrait
+  def a(c: Option[Int]) = c match { case _: SealedTrait => ; case _ => }
+                                            ^
+2 warnings
+4 errors

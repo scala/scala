@@ -4557,9 +4557,9 @@ trait Types
         throw new MatchError((tp1, tp2))
     }
 
-    def check(tp1: Type, tp2: Type) = {
+    def check(tp1: Type, tp2: Type): Boolean = {
       val sym1 = tp1.typeSymbol
-      if (sym1.isClass && sym1.hasFlag(FINAL) && sym1 != SingletonClass)
+      if (sym1.isClass && sym1.hasFlag(FINAL | MODULE) && sym1 != SingletonClass)
         tp1 <:< tp2 || isNumericValueClass(sym1) && isNumericValueClass(tp2.typeSymbol)
       else tp1.baseClasses forall (bc =>
         tp2.baseTypeIndex(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))

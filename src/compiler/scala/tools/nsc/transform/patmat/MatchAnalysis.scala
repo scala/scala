@@ -18,8 +18,8 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 trait TreeAndTypeAnalysis extends Debugging {
   import global._
-  import definitions._
   import analyzer.Typer
+  import definitions._
 
   /** Compute the type T implied for a value `v` matched by a pattern `pat` (with expected type `pt`).
    *
@@ -326,7 +326,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
           if (!substitutionComputed) updateSubstitution(tm)
 
           tm match {
-            case ttm @ TypeTestTreeMaker(_, _, _, _)                  => ttm.renderCondition(condStrategy)
+            case ttm @ TypeTestTreeMaker(_, _, _, _)                  => ttm.renderCondition(new condStrategy(ttm))
             case EqualityTestTreeMaker(prevBinder, patTree, _)        => uniqueEqualityProp(binderToUniqueTree(prevBinder), unique(patTree))
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
             case ProductExtractorTreeMaker(testedBinder, None)        => uniqueNonNullProp(binderToUniqueTree(testedBinder))
@@ -339,12 +339,17 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         }
       }
 
-      object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
+      private class condStrategy(ttm:TypeTestTreeMaker) extends TypeTestTreeMaker.TypeTestCondStrategy {
         type Result                                           = Prop
         def and(a: Result, b: Result)                         = And(a, b)
         def withOuterTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
         def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
-          val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
+          val p = binderToUniqueTree(b)
+          val testedPath = p
+          val uniquePt = uniqueTp(pt)
+          val eq = Eq(Var(testedPath), TypeConst(checkableType(uniquePt)))
+          eq.pos = ttm.tptPos
+          And(uniqueNonNullProp(p), uniqueTypeProp(testedPath, uniquePt))
         }
         def nonNullTest(testedBinder: Symbol)                 = uniqueNonNullProp(binderToUniqueTree(testedBinder))
         def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
@@ -503,6 +508,21 @@ trait MatchAnalysis extends MatchApproximation {
         }
 
         if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.patmatAnaReach, start)
+
+        propsCasesFail.iterator.foreach(prop => foreachEq(prop) {
+          case eq@Eq(varr, tc: TypeConst) =>
+            val testedTypeCheckable = tc.wideTp
+            if (!(testedTypeCheckable <:< varr.staticTpCheckable)) {
+              varr.domainSyms match {
+                case Some(syms) =>
+                  if (!syms.exists(sym => sym.const.tp != ConstantNull && isPopulated(sym.const.wideTp, testedTypeCheckable))) {
+                    reporter.warning(eq.pos, "Pattern type is not compatible with any of the sealed children of expected type")
+                  }
+                case None       =>
+              }
+            }
+          case Eq(_, _)                   =>
+        })
 
         if (reachable) None else Some(caseIndex)
       } catch {

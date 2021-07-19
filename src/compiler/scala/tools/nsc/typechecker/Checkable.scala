@@ -246,7 +246,8 @@ trait Checkable {
          isEffectivelyFinal(sym1) // initialization important
       || isEffectivelyFinal(sym2)
       || !sym1.isTrait && !sym2.isTrait
-      || isSealedOrFinal(sym1) && isSealedOrFinal(sym2) && allChildrenAreIrreconcilable(sym1, sym2) && (isRecheck || !currentRun.compiles(sym1) && !currentRun.compiles(sym2))
+      || isSealedOrFinal(sym1) && isSealedOrFinal(sym2) && allChildrenAreIrreconcilable(sym1, sym2) && (isRecheck ||
+           (isPastTyper || !currentRun.compiles(sym1) && !currentRun.compiles(sym2)))
     )
     private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
     // initialization important
