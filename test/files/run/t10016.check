@@ -1,0 +1,8 @@
+
+scala> def existWith(x: (List[T] forSome {type T}) with Int {def xxx: Int}) = ???
+def existWith(x: List[_] with Int{def xxx: Int}): Nothing
+
+scala> def existKeepsAnnot(x: (List[T] forSome {type T})@SerialVersionUID(1L) with Int {def xxx: Int}) = ???
+def existKeepsAnnot(x: List[Any] @SerialVersionUID(value = 1L) with Int{def xxx: Int}): Nothing
+
+scala> :quit
