@@ -186,7 +186,8 @@ sealed class HashSet[A] extends AbstractSet[A]
   protected def elemHashCode(key: A) = key.##
 
   protected final def improve(hcode: Int) = {
-    var h: Int = hcode + ~(hcode << 9)
+    var h = collection.Map.hashSeed
+    h = h + hcode + ~(hcode << 9)
     h = h ^ (h >>> 14)
     h = h + (h << 4)
     h ^ (h >>> 10)
@@ -1116,7 +1117,8 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   protected def elemHashCode(key: Any) = key.##
 
   protected final def improve(hcode: Int) = {
-    var h: Int = hcode + ~(hcode << 9)
+    var h = collection.Map.hashSeed
+    h = h + hcode + ~(hcode << 9)
     h = h ^ (h >>> 14)
     h = h + (h << 4)
     h ^ (h >>> 10)

@@ -42,6 +42,8 @@ trait Map[K, +V] extends Iterable[(K, V)] with GenMap[K, V] with MapLike[K, V, M
  *  @define coll map
  */
 object Map extends MapFactory[Map] {
+  private[collection] val hashSeed: Int = Integer.getInteger("scala.collection.Map.hashSeed", 0)
+
   def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */

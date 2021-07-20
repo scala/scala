@@ -428,7 +428,9 @@ private[collection] object HashTable {
       * }}}
       * the rest of the computation is due to scala/bug#5293
       */
-    protected final def improve(hcode: Int, seed: Int): Int = rotateRight(byteswap32(hcode), seed)
+    protected final def improve(hcode: Int, seed: Int): Int = {
+      rotateRight(byteswap32(hcode + collection.Map.hashSeed), seed)
+    }
   }
 
   /**

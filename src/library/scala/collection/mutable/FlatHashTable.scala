@@ -420,7 +420,9 @@ private[collection] object FlatHashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected final def improve(hcode: Int, seed: Int) = rotateRight(byteswap32(hcode), seed)
+    protected final def improve(hcode: Int, seed: Int) = {
+      rotateRight(byteswap32(hcode + collection.Map.hashSeed), seed)
+    }
 
     /**
      * Elems have type A, but we store AnyRef in the table. Plus we need to deal with

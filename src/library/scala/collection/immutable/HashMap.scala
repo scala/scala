@@ -104,7 +104,8 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   protected def elemHashCode(key: A) = key.##
 
   protected final def improve(hcode: Int) = {
-    var h: Int = hcode + ~(hcode << 9)
+    var h = collection.Map.hashSeed
+    h = h + hcode + ~(hcode << 9)
     h = h ^ (h >>> 14)
     h = h + (h << 4)
     h ^ (h >>> 10)
@@ -261,7 +262,6 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
  *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
-
   override def newBuilder[A, B]: mutable.Builder[(A, B), HashMap[A, B]] = new HashMapBuilder[A, B]
 
   private[collection] abstract class Merger[A, B] {
@@ -1057,7 +1057,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   private def elemHashCode(key: Any) = key.##
 
   private final def improve(hcode: Int) = {
-    var h: Int = hcode + ~(hcode << 9)
+    var h = collection.Map.hashSeed
+    h = h + hcode + ~(hcode << 9)
     h = h ^ (h >>> 14)
     h = h + (h << 4)
     h ^ (h >>> 10)

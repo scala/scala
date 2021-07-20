@@ -96,7 +96,6 @@ extends AbstractSet[A]
   def useSizeMap(t: Boolean) = if (t) {
     if (!isSizeMapDefined) sizeMapInitAndRebuild()
   } else sizeMapDisable()
-
 }
 
 /** $factoryInfo
