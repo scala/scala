@@ -158,6 +158,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
   // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
   Compile / scalacOptions += "-Wconf:cat=optimizer:is",
+  // We use @nowarn for some methods that are deprecated in Java > 8
+  Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s",
   Compile / scalacOptions ++= Seq("-deprecation", "-feature"),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
@@ -227,7 +229,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
 
 lazy val fatalWarningsSettings = Seq(
   Compile / scalacOptions ++= {
-    if (fatalWarnings.value) Seq("-Werror", "-Wconf:cat=unused-nowarn:is")
+    if (fatalWarnings.value) Seq("-Werror")
     else Nil
   },
   Compile / doc / scalacOptions -= "-Werror", // there are too many doc errors to enable this right now
