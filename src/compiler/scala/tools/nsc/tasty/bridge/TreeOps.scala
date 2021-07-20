@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, ForceKinds}, TastyModes._, ForceKinds._
 
 import scala.tools.tasty.TastyName
 import scala.reflect.internal.Flags
@@ -33,6 +33,19 @@ trait TreeOps { self: TastyUniverse =>
       case tree: TastyIdent => tree.tname.toTypeName
       case _                => TastyName.EmptyTpe
     }
+  }
+
+  def showTree(tree: Tree): String = {
+    // here we want to avoid forcing the symbols of type trees,
+    // so instead substitute the type tree with an Identifier
+    // of the `showType`, which does not force.
+    val tree1 = tree.transform(new u.Transformer {
+      override def transform(tree: Tree) = tree match {
+        case tree: u.TypeTree => u.Ident(s"${showType(tree.tpe, wrap = false)}") // ident prints its name directly
+        case tree => super.transform(tree)
+      }
+    })
+    u.show(tree1)
   }
 
   object tpd {
@@ -59,7 +72,7 @@ trait TreeOps { self: TastyUniverse =>
 
       if (ctx.mode.is(ReadAnnotation) && name.isSignedConstructor) {
         val cls = qual.tpe.typeSymbol
-        cls.ensureCompleted() // need to force flags
+        cls.ensureCompleted(AnnotCtor)
         if (cls.isJavaAnnotation)
           selectCtor(qual)
         else

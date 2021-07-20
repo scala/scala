@@ -47,7 +47,6 @@ trait AnnotationOps { self: TastyUniverse =>
     class FromTree(tree: Symbol => Context => Tree) extends DeferredAnnotation {
       private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
         val atree = tree(annotee)(ctx)
-        ctx.log(s"annotation on $annotee: $atree")
         val annot = mkAnnotation(atree)
         val annotSym = annot.tpe.typeSymbol
         if ((annotSym eq defn.TargetNameAnnotationClass) || (annotSym eq defn.StaticMethodAnnotationClass)) {
