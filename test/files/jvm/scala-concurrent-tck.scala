@@ -874,11 +874,16 @@ trait CustomExecutionContext extends TestBase {
         latch.countDown()
       })
 
+      // scala/bug#12423, scala/scala#9680
+      val threadDeathWaitingPeriod =
+        if (scala.util.Properties.isJavaAtLeast("17")) 1000L
+        else 10L
+
       @tailrec def waitForThreadDeath(turns: Int): Boolean =
           if (turns <= 0) false
           else if ((thread ne null) && thread.isAlive == false) true
           else {
-            Thread.sleep(10)
+            Thread.sleep(threadDeathWaitingPeriod)
             waitForThreadDeath(turns - 1)
           }
 
