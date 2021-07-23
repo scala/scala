@@ -187,12 +187,11 @@ private final class DelegatingReporter(
   }
 
   import xsbti.Severity.{ Info, Warn, Error }
-  private[this] def convert(sev: Severity): xsbti.Severity = {
-    sev match {
-      case INFO    => Info
-      case WARNING => Warn
-      case ERROR   => Error
-    }
+  private[this] def convert(sev: Severity): xsbti.Severity = sev match {
+    case INFO    => Info
+    case WARNING => Warn
+    case ERROR   => Error
+    case x       => throw new MatchError(x)
   }
 
   // Define our own problem because the bridge should not depend on sbt util-logging.
