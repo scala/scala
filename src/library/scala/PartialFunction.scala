@@ -378,25 +378,26 @@ object PartialFunction {
    */
   def empty[A, B] : PartialFunction[A, B] = empty_pf
 
-  /** Creates a Boolean test based on a value and a partial function.
-   *  It behaves like a 'match' statement with an implied 'case _ => false'
-   *  following the supplied cases.
+  /** A Boolean test that is the result of the given function where defined,
+   *  and false otherwise.
+   *
+   *  It behaves like a `case _ => false` were added to the partial function.
    *
    *  @param  x   the value to test
    *  @param  pf  the partial function
    *  @return true, iff `x` is in the domain of `pf` and `pf(x) == true`.
    */
-  def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean = pf.applyOrElse(x, constFalse)
+  def cond[A](x: A)(pf: PartialFunction[A, Boolean]): Boolean = pf.applyOrElse(x, constFalse)
 
-  /** Transforms a PartialFunction[T, U] `pf` into Function1[T, Option[U]] `f`
-   *  whose result is `Some(x)` if the argument is in `pf`'s domain and `None`
-   *  otherwise, and applies it to the value `x`.  In effect, it is a
-   *  `'''match'''` statement which wraps all case results in `Some(_)` and
-   *  adds `'''case''' _ => None` to the end.
+  /** Apply the function to the given value if defined, and return the result
+   *  in a `Some`; otherwise, return `None`.
    *
    *  @param  x     the value to test
    *  @param  pf    the PartialFunction[T, U]
    *  @return `Some(pf(x))` if `pf isDefinedAt x`, `None` otherwise.
    */
-  def condOpt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] = pf.lift(x)
+  def condOpt[A, B](x: A)(pf: PartialFunction[A, B]): Option[B] = {
+    val z = pf.applyOrElse(x, checkFallback[B])
+    if (!fallbackOccurred(z)) Some(z) else None
+  }
 }
