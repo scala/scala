@@ -276,7 +276,12 @@ private[collection] final class LinearSeqIterator[A](coll: LinearSeqOps[A, Linea
   // A call-by-need cell
   private[this] final class LazyCell(st: => LinearSeqOps[A, LinearSeq, LinearSeq[A]]) { lazy val v = st }
 
-  private[this] var these: LazyCell = new LazyCell(coll)
+  private[this] var these: LazyCell = {
+    // Reassign reference to avoid creating a private class field and holding a reference to the head.
+    // LazyCell would otherwise close over `coll`.
+    val initialHead = coll
+    new LazyCell(initialHead)
+  }
 
   def hasNext: Boolean = these.v.nonEmpty
 
