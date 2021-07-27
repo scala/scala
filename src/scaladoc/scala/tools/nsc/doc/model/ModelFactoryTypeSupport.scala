@@ -45,7 +45,7 @@ trait ModelFactoryTypeSupport {
           appendType0(tp)
         case tp :: tps =>
           appendType0(tp)
-          nameBuffer append sep
+          nameBuffer.append(sep)
           appendTypes0(tps, sep)
       }
 
@@ -202,15 +202,16 @@ trait ModelFactoryTypeSupport {
         /* Polymorphic types */
         case PolyType(tparams, result) =>
           assert(tparams.nonEmpty, "polymorphic type must have at least one type parameter")
-          def typeParamsToString(tps: List[Symbol]): String = if (tps.isEmpty) "" else
-            tps.map{tparam =>
-              tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
-            }.mkString("[", ", ", "]")
-          nameBuffer append typeParamsToString(tparams)
+          def typeParamsToString(tps: List[Symbol]): String =
+            if (tps.isEmpty) ""
+            else
+              tps.map { tparam =>
+                tparam.varianceString + tparam.unexpandedName + typeParamsToString(tparam.typeParams)
+              }.mkString("[", ", ", "]")
+          nameBuffer.append(typeParamsToString(tparams))
           appendType0(result)
 
         case et@ExistentialType(quantified, underlying) =>
-
           def appendInfoStringReduced(sym: Symbol, tp: Type): Unit = {
             if (sym.isType && !sym.isAliasType && !sym.isClass) {
                 tp match {
