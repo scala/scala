@@ -12,6 +12,7 @@
 
 package scala.tools.partest.nest
 
+@deprecated("JDK 17 deprecates SecurityManager", since="2.13.7")
 object TrapExit {
 
   private class TrapExitThrowable(val status: Int) extends Throwable {

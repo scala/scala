@@ -5,9 +5,12 @@ import java.security._
 
 import scala.language.reflectiveCalls
 
+// SecurityManager is deprecated on JDK 17, so we sprinkle `@deprecated` around
+
 object Test {
   trait Bar { def bar: Unit }
 
+  @deprecated
   object Mgr extends SecurityManager {
     def allowedProperty(name: String) =
       name == "sun.net.inetaddr.ttl" ||
@@ -29,6 +32,7 @@ object Test {
     def doDestroy( obj : Destroyable ) : Unit = obj.destroy();
     doDestroy( p );
   }
+  @deprecated
   def t2() = {
     System.setSecurityManager(Mgr)
 
@@ -44,6 +48,6 @@ object Test {
     try t1()
     catch { case _: java.io.IOException => () }
 
-    t2()
+    t2(): @annotation.nowarn("cat=deprecation")
   }
 }
