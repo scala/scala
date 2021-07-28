@@ -29,11 +29,20 @@ trait FlagOps { self: TastyUniverse =>
         | Enum | Infix | Open | ParamAlias | Invisible
     )
 
+    type FlagParser = TastyFlagSet => Context => TastyFlagSet
+
+    val addDeferred: FlagParser = flags => _ => flags | Deferred
+    val parseMethod: FlagParser = { mods0 => implicit ctx =>
+      var mods = EmptyTastyFlags
+      if (mods0.is(Erased)) erasedRefinementIsUnsupported[Unit]
+      if (mods0.isOneOf(Given | Implicit)) mods |= Implicit
+      mods
+    }
+
     object Creation {
       val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
       val ObjectClassDef: TastyFlagSet = Object | Final
       val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
-      val BoundedType: u.FlagSet = newSymbolFlagSet(Deferred)
     }
     def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
       flags | (inheritedAccess & (Private | Local | Protected))

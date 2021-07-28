@@ -20,6 +20,8 @@ import scala.reflect.internal.Variance
 import scala.util.chaining._
 
 import scala.collection.mutable
+import scala.collection.immutable.ArraySeq
+
 import scala.reflect.internal.Flags
 
 /**This layer adds factories that construct `scala.reflect` Types in the shapes that TASTy expects.
@@ -169,6 +171,13 @@ trait TypeOps { self: TastyUniverse =>
     private[bridge] def LocalSealedChildProxyInfo(parent: Symbol, tflags: TastyFlagSet)(implicit ctx: Context): Type =
       new LocalSealedChildProxyCompleter(parent, tflags)
 
+    private[bridge] def LambdaParamInfo(
+        tflags: TastyFlagSet,
+        idx: Int,
+        infoDb: Int => Type
+    )(implicit ctx: Context): Type =
+      new LambdaParamCompleter(tflags, idx, infoDb)
+
     def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
       case u.PolyType(tparams, tpe) =>
         val (bounds, alias) = OpaqueTypeToBounds(tpe)
@@ -271,6 +280,10 @@ trait TypeOps { self: TastyUniverse =>
       }
 
     }
+
+    def ParamRef(binder: Type, idx: Int): Type =
+      binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
+
   }
 
   private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: u.Scope): Type =
@@ -507,6 +520,16 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
+  private[TypeOps] final class LambdaParamCompleter(
+      flags: TastyFlagSet,
+      idx: Int,
+      infoDb: Int => Type,
+  )(implicit ctx: Context)
+      extends BaseTastyCompleter(flags) {
+    override def computeInfo(denot: Symbol)(implicit ctx: Context): Unit =
+      denot.info = infoDb(idx)
+  }
+
   abstract class BaseTastyCompleter(
       final val tflags: TastyFlagSet
   )(implicit capturedCtx: Context)
@@ -562,13 +585,6 @@ trait TypeOps { self: TastyUniverse =>
     case res                 => res
   }
 
-  abstract class LambdaTypeCompanion[N <: TastyName] {
-    def factory(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType
-
-    final def apply(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): Type =
-      factory(params)(registerCallback, paramInfosOp, resultTypeOp).canonical
-  }
-
   final class LambdaPolyType(typeParams: List[Symbol], val resType: Type) extends u.PolyType(typeParams, LambdaPolyType.addLower(resType)) {
     def toNested: u.PolyType = resType match {
       case _: u.TypeBounds => this
@@ -604,75 +620,232 @@ trait TypeOps { self: TastyUniverse =>
     if (sym.name == u.nme.CONSTRUCTOR) sym.owner.tpe
     else givenTp
 
-  private[TypeOps] type LambdaType = Type with Lambda
-  private[TypeOps] type TypeLambda = LambdaType with TypeLike
-  private[TypeOps] type TermLambda = LambdaType with TermLike
+  /** Lazy thread unsafe non-nullable value that can not be re-entered */
+  private[bridge] final class SyncRef[A](private var compute: () => A) {
+    private var out: A = _
+    private var entered: Boolean = false
 
-  private[TypeOps] trait TypeLike { self: Type with Lambda =>
-    type ThisTName = TastyName.TypeName
-    type ThisName  = u.TypeName
-  }
-
-  private[TypeOps] trait TermLike { self: Type with Lambda =>
-    type ThisTName = TastyName
-    type ThisName  = u.TermName
-    type PInfo     = Type
-  }
-
-  private[TypeOps] trait Lambda extends Product with Serializable { self: Type =>
-    type ThisTName <: TastyName
-    type ThisName <: u.Name
-    type This <: Type
-
-    val paramNames: List[ThisName]
-    val paramInfos: List[Type]
-    val resType: Type
-
-    def typeParams: List[Symbol] // deferred to final implementation
-
-    final protected def validateThisLambda(): Unit = {
-      assert(resType.isComplete, self)
-      assert(paramInfos.length == paramNames.length, self)
+    def apply(): A = {
+      if (entered) {
+        assert(out != null, "cyclic completion of SyncRef")
+      }
+      else {
+        entered = true
+        val result = compute()
+        compute = null
+        assert(result != null, "SyncRef is non-nullable")
+        out = result
+      }
+      out
     }
+  }
+
+  object MethodTermLambda extends TermLambdaFactory {
+
+    type ThisLambda = MethodTermLambda
+
+    protected def apply(
+        params: ArraySeq[TastyName],
+        flags: TastyFlagSet,
+        paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+        resultTypeOp: () => Type,
+        registerCallback: Type => Unit,
+    )(implicit ctx: Context): ThisLambda = {
+      new MethodTermLambda(params, paramInfosOp, resultTypeOp, flags, registerCallback)
+    }
+
+  }
+
+  private[TypeOps] final class MethodTermLambda(
+      paramTNames: ArraySeq[TastyName],
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type,
+      flags: TastyFlagSet,
+      registerCallback: Type => Unit,
+  )(implicit ctx: Context)
+      extends TermLambda("MethodTermLambda")(paramTNames, paramInfosOp, resultTypeOp, flags)(registerCallback) {
+
+    protected def canonical(ps: List[Symbol], res: Type): Type = u.MethodType(ps, res)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[MethodTermLambda]
+  }
+
+  object HKTypeLambda extends TypeLambdaFactory {
+
+    type ThisLambda = HKTypeLambda
+
+    protected def apply(
+        params: ArraySeq[TastyName.TypeName],
+        flags: TastyFlagSet,
+        paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+        resultTypeOp: () => Type,
+        registerCallback: Type => Unit,
+    )(implicit ctx: Context): ThisLambda = {
+      new HKTypeLambda(params, flags, paramInfosOp, resultTypeOp, registerCallback)
+    }
+  }
+
+  private[TypeOps] final class HKTypeLambda(
+      paramTNames: ArraySeq[TastyName.TypeName],
+      flags: TastyFlagSet,
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type,
+      registerCallback: Type => Unit
+  )(implicit ctx: Context)
+      extends TypeLambda("HKTypeLambda")(paramTNames, flags, paramInfosOp, resultTypeOp)(registerCallback) {
+
+    final override protected def normaliseResult(resType: Type): Type = lambdaResultType(resType)
+
+    protected def canonical(ps: List[Symbol], res: Type): Type = new LambdaPolyType(ps, res)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
+  }
+
+  object PolyTypeLambda extends TypeLambdaFactory {
+
+    type ThisLambda = PolyTypeLambda
+
+    protected def apply(
+        params: ArraySeq[TastyName.TypeName],
+        flags: TastyFlagSet,
+        paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+        resultTypeOp: () => Type,
+        registerCallback: Type => Unit,
+    )(implicit ctx: Context): ThisLambda = {
+      new PolyTypeLambda(params, flags, paramInfosOp, resultTypeOp, registerCallback)
+    }
+  }
+
+  private[TypeOps] final class PolyTypeLambda(
+      paramTNames: ArraySeq[TastyName.TypeName],
+      flags: TastyFlagSet,
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type,
+      registerCallback: Type => Unit
+  )(implicit ctx: Context)
+      extends TypeLambda("PolyTypeLambda")(paramTNames, flags, paramInfosOp, resultTypeOp)(registerCallback) {
+
+    protected def canonical(ps: List[Symbol], res: Type): Type = u.PolyType(ps, res)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[PolyTypeLambda]
+  }
+
+  private[TypeOps] abstract class TypeLambda(
+      kind: String)(
+      paramTNames: ArraySeq[TastyName.TypeName],
+      flags: TastyFlagSet,
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type)(
+      registerCallback: Type => Unit
+  )(implicit ctx: Context)
+      extends LambdaType(kind)(paramTNames, paramInfosOp, resultTypeOp, flags)(registerCallback) {
+    final override def typeParams: List[Symbol] = lambdaParams.toList
+    final protected def normaliseParam(info: Type): Type = normaliseIfBounds(info)
+  }
+
+  private[TypeOps] abstract class TermLambda(
+      kind: String)(
+      paramTNames: ArraySeq[TastyName],
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type,
+      flags: TastyFlagSet)(
+      registerCallback: Type => Unit
+  )(implicit ctx: Context)
+      extends LambdaType(kind)(paramTNames, paramInfosOp, resultTypeOp, flags)(registerCallback) {
+    final override def params: List[Symbol] = lambdaParams.toList
+    final protected def normaliseParam(info: Type): Type = info
+  }
+
+  private[TypeOps] abstract class LambdaType(
+      kind: String)(
+      paramTNames: ArraySeq[TastyName],
+      paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+      resultTypeOp: () => Type,
+      flags: TastyFlagSet)(
+      registerCallback: Type => Unit
+  )(implicit ctx: Context) extends AbstractLambdaType(kind) {
+
+    protected def normaliseParam(info: Type): Type
+    protected def normaliseResult(resType: Type): Type = resType
+
+    final val lambdaParams: ArraySeq[Symbol] = {
+      val paramInfoDb = new SyncRef(() => paramInfosOp(this.lambdaParams))
+      def infoAt(idx: Int) = normaliseParam(paramInfoDb()(idx))
+
+      paramTNames.zipWithIndex.map { case (tname, idx) =>
+        ctx.newLambdaParameter(tname, flags, idx, infoAt)
+      }
+    }
+
+    registerCallback(this)
+
+    final val resType: Type = normaliseResult(resultTypeOp())
+
+  }
+
+  private[TypeOps] abstract class AbstractLambdaType(override val productPrefix: String)
+      extends Type
+         with Product
+         with Serializable {
+
+    def lambdaParams: ArraySeq[Symbol]
+    def resType: Type
+
+    final override def etaExpand: Type = {
+      lambdaParams.foreach(_.info) // force locally
+      canonical(lambdaParams.toList, resType)
+    }
+
+    protected def canonical(ps: List[Symbol], res: Type): Type
 
     override final def productArity: Int = 2
 
     override final def productElement(n: Int): Any = n match {
-      case 0 => paramNames
+      case 0 => lambdaParams
       case 1 => resType
       case _ => throw new IndexOutOfBoundsException(n.toString)
     }
 
-    def canEqual(that: Any): Boolean = that.isInstanceOf[Lambda]
-
-    def canonical: This
-
     override final def equals(that: Any): Boolean = that match {
-      case that: Lambda =>
+      case that: AbstractLambdaType =>
         (that.canEqual(self)
-          && that.paramNames == paramNames
-          && that.resType    == resType)
+          && that.lambdaParams == lambdaParams
+          && that.resType == resType)
       case _ => false
     }
+
   }
 
-  object HKTypeLambda extends TypeLambdaCompanion {
-    def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
-        paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
-      new HKTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
+  abstract class LambdaFactory[N <: TastyName] {
+
+    type ThisLambda <: LambdaType
+
+    protected def apply(
+        params: ArraySeq[N],
+        flags: TastyFlagSet,
+        paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+        resultTypeOp: () => Type,
+        registerCallback: Type => Unit,
+    )(implicit ctx: Context): ThisLambda
+
   }
 
-  object PolyType extends TypeLambdaCompanion {
-    def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
-         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
-      new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
+  object LambdaFactory {
+    final def parse[N <: TastyName](
+        factory: LambdaFactory[N],
+        params: ArraySeq[N],
+        flags: TastyFlagSet)(
+        paramInfosOp: ArraySeq[Symbol] => ArraySeq[Type],
+        resultTypeOp: () => Type,
+        registerCallback: Type => Unit,
+    )(implicit ctx: Context): Type =
+      factory(params, flags, paramInfosOp, resultTypeOp, registerCallback)
+        .etaExpand // turn the LambdaType into something the compiler understands
+        .tap(registerCallback) // we should replace the type at start as it has been expanded
   }
 
-  final class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
-    def factory(params: List[TastyName])(registerCallback: Type => Unit,
-        paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
-      new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
-  }
+  abstract class TermLambdaFactory extends LambdaFactory[TastyName]
+  abstract class TypeLambdaFactory extends LambdaFactory[TastyName.TypeName]
 
   def recThis(tpe: Type): Type = tpe.asInstanceOf[RecType].recThis
   def symOfTypeRef(tpe: Type): Symbol = tpe.asInstanceOf[u.TypeRef].sym
@@ -696,97 +869,6 @@ trait TypeOps { self: TastyUniverse =>
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def safeToString: String = s"RecType(rt @ $hashCode => ${if (parent == null) "<under-construction>" else parent})"
 
-  }
-
-  def methodTypeCompanion(initialFlags: TastyFlagSet): MethodTypeCompanion = new MethodTypeCompanion(initialFlags)
-
-  abstract class TermLambdaCompanion
-    extends LambdaTypeCompanion[TastyName]
-
-  abstract class TypeLambdaCompanion
-    extends LambdaTypeCompanion[TastyName.TypeName]
-
-  private[TypeOps] final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: TastyFlagSet)(registerCallback: MethodTermLambda => Unit,
-    paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
-  extends Type with Lambda with TermLike { methodLambda =>
-    type This = u.MethodType
-
-    val paramNames: List[u.TermName] = paramTNames.map(encodeTermName)
-
-    override val productPrefix = "MethodTermLambda"
-
-    registerCallback(this)
-
-    val paramInfos: List[Type] = paramInfosOp()
-
-    override val params: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) =>
-        ctx.owner.newValueParameter(name, u.NoPosition, newSymbolFlagSet(defaultFlags)).setInfo(argInfo)
-    }
-
-    val resType: Type = resultTypeOp()
-
-    validateThisLambda()
-
-    def canonical: u.MethodType = u.MethodType(params, resType)
-
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[MethodTermLambda]
-  }
-
-  private[TypeOps] final class HKTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: HKTypeLambda => Unit,
-    paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
-  extends Type with Lambda with TypeLike {
-
-    type This = LambdaPolyType
-    val paramNames: List[u.TypeName] = paramTNames.map(encodeTypeName)
-
-    override val productPrefix = "HKTypeLambda"
-
-    registerCallback(this)
-
-    val paramInfos: List[Type] = paramInfosOp()
-
-    override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, bounds) =>
-        val argInfo = normaliseIfBounds(bounds)
-        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
-    }
-
-    val resType: Type = lambdaResultType(resultTypeOp())
-
-    validateThisLambda()
-
-    def canonical: LambdaPolyType = new LambdaPolyType(typeParams, resType)
-
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
-  }
-
-  private[TypeOps] final class PolyTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: PolyTypeLambda => Unit,
-    paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
-  extends Type with Lambda with TypeLike {
-
-    type This = u.PolyType
-
-    val paramNames: List[u.TypeName] = paramTNames.map(encodeTypeName)
-
-    override val productPrefix = "PolyTypeLambda"
-
-    registerCallback(this)
-
-    val paramInfos: List[Type] = paramInfosOp()
-
-    override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) =>
-        ctx.owner.newTypeParameter(name, u.NoPosition, FlagSets.Creation.BoundedType).setInfo(argInfo)
-    }
-
-    val resType: Type = resultTypeOp() // potentially need to flatten? (probably not, happens in typer in dotty)
-
-    validateThisLambda()
-
-    def canonical: u.PolyType = u.PolyType(typeParams, resType)
-
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[PolyTypeLambda]
   }
 
 }

@@ -156,6 +156,11 @@ trait ContextOps { self: TastyUniverse =>
 
   final case class TraceInfo[-T](query: String, qual: String, res: T => String, modifiers: List[String] = Nil)
 
+  trait TraceFrame {
+    def parent: TraceFrame
+    def id: String
+  }
+
   /**Maintains state through traversal of a TASTy file, such as the outer scope of the defintion being traversed, the
    * traversal mode, and the root owners and source path for the TASTy file.
    * It also provides all operations for manipulation of the symbol table, such as creating/updating symbols and
@@ -205,17 +210,17 @@ trait ContextOps { self: TastyUniverse =>
 
     @inline final def trace[T](info: => TraceInfo[T])(op: => T): T = {
 
-      def withTrace(info: => TraceInfo[T], op: => T)(traceId: String): T = {
-        val i = info
+      def addInfo(i: TraceInfo[T], op: => T)(frame: TraceFrame): T = {
+        val id0 = frame.id
         val modStr = (
           if (i.modifiers.isEmpty) ""
           else " " + green(i.modifiers.mkString("[", ",", "]"))
         )
-        logImpl(s"${yellow(s"$traceId")} ${cyan(s"<<< ${i.query}:")} ${magenta(i.qual)}$modStr")
-        op.tap(eval => logImpl(s"${yellow(s"$traceId")} ${cyan(s">>>")} ${magenta(i.res(eval))}$modStr"))
+        logImpl(s"${yellow(id0)} ${cyan(s"<<< ${i.query}:")} ${magenta(i.qual)}$modStr")
+        op.tap(eval => logImpl(s"${yellow(id0)} ${cyan(s">>>")} ${magenta(i.res(eval))}$modStr"))
       }
 
-      if (u.settings.YdebugTasty) initialContext.addFrame(withTrace(info, op))
+      if (u.settings.YdebugTasty) initialContext.subTrace(addInfo(info, op))
       else op
     }
 
@@ -279,6 +284,16 @@ trait ContextOps { self: TastyUniverse =>
         flags = tflags,
         info = defn.LocalSealedChildProxyInfo(cls, tflags),
         privateWithin = u.NoSymbol
+      )
+    }
+
+    final def newLambdaParameter(tname: TastyName, flags: TastyFlagSet, idx: Int, infoDb: Int => Type): Symbol = {
+      val flags1 = flags | Param
+      unsafeNewSymbol(
+        owner = owner,
+        name  = tname,
+        flags = flags1,
+        info  = defn.LambdaParamInfo(flags1, idx, infoDb)
       )
     }
 
@@ -594,32 +609,32 @@ trait ContextOps { self: TastyUniverse =>
     def mode: TastyMode = EmptyTastyMode
     def owner: Symbol = topLevelClass.owner
 
-    private class TraceFrame(val id: Int, val next: TraceFrame) {
+    private class TraceFrameImpl(val worker: Int, val parent: TraceFrameImpl) extends TraceFrame {
 
       var nextChild: Int = 0
 
-      def show: String = {
-        val buf = mutable.ArrayDeque.empty[String]
+      val id: String = {
+        val buf = mutable.ArrayDeque.empty[Int]
         var cur = this
-        while (cur.id != -1) {
-          buf.prepend(cur.id.toString)
-          cur = cur.next
+        while (cur.worker != -1) {
+          buf.prepend(cur.worker)
+          cur = cur.parent
         }
         buf.mkString("[", " ", ")")
       }
 
     }
 
-    private[this] var _trace: TraceFrame = new TraceFrame(id = -1, next = null)
+    private[this] var _trace: TraceFrameImpl = new TraceFrameImpl(worker = -1, parent = null)
 
-    private[ContextOps] def addFrame[T](op: String => T): T = {
-      val oldFrame  = _trace
-      val newFrame = new TraceFrame(id = oldFrame.nextChild, next = oldFrame)
-      _trace = newFrame
-      try op(newFrame.show)
+    private[ContextOps] def subTrace[T](op: TraceFrame => T): T = {
+      val parent = _trace
+      val child = new TraceFrameImpl(worker = parent.nextChild, parent)
+      _trace = child
+      try op(child)
       finally {
-        _trace = oldFrame
-        _trace.nextChild += 1
+        parent.nextChild += 1
+        _trace = parent
       }
     }
 

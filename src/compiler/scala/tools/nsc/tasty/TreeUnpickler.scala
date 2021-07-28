@@ -21,6 +21,7 @@ import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.reflect.internal.Variance
 import scala.util.chaining._
+import scala.collection.immutable.ArraySeq
 
 /**`TreeUnpickler` is responsible for traversing all trees in the "ASTs" section of a TASTy file, which represent the
  * definitions inside the classfile associated with the root class/module. `TreeUnpickler` will enter the public api
@@ -220,7 +221,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Read names in an interleaved sequence of types/bounds and (parameter) names,
       *  possibly followed by a sequence of modifiers.
       */
-    def readParamNamesAndMods(end: Addr): (List[TastyName], TastyFlagSet) = {
+    def readParamNamesAndMods(end: Addr): (ArraySeq[TastyName], TastyFlagSet) = {
       val names =
         collectWhile(currentAddr != end && !isModifierTag(nextByte)) {
           skipTree()
@@ -234,17 +235,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case GIVEN    => mods |= Given
         }
       }
-      (names, mods)
+      (names.to(ArraySeq), mods)
     }
 
     /** Read `n` parameter types or bounds which are interleaved with names */
-    def readParamTypes[T <: Type](n: Int)(implicit ctx: Context): List[T] = {
-      if (n == 0) Nil
-      else {
-        val t = readType().asInstanceOf[T]
-        readNat() // skip name
-        t :: readParamTypes(n - 1)
+    def readParamTypes(ps: ArraySeq[Symbol])(implicit ctx: Context): ArraySeq[Type] = {
+      def inner(ps1: Iterator[Symbol], buf: mutable.ArrayBuffer[Type]): ArraySeq[Type] = {
+        if (ps1.isEmpty) buf.to(ArraySeq)
+        else {
+          val p = ps1.next()
+          val rest = ps1
+          val localCtx = ctx.withOwner(p)
+          val t = readType()(localCtx)
+          readNat() // skip name
+          inner(rest, buf += t)
+        }
       }
+      inner(ps.iterator, new mutable.ArrayBuffer)
     }
 
     /** Read reference to definition and return symbol created at that definition */
@@ -332,18 +339,27 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readLengthType(): Type = {
         val end = readEnd()
 
-        def readMethodic[N <: TastyName]
-            (companionOp: TastyFlagSet => LambdaTypeCompanion[N], nameMap: TastyName => N)(implicit ctx: Context): Type = {
+        def readMethodic[N <: TastyName](
+            factory: LambdaFactory[N],
+            parseFlags: FlagSets.FlagParser,
+            nameMap: TastyName => N
+        )(implicit ctx: Context): Type = {
           val result = typeAtAddr.getOrElse(start, {
+            // TODO [tasty]: can we share LambdaTypes/RecType/RefinedType safely
+            // under a new context owner? (aka when referenced by a `SHAREDtype`).
+            // So far this has been safe to do, but perhaps with macros comparing the
+            // owners of the symbols of PolyTypes maybe not?
+            // one concrete example where TypeLambdaType is shared between two unrelated classes:
+            // - test/tasty/run/src-3/tastytest/issue12420/ShareLambda.scala
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
             val (paramNames, mods) = nameReader.readParamNamesAndMods(end)
-            companionOp(mods)(paramNames.map(nameMap))(
-              pt => typeAtAddr(start) = pt,
-              () => paramReader.readParamTypes(paramNames.length),
-              () => readType()
-            ).tap(typeAtAddr(start) = _)
+            LambdaFactory.parse(factory, paramNames.map(nameMap), parseFlags(mods)(ctx))(
+              ps => paramReader.readParamTypes(ps),
+              () => readType(),
+              pt => typeAtAddr(start) = pt, // register the lambda so that we can access its parameters
+            )
           })
           goto(end)
           result
@@ -382,18 +398,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case ORtype => unionIsUnsupported
             case SUPERtype => defn.SuperType(readType(), readType())
             case MATCHtype | MATCHCASEtype => matchTypeIsUnsupported
-            case POLYtype => readMethodic(Function.const(PolyType), _.toTypeName)
-            case METHODtype =>
-              def companion(mods0: TastyFlagSet) = {
-                var mods = EmptyTastyFlags
-                if (mods0.is(Erased)) erasedRefinementIsUnsupported[Unit]
-                if (mods0.isOneOf(Given | Implicit)) mods |= Implicit
-                methodTypeCompanion(mods)
-              }
-              readMethodic(companion, id)
-            case TYPELAMBDAtype => readMethodic(Function.const(HKTypeLambda), _.toTypeName)
-            case PARAMtype => // reference to a type parameter within a LambdaType
-              readTypeRef().typeParams(readNat()).ref
+            case POLYtype => readMethodic(PolyTypeLambda, FlagSets.addDeferred, _.toTypeName)
+            case METHODtype => readMethodic(MethodTermLambda, FlagSets.parseMethod, id)
+            case TYPELAMBDAtype => readMethodic(HKTypeLambda, FlagSets.addDeferred, _.toTypeName)
+            case PARAMtype => defn.ParamRef(readTypeRef(), readNat()) // reference to a parameter within a LambdaType
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
