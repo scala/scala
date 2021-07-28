@@ -42,7 +42,7 @@ object Compat {
     } catch { case _: Throwable => null }
 
     private object Reflective extends OriginalTreeTraverser {
-      private[this] val ct = scala.reflect.ClassTag(cls)
+      private[this] val ct = scala.reflect.ClassTag[AnyRef](cls)
       private[this] val meth = cls.getMethod("original")
       def traverseOriginal[T <: Global#Tree](t: T)(f: T => Unit): Unit =
         t.attachments.get(ct) match {
