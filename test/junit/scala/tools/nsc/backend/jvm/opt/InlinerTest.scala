@@ -1865,14 +1865,14 @@ class InlinerTest extends BytecodeTesting {
       ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE, // get length, init loop counter
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*25*/,     // check loop condition
       ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "consume", // load element, store into local, call body
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,    // increase loop counter, jump
-      -1 /*25*/, RETURN))
+      IINC, GOTO /*7*/,    // increase loop counter, jump
+      -1 /*26*/, RETURN))
 
     assertSameSummary(getMethod(c, "t2"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE,
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*24*/,
       ALOAD, ILOAD, AALOAD, "trim", POP,
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,
+      IINC, GOTO /*8*/,
       -1 /*24*/, RETURN)
     )
   }
@@ -1891,14 +1891,14 @@ class InlinerTest extends BytecodeTesting {
       -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*39*/, // loop condition
       ALOAD, ILOAD, IALOAD, ICONST_1, IADD, ISTORE, // compute element
       ALOAD, ILOAD, ILOAD, IASTORE, // store element
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*14*/, // increase counter, jump
-      -1 /*39*/, ALOAD, ARETURN)
+      IINC, GOTO /*22*/, // increase counter, jump
+      -1 /*44*/, ALOAD, ARETURN)
     )
     assertSameSummary(getMethod(c, "t2"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*38*/, ICONST_0, ISTORE, // init new array, loop counter
       -1 /*15*/, ILOAD, ILOAD, IF_ICMPGE /*38*/, // loop condition
       ALOAD, ILOAD, AALOAD, "trim", ASTORE, ALOAD, ACONST_NULL, ASTORE, ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, ACONST_NULL, ASTORE, // compute and store element
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*15*/, // increase counter, jump
+      IINC, GOTO /*15*/, // increase counter, jump
       -1 /*38*/, ALOAD, ARETURN)
     )
   }

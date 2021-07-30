@@ -1,0 +1,18 @@
+def increment
+  iinc 1
+  iinc 54
+  iinc 127
+  iinc -1
+  iinc -54
+  iinc -128
+end increment
+def wideIncrement
+  iinc 128
+  iinc 8765
+  iinc 32767
+  iinc -129
+  iinc -8765
+  iinc -32768
+end wideIncrement
+def tooBigForIinc
+end tooBigForIinc
