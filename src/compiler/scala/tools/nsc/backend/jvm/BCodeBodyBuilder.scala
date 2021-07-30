@@ -79,9 +79,23 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Assign(lhs, rhs) =>
           val s = lhs.symbol
           val Local(tk, _, idx, _) = locals.getOrMakeLocal(s)
-          genLoad(rhs, tk)
-          lineNumber(tree)
-          bc.store(idx, tk)
+
+          rhs match {
+            case Apply(Select(larg: Ident, nme.ADD), Literal(x) :: Nil)
+            if larg.symbol == s && tk.isIntSizedType && x.isShortRange =>
+              lineNumber(tree)
+              bc.iinc(idx, x.intValue)
+
+            case Apply(Select(larg: Ident, nme.SUB), Literal(x) :: Nil)
+            if larg.symbol == s && tk.isIntSizedType && Constant(-x.intValue).isShortRange =>
+              lineNumber(tree)
+              bc.iinc(idx, -x.intValue)
+
+            case _ =>
+              genLoad(rhs, tk)
+              lineNumber(tree)
+              bc.store(idx, tk)
+          }
 
         case _ =>
           genLoad(tree, UNIT)
