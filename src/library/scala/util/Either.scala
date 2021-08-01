@@ -690,7 +690,7 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is `Left`.
      */
-    @deprecated("Use `Either.getOrElse` instead", "2.13.0")
+    @deprecated("Use `Either.toOption.get` instead", "2.13.0")
     def get: B = e match {
       case Right(b) => b
       case _        => throw new NoSuchElementException("Either.right.get on Left")
