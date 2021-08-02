@@ -19,7 +19,6 @@ import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.jdk.CollectionConverters._
 import scala.tools.nsc.util.Exceptional
-import scala.util.chaining._
 
 package object partest {
   type File         = java.io.File
@@ -180,17 +179,4 @@ package object partest {
   def isDebug                = sys.props.contains("partest.debug") || sys.env.contains("PARTEST_DEBUG")
   def debugSettings          = sys.props.getOrElse("partest.debug.settings", "")
   def log(msg: => Any): Unit = if (isDebug) Console.err.println(msg)
-
-  private val printable = raw"\p{Print}".r
-
-  def hexdump(s: String): Iterator[String] = {
-    var offset = 0
-    def hex(bytes: Array[Byte])   = bytes.map(b => f"$b%02x").mkString(" ")
-    def charFor(byte: Byte): Char = byte.toChar match { case c @ printable() => c ; case _ => '.' }
-    def ascii(bytes: Array[Byte]) = bytes.map(charFor).mkString
-    def format(bytes: Array[Byte]): String =
-      f"$offset%08x  ${hex(bytes.slice(0, 8))}%-24s ${hex(bytes.slice(8, 16))}%-24s |${ascii(bytes)}|"
-        .tap(_ => offset += bytes.length)
-    s.getBytes(codec.charSet).grouped(16).map(format)
-  }
 }

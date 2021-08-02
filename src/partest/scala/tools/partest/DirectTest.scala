@@ -45,6 +45,7 @@ abstract class DirectTest {
   protected def pathOf(locations: String*) = locations.mkString(sys.props("path.separator"))
 
   // override to add additional settings besides -d testOutput.path
+  // default is -usejavacp
   def extraSettings: String = "-usejavacp"
   // a default Settings object using only extraSettings
   def settings: Settings = newSettings(CommandLineParser.tokenize(extraSettings))

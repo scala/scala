@@ -723,6 +723,7 @@ lazy val junit = project.in(file("test") / "junit")
       "-feature",
       "-Xlint:-valpattern,_",
       "-Wconf:msg=match may not be exhaustive:s", // if we missed a case, all that happens is the test fails
+      "-Wconf:cat=lint-nullary-unit&site=.*Test:s", // normal unit test style
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
     ),
     Compile / javacOptions ++= Seq("-Xlint"),

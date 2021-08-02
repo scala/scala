@@ -110,4 +110,10 @@ class AssertUtilTest {
     assertEquals(1, sut.errors.size)
     assertEquals(0, sut.errors.head._2.getSuppressed.length)
   }
+
+  /** TODO
+  @Test def `hexdump is supplementary-aware`: Unit = {
+    assertEquals("00000000  f0 90 90 80                                       |𐐀.|", hexdump("\ud801\udc00").next())
+  }
+  */
 }

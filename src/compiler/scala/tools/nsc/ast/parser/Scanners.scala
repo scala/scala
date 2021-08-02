@@ -172,7 +172,45 @@ trait Scanners extends ScannersCommon {
     /** A switch whether operators at the start of lines can be infix operators. */
     private var allowLeadingInfixOperators = true
 
-    private def isDigit(c: Char) = java.lang.Character isDigit c
+    private def isDigit(c: Char) = Character.isDigit(c)
+
+    import Character.{isHighSurrogate, isLowSurrogate, isUnicodeIdentifierPart, isUnicodeIdentifierStart, isValidCodePoint, toCodePoint}
+
+    // given char (ch) is high surrogate followed by low, codepoint passes predicate.
+    // true means supplementary chars were put to buffer.
+    // strict to require low surrogate (if not in string literal).
+    private def isSupplementary(high: Char, test: Int => Boolean, strict: Boolean = true): Boolean =
+      isHighSurrogate(high) && {
+        var res = false
+        nextChar()
+        val low = ch
+        if (isLowSurrogate(low)) {
+          nextChar()
+          val codepoint = toCodePoint(high, low)
+          if (isValidCodePoint(codepoint) && test(codepoint)) {
+            putChar(high)
+            putChar(low)
+            res = true
+          } else
+            syntaxError(f"illegal character '\\u$high%04x\\u$low%04x'")
+        } else if (!strict) {
+          putChar(high)
+          res = true
+        } else
+          syntaxError(f"illegal character '\\u$high%04x' missing low surrogate")
+        res
+      }
+    private def atSupplementary(ch: Char, f: Int => Boolean): Boolean =
+      isHighSurrogate(ch) && {
+        val hi = ch
+        val r = lookaheadReader
+        r.nextRawChar()
+        val lo = r.ch
+        isLowSurrogate(lo) && {
+          val codepoint = toCodePoint(hi, lo)
+          isValidCodePoint(codepoint) && f(codepoint)
+        }
+      }
 
     private var openComments = 0
     final protected def putCommentChar(): Unit = { processCommentChar(); nextChar() }
@@ -705,14 +743,18 @@ trait Scanners extends ScannersCommon {
                   syntaxError("empty character literal (use '\\'' for single quote)")
                 else {
                   nextChar()
-                  token = CHARLIT
-                  setStrVal()
+                  if (cbuf.length != 1)
+                    syntaxError("illegal codepoint in Char constant: " + cbuf.toString.map(c => f"\\u$c%04x").mkString("'", "", "'"))
+                  else {
+                    token = CHARLIT
+                    setStrVal()
+                  }
                 }
-              } else if (isEmptyCharLit) {
-                syntaxError("empty character literal")
-              } else {
-                unclosedCharLit()
               }
+              else if (isEmptyCharLit)
+                syntaxError("empty character literal")
+              else
+                unclosedCharLit()
             }
             else unclosedCharLit()
           }
@@ -755,7 +797,7 @@ trait Scanners extends ScannersCommon {
             } else if (ch == '\u2190') {
               deprecationWarning("The unicode arrow `←` is deprecated, use `<-` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
               nextChar(); token = LARROW
-            } else if (Character.isUnicodeIdentifierStart(ch)) {
+            } else if (isUnicodeIdentifierStart(ch)) {
               putChar(ch)
               nextChar()
               getIdentRest()
@@ -763,8 +805,10 @@ trait Scanners extends ScannersCommon {
               putChar(ch)
               nextChar()
               getOperatorRest()
+            } else if (isSupplementary(ch, isUnicodeIdentifierStart)) {
+              getIdentRest()
             } else {
-              syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch.toInt)) + "'")
+              syntaxError(f"illegal character '\\u$ch%04x'")
               nextChar()
             }
           }
@@ -831,13 +875,15 @@ trait Scanners extends ScannersCommon {
       case SU => // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
         finishNamed()
       case _ =>
-        if (Character.isUnicodeIdentifierPart(ch)) {
+        if (isUnicodeIdentifierPart(ch)) {
           putChar(ch)
           nextChar()
           getIdentRest()
-        } else {
-          finishNamed()
         }
+        else if (isSupplementary(ch, isUnicodeIdentifierPart))
+          getIdentRest()
+        else
+          finishNamed()
     }
 
     @tailrec
@@ -955,6 +1001,25 @@ trait Scanners extends ScannersCommon {
         }
         getStringPart(multiLine, seenEscapedQuote || q)
       } else if (ch == '$') {
+        @tailrec def getInterpolatedIdentRest(): Unit =
+          if (ch != SU && isUnicodeIdentifierPart(ch)) {
+            putChar(ch)
+            nextRawChar()
+            getInterpolatedIdentRest()
+          } else if (atSupplementary(ch, isUnicodeIdentifierPart)) {
+            putChar(ch)
+            nextRawChar()
+            putChar(ch)
+            nextRawChar()
+            getInterpolatedIdentRest()
+          } else {
+            next.token = IDENTIFIER
+            next.name = newTermName(cbuf.toCharArray)
+            cbuf.clear()
+            val idx = next.name.start - kwOffset
+            if (idx >= 0 && idx < kwArray.length)
+              next.token = kwArray(idx)
+          }
         nextRawChar()
         if (ch == '$' || ch == '"') {
           putChar(ch)
@@ -968,32 +1033,29 @@ trait Scanners extends ScannersCommon {
           finishStringPart()
           nextRawChar()
           next.token = USCORE
-        } else if (Character.isUnicodeIdentifierStart(ch)) {
+        } else if (isUnicodeIdentifierStart(ch)) {
           finishStringPart()
-          do {
-            putChar(ch)
-            nextRawChar()
-          } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
-          next.token = IDENTIFIER
-          next.name = newTermName(cbuf.toString)
-          cbuf.clear()
-          val idx = next.name.start - kwOffset
-          if (idx >= 0 && idx < kwArray.length) {
-            next.token = kwArray(idx)
-          }
+          putChar(ch)
+          nextRawChar()
+          getInterpolatedIdentRest()
+        } else if (atSupplementary(ch, isUnicodeIdentifierStart)) {
+          finishStringPart()
+          putChar(ch)
+          nextRawChar()
+          putChar(ch)
+          nextRawChar()
+          getInterpolatedIdentRest()
         } else {
           val expectations = "$$, $\", $identifier or ${expression}"
           syntaxError(s"invalid string interpolation $$$ch, expected: $expectations")
         }
       } else {
         val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))
-        if (isUnclosedLiteral) {
+        if (isUnclosedLiteral)
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
-          else {
+          else
             unclosedStringLit(seenEscapedQuote)
-          }
-        }
         else {
           putChar(ch)
           nextRawChar()
@@ -1027,53 +1089,38 @@ trait Scanners extends ScannersCommon {
         false
       }
 
-    /** copy current character into cbuf, interpreting any escape sequences,
-     *  and advance to next character.
+    /** Copy current character into cbuf, interpreting any escape sequences,
+     *  and advance to next character. Surrogate pairs are consumed (see check
+     *  at fetchSingleQuote), but orphan surrogate is allowed.
      */
     protected def getLitChar(): Unit =
       if (ch == '\\') {
         nextChar()
-        if ('0' <= ch && ch <= '7') {
-          val start = charOffset - 2
-          val leadch: Char = ch
-          var oct: Int = digit2int(ch, 8)
-          nextChar()
-          if ('0' <= ch && ch <= '7') {
-            oct = oct * 8 + digit2int(ch, 8)
-            nextChar()
-            if (leadch <= '3' && '0' <= ch && ch <= '7') {
-              oct = oct * 8 + digit2int(ch, 8)
-              nextChar()
-            }
-          }
-          val alt = if (oct == LF) "\\n" else "\\u%04x" format oct
-          syntaxError(start, s"octal escape literals are unsupported: use $alt instead")
-          putChar(oct.toChar)
-        } else {
-          if (ch == 'u') {
-            if (getUEscape()) nextChar()
-          }
-          else {
-            ch match {
-              case 'b'  => putChar('\b')
-              case 't'  => putChar('\t')
-              case 'n'  => putChar('\n')
-              case 'f'  => putChar('\f')
-              case 'r'  => putChar('\r')
-              case '\"' => putChar('\"')
-              case '\'' => putChar('\'')
-              case '\\' => putChar('\\')
-              case _    => invalidEscape()
-            }
-            nextChar()
-          }
-        }
-      } else  {
+        charEscape()
+      } else if (!isSupplementary(ch, _ => true, strict = false)) {
         putChar(ch)
         nextChar()
       }
 
-    private def getUEscape(): Boolean = {
+    private def charEscape(): Unit = {
+      var bump = true
+      ch match {
+        case 'b'  => putChar('\b')
+        case 't'  => putChar('\t')
+        case 'n'  => putChar('\n')
+        case 'f'  => putChar('\f')
+        case 'r'  => putChar('\r')
+        case '\"' => putChar('\"')
+        case '\'' => putChar('\'')
+        case '\\' => putChar('\\')
+        case 'u'  => bump = uEscape()
+        case x if '0' <= x && x <= '7' => bump = octalEscape()
+        case _    => invalidEscape()
+      }
+      if (bump) nextChar()
+    }
+
+    private def uEscape(): Boolean = {
       while (ch == 'u') nextChar()
       var codepoint = 0
       var digitsRead = 0
@@ -1094,7 +1141,25 @@ trait Scanners extends ScannersCommon {
       putChar(found)
       true
     }
-    
+
+    private def octalEscape(): Boolean = {
+      val start = charOffset - 2
+      val leadch: Char = ch
+      var oct: Int = digit2int(ch, 8)
+      nextChar()
+      if ('0' <= ch && ch <= '7') {
+        oct = oct * 8 + digit2int(ch, 8)
+        nextChar()
+        if (leadch <= '3' && '0' <= ch && ch <= '7') {
+          oct = oct * 8 + digit2int(ch, 8)
+          nextChar()
+        }
+      }
+      val alt = if (oct == LF) "\\n" else f"\\u$oct%04x"
+      syntaxError(start, s"octal escape literals are unsupported: use $alt instead")
+      putChar(oct.toChar)
+      false
+    }
 
     protected def invalidEscape(): Unit = {
       syntaxError(charOffset - 1, "invalid escape character")

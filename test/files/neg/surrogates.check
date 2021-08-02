@@ -1,0 +1,4 @@
+surrogates.scala:3: error: illegal codepoint in Char constant: '\ud801\udc00'
+  def `too wide for Char` = '𐐀'
+                            ^
+1 error
