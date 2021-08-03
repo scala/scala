@@ -34,6 +34,5 @@ abstract class TastyCore { self: TastyUniverse =>
   private val Identity = (x: Any) => x
 
   def id[T]: T => T = Identity.asInstanceOf[T => T]
-  def map[T, U](ts: List[T], f: T => U): List[U] = if (f `eq` Identity) ts.asInstanceOf[List[U]] else ts.map(f)
 
 }

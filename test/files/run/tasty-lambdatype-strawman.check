@@ -1,0 +1,3 @@
+PolyType([B => TypeBounds(NothingType, AppliedType(ParamRef(CC), [IntType])), CC => PolyType([_ => TypeBounds(NothingType, AnyType)], AnyType)], AppliedType(NamedRef(Bar), [ParamRef(B), ParamRef(CC)]))
+
+there was a cycle in creating Delta type constructor
