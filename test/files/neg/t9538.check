@@ -1,0 +1,13 @@
+t9538.scala:9: error: Option[String] is not a valid result type of an unapplySeq method of an extractor.
+  def f(x: Any) = x match { case X(y, z) => }
+                                 ^
+t9538.scala:10: error: Option[(Int, Int, Int)] is not a valid result type of an unapplySeq method of an extractor.
+  def g0(x: Any) = x match { case Y() => }
+                                  ^
+t9538.scala:11: error: Option[(Int, Int, Int)] is not a valid result type of an unapplySeq method of an extractor.
+  def g1(x: Any) = x match { case Y(y) => }
+                                  ^
+t9538.scala:12: error: Option[(Int, Int, Int)] is not a valid result type of an unapplySeq method of an extractor.
+  def g2(x: Any) = x match { case Y(y,z) => }
+                                  ^
+4 errors

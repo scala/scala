@@ -16,9 +16,10 @@ package nsc
 package transform
 package patmat
 
-import scala.tools.nsc.typechecker.Contexts
 import scala.reflect.internal.util
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.typechecker.Contexts
+import scala.util.chaining._
 
 /** An 'extractor' can be a case class or an unapply or unapplySeq method.
   *
@@ -205,15 +206,17 @@ trait PatternExpansion {
       if (isUnapply || equivConstrParamTypes.isEmpty) notRepeated
       else {
         val lastParamTp = equivConstrParamTypes.last
-        if (isUnapplySeq) {
-          val elementTp = elementTypeFromApply(lastParamTp)
-          (elementTp, scalaRepeatedType(elementTp))
-        } else {
+        if (isUnapplySeq)
+          elementTypeFromApply(lastParamTp) match {
+            case NoType    => notRepeated.tap(_ =>
+              err(s"${unapplyResultType()} is not a valid result type of an unapplySeq method of an extractor."))
+            case elementTp => (elementTp, scalaRepeatedType(elementTp))
+          }
+        else
           definitions.elementType(RepeatedParamClass, lastParamTp) match {
-            case NoType => notRepeated
+            case NoType    => notRepeated
             case elementTp => (elementTp, lastParamTp)
           }
-        }
       }
 
     // errors & warnings
@@ -248,10 +251,11 @@ trait PatternExpansion {
 
     // emit error/warning on mismatch
     if (isStar && !isSeq) err("Star pattern must correspond with varargs or unapplySeq")
-    else if (equivConstrParamTypes == List(NoType) && unapplyResultType().isNothing)
-      err(s"${fun.symbol.owner} can't be used as an extractor: The result type of an ${fun.symbol.name} method may not be Nothing")
     else if (equivConstrParamTypes == List(NoType))
-      err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultType()}")
+      if (unapplyResultType().isNothing)
+        err(s"${fun.symbol.owner} can't be used as an extractor: The result type of an ${fun.symbol.name} method may not be Nothing")
+      else
+        err(s"The result type of an ${fun.symbol.name} method must contain a member `get` to be used as an extractor pattern, no such member exists in ${unapplyResultType()}")
     else if (elementArity < 0) arityError("not enough")
     else if (elementArity > 0 && !isSeq) arityError("too many")
     else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn(
