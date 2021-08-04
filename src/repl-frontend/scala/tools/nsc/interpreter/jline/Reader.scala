@@ -185,7 +185,7 @@ object Reader {
       // VIINS, VICMD, EMACS
       val keymap = if (config.viMode) VIINS else EMACS
       reader.getKeyMaps.put(MAIN, reader.getKeyMaps.get(keymap));
-      keyMap.bind(new Reference(ScalaShowType.Name), KeyMap.ctrl('T'))
+      keyMap.bind(new Reference(ScalaShowType.Name), KeyMap.alt(KeyMap.ctrl('t')))
     }
     def secure(p: java.nio.file.Path): Unit = {
       try scala.reflect.internal.util.OwnerOnlyChmod.chmodFileOrCreateEmpty(p)
