@@ -94,7 +94,7 @@ trait LoopCommands {
     echo("")
     echo("Useful default key bindings:")
     echo("  TAB           code completion")
-    echo("  CTRL-SHIFT-T  type at cursor, hit again to see the code with all types/implicits inferred.")
+    echo("  CTRL-T        type at cursor, hit again to see the code with all types/implicits inferred.")
   }
   def ambiguousError(cmd: String): Result = {
     matchingCommands(cmd) match {
