@@ -219,15 +219,18 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  val namedYears = for (m <- namedDate findAllMatchIn dates) yield m group "year"
    *  }}}
    *
-   *  Group names supplied to the constructor are preferred to inline group names
-   *  when retrieving matched groups by name. Not all platforms support inline names.
+   *  Inline group names are preferred over group names supplied to the constructor
+   *  when retrieving matched groups by name. Group names supplied to the constructor
+   *  should be considered deprecated.
    *
    *  This constructor does not support options as flags, which must be
-   *  supplied as inline flags in the pattern string: `(?idmsux-idmsux)`.
+   *  supplied as inline flags in the pattern string: `(?idmsuxU)`.
    *
    *  @param regex      The regular expression to compile.
    *  @param groupNames Names of capturing groups.
    */
+  // we cannot add the alternative `def this(regex: String)` in a forward binary compatible way:
+  // @deprecated("use inline group names like (?<year>X) instead", "2.13.7")
   def this(regex: String, groupNames: String*) = this(Pattern.compile(regex), groupNames: _*)
 
   /** Tries to match a [[java.lang.CharSequence]].
@@ -396,7 +399,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
       def hasNext = matchIterator.hasNext
       def next(): Match = {
         matchIterator.next()
-        new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
+        new Match(matchIterator.source, matchIterator.matcher, matchIterator._groupNames).force
       }
     }
   }
@@ -621,6 +624,7 @@ object Regex {
     val source: CharSequence
 
     /** The names of the groups, or an empty sequence if none defined */
+    @deprecated("groupNames does not include inline group names, and should not be used anymore", "2.13.7")
     val groupNames: Seq[String]
 
     /** The number of capturing groups in the pattern.
@@ -687,7 +691,11 @@ object Regex {
       if (end(i) >= 0) source.subSequence(end(i), source.length)
       else null
 
-    private[this] lazy val nameToIndex: Map[String, Int] = Map[String, Int]() ++ ("" :: groupNames.toList).zipWithIndex
+    @scala.annotation.nowarn("msg=deprecated")
+    private def groupNamesNowarn: Seq[String] = groupNames
+
+    private[this] lazy val nameToIndex: Map[String, Int] =
+      Map[String, Int]() ++ ("" :: groupNamesNowarn.toList).zipWithIndex
 
     /** Returns the group with the given name.
      *
@@ -700,7 +708,7 @@ object Regex {
      *  @throws   IllegalArgumentException if the requested group name is not defined
      */
     def group(id: String): String = (
-      if (groupNames.isEmpty)
+      if (groupNamesNowarn.isEmpty)
         matcher group id
       else
         nameToIndex.get(id) match {
@@ -716,7 +724,10 @@ object Regex {
   /** Provides information about a successful match. */
   class Match(val source: CharSequence,
               protected[matching] val matcher: Matcher,
-              val groupNames: Seq[String]) extends MatchData {
+              _groupNames: Seq[String]) extends MatchData {
+
+    @deprecated("groupNames does not include inline group names, and should not be used anymore", "2.13.7")
+    val groupNames: Seq[String] = _groupNames
 
     /** The index of the first matched character. */
     val start: Int = matcher.start
@@ -791,8 +802,11 @@ object Regex {
    *
    *  @see [[java.util.regex.Matcher]]
    */
-  class MatchIterator(val source: CharSequence, val regex: Regex, val groupNames: Seq[String])
+  class MatchIterator(val source: CharSequence, val regex: Regex, private[Regex] val _groupNames: Seq[String])
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
+
+    @deprecated("groupNames does not include inline group names, and should not be used anymore", "2.13.7")
+    val groupNames: Seq[String] = _groupNames
 
     protected[Regex] val matcher = regex.pattern.matcher(source)
 
@@ -855,14 +869,14 @@ object Regex {
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
-      def next() = { self.next(); new Match(source, matcher, groupNames).force }
+      def next() = { self.next(); new Match(source, matcher, _groupNames).force }
     }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support. */
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
-      def next() = { self.next(); new Match(source, matcher, groupNames).force }
+      def next() = { self.next(); new Match(source, matcher, _groupNames).force }
     }
   }
 
