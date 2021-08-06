@@ -1,10 +1,8 @@
 package scala.tools.nsc
 package backend.jvm
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.reporters.StoreReporter
@@ -13,7 +11,6 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 
-@RunWith(classOf[JUnit4])
 class IndySammyTest extends BytecodeTesting {
   import compiler._
 

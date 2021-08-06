@@ -2,9 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
@@ -13,7 +11,6 @@ import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.testkit.AssertUtil.fail
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class InlinerIllegalAccessTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
 

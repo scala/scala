@@ -1,13 +1,10 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.{ Assert, Test }
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.collection.mutable
 
 /* Test for scala/bug#9095 */
-@RunWith(classOf[JUnit4])
 class LinkedHashSetTest {
   class TestClass extends mutable.LinkedHashSet[String] {
     def lastItemRef = lastEntry
@@ -17,9 +14,9 @@ class LinkedHashSetTest {
   def testClear(): Unit = {
     val lhs = new TestClass
     Seq("a", "b").foreach(k => lhs.add(k))
-    
-    Assert.assertNotNull(lhs.lastItemRef)
+
+    Assertions.assertNotNull(lhs.lastItemRef)
     lhs.clear()
-    Assert.assertNull(lhs.lastItemRef)
+    Assertions.assertNull(lhs.lastItemRef)
   }
 }

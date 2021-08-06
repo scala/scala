@@ -2,8 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.AbstractInsnNode
@@ -26,20 +26,20 @@ class ProdConsAnalyzerTest extends BytecodeTesting {
   }
 
   def testMultiInsns(insns: Iterable[AbstractInsnNode], expected: Iterable[String]): Unit = {
-    assertTrue(s"Sizes don't match: ${insns.size} vs ${expected.size}", insns.size == expected.size)
+    assertTrue(insns.size == expected.size, s"Sizes don't match: ${insns.size} vs ${expected.size}")
     for (insn <- insns) {
       val txt = prodToString(insn)
-      assertTrue(s"Instruction $txt not found in ${expected mkString ", "}", expected.exists(txt.contains))
+      assertTrue(expected.exists(txt.contains), s"Instruction $txt not found in ${expected mkString ", "}")
     }
   }
 
   def testInsn(insn: AbstractInsnNode, expected: String): Unit = {
     val txt = prodToString(insn)
-    assertTrue(s"Expected $expected, found $txt", txt contains expected)
+    assertTrue(txt contains expected, s"Expected $expected, found $txt")
   }
 
   def single[T](c: Iterable[T]): T = {
-    assertTrue(s"Expected singleton collection, got $c", c.size == 1)
+    assertTrue(c.size == 1, s"Expected singleton collection, got $c")
     c.head
   }
 

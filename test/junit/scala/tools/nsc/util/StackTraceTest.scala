@@ -3,12 +3,9 @@ package scala.tools.nsc.util
 
 import scala.util.{Failure, Success, Try}
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class StackTraceTest {
   val CausedBy   = "Caused by: "
   val Suppressed = "Suppressed: "

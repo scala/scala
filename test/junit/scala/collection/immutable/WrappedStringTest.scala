@@ -1,11 +1,8 @@
 package scala.collection.immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
-@RunWith(classOf[JUnit4])
 class WrappedStringTest {
 
   @Test // scala/bug#11518

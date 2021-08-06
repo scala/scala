@@ -1,7 +1,7 @@
 package scala.reflect.internal
 
-import org.junit.Test
-import org.junit.Assert.assertFalse
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertFalse
 
 import scala.reflect.internal.util.NoSourceFile
 import scala.tools.nsc.reporters.StoreReporter

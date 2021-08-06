@@ -1,8 +1,8 @@
 package scala.util
 
 import org.junit.Before
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 class PropertiesTest {
   final val TestProperty = "scala.util.PropertiesTest.__test_property__"
@@ -29,7 +29,7 @@ class PropertiesTest {
 
     var done = false
     assertEquals(Properties.propOrElse(TestProperty, { done = true; "bar" }), "foo")
-    assertFalse("Does not evaluate alt if not needed", done)
+    assertFalse(done, "Does not evaluate alt if not needed")
   }
 
   @Test
@@ -39,6 +39,6 @@ class PropertiesTest {
     var done = false
     val envName = System.getenv().keySet().iterator().next()
     assertNotEquals(Properties.envOrElse(envName, { done = true; "bar" }), "bar")
-    assertFalse("Does not evaluate alt if not needed", done)
+    assertFalse(done, "Does not evaluate alt if not needed")
   }
 }

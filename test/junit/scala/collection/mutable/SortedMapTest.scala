@@ -1,8 +1,8 @@
 package scala.collection
 package mutable
 
-import org.junit.Assert.{assertEquals, assertNotEquals}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertNotEquals}
+import org.junit.jupiter.api.Test
 
 class SortedMapTest {
   @Test

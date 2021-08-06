@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.{FileSystems, Files, Path}
 import java.util.jar.Attributes
 import java.util.jar.Attributes.Name
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.tools.nsc.{CloseableRegistry, Global, Settings}
 import scala.tools.testkit.{BytecodeTesting, ForDeletion}
@@ -42,8 +42,8 @@ class MultiReleaseJarTest extends BytecodeTesting {
         decls
       }
 
-      Assert.assertEquals(List("newApi", "oldApi"), declsOfC(temp1.path, "9"))
-      Assert.assertEquals(List("oldApi"), declsOfC(temp2.path, "8"))
+      Assertions.assertEquals(List("newApi", "oldApi"), declsOfC(temp1.path, "9"))
+      Assertions.assertEquals(List("oldApi"), declsOfC(temp2.path, "8"))
     }
   }
 
@@ -63,9 +63,9 @@ class MultiReleaseJarTest extends BytecodeTesting {
       rootMirror.getClassIfDefined(className) != NoSymbol
     }
     try {
-      Assert.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "8"))
-      Assert.assertFalse(lookup("java.lang.invoke.LambdaMetafactory", "7"))
-      Assert.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "9"))
+      Assertions.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "8"))
+      Assertions.assertFalse(lookup("java.lang.invoke.LambdaMetafactory", "7"))
+      Assertions.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "9"))
     } finally {
       cleanup.close()
     }

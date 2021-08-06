@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
@@ -14,7 +12,6 @@ import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.BytecodeTesting._
 import scala.tools.testkit.ClearAfterClass
 
-@RunWith(classOf[JUnit4])
 class UnreachableCodeTest extends ClearAfterClass {
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder

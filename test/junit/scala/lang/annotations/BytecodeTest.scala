@@ -1,7 +1,7 @@
 package scala.lang.annotations
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.tools.nsc.backend.jvm.AsmUtils
@@ -65,7 +65,7 @@ class BytecodeTest extends BytecodeTesting {
     def check(classfile: String, annotName: String) = {
       val f = (outfiles collect { case (`classfile`, bytes) => AsmUtils.readClass(bytes) }).head
       val descs = f.visibleAnnotations.asScala.map(_.desc).toList
-      assertTrue(descs.toString, descs exists (_ contains annotName))
+      assertTrue(descs exists (_ contains annotName), descs.toString)
     }
 
     check("A.class", "AnnotA")

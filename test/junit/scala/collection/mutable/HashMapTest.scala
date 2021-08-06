@@ -1,12 +1,9 @@
 package scala.collection
 package mutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class HashMapTest {
 
   @Test
@@ -260,6 +257,6 @@ class HashMapTest {
     val m = mutable.HashMap(
       0 -> 1, 1 -> 1, 2 -> 1, 3 -> 1, 4 -> 1, 5 -> 1, 6 -> 1, 7 -> 1, 8 -> 1, 9 -> 1, 241 -> 1)
       .mapValuesInPlace((_, _) => -1)
-    assertTrue(m.toString, m.forall(_._2 == -1))
+    assertTrue(m.forall(_._2 == -1), m.toString)
   }
 }

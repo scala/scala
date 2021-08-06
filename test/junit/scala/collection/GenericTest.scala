@@ -4,7 +4,7 @@ import mutable.Builder
 
 import scala.util.Try
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 trait Parse[A] {
   def parse(s: String): Option[A]

@@ -1,13 +1,10 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.{collection => c}
 import scala.collection.{immutable => i, mutable => m}
 
-@RunWith(classOf[JUnit4])
 class UnsortedTest {
   @Test
   def usortedIsSpecific(): Unit = {

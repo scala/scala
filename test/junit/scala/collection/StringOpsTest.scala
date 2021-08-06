@@ -1,13 +1,10 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
 import scala.tools.testkit.AssertUtil.assertThrows
 
 
-@RunWith(classOf[JUnit4])
 class StringOpsTest {
   // Test for scala/bug#10951
   @Test def mkstring(): Unit = {

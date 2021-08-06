@@ -1,14 +1,11 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.{Ignore, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertThrows => _, _}
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.tools.testkit.AllocationTest
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class HashSetTest extends AllocationTest {
 
   @Test
@@ -95,7 +92,7 @@ class HashSetTest extends AllocationTest {
     })
   }
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingUnionEqual(): Unit = {
     val base1 = generate()
     val base2 = generate()
@@ -105,7 +102,7 @@ class HashSetTest extends AllocationTest {
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingPlusPlusEqual(): Unit = {
     val base1 = generate()
     val base2 = generate()
@@ -149,7 +146,7 @@ class HashSetTest extends AllocationTest {
     })
   }
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingUnionSubsetShared(): Unit = {
     val base1 = generate()
     val base2 = base1 - base1.head
@@ -159,7 +156,7 @@ class HashSetTest extends AllocationTest {
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingPlusPlusSubsetShared(): Unit = {
     val base1 = generate()
     val base2 = base1 - base1.head
@@ -167,8 +164,9 @@ class HashSetTest extends AllocationTest {
       base1 ++ base2
     })
   }
+
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingUnionSubsetUnshared(): Unit = {
     val base1 = generate()
     val base2 = generate() - base1.head
@@ -178,7 +176,7 @@ class HashSetTest extends AllocationTest {
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingPlusPlusSubsetUnshared(): Unit = {
     val base1 = generate()
     val base2 = generate() - base1.head
@@ -186,8 +184,9 @@ class HashSetTest extends AllocationTest {
       base1 ++ base2
     })
   }
+
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingUnionSupersetShared(): Unit = {
     val base1 = generate()
     val base2 = base1 + "Mike"
@@ -197,7 +196,7 @@ class HashSetTest extends AllocationTest {
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingPlusPlusSupersetShared(): Unit = {
     val base1 = generate()
     val base2 = base1 + "Mike"
@@ -205,8 +204,9 @@ class HashSetTest extends AllocationTest {
       base1 ++ base2
     })
   }
+
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingUnionSupersetUnshared(): Unit = {
     val base1 = generate()
     val base2 = generate() + "Mike"
@@ -216,7 +216,7 @@ class HashSetTest extends AllocationTest {
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def nonAllocatingPlusPlusSupersetUnshared(): Unit = {
     val base1 = generate()
     val base2 = generate() + "Mike"
@@ -237,7 +237,7 @@ class HashSetTest extends AllocationTest {
 
     override def toString: String = s"$hashCode-$other"
   }
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   @Test def collidingAdd(): Unit = {
     val initial = generateWithCollisions(1, 1000)
     assertEquals(1000, initial.size)

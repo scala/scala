@@ -1,7 +1,7 @@
 package scala.util
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 import scala.annotation.unused
 import scala.reflect.ClassTag
@@ -786,7 +786,7 @@ object UsingTest {
   case object IgnoresSuppressed extends SuppressionBehavior
 
   def assertThrowableClass[T <: Throwable: ClassTag](t: Throwable): Unit = {
-    assertEquals(s"Caught [${t.getMessage}]", implicitly[ClassTag[T]].runtimeClass, t.getClass)
+    assertEquals(implicitly[ClassTag[T]].runtimeClass, t.getClass, s"Caught [${t.getMessage}]")
   }
 
   def assertSingleSuppressed[T <: Throwable: ClassTag](t: Throwable): Unit = {

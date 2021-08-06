@@ -1,9 +1,7 @@
 package scala.tools.nsc.backend.jvm
 
-import org.junit.{Ignore, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.jdk.CollectionConverters._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -16,7 +14,6 @@ class Collector extends NestedClassesCollector[String](nestedOnly = false) {
     throw e.getOrElse(new Exception(msg + " " + sig))
 }
 
-@RunWith(classOf[JUnit4])
 class NestedClassesCollectorTest {
   val c = new Collector {
     override def visitInternalName(internalName: String, offset: Int, length: Int): Unit = {
@@ -103,7 +100,7 @@ class NestedClassesCollectorTest {
   }
 
   @Test
-  @Ignore("manually run test")
+  @Disabled("manually run test")
   def rtJar(): Unit = {
     import java.nio.file._
     val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/rt.jar")
@@ -119,7 +116,7 @@ class NestedClassesCollectorTest {
   }
 
   @Test
-  @Ignore("manually run test")
+  @Disabled("manually run test")
   def allJars(): Unit = {
     // for i in $(find /Users/jz/.ivy2/cache -name jars); do find $i -name '*.jar' | head -1; done > /tmp/jars.txt
     import java.nio.file._

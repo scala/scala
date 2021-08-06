@@ -1,7 +1,7 @@
 package scala.runtime;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.lang.invoke.*;
@@ -15,19 +15,19 @@ public final class LambdaDeserializerTest {
     @Test
     public void serializationPrivate() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByPrivateImplMethod();
-        Assert.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
+        Assertions.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
     }
 
     @Test
     public void serializationStatic() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByStaticImplMethod();
-        Assert.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
+        Assertions.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
     }
 
     @Test
     public void serializationVirtualMethodReference() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByVirtualMethodReference();
-        Assert.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
+        Assertions.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
     }
 
     @Test
@@ -35,19 +35,19 @@ public final class LambdaDeserializerTest {
         F1<I, Object> f1 = lambdaHost.lambdaBackedByInterfaceMethodReference();
         I i = new I() {
         };
-        Assert.assertEquals(f1.apply(i), reconstitute(f1).apply(i));
+        Assertions.assertEquals(f1.apply(i), reconstitute(f1).apply(i));
     }
 
     @Test
     public void serializationStaticMethodReference() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByStaticMethodReference();
-        Assert.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
+        Assertions.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
     }
 
     @Test
     public void serializationNewInvokeSpecial() {
         F0<Object> f1 = lambdaHost.lambdaBackedByConstructorCall();
-        Assert.assertEquals(f1.apply(), reconstitute(f1).apply());
+        Assertions.assertEquals(f1.apply(), reconstitute(f1).apply());
     }
 
     @Test
@@ -55,7 +55,7 @@ public final class LambdaDeserializerTest {
         F0<Object> f1 = lambdaHost.lambdaBackedByConstructorCall();
         F0<Object> reconstituted1 = reconstitute(f1);
         F0<Object> reconstituted2 = reconstitute(f1);
-        Assert.assertNotEquals(reconstituted1.getClass(), reconstituted2.getClass());
+        Assertions.assertNotEquals(reconstituted1.getClass(), reconstituted2.getClass());
     }
 
     @Test
@@ -64,7 +64,7 @@ public final class LambdaDeserializerTest {
         F0<Object> f1 = lambdaHost.lambdaBackedByConstructorCall();
         F0<Object> reconstituted1 = reconstitute(f1, cache);
         F0<Object> reconstituted2 = reconstitute(f1, cache);
-        Assert.assertEquals(reconstituted1.getClass(), reconstituted2.getClass());
+        Assertions.assertEquals(reconstituted1.getClass(), reconstituted2.getClass());
     }
 
     @Test
@@ -73,10 +73,10 @@ public final class LambdaDeserializerTest {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByStaticImplMethod();
         // Check that deserialization of a static lambda always returns the
         // same instance.
-        Assert.assertSame(reconstitute(f1, cache), reconstitute(f1, cache));
+        Assertions.assertSame(reconstitute(f1, cache), reconstitute(f1, cache));
 
         // (as is the case with regular invocation.)
-        Assert.assertSame(f1, lambdaHost.lambdaBackedByStaticImplMethod());
+        Assertions.assertSame(f1, lambdaHost.lambdaBackedByStaticImplMethod());
     }
 
     @Test
@@ -100,7 +100,7 @@ public final class LambdaDeserializerTest {
             throw new AssertionError();
         } catch (IllegalArgumentException iae) {
             if (!iae.getMessage().contains("Illegal lambda deserialization")) {
-                Assert.fail("Unexpected message: " + iae.getMessage());
+                Assertions.fail("Unexpected message: " + iae.getMessage());
             }
         }
     }

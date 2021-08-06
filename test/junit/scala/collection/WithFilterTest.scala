@@ -3,7 +3,7 @@ package scala.collection
 import immutable.{TreeMap, TreeSet}
 import scala.annotation.unused
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class WithFilterTest {
 

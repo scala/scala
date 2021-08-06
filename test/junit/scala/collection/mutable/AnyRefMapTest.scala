@@ -1,12 +1,9 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 /* Test for scala/bug#10540 */
-@RunWith(classOf[JUnit4])
 class AnyRefMapTest {
 
   @Test def testAnyRefMapCopy(): Unit = {

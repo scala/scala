@@ -1,11 +1,8 @@
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 /* Tests various maps by making sure they all agree on the same answers. */
-@RunWith(classOf[JUnit4])
 class ReusableBuildersTest {
   // GrowingBuilders are NOT reusable but can clear themselves
   @Test

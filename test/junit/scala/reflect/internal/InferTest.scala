@@ -1,7 +1,7 @@
 package scala.reflect.internal
 
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.BytecodeTesting
 

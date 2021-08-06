@@ -3,7 +3,7 @@ package scala
 import scala.annotation.nowarn
 import scala.reflect.io.File
 import java.util.Base64
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 package collection {
   object accessWrappers { val Wrappers = convert.JavaCollectionWrappers }

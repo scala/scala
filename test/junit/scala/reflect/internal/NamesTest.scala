@@ -1,13 +1,10 @@
 package scala.reflect.internal
 
 import scala.tools.testkit.AssertUtil._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 
-@RunWith(classOf[JUnit4])
 class NamesTest {
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._
@@ -123,7 +120,7 @@ class NamesTest {
     def check(name: Name, sub: String): Unit = {
       val javaResult = name.toString.lastIndexOf(sub)
       val nameResult = name.lastIndexOf(sub)
-      assertEquals(s""""$name".lastIndexOf("$sub")""", javaResult, nameResult)
+      assertEquals(javaResult, nameResult, s""""$name".lastIndexOf("$sub")""")
     }
     val d = TermName("x$default$42")
     val e = TermName("")

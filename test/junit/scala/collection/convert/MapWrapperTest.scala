@@ -2,14 +2,11 @@ package scala.collection.convert
 
 import java.util
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 
-@RunWith(classOf[JUnit4])
 class MapWrapperTest {
 
   /* Test for scala/bug#7883 */

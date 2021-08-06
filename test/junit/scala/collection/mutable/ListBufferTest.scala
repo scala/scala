@@ -1,10 +1,9 @@
 package scala.collection.mutable
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertThrows, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil.assertSameElements
-
 import scala.annotation.nowarn
 
 class ListBufferTest {
@@ -106,14 +105,14 @@ class ListBufferTest {
     assertEquals(ListBuffer(0, 1), b3)
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
+  @Test
   def removeWithNegativeIndex(): Unit = {
-    ListBuffer(0, 1, 2).remove(-1)
+    assertThrows(classOf[IndexOutOfBoundsException], () => ListBuffer(0, 1, 2).remove(-1))
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
+  @Test
   def removeWithTooLargeIndex(): Unit = {
-    ListBuffer(0).remove(1)
+    assertThrows(classOf[IndexOutOfBoundsException], () => ListBuffer(0).remove(1))
   }
 
   @Test
@@ -133,24 +132,24 @@ class ListBufferTest {
     testRemoveMany(idx = 2, count = 1, expectation = ListBuffer(0, 1))
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
+  @Test
   def removeManyWithNegativeIndex(): Unit = {
-    ListBuffer(0, 1, 2).remove(idx = -1, count = 1)
+    assertThrows(classOf[IndexOutOfBoundsException], () => ListBuffer(0, 1, 2).remove(idx = -1, count = 1))
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
+  @Test
   def removeManyWithTooLargeIndex(): Unit = {
-    ListBuffer(0).remove(idx = 1, count = 1)
+    assertThrows(classOf[IndexOutOfBoundsException], () => ListBuffer(0).remove(idx = 1, count = 1))
   }
 
-  @Test(expected = classOf[IllegalArgumentException])
+  @Test
   def removeManyWithNegativeCount(): Unit = {
-    ListBuffer(0).remove(idx = 0, count = -1)
+    assertThrows(classOf[IllegalArgumentException], () => ListBuffer(0).remove(idx = 0, count = -1))
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
+  @Test
   def removeManyWithTooLargeCount(): Unit = {
-    ListBuffer(0).remove(idx = 0, count = 100)
+    assertThrows(classOf[IndexOutOfBoundsException], () => ListBuffer(0).remove(idx = 0, count = 100))
   }
 
   @nowarn("cat=deprecation")

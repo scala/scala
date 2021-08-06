@@ -1,10 +1,9 @@
 package scala.tools.nsc
 
+import org.junit.jupiter.api.{AfterEach, BeforeEach, Test}
+
 import java.nio.file.{Files, Path}
 import java.util.regex.Pattern
-
-import org.junit.{After, Before, Test}
-
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.FileUtils._
 import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
@@ -16,11 +15,13 @@ class PickleWriteTest {
   private val debug = false
   private val deleteBaseAfterTest = true
 
-  @Before def before(): Unit = {
+  @BeforeEach
+  def before(): Unit = {
     base = Files.createTempDirectory("pickleWriteTest")
   }
 
-  @After def after(): Unit = {
+  @AfterEach
+  def after(): Unit = {
     if (base != null && !debug && deleteBaseAfterTest) {
       deleteRecursive(base)
     }

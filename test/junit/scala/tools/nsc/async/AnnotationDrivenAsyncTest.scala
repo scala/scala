@@ -5,8 +5,9 @@ import java.io.File
 import java.lang.reflect.InvocationTargetException
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.CompletableFuture
-import org.junit.Assert.assertEquals
-import org.junit.{Assert, Ignore, Test}
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.annotation.{StaticAnnotation, nowarn, unused}
 import scala.concurrent.duration.Duration
@@ -19,8 +20,9 @@ import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.testkit.async.AsyncStateMachine
 
 class AnnotationDrivenAsyncTest {
+
   @Test
-  @Ignore // TODO XASYNC
+  @Disabled // TODO XASYNC
   def testBoxedUnitNotImplemented(): Unit = {
     val code =
       """
@@ -369,7 +371,7 @@ class AnnotationDrivenAsyncTest {
 
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
-  @Ignore
+  @Disabled
   def testManualRunPartestUnderJUnit(): Unit = {
     import scala.jdk.CollectionConverters._
     for (path <- List(Paths.get("../async/run"), Paths.get("../async/neg"))) {
@@ -430,8 +432,8 @@ class AnnotationDrivenAsyncTest {
       def showInfo(info: StoreReporter#Info): String = {
         Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
       }
-      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)
-      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasWarnings)
+      assertTrue(!reporter.hasErrors, reporter.infos.map(showInfo).mkString("\n"))
+      assertTrue(!reporter.hasWarnings, reporter.infos.map(showInfo).mkString("\n"))
       val loader = new URLClassLoader(Seq(new File(settings.outdir.value).toURI.toURL), global.getClass.getClassLoader)
       val cls = loader.loadClass("Test")
       val result = try {

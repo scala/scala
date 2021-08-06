@@ -12,8 +12,8 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import AssertUtil._
 
 class ReflectUtilTest {

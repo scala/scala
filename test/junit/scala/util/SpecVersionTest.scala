@@ -1,9 +1,7 @@
 package scala.util
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 
@@ -11,7 +9,6 @@ import scala.tools.testkit.AssertUtil._
  *  and must work for legacy "major.minor" and plain version_number,
  *  and fail otherwise.
  */
-@RunWith(classOf[JUnit4])
 class SpecVersionTest {
   class TestProperties(versionAt: String) extends PropertiesTrait {
     override def javaSpecVersion = versionAt

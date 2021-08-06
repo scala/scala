@@ -12,13 +12,11 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import AssertUtil.{assertThrown, assertThrows}
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
+import scala.tools.testkit.AssertUtil.{assertThrown, assertThrows}
+
 class AssertThrowsTest {
   class Foo extends Exception
   class SubFoo extends Foo
@@ -32,7 +30,7 @@ class AssertThrowsTest {
 
   @Test
   def wrongThrow(): Unit =
-    assertTrue("Wrong exception thrown", {
+    assertTrue({
       try {
         assertThrows[Foo] { throw new Bar }
         false
@@ -41,7 +39,7 @@ class AssertThrowsTest {
         case e: AssertionError => true
         case t: Throwable => fail(s"expected AssertionError but got $t"); false
       }
-    })
+    }, "Wrong exception thrown")
 
   @Test
   def errorIfNoThrow(): Unit = {

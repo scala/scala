@@ -1,16 +1,13 @@
 package scala.math
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import java.{lang => jl}
 
 import scala.collection.SortedSet
 import scala.math.Ordering.Double.TotalOrdering
 
-@RunWith(classOf[JUnit4])
 class OrderingTest {
   val floats = Seq(
     Float.NegativeInfinity,
@@ -166,29 +163,28 @@ class OrderingTest {
         val msg = s"for i=$i, j=$j"
 
         // consistency with `compare`
-        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
-        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
-        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
-        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
-        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+        assertEquals(O.compare(i, j) < 0, O.lt(i, j), msg)
+        assertEquals(O.compare(i, j) <= 0, O.lteq(i, j), msg)
+        assertEquals(O.compare(i, j) == 0, O.equiv(i, j), msg)
+        assertEquals(O.compare(i, j) >= 0, O.gteq(i, j), msg)
+        assertEquals(O.compare(i, j) > 0, O.gt(i, j), msg)
 
         // consistency with other ops
-        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
-        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
-        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
-        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
-        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        assertTrue(O.lteq(i, j) || O.gteq(i, j), msg)
+        assertTrue(O.lteq(i, j) || O.gt(i, j), msg)
+        assertTrue(O.lteq(i, j) != O.gt(i, j), msg)
+        assertTrue(O.lt(i, j) || O.gteq(i, j), msg)
+        assertTrue(O.lt(i, j) != O.gteq(i, j), msg)
         // exactly one of `lt`, `equiv`, `gt` is true
-        assertTrue(msg,
-          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
-            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+        assertTrue((O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)), msg)
 
         // consistency with `max` and `min`
-        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
-        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        assertEquals(O.compare(i, j) >= 0, same(O.max(i, j), i), msg)
+        assertEquals(O.compare(i, j) <= 0, same(O.min(i, j), i), msg)
         if (!same(i, j)) {
-          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
-          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+          assertEquals(O.compare(i, j) < 0, same(O.max(i, j), j), msg)
+          assertEquals(O.compare(i, j) > 0, same(O.min(i, j), j), msg)
         }
       }
     }
@@ -206,29 +202,28 @@ class OrderingTest {
         val msg = s"for i=$i, j=$j"
 
         // consistency with `compare`
-        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
-        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
-        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
-        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
-        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+        assertEquals(O.compare(i, j) < 0, O.lt(i, j), msg)
+        assertEquals(O.compare(i, j) <= 0, O.lteq(i, j), msg)
+        assertEquals(O.compare(i, j) == 0, O.equiv(i, j), msg)
+        assertEquals(O.compare(i, j) >= 0, O.gteq(i, j), msg)
+        assertEquals(O.compare(i, j) > 0, O.gt(i, j), msg)
 
         // consistency with other ops
-        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
-        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
-        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
-        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
-        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        assertTrue(O.lteq(i, j) || O.gteq(i, j), msg)
+        assertTrue(O.lteq(i, j) || O.gt(i, j), msg)
+        assertTrue(O.lteq(i, j) != O.gt(i, j), msg)
+        assertTrue(O.lt(i, j) || O.gteq(i, j), msg)
+        assertTrue(O.lt(i, j) != O.gteq(i, j), msg)
         // exactly one of `lt`, `equiv`, `gt` is true
-        assertTrue(msg,
-          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
-            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+        assertTrue((O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)), msg)
 
         // consistency with `max` and `min`
-        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
-        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        assertEquals(O.compare(i, j) >= 0, same(O.max(i, j), i), msg)
+        assertEquals(O.compare(i, j) <= 0, same(O.min(i, j), i), msg)
         if (!same(i, j)) {
-          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
-          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+          assertEquals(O.compare(i, j) < 0, same(O.max(i, j), j), msg)
+          assertEquals(O.compare(i, j) > 0, same(O.min(i, j), j), msg)
         }
       }
     }

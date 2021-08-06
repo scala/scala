@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Type
 import scala.tools.asm.tree.analysis.BasicValue
@@ -13,7 +11,6 @@ import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter.{AaloadValue, LM
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class TypeFlowAnalyzerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._

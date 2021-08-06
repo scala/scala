@@ -3,8 +3,8 @@ package scala.runtime
 
 import scala.language.postfixOps
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.Seq
 import scala.collection.immutable.{List, Vector}

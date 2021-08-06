@@ -14,19 +14,16 @@ package scala.jdk
 
 import java.util.stream.{DoubleStream, IntStream, LongStream, Stream => JStream}
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.jdk.StreamConverters._
 
-@RunWith(classOf[JUnit4])
 class StreamConvertersTest {
-  def assertEq[A](a1: A, a2: A, s: String): Unit = { assertEquals(s, a1, a2) }  // Weird order normally!
+  def assertEq[A](a1: A, a2: A, s: String): Unit = { assertEquals(a1, a2, s) }  // Weird order normally!
   def assertEq[A](a1: A, a2: A): Unit = { assertEq(a1, a2, "not equal") }
   def assert(b: Boolean): Unit = { assertTrue(b) }
-  def assert(b: Boolean, s: String): Unit = { assertTrue(s, b) }
+  def assert(b: Boolean, s: String): Unit = { assertTrue(b, s) }
 
   def arrayO(n: Int) = (1 to n).map(_.toString).toArray
   def arrayD(n: Int) = (1 to n).map(_.toDouble).toArray

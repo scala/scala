@@ -1,11 +1,10 @@
 package scala.tools.nsc
 
+import org.junit.jupiter.api.{AfterEach, BeforeEach, Test}
+
 import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-
-import org.junit.{After, Before, Test}
-
 import scala.jdk.CollectionConverters._
 import FileUtils._
 import scala.tools.nsc.PipelineMain._
@@ -18,11 +17,13 @@ class PipelineMainTest {
   private val debug = false
   private var deleteBaseAfterTest = true
 
-  @Before def before(): Unit = {
+  @BeforeEach
+  def before(): Unit = {
     base = Files.createTempDirectory("pipelineBase")
   }
 
-  @After def after(): Unit = {
+  @AfterEach
+  def after(): Unit = {
     if (base != null && !debug && deleteBaseAfterTest) {
       deleteRecursive(base)
     }

@@ -1,7 +1,7 @@
 package scala.collection
 
-import org.junit.{Assert, Test}
-import Assert.{assertEquals, assertNotEquals}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertNotEquals}
+import org.junit.jupiter.api.Test
 
 class SortedSetMapEqualsTest {
   @Test

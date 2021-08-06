@@ -1,11 +1,8 @@
 package scala
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class PartialFunctionCompositionTest {
   val fallbackFun = (_: String) => "fallback"
   val passAll: PartialFunction[String, String] = { case any => any }

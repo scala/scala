@@ -1,15 +1,12 @@
 package scala.tools.nsc
 package backend.jvm
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class LineNumberTest extends BytecodeTesting {
 
   import compiler._
@@ -35,6 +32,6 @@ class LineNumberTest extends BytecodeTesting {
         |""".stripMargin
     val cls = compileClass(code)
     val m = getMethod(cls, "$anonfun$main$2")
-    assertEquals(m.localVars.toString, m.localVars.map(_.name).sorted, List("a", "a1", "x$1"))
+    assertEquals(m.localVars.map(_.name).sorted, List("a", "a1", "x$1"), m.localVars.toString)
   }
 }

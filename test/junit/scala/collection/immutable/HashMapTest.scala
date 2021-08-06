@@ -1,16 +1,12 @@
 package scala.collection.immutable
 
 import java.util.Collections
-
-import org.junit.Assert._
-import org.junit.{Ignore, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.tools.testkit.AllocationTest
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class HashMapTest extends AllocationTest{
 
   @Test
@@ -237,7 +233,7 @@ class HashMapTest extends AllocationTest{
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def addSharedAllocations2(): Unit = {
     val nonEmpty1 = HashMap("a" -> 1,
       "b" -> 2,
@@ -259,7 +255,7 @@ class HashMapTest extends AllocationTest{
   }
 
   @Test
-  @Ignore // TODO Port {HashMap, HashSet}.concat allocation reduction
+  @Disabled // TODO Port {HashMap, HashSet}.concat allocation reduction
   def addCollidingAllocations(): Unit = {
     val nonEmpty1 = HashMap("a" -> 1,
       "b" -> 2,

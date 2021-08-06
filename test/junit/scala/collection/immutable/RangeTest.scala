@@ -1,13 +1,11 @@
 package scala.collection.immutable
 
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertSame, assertTrue}
+import org.junit.jupiter.api.Test
+
 import scala.tools.testkit.AssertUtil
 
-@RunWith(classOf[JUnit4])
 class RangeTest {
-  import Assert.{ assertThrows => _, _ }
   import AssertUtil._
 
   @Test
@@ -70,9 +68,9 @@ class RangeTest {
     assertEquals(10, it.next())
   }
 
-  @Test(expected = classOf[IllegalArgumentException])
+  @Test
   def largeRangeMap(): Unit = {
-    Int.MinValue to Int.MaxValue map identity
+    assertThrows[IllegalArgumentException](Int.MinValue to Int.MaxValue map identity)
   }
 
   @Test

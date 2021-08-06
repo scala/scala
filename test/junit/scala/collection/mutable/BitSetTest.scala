@@ -1,13 +1,10 @@
 package scala.collection.mutable
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
 
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class BitSetTest {
   // Test for scala/bug#8910
   @Test def capacityExpansionTest(): Unit = {

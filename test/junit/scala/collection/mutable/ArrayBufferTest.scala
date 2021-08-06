@@ -1,7 +1,7 @@
 package scala.collection.mutable
 
-import org.junit.Test
-import org.junit.Assert.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
 
 import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertThrows, fail}

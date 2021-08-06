@@ -1,15 +1,12 @@
 package scala.tools.nsc.symtab.classfile
 
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class PicklerTest extends BytecodeTesting {
   @Test
   def pickleUnpicklePreserveDeclOrder(): Unit = {
@@ -27,7 +24,7 @@ class PicklerTest extends BytecodeTesting {
       val classSym = global.rootMirror.getClassIfDefined(name)
       val moduleSym = global.rootMirror.getModuleIfDefined(name).moduleClass
       val syms = List(classSym, moduleSym).filter(sym => sym.exists)
-      Assert.assertTrue(syms.nonEmpty)
+      Assertions.assertTrue(syms.nonEmpty)
       syms.flatMap(sym => sym.name.toString :: sym.info.decls.toList.map(decl => global.definitions.fullyInitializeSymbol(decl).defString))
     }
     val decls1 = showDecls(compiler1.global)
@@ -35,6 +32,6 @@ class PicklerTest extends BytecodeTesting {
     compiler2.global.platform.currentClassPath = Some(AggregateClassPath(new VirtualDirectoryClassPath(out) :: compiler2.global.platform.currentClassPath.get :: Nil))
     new compiler2.global.Run
     val decls2 = showDecls(compiler2.global)
-    Assert.assertEquals(decls1, decls2)
+    Assertions.assertEquals(decls1, decls2)
   }
 }

@@ -1,12 +1,9 @@
 package scala.collection.mutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import scala.collection.mutable
 
-@RunWith(classOf[JUnit4])
 class SerializationTest {
 
   @Test
@@ -102,7 +99,7 @@ class SerializationTest {
   private def assertEqualsAfterDeserialization[A](original: mutable.Iterable[A], expectedClass: Class[_]): Unit = {
     val after = serializeDeserialize(original)
     assertEquals(original, after)
-    assertTrue("Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName, expectedClass.isInstance(after))
+    assertTrue(expectedClass.isInstance(after), "Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName)
   }
 
   private def serializeDeserialize[T <: AnyRef](obj: T): T = {

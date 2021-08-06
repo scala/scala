@@ -1,13 +1,10 @@
 package scala
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 /**
   * Created by estsauver on 6/15/17.
   */
-@RunWith(classOf[JUnit4])
 class MatchErrorSerializationTest {
 
   @Test

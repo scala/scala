@@ -1,7 +1,7 @@
 package scala
 
-import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -52,15 +52,18 @@ class CollectTest {
   def testStreamCollectFirst(): Unit =
     testing(Seq(1), Some(1))(Stream.continually(1) collectFirst { case x if f(x) && x < 2 => x})
 
-  @Ignore @Test
+  @Disabled
+  @Test
   def testIteratorCollect(): Unit =
     testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
 
-  @Ignore @Test
+  @Test
+  @Disabled
   def testListViewCollect(): Unit =
     testing(???)((Iterator(1, 2) collect { case x if f(x) && x < 2 => x}).toList)
 
-  @Ignore @Test
+  @Test
+  @Disabled
   def testFutureCollect(): Unit = {
     // This would do the trick in Future.collect, but I haven't added this yet as there is a tradeoff
     // with extra allocations to consider.

@@ -1,10 +1,7 @@
 package scala.concurrent.duration
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class SpecialDurationsTest {
   @Test
   def test_11178(): Unit = {

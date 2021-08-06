@@ -1,13 +1,10 @@
 package scala.reflect
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 class Misc
 
-@RunWith(classOf[JUnit4])
 class ClassTagTest {
   def checkNotString[A: ClassTag](a: Any)  = a match { case x: String  => false case x: A => true case _ => false }
   def checkNotInt[A: ClassTag](a: Any)  = a match { case x: Int  => false case x: A => true case _ => false }

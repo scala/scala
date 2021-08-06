@@ -1,10 +1,8 @@
 package scala.tools.nsc
 package typechecker
 
-import org.junit.Assert.assertTrue
-import org.junit.{After, Before, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.{AfterEach, BeforeEach, Test}
 
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.testkit.BytecodeTesting
@@ -22,16 +20,17 @@ trait Quux[-T] extends Z[T]
 trait SubZB extends Z[B]
 trait ZwC[-T] extends Z[T] with C
 
-@RunWith(classOf[JUnit4])
 class InferencerTests extends BytecodeTesting {
   import compiler.global._, analyzer._
 
   var storedXsource: ScalaVersion = null
-  @Before
+
+  @BeforeEach
   def storeXsource(): Unit = {
     storedXsource = settings.source.value
   }
-  @After
+
+  @AfterEach
   def restoreXsource(): Unit = {
     settings.source.value = storedXsource
   }

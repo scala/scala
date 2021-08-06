@@ -1,7 +1,7 @@
 package scala.tools.nsc.backend.jvm
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.Flags
@@ -27,7 +27,7 @@ class DefaultMethodTest extends BytecodeTesting {
     }
     val asmClasses: List[ClassNode] = compiler.compileClassesTransformed(code, Nil, makeFooDefaultMethod.transform(_))
     val foo = asmClasses.head.methods.iterator.asScala.toList.last
-    assertTrue("default method should not be abstract", (foo.access & Opcodes.ACC_ABSTRACT) == 0)
-    assertTrue("default method body emitted", foo.instructions.size() > 0)
+    assertTrue((foo.access & Opcodes.ACC_ABSTRACT) == 0, "default method should not be abstract")
+    assertTrue(foo.instructions.size() > 0, "default method body emitted")
   }
 }

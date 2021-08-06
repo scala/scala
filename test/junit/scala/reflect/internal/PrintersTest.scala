@@ -1,12 +1,10 @@
 package scala.reflect.internal
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 import scala.tools.reflect._
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror=>cm}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 object PrinterHelper {
   val toolbox = cm.mkToolBox()
@@ -65,7 +63,6 @@ object PrinterHelper {
 
 import PrinterHelper._
 
-@RunWith(classOf[JUnit4])
 class BasePrintTest {
   @Test def testIdent(): Unit = assertTreeCode(Ident(TermName("*")))("*")
 
@@ -361,7 +358,6 @@ class BasePrintTest {
   @Test def testImport4(): Unit = assertPrintedCode("import scala.collection._")
 }
 
-@RunWith(classOf[JUnit4])
 class ClassPrintTest {
   @Test def testClass(): Unit = assertPrintedCode("class *")
 
@@ -847,7 +843,6 @@ class ClassPrintTest {
     |}""")
 }
 
-@RunWith(classOf[JUnit4])
 class TraitPrintTest {
   @Test def testTrait(): Unit = assertPrintedCode("trait *")
 
@@ -968,7 +963,6 @@ class TraitPrintTest {
     |}""")
 }
 
-@RunWith(classOf[JUnit4])
 class ValAndDefPrintTest {
   @Test def testVal1(): Unit = assertPrintedCode("val a: scala.Unit = ()")
 
@@ -1103,7 +1097,6 @@ class ValAndDefPrintTest {
     |}""", wrapCode = true)
 }
 
-@RunWith(classOf[JUnit4])
 class PackagePrintTest {
   @Test def testPackage1(): Unit = assertPrintedCode(sm"""
     |package foo.bar {
@@ -1142,7 +1135,6 @@ class PackagePrintTest {
     |}""", checkTypedTree = false)
 }
 
-@RunWith(classOf[JUnit4])
 class QuasiTreesPrintTest {
   @Test def testQuasiIdent(): Unit = assertTreeCode(q"*")("*")
 

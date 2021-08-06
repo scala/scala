@@ -1,16 +1,13 @@
 package scala.tools.nsc
 package backend.jvm
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class BTypesTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler.global
@@ -229,8 +226,8 @@ class BTypesTest extends BytecodeTesting {
       val a1 = ArrayBType(p1)
       val a2 = ArrayBType(p2)
       val expect = p1 == p2
-      assertEquals(s"$a1 $a2", expect, a1.conformsTo(a2).get)
-      assertEquals(s"$a1 $a2", expect, a2.conformsTo(a1).get)
+      assertEquals(expect, a1.conformsTo(a2).get, s"$a1 $a2")
+      assertEquals(expect, a2.conformsTo(a1).get, s"$a1 $a2")
     }
     assertTrue(ArrayBType(s).conformsTo(ArrayBType(o)).get)
   }

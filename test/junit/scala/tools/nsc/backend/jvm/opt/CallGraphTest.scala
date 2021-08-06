@@ -2,8 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.collection.immutable.IntMap
@@ -45,7 +45,7 @@ class CallGraphTest extends BytecodeTesting {
       val callee = callsite.callee.get
       assert(callee.callee == target)
       assert(callee.calleeDeclarationClass == calleeDeclClass)
-      assertEquals("safeToInline", safeToInline, callee.safeToInline)
+      assertEquals(safeToInline, callee.safeToInline, "safeToInline")
       assert(callee.annotatedInline == atInline)
       assert(callee.annotatedNoInline == atNoInline)
       assert(callsite.argInfos == argInfos)

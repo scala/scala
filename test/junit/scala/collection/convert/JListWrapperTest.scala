@@ -2,8 +2,8 @@ package scala.collection.convert
 
 import java.{util => ju}
 
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import scala.collection.JavaConverters._
 import scala.collection.immutable.List
 import scala.collection.mutable.Buffer

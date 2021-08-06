@@ -12,14 +12,11 @@
 
 package scala.collection.immutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.ReflectUtil
 
-@RunWith(classOf[JUnit4])
 class IntMapTest {
   @Test
   def `isEmpty O(1)`(): Unit = {

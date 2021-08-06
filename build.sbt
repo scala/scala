@@ -37,6 +37,8 @@ import scala.build._, VersionUtil._
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.13.2"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % Test
+val jupiterDep        = "org.junit.jupiter"              % "junit-jupiter"                    % "5.7.1"                           % Test
+val jupiterApiDep     = "org.junit.jupiter"              % "junit-jupiter-api"                % "5.7.1"                           % Test
 val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.15.4"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.13"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
@@ -727,7 +729,7 @@ lazy val junit = project.in(file("test") / "junit")
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
-    libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
+    libraryDependencies ++= Seq(jupiterApiDep, jupiterDep, junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value)

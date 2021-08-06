@@ -1,13 +1,9 @@
 package scala.tools.nsc
 package symtab
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-import org.junit.runners.JUnit4
-
-@RunWith(classOf[JUnit4])
 class SymbolTableTest {
   object symbolTable extends SymbolTableForUnitTesting
 
@@ -21,7 +17,7 @@ class SymbolTableTest {
     symbolTable.definitions.init()
     val listClassTpe = symbolTable.definitions.ListClass.tpe
     val seqClassTpe = symbolTable.definitions.SeqClass.tpe
-    assertTrue("List should be subclass of Seq", listClassTpe <:< seqClassTpe)
+    assertTrue(listClassTpe <:< seqClassTpe, "List should be subclass of Seq")
   }
 
   /**
@@ -40,8 +36,8 @@ class SymbolTableTest {
     val fooTypeRef = TypeRef(fooSymbol.owner.tpe, fooSymbol, Nil)
     val barType = new ClassInfoType(List(fooTypeRef), EmptyScope, barSymbol)
     barSymbol.info = barType
-    assertTrue("Bar should be subclass of Foo", barSymbol.tpe <:< fooSymbol.tpe)
-    assertFalse("Foo should be a superclass of Foo", fooSymbol.tpe <:< barSymbol.tpe)
+    assertTrue(barSymbol.tpe <:< fooSymbol.tpe, "Bar should be subclass of Foo")
+    assertFalse(fooSymbol.tpe <:< barSymbol.tpe, "Foo should be a superclass of Foo")
   }
 
   @Test

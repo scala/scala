@@ -1,6 +1,7 @@
 package scala.collection
 
-import org.junit.{Assert, Test}, Assert.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
 import scala.tools.testkit.AssertUtil._
@@ -281,8 +282,8 @@ class IterableTest {
   @deprecated("Uses deprecated hasDefiniteSize, extends HashMap", since="2.13.0")
   @Test
   def hasDefiniteSize(): Unit = {
+    import scala.collection.{immutable => i, mutable => m}
     import scala.{collection => c}
-    import scala.collection.{mutable => m, immutable => i}
     assertEquals(true, Some(1).hasDefiniteSize)
     assertEquals(true, None.hasDefiniteSize)
     assertEquals(true, Option(1).hasDefiniteSize)

@@ -2,15 +2,12 @@ package scala.collection
 
 import org.hamcrest.CoreMatchers._
 import org.hamcrest.MatcherAssert._
-import org.junit.Assert.{assertThat => _, _}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertArrayEquals, assertEquals, assertFalse, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.AdaptedArrowAssocWorkaround.Tx
 import scala.collection.immutable._
 
-@RunWith(classOf[JUnit4])
 class LazyZipOpsTest {
 
   private val ws = List(1, 2, 3)

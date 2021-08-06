@@ -1,9 +1,7 @@
 package scala.tools.nsc.backend.jvm.opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.InlineSourceMatcherTest._
@@ -11,7 +9,6 @@ import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class InlineSourceMatcherTest extends BytecodeTesting {
   import compiler._
 

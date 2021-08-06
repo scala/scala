@@ -1,27 +1,24 @@
 package scala.util
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
-@RunWith(classOf[JUnit4])
 class SystemPropertiesTest {
   @Test
   def filterAll(): Unit = {
     val isEmpty = sys.props.filter(_ => false).size == 0
-    assertTrue("A filter matching nothing should produce an empty result", isEmpty)
+    assertTrue(isEmpty, "A filter matching nothing should produce an empty result")
   }
 
   @Test
   def filterNone(): Unit = {
     val isUnchanged = sys.props.filter(_ => true) == sys.props
-    assertTrue("A filter matching everything should not change the result", isUnchanged)
+    assertTrue(isUnchanged, "A filter matching everything should not change the result")
   }
 
   @Test
   def empty(): Unit = {
     val hasSize0 = sys.props.empty.size == 0
-    assertTrue("SystemProperties.empty should have size of 0", hasSize0)
+    assertTrue(hasSize0, "SystemProperties.empty should have size of 0")
   }
 }

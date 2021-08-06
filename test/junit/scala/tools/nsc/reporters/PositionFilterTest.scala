@@ -2,14 +2,11 @@ package scala
 package tools.nsc
 package reporters
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util._
 
-@RunWith(classOf[JUnit4])
 class PositionFilterTest {
   val source = "Test_PositionFilter"
   val batchFile = new BatchSourceFile(source, "For testing".toList)

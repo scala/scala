@@ -1,14 +1,10 @@
 package scala.reflect.io
 
+import org.junit.jupiter.api.{Assertions, Test}
+
 import java.nio.file.Files
-
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-
 import scala.tools.testkit.TempDir
 
-@RunWith(classOf[JUnit4])
 class AbstractFileTest {
   @Test
   def handleURLEscapedCharacters(): Unit = {
@@ -19,9 +15,9 @@ class AbstractFileTest {
 
     try {
       val fileFromURLPath = new java.io.File(scalaFile.toURI.toURL.getPath)
-      Assert.assertTrue(!fileFromURLPath.exists())
+      Assertions.assertTrue(!fileFromURLPath.exists())
       val scalacFile = AbstractFile.getURL(scalaFile.toURI.toURL)
-      Assert.assertTrue(scalacFile.file.exists())
+      Assertions.assertTrue(scalacFile.file.exists())
     } finally {
       Files.deleteIfExists(scalaPath)
       Files.deleteIfExists(tempDir)

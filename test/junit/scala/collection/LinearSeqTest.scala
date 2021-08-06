@@ -1,10 +1,7 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class LinearSeqTest {
   // Tests regression on issue 11262
   @Test def extensionIteratorTest(): Unit = {

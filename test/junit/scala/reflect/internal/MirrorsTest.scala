@@ -1,18 +1,15 @@
 package scala.reflect.internal
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class MirrorsTest {
   @Test def rootCompanionsAreConnected(): Unit = {
     val cm = scala.reflect.runtime.currentMirror
     import cm._
-    assertEquals("RootPackage.moduleClass == RootClass", RootClass, RootPackage.moduleClass)
-    assertEquals("RootClass.module == RootPackage", RootPackage, RootClass.module)
-    assertEquals("EmptyPackage.moduleClass == EmptyPackageClass", EmptyPackageClass, EmptyPackage.moduleClass)
-    assertEquals("EmptyPackageClass.module == EmptyPackage", EmptyPackage, EmptyPackageClass.module)
+    assertEquals(RootClass, RootPackage.moduleClass, "RootPackage.moduleClass == RootClass")
+    assertEquals(RootPackage, RootClass.module, "RootClass.module == RootPackage")
+    assertEquals(EmptyPackageClass, EmptyPackage.moduleClass, "EmptyPackage.moduleClass == EmptyPackageClass")
+    assertEquals(EmptyPackage, EmptyPackageClass.module, "EmptyPackageClass.module == EmptyPackage")
   }
 }

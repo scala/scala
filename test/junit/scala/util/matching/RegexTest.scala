@@ -1,13 +1,10 @@
 package scala.util.matching
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertThrows => _, _}
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class RegexTest {
   @Test def t8022CharSequence(): Unit = {
     val full = """.*: (.)$""".r

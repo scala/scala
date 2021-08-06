@@ -3,17 +3,14 @@
  */
 package scala.tools.nsc.classpath
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
 
-@RunWith(classOf[JUnit4])
 class JrtClassPathTest {
 
   @Test def lookupJavaClasses(): Unit = {
@@ -30,7 +27,7 @@ class JrtClassPathTest {
       else JrtClassPath(None, closeableRegistry).get
 
     assertEquals(Nil, cp.classes(""))
-    assertTrue(cp.packages("java").toString, cp.packages("java").exists(_.name == "java.lang"))
+    assertTrue(cp.packages("java").exists(_.name == "java.lang"), cp.packages("java").toString)
     assertTrue(cp.classes("java.lang").exists(_.name == "Object"))
     val jl_Object = cp.classes("java.lang").find(_.name == "Object").get
     assertEquals("java/lang/Object", AsmUtils.classFromBytes(jl_Object.file.toByteArray).name)

@@ -14,8 +14,8 @@ package scala.jdk
 
 import java.time.{Duration => JavaDuration}
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.AdaptedArrowAssocWorkaround.Tx
 import scala.concurrent.duration._
@@ -36,8 +36,8 @@ class DurationConvertersTest {
       Long.MaxValue       -> Tx(9223372036L, 854775807)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.nanos.toJava
-      assertEquals(s"toJava($n nanos) -> $expSecs s)", expSecs, result.getSeconds)
-      assertEquals(s"toJava($n nanos) -> $expNanos n)", expNanos, result.getNano)
+      assertEquals(expSecs, result.getSeconds, s"toJava($n nanos) -> $expSecs s)")
+      assertEquals(expNanos, result.getNano, s"toJava($n nanos) -> $expNanos n)")
     }
   }
 
@@ -51,8 +51,8 @@ class DurationConvertersTest {
       9223372036854L  -> Tx(9223372036L, 854000000)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.millis.toJava
-      assertEquals(s"toJava($n millis) -> $expSecs s)", expSecs, result.getSeconds)
-      assertEquals(s"toJava($n millis) -> $expNanos n)", expNanos, result.getNano)
+      assertEquals(expSecs, result.getSeconds, s"toJava($n millis) -> $expSecs s)")
+      assertEquals(expNanos, result.getNano, s"toJava($n millis) -> $expNanos n)")
     }
   }
 
@@ -66,8 +66,8 @@ class DurationConvertersTest {
       9223372036854775L  -> Tx(9223372036L, 854775000)
     ).foreach { case (n, (expSecs, expNanos)) =>
       val result = n.micros.toJava
-      assertEquals(s"toJava($n micros) -> $expSecs s)", expSecs, result.getSeconds)
-      assertEquals(s"toJava($n micros) -> $expNanos n)", expNanos, result.getNano)
+      assertEquals(expSecs, result.getSeconds, s"toJava($n micros) -> $expSecs s)")
+      assertEquals(expNanos, result.getNano, s"toJava($n micros) -> $expNanos n)")
     }
   }
 
@@ -107,7 +107,7 @@ class DurationConvertersTest {
   def unsupportedJavaDurationThrows(): Unit = {
     Seq(JavaDuration.ofSeconds(-9223372037L), JavaDuration.ofSeconds(9223372037L)).foreach { d =>
       val res = Try { conv.toScala(d) }
-      assertTrue(s"Expected exception for $d but got success", res.isFailure)
+      assertTrue(res.isFailure, s"Expected exception for $d but got success")
     }
   }
 }

@@ -12,7 +12,7 @@
 
 package scala.jdk;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
 
@@ -20,7 +20,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static scala.jdk.javaapi.FutureConverters.asJava;
 import static scala.jdk.javaapi.FutureConverters.asScala;
 
@@ -31,9 +31,9 @@ public class FutureConvertersTest {
     public void testToScalaSuccess() {
         final CompletableFuture<String> cs = new CompletableFuture<>();
         final Future<String> f = asScala(cs);
-        assertFalse("f must not yet be completed", f.isCompleted());
+        assertFalse(f.isCompleted(), "f must not yet be completed");
         cs.complete("Hello");
-        assertTrue("f must be completed by now", f.isCompleted());
+        assertTrue(f.isCompleted(), "f must be completed by now");
         assertEquals("Hello", f.value().get().get());
     }
 
@@ -41,10 +41,10 @@ public class FutureConvertersTest {
     public void testToScalaFailure() {
         final CompletableFuture<String> cs = new CompletableFuture<>();
         final Future<String> f = asScala(cs);
-        assertFalse("f must not yet be completed", f.isCompleted());
+        assertFalse(f.isCompleted(), "f must not yet be completed");
         final Exception ex = new RuntimeException("Hello");
         cs.completeExceptionally(ex);
-        assertTrue("f must be completed by now", f.isCompleted());
+        assertTrue(f.isCompleted(), "f must be completed by now");
         assertEquals(ex, f.value().get().failed().get());
     }
 
@@ -54,9 +54,9 @@ public class FutureConvertersTest {
         final Promise<String> p = promise();
         final CompletionStage<String> cs = asJava(p.future());
         final CompletableFuture<String> cp = (CompletableFuture<String>) cs;
-        assertFalse("cs must not yet be completed", cp.isDone());
+        assertFalse(cp.isDone(), "cs must not yet be completed");
         p.success("Hello");
-        assertTrue("cs must be completed by now", cp.isDone());
+        assertTrue(cp.isDone(), "cs must be completed by now");
         assertEquals("Hello", cp.get());
     }
 
@@ -66,20 +66,20 @@ public class FutureConvertersTest {
         final Promise<String> p = promise();
         final CompletionStage<String> cs = asJava(p.future());
         final CompletableFuture<String> cp = (CompletableFuture<String>) cs;
-        assertFalse("cs must not yet be completed", cp.isDone());
+        assertFalse(cp.isDone(), "cs must not yet be completed");
         final Exception ex = new RuntimeException("Hello");
         p.failure(ex);
-        assertTrue("cs must be completed by now", cp.isDone());
-        assertEquals("exceptionally equals", ex.toString(), cp.exceptionally(x -> x.toString()).get());
+        assertTrue(cp.isDone(), "cs must be completed by now");
+        assertEquals(ex.toString(), cp.exceptionally(x -> x.toString()).get(), "exceptionally equals");
         Throwable thr = null;
         try {
             cp.get();
         } catch (Throwable t) {
             thr = t;
         }
-        assertNotNull("get() must throw", thr);
-        assertEquals("thrown exception must be wrapped", ExecutionException.class, thr.getClass());
-        assertEquals("wrapper must contain the right exception", ex, thr.getCause());
+        assertNotNull(thr, "get() must throw");
+        assertEquals(ExecutionException.class, thr.getClass(), "thrown exception must be wrapped");
+        assertEquals(ex, thr.getCause(), "wrapper must contain the right exception");
     }
 
     @Test
@@ -90,7 +90,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.thenApply(x -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -109,14 +109,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenAccept(x -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -127,14 +127,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenRun(() -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -146,7 +146,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.thenCombine(other, (x, y) -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -166,14 +166,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenAcceptBoth(other, (x, y) -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -185,14 +185,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.runAfterBoth(other, () -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -204,7 +204,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.applyToEither(other, x -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -224,14 +224,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.acceptEither(other, x -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -243,14 +243,14 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.runAfterEither(other, () -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         p.success("Hello");
         latch.countDown();
-        assertNull("result must be Void", second.toCompletableFuture().get());
+        assertNull(second.toCompletableFuture().get(), "result must be Void");
     }
 
     @Test
@@ -261,7 +261,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.thenCompose(x -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -280,7 +280,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.whenComplete((v, e) -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -298,7 +298,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.handle((v, e) -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -317,7 +317,7 @@ public class FutureConvertersTest {
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.exceptionally(e -> {
             try {
-                assertTrue("latch must succeed", latch.await(1, SECONDS));
+                assertTrue(latch.await(1, SECONDS), "latch must succeed");
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }

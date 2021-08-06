@@ -1,7 +1,7 @@
 package scala.collection.mutable
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import org.openjdk.jol.info.GraphWalker
 
 /** Tests for [[OpenHashMap]]. */
@@ -57,22 +57,22 @@ class OpenHashMapTest {
 
     val m = OpenHashMap.empty[MyClass, Int]
     val obj = new MyClass
-    assertEquals("Found a key instance in the map before adding one!?", 0, countInstances(m))
+    assertEquals(0, countInstances(m), "Found a key instance in the map before adding one!?")
     m.put(obj, 0)
-    assertEquals("There should be only one key instance in the map.", 1, countInstances(m))
+    assertEquals(1, countInstances(m), "There should be only one key instance in the map.")
     m.put(obj, 1)
-    assertEquals("There should still be only one key instance in the map.", 1, countInstances(m))
+    assertEquals(1, countInstances(m), "There should still be only one key instance in the map.")
     m.remove(obj)
-    assertEquals("There should be no key instance in the map.", 0, countInstances(m))
+    assertEquals(0, countInstances(m), "There should be no key instance in the map.")
 
     val obj2 = new MyClass
-    assertEquals("The hash codes of the test objects need to match.", obj.##, obj2.##)
+    assertEquals(obj.##, obj2.##, "The hash codes of the test objects need to match.")
     m.put(obj, 0)
     m.put(obj2, 0)
-    assertEquals("There should be two key instances in the map.", 2, countInstances(m))
+    assertEquals(2, countInstances(m), "There should be two key instances in the map.")
     m.remove(obj)
-    assertEquals("There should be one key instance in the map.", 1, countInstances(m))
+    assertEquals(1, countInstances(m), "There should be one key instance in the map.")
     m.remove(obj2)
-    assertEquals("There should be no key instance in the map.", 0, countInstances(m))
+    assertEquals(0, countInstances(m), "There should be no key instance in the map.")
   }
 }

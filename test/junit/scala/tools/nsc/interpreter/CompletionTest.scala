@@ -1,7 +1,7 @@
 package scala.tools.nsc.interpreter
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
 import java.io.{PrintWriter, StringWriter}
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}

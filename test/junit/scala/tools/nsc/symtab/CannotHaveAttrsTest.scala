@@ -1,15 +1,12 @@
 package scala.tools.nsc
 package symtab
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Disabled, Test}
 
-import scala.tools.testkit.AssertUtil.assertThrows
 import scala.reflect.internal.util.OffsetPosition
+import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class CannotHaveAttrsTest {
   object symbolTable extends SymbolTableForUnitTesting {
     object CHA extends CannotHaveAttrs {
@@ -47,7 +44,8 @@ class CannotHaveAttrsTest {
       assertEquals(t.tpe, NoType)
     }
 
-  @Test @org.junit.Ignore("scala/bug#8816")
+  @Test
+  @Disabled("scala/bug#8816")
   def nonDefaultPosAssignmentFails(): Unit = {
     val pos = new OffsetPosition(null, 0)
     attrlessTrees.foreach { t =>
@@ -56,7 +54,8 @@ class CannotHaveAttrsTest {
     }
   }
 
-  @Test @org.junit.Ignore("scala/bug#8816")
+  @Test
+  @Disabled("scala/bug#8816")
   def nonDefaultTpeAssignmentFails(): Unit = {
     val tpe = typeOf[Int]
     attrlessTrees.foreach { t =>

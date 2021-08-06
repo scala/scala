@@ -1,14 +1,11 @@
 package scala.reflect.internal
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.runtime.ScalaRunTime
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 
-@RunWith(classOf[JUnit4])
 class TreeGenTest {
   object symbolTable extends SymbolTableForUnitTesting
 

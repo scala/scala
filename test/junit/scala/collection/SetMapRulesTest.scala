@@ -12,10 +12,8 @@
 
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 import scala.annotation.unused
 import scala.collection.{mutable, immutable, concurrent}
@@ -35,7 +33,6 @@ import scala.jdk.CollectionConverters._
   * 1 is indirectly tested by using the `Value` instances as keys in all tests. 3 cannot be tested directly. The other
   * rules have explicit tests.
   */
-@RunWith(classOf[JUnit4])
 class SetMapRulesTest {
 
   class Value private (val id: Int, extra: Int) {
@@ -68,7 +65,7 @@ class SetMapRulesTest {
   private def checkUnique[T <: mutable.Iterable[_]](gen: () => T, op: String)(f: T => T): Unit = {
     val v1 = gen()
     val v2 = f(v1)
-    assertNotSame(s"$op should be a different object", v1, v2)
+    assertNotSame(v1, v2, s"$op should be a different object")
   }
 
   private def checkPreservesKeyIdentities[T <: collection.Map[Value, Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -76,7 +73,7 @@ class SetMapRulesTest {
     val keys1 = v1.keysIterator.map(_.toTuple).toSet
     val v2 = f(v1)
     val keys2 = v2.keysIterator.map(_.toTuple).toSet
-    assertTrue(s"$op should preserve key identities (all of $keys1 should be in $keys2)", keys1.forall(k => keys2.contains(k)))
+    assertTrue(keys1.forall(k => keys2.contains(k)), s"$op should preserve key identities (all of $keys1 should be in $keys2)")
   }
 
   private def checkPreservesIdentities[T <: collection.Iterable[Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -84,7 +81,7 @@ class SetMapRulesTest {
     val keys1 = v1.iterator.map(_.toTuple).toSet
     val v2 = f(v1)
     val keys2 = v2.iterator.map(_.toTuple).toSet
-    assertTrue(s"$op should preserve key identities (all of $keys1 should be in $keys2)", keys1.forall(k => keys2.contains(k)))
+    assertTrue(keys1.forall(k => keys2.contains(k)), s"$op should preserve key identities (all of $keys1 should be in $keys2)")
   }
 
   private def checkDiscardsKeyIdentities[T <: collection.Map[Value, Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -92,7 +89,7 @@ class SetMapRulesTest {
     val keys1 = v1.keysIterator.map(_.toTuple).toSet
     val v2 = f(v1)
     val keys2 = v2.keysIterator.map(_.toTuple).toSet
-    assertTrue(s"$op should discard key identities (none of $keys1 should be in $keys2)", keys1.forall(k => !keys2.contains(k)))
+    assertTrue(keys1.forall(k => !keys2.contains(k)), s"$op should discard key identities (none of $keys1 should be in $keys2)")
   }
 
   private def checkDiscardsIdentities[T <: collection.Iterable[Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -100,7 +97,7 @@ class SetMapRulesTest {
     val keys1 = v1.iterator.map(_.toTuple).toSet
     val v2 = f(v1)
     val keys2 = v2.iterator.map(_.toTuple).toSet
-    assertTrue(s"$op should discard key identities (none of $keys1 should be in $keys2)", keys1.forall(k => !keys2.contains(k)))
+    assertTrue(keys1.forall(k => !keys2.contains(k)), s"$op should discard key identities (none of $keys1 should be in $keys2)")
   }
 
   private def checkAllValuesUpdated[T <: collection.Map[Value, Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -108,7 +105,7 @@ class SetMapRulesTest {
     val values1 = v1.valuesIterator.map(_.toTuple).toSet
     val v2 = f(v1)
     val values2 = v2.valuesIterator.map(_.toTuple).toSet
-    assertTrue(s"$op should update values (none of $values1 should be in $values2)", values1.forall(k => !values2.contains(k)))
+    assertTrue(values1.forall(k => !values2.contains(k)), s"$op should update values (none of $values1 should be in $values2)")
   }
 
   private def checkNoSharedValues[T <: immutable.Map[Value, Value]](gen: () => T, op: String)(f: T => T): Unit = {
@@ -117,7 +114,7 @@ class SetMapRulesTest {
     val v2 = f(v1)
     val entries1b = v1.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
     @unused val entries2 = v2.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
-    assertEquals(s"$op should preserve original values ($entries1a should be equal to $entries1b)", entries1a, entries1b)
+    assertEquals(entries1a, entries1b, s"$op should preserve original values ($entries1a should be equal to $entries1b)")
   }
 
   private def checkMap(gen: () => collection.Map[Value, Value]): Unit = {

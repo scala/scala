@@ -13,13 +13,11 @@
 package scala.tools.nsc
 package settings
 
-import org.junit.{Assert, Test}, Assert.{assertEquals, assertFalse, assertTrue, fail}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertTrue, fail}
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable.ListBuffer
 
-@RunWith(classOf[JUnit4])
 class TargetTest {
 
   @Test def testSettingTargetSetting(): Unit = {

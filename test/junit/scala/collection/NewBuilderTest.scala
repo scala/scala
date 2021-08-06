@@ -3,8 +3,8 @@ package scala.collection
 import scala.{collection => sc}, sc.{mutable => scm, immutable => sci}
 import scala.reflect.ClassTag
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 /* Tests various maps by making sure they all agree on the same answers. */
 class NewBuilderTest {
@@ -15,7 +15,7 @@ class NewBuilderTest {
     def test[T: ClassTag](mapped: Any): Unit = {
       val expected = reflect.classTag[T].runtimeClass
       val isInstance = reflect.classTag[T].runtimeClass.isInstance(mapped)
-      assertTrue(s"$mapped (of class ${mapped.getClass} is not a in instance of ${expected}", isInstance)
+      assertTrue(isInstance, s"$mapped (of class ${mapped.getClass} is not a in instance of ${expected}")
     }
 
     test[sc.GenTraversable[_]   ]((sc.GenTraversable(1):    sc.GenTraversable[Int]).map(x => x))

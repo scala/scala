@@ -12,7 +12,7 @@
 
 package scala.jdk.javaapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Tuple2;
 import scala.collection.Map;
 import scala.collection.immutable.List;
@@ -22,7 +22,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StreamConvertersJavaTest {
     public List<String> ls = CollectionConverters.asScala(Arrays.asList("a", "b")).toList();

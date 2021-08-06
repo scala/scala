@@ -1,11 +1,8 @@
 package scala.reflect.internal.util
 
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertTrue}
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class WeakHashSetTest {
 
   // a class guaranteed to provide hash collisions

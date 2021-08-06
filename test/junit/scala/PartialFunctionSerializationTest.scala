@@ -1,10 +1,7 @@
 package scala
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class PartialFunctionSerializationTest {
   val pf1: PartialFunction[Int, Int] = { case n if n > 0 => 1 }
   val pf2: PartialFunction[Int, Int] = { case n if n <= 0 => 2 }

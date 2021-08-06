@@ -1,10 +1,7 @@
 package scala.tools.nsc
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class ScriptRunnerTest {
   @Test
   def testEmptyScriptSucceeds(): Unit = {

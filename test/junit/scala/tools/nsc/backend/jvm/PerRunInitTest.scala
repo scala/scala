@@ -2,7 +2,7 @@ package scala.tools.nsc.backend.jvm
 import java.util
 
 import org.junit._
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
 
 import scala.collection.mutable
 import scala.ref.WeakReference
@@ -88,12 +88,12 @@ abstract class PerRunInitTest {
 
     add(1, data)
 
-    assertEquals(s"$data", 1, sizeOf(data))
+    assertEquals(1, sizeOf(data), s"$data")
     doGc()
-    assertEquals(s"$data", 1, sizeOf(data))
+    assertEquals(1, sizeOf(data), s"$data")
 
     clearCaches()
-    assertEquals(s"$data", 0, sizeOf(data))
+    assertEquals(0, sizeOf(data), s"$data")
   }
 
   @Test
@@ -115,11 +115,11 @@ abstract class PerRunInitTest {
     dontClear(data)
 
     add(1, data)
-    assertEquals(s"$data", 1, sizeOf(data))
+    assertEquals(1, sizeOf(data), s"$data")
     doGc()
-    assertEquals(s"$data", 1, sizeOf(data))
+    assertEquals(1, sizeOf(data), s"$data")
     clearCaches()
-    assertEquals(s"$data", 1, sizeOf(data))
+    assertEquals(1, sizeOf(data), s"$data")
   }
 
 

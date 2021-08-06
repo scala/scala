@@ -1,13 +1,10 @@
 package scala.reflect.internal.util
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertThrows => _, _}
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class SourceFileTest {
   def lineContentOf(code: String, offset: Int) =
     Position.offset(new BatchSourceFile("", code), offset).lineContent

@@ -1,7 +1,7 @@
 package scala.tools.nsc.transform
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 import scala.tools.testkit.BytecodeTesting

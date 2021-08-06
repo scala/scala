@@ -1,6 +1,6 @@
 package scala.tools.nsc
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 

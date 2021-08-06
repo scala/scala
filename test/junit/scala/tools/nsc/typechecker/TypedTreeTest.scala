@@ -1,7 +1,7 @@
 package scala.tools.nsc.typechecker
 
-import org.junit.Assert.{assertEquals, assertNotEquals}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertNotEquals}
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.BytecodeTesting
 

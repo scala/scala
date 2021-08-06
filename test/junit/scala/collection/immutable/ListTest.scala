@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.ref.WeakReference
 import scala.tools.testkit.{AllocationTest, CompileTime}
 import scala.collection.Sizes
 
-@RunWith(classOf[JUnit4])
 class ListTest extends AllocationTest{
   /**
    * Test that empty iterator does not hold reference
@@ -35,7 +32,7 @@ class ListTest extends AllocationTest{
 
     // check something is result to protect from JIT optimizations
     for ((i, _) <- emptyIterators) {
-      Assert.assertTrue(i.isEmpty)
+      Assertions.assertTrue(i.isEmpty)
     }
 
     // await gc up to ~5 seconds
@@ -47,23 +44,23 @@ class ListTest extends AllocationTest{
     }
 
     // real assertion
-    Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
+    Assertions.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
   }
 
   @Test
   def updated(): Unit = {
     val xs = 1 :: 2 :: Nil
-    Assert.assertEquals(0 :: 2 :: Nil, xs.updated(index = 0, elem = 0))
-    Assert.assertEquals(1 :: 0 :: Nil, xs.updated(index = 1, elem = 0))
+    Assertions.assertEquals(0 :: 2 :: Nil, xs.updated(index = 0, elem = 0))
+    Assertions.assertEquals(1 :: 0 :: Nil, xs.updated(index = 1, elem = 0))
     try {
       xs.updated(index = -1, 0)
-      Assert.fail("No exception thrown")
+      Assertions.fail("No exception thrown")
     } catch {
       case e: IndexOutOfBoundsException => ()
     }
     try {
       xs.updated(index = 2, 0)
-      Assert.fail("No exception thrown")
+      Assertions.fail("No exception thrown")
     } catch {
       case e: IndexOutOfBoundsException => ()
     }

@@ -4,10 +4,8 @@
 package scala.tools.nsc.classpath
 
 import java.net.URL
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import scala.reflect.io.VirtualFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassPath
@@ -17,7 +15,6 @@ import scala.tools.nsc.util.ClassPath
  * cp instances used during creating it and whether it preserves the ordering
  * (in the case of the repeated entry for a class or a source it returns the first one).
  */
-@RunWith(classOf[JUnit4])
 class AggregateClassPathTest {
 
   private abstract class TestClassPathBase extends ClassPath {

@@ -1,10 +1,9 @@
 package scala.collection
 
-import org.junit.Assert.{assertEquals, assertSame, assertTrue}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertSame, assertTrue}
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.collection.mutable.ArrayBuffer
-import org.junit.{Assert, Test}
-
 import scala.collection.{immutable => im}
 
 class FactoriesTest {
@@ -16,7 +15,7 @@ class FactoriesTest {
     def cloneCollection[A, C](xs: Iterable[A])(implicit bf: BuildFrom[xs.type, A, C]): C =
       bf.fromSpecific(xs)(xs)
 
-    Assert.assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
+    Assertions.assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
   }
 
   @Test def factoryIgnoresSourceCollectionFactory(): Unit = {
@@ -24,7 +23,7 @@ class FactoriesTest {
     def cloneElements[A, C](xs: Iterable[A])(cb: Factory[A, C]): C =
       cb.fromSpecific(xs)
 
-    Assert.assertEquals("List", cloneElements(seq)(Seq).collectionClassName)
+    Assertions.assertEquals("List", cloneElements(seq)(Seq).collectionClassName)
   }
 
   def apply(factory: IterableFactory[Iterable]): Unit = {
@@ -111,9 +110,10 @@ class FactoriesTest {
       input <- inputs
     } {
       assertSame(
-        s"IterableFactory ($factory)'s method `from` should return the same reference when passed $input",
         input,
-        factory.from(input))
+        factory.from(input),
+        s"IterableFactory ($factory)'s method `from` should return the same reference when passed $input"
+      )
     }
   def sortedFactoryFromIterableOnceReturnsSameReference[CC[X] <: IterableOnce[X] , A](
     factories: SortedIterableFactory[CC]*
@@ -125,9 +125,10 @@ class FactoriesTest {
       input <- inputs
     } {
       assertSame(
-        s"SortedIterableFactory ($factory)'s method `from` should return the same reference when passed $input",
         input,
-        factory.from(input))
+        factory.from(input),
+        s"SortedIterableFactory ($factory)'s method `from` should return the same reference when passed $input"
+      )
     }
   def mapFactoryFromIterableOnceReturnsSameReference[CC[X, Y] <: Map[X, Y] , K, V](
    factories: MapFactory[CC]*
@@ -139,9 +140,9 @@ class FactoriesTest {
       input <- inputs
     } {
       assertSame(
-        s"MapFactory ($factory)'s method `from` should return the same reference when passed $input",
         input,
-        factory.from(input))
+        factory.from(input),
+        s"MapFactory ($factory)'s method `from` should return the same reference when passed $input")
     }
   def sortedMapFactoryFromIterableOnceReturnsSameReference[CC[X, Y] <: Map[X, Y] , K, V](
     factories: SortedMapFactory[CC]*
@@ -153,9 +154,10 @@ class FactoriesTest {
       input <- inputs
     } {
       assertSame(
-        s"SortedMapFactory ($factory)'s method `from` should return the same reference when passed $input",
         input,
-        factory.from(input))
+        factory.from(input),
+        s"SortedMapFactory ($factory)'s method `from` should return the same reference when passed $input"
+      )
     }
 
 

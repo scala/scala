@@ -14,7 +14,7 @@ package scala.collection.mutable
 
 import java.util.ConcurrentModificationException
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil.assertThrows
 

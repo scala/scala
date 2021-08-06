@@ -3,8 +3,8 @@ package scala.collection.immutable
 // "Disabled string conversions so as not to get confused!"
 import scala.Predef.{any2stringadd => _, _}
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 class SetTest {
   @Test

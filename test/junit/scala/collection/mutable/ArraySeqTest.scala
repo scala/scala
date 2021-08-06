@@ -1,13 +1,10 @@
 package scala.collection.mutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.immutable.Seq
 
-@RunWith(classOf[JUnit4])
 class ArraySeqTest {
   @Test
   def t11187(): Unit = {

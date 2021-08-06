@@ -1,17 +1,14 @@
 package scala.collection
 package immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.{Test, Timeout}
+import org.junit.jupiter.api.Assertions._
 
 import scala.annotation.unused
 import scala.collection.mutable.{Builder, ListBuffer}
 import scala.tools.testkit.AssertUtil
 import scala.util.Try
 
-@RunWith(classOf[JUnit4])
 class LazyListTest {
 
   @Test
@@ -192,7 +189,8 @@ class LazyListTest {
 
   val cycle1: LazyList[Int] = 1 #:: 2 #:: cycle1
   val cycle2: LazyList[Int] = 1 #:: 2 #:: 3 #:: cycle2
-  @Test(timeout=10000)
+  @Test
+  @Timeout(value = 10)
   def testSameElements(): Unit = {
     assert(LazyList().sameElements(LazyList()))
     assert(!LazyList().sameElements(LazyList(1)))

@@ -1,8 +1,8 @@
 
 package scala.reflect
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 class QTest {
 

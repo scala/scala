@@ -1,20 +1,16 @@
 package scala.sys.process
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream, ByteArrayInputStream,
-  ByteArrayOutputStream, IOException, Closeable}
-import java.lang.reflect.InvocationTargetException
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.control.Exception.ignoring
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
+import java.io._
+import java.lang.reflect.InvocationTargetException
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
 import scala.tools.testkit.AssertUtil.{readyOrNot, waitForIt}
 import scala.tools.testkit.TestDuration
+import scala.util.control.Exception.ignoring
 
-@RunWith(classOf[JUnit4])
 class PipedProcessTest {
 
   // PipedProcesses need not to release resources when it normally end
@@ -52,7 +48,7 @@ class PipedProcessTest {
     //p.exitValue()
     p.callRunAndExitValue(source, sink)
 
-    assertFalse("Source is alive", source.isAlive)
+    assertFalse(source.isAlive, "Source is alive")
   }
 
   // PipedProcesses must release resources when b.run() failed
@@ -136,7 +132,6 @@ class PipedProcessTest {
   }
 }
 
-@RunWith(classOf[JUnit4])
 class PipeSourceSinkTest {
   def throwsIOException(f: => Unit) = {
     try { f; false }

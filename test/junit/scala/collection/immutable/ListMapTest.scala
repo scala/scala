@@ -1,14 +1,11 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.runtime.AbstractFunction2
 import scala.tools.testkit.AllocationTest
 
-@RunWith(classOf[JUnit4])
 class ListMapTest extends AllocationTest {
 
   @Test

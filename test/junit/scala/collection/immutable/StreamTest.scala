@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.{Test, Timeout}
+import org.junit.jupiter.api.Assertions._
 
 import scala.annotation.unused
 import scala.ref.WeakReference
 import scala.util.Try
 
-@RunWith(classOf[JUnit4])
 @deprecated("Tests deprecated Stream", since="2.13")
 class StreamTest {
 
@@ -147,7 +144,8 @@ class StreamTest {
 
   val cycle1: Stream[Int] = 1 #:: 2 #:: cycle1
   val cycle2: Stream[Int] = 1 #:: 2 #:: 3 #:: cycle2
-  @Test(timeout=10000)
+  @Test
+  @Timeout(value = 10)
   def testSameElements(): Unit = {
     assert(Stream().sameElements(Stream()))
     assert(!Stream().sameElements(Stream(1)))

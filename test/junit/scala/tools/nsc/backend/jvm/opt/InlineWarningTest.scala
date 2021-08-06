@@ -2,14 +2,11 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class InlineWarningTest extends BytecodeTesting {
   def optInline = "-opt:l:inline -opt-inline-from:**"
   override def compilerArgs = s"$optInline -opt-warnings"

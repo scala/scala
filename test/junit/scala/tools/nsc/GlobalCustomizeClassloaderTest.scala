@@ -2,17 +2,14 @@ package scala.tools.nsc
 
 import java.io.Closeable
 
-import org.junit.Assert.{assertEquals, assertTrue, fail}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue, fail}
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, NoSourceFile}
 import scala.reflect.io.{Path, VirtualDirectory}
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
-@RunWith(classOf[JUnit4])
 class GlobalCustomizeClassloaderTest {
   // Demonstrate extension points to customise creation of the classloaders used to load compiler
   // plugins and macro implementations.

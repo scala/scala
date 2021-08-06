@@ -2,9 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable
 import scala.tools.asm.Opcodes._
@@ -12,7 +10,6 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest extends BytecodeTesting {
   // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
   override def compilerArgs = "-opt:inline -opt-inline-from:**"

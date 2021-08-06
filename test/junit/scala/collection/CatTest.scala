@@ -1,11 +1,9 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
+
 import scala.collection.immutable.{List, Vector}
 
-@RunWith(classOf[JUnit4])
 /* Test for scala/bug#8014 and ++ in general  */
 class CatTest {
   val noVec = Vector.empty[Int]

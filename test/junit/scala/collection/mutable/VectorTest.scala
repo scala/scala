@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 /* Test for scala/bug#8014 and ++ in general  */
 class VectorTest {

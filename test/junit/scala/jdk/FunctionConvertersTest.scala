@@ -14,8 +14,8 @@ package scala.jdk
 
 import java.io.NotSerializableException
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.jdk.FunctionConverters._

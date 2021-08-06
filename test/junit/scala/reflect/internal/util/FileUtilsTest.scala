@@ -2,7 +2,7 @@ package scala.reflect.internal.util
 
 import java.io._
 
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
 import org.junit._
 
 class FileUtilsTest {

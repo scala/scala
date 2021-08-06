@@ -1,8 +1,8 @@
 
 package scala.io
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 import java.io.{Console => _, _}
 
@@ -28,13 +28,14 @@ class SourceTest {
       case "The Scala compiler and reflection APIs." =>
       case "This is the documentation for the Scala standard library." =>
       case l =>
-        assertTrue(s"$l\n${ls.mkString("\n")}", false)
+        assertTrue(false, s"$l\n${ls.mkString("\n")}")
     }
   }
-  @Test(expected = classOf[java.io.FileNotFoundException])
+  @Test
   def loadFromMissingResource(): Unit = {
-    Source.fromResource("missing.txt")
+    assertThrows(classOf[java.io.FileNotFoundException], () => Source.fromResource("missing.txt"))
   }
+
   @Test def canCustomizeReporting() = {
     class CapitalReporting(is: InputStream) extends BufferedSource(is) {
       override def report(pos: Int, msg: String, out: PrintStream): Unit = {

@@ -1,13 +1,10 @@
 package scala.tools.nsc
 package settings
 
-import org.junit.Assert.{assertTrue => assert, _}
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertTrue => assert, _}
+import org.junit.jupiter.api.Test
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class SettingsTest {
   @Test def booleanSettingColon(): Unit = {
     def check(args: String*): MutableSettings#BooleanSetting = {
@@ -164,8 +161,8 @@ class SettingsTest {
     def check(expected: String, args: String*): Unit = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (_, residual) = s.processArguments(args.toList, processAll = true)
-      assert(s"remaining input [$residual]", residual.isEmpty)
-      assert(s"(${s.source.value} == ${ScalaVersion(expected)})", s.source.value == ScalaVersion(expected))
+      assert(residual.isEmpty, s"remaining input [$residual]")
+      assert(s.source.value == ScalaVersion(expected), s"(${s.source.value} == ${ScalaVersion(expected)})")
     }
     check(expected = "2.13.0") // default
     check(expected = "3",      "-Xsource:2.14")
@@ -249,22 +246,22 @@ class SettingsTest {
   @Test def `wildcard doesn't disable everything`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:_" :: Nil, true)
-    assert("has the choice", settings.opt.contains(settings.optChoices.inline))
-    assert("is enabled", settings.optInlinerEnabled)
+    assert(settings.opt.contains(settings.optChoices.inline), "has the choice")
+    assert(settings.optInlinerEnabled, "is enabled")
   }
   @Test def `kill switch can be enabled explicitly`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:inline,l:none" :: Nil, true)
-    assert("has the choice", settings.opt.contains(settings.optChoices.inline))
-    assertFalse("is not enabled", settings.optInlinerEnabled)
+    assert(settings.opt.contains(settings.optChoices.inline), "has the choice")
+    assertFalse(settings.optInlinerEnabled, "is not enabled")
   }
   @Test def `t12036 don't consume dash option as arg`(): Unit = {
     import scala.collection.mutable.ListBuffer
     val errors   = ListBuffer.empty[String]
     val settings = new Settings(errors.addOne)
     val (ok, rest) = settings.processArguments("-Vinline" :: "-Xlint" :: Nil, true)
-    assertFalse("processing should fail", ok)
-    assertEquals("processing stops at bad option", 2, rest.length)
+    assertFalse(ok, "processing should fail")
+    assertEquals(2, rest.length, "processing stops at bad option")
     assertEquals(2, errors.size)  // missing arg and bad option
   }
   @Test def `t12098 MultiStringSetting with prepend handles non-colon args`(): Unit = {
@@ -272,8 +269,8 @@ class SettingsTest {
     val errors   = ListBuffer.empty[String]
     val settings = new Settings(errors.addOne)
     val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-Vdebug" :: "x.scala" :: Nil, true)
-    assert("processing should succeed", ok)
-    assertEquals("processing stops at argument", 1, rest.length)
+    assert(ok, "processing should succeed")
+    assertEquals(1, rest.length, "processing stops at argument")
     assertEquals("processing stops at the correct argument", "x.scala", rest.head)
     assertEquals(0, errors.size)
     assert(settings.debug)
@@ -282,7 +279,7 @@ class SettingsTest {
   @Test def `t12098 MultiStringSetting prepends`(): Unit = {
     val settings = new Settings(msg => fail(s"Unexpected error: $msg"))
     val (ok, rest) = settings.processArguments("-Wconf:cat=lint-missing-interpolator:ws" :: "-Xlint" :: "x.scala" :: Nil, true)
-    assert("processing should succeed", ok)
+    assert(ok, "processing should succeed")
     assert(settings.warnMissingInterpolator)
     assert(settings.lintDeprecation)
     // test/files/neg/t12098.scala shows that cat=deprecation:w due to xlint supersedes default cat=deprecation:ws

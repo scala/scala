@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
@@ -13,7 +11,6 @@ import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class InlineInfoTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}

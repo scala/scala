@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.analysis.{AliasingAnalyzer, AliasingFrame}
@@ -13,7 +11,6 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class AnalyzerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._

@@ -1,7 +1,7 @@
 package scala
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.RunTesting
 
@@ -22,8 +22,8 @@ class OptionTest extends RunTesting {
   import runner._
   import scala.tools.reflect.{ ToolBoxError => E }
 
-  @Test(expected = classOf[E]) def testSomeZipList(): Unit = run("""Some("foo") zip List("bar", "baz")""")
-  @Test(expected = classOf[E]) def testSomeZipNil(): Unit = run("""Some("foo") zip Nil""")
-  @Test(expected = classOf[E]) def testNoneZipList(): Unit = run("""None zip List("bar")""")
-  @Test(expected = classOf[E]) def testNoneZipNil(): Unit = run("""None zip Nil""")
+  @Test() def testSomeZipList(): Unit = assertThrows(classOf[E], run("""Some("foo") zip List("bar", "baz")"""))
+  @Test() def testSomeZipNil(): Unit = assertThrows(classOf[E], run("""Some("foo") zip Nil"""))
+  @Test() def testNoneZipList(): Unit = assertThrows(classOf[E], run("""None zip List("bar")"""))
+  @Test() def testNoneZipNil(): Unit = assertThrows(classOf[E], run("""None zip Nil"""))
 }

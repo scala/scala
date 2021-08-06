@@ -1,15 +1,13 @@
 package scala.reflect.internal
 
-import org.junit.Assert._
-import org.junit.{After, Assert, Before, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{AfterEach, Assertions, BeforeEach, Test}
+
 import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 import language.existentials
 
-@RunWith(classOf[JUnit4])
 class TypesTest {
 
   object symbolTable extends SymbolTableForUnitTesting
@@ -62,7 +60,7 @@ class TypesTest {
     results.toList match {
       case Nil => // okay
       case xs =>
-        Assert.fail(xs.mkString("\n"))
+        Assertions.fail(xs.mkString("\n"))
     }
   }
 
@@ -81,7 +79,7 @@ class TypesTest {
       if (!(a =:= b))
         results += s"expected a =:= b; where a=${showRaw(a)} b=${showRaw(b)}"
     }
-    assertTrue(s"Mismatches:\n${results.mkString("\n")}", results.isEmpty)
+    assertTrue(results.isEmpty, s"Mismatches:\n${results.mkString("\n")}")
   }
 
   @Test
@@ -192,11 +190,11 @@ class TypesTest {
   }
 
   var storedXsource: ScalaVersion = null
-  @Before
+  @BeforeEach
   def storeXsource(): Unit = {
     storedXsource = settings.source.value
   }
-  @After
+  @AfterEach
   def restoreXsource(): Unit = {
     settings.source.value = storedXsource
   }

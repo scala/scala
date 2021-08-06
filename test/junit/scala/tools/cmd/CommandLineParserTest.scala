@@ -1,12 +1,9 @@
 package scala.tools.cmd
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class CommandLineParserTest {
   import CommandLineParser.{tokenize, ParseException}
 

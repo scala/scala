@@ -1,16 +1,13 @@
 package scala.tools.nsc.backend.jvm
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class DirectCompileTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:method"
   import compiler._

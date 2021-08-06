@@ -1,14 +1,11 @@
 package scala.tools.nsc.backend.jvm
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class GenericSignaturesTest extends BytecodeTesting {
   import compiler._
 

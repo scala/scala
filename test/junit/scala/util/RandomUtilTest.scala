@@ -1,18 +1,18 @@
 package scala.util
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class RandomUtilTest {
   @Test def testBetween(): Unit = {
     val rand = new Random()
-    Assert.assertTrue("Random between Int must be inclusive-exclusive", rand.between(0, 1).equals(0))
-    Assert.assertTrue("Random between Long must be inclusive-exclusive", rand.between(0L, 1L).equals(0L))
-    Assert.assertTrue("Random nextLong must be inclusive-exclusive", rand.nextLong(1L).equals(0L))
+    Assertions.assertTrue(rand.between(0, 1).equals(0), "Random between Int must be inclusive-exclusive")
+    Assertions.assertTrue(rand.between(0L, 1L).equals(0L), "Random between Long must be inclusive-exclusive")
+    Assertions.assertTrue(rand.nextLong(1L).equals(0L), "Random nextLong must be inclusive-exclusive")
     val float: Float = rand.between(0.0f, 1.0f)
-    Assert.assertTrue("Float Random should be inclusive-exclusive", 0.0f <= float && float < 1.0f)
+    Assertions.assertTrue(0.0f <= float && float < 1.0f, "Float Random should be inclusive-exclusive")
     val double: Double = rand.between(0.0f.toDouble, 1.0f.toDouble)
-    Assert.assertTrue("Random between Double should be inclusive-exclusive", 0.0f.toDouble <= double && double < 1.0f.toDouble)
+    Assertions.assertTrue(0.0f.toDouble <= double && double < 1.0f.toDouble, "Random between Double should be inclusive-exclusive")
   }
 
   @Test def testBetweenIntException(): Unit = assertThrows[IllegalArgumentException] {

@@ -1,10 +1,7 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class UnrolledBufferTestTest {
   @Test
   def test_SI9254_original(): Unit = {

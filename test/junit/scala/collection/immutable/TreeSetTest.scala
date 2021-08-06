@@ -3,14 +3,11 @@ package scala.collection.immutable
 import java.util
 import java.util.Collections
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AllocationTest
 
-@RunWith(classOf[JUnit4])
 class TreeSetTest extends AllocationTest {
 
   @Test
@@ -172,7 +169,7 @@ class TreeSetTest extends AllocationTest {
 
     compareCount = 0
     assertEquals(exp, act)
-    assertTrue(compareCount.toString, compareCount < 30)
+    assertTrue(compareCount < 30, compareCount.toString)
     //we cant combine this with th above assertion as onlyAllocates run lots of time to determne the allocation
     onlyAllocates(408)(assertEquals(exp, act))
   }
@@ -253,8 +250,8 @@ class TreeSetTest extends AllocationTest {
     val all = List[(Set[K], String)]((tree1_1, "tree1_1"), (tree1_2, "tree1_2"), (tree2_1, "tree2_1"), (tree2_2, "tree2_2"), (treeHash, "treeHash"))
     for ((lhs, lText) <- all;
          (rhs, rText) <- all) {
-      assertEquals(s"$lText $rText", lhs, rhs)
-      assertEquals(s"$rText $lText", rhs, lhs)
+      assertEquals(lhs, rhs, s"$lText $rText")
+      assertEquals(rhs, lhs, s"$rText $lText")
     }
   }
 

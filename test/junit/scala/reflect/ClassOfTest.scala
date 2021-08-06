@@ -1,9 +1,7 @@
 package scala.reflect
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.RunTesting
 
@@ -11,7 +9,6 @@ object ClassOfTest {
   class VC(val x: Any) extends AnyVal
 }
 
-@RunWith(classOf[JUnit4])
 class ClassOfTest extends RunTesting {
   import runner._
 

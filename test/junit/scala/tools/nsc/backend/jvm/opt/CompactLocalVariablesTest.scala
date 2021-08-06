@@ -2,16 +2,13 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting._
 import scala.tools.testkit.ClearAfterClass
 
-@RunWith(classOf[JUnit4])
 class CompactLocalVariablesTest extends ClearAfterClass {
   // recurse-unreachable-jumps is required for eliminating catch blocks, in the first dce round they
   // are still live.only after eliminating the empty handler the catch blocks become unreachable.
@@ -65,8 +62,8 @@ class CompactLocalVariablesTest extends ClearAfterClass {
     val varOpSlots = convertMethod(withCompact).instructions collect {
       case VarOp(_, v) => v
     }
-    assertTrue(varOpSlots.toString, varOpSlots == List(1, 2, 4, 5, 7, 8, 10, 11,  // stores
-                                                       1, 7, 2, 8, 4, 10, 5, 11)) // loads
+    assertTrue(varOpSlots == List(1, 2, 4, 5, 7, 8, 10, 11,  // stores
+                                                       1, 7, 2, 8, 4, 10, 5, 11), varOpSlots.toString) // loads
 
     // the local variables descriptor table is cleaned up to remove stale entries after dce,
     // also when the slots are not compacted

@@ -2,8 +2,8 @@ package scala.collection.immutable
 
 import java.{util => ju}
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 
 import scala.collection.immutable.ChampMapSmokeTest.mkTuple
 

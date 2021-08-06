@@ -1,7 +1,7 @@
 package scala
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.RunTesting
 
@@ -23,10 +23,11 @@ class ExtractorTest extends RunTesting {
     }
   }
 
-  @Test(expected = classOf[MatchError]) def testOptionalFunctionExtractorMatchError(): Unit = {
-    2 match {
+  @Test
+  def testOptionalFunctionExtractorMatchError(): Unit = {
+    assertThrows(classOf[MatchError], () => 2 match {
       case of.unlift(m) =>
-    }
+    })
   }
 
   @Test def testOptionalFunctionExtractorSeq(): Unit = {
@@ -37,10 +38,11 @@ class ExtractorTest extends RunTesting {
     }
   }
 
-  @Test(expected = classOf[MatchError]) def testOptionalFunctionExtractorSeqMatchError(): Unit = {
-    Seq(1, 2) match {
+  @Test
+  def testOptionalFunctionExtractorSeqMatchError(): Unit = {
+    assertThrows(classOf[MatchError], () => Seq(1, 2) match {
       case of.unlift.elementWise(m0, m1) =>
-    }
+    })
   }
 
   val pf: PartialFunction[Int, String] = {
@@ -55,10 +57,11 @@ class ExtractorTest extends RunTesting {
     }
   }
 
-  @Test(expected = classOf[MatchError]) def testPartialFunctionExtractorMatchError(): Unit = {
-    2 match {
+  @Test
+  def testPartialFunctionExtractorMatchError(): Unit = {
+    assertThrows(classOf[MatchError], () => 2 match {
       case pf(m) =>
-    }
+    })
   }
 
   @Test def testPartialFunctionExtractorSeq(): Unit = {
@@ -69,10 +72,11 @@ class ExtractorTest extends RunTesting {
     }
   }
 
-  @Test(expected = classOf[MatchError]) def testPartialFunctionExtractorSeqMatchError(): Unit = {
-    Seq(1, 2) match {
+  @Test
+  def testPartialFunctionExtractorSeqMatchError(): Unit = {
+    assertThrows(classOf[MatchError], () => Seq(1, 2) match {
       case pf.elementWise(m0, m1) =>
-    }
+    })
   }
 
 }

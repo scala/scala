@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.collection.immutable.TreeMap
@@ -14,7 +12,6 @@ import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._

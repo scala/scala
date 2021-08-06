@@ -13,8 +13,8 @@
 package scala.tools.nsc
 package reporters
 
-import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{assertEquals, assertTrue}
+import org.junit.jupiter.api.Test
 import java.io.{File => JFile}
 
 import scala.collection.mutable.ListBuffer
@@ -240,7 +240,7 @@ class WConfTest extends BytecodeTesting {
       case pv: Version.ParseableVersion =>
         assertEquals(ev, pv.copy(orig = ""))
       case nv: Version.NonParseableVersion =>
-        assertTrue(s"failed to parse $s, expected $ev", ev.isInstanceOf[Version.NonParseableVersion])
+        assertTrue(ev.isInstanceOf[Version.NonParseableVersion], s"failed to parse $s, expected $ev")
     }
 
     val v123 = Version.ParseableVersion("", 1, Some(2), Some(3))
@@ -274,7 +274,7 @@ class WConfTest extends BytecodeTesting {
     val name = Map(s -> "!<", e -> "!=", g -> "!>", ns -> "<", ne -> "=", ng -> ">")
 
     def check(a: Version.ParseableVersion, b: Version.ParseableVersion, op: (Version.ParseableVersion, Version.ParseableVersion) => Boolean): Unit ={
-      assertTrue(s"$a ${name(op)} $b", op(a, b))
+      assertTrue(op(a, b), s"$a ${name(op)} $b")
     }
 
     object v {

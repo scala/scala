@@ -1,6 +1,6 @@
 package scala.collection
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.collection.mutable.Builder

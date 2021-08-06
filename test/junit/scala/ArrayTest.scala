@@ -1,7 +1,7 @@
 package scala
 
-import org.junit.Assert.{ assertArrayEquals, assertFalse, assertTrue }
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.{ assertArrayEquals, assertFalse, assertTrue }
+import org.junit.jupiter.api.Test
 
 import scala.runtime.BoxedUnit
 
@@ -41,10 +41,10 @@ class ArrayTest {
     val ys = Array(Vector(1, 2, 3))
     def anyxs = xs.asInstanceOf[Array[AnyRef]]
     def anyys = ys.asInstanceOf[Array[AnyRef]]
-    assertTrue("Arrays of List and Vector should compare equal", Array.equals(anyxs, anyys))
+    assertTrue(Array.equals(anyxs, anyys), "Arrays of List and Vector should compare equal")
     assertTrue(xs.sameElements(ys))     // for fun
     //assertTrue(Array.equals(xs, ys))  // would be nice
-    assertTrue("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("hello, world")))
-    assertFalse("Arrays of String", Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("goodbye, cruel world")))
+    assertTrue(Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("hello, world")), "Arrays of String")
+    assertFalse(Array.equals(Array[AnyRef]("hello, world"), Array[AnyRef]("goodbye, cruel world")), "Arrays of String")
   }
 }

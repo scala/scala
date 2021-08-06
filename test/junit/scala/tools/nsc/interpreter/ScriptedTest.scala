@@ -1,10 +1,11 @@
 package scala.tools.nsc
 package interpreter
 
-import org.junit._, Assert._, runner.RunWith, runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertEquals, assertNotNull}
+import org.junit.jupiter.api.Test
+
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class ScriptedTest {
   import javax.script._
   import scala.tools.nsc.interpreter.shell.Scripted

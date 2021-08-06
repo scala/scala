@@ -1,14 +1,11 @@
 package scala.tools.nsc.interpreter.shell
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 case class Tabby(width: Int = 80, isAcross: Boolean = false, marginSize: Int = 3) extends Tabulator
 case class VTabby(width: Int = 80, isAcross: Boolean = false, marginSize: Int = 3) extends VariColumnTabulator
 
-@RunWith(classOf[JUnit4])
 class TabulatorTest {
 
   // à̧̄ is composed using 3 combining characters

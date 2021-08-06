@@ -1,15 +1,12 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */
 class PriorityQueueTest {
   val priorityQueue = new mutable.PriorityQueue[Int]()

@@ -1,7 +1,8 @@
 
 package scala.util.matching
 
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Test
 
 import PartialFunction._
 
@@ -43,12 +44,12 @@ class CharRegexTest {
     cond(d) { case rnc() => true } .no()
   }
 
-  @Test(expected = classOf[MatchError])
+  @Test
   def failCorrectly(): Unit = {
     val headAndTail = """(\p{Lower})([a-z]+)""".r
-    val n = "cat"(0) match {
+    assertThrows(classOf[MatchError], () => "cat"(0) match {
       case headAndTail(ht @ _*) => ht.size
-    }
-    assert(false, s"Match size $n")
+    })
+
   }
 }

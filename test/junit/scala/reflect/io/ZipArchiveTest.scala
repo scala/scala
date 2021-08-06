@@ -5,8 +5,8 @@ import java.net.{URI, URL}
 import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{Attributes, Manifest, JarEntry, JarOutputStream}
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.testkit.AssertUtil._

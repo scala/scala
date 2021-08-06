@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
 import org.junit._
 
 import scala.tools.testkit.AllocationTest

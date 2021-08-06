@@ -2,17 +2,14 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class UnusedLocalVariablesTest extends BytecodeTesting {
   override def compilerArgs = "-opt:unreachable-code"
   import compiler._
@@ -76,7 +73,7 @@ class UnusedLocalVariablesTest extends BytecodeTesting {
   }
 
   def assertLocalVarCount(code: String, numVars: Int): Unit = {
-    assertEquals(compileMethod(code).localVars.toString, numVars, compileMethod(code).localVars.length)
+    assertEquals(numVars, compileMethod(code).localVars.length, compileMethod(code).localVars.toString)
   }
 
 }

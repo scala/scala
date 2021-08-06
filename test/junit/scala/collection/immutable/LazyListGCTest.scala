@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 import scala.ref.WeakReference
 import scala.util.Try
 
 // TODO: fill this out with all relevant LazyList methods
-@RunWith(classOf[JUnit4])
 class LazyListGCTest {
   /** Test helper to verify that the given LazyList operation allows
     * GC of the head during processing of the tail.

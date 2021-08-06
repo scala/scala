@@ -1,12 +1,9 @@
 package scala.sys.process
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class ProcessBuilderTest {
 
   @Test
@@ -19,7 +16,7 @@ class ProcessBuilderTest {
       val p = Try(("does-not-exist" #< new ByteArrayInputStream("foo".getBytes(UTF_8))).lazyLines)
       assertTrue(p.isSuccess)
       val q = p.map(_.toList)
-      assertTrue("Expected realizing bad command to fail.", q.isFailure)
+      assertTrue(q.isFailure, "Expected realizing bad command to fail.")
     }
   }
 }

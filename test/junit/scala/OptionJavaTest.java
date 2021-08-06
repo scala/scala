@@ -17,8 +17,15 @@ import java.util.List;
 
 import scala.jdk.javaapi.CollectionConverters;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OptionJavaTest {
 
@@ -54,9 +61,9 @@ public class OptionJavaTest {
         assertFalse(noneIntegerOpt.nonEmpty());
     }
 
-    @Test(expected = java.util.NoSuchElementException.class)
+    @Test
     public void testGetNoneIntegerFailure() {
-        noneIntegerOpt.get();
+        assertThrows(java.util.NoSuchElementException.class, () ->noneIntegerOpt.get());
     }
 
     @Test
@@ -77,9 +84,9 @@ public class OptionJavaTest {
         assertFalse(noneStringOpt.nonEmpty());
     }
 
-    @Test(expected = java.util.NoSuchElementException.class)
+    @Test
     public void testGetNoneStringFailure() {
-        noneStringOpt.get();
+        assertThrows(java.util.NoSuchElementException.class, () ->noneStringOpt.get());
     }
 
     @Test

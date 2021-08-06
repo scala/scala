@@ -1,7 +1,7 @@
 package scala.collection
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.tools.testkit.AssertUtil.assertThrows
@@ -23,9 +23,9 @@ class MinByMaxByTest {
   def testCorrectness() = {
     def f(x: Int) = -1 * x
     val max = list.maxBy(f)
-    assertTrue("f(list.maxBy(f)) should ≥ f(x) where x is any element of list.", list.forall(f(_) <= f(max)))
+    assertTrue(list.forall(f(_) <= f(max)), "f(list.maxBy(f)) should ≥ f(x) where x is any element of list.")
     val min = list.minBy(f)
-    assertTrue("f(list.minBy(f)) should ≤ f(x) where x is any element of list.", list.forall(f(_) >= f(min)))
+    assertTrue(list.forall(f(_) >= f(min)), "f(list.minBy(f)) should ≤ f(x) where x is any element of list.")
   }
 
   // Ensure that it always returns the first match if more than one element have the same largest/smallest f(x).

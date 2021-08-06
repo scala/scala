@@ -1,11 +1,8 @@
 package scala.reflect.internal.util
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class StringOpsTest {
   @Test
   def prefixOfNone(): Unit = {

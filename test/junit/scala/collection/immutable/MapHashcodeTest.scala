@@ -1,7 +1,7 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AllocationTest
 import scala.util.hashing.MurmurHash3
@@ -230,8 +230,8 @@ class MapHashcodeTest extends AllocationTest {
   }
 
   private def assertConsistent(m: Map[_, _]): Unit = {
-    assertEquals(m.getClass.toString, MurmurHash3.mapHash(m), m.hashCode())
-    assertEquals(m.getClass.toString, MurmurHash3.unorderedHash(m, MurmurHash3.mapSeed), m.hashCode())
+    assertEquals(MurmurHash3.mapHash(m), m.hashCode(), m.getClass.toString)
+    assertEquals(MurmurHash3.unorderedHash(m, MurmurHash3.mapSeed), m.hashCode(), m.getClass.toString)
   }
 
   @Test

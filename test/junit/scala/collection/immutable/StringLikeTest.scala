@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 import scala.util.Random
 
 /* Test for scala/bug#8988 */
-@RunWith(classOf[JUnit4])
 class StringLikeTest {
   @Test
   def testStringSplitWithChar(): Unit = {
@@ -53,16 +50,16 @@ class StringLikeTest {
     assertThrows[java.lang.NumberFormatException](sOne.toLong)
     assertThrows[java.lang.NumberFormatException](sOne.toShort)
     assertThrows[java.lang.NumberFormatException](sOne.toByte)
-    assertEquals("trim toDouble", 1.0d, sOne.toDouble, 0.1d)
-    assertEquals("trim toDouble", 1.0d, sOne.toDouble, 0.1d)
-    assertEquals("trim toFloat", 1.0f, sOne.toFloat, 0.1f)
+    assertEquals(1.0d, sOne.toDouble, 0.1d, "trim toDouble")
+    assertEquals(1.0d, sOne.toDouble, 0.1d, "trim toDouble")
+    assertEquals(1.0f, sOne.toFloat, 0.1f, "trim toFloat")
 
-    assertEquals("no trim toInt", 2, sOk.toInt)
-    assertEquals("no trim toLong", 2L, sOk.toLong)
-    assertEquals("no trim toShort",  2.toShort, sOk.toShort)
-    assertEquals("no trim toByte", 2.toByte, sOk.toByte)
-    assertEquals("no trim toDouble", 2.0d, sOk.toDouble, 0.1d)
-    assertEquals("no trim toFloat", 2.0f, sOk.toFloat, 0.1f)
+    assertEquals(2, sOk.toInt, "no trim toInt")
+    assertEquals(2L, sOk.toLong, "no trim toLong")
+    assertEquals(2.toShort, sOk.toShort, "no trim toShort")
+    assertEquals(2.toByte, sOk.toByte, "no trim toByte")
+    assertEquals(2.0d, sOk.toDouble, 0.1d, "no trim toDouble")
+    assertEquals(2.0f, sOk.toFloat, 0.1f, "no trim toFloat")
 
     // JDK 17 gives the nicer message
     def isNullStringMessage(s: String) =

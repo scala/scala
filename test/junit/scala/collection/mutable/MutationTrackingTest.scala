@@ -15,7 +15,7 @@ package mutable
 
 import java.util.ConcurrentModificationException
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertThrows

@@ -1,11 +1,8 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class SerializationTest {
 
   @Test
@@ -133,7 +130,7 @@ class SerializationTest {
     val after = serializeDeserialize(original)
     assertEquals(original, after)
     if(expectedClass ne null)
-      assertTrue("Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName, expectedClass.isInstance(after))
+      assertTrue(expectedClass.isInstance(after), "Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName)
   }
 
   private def serializeDeserialize[T <: AnyRef](obj: T): T = {

@@ -1,16 +1,13 @@
 package scala.tools.nsc.transform.delambdafy
 
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 import scala.reflect.io.Path.jfile2path
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.testkit.BytecodeTesting._
 import scala.tools.testkit.TempDir
 
-@RunWith(classOf[JUnit4])
 class DelambdafyTest {
   def compileToMultipleOutputWithDelambdafyMethod(): List[(String, Array[Byte])] = {
     val codeForMultiOutput = """

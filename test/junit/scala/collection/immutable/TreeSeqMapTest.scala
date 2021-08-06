@@ -2,12 +2,9 @@ package scala
 package collection
 package immutable
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class TreeSeqMapTest {
   @Test
   def t7445(): Unit = {
@@ -142,9 +139,9 @@ class TreeSeqMapTest {
       val v = toBinaryString(i)
       val o3 = o1.include(i, v)
       val o4 = o1.append(i, v)
-      assertEquals(s"$i", o3, o4)
+      assertEquals(o3, o4, s"$i")
       val o5 = o2.appendInPlace(i, v)
-      assertEquals(s"$i", o3, o5)
+      assertEquals(o3, o5, s"$i")
     }
   }
   @Test
@@ -153,25 +150,25 @@ class TreeSeqMapTest {
       val e1 = TreeSeqMap.empty[Int, Int]
       val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
       val e3 = e2.tail
-      assertEquals(s"default empty keeps insertion order", List(2 -> 2, 1 -> 3), e3.toList)
+      assertEquals(List(2 -> 2, 1 -> 3), e3.toList, "default empty keeps insertion order")
     }
     {
       val e1 = TreeSeqMap.empty[Int, Int](TreeSeqMap.OrderBy.Modification)
       val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
       val e3 = e2.tail
-      assertEquals(s"modification empty keeps modification order", List(1 -> 3, 3 -> 4), e3.toList)
+      assertEquals(List(1 -> 3, 3 -> 4), e3.toList, "modification empty keeps modification order")
     }
     {
       val e1 = TreeSeqMap(3 -> 1).empty
       val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
       val e3 = e2.tail
-      assertEquals(s"default empty from instance keeps insertion order", List(2 -> 2, 1 -> 3), e3.toList)
+      assertEquals(List(2 -> 2, 1 -> 3), e3.toList, "default empty from instance keeps insertion order")
     }
     {
       val e1 = TreeSeqMap(3 -> 1).orderingBy(TreeSeqMap.OrderBy.Modification).empty
       val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
       val e3 = e2.tail
-      assertEquals(s"modification empty from instance keeps modification order", List(1 -> 3, 3 -> 4), e3.toList)
+      assertEquals(List(1 -> 3, 3 -> 4), e3.toList, "modification empty from instance keeps modification order")
     }
   }
 }

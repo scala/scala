@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Assert._
-import org.junit.{Ignore, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.{Disabled, Test}
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
@@ -16,7 +14,6 @@ import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class InlinerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:inline -opt-inline-from:** -opt-warnings"
 
@@ -1950,7 +1947,8 @@ class InlinerTest extends BytecodeTesting {
     assertInvokedMethods(getMethod(c, "t5b"), List("C.$anonfun$t5b$1"))
   }
 
-  @Test @Ignore
+  @Test
+  @Disabled
   def cleanArrayPartition(): Unit = {
     // need to
     //   - inline ArrayOps$.elemTag$extension

@@ -2,10 +2,8 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.tree.MethodNode
@@ -15,7 +13,6 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class NullnessAnalyzerTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:none"
   import compiler._
@@ -26,7 +23,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
     for (i <- findInstrs(method, query)) {
       val r = analyzer.frameAt(i).getValue(index)
-      assertTrue(s"Expected: $nullness, found: $r. At instr ${textify(i)}", nullness == r)
+      assertTrue(nullness == r, s"Expected: $nullness, found: $r. At instr ${textify(i)}")
     }
   }
 

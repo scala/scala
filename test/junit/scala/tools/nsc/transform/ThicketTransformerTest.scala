@@ -1,8 +1,8 @@
 package scala.tools.nsc
 package transform
 
-import org.junit.Assert.assertSame
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.tools.nsc.reporters.StoreReporter
 
@@ -30,7 +30,7 @@ class ThicketTransformerTest {
       }
     }
     def t(t: Tree): Tree = testTransformers.testTransformer.transform(t)
-    def assertTreeEquals(expected: Tree, actual: Tree) = Assert.assertEquals(expected.toString, actual.toString)
+    def assertTreeEquals(expected: Tree, actual: Tree) = Assertions.assertEquals(expected.toString, actual.toString)
 
     def s(s: String) = Literal(Constant(s))
     def i(i: Int) = Literal(Constant(i))

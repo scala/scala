@@ -1,6 +1,6 @@
 package scala.math
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.math.{BigDecimal => BD, MathContext => MC}
 
 /* Tests various maps by making sure they all agree on the same answers. */

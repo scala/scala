@@ -1,9 +1,7 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 /**
   * base class for testing common methods on a various implementations
@@ -11,7 +9,6 @@ import org.junit.runners.JUnit4
   * @tparam T the collection type
   * @tparam E the element type
   */
-@RunWith(classOf[JUnit4])
 abstract class IndexedTest[T, E] {
 
   protected def size = 10
@@ -35,7 +32,7 @@ abstract class IndexedTest[T, E] {
   @Test def checkIndexedAccess(): Unit = {
     val test = underTest(size)
     for (i <- 0 until size) {
-      assertEquals(s" at index $i", expectedValueAtIndex(i), get(test, i))
+      assertEquals(expectedValueAtIndex(i), get(test, i), s" at index $i")
     }
   }
 
@@ -61,12 +58,12 @@ abstract class IndexedTest[T, E] {
     val txtAndState = s"$txt canBeSame $canBeSame isMutableContent $isMutableContent isTakeAllSame $isTakeAllSame offset $offset len $len length(test) ${length(test)}"
     val isValidSame = canBeSame && !isMutableContent && offset == 0 && len == size
     if (isValidSame && isTakeAllSame)
-      assertSame(txtAndState, orig, test)
+      assertSame(orig, test, txtAndState)
     else
-      assertNotSame(txtAndState, orig, test)
-    assertSame(txtAndState, len, length(test))
+      assertNotSame(orig, test, txtAndState)
+    assertSame(len, length(test), txtAndState)
     for (i <- 0 until len) {
-      assertEquals(s" $txtAndState $i $offset $len", expectedValueAtIndex(i + offset), get(test, i))
+      assertEquals(expectedValueAtIndex(i + offset), get(test, i), s" $txtAndState $i $offset $len")
     }
   }
 
@@ -116,8 +113,8 @@ abstract class IndexedTest[T, E] {
     for (start <- 0 until size) {
       val empty1 = slice(orig, start, start)
       val empty2 = slice(orig, start, start)
-      assertEquals(s"start $start", 0, length(empty1))
-      if (isEmptyConstant) assertSame(s"start $start", empty1, empty2)
+      assertEquals(0, length(empty1), s"start $start")
+      if (isEmptyConstant) assertSame(empty1, empty2, s"start $start")
     }
   }
 
@@ -160,8 +157,8 @@ abstract class IndexedTest[T, E] {
     val e = take(orig, 0)
     for (len <- List(-1, -10, -99, Int.MinValue)) {
       val empty = take(orig, len)
-      assertEquals(s"len $len", 0, length(empty))
-      if (isEmptyConstant) assertSame(s"len $len", e, empty)
+      assertEquals(0, length(empty), s"len $len")
+      if (isEmptyConstant) assertSame(e, empty, s"len $len")
     }
   }
 
@@ -175,7 +172,7 @@ abstract class IndexedTest[T, E] {
     assertNotNull(e)
     for (len <- List(size + 1, size + 10, Int.MaxValue)) {
       val all = take(orig, len)
-      assertEquals(s"len $len", size, length(all))
+      assertEquals(size, length(all), s"len $len")
       expectSameContent("", true, orig, all, 0, size)
     }
   }
@@ -405,7 +402,7 @@ package IndexedTestImpl {
     override def isTakeAllSame = true
 
     override def doAssertEquals(txt: String, expected: T, actual: T): Unit = {
-      assertEquals(txt, expected, actual)
+      assertEquals(expected, actual, txt)
     }
 
     def createEmpty(size: Int) : T
@@ -437,7 +434,7 @@ package IndexedTestImpl {
     override def isTakeAllSame = true
 
     override def doAssertEquals(txt: String, expected: T, actual: T): Unit = {
-      assertEquals(txt, expected, actual)
+      assertEquals(expected, actual, txt)
     }
 
   }
@@ -460,7 +457,7 @@ package IndexedTestImpl {
     override def isTakeAllSame = false
 
     override def doAssertEquals(txt: String, expected: StringOps, actual: StringOps): Unit = {
-      assertEquals(txt, expected, actual)
+      assertEquals(expected, actual, txt)
     }
 
   }

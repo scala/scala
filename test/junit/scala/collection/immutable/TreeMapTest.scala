@@ -2,14 +2,11 @@ package scala.collection.immutable
 
 import java.util.Collections
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AllocationTest
 
-@RunWith(classOf[JUnit4])
 class TreeMapTest extends AllocationTest {
 
   @Test
@@ -124,7 +121,7 @@ class TreeMapTest extends AllocationTest {
 
     compareCount = 0
     assertEquals(exp, act)
-    assertTrue(compareCount.toString, compareCount < 30)
+    assertTrue(compareCount < 30, compareCount.toString)
 
     onlyAllocates(408)(assertEquals(exp, act))
   }
@@ -200,8 +197,8 @@ class TreeMapTest extends AllocationTest {
     val all = List[(Map[K, V], String)]((tree1_1,"tree1_1"), (tree1_2, "tree1_2"), (tree2_1, "tree2_1"), (tree2_2, "tree2_2"), (treeHash, "treeHash"))
     for ((lhs, lText ) <- all;
          (rhs, rText) <-all) {
-      assertEquals(s"$lText $rText", lhs, rhs)
-      assertEquals(s"$rText $lText", rhs, lhs)
+      assertEquals(lhs, rhs, s"$lText $rText")
+      assertEquals(rhs, lhs, s"$rText $lText")
     }
   }
 
@@ -259,7 +256,7 @@ class TreeMapTest extends AllocationTest {
     val src: Map[Int, String] = TreeMap(Range(0, 100, 2).map((_, "")) :_*)
     for (i <- Range(-1, 101, 2)) {
       src - i
-      assertSame(i.toString, src, nonAllocating(src - i, text = i.toString))
+      assertSame(src, nonAllocating(src - i, text = i.toString), i.toString)
     }
   }
 }

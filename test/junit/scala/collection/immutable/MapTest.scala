@@ -1,7 +1,7 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 class MapTest {
 
@@ -112,30 +112,30 @@ class MapTest {
       for (form <- List(addList, addMap, addArray, addSortSame, addSortReverse, addTreeSame, addTreeReverse)) {
         val info = s"form[${form.getClass.getSimpleName}]=$form, size=$size, start=$start"
 
-        assertEquals(info, expected, (treeMap ++ form).toList)
-        assertEquals(info, expected, (sortMap ++ form).toList)
+        assertEquals(expected, (treeMap ++ form).toList, info)
+        assertEquals(expected, (sortMap ++ form).toList, info)
 
-        assertEquals(info, expected, (treeMap ++ form.iterator).toList)
-        assertEquals(info, expected, (sortMap ++ form.iterator).toList)
+        assertEquals(expected, (treeMap ++ form.iterator).toList)
+        assertEquals(expected, (sortMap ++ form.iterator).toList)
 
-        assertEquals(info, expected, (form.foldLeft(treeMap) {
+        assertEquals(expected, (form.foldLeft(treeMap) {
           _ + _
-        }).toList)
-        assertEquals(info, expected, (form.foldLeft(sortMap) {
+        }).toList, info)
+        assertEquals(expected, (form.foldLeft(sortMap) {
           _ + _
-        }).toList)
+        }).toList, info)
 
         for (form2 <- List(addList, addMap, addArray, addSortSame, addSortReverse, addTreeSame, addTreeReverse)) {
           val info2 = s"form2[${form2.getClass.getSimpleName}]=$form2, $info"
 
-          assertEquals(info2, expected, (emptySB ++= form ++= form2).result().toList)
-          assertEquals(info2, expected, (emptyTB ++= form ++= form2).result().toList)
+          assertEquals(expected, (emptySB ++= form ++= form2).result().toList, info2)
+          assertEquals(expected, (emptyTB ++= form ++= form2).result().toList, info2)
 
-          assertEquals(info2, expected, ((form.foldLeft(emptySB)(_ += _)) ++= form2).result().toList)
-          assertEquals(info2, expected, ((form.foldLeft(emptyTB)(_ += _)) ++= form2).result().toList)
+          assertEquals(expected, ((form.foldLeft(emptySB)(_ += _)) ++= form2).result().toList, info2)
+          assertEquals(expected, ((form.foldLeft(emptyTB)(_ += _)) ++= form2).result().toList, info2)
 
-          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList)
-          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList)
+          assertEquals(expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList, info2)
+          assertEquals(expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList, info2)
 
         }
       }

@@ -1,15 +1,12 @@
 package scala.collection
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{ assertThrows => _, _ }
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 
 import Seq.empty
 
-@RunWith(classOf[JUnit4])
 class IteratorTest {
 
   private def from0 = Iterator.from(0)
@@ -19,7 +16,7 @@ class IteratorTest {
     val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2
     slidingIt.next()
-    assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
+    assertEquals(1, counter, "Counter should be one, that means we didn't look further than needed")
   }
 
   @Test def groupedIteratorIsLazyWhenPadded(): Unit = {
@@ -27,7 +24,7 @@ class IteratorTest {
     def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2 withPadding -1
     slidingIt.next()
-    assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
+    assertEquals(1, counter, "Counter should be one, that means we didn't look further than needed")
   }
 
   @Test def dropDoesNotGrowStack(): Unit = {
@@ -817,7 +814,7 @@ class IteratorTest {
     val it3 = it2 ++ Array(4).iterator
     assertEquals(2, it3.next())
     assertEquals(3, it3.next())
-    assertTrue("concatted tail of it3 should be next", it3.hasNext)
+    assertTrue(it3.hasNext, "concatted tail of it3 should be next")
   }
 
 }

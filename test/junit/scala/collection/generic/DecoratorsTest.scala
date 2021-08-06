@@ -1,6 +1,6 @@
 package scala.collection.generic
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 import scala.AdaptedArrowAssocWorkaround.Tx
 import scala.annotation.unused

@@ -5,17 +5,14 @@ package scala.tools.nsc.classpath
 
 import java.io.File
 
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
 import org.junit._
 import org.junit.rules.TemporaryFolder
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.util.PathResolver
 
-@RunWith(classOf[JUnit4])
 class PathResolverBaseTest {
 
   val tempDir = new TemporaryFolder()
@@ -73,22 +70,22 @@ class PathResolverBaseTest {
 
       val packageNames = packages.map(_.name).sorted
       val packageNamesFromList = packagesFromList.map(_.name).sorted
-      assertEquals(s"Methods list and packages for package '$inPackage' should return the same packages",
-        packageNames, packageNamesFromList)
+      assertEquals(packageNames, packageNamesFromList,
+        s"Methods list and packages for package '$inPackage' should return the same packages")
 
       val classFileNames = classes.map(_.name).sorted
       val classFileNamesFromList = classesAndSourcesFromList.filter(_.binary.isDefined).map(_.name).sorted
-      assertEquals(s"Methods list and classes for package '$inPackage' should return entries for the same class files",
-        classFileNames, classFileNamesFromList)
+      assertEquals(classFileNames, classFileNamesFromList,
+        s"Methods list and classes for package '$inPackage' should return entries for the same class files")
 
       val sourceFileNames = sources.map(_.name).sorted
       val sourceFileNamesFromList = classesAndSourcesFromList.filter(_.source.isDefined).map(_.name).sorted
-      assertEquals(s"Methods list and sources for package '$inPackage' should return entries for the same source files",
-        sourceFileNames, sourceFileNamesFromList)
+      assertEquals(sourceFileNames, sourceFileNamesFromList,
+        s"Methods list and sources for package '$inPackage' should return entries for the same source files")
 
       val uniqueNamesOfClassAndSourceFiles = (classFileNames ++ sourceFileNames).toSet
-      assertEquals(s"Class and source entries with the same name obtained via list for package '$inPackage' should be merged into one containing both files",
-        uniqueNamesOfClassAndSourceFiles.size, classesAndSourcesFromList.length)
+      assertEquals(uniqueNamesOfClassAndSourceFiles.size, classesAndSourcesFromList.length,
+        s"Class and source entries with the same name obtained via list for package '$inPackage' should be merged into one containing both files")
     }
 
     packagesToTest foreach compareEntriesInPackage
@@ -98,7 +95,7 @@ class PathResolverBaseTest {
   def testFindClassFile(): Unit = {
     val classPath = createFlatClassPath(settings)
     classFilesToFind foreach { className =>
-      assertTrue(s"File for $className should be found", classPath.findClassFile(className).isDefined)
+      assertTrue(classPath.findClassFile(className).isDefined, s"File for $className should be found")
     }
   }
 
@@ -106,7 +103,7 @@ class PathResolverBaseTest {
   def testFindClass(): Unit = {
     val classPath = createFlatClassPath(settings)
     classesToFind foreach { className =>
-      assertTrue(s"File for $className should be found", classPath.findClass(className).isDefined)
+      assertTrue(classPath.findClass(className).isDefined, s"File for $className should be found")
     }
   }
 }

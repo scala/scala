@@ -12,8 +12,8 @@
 
 package scala.jdk
 
-import org.junit.Test
-import org.junit.Assert.{assertFalse, assertTrue}
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.{assertFalse, assertTrue}
 
 import scala.collection.{AnyStepper, DoubleStepper, IntStepper, LongStepper, Stepper, concurrent => cc, immutable => ci, mutable => cm}
 import scala.{collection => co}
@@ -32,7 +32,7 @@ class StepperConversionTest {
     def check[X](x: X): Boolean
     def msg[X](x: X): String
     def assert(x: Any): Unit =
-      if(!check(x)) assertTrue(msg(x), false)
+      if(!check(x)) assertTrue(false, msg(x))
   }
   object SpecCheck {
     def apply(f: Any => Boolean, err: Any => String = _ => "SpecCheck failed") = new SpecCheck {

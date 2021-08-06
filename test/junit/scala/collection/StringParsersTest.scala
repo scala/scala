@@ -1,44 +1,40 @@
 package scala.collection
 
-import org.junit.Test
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions.{assertThrows => _, _}
+import org.junit.jupiter.api.Test
+
 import scala.tools.testkit.AssertUtil._
 import scala.util.Try
 
-@RunWith(classOf[JUnit4])
 class StringParsersTest {
 
   def doubleOK(str: String): Unit = assertTrue(
-    s"str.toDouble <> str.toDoubleOption for $str",
     (str.toDoubleOption, Try(str.toDouble).toOption) match {
       case (Some(d1), Some(d2)) => d1.isNaN && d2.isNaN || d1 == d2
       case (o1, o2) => o1 == o2
-    })
+    }, s"str.toDouble <> str.toDoubleOption for $str")
 
   def floatOK(str: String): Unit = assertTrue(
-    s"str.toFloat <> str.toFloatOption for $str",
     (str.toFloatOption, Try(str.toFloat).toOption) match {
       case (Some(f1), Some(f2)) if f1.isNaN && f2.isNaN => true
       case (o1, o2) => o1 == o2
-    })
+    }, s"str.toFloat <> str.toFloatOption for $str")
 
   def byteOK(str: String): Unit = assertTrue(
-    s"str.toByte <> str.toByteOption for $str",
-    str.toByteOption == Try(str.toByte).toOption)
+    str.toByteOption == Try(str.toByte).toOption,
+    s"str.toByte <> str.toByteOption for $str")
 
   def shortOK(str: String): Unit = assertTrue(
-    s"str.toShort <> str.toShortOption for $str",
-    str.toShortOption == Try(str.toShort).toOption)
+    str.toShortOption == Try(str.toShort).toOption,
+    s"str.toShort <> str.toShortOption for $str")
 
   def intOK(str: String): Unit = assertTrue(
-    s"str.toInt <> str.toIntOption for $str",
-    str.toIntOption == Try(str.toInt).toOption)
+    str.toIntOption == Try(str.toInt).toOption,
+    s"str.toInt <> str.toIntOption for $str")
 
   def longOK(str: String): Unit = assertTrue(
-    s"str.toLong <> str.toLongOption for $str",
-    str.toLongOption == Try(str.toLong).toOption)
+    str.toLongOption == Try(str.toLong).toOption,
+    s"str.toLong <> str.toLongOption for $str")
 
   val forAllExamples = List("", "+", "-", "0", "-0", "+0", "1", "-1", "+1")
 

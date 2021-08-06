@@ -3,8 +3,8 @@ package tools.nsc
 package reporters
 
 import java.io.{ByteArrayOutputStream, StringReader, BufferedReader, PrintWriter}
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util._
 
@@ -40,7 +40,7 @@ class ConsoleReporterTest {
     try {
       test(pos)
       val buf = writerOut.toString
-      if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
+      if (msg.isEmpty && severity.isEmpty) assertTrue(buf.isEmpty, s"Expected no message output but saw: [$buf]")
       else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next())
       else {
         val it = buf.linesIterator

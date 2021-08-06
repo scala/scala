@@ -1,6 +1,6 @@
 package scala.math
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import scala.annotation.unused
 
 class PartialOrderingTest {

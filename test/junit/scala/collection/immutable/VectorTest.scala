@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.collection.mutable.{ListBuffer, StringBuilder}
 import scala.reflect.{ClassTag, classTag}
 
-@RunWith(classOf[JUnit4])
 class VectorTest {
   import VectorUtils.validateDebug
 
@@ -42,8 +39,8 @@ class VectorTest {
       validateDebug(prefix)
       validateDebug(suffix)
       validateDebug(prefix ++: suffix)
-      assertEquals((prefix, suffix).toString, els, prefix ++: suffix)
-      assertEquals((prefix, suffix).toString, els, prefix :++ suffix)
+      assertEquals(els, prefix ++: suffix, (prefix, suffix).toString)
+      assertEquals(els, prefix :++ suffix, (prefix, suffix).toString)
       assertEquals(els, prefix.toList ++: suffix)
       assertEquals(els, prefix.toList :++ suffix)
     }
@@ -197,7 +194,7 @@ class VectorTest {
       j <- -100 to 4000 by 6
     } {
       val v2 = v.take(i)
-      assertArrayEquals(s"<${v2.length}>.take($j)", v2.toArray.take(j), v2.iterator.take(j).toArray)
+      assertArrayEquals(v2.toArray.take(j), v2.iterator.take(j).toArray, s"<${v2.length}>.take($j)")
     }
   }
 
@@ -209,7 +206,7 @@ class VectorTest {
       j <- -100 to 4000 by 60
     } {
       val v2 = v.take(i)
-      assertArrayEquals(s"<${v2.length}>.drop($j)", v2.toArray.drop(j), v2.iterator.drop(j).toArray)
+      assertArrayEquals(v2.toArray.drop(j), v2.iterator.drop(j).toArray, s"<${v2.length}>.drop($j)")
     }
   }
 
@@ -222,7 +219,7 @@ class VectorTest {
       k <- -100 to 4000 by 60
     } {
       val v2 = v.take(i)
-      assertArrayEquals(s"<${v2.length}>.slice($j, $k)", v2.toArray.slice(j, k), v2.iterator.slice(j, k).toArray)
+      assertArrayEquals(v2.toArray.slice(j, k), v2.iterator.slice(j, k).toArray, s"<${v2.length}>.slice($j, $k)")
     }
   }
 

@@ -12,14 +12,14 @@
 
 package scala.jdk.javaapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import scala.Function2;
 import scala.runtime.BoxedUnit;
 
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.ObjDoubleConsumer;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FunctionConvertersJavaTest {
     Function2<String, String, BoxedUnit> sf = (x, y) -> BoxedUnit.UNIT;

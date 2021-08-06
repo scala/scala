@@ -12,17 +12,13 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import AssertUtil._
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import java.lang.ref._
-
 import scala.annotation.unused
+import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class AssertUtilTest {
   @Test def assertThrowsAssertion(): Unit = {
     assertThrows[AssertionError](throw new AssertionError("meme"), _ == "meme")

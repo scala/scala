@@ -1,12 +1,9 @@
 package scala.lang.stringinterpol
 
+import org.junit.jupiter.api.Assertions.{assertThrows => _, _}
+import org.junit.jupiter.api.Test
+
 import java.text.DecimalFormat
-
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-
 import scala.language.implicitConversions
 import scala.tools.testkit.AssertUtil._
 
@@ -31,7 +28,6 @@ object StringContextTestUtils {
   }
 }
 
-@RunWith(classOf[JUnit4])
 class StringContextTest {
 
   import StringContext._
@@ -83,7 +79,6 @@ class StringContextTest {
   // verifying that the standard interpolators can be supplanted
   @Test def antiHijack_?() = {
     object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any*) = "!!!!" } }
-    import AllYourStringsAreBelongToMe._
     //assertEquals("????", s"????")
     assertEquals("!!!!", s"????") // OK to hijack core interpolator ids
   }

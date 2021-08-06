@@ -1,11 +1,8 @@
 package scala.lang.primitives
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class PredefAutoboxingTest {
   @Test def unboxNullByte() =
     assertEquals(Predef.Byte2byte(null), 0.toByte)

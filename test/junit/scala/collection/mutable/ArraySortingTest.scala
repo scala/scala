@@ -1,12 +1,9 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert.assertEquals
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
 
 /* Tests various maps by making sure they all agree on the same answers. */
-@RunWith(classOf[JUnit4])
 class ArraySortingTest {
   
   class CantSortMe(val i: Int) {

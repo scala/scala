@@ -1,18 +1,14 @@
 package scala.reflect.internal.util
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
-@RunWith(classOf[JUnit4])
 class AbstractFileClassLoaderTest {
 
-  import scala.reflect.io._
-  import scala.io.Source
+  import java.net.{URL, URLClassLoader}
   import scala.io.Codec.UTF8
-  import scala.reflect.io.Streamable
-  import java.net.{ URLClassLoader, URL }
+  import scala.io.Source
+  import scala.reflect.io.{Streamable, _}
 
   implicit def `we love utf8` = UTF8
   implicit class `abs file ops`(f: AbstractFile) {

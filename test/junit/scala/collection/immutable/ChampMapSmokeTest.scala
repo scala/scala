@@ -1,7 +1,7 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.Assertions.{assertEquals, assertFalse, assertSame, assertTrue}
+import org.junit.jupiter.api.{Assertions, Test}
 
 object ChampMapSmokeTest {
 
@@ -214,10 +214,10 @@ class ChampMapSmokeTest {
     val s1, s2 = new String("s") // equals, but distinct references,
     val key = "k"
     var map = emptyMap[Any, Any].updated(key, s1).updated(key, s2)
-    Assert.assertSame(s2, map.apply(key))
+    Assertions.assertSame(s2, map.apply(key))
     class collision() { override def hashCode = key.hashCode}
     for (i <- (0 to 1024)) map = map.updated(new collision(), "")
-    Assert.assertSame(s1, map.updated(key, s1).apply(key))
+    Assertions.assertSame(s1, map.updated(key, s1).apply(key))
   }
 
   @Test def replacedValueIdentical(): Unit = {

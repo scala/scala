@@ -1,8 +1,8 @@
 package scala.tools.nsc
 package classpath
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import java.net.{URI, URL}
 import java.nio.file._
 import java.nio.file.attribute.FileTime

@@ -1,9 +1,7 @@
 package scala.tools.nsc
 package transform.patmat
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.AsmUtils._
@@ -13,7 +11,6 @@ import scala.tools.testkit.BytecodeTesting._
 
 import PartialFunction.cond
 
-@RunWith(classOf[JUnit4])
 class PatmatBytecodeTest extends BytecodeTesting {
   val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:l:inline -opt-inline-from:**"))
 

@@ -1,7 +1,7 @@
 package scala.util
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 import scala.math.{Ordered, Ordering}
 
 class SortingTest {
@@ -35,16 +35,16 @@ class SortingTest {
     val rxs = { val temp = xs.clone; Sorting.stableSort(temp)(backwardsN); temp }
     val sys = Sorting.stableSort(ys.clone.toIndexedSeq, (i: Int) => xs(i))
     
-    assertTrue("Quicksort should be in order", isSorted(qxs))
-    assertTrue("Quicksort should be in reverse order", isAntisorted(pxs))
-    assertTrue("Stable sort should be sorted and stable", isStable(sxs))
-    assertTrue("Stable sort should be reverse sorted but stable", isAntistable(rxs))
-    assertTrue("Stable sorting by proxy should produce sorted stable list", isStable(sys.map(i => xs(i))))
-    assertTrue("Quicksort should produce canonical ordering", (qxs zip zs).forall{ case (a,b) => a.i == b.i })
-    assertTrue("Reverse quicksort should produce canonical ordering", (pxs.reverse zip zs).forall{ case (a,b) => a.i == b.i })
-    assertTrue("Stable sort should produce exact ordering", (sxs zip zs).forall{ case (a,b) => a == b })
-    assertTrue("Reverse stable sort should produce canonical ordering", (rxs.reverse zip zs).forall{ case (a,b) => a.i == b.i })
-    assertTrue("Proxy sort and direct sort should produce exactly the same thing", (sxs zip sys.map(i => xs(i))).forall{ case (a,b) => a == b })
+    assertTrue(isSorted(qxs), "Quicksort should be in order")
+    assertTrue(isAntisorted(pxs), "Quicksort should be in reverse order")
+    assertTrue(isStable(sxs), "Stable sort should be sorted and stable")
+    assertTrue(isAntistable(rxs), "Stable sort should be reverse sorted but stable")
+    assertTrue(isStable(sys.map(i => xs(i))), "Stable sorting by proxy should produce sorted stable list")
+    assertTrue((qxs zip zs).forall{ case (a,b) => a.i == b.i }, "Quicksort should produce canonical ordering")
+    assertTrue((pxs.reverse zip zs).forall{ case (a,b) => a.i == b.i }, "Reverse quicksort should produce canonical ordering")
+    assertTrue((sxs zip zs).forall{ case (a,b) => a == b }, "Stable sort should produce exact ordering")
+    assertTrue((rxs.reverse zip zs).forall{ case (a,b) => a.i == b.i }, "Reverse stable sort should produce canonical ordering")
+    assertTrue((sxs zip sys.map(i => xs(i))).forall{ case (a,b) => a == b }, "Proxy sort and direct sort should produce exactly the same thing")
   }
   
   @Test def testSortConsistency(): Unit = {
@@ -58,11 +58,11 @@ class SortingTest {
       val b = Array.fill(size)(rng.nextBoolean())
       val bfwd = Sorting.stableSort(b.clone.toIndexedSeq)
       val bbkw = Sorting.stableSort(b.clone.toIndexedSeq, (x: Boolean, y: Boolean) => x && !y)
-      assertTrue("All falses should be first", bfwd.dropWhile(_ == false).forall(_ == true))
-      assertTrue("All falses should be last when sorted backwards", bbkw.dropWhile(_ == true).forall(_ == false))
-      assertTrue("Sorting booleans should preserve the number of trues", b.count(_ == true) == bfwd.count(_ == true))
-      assertTrue("Backwards sorting booleans should preserve the number of trues", b.count(_ == true) == bbkw.count(_ == true))
-      assertTrue("Sorting should not change the sizes of arrays", b.length == bfwd.length && b.length == bbkw.length)
+      assertTrue(bfwd.dropWhile(_ == false).forall(_ == true), "All falses should be first")
+      assertTrue(bbkw.dropWhile(_ == true).forall(_ == false), "All falses should be last when sorted backwards")
+      assertTrue(b.count(_ == true) == bfwd.count(_ == true), "Sorting booleans should preserve the number of trues")
+      assertTrue(b.count(_ == true) == bbkw.count(_ == true), "Backwards sorting booleans should preserve the number of trues")
+      assertTrue(b.length == bfwd.length && b.length == bbkw.length, "Sorting should not change the sizes of arrays")
     }
   }
 }

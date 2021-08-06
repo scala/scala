@@ -1,14 +1,11 @@
 package scala.tools.nsc
 package symtab
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class FlagsTest extends BytecodeTesting {
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._

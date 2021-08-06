@@ -1,13 +1,10 @@
 package scala.lang.annotations
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.RunTesting
 
-@RunWith(classOf[JUnit4])
 class RunTest extends RunTesting {
   import runner._
 

@@ -17,8 +17,8 @@ import scala.util.Properties._
 import scala.util.Using
 import scala.util.chaining._
 
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions._
 
 class ProcessTest {
   private def testily(body: => Unit) = if (!isWin) body

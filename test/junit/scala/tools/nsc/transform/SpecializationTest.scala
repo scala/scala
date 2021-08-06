@@ -1,7 +1,7 @@
 package scala.tools.nsc.transform
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 
@@ -25,21 +25,21 @@ class SpecializationTest {
       val cls = FunctionClass.apply(i)
       val actual = cls.typeParams.exists(_.isSpecialized)
       val expected = i <= MaxFunctionAritySpecialized
-      assertEquals(cls.toString, expected, actual)
+      assertEquals(expected, actual, cls.toString)
     }
 
     for (i <- (1 to MaxTupleArity)) {
       val cls = TupleClass.apply(i)
       val actual = cls.typeParams.exists(_.isSpecialized)
       val expected = i <= MaxTupleAritySpecialized
-      assertEquals(cls.toString, expected, actual)
+      assertEquals(expected, actual, cls.toString)
     }
 
     for (i <- (1 to MaxProductArity)) {
       val cls = ProductClass.apply(i)
       val actual = cls.typeParams.exists(_.isSpecialized)
       val expected = i <= MaxProductAritySpecialized
-      assertEquals(cls.toString, expected, actual)
+      assertEquals(expected, actual, cls.toString)
     }
   }
 }

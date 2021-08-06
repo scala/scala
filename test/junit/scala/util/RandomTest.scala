@@ -1,6 +1,6 @@
 package scala.util
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.annotation.unused
 import scala.collection.immutable.WrappedString
@@ -12,7 +12,7 @@ class RandomTest {
 
     val items = Random.alphanumeric.take(100000)
     for (c <- items) {
-      Assert.assertTrue(s"$c should be alphanumeric", isAlphaNum(c))
+      Assertions.assertTrue(isAlphaNum(c), s"$c should be alphanumeric")
     }
   }
 

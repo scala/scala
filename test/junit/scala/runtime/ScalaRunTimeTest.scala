@@ -1,12 +1,9 @@
 package scala.runtime
 
-import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 /** Tests for the runtime object ScalaRunTime */
-@RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
   @Test
   def testStringOf(): Unit = {

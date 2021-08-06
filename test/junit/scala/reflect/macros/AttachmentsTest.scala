@@ -1,12 +1,9 @@
 package scala.reflect.macros
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.jupiter.api.Test
 
 import scala.reflect.internal.util._
 
-@RunWith(classOf[JUnit4])
 class AttachmentsTest {
   def emptyAtt: Attachments = NoPosition
 

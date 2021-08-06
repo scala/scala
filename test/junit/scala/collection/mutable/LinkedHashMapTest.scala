@@ -1,14 +1,11 @@
 package scala.collection.mutable
 
-import org.junit.Assert._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.{ Assert, Test }
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable
 
 /* Test for scala/bug#9095 */
-@RunWith(classOf[JUnit4])
 class LinkedHashMapTest {
   class TestClass extends mutable.LinkedHashMap[String, Int] {
     def lastItemRef = lastEntry
@@ -19,9 +16,9 @@ class LinkedHashMapTest {
     val lhm = new TestClass
     Seq("a" -> 8, "b" -> 9).foreach(kv => lhm.put(kv._1, kv._2))
     
-    Assert.assertNotNull(lhm.lastItemRef)
+    assertNotNull(lhm.lastItemRef)
     lhm.clear()
-    Assert.assertNull(lhm.lastItemRef)
+    assertNull(lhm.lastItemRef)
   }
 
   @Test

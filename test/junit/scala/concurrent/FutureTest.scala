@@ -1,8 +1,8 @@
 
 package scala.concurrent
 
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 import scala.tools.testkit.AssertUtil._
 import scala.util.Try
@@ -57,7 +57,7 @@ class FutureTest {
     // normally we have no guarantee that firstCompletedOf completed, so we assert that this assumption held
     assertNotReachable(result, unfulfilled) {
       quick.complete(Try(result))
-      assertTrue("First must complete", first.isCompleted)
+      assertTrue(first.isCompleted, "First must complete")
     }
     /* The test has this structure under the hood:
     val p = Promise[String]

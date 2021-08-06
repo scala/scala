@@ -1,6 +1,6 @@
 package scala.collection
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import scala.collection.{mutable => cm, immutable => ci}
 import scala.jdk.CollectionConverters._
 

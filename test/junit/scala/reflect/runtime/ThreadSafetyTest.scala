@@ -14,7 +14,7 @@ package scala.reflect.runtime
 
 import java.util.concurrent.{Callable, Executors}
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class ThreadSafetyTest {
   import scala.reflect.runtime.universe._

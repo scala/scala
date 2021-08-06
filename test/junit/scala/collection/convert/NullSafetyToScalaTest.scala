@@ -3,8 +3,8 @@ package scala.collection.convert
 import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
-import org.junit.Test
-import org.junit.Assert.assertNull
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertNull
 
 import scala.jdk.CollectionConverters._
 

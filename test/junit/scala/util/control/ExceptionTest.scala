@@ -12,16 +12,12 @@
 
 package scala.util
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
-import org.junit.Assert._
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable.ListBuffer
-
 import scala.util.control.Exception._
 
-@RunWith(classOf[JUnit4])
 class ExceptionTest {
 
   @Test

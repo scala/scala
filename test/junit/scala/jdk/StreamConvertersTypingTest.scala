@@ -14,8 +14,8 @@ package scala.jdk
 
 import java.util.stream._
 
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.annotation.unused
 import scala.collection.Stepper.EfficientSplit

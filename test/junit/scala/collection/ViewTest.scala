@@ -1,8 +1,8 @@
 package scala.collection
 
 import scala.collection.immutable.List
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 

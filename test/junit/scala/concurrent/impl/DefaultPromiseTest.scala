@@ -2,8 +2,8 @@ package scala.concurrent.impl
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
-import org.junit.Assert._
-import org.junit.Test
+import org.junit.jupiter.api.Assertions._
+import org.junit.jupiter.api.Test
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.impl.Promise.DefaultPromise
@@ -87,7 +87,7 @@ class DefaultPromiseTest {
 
       expected match {
         case NoEffect =>
-          assertTrue(s"Shouldn't throw exception: $result", result.isSuccess)
+          assertTrue(result.isSuccess, s"Shouldn't throw exception: $result")
           assertEquals(Map.empty[(Try[Result], HandlerId), Int], fireCounts)
         case HandlersFired(firingResult, handlers) =>
           assert(result.isSuccess)
