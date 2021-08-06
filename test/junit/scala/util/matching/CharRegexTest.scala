@@ -1,54 +1,50 @@
 
 package scala.util.matching
 
-import org.junit.Test
+import scala.tools.testkit.AssertUtil.{assertCond, assertCondNot, assertThrows}
 
-import PartialFunction._
+import org.junit.Test
 
 /** Regex can match a Char.
  *  If the pattern includes a group,
  *  always return a single char.
  */
 class CharRegexTest {
-  implicit class Averrable(val b: Boolean) /*extends AnyVal*/ {
-    def yes(): Unit = assert(b)
-    def no(): Unit = assert(!b)
-  }
+
   val c: Char = 'c'  // "cat"(0)
   val d: Char = 'D'  // "Dog"(0)
 
-  @Test def comparesGroupCorrectly(): Unit = {
+  @Test def comparesGroupCorrectly: Unit = {
     val r = """(\p{Lower})""".r
-    cond(c) { case r(x) => true } .yes()
-    cond(c) { case r(_) => true } .yes()
-    cond(c) { case r(_*) => true } .yes()
-    cond(c) { case r() => true } .no()
+    assertCond(c) { case r(x) => true }
+    assertCond(c) { case r(_) => true }
+    assertCond(c) { case r(_*) => true }
+    assertCondNot(c) { case r() => true }
 
-    cond(d) { case r(x) => true } .no()
-    cond(d) { case r(_) => true } .no()
-    cond(d) { case r(_*) => true } .no()
-    cond(d) { case r() => true } .no()
+    assertCondNot(d) { case r(x) => true }
+    assertCondNot(d) { case r(_) => true }
+    assertCondNot(d) { case r(_*) => true }
+    assertCondNot(d) { case r() => true }
   }
 
-  @Test def comparesNoGroupCorrectly(): Unit = {
+  @Test def comparesNoGroupCorrectly: Unit = {
     val rnc = """\p{Lower}""".r
-    cond(c) { case rnc(x) => true } .no()
-    cond(c) { case rnc(_) => true } .no()
-    cond(c) { case rnc(_*) => true } .yes()
-    cond(c) { case rnc() => true } .yes()
+    assertCondNot(c) { case rnc(x) => true }
+    assertCondNot(c) { case rnc(_) => true }
+    assertCond(c) { case rnc(_*) => true }
+    assertCond(c) { case rnc() => true }
 
-    cond(d) { case rnc(x) => true } .no()
-    cond(d) { case rnc(_) => true } .no()
-    cond(d) { case rnc(_*) => true } .no()
-    cond(d) { case rnc() => true } .no()
+    assertCondNot(d) { case rnc(x) => true }
+    assertCondNot(d) { case rnc(_) => true }
+    assertCondNot(d) { case rnc(_*) => true }
+    assertCondNot(d) { case rnc() => true }
   }
 
-  @Test(expected = classOf[MatchError])
-  def failCorrectly(): Unit = {
+  @Test def failCorrectly: Unit = {
     val headAndTail = """(\p{Lower})([a-z]+)""".r
-    val n = "cat"(0) match {
+    def test = "cat"(0) match {
       case headAndTail(ht @ _*) => ht.size
     }
-    assert(false, s"Match size $n")
+    assertThrows[MatchError](test)
   }
 }

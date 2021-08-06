@@ -136,6 +136,9 @@ object AssertUtil {
         throw ae
     }
 
+  def assertCond[A](x: A)(pf: PartialFunction[A, Boolean]): Unit    = assertTrue(PartialFunction.cond(x)(pf))
+  def assertCondNot[A](x: A)(pf: PartialFunction[A, Boolean]): Unit = assertFalse(PartialFunction.cond(x)(pf))
+
   def assertFails[U](checkMessage: String => Boolean)(body: => U): Unit = assertThrows[AssertionError](body, checkMessage)
 
   /** JUnit-style assertion for `IterableLike.sameElements`.
