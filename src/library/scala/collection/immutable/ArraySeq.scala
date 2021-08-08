@@ -68,7 +68,15 @@ sealed abstract class ArraySeq[+A]
     ArraySeq.unsafeWrapArray(dest).asInstanceOf[ArraySeq[B]]
   }
 
-  override def map[B](f: A => B): ArraySeq[B] = iterableFactory.tabulate(length)(i => f(apply(i)))
+  override def map[B](f: A => B): ArraySeq[B] = {
+    val a = new Array[Any](size)
+    var i = 0
+    while (i < a.length){
+      a(i) = f(apply(i)).asInstanceOf[Any]
+      i += 1
+    }
+    ArraySeq.unsafeWrapArray(a).asInstanceOf[ArraySeq[B]]
+  }
 
   override def prepended[B >: A](elem: B): ArraySeq[B] =
     ArraySeq.unsafeWrapArray(unsafeArray.prepended[Any](elem)).asInstanceOf[ArraySeq[B]]
