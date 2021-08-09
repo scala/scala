@@ -19,13 +19,14 @@ class ArraySeqBenchmark {
   var size: Int = _
   var integersS: ArraySeq[Int] = _
   var stringsS: ArraySeq[String] = _
-  val newS = Array("a", "b", "c", "d", "e", "f")
+  var newS: Array[String] = _
 
   @Setup(Level.Trial) def initNumbers: Unit = {
     val integers = (1 to size).toList
     val strings = integers.map(_.toString)
     integersS = ArraySeq.unsafeWrapArray(integers.toArray)
     stringsS = ArraySeq.unsafeWrapArray(strings.toArray)
+    newS = Array("a", "b", "c", "d", "e", "f")
   }
 
   @Benchmark def sortedStringOld(bh: Blackhole): Unit =

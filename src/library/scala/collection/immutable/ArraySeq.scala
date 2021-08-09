@@ -72,7 +72,7 @@ sealed abstract class ArraySeq[+A]
     val a = new Array[Any](size)
     var i = 0
     while (i < a.length){
-      a(i) = f(apply(i)).asInstanceOf[Any]
+      a(i) = f(apply(i))
       i += 1
     }
     ArraySeq.unsafeWrapArray(a).asInstanceOf[ArraySeq[B]]
