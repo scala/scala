@@ -1,14 +1,22 @@
 class A {
-  // fail
+  // ok
   val a =
     for {
       case Some(x) <- List(Some(1), None)
-    } yield x
+      y = x + 1
+    } yield x + y
 
-  // fail
+  // ok
   val b =
     for {
       Some(x) <- List(Some(1), None)
-      case y = x + 1
+      Some(y) <- List(None, Some(2))
     } yield x+y
+
+  // fail
+  val c =
+    for {
+      case Some(x) <- List(Some(1), None)
+      case y = x + 1
+    } yield x + y
 }
