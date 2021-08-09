@@ -1915,16 +1915,14 @@ self =>
       else generator(!isFirst, allowNestedIf)
 
     /** {{{
-     *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
+     *  Generator ::= [`case'] Pattern1 (`<-' | `=') Expr [Guard]
      *  }}}
      */
     def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
       val start  = in.offset
       val hasCase = in.token == CASE
-      if (hasCase) {
-        if (!currentRun.isScala3) syntaxError(in.offset, s"`case` keyword in for comprehension requires the -Xsource:3 flag.")
+      if (hasCase)
         in.skipCASE()
-      }
 
       val hasVal = in.token == VAL
       if (hasVal)
