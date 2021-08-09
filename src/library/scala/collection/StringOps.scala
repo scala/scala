@@ -158,13 +158,13 @@ object StringOps {
 }
 
 /** Provides extension methods for strings.
-  * 
+  *
   * Some of these methods treat strings as a plain collection of [[Char]]s
   * without any regard for Unicode handling. Unless the user takes Unicode
   * handling in to account or makes sure the strings don't require such handling,
   * these methods may result in unpaired or invalidly paired surrogate code
   * units.
-  * 
+  *
   * @define unicodeunaware This method treats a string as a plain sequence of
   *                        Char code units and makes no attempt to keep
   *                        surrogate pairs or codepoint sequences together.
@@ -848,9 +848,13 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** You can follow a string with `.r`, turning it into a `Regex`. E.g.
     *
-    *  `"""A\w*""".r`   is the regular expression for identifiers starting with `A`.
+    *  `"""A\w*""".r`   is the regular expression for ASCII-only identifiers starting with `A`.
+    *
+    *  `"""(?<month>\d\d)-(?<day>\d\d)-(?<year>\d\d\d\d)""".r` matches dates
+    *  and provides its subcomponents through groups named "month", "day" and
+    *  "year".
     */
-  def r: Regex = r()
+  def r: Regex = new Regex(s)
 
   /** You can follow a string with `.r(g1, ... , gn)`, turning it into a `Regex`,
     *  with group names g1 through gn.
@@ -861,6 +865,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @param groupNames The names of the groups in the pattern, in the order they appear.
     */
+  @deprecated("use inline group names like (?<year>X) instead", "2.13.7")
   def r(groupNames: String*): Regex = new Regex(s, groupNames: _*)
 
   /**
@@ -1430,7 +1435,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @param f    the 'split function' mapping the elements of this string to an [[scala.util.Either]]
     *
-    *  @return     a pair of strings: the first one made of those characters returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of strings: the first one made of those characters returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]].
     */
   def partitionMap(f: Char => Either[Char,Char]): (String, String) = {

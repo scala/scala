@@ -4,8 +4,8 @@ object Test extends App {
  import scala.util.matching.{ Regex, UnanchoredRegex }
 
  val dateP1 = """(\d\d\d\d)-(\d\d)-(\d\d)""".r.unanchored
- val dateP2 = """(\d\d\d\d)-(\d\d)-(\d\d)""".r("year", "month", "day").unanchored
- val dateP3 =  new Regex("""(\d\d\d\d)-(\d\d)-(\d\d)""", "year", "month", "day") with UnanchoredRegex
+ val dateP2 = """(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)""".r.unanchored
+ val dateP3 =  new Regex("""(?<year>\d\d\d\d)-(?<month>\d\d)-(?<day>\d\d)""") with UnanchoredRegex
 
  val yearStr = "2011"
  val dateStr = List(yearStr,"07","15").mkString("-")
