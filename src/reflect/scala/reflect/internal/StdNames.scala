@@ -675,6 +675,11 @@ trait StdNames {
     // Scala 3 import syntax
     val as: NameType              = nameType("as")
 
+    // Scala 3 hard keywords
+    val `enum`: NameType          = nameType("enum")
+    val `export`: NameType        = nameType("export")
+    val `given`: NameType         = nameType("given")
+
     // Scala 3 soft keywords
     val infix: NameType           = nameType("infix")
     val open: NameType            = nameType("open")

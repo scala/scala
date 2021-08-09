@@ -1277,6 +1277,8 @@ self =>
     def ident(skipIt: Boolean): Name = (
       if (isIdent) {
         val name = in.name.encode
+        if (in.token != BACKQUOTED_IDENT && scala3Keywords.contains(name))
+          deprecationWarning(in.offset, s"Wrap `$name` in backticks to use it as an identifier, it will become a keyword in Scala 3.", "2.13.7")
         in.nextToken()
         name
       }
