@@ -1,15 +1,12 @@
 package scala.util.matching
 
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.tools.testkit.AssertUtil._
+import scala.tools.testkit.AssertUtil.{assertCond, assertThrows}
 
-@RunWith(classOf[JUnit4])
 class RegexTest {
-  @Test def t8022CharSequence(): Unit = {
+  @Test def t8022CharSequence: Unit = {
     val full = """.*: (.)$""".r
     val text = "   When I use this operator: *"
     // Testing 2.10.x compatibility of the return types of unapplySeq
@@ -17,7 +14,7 @@ class RegexTest {
     assertEquals("*", y)
   }
 
-  @Test def t8022Match(): Unit = {
+  @Test def t8022Match: Unit = {
     val R = """(\d)""".r
     val matchh = R.findFirstMatchIn("a1").get
     // Testing 2.10.x compatibility of the return types of unapplySeq
@@ -25,7 +22,7 @@ class RegexTest {
     assertEquals("1", y)
   }
 
-  @Test def `t9666: use inline group names`(): Unit = {
+  @Test def `t9666: use inline group names`: Unit = {
     val r = new Regex("a(?<Bee>b*)c")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -37,7 +34,8 @@ class RegexTest {
     assertFalse(ms.hasNext)
   }
 
-  @Test def `t9666: use explicit group names`(): Unit = {
+  @deprecated("Explicit group names are essentially deprecated", since="2.13.7")
+  @Test def `t9666: use explicit group names`: Unit = {
     val r = new Regex("a(b*)c", "Bee")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -49,7 +47,8 @@ class RegexTest {
     assertFalse(ms.hasNext)
   }
 
-  @Test def `t9666: fall back to explicit group names`(): Unit = {
+  @deprecated("Explicit group names are essentially deprecated", since="2.13.7")
+  @Test def `t9666: fall back to explicit group names`: Unit = {
     val r = new Regex("a(?<Bar>b*)c", "Bee")
     val ms = r findAllIn "stuff abbbc more abc and so on"
     assertTrue(ms.hasNext)
@@ -67,13 +66,16 @@ class RegexTest {
   type NoMatch = NoSuchElementException
   type NoData  = IllegalStateException
 
-  @Test def `t9666: throw on bad name`(): Unit = {
+  @Test def `t9666: throw on bad name`: Unit =
     assertThrows[NoGroup] {
       val r = new Regex("a(?<Bar>b*)c")
       val ms = r findAllIn "stuff abbbc more abc and so on"
       assertTrue(ms.hasNext)
       ms group "Bee"
     }
+
+  @deprecated("Explicit group names are essentially deprecated", since="2.13.7")
+  @Test def `t9666: throw on bad explicit name`: Unit = {
     assertThrows[NoGroup] {
       val r = new Regex("a(?<Bar>b*)c", "Bar")
       val ms = r findAllIn "stuff abbbc more abc and so on"
@@ -88,7 +90,7 @@ class RegexTest {
     }
   }
 
-  @Test def `t9827 MatchIterator ergonomics`(): Unit = {
+  @Test def `t9827 MatchIterator ergonomics`: Unit = {
     val r = "(ab)(cd)".r
     val s = "xxxabcdyyyabcdzzz"
     assertEquals(3, r.findAllIn(s).start)
@@ -155,7 +157,7 @@ class RegexTest {
     }
   }
 
-  @Test def `t10827 matches method`(): Unit = {
+  @Test def `t10827 matches method`: Unit = {
     val r = """\d+""".r
     assertTrue(r.matches("500"))
     assertFalse(r.matches("foo"))
@@ -164,7 +166,7 @@ class RegexTest {
     assertFalse(r.matches("2foo"))
   }
 
-  @Test def `t10827 matches method for unanchored Regex`(): Unit = {
+  @Test def `t10827 matches method for unanchored Regex`: Unit = {
     val r = """\d+""".r.unanchored
     assertTrue(r.matches("500"))
     assertFalse(r.matches("abc"))
@@ -173,7 +175,7 @@ class RegexTest {
     assertTrue(r.matches("2foo"))
   }
 
-  @Test def replacementMatching(): Unit = {
+  @Test def replacementMatching: Unit = {
     val regex = """\$\{(.+?)\}""".r
     val replaced = regex.replaceAllIn("Replacing: ${main}. And another method: ${foo}.",
         (m: util.matching.Regex.Match) => {
@@ -190,7 +192,7 @@ class RegexTest {
     assertEquals("Replacing: main. And another: ${foo}.", replaced3)
   }
 
-  @Test def groupsMatching(): Unit = {
+  @Test def groupsMatching: Unit = {
     val Date = """(\d+)/(\d+)/(\d+)""".r
     for (Regex.Groups(a, b, c) <- Date findFirstMatchIn "1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.") {
       assertEquals("1", a)
@@ -198,13 +200,13 @@ class RegexTest {
       assertEquals("2001", c)
     }
     for (Regex.Groups(a, b, c) <- Date.findAllIn("1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.").matchData) {
-      assertTrue(a == "1" || a == "31")
-      assertTrue(b == "1" || b == "12")
-      assertTrue(c == "2001" || c == "2000")
+      assertCond(a) { case "1" | "31" => true }
+      assertCond(b) { case "1" | "12" => true }
+      assertCond(c) { case "2001" | "2000" => true }
     }
   }
 
-  @Test def `t6406 no longer unapply any`(): Unit = {
+  @Test def `t6406 no longer unapply any`: Unit = {
     val r = "(\\d+)".r
     val q = """(\d)""".r
     val ns = List("1,2","x","3,4")
