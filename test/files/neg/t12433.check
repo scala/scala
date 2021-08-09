@@ -1,0 +1,4 @@
+t12433.scala:5: error: not found: value /
+  def t1 = /
+           ^
+1 error
