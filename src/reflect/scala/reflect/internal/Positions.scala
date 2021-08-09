@@ -345,7 +345,8 @@ trait Positions extends api.Positions { self: SymbolTable =>
           if (t.pos includes pos) {
             if (isEligible(t)) last = t
             super.traverse(t)
-          } else t match {
+          }
+          t match {
             case mdef: MemberDef =>
               val annTrees = mdef.mods.annotations match {
                 case Nil if mdef.symbol != null =>

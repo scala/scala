@@ -12,7 +12,9 @@
 
 package scala.tools.nsc.interpreter
 
-import scala.reflect.internal.util.{Position, RangePosition, StringOps}
+import scala.collection.mutable
+import scala.reflect.internal.util.{Position, RangePosition}
+import scala.tools.nsc.ast.parser.Tokens
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{Settings, interactive}
@@ -22,7 +24,7 @@ import scala.tools.nsc.interpreter.Results.{Error, Result}
 
 trait PresentationCompilation { self: IMain =>
 
-  private final val Cursor = IMain.DummyCursorFragment + " "
+  private final val Cursor = IMain.DummyCursorFragment
 
   /** Typecheck a line of REPL input, suitably wrapped with "interpreter wrapper" objects/classes, with the
     * presentation compiler. The result of this method gives access to the typechecked tree and to autocompletion
@@ -34,11 +36,31 @@ trait PresentationCompilation { self: IMain =>
     if (global == null) Left(Error)
     else {
       val pc = newPresentationCompiler()
-      val line1 = buf.patch(cursor, Cursor, 0)
-      val trees = pc.newUnitParser(line1).parseStats()
+      def cursorIsInKeyword(): Boolean = {
+        val scanner = pc.newUnitParser(buf).newScanner()
+        scanner.init()
+        while (scanner.token != Tokens.EOF) {
+          val token    = scanner.token
+          val o        = scanner.offset
+          scanner.nextToken()
+          if ((o to scanner.lastOffset).contains(cursor)) {
+            return (!Tokens.isIdentifier(token) && pc.syntaxAnalyzer.token2name.contains(token))
+          }
+        }
+        false
+      }
+      // Support completion of "def format = 42; for<TAB>" by replacing the keyword with foo_CURSOR_ before
+      // typechecking. Only do this when needed to be able ot correctly return the type of `foo.bar<CURSOR>`
+      // where `bar` is the complete name of a member.
+      val line1 = if (!cursorIsInKeyword()) buf else buf.patch(cursor, Cursor, 0)
+
+      val trees = pc.newUnitParser(line1).parseStats() match {
+        case Nil => List(pc.EmptyTree)
+        case xs => xs
+      }
       val importer = global.mkImporter(pc)
       //println(s"pc: [[$line1]], <<${trees.size}>>")
-      val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true)
+      val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true, storeResultInVal = false)
       val origUnit = request.mkUnit
       val unit = new pc.CompilationUnit(origUnit.source)
       unit.body = pc.mkImporter(global).importTree(origUnit.body)
@@ -89,8 +111,6 @@ trait PresentationCompilation { self: IMain =>
     interactiveGlobal
   }
 
-  private var lastCommonPrefixCompletion: Option[String] = None
-
   abstract class PresentationCompileResult(val compiler: interactive.Global, val inputRange: Position, val cursor: Int, val buf: String) extends PresentationCompilationResult {
     val unit: compiler.RichCompilationUnit // depmet broken for constructors, can't be ctor arg
 
@@ -120,15 +140,45 @@ trait PresentationCompilation { self: IMain =>
       }
     }
 
-    def typeString(tree: compiler.Tree): String =
-      compiler.exitingTyper(tree.tpe.toString)
+    def typeString(tree: compiler.Tree): String = {
+      tree.tpe match {
+        case null | compiler.NoType | compiler.ErrorType => ""
+        case tp if compiler.nme.isReplWrapperName(tp.typeSymbol.name) => ""
+        case tp => compiler.exitingTyper(tp.toString)
+      }
+    }
 
     def treeString(tree: compiler.Tree): String =
       compiler.showCode(tree)
 
     override def print = {
       val tree = treeAt(inputRange)
-      treeString(tree) + " // : " + tree.tpe.safeToString
+      import compiler._
+      object makeCodePrinterPrintInferredTypes extends Transformer {
+        private def printableTypeTree(tp: Type): TypeTree = {
+          val tree = TypeTree(tp)
+          tree.wasEmpty = false
+          tree
+        }
+        override def transform(tree: Tree): Tree = super.transform(tree) match {
+          case ValDef(mods, name, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
+            if (tree.symbol != null && tree.symbol != NoSymbol && nme.isReplWrapperName(tree.symbol.owner.name)) {
+              treeCopy.ValDef(tree, mods &~ (Flag.PRIVATE | Flag.LOCAL), name.dropLocal, printableTypeTree(tt.tpe), rhs)
+            } else {
+              treeCopy.ValDef(tree, mods, name, printableTypeTree(tt.tpe), rhs)
+            }
+          case DefDef(mods, name, tparams, vparamss, tt @ build.SyntacticEmptyTypeTree(), rhs) =>
+            treeCopy.DefDef(tree, mods, name, tparams, vparamss, printableTypeTree(tt.tpe), rhs)
+          case t => t
+        }
+
+      }
+      val tree1    = makeCodePrinterPrintInferredTypes.transform(tree)
+      val tpString = typeString(tree1) match {
+        case "" => ""
+        case s => " // : "  + s
+      }
+      treeString(tree1) + tpString
     }
 
 
@@ -138,7 +188,7 @@ trait PresentationCompilation { self: IMain =>
     val NoCandidates = (-1, Nil)
     type Candidates = (Int, List[CompletionCandidate])
 
-    override def completionCandidates(tabCount: Int): Candidates = {
+    override def completionCandidates(filter: Boolean, tabCount: Int): Candidates = {
       import compiler._
       import CompletionResult.NoResults
 
@@ -161,76 +211,56 @@ trait PresentationCompilation { self: IMain =>
         if (m.sym.paramss.isEmpty) CompletionCandidate.Nullary
         else if (m.sym.paramss.size == 1 && m.sym.paramss.head.isEmpty) CompletionCandidate.Nilary
         else CompletionCandidate.Other
-      def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean): Candidates = {
+      def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean) = {
+        val seen = new mutable.HashSet[Symbol]()
         val ccs = for {
           member <- matching
-          if member.symNameDropLocal == name
+          if seen.add(member.sym)
           sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
-          val tp         = member.prefix memberType sym
-          val desc       = Seq(if (isMemberDeprecated(member)) "(deprecated)" else "", if (isMemberUniversal(member)) "(universal)" else "")
-          val methodOtherDesc = if (!desc.exists(_ != "")) "" else " " + desc.filter(_ != "").mkString(" ")
           CompletionCandidate(
-            defString = sugared.defStringSeenAs(tp) + methodOtherDesc,
+            name = member.symNameDropLocal.decoded,
             arity = memberArity(member),
             isDeprecated = isMemberDeprecated(member),
-            isUniversal = isMemberUniversal(member))
+            isUniversal = isMemberUniversal(member),
+            declString = () => {
+              if (sym.isPackageObjectOrClass) ""
+              else {
+                val tp              = member.prefix memberType sym
+                val desc            = Seq(if (isMemberDeprecated(member)) "(deprecated)" else "", if (isMemberUniversal(member)) "(universal)" else "")
+                val methodOtherDesc = if (!desc.exists(_ != "")) "" else " " + desc.filter(_ != "").mkString(" ")
+                sugared.defStringSeenAs(tp) + methodOtherDesc
+              }
+            })
         }
-        (cursor, CompletionCandidate("") :: ccs.distinct)
+        ccs
       }
-      def toCandidates(members: List[Member]): List[CompletionCandidate] =
-        members
-          .map(m => CompletionCandidate(m.symNameDropLocal.decoded, memberArity(m), isMemberDeprecated(m), isMemberUniversal(m)))
-          .sortBy(_.defString)
       val found = this.completionsAt(cursor) match {
         case NoResults => NoCandidates
         case r =>
           def shouldHide(m: Member): Boolean =
-            tabCount == 0 && (isMemberDeprecated(m) || isMemberUniversal(m))
-          val matching = r.matchingResults().filterNot(shouldHide)
-          val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(inputRange.start, cursor)) && matching.exists(_.symNameDropLocal == r.name)
-          val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
-          if (tabAfterCommonPrefixCompletion || doubleTab) {
-            val pos1 = positionOf(cursor)
-            import compiler._
-            val locator = new Locator(pos1)
-            val tree = locator locateIn unit.body
-            var isNew = false
-            new TreeStackTraverser {
-              override def traverse(t: Tree): Unit = {
-                if (t eq tree) {
-                  isNew = path.dropWhile { case _: Select | _: Annotated => true; case _ => false}.headOption match {
-                    case Some(_: New) => true
-                    case _ => false
-                  }
-                } else super.traverse(t)
-              }
-            }.traverse(unit.body)
-            defStringCandidates(matching, r.name, isNew)
-          } else if (matching.isEmpty) {
-            // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
-            val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
-            val memberCompletions: List[CompletionCandidate] = toCandidates(camelMatches)
-            def allowCompletion = (
-              (memberCompletions.size == 1)
-                || CompletionResult.camelMatch(r.name)(r.name.newName(StringOps.longestCommonPrefix(memberCompletions.map(_.defString))))
-              )
-            if (memberCompletions.isEmpty) NoCandidates
-            else if (allowCompletion) (cursor - r.positionDelta, memberCompletions)
-            else (cursor, CompletionCandidate("") :: memberCompletions)
-          } else if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
-            NoCandidates // don't offer completion if the only option has been fully typed already
-          else {
-            // regular completion
-            (cursor - r.positionDelta, toCandidates(matching))
-          }
+            filter && tabCount == 0 && (isMemberDeprecated(m) || isMemberUniversal(m))
+          val matching = r.matchingResults(nameMatcher = if (filter) {entered => candidate => candidate.startsWith(entered)} else _ => _ => true).filterNot(shouldHide)
+          val pos1 = positionOf(cursor)
+          import compiler._
+          val locator = new Locator(pos1)
+          val tree = locator locateIn unit.body
+          var isNew = false
+          new TreeStackTraverser {
+            override def traverse(t: Tree): Unit = {
+              if (t eq tree) {
+                isNew = path.dropWhile { case _: Select | _: Annotated => true; case _ => false}.headOption match {
+                  case Some(_: New) => true
+                  case _ => false
+                }
+              } else super.traverse(t)
+            }
+          }.traverse(unit.body)
+          val candidates = defStringCandidates(matching, r.name, isNew)
+          val pos = cursor - r.positionDelta
+          (pos, candidates.sortBy(_.name))
       }
-      lastCommonPrefixCompletion =
-        if (found != NoCandidates && buf.length >= found._1)
-          Some(buf.substring(inputRange.start, found._1) + StringOps.longestCommonPrefix(found._2.map(_.defString)))
-        else
-          None
       found
     }
 
