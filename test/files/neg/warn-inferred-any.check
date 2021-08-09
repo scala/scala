@@ -1,6 +1,9 @@
 warn-inferred-any.scala:10: warning: a type was inferred to be `Any`; this may indicate a programming error.
   { List(1, 2, 3) contains "a" }  // only this warns
                   ^
+warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  { 1 to 5 contains 5L }          // should warn: scala.Predef.intWrapper(1).to(5).contains[AnyVal](5L)
+           ^
 warn-inferred-any.scala:18: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
   { 1L to 5L contains 5 }         // warn
              ^
@@ -14,5 +17,5 @@ warn-inferred-any.scala:37: warning: a type was inferred to be `Object`; this ma
   cs.contains(new C2)             // warns
      ^
 error: No warnings can be incurred under -Werror.
-5 warnings
+6 warnings
 1 error
