@@ -24,7 +24,7 @@ package <empty> {
     final <synthetic> def equals$extension[A]($this: C[A])(x$1: Any): Boolean = {
   case <synthetic> val x1: Any = x$1;
   case5(){
-    if (x1.isInstanceOf[C[A]])
+    if (x1.isInstanceOf[C[$this._]])
       matchEnd4(true)
     else
       case6()

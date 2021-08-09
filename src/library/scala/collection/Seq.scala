@@ -34,7 +34,7 @@ trait Seq[+A]
 
   override def equals(o: Any): Boolean =
     (this eq o.asInstanceOf[AnyRef]) || (o match {
-      case seq: Seq[A] if seq.canEqual(this) => sameElements(seq)
+      case seq: Seq[A @unchecked] if seq.canEqual(this) => sameElements(seq)
       case _ => false
     })
 

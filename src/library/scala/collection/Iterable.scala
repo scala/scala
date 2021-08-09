@@ -994,7 +994,7 @@ trait MapFactoryDefaults[K, +V,
   override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = mapFactory.newBuilder[K, V]
   override def empty: CC[K, V @uncheckedVariance] = (this: AnyRef) match {
     // Implemented here instead of in TreeSeqMap since overriding empty in TreeSeqMap is not forwards compatible (should be moved)
-    case self: immutable.TreeSeqMap[K, V] => immutable.TreeSeqMap.empty(self.orderedBy).asInstanceOf[CC[K, V]]
+    case self: immutable.TreeSeqMap[_, _] => immutable.TreeSeqMap.empty(self.orderedBy).asInstanceOf[CC[K, V]]
     case _ => mapFactory.empty
   }
 

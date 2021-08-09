@@ -1,0 +1,21 @@
+patmat-exprs-b.scala:42: warning: parameter value num in class Add is never used
+  case class Add[T](args: Iterable[Expr[T]])(implicit @nowarn num: NumericOps[T]) extends ManyArg[T] {
+                                                              ^
+patmat-exprs-b.scala:46: warning: parameter value num in class Add2 is never used
+  case class Add2[T](left: Expr[T], right: Expr[T])(implicit @nowarn num: NumericOps[T]) extends TwoArg[T] {
+                                                                     ^
+patmat-exprs-b.scala:49: warning: parameter value num in class Add3 is never used
+  case class Add3[T](a1: Expr[T], a2: Expr[T], a3: Expr[T])(implicit @nowarn num: NumericOps[T]) extends ManyArg[T] {
+                                                                             ^
+patmat-exprs-b.scala:42: warning: @nowarn annotation does not suppress any warnings
+  case class Add[T](args: Iterable[Expr[T]])(implicit @nowarn num: NumericOps[T]) extends ManyArg[T] {
+                                                       ^
+patmat-exprs-b.scala:46: warning: @nowarn annotation does not suppress any warnings
+  case class Add2[T](left: Expr[T], right: Expr[T])(implicit @nowarn num: NumericOps[T]) extends TwoArg[T] {
+                                                              ^
+patmat-exprs-b.scala:49: warning: @nowarn annotation does not suppress any warnings
+  case class Add3[T](a1: Expr[T], a2: Expr[T], a3: Expr[T])(implicit @nowarn num: NumericOps[T]) extends ManyArg[T] {
+                                                                      ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

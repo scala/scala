@@ -221,7 +221,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case that: TreeSet[A] if ordering == that.ordering => RB.keysEqual(tree, that.tree)
+    case that: TreeSet[A @unchecked] if ordering == that.ordering => RB.keysEqual(tree, that.tree)
     case _ => super.equals(obj)
   }
 
@@ -278,7 +278,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         case ts: TreeSet[A] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree
           else tree = RB.union(beforePublish(tree), ts.tree)(ordering)
-        case ts: TreeMap[A, _] if ts.ordering == ordering =>
+        case ts: TreeMap[A @unchecked, _] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree0
           else tree = RB.union(beforePublish(tree), ts.tree0)(ordering)
         case _ =>

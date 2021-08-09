@@ -74,6 +74,7 @@ object kaseMacro {
       val primaryParams = primaryParamss.head
       val secondaryParamss = primaryParamss.tail
       val ourPolyType = if (tparams.nonEmpty) AppliedTypeTree(Ident(name), tparams.map(tparam => Ident(tparam.name))) else Ident(name)
+      val ourWildType = if (tparams.nonEmpty) AppliedTypeTree(Ident(name), tparams.map(_ => Bind(typeNames.WILDCARD, EmptyTree))) else Ident(name)
       val tparamUnderscores = tparams.zipWithIndex.map{ case (tdef, i) => TypeDef(makeDeferredSynthetic(unmakeParam(tdef.mods)), TypeName("x$" + (i+1)), tdef.tparams, tdef.rhs) }
       val ourExistentialType = ExistentialTypeTree(AppliedTypeTree(Ident(name), tparamUnderscores.map(tdef => Ident(tdef.name))), tparamUnderscores)
 
@@ -154,7 +155,7 @@ object kaseMacro {
               Apply(Select(thatC, TermName("canEqual")), List(This(name)))
             }
             def sameTypeCheck = {
-              val ifSameType = CaseDef(Typed(Ident(termNames.WILDCARD), ourPolyType), EmptyTree, Literal(Constant(true)))
+              val ifSameType = CaseDef(Typed(Ident(termNames.WILDCARD), ourWildType), EmptyTree, Literal(Constant(true)))
               val otherwise = CaseDef(Ident(termNames.WILDCARD), EmptyTree, Literal(Constant(false)))
               Match(Ident(equalsParam.name), List(ifSameType, otherwise))
             }
