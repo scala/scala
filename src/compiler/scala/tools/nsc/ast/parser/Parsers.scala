@@ -2618,7 +2618,16 @@ self =>
      *  }}}
      */
     def importSelectors(): List[ImportSelector] = {
-      val selectors = inBracesOrNil(commaSeparated(importSelector()))
+      val selectors0 = inBracesOrNil(commaSeparated(importSelector()))
+
+      // Treat an import of `*, given` or `given, *` as if it was an import of `*`
+      // since the former in Scala 3 has the same semantics as the latter in Scala 2.
+      val selectors =
+        if (currentRun.isScala3 && selectors0.exists(_.name eq nme.WILDCARD))
+          selectors0.filterNot(sel => sel.name == nme.`given` && sel.rename == sel.name)
+        else
+          selectors0
+
       selectors.init foreach {
         case ImportSelector(nme.WILDCARD, pos, _, _)  => syntaxError(pos, "Wildcard import must be in last position")
         case _                                        => ()
