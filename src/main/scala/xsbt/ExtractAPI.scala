@@ -838,9 +838,14 @@ class ExtractAPI[GlobalType <: Global](
       }
       implicit def compat(ann: AnnotationInfo): IsStatic = new IsStatic(ann)
 
-      // scala/bug#11679 annotations of inherited members may be absent from the compile time classpath
-      // so avoid calling `isNonBottomSubClass` on these stub symbols which would trigger a fatal error.
-      annotations.filter(ann => !isStub(ann.atp.typeSymbol) && ann.isStatic)
+      // `isStub` for scala/bug#11679: annotations of inherited members may be absent from the compile time
+      // classpath so avoid calling `isNonBottomSubClass` on these stub symbols which would trigger an error.
+      //
+      // `initialize` for sbt/zinc#998: 2.13 identifies Java annotations by flags. Up to 2.13.6, this is done
+      // without forcing the info of `ann.atp.typeSymbol`, flags are missing it's still a `ClassfileLoader`.
+      annotations.filter(
+        ann => !isStub(ann.atp.typeSymbol) && { ann.atp.typeSymbol.initialize; ann.isStatic }
+      )
     }
 
   private def isStub(sym: Symbol): Boolean = sym match {
