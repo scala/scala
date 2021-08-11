@@ -24,6 +24,9 @@ abstract class MainNode<K, V> extends BasicNode {
 
     public abstract int cachedSize(Object ct);
 
+    // standard contract
+    public abstract int knownSize();
+
     public boolean CAS_PREV(MainNode<K, V> oldval, MainNode<K, V> nval) {
         return updater.compareAndSet(this, oldval, nval);
     }

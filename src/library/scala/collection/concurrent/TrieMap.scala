@@ -398,10 +398,11 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
 
   def isNullInode(ct: TrieMap[K, V]) = GCAS_READ(ct) eq null
 
-  def cachedSize(ct: TrieMap[K, V]): Int = {
-    val m = GCAS_READ(ct)
-    m.cachedSize(ct)
-  }
+  def cachedSize(ct: TrieMap[K, V]): Int =
+    GCAS_READ(ct).cachedSize(ct)
+
+  def knownSize(ct: TrieMap[K, V]): Int =
+    GCAS_READ(ct).knownSize()
 
   /* this is a quiescent method! */
   def string(lev: Int) = "%sINode -> %s".format("  " * lev, mainnode match {
@@ -438,6 +439,8 @@ private[concurrent] final class FailedNode[K, V](p: MainNode[K, V]) extends Main
 
   def cachedSize(ct: AnyRef): Int = throw new UnsupportedOperationException
 
+  def knownSize: Int = throw new UnsupportedOperationException
+
   override def toString = "FailedNode(%s)".format(p)
 }
 
@@ -456,7 +459,7 @@ private[collection] final class SNode[K, V](final val k: K, final val v: V, fina
   def string(lev: Int) = ("  " * lev) + "SNode(%s, %s, %x)".format(k, v, hc)
 }
 
-
+// Tomb Node, used to ensure proper ordering during removals
 private[collection] final class TNode[K, V](final val k: K, final val v: V, final val hc: Int)
   extends MainNode[K, V] with KVNode[K, V] {
   def copy = new TNode(k, v, hc)
@@ -464,10 +467,11 @@ private[collection] final class TNode[K, V](final val k: K, final val v: V, fina
   def copyUntombed = new SNode(k, v, hc)
   def kvPair = (k, v)
   def cachedSize(ct: AnyRef): Int = 1
+  def knownSize: Int = 1
   def string(lev: Int) = ("  " * lev) + "TNode(%s, %s, %x, !)".format(k, v, hc)
 }
 
-
+// List Node, leaf node that handles hash collisions
 private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Equiv[K])
   extends MainNode[K, V] {
 
@@ -492,7 +496,7 @@ private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Eq
 
   def removed(k: K, ct: TrieMap[K, V]): MainNode[K, V] = {
     val updmap = entries.filterNot(entry => equiv.equiv(entry._1, k))
-    if (updmap.size > 1) new LNode(updmap, equiv)
+    if (updmap.sizeIs > 1) new LNode(updmap, equiv)
     else {
       val (k, v) = updmap.iterator.next()
       new TNode(k, v, ct.computeHash(k)) // create it tombed so that it gets compressed on subsequent accesses
@@ -503,14 +507,16 @@ private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Eq
 
   def cachedSize(ct: AnyRef): Int = entries.size
 
+  def knownSize: Int = -1 // shouldn't ever be empty, and the size of a list is not known
+
   def string(lev: Int) = (" " * lev) + "LNode(%s)".format(entries.mkString(", "))
 
 }
 
-
+// Ctrie Node, contains bitmap and array of references to branch nodes
 private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[BasicNode], val gen: Gen) extends CNodeBase[K, V] {
   // this should only be called from within read-only snapshots
-  def cachedSize(ct: AnyRef) = {
+  def cachedSize(ct: AnyRef): Int = {
     val currsz = READ_SIZE()
     if (currsz != -1) currsz
     else {
@@ -519,6 +525,8 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
       READ_SIZE()
     }
   }
+
+  def knownSize: Int = READ_SIZE() // this should only ever return -1 if unknown
 
   // lends itself towards being parallelizable by choosing
   // a random starting offset in the array
@@ -676,6 +684,7 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   *
   *  For details, see: [[http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf]]
   */
+@SerialVersionUID(-5212455458703321708L)
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
   extends scala.collection.mutable.AbstractMap[K, V]
     with scala.collection.concurrent.Map[K, V]
@@ -1002,16 +1011,14 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   // END extra overrides
   ///////////////////////////////////////////////////////////////////
 
-
-  private def cachedSize() = {
-    val r = RDCSS_READ_ROOT()
-    r.cachedSize(this)
-  }
-
   override def size: Int =
     if (nonReadOnly) readOnlySnapshot().size
-    else cachedSize()
-  override def isEmpty: Boolean = size == 0
+    else RDCSS_READ_ROOT().cachedSize(this)
+  override def knownSize: Int =
+    if (nonReadOnly) -1
+    else RDCSS_READ_ROOT().knownSize(this)
+  override def isEmpty: Boolean =
+    (if (nonReadOnly) readOnlySnapshot() else this).sizeIs == 0 // sizeIs checks knownSize
   override protected[this] def className = "TrieMap"
 
 }
