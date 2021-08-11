@@ -184,7 +184,7 @@ grammar:
                       |  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
 
   Enumerators       ::=  Generator {semi Generator}
-  Generator         ::=  Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}
+  Generator         ::=  [‘case’] Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}
 
   CaseClauses       ::=  CaseClause { CaseClause }
   CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block
