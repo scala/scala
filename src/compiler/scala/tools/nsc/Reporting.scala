@@ -80,11 +80,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def suppressionExists(pos: Position): Boolean =
       suppressions.getOrElse(pos.source, Nil).exists(_.annotPos.point == pos.point)
 
-    def warnUnusedSuppressions(): Unit = {
-      // if we stop before typer completes (errors in parser, Ystop), report all suspended messages
+    def runFinished(hasErrors: Boolean): Unit = {
+      // report suspended messages (in case the run finished before typer)
       suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning))
-      // scaladoc doesn't run all phases, so not all warnings are emitted
-      if (settings.warnUnusedNowarn && !settings.isScaladoc)
+      // report unused nowarns only if all all phases are done. scaladoc doesn't run all phases.
+      if (!hasErrors && settings.warnUnusedNowarn && !settings.isScaladoc)
         for {
           source <- suppressions.keysIterator.toList
           sups   <- suppressions.remove(source)
