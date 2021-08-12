@@ -3,50 +3,62 @@
 This directory is used by the `bench` subproject of the Scala sbt build.
 It makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](https://openjdk.java.net/projects/code-tools/jmh/).
 
-## Running a benchmark
+## About the benchmarks
 
-Benchmarks are built with the bootstrap compiler ("starr") using the library built from the `library` project ("quick").
-If you want to test compiler changes you need to bootstrap with the new compiler.
+Benchmarks are built with the reference compiler ("starr") using the library built from the `library` project ("quick").
+If you want to test compiler changes you need to bootstrap a new compiler.
 
-You'll then need to know the fully-qualified name of the benchmark runner class.
-The benchmarking classes are organized under `src/main/scala`,
+The benchmarking classes are organized under `test/benchmarks/src/main/scala`,
 in the same package hierarchy as the classes that they test.
-Assuming that we're benchmarking `scala.collection.mutable.OpenHashMap`,
-the benchmark runner would likely be named `scala.collection.mutable.OpenHashMapRunner`.
-Using this example, one would simply run
-
-    bench/jmh:runMain scala.collection.mutable.OpenHashMapRunner
-
-in the Scala sbt build.
-
-The JMH results can be found under `../../target/jmh-results/` (i.e. the main Scala build's `target`,
-not the one that contains the benchmark class files). `jmh-results` gets deleted on an sbt `bench/clean`,
-so you should copy these files out of `target` if you wish to preserve them.
-
-## Creating a benchmark and runner
 
 The benchmarking classes use the same package hierarchy as the classes that they test
-in order to make it easy to expose, in package scope, members of the class under test,
+in order to make it easy to expose members of the class under test in package-private scope,
 should that be necessary for benchmarking.
 
 There are two types of classes in the source directory:
-those suffixed `Benchmark` and those suffixed `Runner`.
-The former are benchmarks that can be run directly using `bench/jmh:run`;
-however, they are normally run from a corresponding class of the latter type,
-which is run using `bench/jmh:runMain` (as described above).
-This …`Runner` class is useful for setting appropriate JMH command options,
+those suffixed `Benchmark`, and a few that are suffixed `Runner`.
+(The latter are described below, under "Custom runners".)
+
+## Running a normal benchmark
+
+Use `bench/Jmh/run` and provide the fully qualified name of the benchmark
+class:
+
+    bench/Jmh/run scala.collection.mutable.ListBufferBenchmark
+
+Results are printed to standard output.
+
+## Custom runners
+
+Some benchmarks have custom runners. A custom runner
+can be useful for setting appropriate JMH command options,
 and for processing the JMH results into files that can be read by other tools, such as Gnuplot.
 
-The `benchmark.JmhRunner` trait should be woven into any runner class, for the standard behavior that it provides.
+Assuming that we're benchmarking `scala.collection.mutable.OpenHashMap`,
+the custom runner (if there is one) would likely be named
+`scala.collection.mutable.OpenHashMapRunner`.
+Using this example, one would run
+
+    bench/Jmh/runMain scala.collection.mutable.OpenHashMapRunner
+
+in the Scala sbt build.
+
+Custom runner results are written to `../../target/jmh-results/` (i.e. the main Scala build's `target`,
+not the one that contains the benchmark class files). `jmh-results` gets deleted on an sbt `bench/clean`,
+so you should copy these files out of `target` if you wish to preserve them.
+
+If you want to make your own custom runner, extend the `benchmark.JmhRunner` trait, for the standard behavior that it provides.
 This includes creating output files in a subdirectory of `target/jmh-results`
 derived from the fully-qualified package name of the `Runner` class.
 
 ## Some useful HotSpot options
-Adding these to the `jmh:run` or `jmh:runMain` command line may help if you're using the HotSpot (Oracle, OpenJDK) compiler.
+
+Adding these to the `Jmh/run` or `Jmh/runMain` command line may help if you're using the HotSpot (Oracle, OpenJDK) compiler.
 They require prefixing with `-jvmArgs`.
-See [the Java documentation](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html) for more options. 
+See [the Java documentation](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html) for more options.
 
 ### Viewing JIT compilation events
+
 Adding `-XX:+PrintCompilation` shows when Java methods are being compiled or deoptimized.
 At the most basic level,
 these messages will tell you whether the code that you're measuring is still being tuned,
@@ -54,16 +66,20 @@ so that you know whether you're running enough warm-up iterations.
 See [Kris Mok's notes](https://gist.github.com/rednaxelafx/1165804#file-notes-md) to interpret the output in detail.
 
 ### Consider GC events
+
 If you're not explicitly performing `System.gc()` calls outside of your benchmarking code,
 you should add the JVM option `-verbose:gc` to understand the effect that GCs may be having on your tests.
 
 ### "Diagnostic" options
+
 These require the `-XX:+UnlockDiagnosticVMOptions` JVM option.
 
 #### Viewing inlining events
+
 Add `-XX:+PrintInlining`.
 
 #### Viewing the disassembled code
+
 If you're running OpenJDK or Oracle JVM,
 you may need to install the disassembler library (`hsdis-amd64.so` for the `amd64` architecture).
 In Debian, this is available in
@@ -84,16 +100,16 @@ To show it for _all_ methods, add `-XX:+PrintAssembly`.
 
 ### Using JITWatch
 
-[JITWatch](https://github.com/AdoptOpenJDK/jitwatch) is useful to understand how the JVM has JIT compiled
+[JITWatch](https://github.com/AdoptOpenJDK/jitwatch) is useful to understand how the JVM has JIT-compiled
 code.
 
 If you install `hsdis`, as described above, machine code disassembly is also created.
 
 You can generate the `hotspot.log` file for a benchmark run by adding the [required JVM options](https://github.com/AdoptOpenJDK/jitwatch/wiki/Building-hsdis)
-to JMH benchmark execution: 
+to JMH benchmark execution:
 
 ```
-sbt:root> bench/jmh:run scala.collection.mutable.ArrayOpsBenchmark.insertInteger -psize=1000 -f1 -jvmArgs -XX:+UnlockDiagnosticVMOptions -jvmArgs -XX:+TraceClassLoading -jvmArgs -XX:+LogCompilation -jvmArgs -XX:LogFile=target/hotspot.log -jvmArgs -XX:+PrintAssembly
+sbt:root> bench/Jmh/run scala.collection.mutable.ArrayOpsBenchmark.insertInteger -psize=1000 -f1 -jvmArgs -XX:+UnlockDiagnosticVMOptions -jvmArgs -XX:+TraceClassLoading -jvmArgs -XX:+LogCompilation -jvmArgs -XX:LogFile=target/hotspot.log -jvmArgs -XX:+PrintAssembly
 ...
 [info] Loaded disassembler from /Users/jz/.jabba/jdk/1.8.172/Contents/Home/jre/lib/hsdis-amd64.dylib
 [info] Decoding compiled method 0x0000000113f60bd0:
@@ -114,7 +130,7 @@ sbt:root> bench/jmh:run scala.collection.mutable.ArrayOpsBenchmark.insertInteger
 JITWatch requires configuration of the class and source path. We generate that with a custom task in our build:
 
 ```
-sbt> bench/jmh:jitwatchConfigFile
+sbt> bench/Jmh/jitwatchConfigFile
 ...
 jmh
 ...
@@ -128,6 +144,7 @@ sbt> ^C
 Follow instructions in the output above and start gleaning insights!
 
 ## Useful reading
+
 * [OpenJDK advice on microbenchmarks](https://wiki.openjdk.java.net/display/HotSpot/MicroBenchmarks)
 * Brian Goetz's "Java theory and practice" articles:
   * "[Dynamic compilation and performance measurement](https://www.ibm.com/developerworks/java/library/j-jtp12214/)"
