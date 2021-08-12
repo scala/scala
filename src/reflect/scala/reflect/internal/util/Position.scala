@@ -175,7 +175,13 @@ private[util] trait InternalPositionImpl {
   def line: Int           = if (hasSource) source.offsetToLine(point) + 1 else 0
   def column: Int         = if (hasSource) calculateColumn() else 0
   def lineContent: String = if (hasSource) source.lineToString(line - 1) else ""
-  def lineCaret: String   = if (hasSource) " " * (column - 1) + "^" else ""
+  def lineCaret: String   = if (hasSource) {
+    if (isRange) {
+      val num = end - start
+      "_" * ((column - point + end) - num - 1) + "^" * num
+    } else
+      " " * (column - 1) + "^"
+  } else ""
   @deprecated("use `lineCaret`", since="2.11.0")
   def lineCarat: String   = lineCaret
 

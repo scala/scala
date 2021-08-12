@@ -483,10 +483,17 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val global: Global.this.type = Global.this
   } with Analyzer
 
+  // phaseName = "rewrites"
+  object rewrites extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("typer")
+    val runsRightAfter = None
+  } with Rewrites
+
   // phaseName = "patmat"
   object patmat extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
+    val runsAfter = List("rewrites")
     val runsRightAfter = None
     // patmat doesn't need to be right after typer, as long as we run before superaccessors
     // (sbt does need to run right after typer, so don't conflict)
@@ -672,6 +679,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
+      rewrites                -> "source code rewrites",
       patmat                  -> "translate match expressions",
       superAccessors          -> "add super accessors in traits and nested classes",
       extensionMethods        -> "add extension methods for inline classes",
