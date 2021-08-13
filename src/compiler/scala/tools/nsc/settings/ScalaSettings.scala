@@ -231,6 +231,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val stopAfter       = PhasesSetting     ("-Ystop-after", "Stop after") withAbbreviation ("-stop") // backward compat
   val stopBefore      = PhasesSetting     ("-Ystop-before", "Stop before")
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
+  val Yrewrites       = MultiChoiceSetting("-Yrewrites", "rewrite", "Enable rewrites", domain = rewriteChoices).withPostSetHook(_ => {Yrangepos.value = true; stopAfter.value = List("rewrites")})
   val Yvalidatepos    = PhasesSetting     ("-Yvalidate-pos", s"Validate positions after the given phases (implies ${Yrangepos.name})") withPostSetHook (_ => Yrangepos.value = true)
   val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", s"Show start and end positions of members (implies ${Yrangepos.name})", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
@@ -275,6 +276,10 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
     // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
     def values: List[CachePolicy] = List(None, LastModified, Always)
+  }
+
+  object rewriteChoices extends MultiChoiceEnumeration {
+    val breakOutArgs = Choice("breakOutArgs", "Add explicit type argumetns to calls of `collection.breakOut`")
   }
 
   object optChoices extends MultiChoiceEnumeration {

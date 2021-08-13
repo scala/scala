@@ -11,8 +11,7 @@ abstract class Rewrites extends SubComponent {
   val phaseName = "rewrites"
 
   def newPhase(prev: Phase): StdPhase = {
-    if (!settings.Yrangepos) {
-      runReporting.warning(NoPosition, "Enable `-Yrangepos` to use `-Yrewrites`", WarningCategory.Other, "")
+    if (settings.Yrewrites.value.isEmpty) {
       new StdPhase(prev) {
         override def apply(unit: global.CompilationUnit): Unit = ()
       }
