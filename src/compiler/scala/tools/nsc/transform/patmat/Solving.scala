@@ -60,7 +60,7 @@ trait Solving extends Logic {
       val symForVar: Map[Int, Sym] = variableForSymbol.map(_.swap)
 
       val relevantVars: immutable.BitSet =
-        symForVar.keySet.map(math.abs)(collection.breakOut)
+        symForVar.keySet.map(math.abs)(collection.breakOut[scala.collection.immutable.Set[Int], Int, scala.collection.immutable.BitSet])
 
       def lit(sym: Sym): Lit = Lit(variableForSymbol(sym))
 

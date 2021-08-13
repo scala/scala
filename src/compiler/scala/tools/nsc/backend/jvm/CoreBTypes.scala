@@ -240,7 +240,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       val bType = primitiveTypeToBType(primitive)
       val name = newTermName(getName(primitive.name.toString, boxedClass(primitive).name.toString))
       (bType, methodNameAndType(BoxesRunTimeClass, name))
-    })(collection.breakOut)
+    })(collection.breakOut[List[CoreBTypesFromSymbols.this.bTypes.global.ClassSymbol], (CoreBTypesFromSymbols.this.bTypes.PrimitiveBType, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[CoreBTypesFromSymbols.this.bTypes.BType,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   // Z -> MethodNameAndType(boxToBoolean,(Z)Ljava/lang/Boolean;)
@@ -263,7 +263,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       val boxed = boxedClass(primitive)
       val method = methodNameAndType(boxed, newTermName("valueOf"), static = true, filterOverload = singleParamOfClass(primitive))
       (classBTypeFromSymbol(boxed).internalName, method)
-    })(collection.breakOut)
+    })(collection.breakOut[List[CoreBTypesFromSymbols.this.bTypes.global.ClassSymbol], (tools.nsc.backend.jvm.BTypes.InternalName, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[tools.nsc.backend.jvm.BTypes.InternalName,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   // java/lang/Boolean -> MethodNameAndType(booleanValue,()Z)
@@ -273,7 +273,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       val boxed = boxedClass(primitive)
       val name = primitive.name.toString.toLowerCase + "Value"
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, newTermName(name)))
-    })(collection.breakOut)
+    })(collection.breakOut[List[CoreBTypesFromSymbols.this.bTypes.global.ClassSymbol], (tools.nsc.backend.jvm.BTypes.InternalName, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[tools.nsc.backend.jvm.BTypes.InternalName,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   private def predefBoxingMethods(getName: (String, String) => String): Map[String, MethodBType] = {
@@ -281,7 +281,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       val boxed = boxedClass(primitive)
       val name = getName(primitive.name.toString, boxed.name.toString)
       (name, methodNameAndType(PredefModule.moduleClass, newTermName(name)).methodType)
-    })(collection.breakOut)
+    })(collection.breakOut[List[CoreBTypesFromSymbols.this.bTypes.global.ClassSymbol], (String, CoreBTypesFromSymbols.this.bTypes.MethodBType), Map[String,CoreBTypesFromSymbols.this.bTypes.MethodBType]])
   }
 
   // boolean2Boolean -> (Z)Ljava/lang/Boolean;
@@ -294,7 +294,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   private def staticRefMethods(name: Name): Map[InternalName, MethodNameAndType] = {
     allRefClasses.map(refClass =>
-      (classBTypeFromSymbol(refClass).internalName, methodNameAndType(refClass, name, static = true)))(collection.breakOut)
+      (classBTypeFromSymbol(refClass).internalName, methodNameAndType(refClass, name, static = true)))(collection.breakOut[scala.collection.immutable.Set[CoreBTypesFromSymbols.this.bTypes.global.Symbol], (tools.nsc.backend.jvm.BTypes.InternalName, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[tools.nsc.backend.jvm.BTypes.InternalName,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   // scala/runtime/BooleanRef -> MethodNameAndType(create,(Z)Lscala/runtime/BooleanRef;)
@@ -311,11 +311,11 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
     ScalaValueClassesNoUnit.map(primitive => {
       val boxed = boxedClass(primitive)
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, nme.CONSTRUCTOR, filterOverload = singleParamOfClass(primitive)))
-    })(collection.breakOut)
+    })(collection.breakOut[List[CoreBTypesFromSymbols.this.bTypes.global.ClassSymbol], (tools.nsc.backend.jvm.BTypes.InternalName, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[tools.nsc.backend.jvm.BTypes.InternalName,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   private def nonOverloadedConstructors(classes: Iterable[Symbol]): Map[InternalName, MethodNameAndType] = {
-    classes.map(cls => (classBTypeFromSymbol(cls).internalName, methodNameAndType(cls, nme.CONSTRUCTOR)))(collection.breakOut)
+    classes.map(cls => (classBTypeFromSymbol(cls).internalName, methodNameAndType(cls, nme.CONSTRUCTOR)))(collection.breakOut[Iterable[CoreBTypesFromSymbols.this.bTypes.global.Symbol], (tools.nsc.backend.jvm.BTypes.InternalName, CoreBTypesFromSymbols.this.bTypes.MethodNameAndType), Map[tools.nsc.backend.jvm.BTypes.InternalName,CoreBTypesFromSymbols.this.bTypes.MethodNameAndType]])
   }
 
   // scala/runtime/BooleanRef -> MethodNameAndType(<init>,(Z)V)

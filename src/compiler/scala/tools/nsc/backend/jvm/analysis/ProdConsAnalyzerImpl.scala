@@ -105,7 +105,7 @@ trait ProdConsAnalyzerImpl {
     case ParameterProducer(local)                           => consumersOfValueAt(methodNode.instructions.getFirst, local)
     case ExceptionProducer(handlerLabel, handlerStackTop)   => consumersOfValueAt(handlerLabel, handlerStackTop)
     case _ =>
-      _consumersOfOutputsFrom.get(insn).map(v => v.indices.flatMap(v.apply)(collection.breakOut): Set[AbstractInsnNode]).getOrElse(Set.empty)
+      _consumersOfOutputsFrom.get(insn).map(v => v.indices.flatMap(v.apply)(collection.breakOut[scala.collection.immutable.IndexedSeq[Int], scala.tools.asm.tree.AbstractInsnNode, Set[scala.tools.asm.tree.AbstractInsnNode]]): Set[AbstractInsnNode]).getOrElse(Set.empty)
   }
 
   /**

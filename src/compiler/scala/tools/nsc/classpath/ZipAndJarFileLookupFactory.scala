@@ -112,7 +112,7 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
       val packages = collection.mutable.HashMap[String, PackageFileInfo]()
 
       def getSubpackages(dir: AbstractFile): List[AbstractFile] =
-        (for (file <- dir if file.isPackage) yield file)(collection.breakOut)
+        (for (file <- dir if file.isPackage) yield file)(collection.breakOut[Iterable[scala.reflect.io.AbstractFile], scala.reflect.io.AbstractFile, List[scala.reflect.io.AbstractFile]])
 
       @tailrec
       def traverse(packagePrefix: String,
@@ -146,7 +146,7 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
     override private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = cachedPackages.get(inPackage.dottedString) match {
       case None => Seq.empty
       case Some(PackageFileInfo(pkg, _)) =>
-        (for (file <- pkg if file.isClass) yield ClassFileEntryImpl(file))(collection.breakOut)
+        (for (file <- pkg if file.isClass) yield ClassFileEntryImpl(file))(collection.breakOut[Iterable[scala.reflect.io.AbstractFile], scala.tools.nsc.classpath.ClassFileEntryImpl, Seq[scala.tools.nsc.classpath.ClassFileEntry]])
     }
 
 

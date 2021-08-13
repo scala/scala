@@ -495,7 +495,7 @@ abstract class ClosureOptimizer {
         val local = Local(firstLocal + i + sizeTwoOffset, offset)
         if (local.size == 2) sizeTwoOffset += 1
         local
-      })(collection.breakOut)
+      })(collection.breakOut[scala.collection.immutable.IndexedSeq[Int], ClosureOptimizer.this.Local, List[ClosureOptimizer.this.Local]])
       LocalsList(locals)
     }
   }

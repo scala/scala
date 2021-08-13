@@ -290,7 +290,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       val r = exitingPickler(sym.moduleClass)
       assert(r != NoSymbol, sym.fullLocationString)
       r
-  })(collection.breakOut)
+  })(collection.breakOut[Iterable[BTypesFromSymbols.this.global.Symbol], BTypesFromSymbols.this.global.Symbol, List[BTypesFromSymbols.this.global.Symbol]])
 
   private def computeClassInfo(classSym: Symbol, classBType: ClassBType): Right[Nothing, ClassInfo] = {
     /**

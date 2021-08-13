@@ -271,7 +271,7 @@ object PostProcessorFrontendAccess {
     def javaDefinedClasses: Set[InternalName] = frontendSynch {
       currentRun.symSource.keys.collect{
         case sym if sym.isJavaDefined => sym.javaBinaryNameString
-      }(scala.collection.breakOut)
+      }(scala.collection.breakOut[Iterable[PostProcessorFrontendAccessImpl.this.global.Symbol], String, Set[tools.nsc.backend.jvm.BTypes.InternalName]])
     }
 
 

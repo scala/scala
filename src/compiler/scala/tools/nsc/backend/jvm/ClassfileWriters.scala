@@ -77,11 +77,11 @@ abstract class ClassfileWriters {
       val basicClassWriter = settings.outputDirs.getSingleOutput match {
         case Some(dest) => new SingleClassWriter(FileWriter(global, dest, jarManifestMainClass))
         case None =>
-          val distinctOutputs: Set[AbstractFile] = settings.outputDirs.outputs.map(_._2)(scala.collection.breakOut)
+          val distinctOutputs: Set[AbstractFile] = settings.outputDirs.outputs.map(_._2)(scala.collection.breakOut[List[(scala.tools.nsc.io.AbstractFile, scala.tools.nsc.io.AbstractFile)], scala.tools.nsc.io.AbstractFile, Set[tools.nsc.io.AbstractFile]])
           if (distinctOutputs.size == 1) new SingleClassWriter(FileWriter(global, distinctOutputs.head, jarManifestMainClass))
           else {
             val sourceToOutput: Map[AbstractFile, AbstractFile] = global.currentRun.units.map(unit => (unit.source.file, frontendAccess.compilerSettings.outputDirectory(unit.source.file))).toMap
-            new MultiClassWriter(sourceToOutput, distinctOutputs.map { output: AbstractFile => output -> FileWriter(global, output, jarManifestMainClass) }(scala.collection.breakOut))
+            new MultiClassWriter(sourceToOutput, distinctOutputs.map { output: AbstractFile => output -> FileWriter(global, output, jarManifestMainClass) }(scala.collection.breakOut[scala.collection.immutable.Set[tools.nsc.io.AbstractFile], (tools.nsc.io.AbstractFile, ClassfileWriters.this.FileWriter), Map[tools.nsc.io.AbstractFile,ClassfileWriters.this.FileWriter]]))
           }
       }
 

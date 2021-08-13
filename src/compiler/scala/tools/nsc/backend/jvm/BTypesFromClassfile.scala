@@ -107,7 +107,7 @@ abstract class BTypesFromClassfile {
 
     def nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
       case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
-    })(collection.breakOut)
+    })(collection.breakOut[scala.collection.mutable.Buffer[scala.tools.asm.tree.InnerClassNode], BTypesFromClassfile.this.postProcessor.bTypes.ClassBType, List[BTypesFromClassfile.this.postProcessor.bTypes.ClassBType]])
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
     // case we build the NestedInfo.
@@ -129,7 +129,7 @@ abstract class BTypesFromClassfile {
 
     val inlineInfo = inlineInfoFromClassfile(classNode)
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut[scala.collection.mutable.Buffer[String], BTypesFromClassfile.this.postProcessor.bTypes.ClassBType, List[BTypesFromClassfile.this.postProcessor.bTypes.ClassBType]])
 
     Right(ClassInfo(superClass, interfaces, flags, Lazy.withoutLock(nestedClasses), Lazy.withoutLock(nestedInfo), inlineInfo))
   }
@@ -162,7 +162,7 @@ abstract class BTypesFromClassfile {
           annotatedInline                     = false,
           annotatedNoInline                   = false)
         ((methodNode.name, methodNode.desc), info)
-      })(scala.collection.breakOut)
+      })(scala.collection.breakOut[scala.collection.mutable.Buffer[scala.tools.asm.tree.MethodNode], ((String, String), tools.nsc.backend.jvm.BTypes.MethodInlineInfo), Map[(String, String),tools.nsc.backend.jvm.BTypes.MethodInlineInfo]])
       InlineInfo(
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),
         sam = inlinerHeuristics.javaSam(classNode.name),

@@ -233,7 +233,7 @@ abstract class BoxUnbox {
         })
 
         if (canRewrite) {
-          val localSlots: Vector[(Int, Type)] = boxKind.boxedTypes.map(tp => (getLocal(tp.getSize), tp))(collection.breakOut)
+          val localSlots: Vector[(Int, Type)] = boxKind.boxedTypes.map(tp => (getLocal(tp.getSize), tp))(collection.breakOut[List[scala.tools.asm.Type], (Int, scala.tools.asm.Type), Vector[(Int, scala.tools.asm.Type)]])
 
           // store boxed value(s) into localSlots
           val storeOps = localSlots.toList reverseMap { case (slot, tp) =>
@@ -246,7 +246,7 @@ abstract class BoxUnbox {
           if (keepBox) {
             val loadOps: List[VarInsnNode] = localSlots.map({ case (slot, tp) =>
               new VarInsnNode(tp.getOpcode(ILOAD), slot)
-            })(collection.breakOut)
+            })(collection.breakOut[scala.collection.immutable.Vector[(Int, scala.tools.asm.Type)], scala.tools.asm.tree.VarInsnNode, List[scala.tools.asm.tree.VarInsnNode]])
             toInsertBefore(creation.valuesConsumer) = storeInitialValues ::: loadOps
           } else {
             toReplace(creation.valuesConsumer) = storeInitialValues
