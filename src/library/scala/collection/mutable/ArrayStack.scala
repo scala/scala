@@ -28,7 +28,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
   def apply[A: ClassTag](elems: A*): ArrayStack[A] = {
-    val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut)
+    val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut[collection.Seq[A], AnyRef, Array[AnyRef]])
     if (els.length == 0) new ArrayStack()
     else new ArrayStack[A](els, els.length)
   }
