@@ -369,10 +369,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat)
         // also make assigned fields mutable so they don't end up final in bytecode
         // and mark the specialized class constructor for a release fence addition
-        if (assignee.isField) {
+        if (assignee.isField)
           assignee.setFlag(MUTABLE)
-          clazz.primaryConstructor.updateAttachment(ConstructorNeedsFence)
-        }
 
         val rewritten = rewriteArrayUpdate(stat)
         // statements coming from the original class need retyping in the current context
