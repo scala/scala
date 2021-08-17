@@ -714,6 +714,10 @@ self =>
       if (isRawIdent && in.name == raw.QMARK)
         deprecationWarning(in.offset,
           "using `?` as a type name will require backticks in the future.", "2.13.6")
+    def checkKeywordDefinition() =
+      if (isRawIdent && scala3Keywords.contains(in.name))
+        deprecationWarning(in.offset,
+          s"Wrap `${in.name}` in backticks to use it as an identifier, it will become a keyword in Scala 3.", "2.13.7")
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -1277,8 +1281,6 @@ self =>
     def ident(skipIt: Boolean): Name = (
       if (isIdent) {
         val name = in.name.encode
-        if (in.token != BACKQUOTED_IDENT && scala3Keywords.contains(name))
-          deprecationWarning(in.offset, s"Wrap `$name` in backticks to use it as an identifier, it will become a keyword in Scala 3.", "2.13.7")
         in.nextToken()
         name
       }
@@ -2520,6 +2522,7 @@ self =>
         if (caseParam) mods |= Flags.CASEACCESSOR
       }
       val nameOffset = in.offset
+      checkKeywordDefinition()
       val name = ident()
       var bynamemod = 0L
       val tpt = {
@@ -2569,6 +2572,7 @@ self =>
         }
         val nameOffset = in.offset
         checkQMarkDefinition()
+        checkKeywordDefinition()
         // TODO AM: freshTermName(o2p(in.skipToken()), "_$$"), will need to update test suite
         val pname: TypeName = wildcardOrIdent().toTypeName
         val param = atPos(start, nameOffset) {
@@ -2784,6 +2788,7 @@ self =>
     def patDefOrDcl(pos : Int, mods: Modifiers): List[Tree] = {
       var newmods = mods
       in.nextToken()
+      checkKeywordDefinition()
       val lhs = commaSeparated(stripParens(noSeq.pattern2()))
       val tp = typedOpt()
       val (rhs, rhsPos) =
@@ -2879,6 +2884,7 @@ self =>
       }
       else {
         val nameOffset = in.offset
+        checkKeywordDefinition()
         val name = identOrMacro()
         funDefRest(start, nameOffset, mods, name)
       }
@@ -2990,6 +2996,7 @@ self =>
       in.nextToken()
       newLinesOpt()
       atPos(start, in.offset) {
+        checkKeywordDefinition()
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
         val tparams = typeParamClauseOpt(name, null)
@@ -3051,6 +3058,7 @@ self =>
      */
     def classDef(start: Offset, mods: Modifiers): ClassDef = {
       in.nextToken()
+      checkKeywordDefinition()
       val nameOffset = in.offset
       val name = identForType()
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
@@ -3086,6 +3094,7 @@ self =>
     def objectDef(start: Offset, mods: Modifiers, isPackageObject: Boolean = false): ModuleDef = {
       in.nextToken()
       val nameOffset = in.offset
+      checkKeywordDefinition()
       val name = ident()
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {

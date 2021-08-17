@@ -2,11 +2,13 @@
 //
 class A {
   val `enum`: Int = 1
+  println(enum)
   val `export`: Int = 1
   val `given`: Int = 1
-  def foo(`given`: Int) = {}
+  def foo(`given`: Int) = given
   def bla[`export` <: Int] = {
     class `enum`
+    new enum
   }
 }
 class B {
