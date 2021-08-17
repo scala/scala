@@ -373,4 +373,26 @@ class BytecodeTest extends BytecodeTesting {
     t(foo, List(("Ljava/lang/String;", "value", 0)))
     t(abcde, List(("Ljava/lang/String;", "value1", 0), ("J", "value2", 1), ("D", "value3", 3), ("I", "value4", 5), ("D", "value5", 6)))
   }
+
+  @Test
+  def nonSpecializedValFence(): Unit = {
+    def code(u1: String) =
+      s"""abstract class Speck[@specialized(Int) T](t: T) {
+         |  val a = t
+         |  $u1
+         |  lazy val u2 = "?"
+         |  var u3 = "?"
+         |  val u4: String
+         |  var u5: String
+         |}
+         |""".stripMargin
+
+    for (u1 <- "" :: List("", "private", "private[this]", "protected").map(mod => s"$mod val u1 = \"?\"")) {
+      for (c <- compileClasses(code(u1)).map(getMethod(_, "<init>")))
+        if (u1.isEmpty)
+          assertDoesNotInvoke(c, "releaseFence")
+        else
+          assertInvoke(c, "scala/runtime/Statics", "releaseFence")
+    }
+  }
 }
