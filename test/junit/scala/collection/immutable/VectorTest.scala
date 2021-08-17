@@ -58,6 +58,14 @@ class VectorTest {
     assertSame(m, Vector.apply(m: _*))
   }
 
+  @Test def factoryReuseArraySet(): Unit = {
+    val arraySeq = ArraySeq[AnyRef]("a", "b")
+    val vectorFromArraySeq = Vector.from(arraySeq)
+    val prefix1Field = classOf[Vector[_]].getDeclaredField("prefix1")
+    prefix1Field.setAccessible(true)
+    assertSame(arraySeq.unsafeArray, prefix1Field.get(vectorFromArraySeq))
+  }
+
   @Test def checkSearch(): Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
   @Test
