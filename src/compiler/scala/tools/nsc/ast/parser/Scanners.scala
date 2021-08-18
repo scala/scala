@@ -1526,6 +1526,8 @@ trait Scanners extends ScannersCommon {
 
   final val softModifierNames = Set(nme.open, nme.infix)
 
+  final val scala3Keywords = Set(nme.`enum`, nme.`export`, nme.`given`)
+
 // Token representation ----------------------------------------------------
 
   /** Returns the string representation of given token. */

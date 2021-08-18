@@ -195,9 +195,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       object AnnotationClass { def unapply(x: jClass[_]) = x.isAnnotation }
 
       object ConstantArg {
-        def enumToSymbol(enum: Enum[_]): Symbol = {
-          val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
-          staticPartOfEnum.info.declaration(TermName(enum.name))
+        def enumToSymbol(`enum`: Enum[_]): Symbol = {
+          val staticPartOfEnum = classToScala(`enum`.getClass).companionSymbol
+          staticPartOfEnum.info.declaration(TermName(`enum`.name))
         }
 
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {

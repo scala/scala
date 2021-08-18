@@ -215,11 +215,11 @@ class FactoriesTest {
       im.BitSet(1, 2, 3)
     )
 
-    object enum extends Enumeration {
+    object `enum` extends Enumeration {
       val x, y, z = Value
     }
 
-    val enumValues = enum.values
+    val enumValues = `enum`.values
 
     sortedFactoryFromIterableOnceReturnsSameReference(SortedSet, im.SortedSet)(enumValues)
 

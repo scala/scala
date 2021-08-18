@@ -240,11 +240,11 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     val root = new DirEntry(RootEntry)
     dirs.put(RootEntry, root)
     val zipFile = openZipFile()
-    val enum    = zipFile.entries()
+    val entries = zipFile.entries()
 
     try {
-      while (enum.hasMoreElements) {
-        val zipEntry = enum.nextElement
+      while (entries.hasMoreElements) {
+        val zipEntry = entries.nextElement
         if (!zipEntry.getName.startsWith("META-INF/versions/")) {
           if (!zipEntry.isDirectory) {
             val dir = getDir(dirs, zipEntry)
