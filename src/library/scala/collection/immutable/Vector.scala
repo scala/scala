@@ -43,7 +43,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
         if (knownSize == 0) empty[E]
         else if (knownSize > 0 && knownSize <= WIDTH) {
           val a1: Arr1 = it match {
-            case as: ArraySeq.ofRef[_] if as.elemTag == classOf[AnyRef] =>
+            case as: ArraySeq.ofRef[_] if as.elemTag.runtimeClass == classOf[AnyRef] =>
               as.unsafeArray.asInstanceOf[Arr1]
             case it: Iterable[E] =>
               val a1 = new Arr1(knownSize)
