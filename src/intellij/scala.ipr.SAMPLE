@@ -482,18 +482,10 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-asm/jars/jmh-generator-asm-1.19.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-bytecode/jars/jmh-generator-bytecode-1.19.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-reflection/jars/jmh-generator-reflection-1.19.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-api-client/jars/wss-agent-api-client-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-api/jars/wss-agent-api-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-hash-calculator/jars/wss-agent-hash-calculator-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-report/jars/wss-agent-report-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-utils/jars/wss-agent-utils-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/wss-agent-via-api/jars/wss-agent-via-api-2.9.9.02.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.whitesource/pecoff4j/jars/pecoff4j-0.0.2.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.4.2.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.typesafe/sbt-mima-plugin/jars/sbt-mima-plugin-0.6.1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/de.heikoseeberger/sbt-header/jars/sbt-header-5.0.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/pl.project13.scala/sbt-jmh/jars/sbt-jmh.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.lightbend/sbt-whitesource/jars/sbt-whitesource-0.1.16.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES>

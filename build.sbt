@@ -299,7 +299,6 @@ val disablePublishing = Seq[Setting[_]](
   // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
   publish := {},
   publishLocal := {},
-  whitesourceIgnore := true
 )
 
 lazy val setJarLocation: Setting[_] =
@@ -429,10 +428,8 @@ lazy val compiler = configureAsSubproject(project)
     name := "scala-compiler",
     description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
-    // These are only needed for the POM. (And, note that the jansi dependency is a fiction
-    // for WhiteSource purposes; the JLine JAR contains a shaded jansi, but WhiteSource
-    // won't know about that unless we tell it.)
-    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional", jansiDep % "optional"),
+    // These are only needed for the POM.
+    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
     buildCharacterPropertiesFile := (Compile / resourceManaged).value / "scala-buildcharacter.properties",
     (Compile / resourceGenerators) += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -1333,11 +1330,6 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
   def extract(m: ModuleID) = (m.organization, m.name)
   files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
 }
-
-// WhiteSource
-whitesourceProduct               := "Lightbend Reactive Platform"
-whitesourceAggregateProjectName  := "scala-2.12-stable"
-whitesourceIgnoredScopes         := Vector("test", "scala-tool")
 
 Global / excludeLintKeys := (Global / excludeLintKeys).value ++ Set(scalaSource, javaSource, resourceDirectory)
 
