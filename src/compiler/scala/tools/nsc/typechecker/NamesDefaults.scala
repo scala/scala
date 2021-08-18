@@ -476,9 +476,33 @@ trait NamesDefaults { self: Analyzer =>
   def defaultGetter(param: Symbol, context: Context): Symbol = {
     val i = param.owner.paramss.flatten.indexWhere(p => p.name == param.name) + 1
     if (i > 0) {
-      val defGetterName = nme.defaultGetterName(param.owner.name, i)
-      if (param.owner.isConstructor) {
-        val mod = companionSymbolOf(param.owner.owner, context)
+
+      def isScala3SyntheticApply(meth: Symbol): Boolean = {
+        // According to rules in Scala 3, a synthetic method named `apply`
+        // should use `<init>` as the prefix of its default getters,
+        // i.e. reuse the constructor's default getters.
+        // We add some more precision - also verify that `apply`
+        // is defined in a module which has a case class companion
+
+        def isModuleWithCaseClassCompanion(owner: Symbol) = (
+          owner.isModuleClass
+          && linkedClassOfClassOf(owner, context).isCaseClass
+        )
+
+        (meth.isScala3Defined
+          && meth.isSynthetic
+          && meth.name == nme.apply
+          && isModuleWithCaseClassCompanion(meth.owner))
+      }
+
+      val scala3SynthApply = isScala3SyntheticApply(param.owner)
+      val defGetterName = {
+        val methodName = if (scala3SynthApply) nme.CONSTRUCTOR else param.owner.name
+        nme.defaultGetterName(methodName, i)
+      }
+      if (scala3SynthApply || param.owner.isConstructor) {
+        val scope = param.owner.owner
+        val mod = if (scala3SynthApply) scope else companionSymbolOf(scope, context)
         mod.info.member(defGetterName)
       }
       else {
