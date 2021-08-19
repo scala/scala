@@ -82,7 +82,13 @@ trait TypeOps { self: TastyUniverse =>
     }
     def preStr(pre: Type): String = {
       val preSym = symOfType(pre)
-      if (isSymbol(preSym)) s"${preSym.fullName}." else ""
+      val thisStr = {
+        if (pre.isInstanceOf[u.ThisType] && !pre.typeSymbol.isPackageClass && !pre.typeSymbol.isModuleClass)
+          ".this"
+        else
+          ""
+      }
+      if (isSymbol(preSym)) s"${preSym.fullName}$thisStr." else ""
     }
     tpe match {
       case tpe: u.ClassInfoType                      => cls(Nil, tpe)
@@ -92,18 +98,23 @@ trait TypeOps { self: TastyUniverse =>
       case tpe: u.ThisType                           => prefixed("path") { s"${tpe.sym.fullName}.this" }
 
       case tpe: u.SingleType =>
-        prefixed("path") { s"${preStr(tpe.prefix)}${tpe.sym.name}.type" }
+        prefixed("path") {
+          if (tpe.sym.isModule) tpe.sym.fullName + ".type"
+          else s"${preStr(tpe.pre)}${tpe.sym.name}.type"
+        }
 
       case tpe: u.TypeRef =>
-        val pre = preStr(tpe.prefix)
         if (tpe.sym.is(Object)) prefixed("path") {
-          s"$pre${tpe.sym.name}.type"
+          s"${tpe.sym.fullName}.type"
         }
         else prefixed("tpelazy") {
+          val pre = preStr(tpe.pre)
           val argsStrs = tpe.args.map(showType(_, wrap = false))
           val argsStr = if (argsStrs.nonEmpty) argsStrs.mkString("[", ", ", "]") else ""
           s"$pre${tpe.sym.name}$argsStr"
         }
+
+      case tpe: u.TypeBounds => prefixed("tpebounds") { s"$tpe"}
 
       case tpe => prefixed("tpe") { s"$tpe" }
     }
@@ -553,9 +564,9 @@ trait TypeOps { self: TastyUniverse =>
   def prefixedRef(prefix: Type, sym: Symbol): Type = {
     if (sym.isType) {
       prefix match {
-        case tp: u.ThisType if tp.sym.isRefinementClass => sym.preciseRef(prefix)
-        case _:u.SingleType | _:u.RefinedType           => sym.preciseRef(prefix)
-        case _                                          => sym.ref
+        case tp: u.ThisType if !sym.isTypeParameter => sym.preciseRef(prefix)
+        case _:u.SingleType | _:u.RefinedType       => sym.preciseRef(prefix)
+        case _                                      => sym.ref
       }
     }
     else if (sym.isConstructor) {
@@ -576,9 +587,8 @@ trait TypeOps { self: TastyUniverse =>
   def namedMemberOfPrefix(pre: Type, name: TastyName)(implicit ctx: Context): Type =
     namedMemberOfTypeWithPrefix(pre, pre, name)
 
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type = {
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type =
     prefixedRef(pre, namedMemberOfType(space, tname))
-  }
 
   def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
