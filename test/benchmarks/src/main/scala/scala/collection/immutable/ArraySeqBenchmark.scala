@@ -1,8 +1,6 @@
 package scala.collection.immutable
 
 import java.util.concurrent.TimeUnit
-import java.util.Arrays
-
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
@@ -21,12 +19,14 @@ class ArraySeqBenchmark {
   var size: Int = _
   var integersS: ArraySeq[Int] = _
   var stringsS: ArraySeq[String] = _
+  var newS: Array[String] = _
 
   @Setup(Level.Trial) def initNumbers: Unit = {
     val integers = (1 to size).toList
     val strings = integers.map(_.toString)
     integersS = ArraySeq.unsafeWrapArray(integers.toArray)
     stringsS = ArraySeq.unsafeWrapArray(strings.toArray)
+    newS = Array("a", "b", "c", "d", "e", "f")
   }
 
   @Benchmark def sortedStringOld(bh: Blackhole): Unit =
@@ -68,4 +68,25 @@ class ArraySeqBenchmark {
     }
     b.result()
   }
+
+  // newS is used to avoid allocating Strings, while still performing some sort of "mapping".
+
+  @Benchmark def mapSOld(): ArraySeq[AnyRef] =
+    oldMap(stringsS)(x => newS(x.length))
+
+  @Benchmark def mapSNew(): ArraySeq[AnyRef] =
+    stringsS.map(x => newS(x.length))
+
+  // Mapping an ArraySeq.ofInt results in an ArraySeq.ofRef containing java.lang.Integers.
+  // Boxing small integers doesn't result in allocations thus the choice of _ & 0xf as the mapping function.
+
+  @Benchmark def mapIOld(): ArraySeq[Int] =
+    oldMap(integersS)(_ & 0xf)
+
+  @Benchmark def mapINew(): ArraySeq[Int] =
+    integersS.map(_ & 0xf)
+
+  private def oldMap[A, B](seq: ArraySeq[A])(f: A => B): ArraySeq[B] =
+    seq.iterableFactory.tabulate(seq.length)(i => f(seq.apply(i)))
+
 }
