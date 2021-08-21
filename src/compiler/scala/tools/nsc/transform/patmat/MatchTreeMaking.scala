@@ -481,7 +481,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         - A parameterized type pattern scala.Array[T1], where T1 is a type pattern. // TODO
           This type pattern matches any non-null instance of type scala.Array[U1], where U1 is a type matched by T1.
     **/
-    case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(override val pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
+    case class TypeTestTreeMaker(prevBinder: Symbol, testedBinder: Symbol, expectedTp: Type, nextBinderTp: Type)(
+      val tptPos: Position, override val pos: Position, extractorArgTypeTest: Boolean = false) extends CondTreeMaker {
       import TypeTestTreeMaker._
       debug.patmat("TTTM"+((prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp)))
 

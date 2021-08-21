@@ -52,7 +52,9 @@ trait Logic extends Debugging {
     type Tree
 
     sealed abstract class Prop
-    final case class Eq(p: Var, q: Const) extends Prop
+    final case class Eq(p: Var, q: Const) extends Prop {
+      var pos: global.Position = NoPosition
+    }
 
     type Const
 
@@ -333,11 +335,12 @@ trait Logic extends Debugging {
         case And(ops) => ops foreach apply
         case Or(ops) => ops foreach apply
         case Not(a) => apply(a)
-        case Eq(a, b) => applyVar(a); applyConst(b)
+        case eq@Eq(_, _) => applyEq(eq)
         case s: Sym => applySymbol(s)
         case AtMostOne(ops) => ops.foreach(applySymbol)
         case _ =>
       }
+      def applyEq(eq: Eq): Unit = {applyVar(eq.p); applyConst(eq.q) }
       def applyVar(x: Var): Unit = {}
       def applyConst(x: Const): Unit = {}
       def applySymbol(x: Sym): Unit = {}
@@ -349,6 +352,12 @@ trait Logic extends Debugging {
         override def applyVar(v: Var) = vars += v
       })(p)
       vars
+    }
+
+    def foreachEq(p: Prop)(f: Eq => Unit): Unit = {
+      (new PropTraverser {
+        override def applyEq(eq: Eq): Unit = f(eq)
+      })(p)
     }
 
     def gatherSymbols(p: Prop): collection.Set[Sym] = {
