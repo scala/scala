@@ -155,6 +155,7 @@ trait TypeOps { self: TastyUniverse =>
     }
 
     final val NoType: Type = u.NoType
+    final val NoPrefix: Type = u.NoPrefix
 
     def adjustParent(tp: Type): Type = {
       val tpe = tp.dealias
@@ -213,7 +214,7 @@ trait TypeOps { self: TastyUniverse =>
     def PolyType(params: List[Symbol], res: Type): Type = u.PolyType(params, res)
     def ClassInfoType(parents: List[Type], clazz: Symbol): Type = u.ClassInfoType(parents, clazz.rawInfo.decls, clazz.asType)
     def ClassInfoType(parents: List[Type], decls: List[Symbol], clazz: Symbol): Type = u.ClassInfoType(parents, u.newScopeWith(decls:_*), clazz.asType)
-    def ThisType(sym: Symbol): Type = u.ThisType(sym)
+    def ThisType(tpe: Type): Type = u.ThisType(symOfType(tpe))
     def ConstantType(c: Constant): Type = u.ConstantType(c)
     def IntersectionType(tps: Type*): Type = u.intersectionType(tps.toList)
     def IntersectionType(tps: List[Type]): Type = u.intersectionType(tps)
@@ -226,6 +227,7 @@ trait TypeOps { self: TastyUniverse =>
     def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
     def LambdaFromParams(typeParams: List[Symbol], ret: Type): Type = u.PolyType(typeParams, lambdaResultType(ret))
     def RecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+    def RecThis(tpe: Type): Type = tpe.asInstanceOf[RecType].recThis
 
     /** The method type corresponding to given parameters and result type */
     def DefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
@@ -295,6 +297,60 @@ trait TypeOps { self: TastyUniverse =>
     def ParamRef(binder: Type, idx: Int): Type =
       binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
 
+    def NamedType(prefix: Type, sym: Symbol): Type = {
+      if (sym.isType) {
+        prefix match {
+          case tp: u.ThisType if !sym.isTypeParameter => u.typeRef(prefix, sym, Nil)
+          case _:u.SingleType | _:u.RefinedType       => u.typeRef(prefix, sym, Nil)
+          case _                                      => u.appliedType(sym, Nil)
+        }
+      }
+      else { // is a term
+        if (sym.hasAllFlags(Flags.PackageFlags)) {
+          u.typeRef(u.NoPrefix, sym, Nil)
+        } else {
+          u.singleType(prefix, sym)
+        }
+      }
+    }
+
+    def TypeRef(prefix: Type, name: TastyName.TypeName)(implicit ctx: Context): Type =
+      TypeRefIn(prefix, prefix, name)
+
+    def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName)(implicit ctx: Context): Type = {
+      import scala.tools.tasty.TastyName._
+
+      def doLookup = lookupTypeFrom(space)(prefix, name)
+
+      // we escape some types in the scala package especially
+      if (prefix.typeSymbol === u.definitions.ScalaPackage) {
+        name match {
+          case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
+            case tpnme.And                                              => AndTpe
+            case tpnme.Or                                               => unionIsUnsupported
+            case tpnme.ContextFunctionN(n) if (n.toInt > 0)             => ContextFunctionType(n.toInt)
+            case tpnme.FunctionN(n)        if (n.toInt > 22)            => FunctionXXLType(n.toInt)
+            case tpnme.TupleCons                                        => genTupleIsUnsupported("scala.*:")
+            case tpnme.Tuple               if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
+            case tpnme.AnyKind                                          => u.definitions.AnyTpe
+            case tpnme.Matchable                                        => u.definitions.AnyTpe
+            case _                                                      => doLookup
+          }
+
+          case _ => doLookup
+        }
+      }
+      else {
+        doLookup
+      }
+    }
+
+    def TermRef(prefix: Type, name: TastyName)(implicit ctx: Context): Type =
+      TermRefIn(prefix, prefix, name)
+
+    def TermRefIn(prefix: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
+      lookupTypeFrom(space)(prefix, name.toTermName)
+
   }
 
   private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: u.Scope): Type =
@@ -335,7 +391,7 @@ trait TypeOps { self: TastyUniverse =>
 
   /** This is a port from Dotty of transforming a Method type to an ErasedTypeRef
    */
-  private[bridge] object NameErasure {
+  private object NameErasure {
 
     def isRepeatedParam(self: Type): Boolean =
       self.typeSymbol eq u.definitions.RepeatedParamClass
@@ -356,7 +412,7 @@ trait TypeOps { self: TastyUniverse =>
           }
           val arg = elemType(self)
           val arg1 = if (wildcardArg) u.TypeBounds.upper(arg) else arg
-          to.ref(arg1 :: Nil)
+          u.appliedType(to, arg1 :: Nil)
         }
         else self
     }
@@ -441,47 +497,6 @@ trait TypeOps { self: TastyUniverse =>
   private val SyntheticScala3Type =
     raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:|Tuple|Matchable)$$".r
 
-  def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
-  def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    import scala.tools.tasty.TastyName._
-
-    def lookupType = namedMemberOfTypeWithPrefix(prefix, space, name)
-
-    // we escape some types in the scala package especially
-    if (prefix.typeSymbol === u.definitions.ScalaPackage) {
-      name match {
-        case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
-          case tpnme.And                                              => AndTpe
-          case tpnme.Or                                               => unionIsUnsupported
-          case tpnme.ContextFunctionN(n) if (n.toInt > 0)             => ContextFunctionType(n.toInt)
-          case tpnme.FunctionN(n)        if (n.toInt > 22)            => FunctionXXLType(n.toInt)
-          case tpnme.TupleCons                                        => genTupleIsUnsupported("scala.*:")
-          case tpnme.Tuple               if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
-          case tpnme.AnyKind                                          => u.definitions.AnyTpe
-          case tpnme.Matchable                                        => u.definitions.AnyTpe
-          case _                                                      => lookupType
-        }
-
-        case _ => lookupType
-      }
-    }
-    else {
-      lookupType
-    }
-  }
-
-  def selectTerm(name: TastyName, prefix: Type)(implicit ctx: Context): Type = selectTerm(name, prefix, prefix)
-  def selectTerm(name: TastyName, prefix: Type, space: Type)(implicit ctx: Context): Type =
-    namedMemberOfTypeWithPrefix(prefix, space, name.toTermName)
-
-  def singletonLike(tpe: Type): Symbol = tpe match {
-    case u.SingleType(_, sym) => sym
-    case u.TypeRef(_,sym,_)   => sym
-    case x                    => throw new MatchError(x)
-  }
-
-  private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol
-
   sealed abstract trait TastyRepr extends u.Type {
     def tflags: TastyFlagSet
     final def unsupportedFlags: TastyFlagSet = tflags & FlagSets.TastyOnlyFlags
@@ -561,36 +576,10 @@ trait TypeOps { self: TastyUniverse =>
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
-  def prefixedRef(prefix: Type, sym: Symbol): Type = {
-    if (sym.isType) {
-      prefix match {
-        case tp: u.ThisType if !sym.isTypeParameter => sym.preciseRef(prefix)
-        case _:u.SingleType | _:u.RefinedType       => sym.preciseRef(prefix)
-        case _                                      => sym.ref
-      }
-    }
-    else if (sym.isConstructor) {
-      normaliseConstructorRef(sym)
-    }
-    else {
-      u.singleType(prefix, sym)
-    }
-  }
+  private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName)(implicit ctx: Context): Type =
+    defn.NamedType(pre, lookupSymbol(owner, tname))
 
-  def normaliseConstructorRef(ctor: Symbol): Type = {
-    var tpe = ctor.tpe
-    val tParams = ctor.owner.typeParams
-    if (tParams.nonEmpty) tpe = u.PolyType(tParams, tpe)
-    tpe
-  }
-
-  def namedMemberOfPrefix(pre: Type, name: TastyName)(implicit ctx: Context): Type =
-    namedMemberOfTypeWithPrefix(pre, pre, name)
-
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type =
-    prefixedRef(pre, namedMemberOfType(space, tname))
-
-  def lambdaResultType(resType: Type): Type = resType match {
+  private def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
     case res                 => res
   }
@@ -621,12 +610,10 @@ trait TypeOps { self: TastyUniverse =>
 
   private[bridge] final class OpaqueTypeBounds(lo: Type, hi: Type, val alias: Type) extends u.TypeBounds(lo, hi)
 
-  def typeRef(tpe: Type): Type = u.appliedType(tpe, Nil)
-
   /** The given type, unless `sym` is a constructor, in which case the
    *  type of the constructed instance is returned
    */
-  def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
+  def effectiveResultType(sym: Symbol, givenTp: Type): Type =
     if (sym.name == u.nme.CONSTRUCTOR) sym.owner.tpe
     else givenTp
 
@@ -856,9 +843,6 @@ trait TypeOps { self: TastyUniverse =>
 
   abstract class TermLambdaFactory extends LambdaFactory[TastyName]
   abstract class TypeLambdaFactory extends LambdaFactory[TastyName.TypeName]
-
-  def recThis(tpe: Type): Type = tpe.asInstanceOf[RecType].recThis
-  def symOfTypeRef(tpe: Type): Symbol = tpe.asInstanceOf[u.TypeRef].sym
 
   private[TypeOps] final class RecType(run: RecType => Type)(implicit ctx: Context) extends Type with Product {
 
