@@ -2,6 +2,8 @@ package scala.tools.nsc
 package transform
 
 import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.{Position, SourceFile}
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -21,9 +23,30 @@ abstract class Rewrites extends SubComponent {
 
   class RewritePhase(prev: Phase) extends StdPhase(prev) {
     override def apply(unit: CompilationUnit): Unit = {
-      val rewriter = new RewriteTraverser()
-      rewriter.traverse(unit.body)
-      writePatches(unit.source, rewriter.patches.toArray)
+      val patches = ArrayBuffer[Patch]()
+
+      val reparseUnit = new CompilationUnit(unit.source)
+      reparseUnit.body = newUnitParser(reparseUnit).parse()
+      val treeByRangePos = mutable.HashMap[Position, Tree]()
+      reparseUnit.body.foreach {
+        tree =>
+          if (tree.pos.isRange && !tree.pos.isTransparent)
+            treeByRangePos(tree.pos) = tree
+      }
+
+      val settings = global.settings
+      val rewritesSetting = settings.Yrewrites
+      if (rewritesSetting.contains(rewritesSetting.domain.breakOutArgs)) {
+        val rewriter = new BreakoutTraverser()
+        rewriter.traverse(unit.body)
+        patches ++= rewriter.patches
+      }
+      if (rewritesSetting.contains(rewritesSetting.domain.collectionSeq)) {
+        val rewriter = new CollectionSeqTraverser(treeByRangePos)
+        rewriter.traverse(unit.body)
+        patches ++= rewriter.patches
+      }
+      writePatches(unit.source, patches.toArray)
     }
   }
 
@@ -103,7 +126,7 @@ abstract class Rewrites extends SubComponent {
     }
   }
 
-  class RewriteTraverser extends Traverser {
+  class BreakoutTraverser extends Traverser {
     val patches = collection.mutable.ArrayBuffer.empty[Patch]
     override def traverse(tree: Tree): Unit = tree match {
       case Application(fun, targs, argss) if fun.symbol == breakOutSym =>
@@ -111,6 +134,39 @@ abstract class Rewrites extends SubComponent {
         if (inferredBreakOut)
           patches += Patch(Position.offset(tree.pos.source, fun.pos.end), targs.mkString("[", ", ", "]"))
       case _ => super.traverse(tree)
+    }
+  }
+  class CollectionSeqTraverser(treeByRangePos: collection.Map[Position, Tree]) extends Traverser {
+    case class Rewrite(name: String, typeAlias: Symbol, termAlias: Symbol, cls: Symbol, module: Symbol)
+
+    def rewrite(name: String) = Rewrite(name,
+      definitions.ScalaPackage.packageObject.info.decl(TypeName(name)),
+      definitions.ScalaPackage.packageObject.info.decl(TermName(name)),
+      rootMirror.getRequiredClass("scala.collection." + name),
+      rootMirror.getRequiredModule("scala.collection." + name))
+    val rewrites = List(rewrite("Seq"), rewrite("IndexedSeq"))
+    val patches = collection.mutable.ArrayBuffer.empty[Patch]
+    override def traverse(tree: Tree): Unit = {
+      tree match {
+        case tt: TypeTree if tt.original != null =>
+          val saved = tt.original.tpe
+          tt.original.tpe = tt.tpe
+          try traverse(tt.original)
+          finally tt.original.setType(saved)
+        case ref: RefTree =>
+          for (rewrite <- rewrites) {
+            val sym = ref.symbol
+            if (sym == rewrite.cls || sym == rewrite.module || sym == rewrite.termAlias || sym == rewrite.typeAlias) {
+              treeByRangePos.get(ref.pos) match {
+                case Some(Ident(name)) if name.string_==(rewrite.name) =>
+                  patches += Patch(ref.pos, "scala.collection." + rewrite.name)
+                case _ =>
+              }
+            }
+          }
+        case _ =>
+      }
+      super.traverse(tree)
     }
   }
 }
