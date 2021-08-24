@@ -15,9 +15,9 @@ package collection
 package concurrent
 
 import java.util.concurrent.atomic._
-
 import scala.{unchecked => uc}
 import scala.annotation.tailrec
+import scala.collection.concurrent.TrieMap.RemovalPolicy
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.GrowableBuilder
@@ -153,11 +153,12 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     *              KEY_ABSENT - key wasn't there, insert only, do not overwrite
     *              KEY_PRESENT - key was there, overwrite only, do not insert
     *              other value `v` - only overwrite if the current value is this
+   *   @param fullEquals whether to use reference or full equals when comparing `v` to the current value
     *  @param hc the hashcode of `k`
     *
     *  @return     null if unsuccessful, Option[V] otherwise (indicating previous value bound to the key)
     */
-  @tailrec def rec_insertif(k: K, v: V, hc: Int, cond: AnyRef, lev: Int, parent: INode[K, V], startgen: Gen, ct: TrieMap[K, V]): Option[V] = {
+  @tailrec def rec_insertif(k: K, v: V, hc: Int, cond: AnyRef, fullEquals: Boolean, lev: Int, parent: INode[K, V], startgen: Gen, ct: TrieMap[K, V]): Option[V] = {
     val m = GCAS_READ(ct)  // use -Yinline!
 
     m match {
@@ -171,9 +172,9 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
           // 1a) insert below
           cn.array(pos) match {
             case in: INode[K, V] @uc =>
-              if (startgen eq in.gen) in.rec_insertif(k, v, hc, cond, lev + 5, this, startgen, ct)
+              if (startgen eq in.gen) in.rec_insertif(k, v, hc, cond, fullEquals, lev + 5, this, startgen, ct)
               else {
-                if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_insertif(k, v, hc, cond, lev, parent, startgen, ct)
+                if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_insertif(k, v, hc, cond, fullEquals, lev, parent, startgen, ct)
                 else null
               }
             case sn: SNode[K, V] @uc => cond match {
@@ -199,7 +200,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
               case otherv =>
-                if (sn.hc == hc && equal(sn.k, k, ct) && sn.v == otherv) {
+                if (sn.hc == hc && equal(sn.k, k, ct) && (if (fullEquals) sn.v == otherv else sn.v.asInstanceOf[AnyRef] eq otherv)) {
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
             }
@@ -237,7 +238,8 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
             }
           case otherv =>
             ln.get(k) match {
-              case Some(v0) if v0 == otherv => if (insertln()) Some(otherv.asInstanceOf[V]) else null
+              case Some(v0) if (if (fullEquals) v0 == otherv else v0.asInstanceOf[AnyRef] eq otherv) =>
+                if (insertln()) Some(otherv.asInstanceOf[V]) else null
               case _ => None
             }
         }
@@ -296,15 +298,15 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     *
     *  @param hc            the hashcode of `k`
     *
-    *  @param removeAlways  if true, then the value will be removed regardless of the value
-    *                       if false, then value will only be removed if it exactly matches v`
+    * @param removalPolicy policy deciding whether to remove `k` based on `v` and the
+    *                       current value associated with `k` (Always, FullEquals, or ReferenceEq)
     *
     *  @return              null if not successful, an Option[V] indicating the previous value otherwise
     */
   def rec_remove(
     k: K,
     v: V,
-    removeAlways: Boolean,
+    removalPolicy: Int,
     hc: Int,
     lev: Int,
     parent: INode[K, V],
@@ -324,13 +326,13 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
           val sub = cn.array(pos)
           val res = sub match {
             case in: INode[K, V] @uc =>
-              if (startgen eq in.gen) in.rec_remove(k, v, removeAlways, hc, lev + 5, this, startgen, ct)
+              if (startgen eq in.gen) in.rec_remove(k, v, removalPolicy, hc, lev + 5, this, startgen, ct)
               else {
-                if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_remove(k, v, removeAlways, hc, lev, parent, startgen, ct)
+                if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_remove(k, v, removalPolicy, hc, lev, parent, startgen, ct)
                 else null
               }
             case sn: SNode[K, V] @uc =>
-              if (sn.hc == hc && equal(sn.k, k, ct) && (removeAlways || sn.v == v)) {
+              if (sn.hc == hc && equal(sn.k, k, ct) && RemovalPolicy.shouldRemove(removalPolicy)(sn.v, v)) {
                 val ncn = cn.removedAt(pos, flag, gen).toContracted(lev)
                 if (GCAS(cn, ncn, ct)) Some(sn.v) else null
               } else None
@@ -374,12 +376,12 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
         clean(parent, ct, lev - 5)
         null
       case ln: LNode[K, V] =>
-        if (removeAlways) {
+        if (removalPolicy == RemovalPolicy.Always) {
           val optv = ln.get(k)
           val nn = ln.removed(k, ct)
           if (GCAS(ln, nn, ct)) optv else null
         } else ln.get(k) match {
-          case optv @ Some(v0) if v0 == v =>
+          case optv @ Some(v0) if RemovalPolicy.shouldRemove(removalPolicy)(v, v0) =>
             val nn = ln.removed(k, ct)
             if (GCAS(ln, nn, ct)) optv else null
           case _ => None
@@ -796,11 +798,11 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     if (!r.rec_insert(k, v, hc, 0, null, r.gen, this)) inserthc(k, hc, v)
   }
 
-  @tailrec private def insertifhc(k: K, hc: Int, v: V, cond: AnyRef): Option[V] = {
+  @tailrec private def insertifhc(k: K, hc: Int, v: V, cond: AnyRef, fullEquals: Boolean): Option[V] = {
     val r = RDCSS_READ_ROOT()
 
-    val ret = r.rec_insertif(k, v, hc, cond, 0, null, r.gen, this)
-    if (ret eq null) insertifhc(k, hc, v, cond)
+    val ret = r.rec_insertif(k, v, hc, cond, fullEquals, 0, null, r.gen, this)
+    if (ret eq null) insertifhc(k, hc, v, cond, fullEquals)
     else ret
   }
 
@@ -822,15 +824,15 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     *
     * @param k the key to remove
     * @param v the value compare with the value found associated with the key
-    * @param removeAlways if true, then `k` will be removed whether or not its value matches `v`
-    *                     if false, then `k` will ONLY be removed if its value matches `v`
+    * @param removalPolicy policy deciding whether to remove `k` based on `v` and the
+   *                       current value associated with `k` (Always, FullEquals, or ReferenceEq)
     * @return an Option[V] indicating the previous value
     */
-  @tailrec private def removehc(k: K, v: V, removeAlways: Boolean, hc: Int): Option[V] = {
+  @tailrec private def removehc(k: K, v: V, removalPolicy: Int, hc: Int): Option[V] = {
     val r = RDCSS_READ_ROOT()
-    val res = r.rec_remove(k, v, removeAlways, hc, 0, null, r.gen, this)
+    val res = r.rec_remove(k, v, removalPolicy, hc, 0, null, r.gen, this)
     if (res ne null) res
-    else removehc(k, v, removeAlways, hc)
+    else removehc(k, v, removalPolicy, hc)
   }
 
 
@@ -907,7 +909,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   override def put(key: K, value: V): Option[V] = {
     val hc = computeHash(key)
-    insertifhc(key, hc, value, INode.KEY_PRESENT_OR_ABSENT)
+    insertifhc(key, hc, value, INode.KEY_PRESENT_OR_ABSENT, fullEquals = false /* unused */)
   }
 
   override def update(k: K, v: V): Unit = {
@@ -922,7 +924,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   override def remove(k: K): Option[V] = {
     val hc = computeHash(k)
-    removehc(k = k, v = null.asInstanceOf[V], removeAlways = true, hc = hc)
+    removehc(k = k, v = null.asInstanceOf[V], RemovalPolicy.Always, hc = hc)
   }
 
   def subtractOne(k: K) = {
@@ -932,7 +934,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   def putIfAbsent(k: K, v: V): Option[V] = {
     val hc = computeHash(k)
-    insertifhc(k, hc, v, INode.KEY_ABSENT)
+    insertifhc(k, hc, v, INode.KEY_ABSENT, fullEquals = false /* unused */)
   }
 
   // TODO once computeIfAbsent is added to concurrent.Map,
@@ -957,7 +959,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     lookuphc(k, hc) match {
       case INodeBase.NO_SUCH_ELEMENT_SENTINEL =>
         val v = op
-        insertifhc(k, hc, v, INode.KEY_ABSENT) match {
+        insertifhc(k, hc, v, INode.KEY_ABSENT, fullEquals = false /* unused */) match {
           case Some(oldValue) => oldValue
           case None => v
         }
@@ -967,17 +969,27 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   def remove(k: K, v: V): Boolean = {
     val hc = computeHash(k)
-    removehc(k, v, removeAlways = false, hc).nonEmpty
+    removehc(k, v, RemovalPolicy.FullEquals, hc).nonEmpty
+  }
+
+  override private[concurrent] def removeRefEq(k: K, v: V): Boolean = {
+    val hc = computeHash(k)
+    removehc(k, v, RemovalPolicy.ReferenceEq, hc).nonEmpty
   }
 
   def replace(k: K, oldvalue: V, newvalue: V): Boolean = {
     val hc = computeHash(k)
-    insertifhc(k, hc, newvalue, oldvalue.asInstanceOf[AnyRef]).nonEmpty
+    insertifhc(k, hc, newvalue, oldvalue.asInstanceOf[AnyRef], fullEquals = true).nonEmpty
+  }
+
+  override private[concurrent] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = {
+    val hc = computeHash(k)
+    insertifhc(k, hc, newValue, oldValue.asInstanceOf[AnyRef], fullEquals = false).nonEmpty
   }
 
   def replace(k: K, v: V): Option[V] = {
     val hc = computeHash(k)
-    insertifhc(k, hc, v, INode.KEY_PRESENT)
+    insertifhc(k, hc, v, INode.KEY_PRESENT, fullEquals = false /* unused */)
   }
 
   def iterator: Iterator[(K, V)] = {
@@ -1038,6 +1050,19 @@ object TrieMap extends MapFactory[TrieMap] {
 
   class MangledHashing[K] extends Hashing[K] {
     def hash(k: K): Int = scala.util.hashing.byteswap32(k.##)
+  }
+
+  private[concurrent] object RemovalPolicy {
+    final val Always = 0
+    final val FullEquals = 1
+    final val ReferenceEq = 2
+
+    def shouldRemove[V](removalPolicy: Int)(a: V, b: V): Boolean =
+      removalPolicy match {
+        case Always      => true
+        case FullEquals  => a == b
+        case ReferenceEq => a.asInstanceOf[AnyRef] eq b.asInstanceOf[AnyRef]
+      }
   }
 }
 
