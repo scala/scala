@@ -712,8 +712,7 @@ self =>
           "`?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.", "2.13.6")
     def checkQMarkDefinition() =
       if (isRawIdent && in.name == raw.QMARK)
-        deprecationWarning(in.offset,
-          "using `?` as a type name will require backticks in the future.", "2.13.6")
+        syntaxError(in.offset, "using `?` as a type name requires backticks.")
     def checkKeywordDefinition() =
       if (isRawIdent && scala3Keywords.contains(in.name))
         deprecationWarning(in.offset,
