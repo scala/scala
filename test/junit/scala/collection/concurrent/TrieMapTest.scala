@@ -59,6 +59,16 @@ class TrieMapTest {
   }
 
   @Test
+  def filterInPlace(): Unit = {
+    ConcurrentMapTestHelper.genericTest_filterInPlace(TrieMap.empty)
+  }
+
+  @Test
+  def mapValuesInPlace(): Unit = {
+    ConcurrentMapTestHelper.genericTest_mapValuesInPlace(TrieMap.empty)
+  }
+
+  @Test
   def customHashingAndEquiv_10481(): Unit = {
     val h = new Hashing[Int] { def hash(i: Int) = i % 4 }
     val e = new Equiv[Int] { def equiv(x: Int, y: Int) = (x % 8) == (y % 8) }

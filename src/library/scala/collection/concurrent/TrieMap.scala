@@ -153,7 +153,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     *              KEY_ABSENT - key wasn't there, insert only, do not overwrite
     *              KEY_PRESENT - key was there, overwrite only, do not insert
     *              other value `v` - only overwrite if the current value is this
-    *  @param hc the hashcode of `k``
+    *  @param hc the hashcode of `k`
     *
     *  @return     null if unsuccessful, Option[V] otherwise (indicating previous value bound to the key)
     */
