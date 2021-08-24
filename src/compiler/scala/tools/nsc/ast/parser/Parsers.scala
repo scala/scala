@@ -709,7 +709,7 @@ self =>
     def checkQMarkUsage() =
       if (!settings.isScala3 && isRawIdent && in.name == raw.QMARK)
         deprecationWarning(in.offset,
-          "`?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.", "2.13.6")
+          "Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.", "2.13.6")
     def checkQMarkDefinition() =
       if (isRawIdent && in.name == raw.QMARK)
         syntaxError(in.offset, "using `?` as a type name requires backticks.")

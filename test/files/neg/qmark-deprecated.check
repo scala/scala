@@ -22,19 +22,19 @@ qmark-deprecated.scala:35: error: using `?` as a type name requires backticks.
 qmark-deprecated.scala:38: error: using `?` as a type name requires backticks.
   type A[?] = Int // error
          ^
-qmark-deprecated.scala:6: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+qmark-deprecated.scala:6: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
 class Bar[M[?] <: List[?]] // errors
                        ^
-qmark-deprecated.scala:27: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+qmark-deprecated.scala:27: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
   val x: Array[?] = new Array[?](0) // errors
                ^
-qmark-deprecated.scala:27: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+qmark-deprecated.scala:27: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
   val x: Array[?] = new Array[?](0) // errors
                               ^
-qmark-deprecated.scala:30: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+qmark-deprecated.scala:30: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
   def foo1[T <: Array[?]](x: T): Array[?] = x // errors
                       ^
-qmark-deprecated.scala:30: warning: `?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.
+qmark-deprecated.scala:30: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
   def foo1[T <: Array[?]](x: T): Array[?] = x // errors
                                        ^
 5 warnings
