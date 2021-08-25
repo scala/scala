@@ -640,6 +640,9 @@ trait StdNames {
     val infix: NameType           = "infix"
     val open: NameType            = "open"
 
+    // Scala 3 hard keywords
+    val `given`: NameType         = "given"
+
     // Compiler utilized names
 
     val AnnotatedType: NameType        = "AnnotatedType"

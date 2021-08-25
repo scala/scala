@@ -23,3 +23,11 @@ class C {
   import mut.*
   val ab = ArrayBuffer(1)
 }
+
+object starring {
+
+  import scala.concurrent.{*, given}, duration.{given, Duration as D, *}, ExecutionContext.Implicits.*
+
+  val f = Future(42)
+  val r = Await.result(f, D.Inf)
+}
