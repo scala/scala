@@ -48,6 +48,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.filterInPlaceImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.mapValuesInPlaceImpl"),
 
+    // #9741
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.SeqMap$SeqMapBuilderImpl"),
   )
 
   override val buildSettings = Seq(
