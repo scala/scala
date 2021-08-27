@@ -16,7 +16,7 @@ import scala.concurrent.duration.SECONDS
 
 object ConcurrentMapTestHelper {
   def genericTest_filterInPlace(newMap: => Map[String, Int]): Unit = {
-    val tester = new ConcurrentMapTester(newMap += "k" -> 0)
+    val tester = new ConcurrentMapTester(newMap += "k1" -> 0 += "k2" -> 0)
 
     tester.runTasks(5, SECONDS)(
       _.filterInPlace((_, v) => {
@@ -25,11 +25,12 @@ object ConcurrentMapTestHelper {
       }),
       map => {
         SECONDS.sleep(1)
-        map("k") = 1
+        map("k1") = 1
       },
     )
 
-    tester.assertContainsEntry("k", 1) // can get `0` if incorrectly implemented
+    tester.assertContainsEntry("k1", 1) // can get `0` if racy implementation
+    tester.assertDoesNotContain("k2")
   }
 
   def genericTest_mapValuesInPlace(newMap: => Map[String, Int]): Unit = {
@@ -45,6 +46,6 @@ object ConcurrentMapTestHelper {
       },
     )
 
-    tester.assertExistsEntry("k", x => x == 1 || x == 6) // can get `5` if incorrectly implemented
+    tester.assertExistsEntry("k", x => x == 1 || x == 6) // can get `5` if racy implementation
   }
 }

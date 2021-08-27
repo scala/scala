@@ -136,7 +136,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
-      if (p(k, v)) remove(k, v)
+      if (!p(k, v)) remove(k, v)
     }
     this
   }

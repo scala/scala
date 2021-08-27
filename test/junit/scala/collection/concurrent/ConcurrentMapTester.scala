@@ -24,4 +24,10 @@ class ConcurrentMapTester[K, V](map: Map[K, V]) {
     assert(value.isDefined, s"map does not contain key '$k'")
     assert(value.exists(p), s"key '$k' is mapped to '${value.get}', which does not match the predicate")
   }
+
+  @throws[AssertionError]
+  def assertDoesNotContain(k: K): Unit = {
+    val value = map.get(k)
+    assert(value.isEmpty, s"key '$k' is not empty and is mapped to '${value.get}'")
+  }
 }
