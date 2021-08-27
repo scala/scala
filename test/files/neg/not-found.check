@@ -1,0 +1,30 @@
+not-found.scala:10: error: not found: value Simple
+Identifiers that begin with uppercase are not pattern variables but match the value in scope.
+      case Simple => 2
+           ^
+not-found.scala:11: error: not found: value Simple
+      case Simple.member => 3
+           ^
+not-found.scala:12: error: not found: value sample
+Identifiers enclosed in backticks are not pattern variables but match the value in scope.
+      case `sample` => 4
+           ^
+not-found.scala:13: error: not found: type Simple
+      case _: Simple => 5
+              ^
+not-found.scala:14: error: not found: value Simple
+      case Simple(_) => 6
+           ^
+not-found.scala:17: error: object Simple is not a member of package p
+did you mean Sample?
+  def g = p.Simple
+            ^
+not-found.scala:21: error: not found: value X
+Identifiers that begin with uppercase are not pattern variables but match the value in scope.
+  val X :: Nil = List(42)
+      ^
+not-found.scala:21: warning: Pattern definition introduces Unit-valued member of T; consider wrapping it in `locally { ... }`.
+  val X :: Nil = List(42)
+        ^
+1 warning
+7 errors
