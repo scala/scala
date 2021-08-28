@@ -1,11 +1,11 @@
-patmat-sealed-reachable.scala:12: warning: fruitless type test: a value of type Option[Int] cannot also be a SomeClass
-  def b(c: Option[Int]) = c match { case _: SomeClass =>; case _ =>  }
+patmat-sealed-reachable.scala:16: warning: fruitless type test: a value of type Option[Int] cannot also be a SomeClass
+  def b(c: Option[Int]) = c match { case _: SomeClass => ; case _ => }
                                             ^
-patmat-sealed-reachable.scala:11: warning: fruitless type test: a value of type Option[Int] cannot also be a SealedTrait
-  def a(c: Option[Int]) = c match { case _: SealedTrait =>; case _ =>  }
+patmat-sealed-reachable.scala:15: warning: fruitless type test: a value of type Option[Int] cannot also be a SealedTrait
+  def a(c: Option[Int]) = c match { case _: SealedTrait => ; case _ => }
                                             ^
-patmat-sealed-reachable.scala:13: warning: Pattern type is not compatible with any of the sealed children of expected type
-  def c(c: Option[Int]) = c match { case _: UnsealedTrait =>; case _ =>  }
+patmat-sealed-reachable.scala:17: warning: Pattern type is not compatible with any of the sealed children of expected type
+  def c(c: Option[Int]) = c match { case _: UnsealedTrait => ; case _ => }
                                             ^
 error: No warnings can be incurred under -Werror.
 3 warnings
