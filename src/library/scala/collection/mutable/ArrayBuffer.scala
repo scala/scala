@@ -114,7 +114,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def length = size0
 
-  override def view: ArrayBufferView[A] = new ArrayBufferView(array, size0, () => mutationCount)
+  // TODO: return `IndexedSeqView` rather than `ArrayBufferView`
+  override def view: ArrayBufferView[A] = new ArrayBufferView(this, () => mutationCount)
 
   override def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
@@ -176,27 +177,21 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
         if (elemsLength > 0) {
-          ensureSize(length + elemsLength)
-          Array.copy(array, index, array, index + elemsLength, size0 - index)
-          size0 = size0 + elemsLength
-          elems match {
-            case elems: ArrayBuffer[_] =>
-              // if `elems eq this`, this works because `elems.array eq this.array`,
-              // we didn't overwrite the values being inserted after moving them in
-              // the previous copy a few lines up, and `System.arraycopy` will
-              // effectively "read" all the values before overwriting any of them.
-              Array.copy(elems.array, 0, array, index, elemsLength)
-            case _ =>
-              var i = 0
-              val it = elems.iterator
-              while (i < elemsLength) {
-                this(index + i) = it.next()
-                i += 1
-              }
-          }
+          val len = size0
+          val newSize = len + elemsLength
+          ensureSize(newSize)
+          Array.copy(array, index, array, index + elemsLength, len - index)
+          // if `elems eq this`, this copy is safe because
+          //   - `elems.array eq this.array`
+          //   - we didn't overwrite the values being inserted after moving them in
+          //     the previous line
+          //   - `copyElemsToArray` will call `System.arraycopy`
+          //   - `System.arraycopy` will effectively "read" all the values before
+          //     overwriting any of them when two arrays are the the same reference
+          IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
+          size0 = newSize // update size AFTER the copy, in case we're inserting a proxy
         }
-      case _ =>
-        insertAll(index, ArrayBuffer.from(elems))
+      case _ => insertAll(index, ArrayBuffer.from(elems))
     }
   }
 
@@ -317,18 +312,30 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   }
 }
 
-final class ArrayBufferView[A] private[mutable](val array: Array[AnyRef], val length: Int, mutationCount: () => Int)
+// TODO: use `CheckedIndexedSeqView.Id` once we can change the return type of `ArrayBuffer#view`
+final class ArrayBufferView[A] private[mutable](underlying: ArrayBuffer[A], mutationCount: () => Int)
   extends AbstractIndexedSeqView[A] {
-  @deprecated("never intended to be public; call ArrayBuffer#view instead", since = "2.13.6")
+  @deprecated("never intended to be public; call ArrayBuffer#view instead", since = "2.13.7")
   def this(array: Array[AnyRef], length: Int) = {
     // this won't actually track mutation, but it would be a pain to have the implementation
     // check if we have a method to get the current mutation count or not on every method and
     // change what it does based on that. hopefully no one ever calls this.
-    this(array, length, () => 0)
+    this({
+      val _array = array
+      val _length = length
+      new ArrayBuffer[A](0) {
+        this.array = _array
+        this.size0 = _length
+      }
+    }, () => 0)
   }
 
+  @deprecated("never intended to be public", since = "2.13.7")
+  def array: Array[AnyRef] = underlying.toArray[Any].asInstanceOf[Array[AnyRef]]
+
   @throws[IndexOutOfBoundsException]
-  def apply(n: Int): A = if (n < length) array(n).asInstanceOf[A] else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${length - 1})")
+  def apply(n: Int): A = underlying(n)
+  def length: Int = underlying.length
   override protected[this] def className = "ArrayBufferView"
 
   // we could inherit all these from `CheckedIndexedSeqView`, except this class is public
