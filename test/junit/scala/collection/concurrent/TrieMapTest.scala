@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 
 import scala.util.hashing.Hashing
 import scala.tools.testkit.AssertUtil.assertThrows
+import scala.util.chaining._
 
 @deprecated("Tests deprecated API", since="2.13")
 class TrieMapTest {
@@ -55,6 +56,16 @@ class TrieMapTest {
   @Test
   def mapValues(): Unit = {
     check(List(("k", "v")))(_.view.mapValues(x => x))
+  }
+
+  @Test
+  def filterInPlace(): Unit = {
+    ConcurrentMapTestHelper.genericTest_filterInPlace(TrieMap.empty)
+  }
+
+  @Test
+  def mapValuesInPlace(): Unit = {
+    ConcurrentMapTestHelper.genericTest_mapValuesInPlace(TrieMap.empty)
   }
 
   @Test
@@ -658,5 +669,40 @@ class TrieMapTest {
     val hashMap4 = TrieMap(1 -> "a")
     assertEquals(hashMap4.updateWith(2)(noneAnytime), None)
     assertEquals(hashMap4, TrieMap(1 -> "a"))
+  }
+
+  @Test
+  def knownSizeConsistency(): Unit = {
+    def check(tm: TrieMap[_, _]): Unit = {
+      def msg = s"for ${tm.toString()}"
+      val snapshot = tm.readOnlySnapshot()
+      val initialKS = snapshot.knownSize
+      val size = snapshot.size
+      assert(initialKS == -1 || initialKS == size, msg)
+      val laterKS = snapshot.knownSize
+      assert(laterKS == -1 || laterKS == size, msg)
+      assert(laterKS >= initialKS, msg) // assert we haven't forgotten the size
+    }
+
+    check(TrieMap.empty)
+    check(TrieMap())
+    check(TrieMap("k" -> "v"))
+    check(TrieMap.empty[String, String].tap(_("k") = "v"))
+    check(TrieMap.empty[String, String].tap(_.put("k", "v")))
+    check(TrieMap.from((1 to 5).map(x => x -> x)))
+    check(TrieMap.from((1 to 10).map(x => x -> x)))
+    check(TrieMap.from((1 to 100).map(x => x -> x)))
+  }
+
+  @Test
+  def isEmptyCorrectness(): Unit = {
+    assert(TrieMap.empty.isEmpty)
+    assert(TrieMap().isEmpty)
+    assert(!TrieMap("k" -> "v").isEmpty)
+    assert(!TrieMap.empty[String, String].tap(_("k") = "v").isEmpty)
+    assert(!TrieMap.empty[String, String].tap(_.put("k", "v")).isEmpty)
+    assert(!TrieMap.from((1 to 5).map(x => x -> x)).isEmpty)
+    assert(!TrieMap.from((1 to 10).map(x => x -> x)).isEmpty)
+    assert(!TrieMap.from((1 to 100).map(x => x -> x)).isEmpty)
   }
 }

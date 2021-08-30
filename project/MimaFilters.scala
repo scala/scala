@@ -65,6 +65,12 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
 
+    // #9727
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.filterInPlaceImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.mapValuesInPlaceImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.filterInPlaceImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.mapValuesInPlaceImpl"),
+
   )
 
   override val buildSettings = Seq(

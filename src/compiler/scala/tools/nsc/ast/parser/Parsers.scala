@@ -709,11 +709,10 @@ self =>
     def checkQMarkUsage() =
       if (!settings.isScala3 && isRawIdent && in.name == raw.QMARK)
         deprecationWarning(in.offset,
-          "`?` in a type will be interpreted as a wildcard in the future, wrap it in backticks to keep the current meaning.", "2.13.6")
+          "Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.", "2.13.6")
     def checkQMarkDefinition() =
       if (isRawIdent && in.name == raw.QMARK)
-        deprecationWarning(in.offset,
-          "using `?` as a type name will require backticks in the future.", "2.13.6")
+        syntaxError(in.offset, "using `?` as a type name requires backticks.")
     def checkKeywordDefinition() =
       if (isRawIdent && scala3Keywords.contains(in.name))
         deprecationWarning(in.offset,
@@ -2700,7 +2699,16 @@ self =>
      *  }}}
      */
     def importSelectors(): List[ImportSelector] = {
-      val selectors = inBracesOrNil(commaSeparated(importSelector()))
+      val selectors0 = inBracesOrNil(commaSeparated(importSelector()))
+
+      // Treat an import of `*, given` or `given, *` as if it was an import of `*`
+      // since the former in Scala 3 has the same semantics as the latter in Scala 2.
+      val selectors =
+        if (currentRun.isScala3 && selectors0.exists(_.isWildcard))
+          selectors0.filterNot(sel => sel.name == nme.`given` && sel.rename == sel.name)
+        else
+          selectors0
+
       for (t <- selectors.init if t.isWildcard) syntaxError(t.namePos, "Wildcard import must be in last position")
       selectors
     }

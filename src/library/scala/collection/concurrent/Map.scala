@@ -131,4 +131,22 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
       case _ => this.updateWithAux(key)(remappingFunction)
     }
   }
+
+  private[collection] def filterInPlaceImpl(p: (K, V) => Boolean): this.type = {
+    val it = iterator
+    while (it.hasNext) {
+      val (k, v) = it.next()
+      if (!p(k, v)) remove(k, v)
+    }
+    this
+  }
+
+  private[collection] def mapValuesInPlaceImpl(f: (K, V) => V): this.type = {
+    val it = iterator
+    while (it.hasNext) {
+      val (k, v) = it.next()
+      replace(k, v, f(k, v))
+    }
+    this
+  }
 }

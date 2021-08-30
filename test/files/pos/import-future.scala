@@ -26,7 +26,7 @@ class C {
 
 object starring {
 
-  import scala.concurrent.*, duration.{Duration as D, *}, ExecutionContext.Implicits.*
+  import scala.concurrent.{*, given}, duration.{given, Duration as D, *}, ExecutionContext.Implicits.*
 
   val f = Future(42)
   val r = Await.result(f, D.Inf)
