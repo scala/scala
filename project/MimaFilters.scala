@@ -31,6 +31,29 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
 
+    // #9425 Node is private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashMap#Node.foreachEntry"),
+
+    // Fixes for scala/bug#12009
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.ArrayBufferView.this"),                  // private[mutable]
+    ProblemFilters.exclude[FinalClassProblem]("scala.collection.IndexedSeqView$IndexedSeqViewIterator"),                  // private[collection]
+    ProblemFilters.exclude[FinalClassProblem]("scala.collection.IndexedSeqView$IndexedSeqViewReverseIterator"),           // private[collection]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView"),                        // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$"),                       // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$CheckedIterator"),        // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$CheckedReverseIterator"), // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Id"),                     // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Appended"),               // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Prepended"),              // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Concat"),                 // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Take"),                   // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$TakeRight"),              // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Drop"),                   // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$DropRight"),              // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.mutable.CheckedIndexedSeqView$$Map"),                  // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Reverse"),                // private[mutable]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.CheckedIndexedSeqView$Slice"),                  // private[mutable]
+
     // #8835
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.scala$reflect$runtime$SynchronizedOps$SynchronizedBaseTypeSeq$$super$maxDepthOfElems"),
 
