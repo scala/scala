@@ -23,5 +23,11 @@ class Test {
   def nowarn2(c: O3) = c match { case _: UnsealedTrait => ; case _ => }
   def nowarn3(c: O4) = c match { case _: UnsealedTrait => ; case _ => }
 
+  // This patch should not affect SealedTrait and SomeClass
+  // scrutinee is incompatible with pattern type;
+//  def test1(c: O3) = c match { case _: SealedTrait => ; case _ => }
+//  def test2(c: O3) = c match { case _: SomeClass => ; case _ => }
+//  def test3(c: O2) = c match { case _: SealedTrait => ; case _ => }
+//  def test4(c: O2) = c match { case _: SomeClass => ; case _ => }
 
 }
