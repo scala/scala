@@ -1428,13 +1428,6 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
   files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
 }
 
-// WhiteSource
-whitesourceProduct               := "Lightbend Reactive Platform"
-whitesourceAggregateProjectName  := "scala-2.13-stable"
-whitesourceIgnoredScopes         := Vector("test", "scala-tool")
-// for some reason sbt 1.4 issues an unused-setting warning for this, I don't understand why
-Global / excludeLintKeys += whitesourceIgnoredScopes
-
 {
   scala.build.TravisOutput.installIfOnTravis()
   Nil
