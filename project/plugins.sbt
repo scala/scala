@@ -32,5 +32,3 @@ Global / concurrentRestrictions := Seq(
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.2")
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
-
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
