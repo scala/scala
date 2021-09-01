@@ -295,8 +295,9 @@ trait ContextErrors extends splain.SplainErrors {
       def AmbiguousIdentError(tree: Tree, name: Name, msg: String) =
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
-      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
-        NormalTypeError(tree, "not found: "+decodeWithKind(name, owner))
+      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context, inPattern: Boolean) = {
+        def help = if (inPattern && name.isTermName) s"\nIdentifiers ${if (name.charAt(0).isUpper) "that begin with uppercase" else "enclosed in backticks"} are not pattern variables but match the value in scope." else ""
+        NormalTypeError(tree, s"not found: ${decodeWithKind(name, owner)}$help")
       }
 
       // typedAppliedTypeTree

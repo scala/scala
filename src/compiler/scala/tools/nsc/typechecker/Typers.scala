@@ -5476,7 +5476,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
             asTypeName orElse inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
+              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext, mode.in(all = PATTERNmode, none = APPSELmode | TYPEPATmode)))
               case sym      => typed1(tree setSymbol sym, mode, pt)
             }
           case LookupSucceeded(qual, sym)   =>
