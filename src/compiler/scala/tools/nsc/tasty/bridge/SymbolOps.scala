@@ -33,10 +33,10 @@ trait SymbolOps { self: TastyUniverse =>
   final def declaringSymbolOf(sym: Symbol): Symbol =
     if (sym.isModuleClass) sym.sourceModule else sym
 
-  private final def deepComplete(tpe: Type)(implicit ctx: Context): Unit = {
-    symOfType(tpe) match {
+  private final def deepComplete(space: Type)(implicit ctx: Context): Unit = {
+    symOfType(space) match {
       case u.NoSymbol =>
-        ctx.log(s"could not retrieve symbol from type ${showType(tpe)}")
+        ctx.log(s"could not retrieve symbol from type ${showType(space)}")
       case termSym if termSym.isTerm =>
         if (termSym.is(Object)) {
           termSym.ensureCompleted(SpaceForce)
@@ -113,11 +113,7 @@ trait SymbolOps { self: TastyUniverse =>
 
     def objectImplementation: Symbol = sym.moduleClass
     def sourceObject: Symbol = sym.sourceModule
-    def ref(args: List[Type]): Type = u.appliedType(sym, args)
-    def ref: Type = sym.ref(Nil)
-    def singleRef: Type = u.singleType(u.NoPrefix, sym)
-    def termRef: Type = sym.preciseRef(u.NoPrefix)
-    def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
+    def ref: Type = u.appliedType(sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
   }
 
@@ -129,15 +125,15 @@ trait SymbolOps { self: TastyUniverse =>
     else
       termParamss
 
-  def namedMemberOfType(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
+  private[bridge] def lookupSymbol(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     deepComplete(space)
     tname match {
-      case SignedName(qual, sig, target) => signedMemberOfSpace(space, qual, sig.map(_.encode), target)
-      case _                             => memberOfSpace(space, tname)
+      case SignedName(qual, sig, target) => lookupSigned(space, qual, sig.map(_.encode), target)
+      case _                             => lookupSimple(space, tname)
     }
   }
 
-  private def memberOfSpace(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
+  private def lookupSimple(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
     //    or else filters for non private.
     // There should be an investigation to see what code makes that false, and what is an equivalent check.
@@ -189,7 +185,7 @@ trait SymbolOps { self: TastyUniverse =>
     typeError(s"can't find $missing; perhaps it is missing from the classpath.")
   }
 
-  private def signedMemberOfSpace(
+  private def lookupSigned(
       space: Type,
       qual: TastyName,
       sig: MethodSignature[ErasedTypeRef],

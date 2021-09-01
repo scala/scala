@@ -57,10 +57,10 @@ trait TreeOps { self: TastyUniverse =>
       new TastyIdent(name).setType(tpe)
 
     @inline final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => namedMemberOfPrefix(qual.tpe, name))
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name))
 
     @inline final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => namedMemberOfTypeWithPrefix(qual.tpe, owner, name))
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name))
 
     private def selectImpl(qual: Tree, name: TastyName)(lookup: Context => Type)(implicit ctx: Context): Tree = {
 

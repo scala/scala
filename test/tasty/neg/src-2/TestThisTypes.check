@@ -1,0 +1,6 @@
+TestThisTypes_fail.scala:12: error: type mismatch;
+ found   : b.Base
+ required: a.Base
+    aBase = b.doTest.get // error
+                     ^
+1 error

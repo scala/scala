@@ -64,9 +64,12 @@ trait ContextOps { self: TastyUniverse =>
   }
 
   final def location(owner: Symbol): String = {
-    if (!isSymbol(owner)) "<NoSymbol>"
-    else if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
-    else s"${describeOwner(owner)} in ${location(owner.owner)}"
+    if (!isSymbol(owner))
+      "<NoSymbol>"
+    else if (owner.isClass || owner.isPackageClass || owner.isPackageObjectOrClass)
+      s"${owner.kindString} ${owner.fullNameString}"
+    else
+      s"${describeOwner(owner)} in ${location(owner.owner)}"
   }
 
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
