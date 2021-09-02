@@ -301,7 +301,7 @@ hello
 there
 """
 val res8: String =
-"""
+s"""
 hello
 there
 """

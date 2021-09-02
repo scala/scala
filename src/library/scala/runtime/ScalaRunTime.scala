@@ -276,9 +276,6 @@ object ScalaRunTime {
       sb.toString
     }
 
-    lazy val escapable = raw"""[\x08\f\n\r\t\\"']|\R""".r.unanchored
-    lazy val tq = "\"" * 3
-
     /** Format a string as a string literal with escapes and enclosing quotes. */
     def stringToString(s: String): String = {
       import scala.util.Properties.lineSeparator
@@ -288,7 +285,7 @@ object ScalaRunTime {
         var i = 0
         var j = 0
         val len = s.length()
-        def addEscapedLineSeparator(n: Int) = {
+        def addEscapedLineSeparatorChar(n: Int) = {
           var k = 0
           while (k < n) {
             val fill = lineSeparator.charAt(k) match {
@@ -319,7 +316,7 @@ object ScalaRunTime {
             case '\n' => raw"\n"
             case c =>
               if (j > 0) {
-                addEscapedLineSeparator(j)
+                addEscapedLineSeparatorChar(j)
                 j = 0
               }
               sub.append(c)
@@ -329,16 +326,16 @@ object ScalaRunTime {
             case "" => ()
             case _  =>
               if (j > 0) {
-                addEscapedLineSeparator(j)
+                addEscapedLineSeparatorChar(j)
                 j = 0
               }
               sub.append(seg)
           }
           i += 1
         }
-        if (j > 0) addEscapedLineSeparator(j)
+        if (j > 0) addEscapedLineSeparatorChar(j)
         val res = sub.toString
-        if (multiline) s"${tq}${res}${tq}" else s""""$res""""
+        if (multiline) s"s${tq}${res}${tq}" else s""""$res""""
       }
       if (s.exists { case escapable() => true case _ => false }) escaped
       else if (s.contains(lineSeparator)) s"${tq}${s}${tq}"
@@ -381,6 +378,10 @@ object ScalaRunTime {
       case _: UnsupportedOperationException | _: AssertionError => "" + arg
     }
   } // end stringOf
+  //lazy val escapable = raw"""[\x08\f\n\r\t\\"']|\R""".r.unanchored
+  private val escapable = raw"""[\x08\f\n\r\t\\"']""".r.unanchored
+  private final val tq = "\"\"\""
+
 
   /** Legacy repl format with extra newlines. */
   def replStringOf(arg: Any, maxLength: Int): String =

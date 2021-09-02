@@ -17,6 +17,8 @@ class ScalaRunTimeTest {
     import ScalaRunTime.{replStringOf, stringOf}
     import scala.collection._
 
+    def verboseStringOf(s: String): String = stringOf(s, maxLength = 0, verboseProduct = true)
+
     assertEquals("null", stringOf(null))
     assertEquals("\"\"", stringOf(""))
 
@@ -78,5 +80,23 @@ class ScalaRunTimeTest {
     }
     assertEquals(null, stringOf(tpolecat))
     assertEquals("null // non-null reference has null-valued toString", replStringOf(tpolecat, maxLength = 100, verboseProduct = false))
+
+    val TQ = "\"" * 3
+    val abcdef =
+      s"""abc
+         |def""".stripMargin
+    def q(s: String) = "\"" + s + "\""
+    def escq(s: String) = "\\\"" + s + "\\\""
+    def tq(s: String) = TQ + s + TQ
+    // escape the quote then wrap in triple quotes
+    assertEquals(
+      "s" + tq(escq(abcdef)),
+      verboseStringOf(q(abcdef))
+    )
+    // escape ALL the quotes
+    assertEquals(
+      "s" + tq(escq(escq(escq(escq(abcdef))))),
+      verboseStringOf(tq(q(abcdef)))
+    )
   }
 }

@@ -6,7 +6,7 @@ scala> val x = s"""
   y = $y
 """
 val x: String =
-"""
+s"""
   y = 55
 """
 
