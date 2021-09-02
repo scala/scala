@@ -404,8 +404,14 @@ object View extends IterableFactory[View] {
 
   @SerialVersionUID(3L)
   private[collection] class Patched[A](underlying: SomeIterableOps[A], from: Int, other: IterableOnce[A], replaced: Int) extends AbstractView[A] {
-    def iterator: Iterator[A] = underlying.iterator.patch(from, other.iterator, replaced)
-    override def knownSize: Int = if (underlying.knownSize == 0 && other.knownSize == 0) 0 else super.knownSize
+    // we may be unable to traverse `other` more than once, so we need to cache it if that's the case
+    private val _other: Iterable[A] = other match {
+      case other: Iterable[A] => other
+      case other              => LazyList.from(other)
+    }
+
+    def iterator: Iterator[A] = underlying.iterator.patch(from, _other.iterator, replaced)
+    override def knownSize: Int = if (underlying.knownSize == 0 && _other.knownSize == 0) 0 else super.knownSize
     override def isEmpty: Boolean = if (knownSize == 0) true else iterator.isEmpty
   }
 
