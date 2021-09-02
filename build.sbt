@@ -354,7 +354,7 @@ def setForkedWorkingDirectory: Seq[Setting[_]] = {
 }
 
 // This project provides the STARR scalaInstance for bootstrapping
-lazy val bootstrap = project in file("target/bootstrap")
+lazy val bootstrap = project.in(file("target/bootstrap")).settings(bspEnabled := false)
 
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
@@ -634,8 +634,9 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
-  .settings(publish / skip := true)
   .settings(
+    publish / skip := true,
+    bspEnabled := false,
     Compile / sourceGenerators += Def.task {
       import scala.collection.JavaConverters._
       val srcBase = (library / Compile / sourceDirectories).value.head / "scala/runtime"
@@ -679,7 +680,9 @@ lazy val bench = project.in(file("test") / "benchmarks")
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
-    Jmh / bspEnabled := false // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
+    // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
+    // should not be needed once sbt-jmh 0.4.3 is out (https://github.com/sbt/sbt-jmh/pull/207)
+    Jmh / bspEnabled := false
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
@@ -804,8 +807,9 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(publish / skip := true)
   .settings(
+    publish / skip := true,
+    bspEnabled := false,
     Test / fork := true,
     Test / parallelExecution := false,
     libraryDependencies ++= {
@@ -930,6 +934,7 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(
+    bspEnabled := false,
     name := "scala-dist",
     Compile / packageBin / mappings ++= {
       val binBaseDir = buildDirectory.value / "pack"
@@ -981,9 +986,10 @@ def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
 
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
-  .settings(publish / skip := true)
   .settings(generateBuildCharacterFileSettings)
   .settings(
+    publish / skip := true,
+    bspEnabled := false,
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
       val jar = (bootstrap / scalaInstance).value.allJars.find(_.getName contains "-compiler").get
@@ -1122,6 +1128,7 @@ lazy val distDependencies = Seq(replFrontend, compiler, library, reflect, scalap
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
+    bspEnabled := false,
     libraryDependencies ++= jlineDeps,
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
