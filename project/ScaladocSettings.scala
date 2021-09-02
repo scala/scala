@@ -1,7 +1,7 @@
 package scala.build
 
 import sbt._
-import sbt.Keys.{ artifact, dependencyClasspath, moduleID, resourceManaged }
+import sbt.Keys.{ artifact, externalDependencyClasspath, moduleID, resourceManaged }
 
 object ScaladocSettings {
 
@@ -15,7 +15,9 @@ object ScaladocSettings {
       s.get(artifact.key).isDefined && s.get(moduleID.key).exists(_.organization == "org.webjars")
     val dest = (resourceManaged.value / "webjars").getAbsoluteFile
     IO.createDirectory(dest)
-    val classpathes = (Compile / dependencyClasspath).value
+    // externalDependencyClasspath (not dependencyClasspath) to avoid compiling
+    // upstream projects (library, reflect, compiler) on bsp `buildTarget/resources`
+    val classpathes = (Compile / externalDependencyClasspath).value
     val files: Seq[File] = classpathes.filter(isWebjar).flatMap { classpathEntry =>
       val jarFile = classpathEntry.data
       IO.unzip(jarFile, dest)
