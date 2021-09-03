@@ -990,7 +990,6 @@ lazy val root: Project = (project in file("."))
   .settings(generateBuildCharacterFileSettings)
   .settings(
     publish / skip := true,
-    bspEnabled := false,
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
       val jar = (bootstrap / scalaInstance).value.allJars.find(_.getName contains "-compiler").get
