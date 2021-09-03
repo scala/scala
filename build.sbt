@@ -46,6 +46,8 @@ val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
+val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
+
 // `set Global / fatalWarnings := true` to enable -Werror for the certain modules
 // currently, many modules cannot support -Werror; ideally this setting will eventually
 //   enable -Werror for all modules
@@ -131,20 +133,21 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
+  projectFolder := thisProject.value.id, // overridden in configureAsSubproject
   Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
   Compile / unmanagedJars := Seq.empty,  // no JARs in version control!
   Compile / sourceDirectory := baseDirectory.value,
   Compile / unmanagedSourceDirectories := List(baseDirectory.value),
-  Compile / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "src" / thisProject.value.id,
+  Compile / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "src" / projectFolder.value,
   sourcesInBase := false,
   Compile / scalaSource := (Compile / sourceDirectory).value,
   // for some reason sbt 1.4 issues unused-settings warnings for this, it seems to me incorrectly
   Global / excludeLintKeys ++= Set(scalaSource),
   // each subproject has to ask specifically for files they want to include
   Compile / unmanagedResources / includeFilter := NothingFilter,
-  target := (ThisBuild / target).value / thisProject.value.id,
-  Compile / classDirectory := buildDirectory.value / "quick/classes" / thisProject.value.id,
-  Compile / doc / target := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  target := (ThisBuild / target).value / projectFolder.value,
+  Compile / classDirectory := buildDirectory.value / "quick/classes" / projectFolder.value,
+  Compile / doc / target := buildDirectory.value / "scaladoc" / projectFolder.value,
   // given that classDirectory and doc target are overridden to be _outside_ of target directory, we have
   // to make sure they are being cleaned properly
   cleanFiles += (Compile / classDirectory).value,
@@ -425,7 +428,7 @@ lazy val reflect = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    apiURL := Some(url(s"https://www.scala-lang.org/api/${versionProperties.value.mavenVersion}/scala-${thisProject.value.id}/")),
+    apiURL := Some(url(s"https://www.scala-lang.org/api/${versionProperties.value.mavenVersion}/scala-${projectFolder.value}/")),
     MimaFilters.mimaSettings,
   )
   .dependsOn(library)
@@ -509,7 +512,7 @@ lazy val compiler = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    apiURL := Some(url(s"https://www.scala-lang.org/api/${versionProperties.value.mavenVersion}/scala-${thisProject.value.id}/")),
+    apiURL := Some(url(s"https://www.scala-lang.org/api/${versionProperties.value.mavenVersion}/scala-${projectFolder.value}/")),
     pomDependencyExclusions += (("org.scala-lang.modules", "scala-asm"))
   )
   .dependsOn(library, reflect)
@@ -847,10 +850,8 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
 
-lazy val partestJavaAgent = Project("partestJavaAgent", file(".") / "src" / "partest-javaagent")
-  .settings(commonSettings)
+lazy val partestJavaAgent = configureAsSubproject(project, srcdir = Some("partest-javaagent"))
   .settings(fatalWarningsSettings)
-  .settings(generatePropertiesFileSettings)
   .settings(disableDocs)
   .settings(
     libraryDependencies += asmDep,
@@ -1140,7 +1141,7 @@ lazy val dist = (project in file("dist"))
       (ThisBuild / buildDirectory).value / "quick"
     }.dependsOn((distDependencies.map(_ / Runtime / products) :+ mkBin): _*).value,
     mkPack := Def.task { (ThisBuild / buildDirectory).value / "pack" }.dependsOn(Compile / packageBin / packagedArtifact, mkBin).value,
-    target := (ThisBuild / target).value / thisProject.value.id,
+    target := (ThisBuild / target).value / projectFolder.value,
     Compile / packageBin := {
       val targetDir = (ThisBuild / buildDirectory).value / "pack" / "lib"
       val jlineJAR = findJar((Compile / dependencyClasspath).value, jlineDep).get.data
@@ -1177,6 +1178,7 @@ def configureAsSubproject(project: Project, srcdir: Option[String] = None): Proj
   (project in base)
     .settings(scalaSubprojectSettings)
     .settings(generatePropertiesFileSettings)
+    .settings(projectFolder := srcdir.getOrElse(project.id))
 }
 
 lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batch).")
