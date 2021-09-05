@@ -51,7 +51,7 @@ class BTypesTest extends BytecodeTesting {
     assert(FLOAT.typedOpcode(Opcodes.IALOAD)  == Opcodes.FALOAD)
     assert(LONG.typedOpcode(Opcodes.IALOAD)   == Opcodes.LALOAD)
     assert(DOUBLE.typedOpcode(Opcodes.IALOAD) == Opcodes.DALOAD)
-    assert(classBTFS(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
+    assert(s.typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
 
     assert(UNIT.typedOpcode(Opcodes.IRETURN)   == Opcodes.RETURN)
     assert(BOOL.typedOpcode(Opcodes.IRETURN)   == Opcodes.IRETURN)
@@ -62,7 +62,7 @@ class BTypesTest extends BytecodeTesting {
     assert(FLOAT.typedOpcode(Opcodes.IRETURN)  == Opcodes.FRETURN)
     assert(LONG.typedOpcode(Opcodes.IRETURN)   == Opcodes.LRETURN)
     assert(DOUBLE.typedOpcode(Opcodes.IRETURN) == Opcodes.DRETURN)
-    assert(classBTFS(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
+    assert(s.typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
   }
 
   @Test
