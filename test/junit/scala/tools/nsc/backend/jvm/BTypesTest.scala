@@ -19,7 +19,8 @@ class BTypesTest extends BytecodeTesting {
   }
   import global.genBCode.bTypes._
 
-  def classBTFS(sym: global.Symbol) = global.exitingDelambdafy(classBTypeFromSymbol(sym))
+  def duringBackend[T](f: => T) = global.exitingDelambdafy(f)
+  def classBTFS(sym: global.Symbol) = duringBackend { classBTypeFromSymbol(sym) }
 
   def jlo = global.definitions.ObjectClass
   def jls = global.definitions.StringClass
@@ -220,5 +221,31 @@ class BTypesTest extends BytecodeTesting {
   @Test
   def maxTypeTest() {
 
+  }
+
+  @Test
+  def maxValueTypeATest(): Unit = duringBackend {
+    assertEquals(LONG, LONG.maxValueType(BYTE))
+    assertEquals(LONG, LONG.maxValueType(SHORT))
+    assertEquals(LONG, LONG.maxValueType(CHAR))
+    assertEquals(LONG, LONG.maxValueType(INT))
+    assertEquals(LONG, LONG.maxValueType(LONG))
+    assertEquals(FLOAT, LONG.maxValueType(FLOAT))
+    assertEquals(DOUBLE, LONG.maxValueType(DOUBLE))
+
+    assertUncomparable(LONG, UNIT)
+    assertUncomparable(LONG, BOOL)
+    assertUncomparable(LONG, o)
+    assertUncomparable(LONG, s)
+    assertUncomparable(LONG, oArr)
+    assertUncomparable(LONG, method)
+
+    def assertUncomparable(t1: PrimitiveBType, t2: BType): Unit = {
+      try {
+        t1.maxValueType(t2)
+      } catch {
+        case e: AssertionError => assertEquals(s"Cannot compute maxValueType: $t1, $t2", e.getMessage)
+      }
+    }
   }
 }
