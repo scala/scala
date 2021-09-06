@@ -8,6 +8,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
+import scala.tools.testing.AssertUtil.assertThrows
 import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
@@ -241,11 +242,10 @@ class BTypesTest extends BytecodeTesting {
     assertUncomparable(LONG, method)
 
     def assertUncomparable(t1: PrimitiveBType, t2: BType): Unit = {
-      try {
-        t1.maxValueType(t2)
-      } catch {
-        case e: AssertionError => assertEquals(s"Cannot compute maxValueType: $t1, $t2", e.getMessage)
-      }
+      assertThrows[AssertionError](
+        t1.maxValueType(t2),
+        _.equals(s"Cannot compute maxValueType: $t1, $t2")
+        )
     }
   }
 }
