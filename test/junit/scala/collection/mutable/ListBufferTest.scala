@@ -3,8 +3,8 @@ package scala.collection.mutable
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
-import scala.tools.testkit.AssertUtil.assertSameElements
-
+import java.util.ConcurrentModificationException
+import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows}
 import scala.annotation.nowarn
 
 class ListBufferTest {
@@ -235,16 +235,32 @@ class ListBufferTest {
 
   @Test
   def self_addAll(): Unit = {
-    val b = ListBuffer(1, 2, 3)
-    b ++= b
-    assertSameElements(List(1, 2, 3, 1, 2, 3), b)
+    val b1 = ListBuffer(1, 2, 3)
+    b1 ++= b1
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b1)
+
+    val b2 = ListBuffer(1, 2, 3)
+    b2 ++= b2.view
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+
+    val b3 = ListBuffer(1, 2, 3)
+    b3 ++= b3.iterator
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b3)
   }
 
   @Test
   def self_prependAll(): Unit = {
-    val b = ListBuffer(1, 2, 3)
-    b prependAll b
-    assertSameElements(List(1, 2, 3, 1, 2, 3), b)
+    val b1 = ListBuffer(1, 2, 3)
+    b1.prependAll(b1)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b1)
+
+    val b2 = ListBuffer(1, 2, 3)
+    b2.prependAll(b2.view)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+
+    val b3 = ListBuffer(1, 2, 3)
+    b3.prependAll(b3.iterator)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b3)
   }
 
   @Test
@@ -256,13 +272,26 @@ class ListBufferTest {
     val b2 = ListBuffer(1, 2, 3)
     b2.insertAll(3, b2)
     assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+
+    val b3 = ListBuffer(1, 2, 3)
+    b3.insertAll(1, b3.view)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b3)
+
+    val b4 = ListBuffer(1, 2, 3)
+    b4.insertAll(1, b4.iterator)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b4)
   }
 
   @Test
   def self_subtractAll(): Unit = {
-    val b = ListBuffer(1, 2, 3)
-    b --= b
-    assertSameElements(Nil, b)
+    val b1 = ListBuffer(1, 2, 3)
+    b1 --= b1
+    assertSameElements(Nil, b1)
+
+    val b2 = ListBuffer(1, 2, 3)
+    //b2 --= b2.view
+    //assertSameElements(Nil, b2)
+    assertThrows[ConcurrentModificationException](b2 --= b2.view)
   }
 
   @Test
@@ -274,5 +303,13 @@ class ListBufferTest {
     val b2 = ListBuffer(1, 2, 3)
     b2.patchInPlace(3, b2, 1)
     assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+
+    val b3 = ListBuffer(1, 2, 3)
+    b3.patchInPlace(1, b3.view, 1)
+    assertSameElements(List(1, 1, 2, 3, 3), b3)
+
+    val b4 = ListBuffer(1, 2, 3)
+    b4.patchInPlace(1, b4.iterator, 1)
+    assertSameElements(List(1, 1, 2, 3, 3), b4)
   }
 }
