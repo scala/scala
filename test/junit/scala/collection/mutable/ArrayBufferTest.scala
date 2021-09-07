@@ -1,5 +1,7 @@
 package scala.collection.mutable
 
+import java.util.ConcurrentModificationException
+
 import org.junit.Test
 import org.junit.Assert.{assertEquals, assertTrue}
 
@@ -448,12 +450,53 @@ class ArrayBufferTest {
     assertEquals(21, resizeDown(42, 17))
   }
 
-  // scala/bug#12121
+  /* tests for scala/bug#12121 */
+
   @Test
-  def insertAll_self(): Unit = {
-    val buf = ArrayBuffer(1, 2, 3)
-    buf.insertAll(1, buf)
-    assertSameElements(List(1, 1, 2, 3, 2, 3), buf)
+  def self_insertAll(): Unit = {
+    val b1 = ArrayBuffer(1, 2, 3)
+    b1.insertAll(1, b1)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b1)
+
+    val b2 = ArrayBuffer(1, 2, 3)
+    b2.insertAll(1, b2.view)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b2)
+
+    val b3 = ArrayBuffer(1, 2, 3)
+    b3.insertAll(1, b3.iterator)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b3)
+  }
+
+  @Test
+  def self_addAll(): Unit = {
+    val b1 = ArrayBuffer(1, 2, 3)
+    b1.addAll(b1)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b1)
+
+    val b2 = ArrayBuffer(1, 2, 3)
+    //b2.addAll(b2.view)
+    //assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+    assertThrows[ConcurrentModificationException](b2.addAll(b2.view))
+  }
+
+  @Test
+  def self_subtractAll(): Unit = {
+    val b1 = ArrayBuffer(1, 2, 3)
+    b1.subtractAll(b1)
+    assertSameElements(Nil, b1)
+
+    val b2 = ArrayBuffer(1, 2, 3)
+    // b2.subtractAll(b2.view)
+    //assertSameElements(Nil, b2)
+    assertThrows[ConcurrentModificationException](b2.subtractAll(b2.view))
+  }
+
+  @Test
+  def self_patchInPlace(): Unit = {
+    val b1 = ArrayBuffer(1, 2, 3)
+    //b1.patchInPlace(1, b1, 1)
+    //assertSameElements(List(1, 1, 2, 3, 3), b1)
+    assertThrows[ConcurrentModificationException](b1.patchInPlace(1, b1, 1))
   }
 
   // scala/bug#12284

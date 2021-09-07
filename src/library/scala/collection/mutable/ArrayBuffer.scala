@@ -57,6 +57,16 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
 
+  private[this] var splitInfo: SplitInfo = null
+
+  // information to allow accessing elements while the backing array is
+  // split/shifted for insertion
+  private[this] class SplitInfo(gapStart: Int, gapLen: Int) {
+    // check bounds before calling this method
+    def splitApply(n: Int): A =
+      (if (n < gapStart) array(n) else array(n + gapLen)).asInstanceOf[A]
+  }
+
   override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     shape.parUnbox(new ObjectArrayStepper(array, 0, length).asInstanceOf[AnyStepper[A] with EfficientSplit])
@@ -101,7 +111,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def apply(n: Int): A = {
     checkWithinBounds(n, n + 1)
-    array(n).asInstanceOf[A]
+    val info = splitInfo
+    if (info == null) array(n).asInstanceOf[A]
+    else info.splitApply(n)
   }
 
   def update(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
@@ -178,11 +190,11 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
         if (elemsLength > 0) {
-          mutationCount += 1
           val len = size0
           val newSize = len + elemsLength
           ensureSize(newSize)
           Array.copy(array, index, array, index + elemsLength, len - index)
+          splitInfo = new SplitInfo(index, elemsLength)
           // if `elems eq this`, this copy is safe because
           //   - `elems.array eq this.array`
           //   - we didn't overwrite the values being inserted after moving them in
@@ -191,6 +203,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
           //   - `System.arraycopy` will effectively "read" all the values before
           //     overwriting any of them when two arrays are the the same reference
           IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
+          mutationCount += 1
+          splitInfo = null
           size0 = newSize // update size AFTER the copy, in case we're inserting a proxy
         }
       case _ => insertAll(index, ArrayBuffer.from(elems))

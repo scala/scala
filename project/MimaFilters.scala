@@ -88,6 +88,9 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$ClassValueInterface"),
     ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$JavaClassValue"),
     ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$FallbackClassValue"),
+
+    // #9782
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.ArrayBuffer$SplitInfo"), // ArrayBuffer#private[this]
   )
 
   override val buildSettings = Seq(
