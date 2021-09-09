@@ -66,13 +66,21 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
 
     // #9727
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.filterInPlaceImpl"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.mapValuesInPlaceImpl"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.filterInPlaceImpl"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.mapValuesInPlaceImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.filterInPlaceImpl"),                                      // private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.mapValuesInPlaceImpl"),                                   // private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.filterInPlaceImpl"),    // private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.mapValuesInPlaceImpl"), // private[collection]
+
+    // #9733
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.concurrent.TrieMap$RemovalPolicy$"),                                        // private[concurrent]
+    // is this a MiMa bug? we really should need these two filters
+    //ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.removeRefEq"),                                    // private[concurrent]
+    //ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.replaceRefEq"),                                   // private[concurrent]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.removeRefEq"),  // private[concurrent]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.replaceRefEq"), // private[concurrent]
 
     // #9741
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.SeqMap$SeqMapBuilderImpl"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.SeqMap$SeqMapBuilderImpl"), // private[SeqMap]
   )
 
   override val buildSettings = Seq(
