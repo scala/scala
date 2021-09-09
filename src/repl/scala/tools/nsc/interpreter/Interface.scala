@@ -335,7 +335,9 @@ case class CompletionCandidate(
   arity: CompletionCandidate.Arity = CompletionCandidate.Nullary,
   isDeprecated: Boolean = false,
   isUniversal: Boolean = false,
-  declString: () => String = () => "")
+  declString: () => String = () => "",
+  alias: Option[String] = None
+)
 object CompletionCandidate {
   sealed trait Arity
   case object Nullary extends Arity

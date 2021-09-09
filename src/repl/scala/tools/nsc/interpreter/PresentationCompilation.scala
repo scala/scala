@@ -211,7 +211,7 @@ trait PresentationCompilation { self: IMain =>
         if (m.sym.paramss.isEmpty) CompletionCandidate.Nullary
         else if (m.sym.paramss.size == 1 && m.sym.paramss.head.isEmpty) CompletionCandidate.Nilary
         else CompletionCandidate.Other
-      def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean) = {
+      def defStringCandidates(matching: List[Member], isNew: Boolean): List[CompletionCandidate] = {
         val seen = new mutable.HashSet[Symbol]()
         val ccs = for {
           member <- matching
@@ -232,7 +232,9 @@ trait PresentationCompilation { self: IMain =>
                 val methodOtherDesc = if (!desc.exists(_ != "")) "" else " " + desc.filter(_ != "").mkString(" ")
                 sugared.defStringSeenAs(tp) + methodOtherDesc
               }
-            })
+            },
+            alias = member.aliasInfo.fold[Option[String]](None)(s => Some(s.sym.nameString))
+            )
         }
         ccs
       }
@@ -257,7 +259,7 @@ trait PresentationCompilation { self: IMain =>
               } else super.traverse(t)
             }
           }.traverse(unit.body)
-          val candidates = defStringCandidates(matching, r.name, isNew)
+          val candidates = defStringCandidates(matching, isNew)
           val pos = cursor - r.positionDelta
           (pos, candidates.sortBy(_.name))
       }

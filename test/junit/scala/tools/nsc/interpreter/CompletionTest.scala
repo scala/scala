@@ -356,4 +356,24 @@ object Test2 {
     assertEquals(expected.sorted.mkString(" "), actual.toSeq.distinct.sorted.mkString(" "))
   }
 
+  @Test
+  def ignoreAlias(): Unit = {
+    val (completer, _, _) = interpretLines(
+      """class Foo(i: Int) { def this(s: String) = this(s.toInt) }""",
+      """type Bar = Foo"""
+      )
+    // We not only keep the original `type Bar = Bar`, but also add more detailed candidates
+    val candidates       = completer.complete("new Bar").candidates
+    //type Bar = Bar
+    //def <init>(i: Int): Foo
+    //def <init>(s: String): Foo
+    assertEquals(3, candidates.size)
+    assertEquals("type Bar = Bar", candidates.head.declString.apply())
+    assertEquals("def <init>(i: Int): Foo", candidates(1).declString.apply())
+    assertEquals("def <init>(s: String): Foo", candidates(2).declString.apply())
+
+    val candidates1       = completer.complete("new Foo").candidates
+    assertEquals(2, candidates1.size)
+  }
+
 }
