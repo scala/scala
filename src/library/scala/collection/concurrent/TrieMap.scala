@@ -972,7 +972,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     removehc(k, v, RemovalPolicy.FullEquals, hc).nonEmpty
   }
 
-  override private[concurrent] def removeRefEq(k: K, v: V): Boolean = {
+  override private[collection] def removeRefEq(k: K, v: V): Boolean = {
     val hc = computeHash(k)
     removehc(k, v, RemovalPolicy.ReferenceEq, hc).nonEmpty
   }
@@ -982,7 +982,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     insertifhc(k, hc, newvalue, oldvalue.asInstanceOf[AnyRef], fullEquals = true).nonEmpty
   }
 
-  override private[concurrent] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = {
+  override private[collection] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = {
     val hc = computeHash(k)
     insertifhc(k, hc, newValue, oldValue.asInstanceOf[AnyRef], fullEquals = false).nonEmpty
   }
