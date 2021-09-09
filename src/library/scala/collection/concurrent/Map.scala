@@ -119,7 +119,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
    * @return    `true` if the removal took place, `false` otherwise
    */
   // TODO: make part of the API in a future version
-  private[concurrent] def removeRefEq(k: K, v: V): Boolean = remove(k, v)
+  private[collection] def removeRefEq(k: K, v: V): Boolean = remove(k, v)
 
   /**
    * Replaces the entry for the given key only if it was previously mapped to
@@ -138,7 +138,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
    * @return          `true` if the entry was replaced, `false` otherwise
    */
   // TODO: make part of the API in a future version
-  private[concurrent] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = replace(k, oldValue, newValue)
+  private[collection] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = replace(k, oldValue, newValue)
 
   /**
    * Update a mapping for the specified key and its current optionally-mapped value

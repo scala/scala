@@ -73,11 +73,8 @@ object MimaFilters extends AutoPlugin {
 
     // #9733
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.concurrent.TrieMap$RemovalPolicy$"),                                        // private[concurrent]
-    // is this a MiMa bug? we really should need these two filters
-    //ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.removeRefEq"),                                    // private[concurrent]
-    //ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.concurrent.TrieMap.replaceRefEq"),                                   // private[concurrent]
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.removeRefEq"),  // private[concurrent]
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.replaceRefEq"), // private[concurrent]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.removeRefEq"),  // private[collection]
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#JConcurrentMapWrapper.replaceRefEq"), // private[collection]
 
     // #9741
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.SeqMap$SeqMapBuilderImpl"), // private[SeqMap]
