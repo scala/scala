@@ -1,7 +1,7 @@
 version: ~> 1.0 # needed for imports
-
 import: scala/scala-dev:travis/default.yml
 
+dist: xenial  # GPG stuff breaks on bionic; scala/scala-dev#764
 language: scala
 
 stages:
@@ -46,6 +46,9 @@ jobs:
 
       # build the spec using jekyll
       - stage: build
+        name: language spec (Jekyll)
+        # wkhtmltopdf requires libssl1.1, which we can't install on xenial
+        dist: bionic
         language: ruby
         install:
           - ruby -v
