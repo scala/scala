@@ -1265,7 +1265,12 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         val expectedUUID = new UUID(reader.readUncompressedLong(), reader.readUncompressedLong())
         val tastyUUID = new TastyHeaderUnpickler(TASTYBytes).readHeader()
         if (expectedUUID != tastyUUID) {
-          reporter.error(NoPosition, s"Tasty UUID ($tastyUUID) file did not correspond the tasty UUID ($expectedUUID) declared in the classfile $file.")
+          loaders.warning(
+            NoPosition,
+            s"$file is out of sync with its TASTy file. Loaded TASTy file. Try cleaning the project to fix this issue",
+            WarningCategory.Other,
+            clazz.fullNameString
+          )
         }
         TASTYBytes
       }
