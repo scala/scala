@@ -297,7 +297,7 @@ abstract class BTypes {
 
         case LONG =>
           if (other.isIntegralType)  LONG
-          else if (other.isRealType) DOUBLE
+          else if (other.isRealType) other
           else                       uncomparable
 
         case FLOAT =>

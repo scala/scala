@@ -8,6 +8,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
+import scala.tools.testing.AssertUtil.assertThrows
 import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
@@ -19,7 +20,8 @@ class BTypesTest extends BytecodeTesting {
   }
   import global.genBCode.bTypes._
 
-  def classBTFS(sym: global.Symbol) = global.exitingDelambdafy(classBTypeFromSymbol(sym))
+  def duringBackend[T](f: => T) = global.exitingDelambdafy(f)
+  def classBTFS(sym: global.Symbol) = duringBackend { classBTypeFromSymbol(sym) }
 
   def jlo = global.definitions.ObjectClass
   def jls = global.definitions.StringClass
@@ -50,7 +52,7 @@ class BTypesTest extends BytecodeTesting {
     assert(FLOAT.typedOpcode(Opcodes.IALOAD)  == Opcodes.FALOAD)
     assert(LONG.typedOpcode(Opcodes.IALOAD)   == Opcodes.LALOAD)
     assert(DOUBLE.typedOpcode(Opcodes.IALOAD) == Opcodes.DALOAD)
-    assert(classBTFS(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
+    assert(s.typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
 
     assert(UNIT.typedOpcode(Opcodes.IRETURN)   == Opcodes.RETURN)
     assert(BOOL.typedOpcode(Opcodes.IRETURN)   == Opcodes.IRETURN)
@@ -61,7 +63,7 @@ class BTypesTest extends BytecodeTesting {
     assert(FLOAT.typedOpcode(Opcodes.IRETURN)  == Opcodes.FRETURN)
     assert(LONG.typedOpcode(Opcodes.IRETURN)   == Opcodes.LRETURN)
     assert(DOUBLE.typedOpcode(Opcodes.IRETURN) == Opcodes.DRETURN)
-    assert(classBTFS(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
+    assert(s.typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
   }
 
   @Test
@@ -220,5 +222,30 @@ class BTypesTest extends BytecodeTesting {
   @Test
   def maxTypeTest() {
 
+  }
+
+  @Test
+  def maxValueTypeATest(): Unit = duringBackend {
+    assertEquals(LONG, LONG.maxValueType(BYTE))
+    assertEquals(LONG, LONG.maxValueType(SHORT))
+    assertEquals(LONG, LONG.maxValueType(CHAR))
+    assertEquals(LONG, LONG.maxValueType(INT))
+    assertEquals(LONG, LONG.maxValueType(LONG))
+    assertEquals(FLOAT, LONG.maxValueType(FLOAT))
+    assertEquals(DOUBLE, LONG.maxValueType(DOUBLE))
+
+    assertUncomparable(LONG, UNIT)
+    assertUncomparable(LONG, BOOL)
+    assertUncomparable(LONG, o)
+    assertUncomparable(LONG, s)
+    assertUncomparable(LONG, oArr)
+    assertUncomparable(LONG, method)
+
+    def assertUncomparable(t1: PrimitiveBType, t2: BType): Unit = {
+      assertThrows[AssertionError](
+        t1.maxValueType(t2),
+        _.equals(s"Cannot compute maxValueType: $t1, $t2")
+        )
+    }
   }
 }
