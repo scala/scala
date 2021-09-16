@@ -924,7 +924,7 @@ self =>
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
       import opinfo._
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
-      val pos                   = lhs.pos union rhs.pos union operatorPos withPoint offset
+      val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
       atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, opinfo.targs))
     }
