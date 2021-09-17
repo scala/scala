@@ -404,11 +404,10 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
   private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
     bf match {
-      case cbf: SortedMapFactory[_]#SortedMapCanBuildFrom[_,_] => {
+      case cbf: TreeMap.SortedMapCanBuildFrom[_, _] =>
         val factory:AnyRef = cbf.factory
         ((factory eq TreeMap) || (factory eq immutable.SortedMap) || (factory eq collection.SortedMap)) &&
           cbf.ordering == ordering
-      }
       case w: WrappedCanBuildFrom[_,_,_] => sameCBF(w.wrapped)
       case _ => false
     }

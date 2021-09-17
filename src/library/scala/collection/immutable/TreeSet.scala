@@ -264,11 +264,10 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
     bf match {
-      case cbf: SortedSetFactory[_]#SortedSetCanBuildFrom[_] => {
+      case cbf: TreeSet.SortedSetCanBuildFrom[_] =>
         val factory:AnyRef = cbf.factory
         ((factory eq TreeSet) || (factory eq immutable.SortedSet) || (factory eq collection.SortedSet)) &&
           cbf.ordering == ordering
-      }
       case w: WrappedCanBuildFrom[_,_,_] => sameCBF(w.wrapped)
       case _ => false
     }
