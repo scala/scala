@@ -1,15 +1,6 @@
 package scala.tools
 package testing
 
-import org.junit.Assert
-import Assert._
-import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime.stringOf
-import scala.collection.GenIterable
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.tools.nsc.settings.ScalaVersion
-import scala.util.Properties.javaSpecVersion
 import java.lang.ref._
 import java.lang.reflect.{Field, Modifier}
 import java.util.IdentityHashMap
@@ -123,11 +114,4 @@ object AssertUtil {
     body
     roots.foreach(assertNoRef)
   }
-
-  private[this] val version8 = ScalaVersion("8")
-
-  /** Assert on Java 8, but on later versions, just print if assert would fail. */
-  def assert8(b: => Boolean, msg: => Any) =
-    if (ScalaVersion(javaSpecVersion) == version8) assert(b, msg)
-    else if (!b) println(s"assert not $msg")
 }
