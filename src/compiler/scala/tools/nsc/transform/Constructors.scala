@@ -603,7 +603,9 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       private def triage() = {
         // Constant typed vals are not memoized.
-        def memoizeValue(sym: Symbol) = !sym.info.resultType.isInstanceOf[FoldableConstantType]
+        def memoizeValue(sym: Symbol): Boolean = {
+          !sym.info.resultType.isInstanceOf[FoldableConstantType] || sym.info.resultType.isInstanceOf[SingletonType]
+        }
 
         // The early initialized field definitions of the class (these are the class members)
         val presupers = treeInfo.preSuperFields(stats)
@@ -670,7 +672,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
               else {
                 val emitField = memoizeValue(statSym)
 
-                if (emitField || statSym.info.resultType.isInstanceOf[SingletonType]) {
+                if (emitField) {
                   moveEffectToCtor(vd.mods, vd.rhs, statSym)
                   defBuf += deriveValDef(stat)(_ => EmptyTree)
                 }
