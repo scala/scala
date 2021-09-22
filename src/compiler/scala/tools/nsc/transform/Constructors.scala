@@ -670,7 +670,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
               else {
                 val emitField = memoizeValue(statSym)
 
-                if (emitField) {
+                if (emitField || statSym.info.resultType.isInstanceOf[SingletonType]) {
                   moveEffectToCtor(vd.mods, vd.rhs, statSym)
                   defBuf += deriveValDef(stat)(_ => EmptyTree)
                 }

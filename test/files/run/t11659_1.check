@@ -1,0 +1,554 @@
+[[syntax trees at end of constructors]]// Scala source: newSource1.scala
+package <empty> {
+  final class Foo extends Object {
+    <paramaccessor> private[this] val s: Object = _;
+    <stable> <accessor> <paramaccessor> def s(): Object = Foo.this.s;
+    override <synthetic> def hashCode(): Int = Foo.hashCode$extension(Foo.this.s());
+    override <synthetic> def equals(x$1: Object): Boolean = Foo.equals$extension(Foo.this.s(), x$1);
+    def <init>(s: Object): Foo = {
+      Foo.this.s = s;
+      Foo.super.<init>();
+      ()
+    }
+  };
+  <synthetic> object Foo extends Object {
+    final <synthetic> def hashCode$extension($this: Object): Int = $this.hashCode();
+    final <synthetic> def equals$extension($this: Object, x$1: Object): Boolean = {
+  case <synthetic> val x1: Object = x$1;
+  case5(){
+    if (x1.$isInstanceOf[Foo]())
+      matchEnd4(true)
+    else
+      case6()
+  };
+  case6(){
+    matchEnd4(false)
+  };
+  matchEnd4(x: Boolean){
+    x
+  }
+}.&&({
+      <synthetic> val Foo$1: Object = if (x$1.eq(null))
+        null
+      else
+        x$1.$asInstanceOf[Foo]().s();
+      $this.==(Foo$1)
+    });
+    def <init>(): Foo.type = {
+      Foo.super.<init>();
+      ()
+    }
+  };
+  object Test extends Object with App {
+    final override <stable> <accessor> def executionStart(): Long = (Test.this.executionStart: Long);
+    private[this] var executionStart: Long = _;
+    override <accessor> def _args(): Array[String] = (Test.this._args: Array[String]);
+    private[this] var _args: Array[String] = _;
+    override <accessor> def _args_=(x$1: Array[String]): Unit = Test.this._args = (x$1: Array[String]);
+    override <stable> <accessor> def initCode(): scala.collection.mutable.ListBuffer = (Test.this.initCode: scala.collection.mutable.ListBuffer);
+    private[this] var initCode: scala.collection.mutable.ListBuffer = _;
+    final override <accessor> protected[this] def scala$App$_setter_$executionStart_=(x$1: Long): Unit = Test.this.executionStart = (x$1: Long);
+    final override <accessor> protected[this] def initCode_=(x$1: scala.collection.mutable.ListBuffer): Unit = Test.this.initCode = (x$1: scala.collection.mutable.ListBuffer);
+    def Foo(name: Object): Object = name;
+    private[this] var foo: String("x") = _;
+    <stable> <accessor> def foo(): String("x") = Test.this.foo;
+    final <synthetic> def delayedEndpoint$Test$1: Unit = {
+      Test.this.foo = Test.this.Foo("x").$asInstanceOf[String("x")]();
+      ()
+    };
+    final <synthetic> class delayedInit$body extends runtime.AbstractFunction0 {
+      <paramaccessor> private[this] val $outer: Test.type = _;
+      final def apply(): Object = {
+        delayedInit$body.this.$outer.delayedEndpoint$Test$1();
+        scala.runtime.BoxedUnit.UNIT
+      };
+      def <init>($outer: Test.type): Test.delayedInit$body = {
+        if ($outer.eq(null))
+          throw null
+        else
+          delayedInit$body.this.$outer = $outer;
+        delayedInit$body.super.<init>();
+        ()
+      }
+    };
+    def <init>(): Test.type = {
+      Test.super.<init>();
+      Test.super./*App*/$init$();
+      Test.this.delayedInit(new Test.delayedInit$body(Test.this));
+      scala.runtime.Statics.releaseFence();
+      ()
+    }
+  }
+}
+PackageDef(
+  "<empty>" // final package <empty>, tree.tpe=type
+  ClassDef( // final class Foo extends Object
+    final
+    "Foo"
+    []
+    Template( // val <local Foo>: <notype> in class Foo, tree.tpe=Foo
+      "java.lang.Object" // parents
+      ValDef(
+        private
+        "_"
+        <tpt>
+        <empty>
+      )
+      // 5 statements
+      ValDef( // private[this] val s: Object in class Foo
+        private <local> <paramaccessor> <triedcooking>
+        "s "
+        <tpt> // tree.tpe=Object
+        <empty>
+      )
+      DefDef( // val s(): Object in class Foo
+        <method> <stable> <accessor> <paramaccessor> <triedcooking>
+        "s"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Object
+        Foo.this."s " // private[this] val s: Object in class Foo, tree.tpe=Object
+      )
+      DefDef( // override def hashCode(): Int in class Foo
+        <method> override <synthetic> <triedcooking>
+        "hashCode"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Int
+        Apply( // final def hashCode$extension($this: Object): Int in object Foo, tree.tpe=Int
+          "Foo"."hashCode$extension" // final def hashCode$extension($this: Object): Int in object Foo, tree.tpe=($this: Object): Int
+          Apply( // val s(): Object in class Foo, tree.tpe=Object
+            Foo.this."s" // val s(): Object in class Foo, tree.tpe=(): Object
+            Nil
+          )
+        )
+      )
+      DefDef( // override def equals(x$1: Object): Boolean in class Foo
+        <method> override <synthetic> <triedcooking>
+        "equals"
+        []
+        // 1 parameter list
+        ValDef( // x$1: Object
+          <param> <synthetic> <triedcooking>
+          "x$1"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        <tpt> // tree.tpe=Boolean
+        Apply( // final def equals$extension($this: Object, x$1: Object): Boolean in object Foo, tree.tpe=Boolean
+          "Foo"."equals$extension" // final def equals$extension($this: Object, x$1: Object): Boolean in object Foo, tree.tpe=($this: Object, x$1: Object): Boolean
+          // 2 arguments
+          Apply( // val s(): Object in class Foo, tree.tpe=Object
+            Foo.this."s" // val s(): Object in class Foo, tree.tpe=(): Object
+            Nil
+          )
+          "x$1" // x$1: Object, tree.tpe=Object
+        )
+      )
+      DefDef( // def <init>(s: Object): Foo in class Foo
+        <method> <triedcooking>
+        "<init>"
+        []
+        // 1 parameter list
+        ValDef( // s: Object
+          <param> <paramaccessor>
+          "s"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        <tpt> // tree.tpe=Foo
+        Block( // tree.tpe=Unit
+          // 2 statements
+          Assign( // tree.tpe=Unit
+            Foo.this."s " // private[this] val s: Object in class Foo, tree.tpe=Object
+            "s" // s: Object, tree.tpe=Object
+          )
+          Apply( // def <init>(): Object in class Object, tree.tpe=Object
+            Foo.super."<init>" // def <init>(): Object in class Object, tree.tpe=(): Object
+            Nil
+          )
+          ()
+        )
+      )
+    )
+  )
+  ClassDef( // class Foo extends Object
+    <module> <synthetic>
+    "Foo"
+    []
+    Template( // val <local Foo>: <notype> in object Foo, tree.tpe=Foo.type
+      "java.lang.Object" // parents
+      ValDef(
+        private
+        "_"
+        <tpt>
+        <empty>
+      )
+      // 3 statements
+      DefDef( // final def hashCode$extension($this: Object): Int in object Foo
+        <method> final <synthetic> <triedcooking>
+        "hashCode$extension"
+        []
+        // 1 parameter list
+        ValDef( // $this: Object
+          <param>
+          "$this"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        <tpt> // tree.tpe=Int
+        Apply( // def hashCode(): Int in class Object, tree.tpe=Int
+          "$this"."hashCode" // def hashCode(): Int in class Object, tree.tpe=(): Int
+          Nil
+        )
+      )
+      DefDef( // final def equals$extension($this: Object, x$1: Object): Boolean in object Foo
+        <method> final <synthetic> <triedcooking>
+        "equals$extension"
+        []
+        // 1 parameter list
+        ValDef( // $this: Object
+          <param>
+          "$this"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        ValDef( // x$1: Object
+          <param> <synthetic> <triedcooking>
+          "x$1"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        <tpt> // tree.tpe=Boolean
+        Apply( // def &&(x: Boolean): Boolean in class Boolean, tree.tpe=Boolean
+          {
+  case <synthetic> val x1: Object = x$1;
+  case5(){
+    if (x1.$isInstanceOf[Foo]())
+      matchEnd4(true)
+    else
+      case6()
+  };
+  case6(){
+    matchEnd4(false)
+  };
+  matchEnd4(x: Boolean){
+    x
+  }
+}."$amp$amp" // def &&(x: Boolean): Boolean in class Boolean, tree.tpe=(x: Boolean): Boolean
+          Block( // tree.tpe=Boolean
+            ValDef( // val Foo$1: Object
+              <synthetic> <triedcooking>
+              "Foo$1"
+              <tpt> // tree.tpe=Object
+              If( // tree.tpe=Object
+                Apply( // final def eq(x$1: Object): Boolean in class Object, tree.tpe=Boolean
+                  "x$1"."eq" // final def eq(x$1: Object): Boolean in class Object, tree.tpe=(x$1: Object): Boolean
+                  null
+                )
+                null
+                Apply( // val s(): Object in class Foo, tree.tpe=Object
+                  x$1.$asInstanceOf[Foo]()."s" // val s(): Object in class Foo, tree.tpe=(): Object
+                  Nil
+                )
+              )
+            )
+            Apply( // final def ==(x$1: Object): Boolean in class Object, tree.tpe=Boolean
+              "$this"."$eq$eq" // final def ==(x$1: Object): Boolean in class Object, tree.tpe=(x$1: Object): Boolean
+              "Foo$1" // val Foo$1: Object, tree.tpe=Object
+            )
+          )
+        )
+      )
+      DefDef( // def <init>(): Foo.type in object Foo
+        <method>
+        "<init>"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Foo.type
+        Block( // tree.tpe=Unit
+          Apply( // def <init>(): Object in class Object, tree.tpe=Object
+            Foo.super."<init>" // def <init>(): Object in class Object, tree.tpe=(): Object
+            Nil
+          )
+          ()
+        )
+      )
+    )
+  )
+  ClassDef( // class Test extends App
+    <module>
+    "Test"
+    []
+    Template( // val <local Test>: <notype> in object Test, tree.tpe=Test.type
+      "java.lang.Object", "scala.App" // parents
+      ValDef(
+        private
+        "_"
+        <tpt>
+        <empty>
+      )
+      // 15 statements
+      DefDef( // final override val executionStart(): Long in object Test
+        <method> final override <stable> <accessor>
+        "executionStart"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Long
+        Typed( // tree.tpe=Long
+          Test.this."executionStart " // private[this] var executionStart: Long in object Test, tree.tpe=Long
+          <tpt> // tree.tpe=Long
+        )
+      )
+      ValDef( // private[this] var executionStart: Long in object Test
+        private <mutable> <local> <triedcooking>
+        "executionStart "
+        <tpt> // tree.tpe=Long
+        <empty>
+      )
+      DefDef( // override def _args(): Array[String] in object Test
+        <method> override <local> <accessor> <expandedname> <defaultinit> <notprivate>
+        "scala$App$$_args"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Array[String]
+        Typed( // tree.tpe=Array[String]
+          Test.this."scala$App$$_args " // private[this] var _args: Array[String] in object Test, tree.tpe=Array[String]
+          <tpt> // tree.tpe=Array[String]
+        )
+      )
+      ValDef( // private[this] var _args: Array[String] in object Test
+        private <mutable> <local> <defaultinit> <triedcooking>
+        "scala$App$$_args "
+        <tpt> // tree.tpe=Array[String]
+        <empty>
+      )
+      DefDef( // override def _args_=(x$1: Array[String]): Unit in object Test
+        <method> override <local> <accessor> <expandedname> <defaultinit> <notprivate>
+        "scala$App$$_args_$eq"
+        []
+        // 1 parameter list
+        ValDef( // x$1: Array[String]
+          <param> <synthetic> <triedcooking>
+          "x$1"
+          <tpt> // tree.tpe=Array[String]
+          <empty>
+        )
+        <tpt> // tree.tpe=Unit
+        Assign( // tree.tpe=Unit
+          Test.this."scala$App$$_args " // private[this] var _args: Array[String] in object Test, tree.tpe=Array[String]
+          Typed( // tree.tpe=Array[String]
+            "x$1" // x$1: Array[String], tree.tpe=Array[String]
+            <tpt> // tree.tpe=Array[String]
+          )
+        )
+      )
+      DefDef( // override val initCode(): scala.collection.mutable.ListBuffer in object Test
+        <method> override <local> <stable> <accessor> <expandedname> <notprivate>
+        "scala$App$$initCode"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=scala.collection.mutable.ListBuffer
+        Typed( // tree.tpe=scala.collection.mutable.ListBuffer
+          Test.this."scala$App$$initCode " // private[this] var initCode: scala.collection.mutable.ListBuffer in object Test, tree.tpe=scala.collection.mutable.ListBuffer
+          <tpt> // tree.tpe=scala.collection.mutable.ListBuffer
+        )
+      )
+      ValDef( // private[this] var initCode: scala.collection.mutable.ListBuffer in object Test
+        private <mutable> <local> <triedcooking>
+        "scala$App$$initCode "
+        <tpt> // tree.tpe=scala.collection.mutable.ListBuffer
+        <empty>
+      )
+      DefDef( // final override protected[this] def scala$App$_setter_$executionStart_=(x$1: Long): Unit in object Test
+        <method> final protected override <mutable> <local> <accessor>
+        "scala$App$_setter_$executionStart_$eq"
+        []
+        // 1 parameter list
+        ValDef( // x$1: Long
+          <param> <synthetic> <triedcooking>
+          "x$1"
+          <tpt> // tree.tpe=Long
+          <empty>
+        )
+        <tpt> // tree.tpe=Unit
+        Assign( // tree.tpe=Unit
+          Test.this."executionStart " // private[this] var executionStart: Long in object Test, tree.tpe=Long
+          Typed( // tree.tpe=Long
+            "x$1" // x$1: Long, tree.tpe=Long
+            <tpt> // tree.tpe=Long
+          )
+        )
+      )
+      DefDef( // final override protected[this] def initCode_=(x$1: scala.collection.mutable.ListBuffer): Unit in object Test
+        <method> final protected override <mutable> <local> <accessor> <expandedname> <notprivate>
+        "scala$App$_setter_$scala$App$$initCode_$eq"
+        []
+        // 1 parameter list
+        ValDef( // x$1: scala.collection.mutable.ListBuffer
+          <param> <synthetic> <triedcooking>
+          "x$1"
+          <tpt> // tree.tpe=scala.collection.mutable.ListBuffer
+          <empty>
+        )
+        <tpt> // tree.tpe=Unit
+        Assign( // tree.tpe=Unit
+          Test.this."scala$App$$initCode " // private[this] var initCode: scala.collection.mutable.ListBuffer in object Test, tree.tpe=scala.collection.mutable.ListBuffer
+          Typed( // tree.tpe=scala.collection.mutable.ListBuffer
+            "x$1" // x$1: scala.collection.mutable.ListBuffer, tree.tpe=scala.collection.mutable.ListBuffer
+            <tpt> // tree.tpe=scala.collection.mutable.ListBuffer
+          )
+        )
+      )
+      DefDef( // def Foo(name: Object): Object in object Test
+        <method> <triedcooking>
+        "Foo"
+        []
+        // 1 parameter list
+        ValDef( // name: Object
+          <param> <triedcooking>
+          "name"
+          <tpt> // tree.tpe=Object
+          <empty>
+        )
+        <tpt> // tree.tpe=Object
+        "name" // name: Object, tree.tpe=Object
+      )
+      ValDef( // private[this] var foo: String("x") in object Test
+        private <mutable> <local> <triedcooking>
+        "foo "
+        <tpt> // tree.tpe=String("x")
+        <empty>
+      )
+      DefDef( // val foo(): String("x") in object Test
+        <method> <stable> <accessor>
+        "foo"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=String("x")
+        Test.this."foo " // private[this] var foo: String("x") in object Test, tree.tpe=String("x")
+      )
+      DefDef( // final def delayedEndpoint$Test$1(): Unit in object Test
+        <method> final <synthetic>
+        "delayedEndpoint$Test$1"
+        []
+        Nil
+        <tpt> // tree.tpe=Unit
+        Block( // tree.tpe=Unit
+          Assign( // tree.tpe=Unit
+            Test.this."foo " // private[this] var foo: String("x") in object Test, tree.tpe=String("x")
+            Apply( // final def $asInstanceOf[T0](): T0 in class Object, tree.tpe=String("x")
+              TypeApply( // final def $asInstanceOf[T0](): T0 in class Object, tree.tpe=(): String("x")
+                Test.this.Foo("x")."$asInstanceOf" // final def $asInstanceOf[T0](): T0 in class Object, tree.tpe=[T0](): T0
+                <tpt> // tree.tpe=String("x")
+              )
+              Nil
+            )
+          )
+          ()
+        )
+      )
+      ClassDef( // final class delayedInit$body extends runtime.AbstractFunction0 in object Test
+        final <synthetic>
+        "delayedInit$body"
+        []
+        Template( // val <local delayedInit$body>: <notype> in class delayedInit$body, tree.tpe=Test.delayedInit$body
+          "scala.runtime.AbstractFunction0" // parents
+          ValDef(
+            private
+            "_"
+            <tpt>
+            <empty>
+          )
+          // 3 statements
+          ValDef( // private[this] val $outer: Test.type in class delayedInit$body
+            private <local> <paramaccessor>
+            "$outer"
+            <tpt> // tree.tpe=Test.type
+            <empty>
+          )
+          DefDef( // final def apply(): Object in class delayedInit$body
+            <method> final
+            "apply"
+            []
+            List(Nil)
+            <tpt> // tree.tpe=Object
+            Block( // tree.tpe=scala.runtime.BoxedUnit
+              Apply( // final def delayedEndpoint$Test$1(): Unit in object Test, tree.tpe=Unit
+                delayedInit$body.this."$outer"."delayedEndpoint$Test$1" // final def delayedEndpoint$Test$1(): Unit in object Test, tree.tpe=(): Unit
+                Nil
+              )
+              "scala"."runtime"."BoxedUnit"."UNIT" // final val UNIT: scala.runtime.BoxedUnit in class BoxedUnit, tree.tpe=scala.runtime.BoxedUnit
+            )
+          )
+          DefDef( // def <init>($outer: Test.type): Test.delayedInit$body in class delayedInit$body
+            <method>
+            "<init>"
+            []
+            // 1 parameter list
+            ValDef( // $outer: Test.type
+              <param> <paramaccessor>
+              "$outer"
+              <tpt> // tree.tpe=Test.type
+              <empty>
+            )
+            <tpt> // tree.tpe=Test.delayedInit$body
+            Block( // tree.tpe=Unit
+              // 2 statements
+              If( // tree.tpe=Unit
+                Apply( // final def eq(x$1: Object): Boolean in class Object, tree.tpe=Boolean
+                  "$outer"."eq" // final def eq(x$1: Object): Boolean in class Object, tree.tpe=(x$1: Object): Boolean
+                  null
+                )
+                Throw( // tree.tpe=Nothing
+                  null
+                )
+                Assign( // tree.tpe=Unit
+                  delayedInit$body.this."$outer" // private[this] val $outer: Test.type in class delayedInit$body, tree.tpe=Test.type
+                  "$outer" // $outer: Test.type, tree.tpe=Test.type
+                )
+              )
+              Apply( // def <init>(): scala.runtime.AbstractFunction0 in class AbstractFunction0, tree.tpe=scala.runtime.AbstractFunction0
+                delayedInit$body.super."<init>" // def <init>(): scala.runtime.AbstractFunction0 in class AbstractFunction0, tree.tpe=(): scala.runtime.AbstractFunction0
+                Nil
+              )
+              ()
+            )
+          )
+        )
+      )
+      DefDef( // def <init>(): Test.type in object Test
+        <method>
+        "<init>"
+        []
+        List(Nil)
+        <tpt> // tree.tpe=Test.type
+        Block( // tree.tpe=Unit
+          // 4 statements
+          Apply( // def <init>(): Object in class Object, tree.tpe=Object
+            Test.super."<init>" // def <init>(): Object in class Object, tree.tpe=(): Object
+            Nil
+          )
+          Apply( // def $init$(): Unit in trait App, tree.tpe=Unit
+            Test.super."$init$" // def $init$(): Unit in trait App, tree.tpe=(): Unit
+            Nil
+          )
+          Apply( // def delayedInit(x: Function0): Unit in trait DelayedInit, tree.tpe=Unit
+            Test.this."delayedInit" // def delayedInit(x: Function0): Unit in trait DelayedInit, tree.tpe=(x: Function0): Unit
+            Apply( // def <init>($outer: Test.type): Test.delayedInit$body in class delayedInit$body, tree.tpe=Test.delayedInit$body
+              new Test.delayedInit$body."<init>" // def <init>($outer: Test.type): Test.delayedInit$body in class delayedInit$body, tree.tpe=($outer: Test.type): Test.delayedInit$body
+              This("Test")class Test extends App, tree.tpe=Test.type
+            )
+          )
+          Apply( // def releaseFence(): Unit in class Statics, tree.tpe=Unit
+            "scala"."runtime"."Statics"."releaseFence" // def releaseFence(): Unit in class Statics, tree.tpe=(): Unit
+            Nil
+          )
+          ()
+        )
+      )
+    )
+  )
+)
+
+
