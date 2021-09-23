@@ -503,6 +503,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
   val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")
   val VimplicitsVerboseTree = BooleanSetting("-Vimplicits-verbose-tree", "Display all intermediate implicits in a chain.")
+  val VimplicitsMaxModules  = IntSetting("-Vimplicits-max-modules", "max modules to display when printing types, set to 0 to only print type names", 0, Some((0, Int.MaxValue)), _ => None)
   val VimplicitsMaxRefined  = IntSetting("-Vimplicits-max-refined", "max chars for printing refined types, abbreviate to `F {...}`", Int.MaxValue, Some((0, Int.MaxValue)), _ => None)
   val VtypeDiffs            = BooleanSetting("-Vtype-diffs", "Print found/required error messages as colored diffs.")
   val logImplicitConv    = BooleanSetting("-Vimplicit-conversions", "Print a message whenever an implicit conversion is inserted.")

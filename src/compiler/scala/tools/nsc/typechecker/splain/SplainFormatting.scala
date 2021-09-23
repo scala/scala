@@ -224,10 +224,8 @@ trait SplainFormatting extends SplainFormatters {
 
   def qualifiedName(path: List[String], name: String): String = s"${pathPrefix(path)}$name"
 
-  def stripModules(path: List[String], name: String): Option[Int] => String = {
-    case Some(keep) => qualifiedName(path.takeRight(keep), name)
-    case None       => name
-  }
+  def stripModules(path: List[String], name: String, keep: Int): String =
+    qualifiedName(path.takeRight(keep), name)
 
   case class TypeParts(sym: Symbol, tt: Type) {
     def modulePath: List[String] = (tt, sym) match {
@@ -351,6 +349,9 @@ trait SplainFormatting extends SplainFormatters {
 
   def truncateDecls(decls: List[Formatted]): Boolean = settings.VimplicitsMaxRefined.value < decls.map(_.length).sum
 
+  def showFormattedQualified(path: List[String], name: String): TypeRepr =
+    FlatType(stripModules(path, name, settings.VimplicitsMaxModules.value))
+
   def formattedDiff(left: Formatted, right: Formatted): String = (left, right) match {
     case (Qualified(lpath, lname), Qualified(rpath, rname)) if lname == rname =>
       val prefix = lpath.reverseIterator.zip(rpath.reverseIterator).takeWhile { case (l, r) => l == r }.size + 1
@@ -363,7 +364,8 @@ trait SplainFormatting extends SplainFormatters {
 
   def showFormattedLImpl(tpe: Formatted, break: Boolean): TypeRepr = tpe match {
     case Simple(name)                 => FlatType(name)
-    case Qualified(_, name)           => FlatType(name)
+    case Qualified(Nil, name)         => FlatType(name)
+    case Qualified(path, name)        => showFormattedQualified(path, name)
     case Applied(cons, args)          => showTypeApply(showFormatted(cons), args.map(showFormattedL(_, break)), break)
     case tpe @ Infix(_, _, _, top)    => wrapParensRepr(if (break) breakInfix(flattenInfix(tpe)) else FlatType(flattenInfix(tpe).map(showFormatted).mkString(" ")), top)
     case UnitForm                     => FlatType("Unit")
