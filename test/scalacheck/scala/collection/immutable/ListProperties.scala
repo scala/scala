@@ -36,7 +36,7 @@ object ListProperties extends Properties("immutable.List") {
   property("list1 ::: list2 == list1.toVector.prependedAll(list2)") = forAll { (list1: List[Int], list2: List[Int]) =>
     (list1.prependedAll(list2): Seq[Int]) ?= list1.toVector.prependedAll(list2)
   }
-  property("list1.prependedAll(iterableOnce) == list1.prependedAll(iterableOnce)") =
+  property("list1.prependedAll(iterableOnce) == list1.toVector.prependedAll(iterableOnce)") =
     forAll(arbitrary[List[Int]], iterableOnceGen){ (list1, it) =>
       (list1.prependedAll(it()): Seq[Int]) ?= list1.toVector.prependedAll(it())
   }
