@@ -907,31 +907,37 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] =
     new AbstractIterator[B] {
       private[this] var origElems = self
-      private[this] var i = if (from > 0) from else 0 // Counts down, switch to patch on 0, -1 means use patch first
-      def hasNext: Boolean = {
-        if (i == 0) {
+      // > 0  => that many more elems from `origElems` before switching to `patchElems`
+      //   0  => need to drop elems from `origElems` and start using `patchElems`
+      //  -1  => have dropped elems from `origElems`, will be using `patchElems` until it's empty
+      //         and then using what's left of `origElems` after the drop
+      private[this] var state = if (from > 0) from else 0
+
+      // checks state and handles 0 => -1
+      @inline private[this] def switchToPatchIfNeeded(): Unit =
+        if (state == 0) {
           origElems = origElems drop replaced
-          i = -1
+          state = -1
         }
+
+      def hasNext: Boolean = {
+        switchToPatchIfNeeded()
         origElems.hasNext || patchElems.hasNext
       }
 
       def next(): B = {
-        if (i == 0) {
-          origElems = origElems drop replaced
-          i = -1
-        }
-        if (i < 0) {
+        switchToPatchIfNeeded()
+        if (state < 0 /* == -1 */) {
           if (patchElems.hasNext) patchElems.next()
           else origElems.next()
         }
         else {
           if (origElems.hasNext) {
-            i -= 1
+            state -= 1
             origElems.next()
           }
           else {
-            i = -1
+            state = -1
             patchElems.next()
           }
         }
