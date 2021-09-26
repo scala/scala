@@ -5843,7 +5843,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             def isNullaryTerm: Boolean = {
               val maybe = context.lookupSymbol(TermName(id), _ => true).symbol
-              maybe != NoSymbol && !maybe.hasPackageFlag && maybe.alternatives.exists(x => requiresNoArgs(x.info))
+              maybe != NoSymbol && !maybe.hasPackageFlag && !maybe.isModule && maybe.alternatives.exists(x => requiresNoArgs(x.info))
             }
             id == "this" || isNullaryTerm
           }
