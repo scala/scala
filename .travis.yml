@@ -12,9 +12,9 @@ templates: # this has no effect on travis, it's just a place to put our template
   pr-jdk8: &pr-jdk8
     if: type = pull_request OR repo != scala/scala
 
-  cron-jdk18: &cron-jdk18
+  cron-jdk17: &cron-jdk17
     if: type = cron AND repo = scala/scala
-    env: ADOPTOPENJDK=18
+    env: ADOPTOPENJDK=17
 
   build-for-testing: &build-for-testing
     # pull request validation (w/ bootstrap)
@@ -97,13 +97,13 @@ jobs:
       <<: *pr-jdk8
 
     - <<: *build-for-testing
-      <<: *cron-jdk18
+      <<: *cron-jdk17
 
     - <<: *test1
-      <<: *cron-jdk18
+      <<: *cron-jdk17
 
     - <<: *test2
-      <<: *cron-jdk18
+      <<: *cron-jdk17
 
     - stage: test
       name: build library with Scala 3
