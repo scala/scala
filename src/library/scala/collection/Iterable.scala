@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
@@ -29,6 +30,7 @@ trait Iterable[+A] extends IterableOnce[A]
   with IterableFactoryDefaults[A, Iterable] {
 
   // The collection itself
+  @deprecated("toIterable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.7")
   final def toIterable: this.type = this
 
   final protected def coll: this.type = this
@@ -133,13 +135,15 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
     */
+  // Should be `protected def asIterable`, or maybe removed altogether if it's not needed
+  @deprecated("toIterable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.7")
   def toIterable: Iterable[A]
 
   /** Converts this $coll to an unspecified Iterable.  Will return
     *  the same collection if this instance is already Iterable.
     *  @return An Iterable containing all elements of this $coll.
     */
-  @deprecated("Use toIterable instead", "2.13.0")
+  @deprecated("toTraversable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.0")
   final def toTraversable: Traversable[A] = toIterable
 
   override def isTraversableAgain: Boolean = true
@@ -830,7 +834,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {
-    val it = Iterator.iterate(toIterable)(f).takeWhile(_.nonEmpty)
+    // toIterable ties the knot between `this: IterableOnceOps[A, CC, C]` and `this.tail: C`
+    // `this.tail.tail` doesn't compile as `C` is unbounded
+    // `Iterable.from(this)` would eagerly copy non-immutable collections
+    val it = Iterator.iterate(toIterable: @nowarn("cat=deprecation"))(f).takeWhile(_.nonEmpty)
     (it ++ Iterator.single(Iterable.empty)).map(fromSpecific)
   }
 

@@ -1,7 +1,9 @@
 package scala.collection
 
-import org.junit.{Assert, Test}, Assert.{assertEquals, assertTrue}
+import org.junit.{Assert, Test}
+import Assert.{assertEquals, assertTrue}
 
+import scala.annotation.nowarn
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
 import scala.tools.testkit.AssertUtil._
 
@@ -135,8 +137,7 @@ class IterableTest {
     check(new Array(10), l.copyToArray(_, 0, -1), 0, 0, 0)
   }
 
-  @deprecated("Uses deprecated toTraversable", since="2.13.0")
-  @Test
+  @Test @nowarn("cat=deprecation")
   def emptyToTraversable(): Unit = {
     assert(Iterable.empty == Array.empty.toIterable)
     assert(Iterable.empty == Array.empty.toTraversable)

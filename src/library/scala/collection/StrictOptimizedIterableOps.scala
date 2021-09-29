@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
 
@@ -254,7 +255,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     */
   override def takeRight(n: Int): C = {
     val b = newSpecificBuilder
-    b.sizeHintBounded(n, toIterable)
+    b.sizeHintBounded(n, toIterable: @nowarn("cat=deprecation"))
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {

@@ -5,11 +5,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.collection.{immutable => i, mutable => m}
 import scala.language.implicitConversions
 import scala.{collection => c}
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=deprecation")
 class ToConserveTest {
   // scala/bug#12188
   implicit def toAnyRefFactory[A, CC[_] <: AnyRef](factory: c.IterableFactory[CC]): c.Factory[A, AnyRef] =
