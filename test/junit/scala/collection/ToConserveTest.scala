@@ -26,8 +26,6 @@ class ToConserveTest {
     assertSame(l, l.toSeq)
     assertSame(l, l.toIterable)
 
-    assertSame(l, l.to(List))
-
     assertSame(l, l.to(c.Iterable))
     assertSame(l, l.to(i.Iterable))
 
@@ -41,7 +39,7 @@ class ToConserveTest {
   }
 
   @Test def toConserveImmutableHashSet: Unit = {
-    val s: c.Iterable[Int] = (1 to 10).to(immutable.HashSet)
+    val s: c.Iterable[Int] = (1 to 10).to(i.HashSet)
     assertSame(s, s.toSet)
     assertSame(s, s.toIterable)
 
@@ -55,7 +53,7 @@ class ToConserveTest {
   }
 
   @Test def toConserveImmutableHashMap: Unit = {
-    val m: c.Iterable[(Int, Int)] = (1 to 10).map(x => (x, x)).to(immutable.HashMap): i.Map[Int, Int]
+    val m: c.Iterable[(Int, Int)] = (1 to 10).map(x => (x, x)).to(i.HashMap): i.Map[Int, Int]
 
     assertSame(m, m.toMap)
     assertSame(m, m.toIterable)
@@ -67,6 +65,24 @@ class ToConserveTest {
     assertSame(m, m.to(i.Map))
 
     assertSame(m, m.to(i.HashMap))
+  }
+
+  @Test def toConserveLazyList: Unit = {
+    val l: c.Iterable[Int] = LazyList.from(1 to 10)
+
+    assertSame(l, l.toSeq)
+    assertSame(l, l.toIterable)
+
+    assertSame(l, l.to(c.Iterable))
+    assertSame(l, l.to(i.Iterable))
+
+    assertSame(l, l.to(c.Seq))
+    assertSame(l, l.to(i.Seq))
+
+    assertSame(l, l.to(c.LinearSeq))
+    assertSame(l, l.to(i.LinearSeq))
+
+    assertSame(l, l.to(LazyList))
   }
 
   @Test def toRebuildMutable: Unit = {
