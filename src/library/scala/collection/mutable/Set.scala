@@ -78,7 +78,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   }
 
   def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
+    foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
   @deprecated("Use filterInPlace instead", "2.13.0")
   @inline final def retain(p: A => Boolean): Unit = filterInPlace(p)
@@ -104,7 +104,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     this
   }
 
-  override def clone(): C = empty ++= toIterable
+  override def clone(): C = empty ++= this
 
   override def knownSize: Int = super[IterableOps].knownSize
 }

@@ -153,7 +153,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                `f` to each element of this $coll and collecting the results.
     */
   def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
-    sortedMapFactory.from(new View.Map[(K, V), (K2, V2)](toIterable, f))
+    sortedMapFactory.from(new View.Map[(K, V), (K2, V2)](this, f))
 
   /** Builds a new sorted map by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
@@ -163,7 +163,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                `f` to each element of this $coll and concatenating the results.
     */
   def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
-    sortedMapFactory.from(new View.FlatMap(toIterable, f))
+    sortedMapFactory.from(new View.FlatMap(this, f))
 
   /** Builds a new sorted map by applying a partial function to all elements of this $coll
     *  on which the function is defined.
@@ -174,10 +174,10 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
-    sortedMapFactory.from(new View.Collect(toIterable, pf))
+    sortedMapFactory.from(new View.Collect(this, pf))
 
   override def concat[V2 >: V](suffix: IterableOnce[(K, V2)]): CC[K, V2] = sortedMapFactory.from(suffix match {
-    case it: Iterable[(K, V2)] => new View.Concat(toIterable, it)
+    case it: Iterable[(K, V2)] => new View.Concat(this, it)
     case _ => iterator.concat(suffix.iterator)
   })(ordering)
 
@@ -185,10 +185,10 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   @`inline` override final def ++ [V2 >: V](xs: IterableOnce[(K, V2)]): CC[K, V2] = concat(xs)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
-  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = sortedMapFactory.from(new View.Appended(toIterable, kv))(ordering)
+  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = sortedMapFactory.from(new View.Appended(this, kv))(ordering)
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))(ordering)
+  override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(this, elem1), elem2), elems))(ordering)
 }
 
 object SortedMapOps {

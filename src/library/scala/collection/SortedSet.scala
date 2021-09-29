@@ -118,7 +118,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                `f` to each element of this $coll and collecting the results.
     */
   def map[B](f: A => B)(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
-    sortedIterableFactory.from(new View.Map(toIterable, f))
+    sortedIterableFactory.from(new View.Map(this, f))
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
@@ -129,7 +129,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                `f` to each element of this $coll and concatenating the results.
     */
   def flatMap[B](f: A => IterableOnce[B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
-    sortedIterableFactory.from(new View.FlatMap(toIterable, f))
+    sortedIterableFactory.from(new View.FlatMap(this, f))
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.
@@ -142,7 +142,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     */
   def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(SortedSetOps.zipOrdMsg) ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] = // sound bcs of VarianceNote
     sortedIterableFactory.from(that match {
-      case that: Iterable[B] => new View.Zip(toIterable, that)
+      case that: Iterable[B] => new View.Zip(this, that)
       case _ => iterator.zip(that)
     })
 
@@ -156,7 +156,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                The order of the elements is preserved.
     */
   def collect[B](pf: scala.PartialFunction[A, B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
-    sortedIterableFactory.from(new View.Collect(toIterable, pf))
+    sortedIterableFactory.from(new View.Collect(this, pf))
 }
 
 object SortedSetOps {

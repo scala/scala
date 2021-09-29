@@ -71,7 +71,7 @@ trait Map[K, +V]
         false
     })
 
-  override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
+  override def hashCode(): Int = MurmurHash3.mapHash(this)
 
   // These two methods are not in MapOps so that MapView is not forced to implement them
   @deprecated("Use - or removed on an immutable Map", "2.13.0")
@@ -296,7 +296,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return       a new $coll resulting from applying the given function
     *                `f` to each element of this $coll and collecting the results.
     */
-  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(toIterable, f))
+  def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] = mapFactory.from(new View.Map(this, f))
 
   /** Builds a new collection by applying a partial function to all elements of this $coll
     *  on which the function is defined.
@@ -309,7 +309,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =
-    mapFactory.from(new View.Collect(toIterable, pf))
+    mapFactory.from(new View.Collect(this, pf))
 
   /** Builds a new map by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
@@ -318,7 +318,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return       a new $coll resulting from applying the given collection-valued function
     *                `f` to each element of this $coll and concatenating the results.
     */
-  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(toIterable, f))
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] = mapFactory.from(new View.FlatMap(this, f))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -329,7 +329,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *                of this $coll followed by all elements of `suffix`.
     */
   def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): CC[K, V2] = mapFactory.from(suffix match {
-    case it: Iterable[(K, V2)] => new View.Concat(toIterable, it)
+    case it: Iterable[(K, V2)] => new View.Concat(this, it)
     case _ => iterator.concat(suffix.iterator)
   })
 
@@ -343,11 +343,11 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] =
-    mapFactory.from(new View.Appended(toIterable, kv))
+    mapFactory.from(new View.Appended(this, kv))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] =
-    mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+    mapFactory.from(new View.Concat(new View.Appended(new View.Appended(this, elem1), elem2), elems))
 
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
@@ -361,7 +361,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
       case that: Iterable[(K, V1)] => that
       case that => View.from(that)
     }
-    mapFactory.from(new View.Concat(thatIterable, toIterable))
+    mapFactory.from(new View.Concat(thatIterable, this))
   }
 }
 

@@ -50,7 +50,7 @@ class ArraySeqBenchmark {
   private[this] def oldSorted[A](seq: ArraySeq[A])(implicit ord: Ordering[A], tag: ClassTag[A]): ArraySeq[A] = {
     val len = seq.length
     val b = ArraySeq.newBuilder[A](tag)
-    if (len == 1) b ++= seq.toIterable
+    if (len == 1) b ++= seq
     else if (len > 1) {
       b.sizeHint(len)
       val arr = new Array[AnyRef](len)

@@ -34,7 +34,7 @@ object Test extends App {
     val (o, e) = ten.partition(_ % 2 == 0)
     assert(o.size == e.size)
     val gs = ten groupBy (x => x / 4)
-    val vs1 = (for (k <- gs.keysIterator; v <- gs(k).toIterable.iterator) yield v).toList.sorted
+    val vs1 = (for (k <- gs.keysIterator; v <- gs(k).iterator) yield v).toList.sorted
     val vs2 = gs.values.toList.flatten.sorted
 //    val vs2 = gs.values.toList flatMap (xs => xs)
     assert(ten.head == 1)
@@ -60,7 +60,6 @@ object Test extends App {
     assert(buf == ten, buf)
     assert(ten.toArray.size == 10)
     assert(ten.toArray.toSeq == ten, ten.toArray.toSeq)
-    assert(ten.toIterable == ten)
     assert(ten.toList == ten)
     assert(ten.toSeq == ten)
     assert(ten.toStream == ten)

@@ -310,8 +310,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
     override protected def fromSpecific(coll: IterableOnce[Value]): ValueSet = ValueSet.fromSpecific(coll)
     override protected def newSpecificBuilder = ValueSet.newBuilder
 
-    def map(f: Value => Value): ValueSet = fromSpecific(new View.Map(toIterable, f))
-    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecific(new View.FlatMap(toIterable, f))
+    def map(f: Value => Value): ValueSet = fromSpecific(new View.Map(this, f))
+    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecific(new View.FlatMap(this, f))
 
     // necessary for disambiguation:
     override def map[B](f: Value => B)(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): immutable.SortedSet[B] =

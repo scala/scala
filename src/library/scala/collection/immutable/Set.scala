@@ -57,7 +57,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   @`inline` final override def - (elem: A): C = excl(elem)
 
   def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
+    foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
 
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.
