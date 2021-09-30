@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
 
@@ -203,7 +204,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
 
   override def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
-    b.sizeHint(toIterable, delta = 0)
+    b.sizeHint(this, delta = 0)
     var acc = z
     b += acc
     val it = iterator
@@ -254,7 +255,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     */
   override def takeRight(n: Int): C = {
     val b = newSpecificBuilder
-    b.sizeHintBounded(n, toIterable)
+    b.sizeHintBounded(n, toIterable: @nowarn("cat=deprecation"))
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {
@@ -271,7 +272,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     */
   override def dropRight(n: Int): C = {
     val b = newSpecificBuilder
-    if (n >= 0) b.sizeHint(toIterable, delta = -n)
+    if (n >= 0) b.sizeHint(this, delta = -n)
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {

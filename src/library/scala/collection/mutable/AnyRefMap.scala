@@ -393,7 +393,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   }
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
-  override def + [V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = AnyRefMap.from(new View.Appended(toIterable, kv))
+  override def + [V1 >: V](kv: (K, V1)): AnyRefMap[K, V1] = AnyRefMap.from(new View.Appended(this, kv))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): AnyRefMap[K, V1] = {
@@ -477,9 +477,9 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
 
   // The implicit dummy parameter is necessary to distinguish these methods from the base methods they overload (not override)
   def map[K2 <: AnyRef, V2](f: ((K, V)) => (K2, V2))(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
-    AnyRefMap.from(new View.Map(toIterable, f))
+    AnyRefMap.from(new View.Map(this, f))
   def flatMap[K2 <: AnyRef, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
-    AnyRefMap.from(new View.FlatMap(toIterable, f))
+    AnyRefMap.from(new View.FlatMap(this, f))
   def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     strictOptimizedCollect(AnyRefMap.newBuilder[K2, V2], pf)
 

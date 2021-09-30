@@ -160,7 +160,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   def clear(): Unit = { keysIterator foreach -= }
 
-  override def clone(): C = empty ++= toIterable
+  override def clone(): C = empty ++= this
 
   @deprecated("Use filterInPlace instead", "2.13.0")
   @inline final def retain(p: (K, V) => Boolean): this.type = filterInPlace(p)

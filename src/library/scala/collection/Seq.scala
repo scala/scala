@@ -38,7 +38,7 @@ trait Seq[+A]
       case _ => false
     })
 
-  override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
+  override def hashCode(): Int = MurmurHash3.seqHash(this)
 
   override def toString(): String = super[Iterable].toString()
 
