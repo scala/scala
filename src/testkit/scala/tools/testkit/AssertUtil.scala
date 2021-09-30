@@ -20,7 +20,6 @@ import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
 import scala.util.chaining._
 import scala.util.{Failure, Success, Try}
-import scala.util.Properties.isJavaAtLeast
 import scala.util.control.{ControlThrowable, NonFatal}
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -40,13 +39,6 @@ import scala.annotation.nowarn
  *  Scala.js and Scala Native.)
  */
 object AssertUtil {
-
-  /** Assert on Java 8, but on later versions, just print if assert would fail. */
-  def assert8(b: => Boolean, msg: => Any) =
-    if (!isJavaAtLeast(9))
-      assert(b, msg)
-    else if (!b)
-      println(s"assert not $msg")
 
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)

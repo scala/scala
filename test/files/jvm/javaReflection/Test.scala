@@ -50,8 +50,6 @@ getSimpleName / getCanonicalName / isAnonymousClass / isLocalClass / isSynthetic
     will change some day).
 */
 
-import scala.tools.testkit.AssertUtil.assert8
-
 object Test {
 
   def tr[T](m: => T): String = try {
@@ -59,6 +57,13 @@ object Test {
     if (r == null) "null"
     else r.toString
   } catch { case e: InternalError => e.getMessage }
+
+  /** Assert on Java 8, but on later versions, just print if assert would fail. */
+  def assert8(b: => Boolean, msg: => Any) =
+    if (!scala.util.Properties.isJavaAtLeast(9))
+      assert(b, msg)
+    else if (!b)
+      println(s"assert not $msg")
 
   def assertNotAnonymous(c: Class[_]) = assert8(!isAnonymous(c), s"$c is anonymous")
   def isAnonymous(c: Class[_]) =
