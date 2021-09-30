@@ -1,3 +1,5 @@
+// scalac: -deprecation
+
 import collection.mutable._
 import reflect._
 
