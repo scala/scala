@@ -31,15 +31,17 @@ object VectorMapProperties extends Properties("immutable.VectorMap") {
 
   property("internal underlying and index are consistent after removal") = forAll { (m: Map[K, V]) =>
     m.size >= 3 ==> {
-      val v = Vector.from(m)
-      val random = v(new scala.util.Random().nextInt(v.size))
-      val vm = VectorMap.from(v)
+      val v       = Vector.from(m)
+      val random  = v(new scala.util.Random().nextInt(v.size))
+      val vm      = VectorMap.from(v)
       val removed = vm - random._1
-      removed.underlying.forall { case (k, (s, v)) => removed.fields(s) == k }
-      removed.fields.zipWithIndex.forall {
-        case (k: K, s) => removed.underlying(k)._1 == s
-        case _ => true
-      }
+      ("all map keys are located at the specified indices in the vector" |:
+        removed.underlying.forall { case (k, (s, v)) => removed.fields(s) == k }) &&
+        ("all elements in the vector are in the map with the correct associated indices" |:
+          removed.fields.zipWithIndex.forall {
+            case (k: K, s) => removed.underlying(k)._1 == s
+            case _         => true
+          })
     }
   }
 
