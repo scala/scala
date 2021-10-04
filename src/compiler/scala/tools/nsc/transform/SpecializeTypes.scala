@@ -1125,7 +1125,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           } else None
         case (overridden, env) =>
-          val om = specializedOverload(clazz, overridden, env)
+          val om = specializedOverload(clazz, overriding, env, overridden)
           clazz.info.decls.enter(om)
           foreachWithIndex(om.paramss) { (params, i) =>
             foreachWithIndex(params) { (param, j) =>
