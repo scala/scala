@@ -1,1 +1,15 @@
-warning: two deprecations (since 2.11.0); re-run with -deprecation for details
+t4813.scala:19: warning: object DoubleLinkedList in package mutable is deprecated (since 2.11.0): low-level linked lists are deprecated
+  runTest(DoubleLinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
+          ^
+t4813.scala:19: warning: class DoubleLinkedList in package mutable is deprecated (since 2.11.0): low-level linked lists are deprecated due to idiosyncrasies in interface and incomplete features
+  runTest(DoubleLinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
+                                            ^
+t4813.scala:22: warning: object LinkedList in package mutable is deprecated (since 2.11.0): low-level linked lists are deprecated
+  runTest(LinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
+          ^
+t4813.scala:22: warning: class LinkedList in package mutable is deprecated (since 2.11.0): low-level linked lists are deprecated due to idiosyncrasies in interface and incomplete features
+  runTest(LinkedList(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
+                                      ^
+t4813.scala:26: warning: class Stack in package mutable is deprecated (since 2.12.0): Stack is an inelegant and potentially poorly-performing wrapper around List. Use a List assigned to a var instead.
+  runTest(Stack(1,2,3))(_.clone) { buf => buf transform (_ + 1) }
+                                 ^

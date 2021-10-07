@@ -1,0 +1,9 @@
+classOfDeprecation.scala:6: warning: class C is deprecated (since like, forever): no no!
+  val t = classOf[C]
+                 ^
+classOfDeprecation.scala:7: warning: class C is deprecated (since like, forever): no no!
+  @ann(classOf[C]) def u = 1
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

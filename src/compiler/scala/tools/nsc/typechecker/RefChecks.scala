@@ -1857,6 +1857,10 @@ abstract class RefChecks extends Transform {
           case x @ Select(_, _) =>
             transformSelect(x)
 
+          case Literal(Constant(tp: Type)) =>
+            checkTypeRef(tp, tree, skipBounds = false)
+            tree
+
           case UnApply(fun, args) =>
             transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
                            // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
