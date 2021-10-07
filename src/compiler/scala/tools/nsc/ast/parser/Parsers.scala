@@ -274,6 +274,14 @@ self =>
   final val InBlock: Location = 1
   final val InTemplate: Location = 2
 
+  type ParamOwner = Int
+  object ParamOwner {
+    final val Class     = 0
+    final val Type      = 1
+    final val TypeParam = 2  // unused
+    final val Def       = 3
+  }
+
   // These symbols may not yet be loaded (e.g. in the ide) so don't go
   // through definitions to obtain the names.
   lazy val ScalaValueClassNames = Seq(tpnme.AnyVal,
@@ -2554,8 +2562,9 @@ self =>
      *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds {`<%` Type} {`:` Type}
      *  }}}
      */
-    def typeParamClauseOpt(owner: Name, contextBoundBuf: ListBuffer[Tree]): List[TypeDef] = {
+    def typeParamClauseOpt(owner: Name, contextBoundBuf: ListBuffer[Tree], ownerKind: ParamOwner): List[TypeDef] = {
       def typeParam(ms: Modifiers): TypeDef = {
+        val isAbstractOwner = ownerKind == ParamOwner.Type //|| ownerKind == ParamOwner.TypeParam
         var mods = ms | Flags.PARAM
         val start = in.offset
         if (owner.isTypeName && isIdent) {
@@ -2570,10 +2579,16 @@ self =>
         val nameOffset = in.offset
         checkQMarkDefinition()
         checkKeywordDefinition()
-        // TODO AM: freshTermName(o2p(in.skipToken()), "_$$"), will need to update test suite
-        val pname: TypeName = wildcardOrIdent().toTypeName
+        val pname: TypeName =
+          if (in.token == USCORE && (isAbstractOwner || !currentRun.isScala3)) {
+            if (!isAbstractOwner)
+              deprecationWarning(in.offset, "Top-level wildcard is not allowed and will error under -Xsource:3", "2.13.7")
+            in.nextToken()
+            freshTypeName("_$$")
+          }
+          else ident(skipIt = false).toTypeName
         val param = atPos(start, nameOffset) {
-          val tparams = typeParamClauseOpt(pname, null) // @M TODO null --> no higher-order context bounds for now
+          val tparams = typeParamClauseOpt(pname, null, ParamOwner.Type) // @M TODO null --> no higher-order context bounds for now
           TypeDef(mods, pname, tparams, typeBounds())
         }
         if (contextBoundBuf ne null) {
@@ -2903,7 +2918,7 @@ self =>
         // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
         // i.e. (B[T] or T => B)
         val contextBoundBuf = new ListBuffer[Tree]
-        val tparams = typeParamClauseOpt(name, contextBoundBuf)
+        val tparams = typeParamClauseOpt(name, contextBoundBuf, ParamOwner.Def)
         val vparamss = paramClauses(name, contextBoundBuf.toList, ofCaseClass = false)
         newLineOptWhenFollowedBy(LBRACE)
         var restype = fromWithinReturnType(typedOpt())
@@ -3005,7 +3020,7 @@ self =>
         checkKeywordDefinition()
         val name = identForType()
         // @M! a type alias as well as an abstract type may declare type parameters
-        val tparams = typeParamClauseOpt(name, null)
+        val tparams = typeParamClauseOpt(name, null, ParamOwner.Type)
         in.token match {
           case EQUALS =>
             in.nextToken()
@@ -3070,7 +3085,7 @@ self =>
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
-          val tparams = typeParamClauseOpt(name, contextBoundBuf)
+          val tparams = typeParamClauseOpt(name, contextBoundBuf, ParamOwner.Class)
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {

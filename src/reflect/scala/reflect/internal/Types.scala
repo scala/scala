@@ -1559,18 +1559,16 @@ trait Types
     /** Bounds notation used in Scala syntax.
       * For example +This <: scala.collection.generic.Sorted[K,This].
       */
-    private[internal] def scalaNotation(typeString: Type => String): String = {
+    private[internal] def scalaNotation(typeString: Type => String): String =
       (if (emptyLowerBound) "" else " >: " + typeString(lo)) +
       (if (emptyUpperBound) "" else " <: " + typeString(hi))
-    }
     /** Bounds notation used in https://adriaanm.github.com/files/higher.pdf.
       * For example *(scala.collection.generic.Sorted[K,This]).
       */
-    private[internal] def starNotation(typeString: Type => String): String = {
+    private[internal] def starNotation(typeString: Type => String): String =
       if (emptyLowerBound && emptyUpperBound) ""
       else if (emptyLowerBound) s"(${typeString(hi)})"
       else s"(${typeString(lo)}, ${typeString(hi)})"
-    }
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
       val lo1 = map match {

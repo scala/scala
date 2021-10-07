@@ -1,0 +1,16 @@
+t5606.scala:3: error: identifier expected but '_' found.
+case class CaseTest[_](someData: String)
+                    ^
+t5606.scala:5: error: using `?` as a type name requires backticks.
+case class CaseTest_?[?](someData: String)
+                      ^
+t5606.scala:8: error: identifier expected but '_' found.
+case class CaseTest2[_, _](someData: String)
+                     ^
+t5606.scala:11: error: identifier expected but '_' found.
+  def f[_](x: Int) = ???
+        ^
+t5606.scala:23: error: using `?` as a type name requires backticks.
+  def regress_?[F[?]]   = 2
+                  ^
+5 errors

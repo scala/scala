@@ -20,14 +20,13 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.{nowarn, tailrec}
-import scala.collection.mutable
-import mutable.{LinkedHashMap, ListBuffer}
-import scala.util.matching.Regex
-import symtab.Flags._
+import scala.collection.mutable, mutable.{LinkedHashMap, ListBuffer}
+import scala.language.implicitConversions
 import scala.reflect.internal.util.{ReusableInstance, Statistics, TriState}
 import scala.reflect.internal.TypesStats
-import scala.language.implicitConversions
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.matching.Regex
+import symtab.Flags._
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -1830,7 +1829,7 @@ trait Implicits extends splain.SplainData {
 
     private def interpolate(text: String, vars: Map[String, String]) =
       Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-        case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
+        case Regex.Groups(v) => Regex.quoteReplacement(vars.getOrElse(v, ""))
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
         case x               => throw new MatchError(x)
       })
@@ -1859,7 +1858,7 @@ trait Implicits extends splain.SplainData {
       formatDefSiteMessage(typeArgsAtSym(paramTp).map(_.toString))
 
     def formatDefSiteMessage(typeArgs: List[String]): String =
-      interpolate(msg, Map(symTypeParamNames zip typeArgs: _*))
+      interpolate(msg, Map(symTypeParamNames.zip(typeArgs): _*))
 
     def formatParameterMessage(fun: Tree): String = {
       val paramNames = referencedTypeParams
@@ -1880,13 +1879,15 @@ trait Implicits extends splain.SplainData {
         case PolyType(tps, tr@TypeRef(_, _, tprefs)) =>
           if (tps.corresponds(tprefs)((p, r) => p == r.typeSymbol)) tr.typeConstructor.toString
           else {
-            val freshTpars = tps.mapConserve { case p if p.name == tpnme.WILDCARD => p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p))) case p => p }
+            val freshTpars = tps.mapConserve { p =>
+              if (p.unexpandedName == tpnme.WILDCARD) p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p)))
+              else p
+            }
             freshTpars.map(_.name).mkString("[", ", ", "] -> ") + tr.instantiateTypeParams(tps, freshTpars.map(_.typeConstructor)).toString
           }
-
         case tp => tp.toString
       }
-      interpolate(msg, Map(paramNames zip argTypes: _*))
+      interpolate(msg, Map(paramNames.zip(argTypes): _*))
     }
 
     def validate: Option[String] = {

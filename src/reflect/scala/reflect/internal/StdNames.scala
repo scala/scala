@@ -473,6 +473,7 @@ trait StdNames {
     def unexpandedName(name: Name): Name =
       name.lastIndexOf("$$") match {
         case 0 | -1 => name
+        case 1 if name.charAt(0) == '_' => if (name.isTermName) nme.WILDCARD else tpnme.WILDCARD
         case idx0   =>
           // Sketchville - We've found $$ but if it's part of $$$ or $$$$
           // or something we need to keep the bonus dollars, so e.g. foo$$$outer

@@ -1,0 +1,15 @@
+t5606b.scala:4: warning: Top-level wildcard is not allowed and will error under -Xsource:3
+case class CaseTest[_](someData: String)
+                    ^
+t5606b.scala:7: warning: Top-level wildcard is not allowed and will error under -Xsource:3
+case class CaseTest2[_, _](someData: String)
+                     ^
+t5606b.scala:7: warning: Top-level wildcard is not allowed and will error under -Xsource:3
+case class CaseTest2[_, _](someData: String)
+                        ^
+t5606b.scala:10: warning: Top-level wildcard is not allowed and will error under -Xsource:3
+  def f[_](x: Int) = ???
+        ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

@@ -140,7 +140,7 @@ trait TypeDebugging {
     def debugString(tp: Type) = debug(tp)
   }
   def paramString(tp: Type)      = typeDebug.str params tp.params
-  def typeParamsString(tp: Type) = typeDebug.str brackets (tp.typeParams map (_.defString))
+  def typeParamsString(tp: Type) = typeDebug.str.brackets(tp.typeParams.map(_.defString))
   def debugString(tp: Type)      = typeDebug debugString tp
 }
 
