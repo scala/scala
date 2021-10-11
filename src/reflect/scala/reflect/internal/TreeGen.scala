@@ -149,6 +149,7 @@ abstract class TreeGen {
   def mkAttributedQualifierIfPossible(prefix: Type): Option[Tree] = prefix match {
     case NoType | NoPrefix | ErrorType => None
     case TypeRef(_, sym, _) if sym.isModule || sym.isClass || sym.isType => None
+    case RefinedType(parents, _) if !parents.exists(_.isStable) => None
     case pre => Some(mkAttributedQualifier(prefix))
   }
 
