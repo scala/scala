@@ -15,8 +15,8 @@ package reflect
 
 import java.lang.{Class => jClass}
 import java.lang.ref.{WeakReference => jWeakReference}
-
 import scala.annotation.{implicitNotFound, nowarn}
+import scala.runtime.ClassValueCompat
 
 /**
  *
@@ -116,7 +116,7 @@ object ClassTag {
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
   private val cacheDisabled = java.lang.Boolean.getBoolean("scala.reflect.classtag.cache.disable")
-  private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
+  private[this] object cache extends ClassValueCompat[jWeakReference[ClassTag[_]]] {
     override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
       new jWeakReference(computeTag(runtimeClass))
 

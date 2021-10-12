@@ -78,6 +78,16 @@ object MimaFilters extends AutoPlugin {
 
     // #9741
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.SeqMap$SeqMapBuilderImpl"), // private[SeqMap]
+
+    // #9752
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.ClassTag$cache$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ModuleSerializationProxy$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$ClassValueInterface"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$JavaClassValue"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.ClassValueCompat$FallbackClassValue"),
   )
 
   override val buildSettings = Seq(
