@@ -28,11 +28,15 @@ class ArrayBufferBenchmark {
   @Param(Array(/*"0", "1",*/ "10", "100", "1000", "10000"))
   var size: Int = _
 
-  var ref: ArrayBuffer[Int] = _
+  var ref : ArrayBuffer[Int]                    = _
+  var set : scala.collection.immutable.Set[Int] = _
+  var list: List[Int]                           = _
 
   @Setup(Level.Trial) def init: Unit = {
     ref = new ArrayBuffer
-    for(i <- 0 until size) ref += i
+    for (i <- 0 until size) ref += i
+    set = ref.toSet
+    list = ref.toList
   }
 
   @Benchmark def filterInPlace(bh: Blackhole): Unit = {
@@ -44,24 +48,45 @@ class ArrayBufferBenchmark {
   @Benchmark def update(bh: Blackhole): Unit = {
     val b = ref.clone()
     var i = 0
-    while(i < size) {
+    while (i < size) {
       b.update(i, -1)
       i += 2
     }
     bh.consume(b)
   }
 
-  @Benchmark def addAll(bh: Blackhole): Unit = {
+  // append `ArrayBuffer`
+  @Benchmark def addAll1(bh: Blackhole): Unit = {
     val b1 = ref.clone()
     val b2 = ref.clone()
-    var i = 0
     b1.addAll(b2)
     bh.consume(b1)
   }
 
+  // append collection with known size
+  @Benchmark def addAll2(bh: Blackhole): Unit = {
+    val b1 = ref.clone()
+    b1.addAll(set)
+    bh.consume(b1)
+  }
+
+  // append collection without known size
+  @Benchmark def addAll3(bh: Blackhole): Unit = {
+    val b1 = ref.clone()
+    b1.addAll(list)
+    bh.consume(b1)
+  }
+
+  // append `IterableOnce` with no known size
+  @Benchmark def addAll4(bh: Blackhole): Unit = {
+    val b1 = ref.clone()
+    b1.addAll(list.iterator)
+    bh.consume(b1)
+  }
+
   @Benchmark def flatMapInPlace1(bh: Blackhole): Unit = {
-    val b = ref.clone()
-    val seq = Seq(0,0)
+    val b   = ref.clone()
+    val seq = scala.Seq(0, 0)
     b.flatMapInPlace { _ => seq }
     bh.consume(b)
   }

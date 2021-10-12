@@ -1,10 +1,10 @@
 package scala.collection
 
-import scala.collection.immutable.List
 import org.junit.Assert._
 import org.junit.Test
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.tools.testkit.AssertUtil.assertSameElements
 
 class ViewTest {
 
@@ -112,5 +112,22 @@ class ViewTest {
   @Test
   def _toString(): Unit = {
     assertEquals("View(<not computed>)", View(1, 2, 3).toString)
+  }
+
+  // see scala/scala#9388
+  @Test
+  def patch(): Unit = {
+    // test re-iterability
+    val v1 = List(2).view.patch(1, List(3, 4, 5).iterator, 0)
+    assertSameElements(Seq(2, 3, 4, 5), v1.toList)
+    assertSameElements(Seq(2, 3, 4, 5), v1.toList) // check that it works twice
+
+    // https://github.com/scala/scala/pull/9388#discussion_r709392221
+    val v2 = List(2).view.patch(1, Nil, 0)
+    assert(!v2.isEmpty)
+
+    // https://github.com/scala/scala/pull/9388#discussion_r709481748
+    val v3 = Nil.view.patch(0, List(1).iterator, 0)
+    assert(v3.knownSize != 0)
   }
 }

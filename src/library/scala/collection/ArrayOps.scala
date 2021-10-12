@@ -123,7 +123,7 @@ object ArrayOps {
   private[collection] final class ArrayIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = 0
     private[this] val len = xs.length
-    override def knownSize = len - pos
+    override def knownSize: Int = len - pos
     def hasNext: Boolean = pos < len
     def next(): A = try {
       val r = xs(pos)
@@ -131,7 +131,12 @@ object ArrayOps {
       r
     } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
     override def drop(n: Int): Iterator[A] = {
-      if (n > 0) pos = Math.min(xs.length, pos + n)
+      if (n > 0) {
+        val newPos = pos + n
+        pos =
+          if (newPos < 0 /* overflow */) len
+          else Math.min(len, newPos)
+      }
       this
     }
   }
