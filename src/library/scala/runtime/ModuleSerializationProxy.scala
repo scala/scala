@@ -15,17 +15,20 @@ package scala.runtime
 import java.io.Serializable
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import scala.annotation.nowarn
 
 private[runtime] object ModuleSerializationProxy {
   private val instances = new ClassValueCompat[Object] {
-    override protected def computeValue(cls: Class[_]): Object = {
-      try {
-        java.security.AccessController.doPrivileged((() => cls.getField("MODULE$").get(null)): PrivilegedExceptionAction[Object])
-      } catch {
+    @deprecated("", "") // because AccessController is deprecated on JDK 17
+    def getModule(cls: Class[_]): Object =
+      java.security.AccessController.doPrivileged(
+        (() => cls.getField("MODULE$").get(null)): PrivilegedExceptionAction[Object])
+    override protected def computeValue(cls: Class[_]): Object =
+      try getModule(cls): @nowarn("cat=deprecation")
+      catch {
         case e: PrivilegedActionException =>
           rethrowRuntime(e.getCause)
       }
-    }
   }
 
   private def rethrowRuntime(e: Throwable): Object = {
