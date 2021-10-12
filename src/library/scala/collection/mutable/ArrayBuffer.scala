@@ -66,7 +66,6 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit = {
-    mutationCount += 1
     array = ArrayBuffer.ensureSize(array, size0, n)
   }
 
@@ -86,7 +85,6 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
    *  This allows releasing some unused memory.
    */
   def trimToSize(): Unit = {
-    mutationCount += 1
     resize(length)
   }
 
@@ -136,10 +134,11 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   }
 
   def addOne(elem: A): this.type = {
-    val i = size0
-    ensureSize(size0 + 1)
-    size0 += 1
-    this(i) = elem
+    mutationCount += 1
+    val oldSize = size0
+    ensureSize(oldSize + 1)
+    size0 = oldSize + 1
+    this(oldSize) = elem
     this
   }
 
@@ -149,6 +148,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
       case elems: ArrayBuffer[_] =>
         val elemsLength = elems.size0
         if (elemsLength > 0) {
+          mutationCount += 1
           ensureSize(length + elemsLength)
           Array.copy(elems.array, 0, array, length, elemsLength)
           size0 = length + elemsLength
@@ -160,6 +160,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
     checkWithinBounds(index, index)
+    mutationCount += 1
     ensureSize(size0 + 1)
     Array.copy(array, index, array, index + 1, size0 - index)
     size0 += 1
@@ -177,6 +178,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
         if (elemsLength > 0) {
+          mutationCount += 1
           val len = size0
           val newSize = len + elemsLength
           ensureSize(newSize)
