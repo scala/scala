@@ -15,6 +15,7 @@ package reflect
 package macros
 
 import reflect.internal.util.Position
+import scala.runtime.ClassValueCompat
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -109,7 +110,7 @@ abstract class Attachments { self =>
 }
 
 private object Attachments {
-  private val matchesTagCache = new ClassValue[Function1[Any, Boolean]] {
+  private val matchesTagCache = new ClassValueCompat[Function1[Any, Boolean]] {
     override def computeValue(cls: Class[_]): Function[Any, Boolean] = cls.isInstance(_)
   }
 }
