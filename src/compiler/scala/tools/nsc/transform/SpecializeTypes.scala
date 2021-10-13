@@ -506,7 +506,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else if (!args.isEmpty)
         enteringTyper {
           foreach2(sym.typeParams, args) { (tp, arg) =>
-            if (tp.isSpecialized)
+            if (tp.isSpecialized || arg.typeSymbol.isSpecialized) //https://github.com/scala/bug/issues/11489
               specializedTypeVarsBuffer(arg, result)
           }
         }
