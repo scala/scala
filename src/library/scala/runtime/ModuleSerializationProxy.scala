@@ -19,12 +19,12 @@ import scala.annotation.nowarn
 
 private[runtime] object ModuleSerializationProxy {
   private val instances = new ClassValueCompat[Object] {
-    @deprecated("", "") // because AccessController is deprecated on JDK 17
+    @nowarn("cat=deprecation") // AccessController is deprecated on JDK 17
     def getModule(cls: Class[_]): Object =
       java.security.AccessController.doPrivileged(
         (() => cls.getField("MODULE$").get(null)): PrivilegedExceptionAction[Object])
     override protected def computeValue(cls: Class[_]): Object =
-      try getModule(cls): @nowarn("cat=deprecation")
+      try getModule(cls)
       catch {
         case e: PrivilegedActionException =>
           rethrowRuntime(e.getCause)
