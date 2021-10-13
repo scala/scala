@@ -45,5 +45,5 @@ object Compilers extends scala.collection.DefaultMap[String, Compiler] {
   }
 
   private def freeMemoryString: String =
-    (Runtime.getRuntime.freeMemory/1048576.0).formatted("%10.2f") + " MB"
+    f"${Runtime.getRuntime.freeMemory/1048576.0}%10.2f MB"
 }
