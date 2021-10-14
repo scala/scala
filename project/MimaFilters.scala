@@ -30,6 +30,12 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#SeqCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
+
+    // scala/scala#9819
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.PriorityQueue#ResizableArrayAccess.p_ensureAdditionalSize"), // private[PriorityQueue]
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics"),  // private[scala]
+    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics$"), // private[scala]
+
   )
 
   override val buildSettings = Seq(

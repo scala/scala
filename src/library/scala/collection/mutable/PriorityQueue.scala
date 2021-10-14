@@ -89,6 +89,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     def p_size0_=(s: Int) = size0 = s
     def p_array = array
     def p_ensureSize(n: Int) = super.ensureSize(n)
+    def p_ensureAdditionalSize(n: Int) = super.ensureAdditionalSize(n)
     def p_swap(a: Int, b: Int): Unit = {
       val h = array(a)
       array(a) = array(b)
@@ -153,7 +154,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *  @return             this $coll.
     */
   def addOne(elem: A): this.type = {
-    resarr.p_ensureSize(resarr.p_size0 + 1)
+    resarr.p_ensureAdditionalSize(1)
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     fixUp(resarr.p_array, resarr.p_size0)
     resarr.p_size0 += 1
@@ -170,7 +171,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   private def unsafeAdd(elem: A): Unit = {
     // like += but skips fixUp, which breaks the ordering invariant
     // a series of unsafeAdds MUST be followed by heapify
-    resarr.p_ensureSize(resarr.p_size0 + 1)
+    resarr.p_ensureAdditionalSize(1)
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     resarr.p_size0 += 1
   }

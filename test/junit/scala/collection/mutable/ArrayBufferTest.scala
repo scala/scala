@@ -3,6 +3,7 @@ package scala.collection.mutable
 import org.junit.Test
 import org.junit.Assert.{assertEquals, assertTrue}
 
+import java.lang.reflect.InvocationTargetException
 import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows, fail}
 import scala.tools.testkit.ReflectUtil.{getMethodAccessible, _}
@@ -358,7 +359,7 @@ class ArrayBufferTest {
     assertEquals(1024, b.array.length)
     b.remove(200, 803)
     b.trimToSize()
-    assertEquals(256, b.array.length)
+    assertEquals(200, b.array.length)
   }
 
   @Test def t11482_allowNegativeInitialSize(): Unit =
@@ -383,16 +384,33 @@ class ArrayBufferTest {
     iiobe( newAB.remove(2, 2), "3 is out of bounds (min 0, max 2)" )
   }
 
-  @Test def `t7880 ensureSize must terminate`(): Unit = {
-    val sut = getMethodAccessible[ArrayBuffer.type]("resizeEnsuring")
-    def resizeEnsuring(length: Int, end: Int, n: Int): Int = sut.invoke(ArrayBuffer, length, end, n).asInstanceOf[Int]
+  // scala/bug#7880 and scala/bug#12464
+  @Test def `ensureSize must terminate and have limits`(): Unit = {
+    val sut = getMethodAccessible[ArrayBuffer.type]("resizeUp")
+    def resizeUp(arrayLen: Long, targetLen: Long): Int = sut.invoke(ArrayBuffer, arrayLen, targetLen).asInstanceOf[Int]
+
+    // check termination and correctness
     assertTrue(7 < ArrayBuffer.DefaultInitialSize)  // condition of test
-    assertEquals(ArrayBuffer.DefaultInitialSize, resizeEnsuring(7, 3, 10))
-    assertEquals(Int.MaxValue - 1, resizeEnsuring(Int.MaxValue / 2, 3, Int.MaxValue / 2 + 1))  // was: ok
-    assertEquals(Int.MaxValue - 1, resizeEnsuring(Int.MaxValue / 2, 3, Int.MaxValue / 2 + 2))  // was: ok
-    assertEquals(Int.MaxValue, resizeEnsuring(Int.MaxValue / 2 + 1, 3, Int.MaxValue / 2 + 1))  // was: wrong
-    assertEquals(Int.MaxValue, resizeEnsuring(Int.MaxValue / 2 + 1, 3, Int.MaxValue / 2 + 2))  // was: hang
-    assertEquals(Int.MaxValue, resizeEnsuring(Int.MaxValue / 2, 3, Int.MaxValue))  // was: hang
+    assertEquals(ArrayBuffer.DefaultInitialSize, resizeUp(7, 10))
+    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1))  // was: ok
+    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 2))  // was: ok
+    assertEquals(-1, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 1))  // was: wrong
+    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 2))  // was: hang
+    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue - 2))
+
+    // check limits
+    def rethrow(op: => Any): Unit =
+      try op catch { case e: InvocationTargetException => throw e.getCause }
+    def checkExceedsMaxInt(targetLen: Long): Unit =
+      assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
+                              _ == "Collections cannot have more than 2147483647 elements")
+    def checkExceedsVMArrayLimit(targetLen: Long): Unit =
+      assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
+                              _ == "Size of array-backed collection exceeds VM array size limit of 2147483645")
+
+    checkExceedsMaxInt(Int.MaxValue + 1L)
+    checkExceedsVMArrayLimit(Int.MaxValue)
+    checkExceedsVMArrayLimit(Int.MaxValue - 1)
   }
 
   @Test def `array capacity must follow sizing`(): Unit = {
@@ -404,11 +422,17 @@ class ArrayBufferTest {
       val buf = new ArrayBuffer(42)
       assertEquals(42, array(buf).length)
     }
-    // hint grows to a power of 2
+    // hint over 2x grows to exact
     locally {
-      val buf = ArrayBuffer(42)
+      val buf = new ArrayBuffer(42)
       buf.sizeHint(100)
-      assertEquals(128, array(buf).length)
+      assertEquals(100, array(buf).length)
+    }
+    // hint under 2x grows by 2x
+    locally {
+      val buf = new ArrayBuffer(42)
+      buf.sizeHint(64)
+      assertEquals(84, array(buf).length)
     }
     locally {
       val buf = new ArrayBuffer[Int](42)
@@ -416,12 +440,19 @@ class ArrayBufferTest {
       buf.remove(buf.size - 1)
       assertEquals(42, array(buf).length)
     }
-    // not a power of 2, just double capacity
+    // double capacity
     locally {
       val buf = new ArrayBuffer[Int](42)
       Iterator.continually(42).take(42).foreach(buf.addOne)
       buf.addOne(17)
       assertEquals(84, array(buf).length)
+    }
+    // exact capacity larger than double
+    locally {
+      val buf = new ArrayBuffer[Int](42)
+      Iterator.continually(42).take(42).foreach(buf.addOne)
+      buf.addAll(ArrayBuffer.from(1 to 43))
+      assertEquals(85, array(buf).length)
     }
     locally {
       val buf = new ArrayBuffer[Int](42)
@@ -429,23 +460,24 @@ class ArrayBufferTest {
       buf.clearAndShrink(42)
       assertEquals(42, array(buf).length)
     }
-    // not a power of 2, just halved capacity
+    // exact shrink
     locally {
       val buf = new ArrayBuffer[Int](42)
       Iterator.continually(42).take(42).foreach(buf.addOne)
       buf.clearAndShrink(17)
-      assertEquals(21, array(buf).length)
+      assertEquals(17, array(buf).length)
     }
   }
 
   @Test def `downsizing must size down`(): Unit = {
     val sut = getMethodAccessible[ArrayBuffer.type]("resizeDown")
-    def resizeDown(length: Int, n: Int): Int = sut.invoke(ArrayBuffer, length, n).asInstanceOf[Int]
+    def resizeDown(arrayLen: Int, targetLen: Int): Int = sut.invoke(ArrayBuffer, arrayLen, targetLen).asInstanceOf[Int]
     assertTrue(17 > ArrayBuffer.DefaultInitialSize)  // condition of test
-    //assertEquals(ArrayBuffer.DefaultInitialSize, resizeDown(17, 3))  // unexpectedly 17 not 16
-    assertEquals(17, resizeDown(17, 3))
-    assertEquals(32, resizeDown(64, 30))
-    assertEquals(21, resizeDown(42, 17))
+    assertEquals(3, resizeDown(17, 3))
+    assertEquals(30, resizeDown(64, 30))
+    assertEquals(17, resizeDown(42, 17))
+    assertEquals(-1, resizeDown(42, 50))
+    assertEquals(0, resizeDown(42, -1))
   }
 
   // scala/bug#12121
