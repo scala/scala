@@ -325,7 +325,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /** Selects all elements of this $coll which satisfy a predicate.
     *
     *  @param p     the predicate used to test elements.
-    *  @return      a new iterator consisting of all elements of this $coll that satisfy the given
+    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
     *               predicate `p`. The order of the elements is preserved.
     */
   def filter(p: A => Boolean): C
