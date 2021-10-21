@@ -1,5 +1,5 @@
 t6323a.scala:13: error: implicit error;
-!I ttag: TypeTag[Test]
+!I ttag: reflect.runtime.universe.TypeTag[Test]
   No TypeTag available for Test
 
       val value = u.typeOf[Test]

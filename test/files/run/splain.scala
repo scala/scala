@@ -200,6 +200,25 @@ object SingleImp
   }
   """
 
+  def shorthandTypes: String = """
+object a {
+  type TypeA
+  object b {
+    type TypeB
+    object c {
+      type TypeC
+      object d {
+        type TypeD
+        implicitly[List[TypeA]]
+        implicitly[Seq[TypeB]]
+        implicitly[Traversable[TypeC]]
+        implicitly[Iterator[TypeD]]
+      }
+    }
+  }
+}
+"""
+
   def show(): Unit = {
     val global = newCompiler()
 
@@ -221,5 +240,6 @@ object SingleImp
     run(singleTypeInFunction)
     run(singleTypeWithFreeSymbol)
     run(parameterAnnotation)
+    run(shorthandTypes)
   }
 }

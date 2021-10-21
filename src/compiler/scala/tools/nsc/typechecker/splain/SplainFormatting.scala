@@ -76,7 +76,7 @@ trait SplainFormatters {
   object RefinedFormatter extends SpecialFormatter {
     object DeclSymbol {
       def unapply(sym: Symbol): Option[(Formatted, Formatted)] =
-        if (sym.hasRawInfo) Some((Simple(sym.simpleName.toString), formatType(sym.rawInfo, true)))
+        if (sym.hasRawInfo) Some((Simple(SimpleName(sym.simpleName.toString)), formatType(sym.rawInfo, true)))
         else None
     }
 
@@ -89,7 +89,7 @@ trait SplainFormatters {
 
     def formatDecl: Symbol => Formatted = {
       case DeclSymbol(n, t) => Decl(n, t)
-      case sym              => Simple(sym.toString)
+      case sym              => Simple(SimpleName(sym.toString))
     }
 
     def apply[A](
@@ -100,7 +100,7 @@ trait SplainFormatters {
       case _ => None
     }
 
-    val none: Formatted = Simple("<none>")
+    val none: Formatted = Simple(SimpleName("<none>"))
 
     def separate[A](left: List[A], right: List[A]): (List[A], List[A], List[A]) = {
       val leftS = Set(left: _*)
@@ -222,10 +222,15 @@ trait SplainFormatting extends SplainFormatters {
     case a                  => a.mkString("", ".", ".")
   }
 
-  def qualifiedName(path: List[String], name: String): String = s"${pathPrefix(path)}$name"
+  def qualifiedName(path: List[String], name: FormattedName): String = name match {
+    case SimpleName(name) => s"${pathPrefix(path)}$name"
+    case InfixName(name) => name
+  }
 
-  def stripModules(path: List[String], name: String, keep: Int): String =
-    qualifiedName(path.takeRight(keep), name)
+  def stripModules(path: List[String], name: FormattedName): String = {
+    val qName = qualifiedName(path, name)
+    if (shorthands(qName)) name.name else qName
+  }
 
   case class TypeParts(sym: Symbol, tt: Type) {
     def modulePath: List[String] = (tt, sym) match {
@@ -349,8 +354,8 @@ trait SplainFormatting extends SplainFormatters {
 
   def truncateDecls(decls: List[Formatted]): Boolean = settings.VimplicitsMaxRefined.value < decls.map(_.length).sum
 
-  def showFormattedQualified(path: List[String], name: String): TypeRepr =
-    FlatType(stripModules(path, name, settings.VimplicitsMaxModules.value))
+  def showFormattedQualified(path: List[String], name: FormattedName): TypeRepr =
+    FlatType(stripModules(path, name))
 
   def formattedDiff(left: Formatted, right: Formatted): String = (left, right) match {
     case (Qualified(lpath, lname), Qualified(rpath, rname)) if lname == rname =>
@@ -363,8 +368,7 @@ trait SplainFormatting extends SplainFormatters {
   }
 
   def showFormattedLImpl(tpe: Formatted, break: Boolean): TypeRepr = tpe match {
-    case Simple(name)                 => FlatType(name)
-    case Qualified(Nil, name)         => FlatType(name)
+    case Simple(name)                 => FlatType(name.name)
     case Qualified(path, name)        => showFormattedQualified(path, name)
     case Applied(cons, args)          => showTypeApply(showFormatted(cons), args.map(showFormattedL(_, break)), break)
     case tpe @ Infix(_, _, _, top)    => wrapParensRepr(if (break) breakInfix(flattenInfix(tpe)) else FlatType(flattenInfix(tpe).map(showFormatted).mkString(" ")), top)
@@ -398,7 +402,7 @@ trait SplainFormatting extends SplainFormatters {
   def formatInfix[A](
       path: List[String], simple: String, left: A, right: A, top: Boolean,
   )(rec: (A, Boolean) => Formatted): Formatted =
-    Infix(Qualified(path, simple), rec(left, false), rec(right, false), top)
+    Infix(Qualified(path, InfixName(simple)), rec(left, false), rec(right, false), top)
 
   def formatWithInfix[A](tpe: Type, args: List[A], top: Boolean)(rec: (A, Boolean) => Formatted): Formatted = {
     val (path, simple)     = formatSimpleType(tpe)
@@ -406,8 +410,8 @@ trait SplainFormatting extends SplainFormatters {
     formatSpecial(tpe, simple, args, formattedArgs, top)(rec).getOrElse {
       args match {
         case left :: right :: Nil if isSymbolic(tpe) => formatInfix(path, simple, left, right, top)(rec)
-        case _ :: _                                  => Applied(Qualified(path, simple), formattedArgs)
-        case _                                       => Qualified(path, simple)
+        case _ :: _                                  => Applied(Qualified(path, SimpleName(simple)), formattedArgs)
+        case _                                       => Qualified(path, SimpleName(simple))
       }
     }
   }

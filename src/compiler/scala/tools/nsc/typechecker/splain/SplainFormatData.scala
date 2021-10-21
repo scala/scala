@@ -19,9 +19,9 @@ import scala.annotation.tailrec
 object Formatted {
   @tailrec def comparator(formatted: Formatted): String = formatted match {
     case Infix(left, _, _, _)       => comparator(left)
-    case Simple(tpe)                => tpe
-    case Qualified(Nil, tpe)        => tpe
-    case Qualified(path, tpe)       => s"${path.mkString}$tpe"
+    case Simple(tpe)                => tpe.name
+    case Qualified(Nil, tpe)        => tpe.name
+    case Qualified(path, tpe)       => s"${path.mkString}${tpe.name}"
     case UnitForm                   => "()"
     case Applied(cons, _)           => comparator(cons)
     case TupleForm(Nil)             => "()"
@@ -42,8 +42,8 @@ object Formatted {
 sealed trait Formatted {
   def length: Int = this match {
     case Infix(infix, left, right, top) => infix.length + left.length + right.length + 2
-    case Simple(tpe)                    => tpe.length
-    case Qualified(path, tpe)           => path.map(_.length).sum + path.length + tpe.length
+    case Simple(tpe)                    => tpe.name.length
+    case Qualified(path, tpe)           => path.map(_.length).sum + path.length + tpe.name.length
     case UnitForm                       => 4
     case Applied(cons, args)            =>  args.map(_.length).sum + ( args.length - 1) * 2 + cons.length + 2
     case TupleForm(elems)               => elems.map(_.length).sum + (elems.length - 1) + 2
@@ -56,9 +56,13 @@ sealed trait Formatted {
   }
 }
 
+sealed trait FormattedName { val name: String }
+case class SimpleName(name: String) extends FormattedName
+case class InfixName(name: String) extends FormattedName
+
 case class Infix(infix: Formatted, left: Formatted, right: Formatted, top: Boolean) extends Formatted
-case class Simple(tpe: String)                                                      extends Formatted
-case class Qualified(path: List[String], tpe: String)                               extends Formatted
+case class Simple(tpe: FormattedName)                                               extends Formatted
+case class Qualified(path: List[String], tpe: FormattedName)                        extends Formatted
 case object UnitForm                                                                extends Formatted
 case class Applied(cons: Formatted, args: List[Formatted])                          extends Formatted
 case class TupleForm(elems: List[Formatted])                                        extends Formatted
