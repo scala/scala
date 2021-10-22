@@ -461,6 +461,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     private def addInferredFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
       var flags = tastyFlags
+      if (flags.is(Given))
+        flags |= Implicit
       val lacksDefinition =
         rhsIsEmpty &&
           name.isTermName && !name.isConstructorName && !flags.isOneOf(FlagSets.TermParamOrAccessor) ||
@@ -668,7 +670,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case HASDEFAULT => addFlag(HasDefault)
           case STABLE => addFlag(Stable)
           case EXTENSION => addFlag(Extension)
-          case GIVEN => addFlag(Implicit)
+          case GIVEN => addFlag(Given)
           case PARAMsetter => addFlag(ParamSetter)
           case PARAMalias => addFlag(ParamAlias)
           case EXPORTED => addFlag(Exported)
@@ -803,7 +805,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def DefDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
         val isMacro = repr.tflags.is(Erased | Macro)
-        checkUnsupportedFlags(repr.unsupportedFlags &~ (Extension | Exported | Infix | optFlag(isMacro)(Erased)))
+        val supportedFlags = Extension | Exported | Infix | Given | optFlag(isMacro)(Erased)
+        checkUnsupportedFlags(repr.unsupportedFlags &~ supportedFlags)
         val isCtor = sym.isConstructor
         val paramDefss = readParamss()(localCtx).map(_.map(symFromNoCycle))
         val typeParams = {
@@ -842,7 +845,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def ValDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
         // valdef in TASTy is either a singleton object or a method forwarder to a local value.
-        checkUnsupportedFlags(repr.unsupportedFlags &~ (Enum | Extension | Exported))
+        checkUnsupportedFlags(repr.unsupportedFlags &~ (Enum | Extension | Exported | Given))
         val tpe = readTpt()(localCtx).tpe
         ctx.setInfo(sym,
           if (repr.tflags.is(FlagSets.SingletonEnum)) {
@@ -856,7 +859,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
       def TypeDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
-        val allowedShared = Enum | Opaque | Infix
+        val allowedShared = Enum | Opaque | Infix | Given
         val allowedTypeFlags = allowedShared | Exported
         val allowedClassFlags = allowedShared | Open | Transparent
         if (sym.isClass) {
@@ -881,7 +884,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
       def TermParam(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
-        checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported))
+        checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported | Given))
         val tpt = readTpt()(localCtx)
         ctx.setInfo(sym,
           if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
