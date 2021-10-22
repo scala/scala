@@ -35,7 +35,7 @@ object TastyFormat {
    * compatibility, but remains backwards compatible, with all
    * preceding `MinorVersion`.
    */
-  final val MinorVersion: Int = 0
+  final val MinorVersion: Int = 1
 
   /**Natural Number. The `ExperimentalVersion` allows for
    * experimentation with changes to TASTy without committing

@@ -41,7 +41,7 @@ object Dotc extends Script.Command {
     val Main_process = mainClass.getMethod("process", classOf[Array[String]])
     val Reporter_hasErrors = reporterClass.getMethod("hasErrors")
     Try {
-      val reporter  = unlockExperimentalFeatures(invokeStatic(Main_process, Seq(args.toArray)))
+      val reporter  = invokeStatic(Main_process, Seq(args.toArray))
       val hasErrors = invoke(Reporter_hasErrors, reporter, Seq.empty).asInstanceOf[Boolean]
       !hasErrors
     }

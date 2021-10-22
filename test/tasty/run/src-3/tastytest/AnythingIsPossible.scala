@@ -2,7 +2,8 @@ package tastytest
 
 object AnythingIsPossible {
 
-  class Box[A](val a: A)
+  class Box[A](accept: => A):
+    val a: A = accept
 
   class Class extends Box({ class X { final val x = Map(("", 3)) } ; val foo = new X(); foo.x: foo.x.type })
 
