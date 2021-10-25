@@ -1297,7 +1297,6 @@ abstract class Erasure extends InfoTransform
           if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != definitions.UnitClass) {
             val typeValue = ct.typeValue.dealiasWiden
             val erased = erasure(typeValue.typeSymbol) applyInArray typeValue
-
             treeCopy.Literal(cleanLiteral, Constant(erased))
           } else cleanLiteral
 

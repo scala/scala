@@ -42,6 +42,7 @@ trait FlagOps { self: TastyUniverse =>
     object Creation {
       val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
       val ObjectClassDef: TastyFlagSet = Object | Final
+      val Wildcard: u.FlagSet = newSymbolFlagSetFromEncoded(Flags.EXISTENTIAL)
       val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
     }
     def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
@@ -56,7 +57,10 @@ trait FlagOps { self: TastyUniverse =>
 
   /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
   private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
-    unsafeEncodeTastyFlagSet(tflags) | ModifierFlags.SCALA3X
+    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags))
+
+  private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet): u.FlagSet =
+    flags | ModifierFlags.SCALA3X
 
   implicit final class SymbolFlagOps(val sym: Symbol) {
     def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =

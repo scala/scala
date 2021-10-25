@@ -269,7 +269,7 @@ trait ContextOps { self: TastyUniverse =>
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
-        newFlags = FlagSets.Creation.Default
+        newFlags = FlagSets.Creation.Wildcard
       ).setInfo(info)
 
     final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
