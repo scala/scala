@@ -396,7 +396,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val lo = readType()
               if (nothingButMods(end)) readVariances(lo)
               else defn.TypeBounds(lo, readVariances(readType()))
-            case ANNOTATEDtype => defn.AnnotatedType(readType(), readTerm()(ctx.addMode(ReadAnnotation)))
+            case ANNOTATEDtype => defn.AnnotatedType(readType(), readTerm()(ctx.addMode(ReadAnnotTopLevel)))
             case ANDtype => defn.IntersectionType(readType(), readType())
             case ORtype => unionIsUnsupported
             case SUPERtype => defn.SuperType(readType(), readType())
@@ -694,7 +694,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
 
     private val readTypedAnnot: Context => DeferredAnnotation = { implicit ctx =>
-      val annotCtx = ctx.addMode(ReadAnnotation)
+      val annotCtx = ctx.addMode(ReadAnnotTopLevel)
       val start = currentAddr
       readByte() // tag
       val end      = readEnd()
@@ -1134,7 +1134,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 until(end)(skipTree())
                 tpd.TypeTree(fnResult(fn.tpe))
               } else {
-                tpd.Apply(fn, until(end)(readTerm()))
+                val argsCtx = ctx.argumentCtx(fn)
+                tpd.Apply(fn, until(end)(readTerm()(argsCtx)))
               }
             case TYPEAPPLY => tpd.TypeApply(readTerm(), until(end)(readTpt()))
             case TYPED => tpd.Typed(readTerm(), readTpt())
@@ -1158,7 +1159,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // wrong number of arguments in some scenarios reading F-bounded
               // types. This came up in #137 of collection strawman.
               tpd.AppliedTypeTree(readTpt(), until(end)(readTpt()))
-            case ANNOTATEDtpt => tpd.Annotated(readTpt(), readTerm()(ctx.addMode(ReadAnnotation)))
+            case ANNOTATEDtpt => tpd.Annotated(readTpt(), readTerm()(ctx.addMode(ReadAnnotTopLevel)))
             case LAMBDAtpt => tpd.LambdaTypeTree(readParams[NoCycle](TYPEPARAM).map(symFromNoCycle), readTpt())
             case MATCHtpt => matchTypeIsUnsupported
             case TYPEBOUNDStpt =>
