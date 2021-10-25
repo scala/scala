@@ -476,7 +476,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           flags |= FieldAccessor
         if (flags.not(Mutable))
           flags |= Stable
-        if (flags.is(Case | Static | Enum)) // singleton enum case
+        if (flags.is(Case | Enum)) // singleton enum case
           flags |= Object | Stable // encode as a module (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
