@@ -478,8 +478,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def isAtProgramPoint(lbl: asm.Label): Boolean = {
       (lastInsn match { case labnode: asm.tree.LabelNode => (labnode.getLabel == lbl); case _ => false } )
     }
-    def lineNumber(tree: Tree): Unit = {
-      if (!emitLines || !tree.pos.isDefined) return
+    def lineNumber(tree: Tree): Unit = if (emitLines && tree.pos.isDefined) {
       val nr = tree.pos.finalPosition.line
       if (nr != lastEmittedLineNr) {
         lastEmittedLineNr = nr

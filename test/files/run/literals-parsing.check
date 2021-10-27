@@ -1,6 +1,6 @@
 [[syntax trees at end of                    parser]] // newSource1.scala
 [0:161]package [0:0]<empty> {
-  [0:161]abstract trait T extends [8:161][161]scala.AnyRef {
+  [0:161]abstract trait T extends [8:161][8]scala.AnyRef {
     [8]def $init$() = [8]{
       [8]()
     };

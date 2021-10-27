@@ -1,8 +1,8 @@
 [[syntax trees at end of                     typer]] // newSource1.scala
 [0:69]package [0:0]<empty> {
-  [0:69]object X extends [9:69][69]scala.AnyRef {
-    [69]def <init>(): [9]X.type = [69]{
-      [69][69][69]X.super.<init>();
+  [0:69]object X extends [9:69][9]scala.AnyRef {
+    [9]def <init>(): [9]X.type = [9]{
+      [9][9][9]X.super.<init>();
       [9]()
     };
     [17:30]private[this] val d: [21]D = [25:30][25:30][25:30]new [29:30]D();

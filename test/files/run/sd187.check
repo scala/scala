@@ -1,8 +1,8 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
 [1:2302]package [1:1]<empty> {
-  [1:2302]class C extends [9:2302][2302]scala.AnyRef {
-    [2302]def <init>(): [9]C = [2302]{
-      [2302][2302][2302]C.super.<init>();
+  [1:2302]class C extends [9:2302][9]scala.AnyRef {
+    [9]def <init>(): [9]C = [9]{
+      [9][9][9]C.super.<init>();
       [9]()
     };
     [103:904]def commonSubPattern([124:130]x: [127:130]<type: [127:130]scala.Any>): [107]AnyVal = [206:220]{

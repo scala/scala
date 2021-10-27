@@ -1,8 +1,8 @@
 source-newSource1.scala,line-3,offset=49 A.this.one
 source-newSource1.scala,line-3,offset=49 A.this
-source-newSource1.scala,line-4,offset=67 A.super.<init>()
-source-newSource1.scala,line-4,offset=67 A.super.<init>
-source-newSource1.scala,line-4,offset=67 this
+source-newSource1.scala,line-2,offset=41 A.super.<init>()
+source-newSource1.scala,line-2,offset=41 A.super.<init>
+source-newSource1.scala,line-2,offset=41 this
 source-newSource1.scala,line-3,offset=49 A.this.one
 source-newSource1.scala,line-3,offset=49 A.this
 RangePosition(newSource1.scala, 55, 57, 65) java.lang.Integer.toString(1)

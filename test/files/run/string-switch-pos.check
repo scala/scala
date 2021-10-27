@@ -1,8 +1,8 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
 [0:216]package [0:0]<empty> {
-  [0:216]class Switch extends [13:216][216]scala.AnyRef {
-    [216]def <init>(): [13]Switch = [216]{
-      [216][216][216]Switch.super.<init>();
+  [0:216]class Switch extends [13:216][13]scala.AnyRef {
+    [13]def <init>(): [13]Switch = [13]{
+      [13][13][13]Switch.super.<init>();
       [13]()
     };
     [17:214]def switch([28:37]s: [31:37]<type: [31:37]scala.Predef.String>, [39:52]cond: [45:52]<type: [45:52]scala.Boolean>): [21]Int = [56:57]{
@@ -67,8 +67,8 @@
         }
       }
     };
-    [216]def <init>(): [13]Switch = [216]{
-      [216][216][216]Switch.super.<init>();
+    [13]def <init>(): [13]Switch = [13]{
+      [13][13][13]Switch.super.<init>();
       [13]()
     }
   }

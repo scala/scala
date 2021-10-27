@@ -3246,8 +3246,8 @@ self =>
         // regarding AnyVal constructor in AddInterfaces.
         DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
       )
-      val parentPos = o2p(in.offset)
       val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      val parentPos = if (parents.isEmpty) o2p(tstart1) else o2p(in.offset)
 
       // we can't easily check this later, because `gen.mkParents` adds the default AnyRef parent, and we need to warn based on what the user wrote
       if (name == nme.PACKAGEkw && parents.nonEmpty && settings.isScala3)
@@ -3260,7 +3260,7 @@ self =>
           Template(parents, self, anyvalConstructor() :: body)
         else
           gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
-                         self, constrMods, vparamss, body, o2p(tstart))
+                         self, constrMods, vparamss, body, o2p(tstart1))
       }
     }
 
