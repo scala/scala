@@ -424,7 +424,7 @@ TODO: Why
 TODO: this is a pretty awkward description of scoping and distinctness of binders
 -->
 
-The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.
+The names of all type parameters must be pairwise different in their enclosing type parameter clause, and between clauses if multiple are present.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.
 
 A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `´@a_1 \ldots @a_n \pm t[\mathit{tps}\,]´ >: ´L´ <: ´U´`.
 
@@ -580,19 +580,22 @@ on which one can write only strings.
 ## Function Declarations and Definitions
 
 ```ebnf
-Dcl                ::=  ‘def’ FunDcl
-FunDcl             ::=  FunSig ‘:’ Type
-Def                ::=  ‘def’ FunDef
-FunDef             ::=  FunSig [‘:’ Type] ‘=’ Expr
-FunSig             ::=  id [FunTypeParamClause] ParamClauses
-FunTypeParamClause ::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
-ParamClauses       ::=  {ParamClause} [[nl] ‘(’ ‘implicit’ Params ‘)’]
-ParamClause        ::=  [nl] ‘(’ [Params] ‘)’
-Params             ::=  Param {‘,’ Param}
-Param              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
-ParamType          ::=  Type
-                     |  ‘=>’ Type
-                     |  Type ‘*’
+Dcl                    ::=  ‘def’ FunDcl
+FunDcl                 ::=  FunSig ‘:’ Type
+Def                    ::=  ‘def’ FunDef
+FunDef                 ::=  FunSig [‘:’ Type] ‘=’ Expr
+FunSig                 ::=  id ParamClauses
+ParamClauses           ::=  ParamClause {ParamClause}
+ParamClause            ::=  TermParamClause | TypeParamClause | UsingParamClause
+TermParamClause        ::=  [nl] ‘(’ [TermParams] ‘)’
+TypeParamClause        ::=  [nl] ‘[’ TypeParams ‘]’ 
+UsingParamClause       ::=  [nl] ‘(’ ‘using’ TermParams ‘)’
+TermParams             ::=  TermParam {‘,’ TermParam}
+TermParam              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
+TypeParams             ::=  TypeParam {‘,’ TypeParams}
+TypeParam              ::=  Type
+                         |  ‘=>’ Type
+                         |  Type ‘*’
 ```
 
 A _function declaration_ has the form `def ´f\,\mathit{psig}´: ´T´`, where
@@ -600,11 +603,12 @@ A _function declaration_ has the form `def ´f\,\mathit{psig}´: ´T´`, where
 signature and ´T´ is its result type. A _function definition_
 `def ´f\,\mathit{psig}´: ´T´ = ´e´` also includes a _function body_ ´e´,
 i.e. an expression which defines the function's result.  A parameter
-signature consists of an optional type parameter clause `[´\mathit{tps}\,´]`,
-followed by zero or more value parameter clauses
-`(´\mathit{ps}_1´)´\ldots´(´\mathit{ps}_n´)`.  Such a declaration or definition
+signature consists of any interweaving of any number of: type `[´\mathit{tps}\,´]`, 
+term `(´\mathit{ps}´)` and using `(using ´\mathit{ps}´)` clauses, 
+in particular none of these clauses are required. Such a declaration or definition
 introduces a value with a (possibly polymorphic) method type whose
 parameter types and result type are as given.
+<!-- TODO: Is this best formulation ? sort of implies def foo[T](x: Int) and def foo(x: Int)[T] are equivalent TODO: Include examples ? -->
 
 The type of the function body is expected to [conform](06-expressions.html#expression-typing)
 to the function's declared
@@ -621,6 +625,18 @@ well as the function body, if it is present.
 A _value parameter clause_ ´\mathit{ps}´ consists of zero or more formal
 parameter bindings such as `´x´: ´T´` or `´x: T = e´`, which bind value
 parameters and associate them with their types.
+
+<!-- TODO: check following: -->
+Note that parameter names have to be unique not only inside clauses but between them too.
+Note that parameters inside type and term clauses are allowed to depend on 
+parameters of the previous ones, the following example is valid:
+```scala
+def foo[T](x: T)[U :> x.type <: T][L <: List[U]](l: L) // valid
+def bar[T](x: T)[T] // invalid: T appears twice
+def zoo(x: Int)[T, U](x: U) // invalid: x appears twice
+def aaa(T <: U)(x: U)[U] //invalid: U appears after being used
+```
+<!-- TODO: in the case of the last example, should it be valid if a definition for U is in scope ? -->
 
 ### Default Arguments
 

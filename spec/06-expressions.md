@@ -472,6 +472,52 @@ Type applications can be omitted if
 for a polymorphic method from the types of the actual method arguments
 and the expected result type.
 
+Remember that functions can have multiple lists of type arguments, and/or 
+return a value with a higher kinded type, as a simple example, 
+take the two following declarations, where ´Z´ is an arbitrary type, 
+potentially containing references to ´T´ and ´U´:
+
+```scala
+def foo[T][U]: Z
+def bar[T]: [U] -> Z
+```
+
+At application, we can then homit either ´T´ and ´U´ or neither, 
+or we can homit ´U´ but not ´T´. 
+But if a parameter for ´U´ is passed, then one must be as well for ´T´, 
+even if the value passed make sense for ´U´ but not for ´T´, 
+as in the following example:
+```scala
+def foo[T <: Int][U <: String]: Z
+
+foo[Int][String] // valid
+foo[Int] // valid* 
+foo // valid*
+
+foo[String] // invalid!
+
+// * if remaining values can be implied
+```
+If there is need to be able to specify any combination, 
+use an empty term clause like this:
+```scala
+def foo[T <: Int]()[U <: String]: Z
+
+foo[Int]()[String] // valid
+foo[Int]() // valid* 
+foo() // valid*
+
+foo()[String] // valid*
+
+//but of course:
+foo[Int][String] // invalid: expected 1 type clause, but got 2
+
+// * if remaining values can be implied
+```
+In most cases this should not be needed, and might hint at your 
+implementation separating too much type clauses from the term clauses
+that reference those types.
+
 ## Tuples
 
 ```ebnf
