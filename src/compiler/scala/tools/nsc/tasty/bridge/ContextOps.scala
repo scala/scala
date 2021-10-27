@@ -269,7 +269,7 @@ trait ContextOps { self: TastyUniverse =>
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
-        newFlags = FlagSets.Creation.Default
+        newFlags = FlagSets.Creation.Wildcard
       ).setInfo(info)
 
     final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
@@ -556,6 +556,9 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
+
+    final def argumentCtx(fn: Tree): Context =
+      if (fn.symbol.isPrimaryConstructor) retractMode(ReadAnnotationCtor) else thisCtx
 
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 

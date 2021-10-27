@@ -34,9 +34,13 @@ object TastyModes {
   final val InnerScope: TastyMode = TastyMode(1 << 5)
   /** When reading the tree of an Opaque type */
   final val OpaqueTypeDef: TastyMode = TastyMode(1 << 6)
+  /** When reading trees of an annotation */
+  final val ReadAnnotationCtor: TastyMode = TastyMode(1 << 7)
 
   /** The union of `IndexStats` and `InnerScope` */
   final val IndexScopedStats: TastyMode = IndexStats | InnerScope
+
+  final val ReadAnnotTopLevel: TastyMode = ReadAnnotation | ReadAnnotationCtor
 
   case class TastyMode(val toInt: Int) extends AnyVal { mode =>
 
@@ -58,6 +62,7 @@ object TastyModes {
         if (mode.is(ReadMacro))      sb += "ReadMacro"
         if (mode.is(InnerScope))     sb += "InnerScope"
         if (mode.is(OpaqueTypeDef))  sb += "OpaqueTypeDef"
+        if (mode.is(ReadAnnotationCtor)) sb += "ReadAnnotationCtor"
         sb.mkString(" | ")
       }
     }

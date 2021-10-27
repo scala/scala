@@ -4,9 +4,14 @@ import scala.language.experimental.macros
 
 import scala.reflect.macros.blackbox.Context
 
+import scala.annotation.experimental
+
 object InlineCompat2 {
 
+  @experimental
   def foo(code: String): String = macro InnerScala2MacroImpl.fooImpl
+
+  @experimental
   inline def foo(inline code: String): String = code // inline method, not macro
 
   object InnerScala2MacroImpl {

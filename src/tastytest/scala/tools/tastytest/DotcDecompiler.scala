@@ -1,6 +1,6 @@
 package scala.tools.tastytest
 
-import scala.util.{Try, Success, Failure}
+import scala.util.Try
 
 object DotcDecompiler extends Script.Command {
 
@@ -19,14 +19,10 @@ object DotcDecompiler extends Script.Command {
       return 1
     }
     val Seq(tasty, additionalSettings @ _*) = args: @unchecked
-    implicit val scala3classloader: Dotc.ClassLoader = Dotc.initClassloader() match {
-      case Success(cl) => cl
-      case Failure(err) =>
-        println(red(s"could not initialise Scala 3 classpath: $err"))
-        return 1
+    Dotc.processIn { implicit scala3classloader =>
+      val success = decompile(tasty, additionalSettings).get
+      if (success) 0 else 1
     }
-    val success = decompile(tasty, additionalSettings).get
-    if (success) 0 else 1
   }
 
 }

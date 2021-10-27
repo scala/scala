@@ -16,12 +16,33 @@ object Dotc extends Script.Command {
   def initClassloader(): Try[Dotc.ClassLoader] =
     Try(Dotc.ClassLoader(ScalaClassLoader.fromURLs(Classpaths.dottyCompiler.asURLs)))
 
+  def processIn(op: Dotc.ClassLoader => Int): Int = {
+    Dotc.initClassloader() match {
+      case Success(cl) => op(cl)
+      case Failure(err) =>
+        println(red(s"could not initialise Scala 3 classpath: $err"))
+        1
+    }
+  }
+
   def loadClass(name: String)(implicit cl: Dotc.ClassLoader) =
     Class.forName(name, true, cl.parent)
 
   def invokeStatic(method: Method, args: Seq[Any])(implicit cl: Dotc.ClassLoader) = {
     assert(Modifier.isStatic(method.getModifiers), s"$method is not static!")
     invoke(method, null, args)
+  }
+
+  def invokeStatic(
+      className: String,
+      methodName: String,
+      args: Seq[String]
+  )(implicit cl: Dotc.ClassLoader): Try[Object] = {
+    val cls = loadClass(className)
+    val method = cls.getMethod(methodName, classOf[Array[String]])
+    Try {
+      invokeStatic(method, Seq(args.toArray))
+    }
   }
 
   def invoke(method: Method, obj: AnyRef, args: Seq[Any])(implicit cl: Dotc.ClassLoader) = {
@@ -35,17 +56,17 @@ object Dotc extends Script.Command {
 
   private def dotcProcess(args: Seq[String])(implicit cl: Dotc.ClassLoader) = processMethod("dotty.tools.dotc.Main")(args)
 
-  def processMethod(mainClassName: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
-    val mainClass = loadClass(mainClassName)
-    val reporterClass = loadClass("dotty.tools.dotc.reporting.Reporter")
-    val Main_process = mainClass.getMethod("process", classOf[Array[String]])
-    val Reporter_hasErrors = reporterClass.getMethod("hasErrors")
-    Try {
-      val reporter  = unlockExperimentalFeatures(invokeStatic(Main_process, Seq(args.toArray)))
+  def processMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
+    val reporterCls = loadClass("dotty.tools.dotc.reporting.Reporter")
+    val Reporter_hasErrors = reporterCls.getMethod("hasErrors")
+    for (reporter <- invokeStatic(className, "process", args)) yield {
       val hasErrors = invoke(Reporter_hasErrors, reporter, Seq.empty).asInstanceOf[Boolean]
       !hasErrors
     }
   }
+
+  def mainMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] =
+    for (_ <- invokeStatic(className, "main", args)) yield ()
 
   def dotcVersion(implicit cl: Dotc.ClassLoader): String = {
     val compilerPropertiesClass = loadClass("dotty.tools.dotc.config.Properties")
@@ -81,14 +102,10 @@ object Dotc extends Script.Command {
       return 1
     }
     val Seq(out, src, additional @ _*) = args: @unchecked
-    implicit val scala3classloader: Dotc.ClassLoader = initClassloader() match {
-      case Success(cl) => cl
-      case Failure(err) =>
-        println(red(s"could not initialise Scala 3 classpath: $err"))
-        return 1
+    Dotc.processIn { implicit scala3classloader =>
+      val success = dotc(out, out, additional, src).get
+      if (success) 0 else 1
     }
-    val success = dotc(out, out, additional, src).get
-    if (success) 0 else 1
   }
 
 }
