@@ -245,9 +245,9 @@ package MutationTrackingTestImpl {
     def clearAndShrink(): Unit = checkThrows { _ clearAndShrink 2 }
 
     @Test
-    def trimToSize(): Unit = checkThrows { _.trimToSize() }
+    def trimToSize(): Unit = checkFine { _.trimToSize() }
 
     @Test
-    def sizeHint(): Unit = checkThrows { _ sizeHint 16 }
+    def sizeHint(): Unit = checkFine { _ sizeHint 16 }
   }
 }

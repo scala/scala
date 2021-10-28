@@ -63,25 +63,54 @@ class ArrayBufferBenchmark {
     bh.consume(b1)
   }
 
-  // append collection with known size
+  // append `Iterable` with known size
   @Benchmark def addAll2(bh: Blackhole): Unit = {
-    val b1 = ref.clone()
-    b1.addAll(set)
-    bh.consume(b1)
+    val b = ref.clone()
+    b.addAll(set)
+    bh.consume(b)
   }
 
-  // append collection without known size
+  // append `Iterable` without known size
   @Benchmark def addAll3(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    b.addAll(list)
+    bh.consume(b)
+  }
+
+  // append `IterableOnce` without known size
+  @Benchmark def addAll4(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    b.addAll(list.iterator)
+    bh.consume(b)
+  }
+
+  // insert `ArrayBuffer`
+  @Benchmark def insertAll1(bh: Blackhole): Unit = {
     val b1 = ref.clone()
-    b1.addAll(list)
+    val b2 = ref.clone()
+    b1.insertAll(size / 2, b2)
     bh.consume(b1)
   }
 
-  // append `IterableOnce` with no known size
-  @Benchmark def addAll4(bh: Blackhole): Unit = {
-    val b1 = ref.clone()
-    b1.addAll(list.iterator)
-    bh.consume(b1)
+  // insert `Iterable` with known size
+  @Benchmark def insertAll2(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    b.insertAll(size / 2, set)
+    bh.consume(b)
+  }
+
+  // insert `Iterable` without known size
+  @Benchmark def insertAll3(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    b.insertAll(size / 2, list)
+    bh.consume(b)
+  }
+
+  // insert `IterableOnce` without known size
+  @Benchmark def insertAll4(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    b.insertAll(size / 2, list.iterator)
+    bh.consume(b)
   }
 
   @Benchmark def flatMapInPlace1(bh: Blackhole): Unit = {
