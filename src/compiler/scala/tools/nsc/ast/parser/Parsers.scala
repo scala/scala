@@ -3078,10 +3078,13 @@ self =>
      *  }}}
      */
     def classDef(start: Offset, mods: Modifiers): ClassDef = {
+      def isAfterLineEnd: Boolean = in.lastOffset < in.lineStartOffset && (in.lineStartOffset <= in.offset || in.lastOffset < in.lastLineStartOffset && in.lastLineStartOffset <= in.offset)
       in.nextToken()
       checkKeywordDefinition()
       val nameOffset = in.offset
       val name = identForType()
+      if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
+        deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
