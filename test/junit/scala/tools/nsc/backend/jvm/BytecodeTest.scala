@@ -17,12 +17,12 @@ class BytecodeTest extends BytecodeTesting {
 
   @Test
   def t10812(): Unit = {
-    val code =
-      """ A { def f: Object = null }
+    def code(prefix: String) =
+      s"""$prefix A { def f: Object = null }
         |object B extends A { override def f: String = "b" }
       """.stripMargin
     for (base <- List("trait", "class")) {
-      val List(a, bMirror, bModule) = compileClasses(base + code)
+      val List(a, bMirror, bModule) = compileClasses(code(base))
       assertEquals(bMirror.name, "B")
       assertEquals(bMirror.methods.asScala.filter(_.name == "f").map(m => m.name + m.desc).toList, List("f()Ljava/lang/String;"))
     }
@@ -200,6 +200,22 @@ class BytecodeTest extends BytecodeTesting {
     assertSameCode(tMethod.instructions,
       List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", true), Op(RETURN), Label(4))
     )
+  }
+
+  @Test def `class constructor has correct line numbers (12470)`: Unit = {
+    val code =
+      """class A
+        |class B
+        |object D
+        |class C
+      """.stripMargin
+    val lines = Map("A" -> 1, "B" -> 2, "D$" -> 3, "C" -> 4)
+    compileClasses(code).foreach { c =>
+      c.methods.asScala.foreach(m => convertMethod(m).instructions.foreach {
+        case LineNumber(n, _) => assertEquals(s"class ${c.name} method ${m.name}", lines(c.name), n)
+        case _ =>
+      })
+    }
   }
 
   @Test

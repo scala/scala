@@ -1,8 +1,8 @@
 [[syntax trees at end of                     typer]] // newSource1.scala
 [0:88]package [0:0]<empty> {
-  [0:88]object X extends [9:88][88]scala.AnyRef {
-    [88]def <init>(): [9]X.type = [88]{
-      [88][88][88]X.super.<init>();
+  [0:88]object X extends [9:88][9]scala.AnyRef {
+    [9]def <init>(): [9]X.type = [9]{
+      [9][9][9]X.super.<init>();
       [9]()
     };
     [17:24][17:18][17:18]D.selectDynamic[[17]Nothing](<19:24>"aaaaa");

@@ -3078,10 +3078,13 @@ self =>
      *  }}}
      */
     def classDef(start: Offset, mods: Modifiers): ClassDef = {
+      def isAfterLineEnd: Boolean = in.lastOffset < in.lineStartOffset && (in.lineStartOffset <= in.offset || in.lastOffset < in.lastLineStartOffset && in.lastLineStartOffset <= in.offset)
       in.nextToken()
       checkKeywordDefinition()
       val nameOffset = in.offset
       val name = identForType()
+      if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
+        deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
@@ -3230,7 +3233,7 @@ self =>
         deprecationWarning(in.offset, "Using `<:` for `extends` is deprecated", since = "2.12.5")
         true
       }
-      val (parents, self, body) = (
+      val (parents, self, body) =
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait && deprecatedUsage()) {
           in.nextToken()
           template()
@@ -3240,27 +3243,25 @@ self =>
           val (self, body) = templateBodyOpt(parenMeansSyntaxError = mods.isTrait || name.isTermName)
           (List(), self, body)
         }
-      )
-      def anyvalConstructor() = (
-        // Not a well-formed constructor, has to be finished later - see note
-        // regarding AnyVal constructor in AddInterfaces.
-        DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
-      )
-      val parentPos = o2p(in.offset)
-      val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      // Not a well-formed constructor, has to be finished later - see note
+      // regarding AnyVal constructor in AddInterfaces.
+      def anyvalConstructor() = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
+      // tstart is the offset of the token after `class C[A]` (which may be LPAREN, EXTENDS, LBRACE).
+      // if there is no template body, then tstart may be in the next program element, so back up to just after the `class C[A]`.
+      val templateOffset = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      val templatePos = o2p(templateOffset)
 
-      // we can't easily check this later, because `gen.mkParents` adds the default AnyRef parent, and we need to warn based on what the user wrote
-      if (name == nme.PACKAGEkw && parents.nonEmpty && settings.isScala3)
-        deprecationWarning(tstart, s"package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);\n" +
-                                   s"drop the `extends` clause or use a regular object instead", "3.0.0")
+      // warn now if user wrote parents for package object; `gen.mkParents` adds AnyRef to parents
+      if (currentRun.isScala3 && name == nme.PACKAGEkw && !parents.isEmpty)
+        deprecationWarning(tstart, """package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+                                     |drop the `extends` clause or use a regular object instead""".stripMargin, "3.0.0")
 
-      atPos(tstart1) {
+      atPos(templateOffset) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents, self, anyvalConstructor() :: body)
         else
-          gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
-                         self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(gen.mkParents(mods, parents, templatePos), self, constrMods, vparamss, body, templatePos)
       }
     }
 

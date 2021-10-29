@@ -1,8 +1,8 @@
 [[syntax trees at end of                     typer]] // newSource1.scala
 [0:201]package [0:0]<empty> {
-  [0:201]object Test extends [12:201][201]scala.AnyRef {
-    [201]def <init>(): [12]Test.type = [201]{
-      [201][201][201]Test.super.<init>();
+  [0:201]object Test extends [12:201][12]scala.AnyRef {
+    [12]def <init>(): [12]Test.type = [12]{
+      [12][12][12]Test.super.<init>();
       [12]()
     };
     [20:43]private[this] val n: [38]Int = [42:43]1;

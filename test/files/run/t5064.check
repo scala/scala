@@ -7,9 +7,9 @@ newSource1.scala:5: warning: a pure expression does nothing in statement positio
 newSource1.scala:6: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   Nil
   ^
-[53]            T5064.super.<init>()
-[53]            T5064.super.<init>
-[53]            this
+[12]            T5064.super.<init>()
+[12]            T5064.super.<init>
+[12]            this
 [16:23]         scala.`package`.List().apply(scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{1}))
 [16:20]         scala.`package`.List().apply
 <16:20>         scala.`package`.List()

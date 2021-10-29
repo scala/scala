@@ -1,8 +1,8 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
 [0:553]package [0:0]<empty> {
-  [0:151]object Case3 extends [13:151][152]scala.AnyRef {
-    [152]def <init>(): [13]Case3.type = [152]{
-      [152][152][152]Case3.super.<init>();
+  [0:151]object Case3 extends [13:151][13]scala.AnyRef {
+    [13]def <init>(): [13]Case3.type = [13]{
+      [13][13][13]Case3.super.<init>();
       [13]()
     };
     [17:60]def unapply([29:35]z: [32:35]<type: [32:35]scala.Any>): [21]Option[Int] = [52:60][52:56][52:56]new [52:56]Some[Int]([57:59]-1);
@@ -28,9 +28,9 @@
       }
     }
   };
-  [152:308]object Case4 extends [165:308][309]scala.AnyRef {
-    [309]def <init>(): [165]Case4.type = [309]{
-      [309][309][309]Case4.super.<init>();
+  [152:308]object Case4 extends [165:308][165]scala.AnyRef {
+    [165]def <init>(): [165]Case4.type = [165]{
+      [165][165][165]Case4.super.<init>();
       [165]()
     };
     [169:217]def unapplySeq([184:190]z: [187:190]<type: [187:190]scala.Any>): [173]Option[List[Int]] = [213:217]scala.None;
@@ -56,9 +56,9 @@
       }
     }
   };
-  [309:448]object Case5 extends [322:448][449]scala.AnyRef {
-    [449]def <init>(): [322]Case5.type = [449]{
-      [449][449][449]Case5.super.<init>();
+  [309:448]object Case5 extends [322:448][322]scala.AnyRef {
+    [322]def <init>(): [322]Case5.type = [322]{
+      [322][322][322]Case5.super.<init>();
       [322]()
     };
     [326:361]def unapply([338:344]z: [341:344]<type: [341:344]scala.Any>): [330]Boolean = [357:361]true;
@@ -84,9 +84,9 @@
       }
     }
   };
-  [449:553]object Case6 extends [462:553][553]scala.AnyRef {
-    [553]def <init>(): [462]Case6.type = [553]{
-      [553][553][553]Case6.super.<init>();
+  [449:553]object Case6 extends [462:553][462]scala.AnyRef {
+    [462]def <init>(): [462]Case6.type = [462]{
+      [462][462][462]Case6.super.<init>();
       [462]()
     };
     [466:509]def unapply([478:484]z: [481:484]<type: [481:484]scala.Int>): [470]Option[Int] = [501:509][501:505][501:505]new [501:505]Some[Int]([506:508]-1);

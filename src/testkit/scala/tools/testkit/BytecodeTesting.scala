@@ -32,7 +32,7 @@ import scala.tools.testkit.ASMConverters._
 
 trait BytecodeTesting extends ClearAfterClass {
   /**
-   * Overwrite to set additional compiler flags
+   * Override to set additional compiler flags.
    */
   def compilerArgs = ""
 
