@@ -56,9 +56,9 @@ object BigInt {
    *  @return  the constructed `BigInt`
    */
   def apply(l: Long): BigInt =
-    if (minCached <= l && l <= maxCached) getCached(l.toInt) else {
-      if (l == Long.MinValue) longMinValue else new BigInt(null, l)
-  }
+    if (minCached <= l && l <= maxCached) getCached(l.toInt)
+    else if (l == Long.MinValue) longMinValue
+    else new BigInt(null, l)
 
   /** Translates a byte array containing the two's-complement binary
    *  representation of a BigInt into a BigInt.
@@ -436,7 +436,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
    *  @param that A positive number
    */
   def mod(that: BigInt): BigInt =
-    if (this.longEncoding && that.longEncoding) {
+    if (this.longEncoding && that.longEncoding && that._long > 0) {
       val res = this._long % that._long
       if (res >= 0) BigInt(res) else BigInt(res + that._long)
     } else BigInt(this.bigInteger.mod(that.bigInteger))
@@ -495,7 +495,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
   /** Returns true if and only if the designated bit is set.
    */
   def testBit(n: Int): Boolean =
-    if (longEncoding) {
+    if (longEncoding && n >= 0) {
       if (n <= 63)
         (_long & (1L << n)) != 0
       else
@@ -505,17 +505,17 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit set.
    */
   def setBit(n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
-    if (longEncoding && n <= 62) BigInt(_long | (1L << n)) else BigInt(this.bigInteger.setBit(n))
+    if (longEncoding && n <= 62 && n >= 0) BigInt(_long | (1L << n)) else BigInt(this.bigInteger.setBit(n))
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit cleared.
    */
   def clearBit(n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
-    if (longEncoding && n <= 62) BigInt(_long & ~(1L << n)) else BigInt(this.bigInteger.clearBit(n))
+    if (longEncoding && n <= 62 && n >= 0) BigInt(_long & ~(1L << n)) else BigInt(this.bigInteger.clearBit(n))
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit flipped.
    */
   def flipBit(n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
-    if (longEncoding && n <= 62) BigInt(_long ^ (1L << n)) else BigInt(this.bigInteger.flipBit(n))
+    if (longEncoding && n <= 62 && n >= 0) BigInt(_long ^ (1L << n)) else BigInt(this.bigInteger.flipBit(n))
 
   /** Returns the index of the rightmost (lowest-order) one bit in this BigInt
    * (the number of zero bits to the right of the rightmost one bit).
