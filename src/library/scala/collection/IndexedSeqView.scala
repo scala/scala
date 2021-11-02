@@ -96,16 +96,18 @@ object IndexedSeqView {
         r
       } else Iterator.empty.next()
 
+    // from < 0 means don't move pos, until < 0 means don't limit remainder
+    //
     override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
       if (_hasNext) {
-        if (remainder <= from) remainder = 0
-        else if (from <= 0) {
-          if (until >= 0 && until < remainder) remainder = until
+        if (remainder <= from) remainder = 0                              // exhausted by big skip
+        else if (from <= 0) {                                             // no skip, pos is same
+          if (until >= 0 && until < remainder) remainder = until          // ...limited by until
         }
         else {
-          pos = pos - from
-          if (until >= 0 && until < remainder) remainder = until - from
-          else remainder -= from
+          pos -= from                                                     // skip ahead
+          if (until >= 0 && until < remainder) remainder = until - from   // ...limited by until, less the skip
+          else remainder -= from                                          // ...otherwise just less the skip
         }
       }
       this
