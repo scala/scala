@@ -106,7 +106,10 @@ object IndexedSeqView {
         }
         else {
           pos -= from                                                     // skip ahead
-          if (until >= 0 && until < remainder) remainder = until - from   // ...limited by until, less the skip
+          if (until >= 0 && until < remainder) {                          // ...limited by until
+            if (until <= from) remainder = 0                              // ...exhausted if limit is smaller than skip
+            else remainder = until - from                                 // ...limited by until, less the skip
+          }
           else remainder -= from                                          // ...otherwise just less the skip
         }
       }
