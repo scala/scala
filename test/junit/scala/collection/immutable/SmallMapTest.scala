@@ -6,14 +6,14 @@ import org.junit._
 import scala.tools.testkit.AllocationTest
 
 class SmallMapTest extends AllocationTest {
-  def iterator(m:Map[_,_]) = m.iterator
-  def keysIterator(m:Map[_,_]) = m.keysIterator
-  def valuesIterator(m:Map[_,_]) = m.valuesIterator
+  def iterator(m: Map[_,_])       = m.iterator
+  def keysIterator(m: Map[_,_])   = m.keysIterator
+  def valuesIterator(m: Map[_,_]) = m.valuesIterator
 
-  //we use this side effect to avoid the git optimising away the tuples
-  //but without affecting the allocations
+  // we use this side effect to avoid the jit optimising away the tuples
+  // but without affecting the allocations
   val nonAllocationResult = new Array[Any](5)
-  def consume(it:Iterator[_]): Int = {
+  def consume(it: Iterator[_]): Int = {
     var size = 0
     nonAllocationResult(0) = it
     while (it.hasNext) {
@@ -22,7 +22,7 @@ class SmallMapTest extends AllocationTest {
     }
     size
   }
-  def consume1(it:Iterator[_]): Int = {
+  def consume1(it: Iterator[_]): Int = {
     nonAllocationResult(0) = it
     nonAllocationResult(1) = it.next()
     1

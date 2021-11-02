@@ -84,8 +84,8 @@ object IndexedSeqView {
   }
   @SerialVersionUID(3L)
   private[collection] class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
-    private[this] var pos = self.length - 1
     private[this] var remainder = self.length
+    private[this] var pos = remainder - 1
     @inline private[this] def _hasNext: Boolean = remainder > 0
     def hasNext: Boolean = _hasNext
     def next(): A =
@@ -96,22 +96,17 @@ object IndexedSeqView {
         r
       } else Iterator.empty.next()
 
-    override def drop(n: Int): Iterator[A] = {
-      if (n > 0) {
-        pos -= n
-        remainder = Math.max(0, remainder - n)
-      }
-      this
-    }
-
-    override def sliceIterator(from: Int, until: Int): Iterator[A] = {
+    override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
       if (_hasNext) {
-        val startCutoff = pos
-        val untilCutoff = startCutoff - remainder + 1
-        val nextStartCutoff = if (from < 0) startCutoff else if (startCutoff - from < 0) 0 else startCutoff - from
-        val nextUntilCutoff = if (until < 0) startCutoff else if (startCutoff - until < untilCutoff) untilCutoff else startCutoff - until + 1
-        remainder = Math.max(0, nextStartCutoff - nextUntilCutoff + 1)
-        pos = nextStartCutoff
+        if (remainder <= from) remainder = 0
+        else if (from <= 0) {
+          if (until >= 0 && until < remainder) remainder = until
+        }
+        else {
+          pos = pos - from
+          if (until >= 0 && until < remainder) remainder = until - from
+          else remainder -= from
+        }
       }
       this
     }
