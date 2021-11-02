@@ -105,12 +105,14 @@ object IndexedSeqView {
     }
 
     override def sliceIterator(from: Int, until: Int): Iterator[A] = {
-      val startCutoff = pos
-      val untilCutoff = startCutoff - remainder + 1
-      val nextStartCutoff = if (from < 0) startCutoff else if (startCutoff - from < 0) 0 else startCutoff - from
-      val nextUntilCutoff = if (until < 0) startCutoff else if (startCutoff - until < untilCutoff) untilCutoff else startCutoff - until + 1
-      remainder = Math.max(0, nextStartCutoff - nextUntilCutoff + 1)
-      pos = nextStartCutoff
+      if (_hasNext) {
+        val startCutoff = pos
+        val untilCutoff = startCutoff - remainder + 1
+        val nextStartCutoff = if (from < 0) startCutoff else if (startCutoff - from < 0) 0 else startCutoff - from
+        val nextUntilCutoff = if (until < 0) startCutoff else if (startCutoff - until < untilCutoff) untilCutoff else startCutoff - until + 1
+        remainder = Math.max(0, nextStartCutoff - nextUntilCutoff + 1)
+        pos = nextStartCutoff
+      }
       this
     }
   }
