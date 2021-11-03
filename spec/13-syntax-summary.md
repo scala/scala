@@ -33,6 +33,7 @@ hexDigit         ::=  ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a�
 charEscapeSeq    ::=  ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
 escapeSeq        ::=  UnicodeEscape | charEscapeSeq
 op               ::=  opchar {opchar}
+                      note that ‘#’, ‘:’, ‘-’ and ‘@’ can't be used as one-symbol operators, they have a reserved semantics in the grammar
 varid            ::=  lower idrest
 boundvarid       ::=  varid
                    |  ‘`’ varid ‘`’
