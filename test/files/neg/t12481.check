@@ -1,0 +1,4 @@
+t12481.scala:19: error: type arguments [_$1] do not conform to trait Universe's type parameter bounds [T <: Txn[T]]
+  def nope: Ref[V[Universe[_]]]     = Ref(V.empty)   // here
+                                         ^
+1 error
