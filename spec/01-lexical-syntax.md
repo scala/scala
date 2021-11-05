@@ -506,7 +506,7 @@ interpolatedString     ::= alphaid ‘"’ {[‘\’] interpolatedStringPart | �
 interpolatedStringPart ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
 escape                 ::= ‘$$’
                          | ‘$"’
-                         | ‘$’ id
+                         | ‘$’ alphaid
                          | ‘$’ BlockExpr
 alphaid                ::= upper idrest
                          |  varid
@@ -533,9 +533,9 @@ in an interpolated string. A single ‘$’-sign can still be obtained by doubli
 character: ‘$$’. A single ‘"’-sign can be obtained by the sequence ‘\$"’.
 
 The simpler form consists of a ‘$’-sign followed by an identifier starting with 
-a letter and followed only by letters, digits, and underscore characters, 
-e.g `$id`. The simpler form is expanded by putting braces around the identifier, 
-e.g `$id` is equivalent to `${id}`. In the following, unless we explicitly state otherwise, 
+a letter and followed only by letters, digits, and underscore characters, e.g., `$id`.
+The simpler form is expanded by putting braces around the identifier,
+e.g., `$id` is equivalent to `${id}`. In the following, unless we explicitly state otherwise,
 we assume that this expansion has already been performed.
 
 The expanded expression is type checked normally. Usually, `StringContext` will resolve to 
