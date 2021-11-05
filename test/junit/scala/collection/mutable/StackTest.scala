@@ -24,4 +24,11 @@ class StackTest {
 
   @Test
   def sliding(): Unit = ArrayDequeTest.genericSlidingTest(Stack, "Stack")
+
+  @Test def `popAll preserves iteration order`: Unit = {
+    val stack = Stack.from(1 to 10)
+    val list  = stack.toList
+    assertEquals(list, stack.popAll())
+    assertTrue(stack.isEmpty)
+  }
 }

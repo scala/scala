@@ -91,7 +91,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *
     * @return The removed elements
     */
-  def popAll(): scala.collection.Seq[A] = removeAllReverse()
+  def popAll(): scala.collection.Seq[A] = removeAll()
 
   /**
     * Returns and removes all elements from the top of this stack which satisfy the given predicate
