@@ -31,4 +31,11 @@ class StackTest {
     assertEquals(list, stack.popAll())
     assertTrue(stack.isEmpty)
   }
+
+  @Test def `popWhile preserves iteration order`: Unit = {
+    val stack = Stack.tabulate(10)(_ * 10)
+    val list  = stack.toList.take(5)
+    assertEquals(list, stack.popWhile(_ < 50))
+    assertEquals(5, stack.size)
+  }
 }
