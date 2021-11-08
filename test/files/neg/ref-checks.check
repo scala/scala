@@ -1,0 +1,7 @@
+ref-checks.scala:8: error: type arguments [Int] do not conform to trait Chars's type parameter bounds [A <: CharSequence]
+  @ann[Chars[Int]] val x = 42
+                       ^
+ref-checks.scala:9: error: type arguments [Double] do not conform to trait Chars's type parameter bounds [A <: CharSequence]
+  val y: Two[Chars[Long] @uncheckedBounds, Chars[Double]] = null
+         ^
+two errors found

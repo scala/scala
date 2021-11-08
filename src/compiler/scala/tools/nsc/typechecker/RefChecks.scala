@@ -1411,40 +1411,60 @@ abstract class RefChecks extends Transform {
         false
     }
 
-    private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
-      case TypeRef(pre, sym, args) =>
-        tree match {
-          case tt: TypeTree if tt.original == null => // scala/bug#7783 don't warn about inferred types
-                                                      // FIXME: reconcile this check with one in resetAttrs
-          case _ => checkUndesiredProperties(sym, tree.pos)
-        }
-        if(sym.isJavaDefined)
-          sym.typeParams foreach (_.cookJavaRawInfo())
-        if (!tp.isHigherKinded && !skipBounds)
-          checkBounds(tree, pre, sym.owner, sym.typeParams, args)
-      case _ =>
-    }
+    private object RefCheckTypeMap extends TypeMap {
+      object ExistentialToWildcard extends TypeMap {
+        override def apply(tpe: Type): Type =
+          if (tpe.typeSymbol.isExistential) WildcardType else mapOver(tpe)
+      }
 
-    private def checkTypeRefBounds(tp: Type, tree: Tree) = {
-      var skipBounds = false
-      tp match {
-        case AnnotatedType(ann :: Nil, underlying) if ann.symbol == UncheckedBoundsClass =>
+      private[this] var skipBounds = false
+      private[this] var tree: Tree = EmptyTree
+
+      def check(tpe: Type, tree: Tree): Type = {
+        this.tree = tree
+        try apply(tpe) finally {
+          skipBounds = false
+          this.tree = EmptyTree
+        }
+      }
+
+      // check all bounds, except those that are existential type parameters
+      // or those within typed annotated with @uncheckedBounds
+      override def apply(tpe: Type): Type = tpe match {
+        case tpe: AnnotatedType if tpe.hasAnnotation(UncheckedBoundsClass) =>
+          // scala/bug#7694 Allow code synthesizers to disable checking of bounds for TypeTrees based on inferred LUBs
+          // which might not conform to the constraints.
+          val savedSkipBounds = skipBounds
           skipBounds = true
-          underlying
+          try mapOver(tpe).filterAnnotations(_.symbol != UncheckedBoundsClass)
+          finally skipBounds = savedSkipBounds
+        case tpe: TypeRef =>
+          checkTypeRef(ExistentialToWildcard(tpe))
+          mapOver(tpe)
+        case tpe =>
+          mapOver(tpe)
+      }
+
+      private def checkTypeRef(tpe: Type): Unit = tpe match {
         case TypeRef(pre, sym, args) =>
-          if (!tp.isHigherKinded && !skipBounds)
+          tree match {
+            // scala/bug#7783 don't warn about inferred types
+            // FIXME: reconcile this check with one in resetAttrs
+            case tree: TypeTree if tree.original == null =>
+            case tree => checkUndesiredProperties(sym, tree.pos)
+          }
+          if (sym.isJavaDefined)
+            sym.typeParams.foreach(_.cookJavaRawInfo())
+          if (!tpe.isHigherKinded && !skipBounds)
             checkBounds(tree, pre, sym.owner, sym.typeParams, args)
-          tp
         case _ =>
-          tp
       }
     }
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = if (annots.isEmpty) Nil else {
         annots.foreach { ann =>
-          checkTypeRef(ann.tpe, tree, skipBounds = false)
-          checkTypeRefBounds(ann.tpe, tree)
+          RefCheckTypeMap.check(ann.tpe, tree)
         }
 
         val annotsBySymbol = new mutable.LinkedHashMap[Symbol, ListBuffer[AnnotationInfo]]()
@@ -1800,29 +1820,8 @@ abstract class RefChecks extends Transform {
               }
             }
 
-            val existentialParams = new ListBuffer[Symbol]
-            var skipBounds = false
-            // check all bounds, except those that are existential type parameters
-            // or those within typed annotated with @uncheckedBounds
-            if (!inPattern) tree.tpe foreach {
-              case tp @ ExistentialType(tparams, tpe) =>
-                existentialParams ++= tparams
-              case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
-                // scala/bug#7694 Allow code synthesizers to disable checking of bounds for TypeTrees based on inferred LUBs
-                // which might not conform to the constraints.
-                skipBounds = true
-              case tp: TypeRef =>
-                val tpWithWildcards = deriveTypeWithWildcards(existentialParams.toList)(tp)
-                checkTypeRef(tpWithWildcards, tree, skipBounds)
-              case _ =>
-            }
-            if (skipBounds) {
-              tree.setType(tree.tpe.map {
-                _.filterAnnotations(_.symbol != UncheckedBoundsClass)
-              })
-            }
-
-            tree
+            if (inPattern) tree
+            else tree.setType(RefCheckTypeMap.check(tree.tpe, tree))
 
           case TypeApply(fn, args) =>
             checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
@@ -1857,8 +1856,8 @@ abstract class RefChecks extends Transform {
           case x @ Select(_, _) =>
             transformSelect(x)
 
-          case Literal(Constant(tp: Type)) =>
-            checkTypeRef(tp, tree, skipBounds = false)
+          case Literal(Constant(tpe: Type)) =>
+            RefCheckTypeMap.check(tpe, tree)
             tree
 
           case UnApply(fun, args) =>
