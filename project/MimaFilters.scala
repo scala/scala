@@ -30,6 +30,11 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#SeqCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
+
+    // KEEP: when the `scala.Stream` val became package-private this static forward was no longer
+    // emitted. only Java clients could possibly be affected; it seems extremely unlikely they'd
+    // be accessing `Stream` via this route
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.package.Stream"),
   )
 
   override val buildSettings = Seq(

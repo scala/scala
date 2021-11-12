@@ -22,6 +22,7 @@ import Uncloseable.protect
 import java.io.{FileInputStream, FileOutputStream}
 import java.util.concurrent.LinkedBlockingQueue
 
+import scala.collection.immutable.Stream  // used in deprecated APIs
 import scala.util.control.NonFatal
 
 private[process] trait ProcessBuilderImpl {

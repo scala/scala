@@ -16,6 +16,7 @@ package process
 
 import processInternal._
 import ProcessBuilder.{Sink, Source}
+import scala.collection.immutable.Stream  // used in deprecated APIs
 
 /** Represents a sequence of one or more external processes that can be
   * executed. A `ProcessBuilder` can be a single external process, or a

@@ -1,4 +1,4 @@
-
+import scala.collection.immutable.Stream
 
 object Test {
   def ser[T](s: Seq[T]): Unit = {

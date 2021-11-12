@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 trait Zero
 trait Succ[N]
 

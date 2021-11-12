@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 object Test {
 
   def sum(stream: Stream[Int]): Int =

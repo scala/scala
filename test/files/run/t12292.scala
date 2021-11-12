@@ -5,6 +5,7 @@ object Test extends ReplTest {
 
   def code = """
 import scala.annotation.nowarn
+import scala.collection.immutable.Stream
 scala.#::.unapply(Stream(1))
 scala.#::.unapply(Stream(1)): @nowarn
 (scala.#::.unapply(Stream(1)): @nowarn)

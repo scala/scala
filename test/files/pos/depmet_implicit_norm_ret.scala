@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 object Test{
   def ?[S <: AnyRef](implicit w : S) : w.type = w
 

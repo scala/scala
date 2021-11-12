@@ -1,4 +1,4 @@
-import scala.Stream._
+import scala.collection.immutable.Stream
 
 object consistencyError {
   /* this gives an error:

@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 // covariant linked list
 abstract class M {
   self =>

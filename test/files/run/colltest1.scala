@@ -206,7 +206,7 @@ object Test extends App {
 
   sequenceTest(Nil)
   sequenceTest(List())
-  sequenceTest(Stream.empty)
+  sequenceTest(immutable.Stream.empty)
   sequenceTest(Array[Int]())
   sequenceTest(mutable.ArrayBuffer())
   sequenceTest(mutable.ListBuffer())

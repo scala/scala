@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 object Test {
   for {
     x1 <- List(1, 2)

@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 case class Zero()
 case class Succ[N](x: N)
 import Stream.{cons, continually}

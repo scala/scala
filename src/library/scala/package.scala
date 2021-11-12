@@ -80,10 +80,12 @@ package object scala {
   val +: = scala.collection.+:
   val :+ = scala.collection.:+
 
+  // we cannot remove these entirely from Scala 2 because bincompat, but
+  // we can make them package-private to prevent usage
   @deprecated("Use LazyList instead of Stream", "2.13.0")
-  type Stream[+A] = scala.collection.immutable.Stream[A]
+  private[scala] type Stream[+A] = scala.collection.immutable.Stream[A]
   @deprecated("Use LazyList instead of Stream", "2.13.0")
-  val Stream = scala.collection.immutable.Stream
+  private[scala] val Stream = scala.collection.immutable.Stream
 
   type LazyList[+A] = scala.collection.immutable.LazyList[A]
   val LazyList = scala.collection.immutable.LazyList
@@ -93,7 +95,7 @@ package object scala {
     def unapply[A](s: LazyList[A]): Option[(A, LazyList[A])] =
       if (s.nonEmpty) Some((s.head, s.tail)) else None
     @deprecated("Prefer LazyList instead", since = "2.13.0")
-    def unapply[A](s: Stream[A]): Option[(A, Stream[A])] =
+    def unapply[A](s: scala.collection.immutable.Stream[A]): Option[(A, scala.collection.immutable.Stream[A])] =
       if (s.nonEmpty) Some((s.head, s.tail)) else None
   }
 

@@ -62,11 +62,12 @@ object BasicIO {
   private[process] final class Streamed[T](
     val process:   T => Unit,
     val    done: Int => Unit,
-    val  stream:  () => Stream[T]
+    val  stream:  () => scala.collection.immutable.Stream[T]
   )
 
   @deprecated("internal", since = "2.13.4")
   private[process] object Streamed {
+    import scala.collection.immutable.Stream
     def apply[T](nonzeroException: Boolean, capacity: Integer): Streamed[T] = {
       val q = new LinkedBlockingQueue[Either[Int, T]](capacity)
       def next(): Stream[T] = q.take() match {

@@ -1,3 +1,5 @@
+import scala.collection.immutable.Stream
+
 object Test{
   trait ZW[S]{type T}
   def ZipWith[S, M <: ZW[S]]: M#T = sys.error("ZW")
