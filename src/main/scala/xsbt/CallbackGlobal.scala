@@ -83,7 +83,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     }
 
     override def progress(current: Int, total: Int): Unit = {
-      if (!compileProgress.advance(current, total, phase.name, phase.next.name)) cancel
+      if (!compileProgress.advance(current, total, phase.name, phase.next.name)) cancel()
       else ()
     }
   }
