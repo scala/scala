@@ -2607,7 +2607,6 @@ self =>
         }
         param
       }
-      newLineOptWhenFollowedBy(LBRACKET)
       if (in.token == LBRACKET) inBrackets(commaSeparated(typeParam(NoMods withAnnotations annotations(skipNewLines = true))))
       else Nil
     }
