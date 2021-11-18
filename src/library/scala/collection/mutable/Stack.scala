@@ -17,17 +17,21 @@ import scala.collection.generic.DefaultSerializable
 import scala.collection.{IterableFactoryDefaults, IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps}
 
 /** A stack implements a data structure which allows to store and retrieve
-  *  objects in a last-in-first-out (LIFO) fashion.
-  *
-  *  @tparam A    type of the elements contained in this stack.
-  *
-  *  @define Coll `Stack`
-  *  @define coll stack
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  */
+ *  objects in a last-in-first-out (LIFO) fashion.
+ *
+ *  Note that operations which consume and produce iterables preserve order,
+ *  rather than reversing it (as would be expected from building a new stack
+ *  by pushing an element at a time).
+ *
+ *  @tparam A    type of the elements contained in this stack.
+ *
+ *  @define Coll `Stack`
+ *  @define coll stack
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 @migration("Stack is now based on an ArrayDeque instead of a linked list", "2.13.0")
 class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
@@ -91,7 +95,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *
     * @return The removed elements
     */
-  def popAll(): scala.collection.Seq[A] = removeAllReverse()
+  def popAll(): scala.collection.Seq[A] = removeAll()
 
   /**
     * Returns and removes all elements from the top of this stack which satisfy the given predicate
