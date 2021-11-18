@@ -18,4 +18,9 @@ class IndexedSeqViewTest {
     assertEquals(2, IndexedSeq(1, 2, 3, 4, 5).view.iterator.take(2).knownSize)
     assertEquals(2, IndexedSeq(1, 2, 3, 4, 5).view.iterator.slice(2, 4).knownSize)
   }
+
+  @Test
+  def reverseEmptyIterator(): Unit = {
+    assertEquals(0, Vector.empty[Int].reverseIterator.take(1).toList.size)
+  }
 }
