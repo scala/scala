@@ -10,6 +10,6 @@ Missing implementations for 6 members. Stub implementations follow:
   protected def newSpecificBuilder: scala.collection.mutable.Builder[String,List[String]] = ???
   def toIterable: Iterable[String] = ???
 
-class Unimplemented extends scala.collection.IterableOps[String, List, List[String]] { }
+class Unimplemented extends scala.collection.IterableOps[String, List, List[String]]
       ^
 1 error

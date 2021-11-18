@@ -534,21 +534,21 @@ abstract class RefChecks extends Transform {
 
       // Verifying a concrete class has nothing unimplemented.
       if (clazz.isConcreteClass && !typesOnly) {
-        val abstractErrors = new ListBuffer[String]
-        def abstractErrorMessage =
-          // a little formatting polish
-          if (abstractErrors.size <= 2) abstractErrors mkString " "
-          else abstractErrors.tail.mkString(abstractErrors.head + "\n", "\n", "")
+        val abstractErrors = ListBuffer.empty[String]
+        def abstractErrorMessage = abstractErrors.mkString(if (abstractErrors.size <= 2) " " else "\n")
 
-        def abstractClassError(mustBeMixin: Boolean, msg: String): Unit = {
-          def prelude = (
+        def mustBeMixin(msg: String): Unit = addError(mustBeMixin = true, msg, supplement = "")
+        def abstractClassError(msg: String): Unit = addError(mustBeMixin = false, msg, supplement = "")
+        def abstractClassErrorStubs(msg: String, stubs: String): Unit = addError(mustBeMixin = false, msg, supplement = stubs)
+        def addError(mustBeMixin: Boolean, msg: String, supplement: String): Unit = {
+          def prelude =
             if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible."
             else if (mustBeMixin) s"$clazz needs to be a mixin."
             else s"$clazz needs to be abstract."
-          )
 
-          if (abstractErrors.isEmpty) abstractErrors ++= List(prelude, msg)
-          else abstractErrors += msg
+          if (abstractErrors.isEmpty) abstractErrors += prelude
+          abstractErrors += msg
+          if (!supplement.isEmpty) abstractErrors += supplement
         }
 
         def javaErasedOverridingSym(sym: Symbol): Symbol =
@@ -563,43 +563,34 @@ abstract class RefChecks extends Transform {
               exitingErasure(tp1 matches tp2)
             })
 
-        def ignoreDeferred(member: Symbol) = (
+        def ignoreDeferred(member: Symbol) =
           (member.isAbstractType && !member.isFBounded) || (
             // the test requires exitingErasure so shouldn't be
             // done if the compiler has no erasure phase available
                member.isJavaDefined
             && (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
           )
-        )
 
         // 2. Check that only abstract classes have deferred members
         def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
-          def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-          var missing: List[Symbol] = Nil
-          var rest: List[Symbol] = Nil
-          memberList.reverseIterator.foreach {
-            case m if m.isDeferred && !ignoreDeferred(m) =>
-              missing ::= m
-            case m if m.isAbstractOverride && m.isIncompleteIn(clazz) =>
-              rest ::= m
-            case _ => // No more
+          val (missing, rest): (List[Symbol], Iterator[Symbol]) = {
+            val memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
+            val (missing0, rest0) = memberList.iterator.partition(m => m.isDeferred & !ignoreDeferred(m))
+            (missing0.toList, rest0)
           }
-          // Group missing members by the name of the underlying symbol,
-          // to consolidate getters and setters.
-          val grouped = missing groupBy (_.name.getterName)
-          val missingMethods = grouped.toList flatMap {
-            case (name, syms) =>
-              if (syms exists (_.isSetter)) syms filterNot (_.isGetter)
-              else syms
+          // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
+          val grouped = missing.groupBy(_.name.getterName)
+          val missingMethods = grouped.toList.flatMap {
+            case (_, syms) if syms.exists(_.isSetter) => syms.filterNot(_.isGetter)
+            case (_, syms)                            => syms
           }
-
           def stubImplementations: List[String] = {
             // Grouping missing methods by the declaring class
             val regrouped = missingMethods.groupBy(_.owner).toList
             def membersStrings(members: List[Symbol]) = {
-              members foreach fullyInitializeSymbol
-              members.sortBy(_.name) map (m => m.defStringSeenAs(clazz.tpe_* memberType m) + " = ???")
+              members.foreach(fullyInitializeSymbol)
+              members.sortBy(_.name).map(m => s"${m.defStringSeenAs(clazz.tpe_* memberType m)} = ???")
             }
 
             if (regrouped.tail.isEmpty)
@@ -609,15 +600,6 @@ abstract class RefChecks extends Transform {
                 ("// Members declared in " + owner.fullName) +: membersStrings(members) :+ ""
             }).init
           }
-
-          // If there are numerous missing methods, we presume they are aware of it and
-          // give them a nicely formatted set of method signatures for implementing.
-          if (missingMethods.size > 1) {
-            abstractClassError(false, s"Missing implementations for ${missingMethods.size} members. Stub implementations follow:")
-            abstractErrors += stubImplementations.map("  " + _ + "\n").mkString("", "", "")
-            return
-          }
-
           def diagnose(member: Symbol): String = {
             val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
@@ -629,12 +611,11 @@ abstract class RefChecks extends Transform {
             if (groupedAccessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
               // If both getter and setter are missing, squelch the setter error.
               if (member.isSetter && isMultiple) null
-              else {
-                if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
-                else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
-                else "\n(Note that variables need to be initialized to be defined)"
-              }
-            } else if (underlying.isMethod) {
+              else if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
+              else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
+              else "\n(Note that variables need to be initialized to be defined)"
+            }
+            else if (underlying.isMethod) {
               // Highlight any member that nearly matches: same name and arity,
               // but differs in one param or param list.
               val abstractParamLists = underlying.paramLists
@@ -646,15 +627,17 @@ abstract class RefChecks extends Transform {
                 sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
                 sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
               }
-
               matchingArity match {
                 // So far so good: only one candidate method
                 case Scope(concrete) =>
-                  val aplIter = abstractParamLists .iterator.flatten
-                  val cplIter = concrete.paramLists.iterator.flatten
+                  val concreteParamLists = concrete.paramLists
+                  val aplIter = abstractParamLists.iterator.flatten
+                  val cplIter = concreteParamLists.iterator.flatten
                   def mismatch(apl: Symbol, cpl: Symbol): Option[(Type, Type)] =
                     if (apl.tpe.asSeenFrom(clazz.tpe, underlying.owner) =:= cpl.tpe) None else Some(apl.tpe -> cpl.tpe)
-
+                  def missingImplicit = abstractParamLists.zip(concreteParamLists).exists {
+                    case (abss, konkrete) => abss.headOption.exists(_.isImplicit) && !konkrete.headOption.exists(_.isImplicit)
+                  }
                   val mismatches = mapFilter2(aplIter, cplIter)(mismatch).take(2).toList
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
@@ -666,8 +649,7 @@ abstract class RefChecks extends Transform {
                       val addendum = (
                         if (abstractSym == concreteSym) {
                           // TODO: what is the optimal way to test for a raw type at this point?
-                          // Compilation has already failed so we shouldn't have to worry overmuch
-                          // about forcing types.
+                          // Compilation has already failed so we shouldn't have to worry overmuch about forcing types.
                           if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             s". To implement this raw type, use ${rawToExistential(pa)}"
                           else if (pa.prefix =:= pc.prefix)
@@ -675,19 +657,12 @@ abstract class RefChecks extends Transform {
                           else
                             ": their prefixes (i.e., enclosing instances) differ"
                         }
-                        else if (abstractSym isSubClass concreteSym)
-                          subclassMsg(abstractSym, concreteSym)
-                        else if (concreteSym isSubClass abstractSym)
-                          subclassMsg(concreteSym, abstractSym)
+                        else if (abstractSym.isSubClass(concreteSym)) subclassMsg(abstractSym, concreteSym)
+                        else if (concreteSym.isSubClass(abstractSym)) subclassMsg(concreteSym, abstractSym)
                         else ""
                       )
                       s"\n(Note that $pa does not match $pc$addendum)"
-                    case Nil => // other overriding gotchas
-                      val missingImplicit = abstractParamLists.zip(concrete.paramLists).exists {
-                        case (abss, konkrete) => abss.headOption.exists(_.isImplicit) && !konkrete.headOption.exists(_.isImplicit)
-                      }
-                      val msg = if (missingImplicit) "\n(overriding member must declare implicit parameter list)" else ""
-                      msg
+                    case Nil if missingImplicit => "\n(overriding member must declare implicit parameter list)" // other overriding gotchas
                     case _ => ""
                   }
                 case _ => ""
@@ -695,22 +670,30 @@ abstract class RefChecks extends Transform {
             }
             else ""
           }
-          for (member <- missing ; msg = diagnose(member) ; if msg != null) {
-            val addendum = if (msg.isEmpty) msg else " " + msg
-            val from = if (member.owner != clazz) s" // inherited from ${member.owner}" else ""
-            abstractClassError(false, s"Missing implementation for:\n  ${infoString0(member, false)}$from$addendum")
+          // The outcomes are
+          // - 1 method in current class
+          // If there are numerous missing methods, we presume they are aware of it and
+          // give them a nicely formatted set of method signatures for implementing.
+          if (missingMethods.size > 1) {
+            val stubs = stubImplementations.map("  " + _ + "\n").mkString("", "", "")
+            abstractClassErrorStubs(s"Missing implementations for ${missingMethods.size} members. Stub implementations follow:", stubs)
           }
-
-          // Check the remainder for invalid absoverride.
-          rest.foreach { member =>
-            val other = member.superSymbolIn(clazz)
-            val explanation =
-              if (other != NoSymbol) " and overrides incomplete superclass member\n" + infoString(other)
-              else ", but no concrete implementation could be found in a base class"
-
-            abstractClassError(true, s"${infoString(member)} is marked `abstract` and `override`$explanation")
+          else {
+            for (member <- missing ; msg = diagnose(member) if msg != null) {
+              val addendum = if (msg.isEmpty) msg else " " + msg
+              val from = if (member.owner != clazz) s" // inherited from ${member.owner}" else ""
+              abstractClassError(s"Missing implementation for:\n  ${infoString0(member, false)}$from$addendum")
+            }
+            // Check the remainder for invalid absoverride.
+            for (member <- rest if member.isAbstractOverride && member.isIncompleteIn(clazz)) {
+              val explanation = member.superSymbolIn(clazz) match {
+                case NoSymbol => ", but no concrete implementation could be found in a base class"
+                case other    => " and overrides incomplete superclass member\n" + infoString(other)
+              }
+              mustBeMixin(s"${infoString(member)} is marked `abstract` and `override`$explanation")
+            }
           }
-        }
+        } // end checkNoAbstractMembers
 
         // 3. Check that concrete classes do not have deferred definitions
         // that are not implemented in a subclass.
@@ -724,10 +707,9 @@ abstract class RefChecks extends Transform {
           for (decl <- bc.info.decls) {
             if (decl.isDeferred && !ignoreDeferred(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
-              if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
-                abstractClassError(false, s"No implementation found in a subclass for deferred declaration\n" +
+              if (impl == NoSymbol || decl.owner.isSubClass(impl.owner))
+                abstractClassError(s"No implementation found in a subclass for deferred declaration\n" +
                                           s"${infoString(decl)}${analyzer.abstractVarMessage(decl)}")
-              }
             }
           }
           if (bc.superClass hasFlag ABSTRACT)
