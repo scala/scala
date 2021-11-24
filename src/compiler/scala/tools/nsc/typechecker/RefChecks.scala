@@ -354,19 +354,23 @@ abstract class RefChecks extends Transform {
             overrideErrorWithMemberInfo("`override` modifier required to override concrete member:")
         }
 
-        def overrideAccessError(): Unit = {
-          val otherAccess = accessFlagsToString(other)
-          overrideError("weaker access privileges in overriding\n"+
-                        overriddenWithAddendum(s"override should ${(if (otherAccess == "") "be public" else "at least be " + otherAccess)}"))
-        }
+        def weakerAccessError(advice: String): Unit =
+          overrideError(sm"""|weaker access privileges in overriding
+                             |${overriddenWithAddendum(advice)}""")
+        def overrideAccessError(): Unit =
+          weakerAccessError {
+            accessFlagsToString(other) match {
+              case ""          => "override should be public"
+              case otherAccess => s"override should at least be $otherAccess"
+            }
+          }
 
         //Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
         /* Is the intersection between given two lists of overridden symbols empty? */
-        def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
-          !(syms1 exists (syms2 contains _))
+        def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) = !syms1.exists(syms2.contains)
 
-        if (memberClass == ObjectClass && otherClass == AnyClass) {} // skip -- can we have a mode of symbolpairs where this pair doesn't even appear?
+        if (memberClass == ObjectClass && otherClass == AnyClass) () // skip -- can we have a mode of symbolpairs where this pair doesn't even appear?
         else if (typesOnly) checkOverrideTypes()
         else {
           // o: public | protected        | package-protected  (aka java's default access)
@@ -374,17 +378,23 @@ abstract class RefChecks extends Transform {
           // m: public | public/protected | public/protected/package-protected-in-same-package-as-o
 
           if (member.isPrivate) // (1.1)
-            overrideError("weaker access privileges in overriding\n"+
-                          overriddenWithAddendum(s"override should not be private"))
+            weakerAccessError("override should not be private")
 
           // todo: align accessibility implication checking with isAccessible in Contexts
-          val ob = other.accessBoundary(memberClass)
-          val mb = member.accessBoundary(memberClass)
-          def isOverrideAccessOK = member.isPublic || {      // member is public, definitely same or relaxed access
-            (!other.isProtected || member.isProtected) &&    // if o is protected, so is m
-            ((!isRootOrNone(ob) && ob.hasTransOwner(mb)) ||  // m relaxes o's access boundary
-             (other.isJavaDefined && other.isProtected))     // overriding a protected java member, see #3946 #12349
+          @inline def protectedOK = !other.isProtected || member.isProtected
+          @inline def accessBoundaryOK = {
+            val ob = other.accessBoundary(memberClass)
+            val mb = member.accessBoundary(memberClass)
+            @inline def companionBoundaryOK = ob.isClass && mb.isModuleClass && mb.module == ob.companionSymbol
+            !isRootOrNone(ob) && (ob.hasTransOwner(mb) || companionBoundaryOK)
           }
+          @inline def otherIsJavaProtected = other.isJavaDefined && other.isProtected
+          def isOverrideAccessOK =
+            member.isPublic ||     // member is public, definitely same or relaxed access
+            protectedOK &&         // if o is protected, so is m
+            (accessBoundaryOK ||   // m relaxes o's access boundary
+              otherIsJavaProtected // overriding a protected java member, see #3946 #12349
+            )
           if (!isOverrideAccessOK) {
             overrideAccessError()
           } else if (other.isClass) {
@@ -753,10 +763,8 @@ abstract class RefChecks extends Transform {
         lazy val varargsType = toJavaRepeatedParam(member.tpe)
 
         def isSignatureMatch(sym: Symbol) = !sym.isTerm || {
-          val symtpe            = clazz.thisType memberType sym
-          def matches(tp: Type) = tp matches symtpe
-
-          matches(member.tpe) || (isVarargs && matches(varargsType))
+          val symtpe = clazz.thisType.memberType(sym)
+          member.tpe.matches(symtpe) || (isVarargs && varargsType.matches(symtpe))
         }
         /* The rules for accessing members which have an access boundary are more
          * restrictive in java than scala.  Since java has no concept of package nesting,
@@ -781,15 +789,16 @@ abstract class RefChecks extends Transform {
           || sym.isProtected                                    // marked protected in java, thus accessible to subclasses
           || sym.privateWithin == member.enclosingPackageClass  // exact package match
         )
-        def classDecls   = inclazz.info.nonPrivateDecl(member.name)
-        def matchingSyms = classDecls filter (sym => isSignatureMatch(sym) && javaAccessCheck(sym))
+        def classDecl = inclazz.info.nonPrivateDecl(member.name)
+                        .orElse(inclazz.info.nonPrivateDecl(member.unexpandedName))
+        def matchingSyms = classDecl.filter(sym => isSignatureMatch(sym) && javaAccessCheck(sym))
 
         (inclazz != clazz) && (matchingSyms != NoSymbol)
       }
 
       // 4. Check that every defined member with an `override` modifier overrides some other member.
       for (member <- clazz.info.decls)
-        if (member.isAnyOverride && !(clazz.thisType.baseClasses exists (hasMatchingSym(_, member)))) {
+        if (member.isAnyOverride && !clazz.thisType.baseClasses.exists(hasMatchingSym(_, member))) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
 
           val nonMatching: List[Symbol] = clazz.info.member(member.name).alternatives.filterNot(_.owner == clazz).filterNot(_.isFinal)

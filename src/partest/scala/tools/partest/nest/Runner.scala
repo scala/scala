@@ -664,18 +664,13 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     runTestCommon(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }
 
-  private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
-    import scala.tools.scalap
-    import scalap.scalax.rules.scalasig.ByteCode
-
-    scalap.Main.decompileScala(ByteCode.forClass(clazz).bytes, isPackageObject)
-  }
-
   def runScalapTest(): TestState = runTestCommon {
-    val isPackageObject = testFile.getName startsWith "package"
+    import scala.tools.scalap, scalap.scalax.rules.scalasig.ByteCode, scalap.Main.decompileScala
+    val isPackageObject = testFile.getName.startsWith("package")
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")
     val loader          = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), this.getClass.getClassLoader)
-    logFile writeAll decompileClass(loader loadClass className, isPackageObject)
+    def decompileClass(clazz: Class[_]): String = decompileScala(ByteCode.forClass(clazz).bytes, isPackageObject)
+    logFile.writeAll(decompileClass(loader.loadClass(className)))
     diffIsOk
   }
 
