@@ -1408,18 +1408,33 @@ abstract class RefChecks extends Transform {
     }
 
     private object RefCheckTypeMap extends TypeMap {
-      object ExistentialToWildcard extends TypeMap {
-        override def apply(tpe: Type): Type =
-          if (tpe.typeSymbol.isExistential) WildcardType else tpe.mapOver(this)
+      object UnboundExistential extends TypeMap {
+        private[this] val bound = mutable.Set.empty[Symbol]
+
+        def toWildcardIn(tpe: Type): Type =
+          try apply(tpe) finally bound.clear()
+
+        override def apply(tpe: Type): Type = tpe match {
+          case ExistentialType(quantified, _) =>
+            bound ++= quantified
+            tpe.mapOver(this)
+          case tpe =>
+            val sym = tpe.typeSymbol
+            if (sym.isExistential && !bound(sym)) WildcardType
+            else tpe.mapOver(this)
+        }
       }
 
+      private[this] var inPattern = false
       private[this] var skipBounds = false
       private[this] var tree: Tree = EmptyTree
 
-      def check(tpe: Type, tree: Tree): Type = {
+      def check(tpe: Type, tree: Tree, inPattern: Boolean = false): Type = {
+        this.inPattern = inPattern
         this.tree = tree
         try apply(tpe) finally {
-          skipBounds = false
+          this.inPattern = false
+          this.skipBounds = false
           this.tree = EmptyTree
         }
       }
@@ -1435,7 +1450,8 @@ abstract class RefChecks extends Transform {
           try tpe.mapOver(this).filterAnnotations(_.symbol != UncheckedBoundsClass)
           finally skipBounds = savedSkipBounds
         case tpe: TypeRef =>
-          checkTypeRef(ExistentialToWildcard(tpe))
+          if (!inPattern) checkTypeRef(UnboundExistential.toWildcardIn(tpe))
+          checkUndesired(tpe.sym)
           tpe.mapOver(this)
         case tpe =>
           tpe.mapOver(this)
@@ -1443,17 +1459,18 @@ abstract class RefChecks extends Transform {
 
       private def checkTypeRef(tpe: Type): Unit = tpe match {
         case TypeRef(pre, sym, args) =>
-          tree match {
-            // scala/bug#7783 don't warn about inferred types
-            // FIXME: reconcile this check with one in resetAttrs
-            case tree: TypeTree if tree.original == null =>
-            case tree => checkUndesiredProperties(sym, tree.pos)
-          }
           if (sym.isJavaDefined)
             sym.typeParams.foreach(_.cookJavaRawInfo())
           if (!tpe.isHigherKinded && !skipBounds)
             checkBounds(tree, pre, sym.owner, sym.typeParams, args)
         case _ =>
+      }
+
+      private def checkUndesired(sym: Symbol): Unit = tree match {
+        // scala/bug#7783 don't warn about inferred types
+        // FIXME: reconcile this check with one in resetAttrs
+        case tree: TypeTree if tree.original == null =>
+        case tree => checkUndesiredProperties(sym, tree.pos)
       }
     }
 
@@ -1775,8 +1792,7 @@ abstract class RefChecks extends Transform {
               }
             }
 
-            if (inPattern) tree
-            else tree.setType(RefCheckTypeMap.check(tree.tpe, tree))
+            tree.setType(RefCheckTypeMap.check(tree.tpe, tree, inPattern))
 
           case TypeApply(fn, args) =>
             checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
