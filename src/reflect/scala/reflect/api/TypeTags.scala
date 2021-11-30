@@ -15,6 +15,7 @@ package reflect
 package api
 
 import java.io.ObjectStreamException
+import scala.annotation.nowarn
 
 /**
  * A `TypeTag[T]` encapsulates the runtime type representation of some type `T`.
@@ -290,7 +291,7 @@ trait TypeTags { self: Universe =>
 
     def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): TypeTag[T] = {
       (mirror1: AnyRef) match {
-        case m: scala.reflect.runtime.JavaMirrors#MirrorImpl
+        case m: scala.reflect.runtime.JavaMirrors#JavaMirror @nowarn("cat=deprecation")
           if cacheMaterializedTypeTags && tpec1.getClass.getName.contains("$typecreator")
             && tpec1.getClass.getDeclaredFields.length == 0 => // excludes type creators that splice in bound types.
 
