@@ -577,16 +577,7 @@ string literal does not start a valid escape sequence.
 symbolLiteral  ::=  ‘'’ plainid
 ```
 
-A symbol literal `'x` is a shorthand for the expression `scala.Symbol("x")` and
-is of the [literal type](03-types.html#literal-types) `'x`.
-`Symbol` is a [case class](05-classes-and-objects.html#case-classes), which is defined as follows.
-
-```scala
-package scala
-final case class Symbol private (name: String) {
-  override def toString: String = "'" + name
-}
-```
+A symbol literal `'x` is deprecated shorthand for the expression `scala.Symbol("x")`.
 
 The `apply` method of `Symbol`'s companion object
 caches weak references to `Symbol`s, thus ensuring that

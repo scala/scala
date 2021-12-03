@@ -131,7 +131,7 @@ determined by evaluating `e == lit`.
 
 Literal types are available for all types for which there is dedicated syntax
 except `Unit`. This includes the numeric types (other than `Byte` and `Short`
-which don't currently have syntax), `Boolean`, `Char`, `String` and `Symbol`.
+which don't currently have syntax), `Boolean`, `Char` and `String`.
 
 ### Stable Types
 A _stable type_ is a singleton type, a literal type,
