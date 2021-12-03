@@ -109,7 +109,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
         out.write(indentString, 0, indentMargin)
     }
 
-    def printSeq[a](ls: List[a])(printelem: a => Unit)(printsep: => Unit): Unit =
+    @tailrec
+    final def printSeq[a](ls: List[a])(printelem: a => Unit)(printsep: => Unit): Unit =
       ls match {
         case List() =>
         case List(x) => printelem(x)

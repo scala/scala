@@ -203,10 +203,24 @@ trait SyntheticMethods extends ast.TreeDSL {
       if (tests.isEmpty) {
         thatTest(eqmeth)
       } else {
-        thatTest(eqmeth) AND Block(
-          ValDef(otherSym, thatCast(eqmeth)),
-          AND(tests: _*)
-        )
+        def andy = {
+          val otherDef = ValDef(otherSym, thatCast(eqmeth))
+          if (tests.size < 23) Block(otherDef, AND(tests: _*))
+          else {
+            val ifs = ListBuffer[Tree]()
+            ifs += otherDef
+            val groupit = tests.grouped(22)
+            while (groupit.hasNext) {
+              val g = groupit.next()
+              if (groupit.hasNext)
+                ifs += IF(AND(g: _*) BOOL_== FALSE).THEN(Return(FALSE)).ENDIF
+              else
+                ifs += AND(g: _*)
+            }
+            Block(ifs.toSeq: _*)
+          }
+        }
+        thatTest(eqmeth) AND andy
       }
     }
 

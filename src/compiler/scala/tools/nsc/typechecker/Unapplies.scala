@@ -82,19 +82,17 @@ trait Unapplies extends ast.TreeDSL {
     if (tparams.isEmpty) tycon else AppliedTypeTree(tycon, tparams map toIdent)
   }
 
-  private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
+  private def constrParamss(cdef: ClassDef): List[List[ValDef]] =
     resetAttrs(deriveClassDef(cdef)(deriveTemplate(_)(treeInfo.firstConstructor(_).duplicate :: Nil))) match {
       case ClassDef(_, _, _, Template(_, _, DefDef(_, _, _, vparamss, _, _) :: Nil)) => vparamss
       case x                                                                         => throw new MatchError(x)
     }
-  }
 
-  private def constrTparamsInvariant(cdef: ClassDef): List[TypeDef] = {
+  private def constrTparamsInvariant(cdef: ClassDef): List[TypeDef] =
     resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate) match {
       case ClassDef(_, _, tparams, _) => tparams.map(tparam => copyTypeDef(tparam)(mods = tparam.mods &~ (COVARIANT | CONTRAVARIANT)))
       case x                          => throw new MatchError(x)
     }
-  }
 
   private def applyShouldInheritAccess(mods: Modifiers) =
     currentRun.isScala3 && (mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary))
@@ -163,26 +161,22 @@ trait Unapplies extends ast.TreeDSL {
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams = constrTparamsInvariant(cdef)
-    val method = constrParamss(cdef) match {
+    val vparamss = constrParamss(cdef)
+    require(vparamss.nonEmpty, "case class must have params")
+    val vparams = vparamss.head
+    val booleanResult = vparamss.head.isEmpty
+    val method = vparamss match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
     val cparams = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val resultType = { // fix for scala/bug#6541 under -Xsource:2.12
-      def repeatedToSeq(tp: Tree) = tp match {
-        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
-        case _                                                                => tp
-      }
-
-      constrParamss(cdef) match {
-        case Nil | Nil :: _ =>
-          gen.rootScalaDot(tpnme.Boolean)
-        case params :: _    =>
-          val constrParamTypes = params.map(param => repeatedToSeq(param.tpt))
-          AppliedTypeTree(gen.rootScalaDot(tpnme.Option), List(treeBuilder.makeTupleType(constrParamTypes)))
-      }
+    def repeatedToSeq(tp: Tree) = tp match {
+      case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
+      case _                                                                => tp
     }
-
+    val resultType = // fix for scala/bug#6541 under -Xsource:2.12
+      if (booleanResult) gen.rootScalaDot(tpnme.Boolean)
+      else AppliedTypeTree(gen.rootScalaDot(tpnme.Option), List(treeBuilder.makeTupleType(vparams.map(p => repeatedToSeq(p.tpt)))))
     def selectCaseFieldAccessor(constrParam: ValDef): Tree = {
       val unapplyParam = Ident(unapplyParamName)
 
@@ -205,16 +199,12 @@ trait Unapplies extends ast.TreeDSL {
       }
     }
 
+    // Working with trees, rather than symbols, to avoid cycles like scala/bug#5082
     val body =
       If(Ident(unapplyParamName) OBJ_EQ NULL,
-          if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule),
-          // Working with trees, rather than symbols, to avoid cycles like scala/bug#5082
-          constrParamss(cdef).take(1).flatten match {
-            case Nil => TRUE
-            case xs  => SOME(xs map selectCaseFieldAccessor: _*)
-          }
+          if (booleanResult) FALSE else REF(NoneModule),
+          if (booleanResult) TRUE else SOME(vparams.map(selectCaseFieldAccessor): _*)
         )
-
 
     atPos(cdef.pos.focus)(DefDef(caseMods, method, tparams, List(cparams), resultType, body))
   }

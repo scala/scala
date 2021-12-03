@@ -78,6 +78,8 @@ trait TreeDSL {
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
       def INT_-   (other: Tree)     = fn(target, getMember(IntClass, nme.MINUS), other)
 
+      def BOOL_== (other: Tree)     = fn(target, getMember(BooleanClass, nme.EQ), other)
+
       // generic operations on ByteClass, IntClass, LongClass
       @unused("avoid warning for multiple parameters")
       def GEN_|   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.OR), other)
@@ -141,7 +143,7 @@ trait TreeDSL {
 
     def NOT(tree: Tree)   = Select(tree, Boolean_not)
     def AND(guards: Tree*) = {
-      def binaryTreeAnd(tests: Seq[Tree]): Tree = tests match{
+      def binaryTreeAnd(tests: Seq[Tree]): Tree = tests match {
         case Seq() => EmptyTree
         case Seq(single) => single
         case multiple =>
