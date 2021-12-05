@@ -153,7 +153,13 @@ sealed class NumericRange[T](
   override def splitAt(n: Int): (NumericRange[T], NumericRange[T]) = (take(n), drop(n))
 
   override def reverse: NumericRange[T] =
-    if (isEmpty) this else new NumericRange.Inclusive(last, start, -step)
+    if (isEmpty) this
+    else {
+      val newStep = -step
+      if (num.sign(newStep) == num.sign(step)) {
+        throw new ArithmeticException("number type is unsigned, and .reverse requires a negative step")
+      } else new NumericRange.Inclusive(last, start, newStep)
+    }
 
   import NumericRange.defaultOrdering
 
