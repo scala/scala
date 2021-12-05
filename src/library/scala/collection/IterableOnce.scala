@@ -558,10 +558,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /** Apply `f` to each element for its side effects
     *  Note: [U] parameter needed to help scalac's type inference.
     */
-  def foreach[U](f: A => U): Unit = {
-    val it = iterator
-    while(it.hasNext) f(it.next())
-  }
+  def foreach[U](f: A => U): Unit =
+    this match {
+      case seq: IndexedSeqOps[A @unchecked, AnyConstr, _] =>
+        val len = seq.length
+        var i = 0
+        while (i < len) {
+          f(seq(i))
+          i += 1
+        }
+      case _ =>
+        val it = iterator
+        while(it.hasNext) f(it.next())
+    }
 
   /** Tests whether a predicate holds for all elements of this $coll.
     *
