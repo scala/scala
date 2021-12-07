@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Werror
 package b {
   class B
 }

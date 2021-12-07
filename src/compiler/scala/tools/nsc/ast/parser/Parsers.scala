@@ -1357,6 +1357,7 @@ self =>
             t = selector(t)
             if (in.token == DOT) t = selectors(t, typeOK, in.skipToken())
           } else {
+            if (name == nme.ROOTPKG) t.updateAttachment(RootSelection)
             t = selectors(t, typeOK, dotOffset)
           }
         }
@@ -1400,7 +1401,10 @@ self =>
     def qualId(): Tree = {
       val start = in.offset
       val id = atPos(start) { Ident(ident()) }
-      if (in.token == DOT) { selectors(id, typeOK = false, in.skipToken()) }
+      if (in.token == DOT) {
+        if (id.name == nme.ROOTPKG) id.updateAttachment(RootSelection)
+        selectors(id, typeOK = false, in.skipToken())
+      }
       else id
     }
     /** Calls `qualId()` and manages some package state. */
@@ -2704,7 +2708,10 @@ self =>
           else syntaxError(in.lastOffset, s". expected", skipIt = false)
 
           if (in.token == THIS) thisDotted(id.name.toTypeName)
-          else id
+          else {
+            if (id.name == nme.ROOTPKG) id.updateAttachment(RootSelection)
+            id
+          }
       })
     }
 
