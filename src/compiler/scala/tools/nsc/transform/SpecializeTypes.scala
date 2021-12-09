@@ -750,7 +750,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       for (m <- normMembers) {
         if (!needsSpecialization(fullEnv, m)) {
-          if (m.isValue && !m.isMutable && !m.isMethod && !m.isDeferred && !m.isLazy) {
+          if (m.isValue && !m.isMutable && !m.isMethod && !m.isDeferred && !m.isLazy && !m.isParamAccessor) {
             // non-specialized `val` fields are made mutable (in Constructors) and assigned from the
             // constructors of specialized subclasses. See PR scala/scala#9704.
             clazz.primaryConstructor.updateAttachment(ConstructorNeedsFence)
