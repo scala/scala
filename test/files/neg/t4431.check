@@ -1,4 +1,5 @@
-t4431.scala:5: error: class BB needs to be abstract. No implementation found in a subclass for deferred declaration
+t4431.scala:5: error: class BB needs to be abstract.
+No implementation found in a subclass for deferred declaration
 def f(): Unit
   class BB extends B { def f (): Unit }
         ^

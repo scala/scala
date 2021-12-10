@@ -535,7 +535,7 @@ abstract class RefChecks extends Transform {
       // Verifying a concrete class has nothing unimplemented.
       if (clazz.isConcreteClass && !typesOnly) {
         val abstractErrors = ListBuffer.empty[String]
-        def abstractErrorMessage = abstractErrors.mkString(if (abstractErrors.size <= 2) " " else "\n")
+        def abstractErrorMessage = abstractErrors.mkString("\n")
 
         def mustBeMixin(msg: String): Unit = addError(mustBeMixin = true, msg, supplement = "")
         def abstractClassError(msg: String): Unit = addError(mustBeMixin = false, msg, supplement = "")
@@ -573,54 +573,24 @@ abstract class RefChecks extends Transform {
 
         // 2. Check that only abstract classes have deferred members
         def checkNoAbstractMembers(): Unit = {
-          // Avoid spurious duplicates: first gather any missing members.
-          val (missing, rest): (List[Symbol], Iterator[Symbol]) = {
-            val memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-            val (missing0, rest0) = memberList.iterator.partition(m => m.isDeferred & !ignoreDeferred(m))
-            (missing0.toList, rest0)
-          }
-          // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
-          val grouped = missing.groupBy(_.name.getterName)
-          val missingMethods = grouped.toList.flatMap {
-            case (_, syms) if syms.exists(_.isSetter) => syms.filterNot(_.isGetter)
-            case (_, syms)                            => syms
-          }
-          def stubImplementations: List[String] = {
-            // Grouping missing methods by the declaring class
-            val regrouped = missingMethods.groupBy(_.owner).toList
-            def membersStrings(members: List[Symbol]) = {
-              members.foreach(fullyInitializeSymbol)
-              members.sortBy(_.name).map(m => s"${m.defStringSeenAs(clazz.tpe_* memberType m)} = ???")
-            }
-
-            if (regrouped.tail.isEmpty)
-              membersStrings(regrouped.head._2)
-            else (regrouped.sortBy("" + _._1.name) flatMap {
-              case (owner, members) =>
-                ("// Members declared in " + owner.fullName) +: membersStrings(members) :+ ""
-            }).init
-          }
-          def diagnose(member: Symbol): String = {
+          def diagnose(member: Symbol, accessors: List[Symbol]): String = {
             val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
-            val groupedAccessors = grouped.getOrElse(member.name.getterName, Nil)
-            val isMultiple = groupedAccessors.size > 1
+            val isMultiple = accessors.size > 1
 
-            if (groupedAccessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
-              // If both getter and setter are missing, squelch the setter error.
-              if (member.isSetter && isMultiple) null
-              else if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
-              else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
-              else "\n(Note that variables need to be initialized to be defined)"
+            if (accessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
+              if (member.isSetter && isMultiple) null // If both getter and setter are missing, squelch the setter error.
+              else if (member.isSetter) "an abstract var requires a setter in addition to the getter"
+              else if (member.isGetter && !isMultiple) "an abstract var requires a getter in addition to the setter"
+              else "variables need to be initialized to be defined"
             }
             else if (underlying.isMethod) {
               // Highlight any member that nearly matches: same name and arity,
               // but differs in one param or param list.
               val abstractParamLists = underlying.paramLists
-              val matchingName       = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
-              val matchingArity      = matchingName.filter { m =>
+              val matchingArity      = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE).filter { m =>
                 !m.isDeferred &&
                 m.name == underlying.name &&
                 sameLength(m.paramLists, abstractParamLists) &&
@@ -661,8 +631,8 @@ abstract class RefChecks extends Transform {
                         else if (concreteSym.isSubClass(abstractSym)) subclassMsg(concreteSym, abstractSym)
                         else ""
                       )
-                      s"\n(Note that $pa does not match $pc$addendum)"
-                    case Nil if missingImplicit => "\n(overriding member must declare implicit parameter list)" // other overriding gotchas
+                      s"$pa does not match $pc$addendum"
+                    case Nil if missingImplicit => "overriding member must declare implicit parameter list" // other overriding gotchas
                     case _ => ""
                   }
                 case _ => ""
@@ -670,20 +640,49 @@ abstract class RefChecks extends Transform {
             }
             else ""
           }
-          // The outcomes are
-          // - 1 method in current class
-          // If there are numerous missing methods, we presume they are aware of it and
-          // give them a nicely formatted set of method signatures for implementing.
-          if (missingMethods.size > 1) {
-            val stubs = stubImplementations.map("  " + _ + "\n").mkString("", "", "")
-            abstractClassErrorStubs(s"Missing implementations for ${missingMethods.size} members. Stub implementations follow:", stubs)
+          // Avoid spurious duplicates: first gather any missing members.
+          val (missing, rest): (List[Symbol], Iterator[Symbol]) = {
+            val memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
+            val (missing0, rest0) = memberList.iterator.partition(m => m.isDeferred & !ignoreDeferred(m))
+            (missing0.toList, rest0)
           }
-          else {
-            for (member <- missing ; msg = diagnose(member) if msg != null) {
-              val addendum = if (msg.isEmpty) msg else " " + msg
-              val from = if (member.owner != clazz) s" // inherited from ${member.owner}" else ""
-              abstractClassError(s"Missing implementation for:\n  ${infoString0(member, false)}$from$addendum")
-            }
+          if (missing.nonEmpty) {
+            // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
+            val byName = missing.groupBy(_.name.getterName)
+            // There may be 1 or more missing members declared in 1 or more parents.
+            // If a single parent, the message names it. Otherwise, missing members are grouped by declaring class.
+            val byOwner = missing.groupBy(_.owner).toList
+            val announceOwner = byOwner.size > 1
+            def membersStrings(members: List[Symbol]) =
+              members.sortBy(_.name).map { m =>
+                val accessors = byName.getOrElse(m.name.getterName, Nil)
+                val diagnostic = diagnose(m, accessors)
+                if (diagnostic == null) null
+                else {
+                  val s0 = infoString0(m, showLocation = false)
+                  fullyInitializeSymbol(m)
+                  val s1 = m.defStringSeenAs(clazz.tpe_*.memberType(m))
+                  val implMsg = if (s0 != s1) s"implements `$s0`" else ""
+                  val spacer  = if (diagnostic.nonEmpty && implMsg.nonEmpty) "; " else ""
+                  val comment = if (diagnostic.nonEmpty || implMsg.nonEmpty) s" // $implMsg$spacer$diagnostic" else ""
+                  s"$s1 = ???$comment"
+                }
+              }.filter(_ ne null)
+            var count = 0
+            val stubs =
+              byOwner.sortBy(_._1.name.toString).flatMap {
+                case (owner, members) =>
+                  val ms = membersStrings(members) :+ ""
+                  count += ms.size - 1
+                  if (announceOwner) s"// Members declared in ${owner.fullName}" :: ms else ms
+              }.init.map(s => s"  $s\n").mkString
+            val isMulti = count > 1
+            val singleParent = if (byOwner.size == 1 && byOwner.head._1 != clazz) s" member${if (isMulti) "s" else ""} of ${byOwner.head._1}" else ""
+            val line0 =
+              if (isMulti) s"Missing implementations for ${count}${val p = singleParent ; if (p.isEmpty) " members" else p}."
+              else s"Missing implementation${val p = singleParent ; if (p.isEmpty) p else s" for$p"}:"
+            abstractClassErrorStubs(line0, stubs)
+
             // Check the remainder for invalid absoverride.
             for (member <- rest if member.isAbstractOverride && member.isIncompleteIn(clazz)) {
               val explanation = member.superSymbolIn(clazz) match {

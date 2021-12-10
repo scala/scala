@@ -3,8 +3,10 @@ private[package p2] def f2(): Int (defined in class A)
   override should not be private
     private def f2(): Int = 1
                 ^
-accesses2.scala:5: error: class B1 needs to be abstract. Missing implementation for:
-  private[package p2] def f2(): Int // inherited from class A
+accesses2.scala:5: error: class B1 needs to be abstract.
+Missing implementation for member of class A:
+  private[package p2] def f2(): Int = ???
+
   class B1 extends A {
         ^
 accesses2.scala:9: error: weaker access privileges in overriding
