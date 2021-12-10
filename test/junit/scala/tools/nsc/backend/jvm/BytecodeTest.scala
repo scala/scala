@@ -393,7 +393,7 @@ class BytecodeTest extends BytecodeTesting {
   @Test
   def nonSpecializedValFence(): Unit = {
     def code(u1: String) =
-      s"""abstract class Speck[@specialized(Int) T](t: T) {
+      s"""abstract class Speck[@specialized(Int) T](t: T, sm: String, val sn: String) {
          |  val a = t
          |  $u1
          |  lazy val u2 = "?"
