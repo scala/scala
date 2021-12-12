@@ -1076,7 +1076,11 @@ trait Infer extends Checkable {
      */
     def inferMethodInstance(fn: Tree, undetParams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
-      case mt @ MethodType(_, _) =>
+      case mt: MethodType =>
+        // If we can't infer the type parameters, we can recover in `tryTypedApply` with an implicit conversion,
+        // but only when implicit conversions are enabled. In that case we have to infer the type parameters again.
+        def noInstanceResult = if (context.implicitsEnabled) undetParams else Nil
+
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(mt.paramTypes, args.length)
@@ -1101,10 +1105,10 @@ trait Infer extends Checkable {
                 enhanceBounds(adjusted.okParams, adjusted.okArgs, xs1)
                 xs1
             }
-          } else undetParams
+          } else noInstanceResult
         } catch ifNoInstance { msg =>
           NoMethodInstanceError(fn, args, msg)
-          undetParams
+          noInstanceResult
         }
       case x => throw new MatchError(x)
     }
