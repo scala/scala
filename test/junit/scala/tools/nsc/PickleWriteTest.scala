@@ -96,4 +96,61 @@ class PickleWriteTest {
     new global2.Run().compile(command2.files)
     assert(!global2.reporter.hasErrors)
   }
+
+  @Test
+  def testPickleWriteJava(): Unit = {
+    val pathFactory = new VirtualFilePathFactory
+
+    val build = new Build(projectsBase, "b1")
+    val p1 = build.project("p1")
+    val p1ApiVirtual = VirtualFilePathFactory.path("p1")
+    p1.scalacOptions ++= List(
+      "-Ypickle-write", p1ApiVirtual,
+      "-Ypickle-java",
+      "-Ystop-after:pickler"
+    )
+    p1.withSource("b1/p1/J.java")(
+      """
+        |package b1.p1;
+        |public class J<T> {
+        |  public Object foo(Object o) { return o; }
+        |  public T bar(T t) { return t; }
+        |
+        |  public void ol(scala.Equals o) {} // Equals extends AnyVal
+        |  public void ol(Object o) {}
+        |}
+    """.stripMargin)
+
+    val p2 = build.project("p2")
+    p2.classpath += p1ApiVirtual
+    p2.withSource("b1/p2/Client.scala")(
+      """
+        |package b1.p2
+        |class Client[T] extends b1.p1.J[T] {
+        |  override def foo(o: Object): Object = o
+        |  override def bar(t: T): T = t
+        |  def test(): Unit = {
+        |    // this was incorrectly showing as ambiguous because Unpickler wasn't massaging type refs to Object
+        |    // in Java-defined .sig files.
+        |    ol(Option(""))
+        |  }
+        |}
+    """.stripMargin)
+
+    val settings1 = new Settings(Console.println, pathFactory)
+    settings1.usejavacp.value = true
+    val argsFile1 = p1.argsFile()
+    val command1 = new CompilerCommand("@" + argsFile1.toAbsolutePath.toString :: Nil, settings1)
+    val global1 = new Global(command1.settings)
+    new global1.Run().compile(command1.files)
+    assert(!global1.reporter.hasErrors)
+
+    val argsFile2 = p2.argsFile()
+    val settings2 = new Settings(Console.println, pathFactory)
+    settings2.usejavacp.value = true
+    val command2 = new CompilerCommand("@" + argsFile2.toAbsolutePath.toString :: Nil, settings2)
+    val global2 = new Global(command2.settings)
+    new global2.Run().compile(command2.files)
+    assert(!global2.reporter.hasErrors)
+  }
 }
