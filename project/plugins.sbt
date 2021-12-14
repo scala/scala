@@ -22,7 +22,7 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
-  "org.slf4j" % "slf4j-nop" % "1.7.31",
+  "org.slf4j" % "slf4j-nop" % "1.7.32",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
   )
 
