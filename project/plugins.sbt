@@ -21,9 +21,9 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.9.0")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
-  "org.slf4j" % "slf4j-nop" % "1.7.31",
+  "org.slf4j" % "slf4j-nop" % "1.7.32",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
-)
+  )
 
 Global / concurrentRestrictions := Seq(
   Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970

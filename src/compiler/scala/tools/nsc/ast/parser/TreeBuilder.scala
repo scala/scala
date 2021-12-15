@@ -56,8 +56,7 @@ abstract class TreeBuilder {
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
 
   /** Tree for `od op`, start is start0 if od.pos is borked. */
-  def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
-    val start = if (od.pos.isDefined) od.pos.start else start0
+  def makePostfixSelect(start: Int, end: Int, od: Tree, op: Name): Tree = {
     atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
   }
 
