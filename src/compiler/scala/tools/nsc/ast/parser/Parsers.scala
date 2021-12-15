@@ -984,8 +984,8 @@ self =>
       if (opinfo.targs.nonEmpty)
         syntaxError(opinfo.offset, "type application is not allowed for postfix operators")
 
-      val od = stripParens(reduceExprStack(base, opinfo.lhs))
-      makePostfixSelect(start, opinfo.offset, od, opinfo.operator)
+      val lhs = reduceExprStack(base, opinfo.lhs)
+      makePostfixSelect(if (lhs.pos.isDefined) lhs.pos.start else start, opinfo.offset, stripParens(lhs), opinfo.operator)
     }
 
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
@@ -1306,11 +1306,12 @@ self =>
 
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
-    def selector(t: Tree): Tree = {
+    def selector(t0: Tree): Tree = {
+      val t = stripParens(t0)
       val point = if (isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
-        Select(t, ident(skipIt = false)) setPos r2p(t.pos.start, point, in.lastOffset)
+        Select(t, ident(skipIt = false)) setPos r2p(t0.pos.start, point, in.lastOffset)
       else
         errorTermTree // has already been reported
     }
@@ -1878,14 +1879,14 @@ self =>
       in.token match {
         case DOT =>
           in.nextToken()
-          simpleExprRest(selector(stripParens(t)), canApply = true)
+          simpleExprRest(selector(t), canApply = true)
         case LBRACKET =>
           val t1 = stripParens(t)
           t1 match {
             case Ident(_) | Select(_, _) | Apply(_, _) | Literal(_) =>
               var app: Tree = t1
               while (in.token == LBRACKET)
-                app = atPos(app.pos.start, in.offset)(TypeApply(app, exprTypeArgs()))
+                app = atPos(t.pos.start, in.offset)(TypeApply(app, exprTypeArgs()))
 
               simpleExprRest(app, canApply = true)
             case _ =>
