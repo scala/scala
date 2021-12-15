@@ -13,7 +13,7 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class ClosureOptimizerTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:all -opt:inline:** -Wopt"
+  override def compilerArgs = "-opt:inline:** -Wopt:_"
   import compiler._
 
   @Test

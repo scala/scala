@@ -1,4 +1,4 @@
-// scalac: -Xlint:deprecation -Xfatal-warnings -opt:inline -opt-inline-from:<sources>
+// scalac: -Xlint:deprecation -Werror -opt:inline:<sources>
 //
 
 trait T {

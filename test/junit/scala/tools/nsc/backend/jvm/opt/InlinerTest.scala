@@ -18,13 +18,13 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:all -opt:inline:** -Wopt"
-
-  val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-opt:inline -opt-inline-from:**"))
-
   import compiler._
   import global.genBCode.{bTypes, postProcessor}
 
+  override def compilerArgs = "-opt:inline:** -Wopt"
+
+  val inlineOnly = global.settings.optChoices.inlineFrom.expandsTo.map(c => s"-${c.name}").mkString("-opt:inline:** -opt:", ",", "")
+  val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = inlineOnly))
 
   compiler.keepPerRunCachesAfterRun(List(
     JavaClearable.forMap(bTypes.classBTypeCache),

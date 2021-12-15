@@ -252,13 +252,20 @@ class SettingsTest {
   @Test def `wildcard doesn't disable everything`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:_" :: Nil, true)
-    assertTrue("has the choice", settings.opt.contains(settings.optChoices.inline))
-    assertTrue("is enabled", settings.optInlinerEnabled)
+    assertTrue("has the choice", settings.opt.contains(settings.optChoices.unreachableCode))
+    assertTrue("is enabled", settings.optUnreachableCode)
+    assertFalse("inliner is not enabled", settings.optInlinerEnabled)
   }
   @Test def `kill switch can be enabled explicitly`(): Unit = {
     val settings = new Settings()
-    settings.processArguments("-opt:inline,none" :: Nil, true)
-    assertTrue("has the choice", settings.opt.contains(settings.optChoices.inline))
+    settings.processArguments("-opt:unreachable-code,none" :: Nil, true)
+    assertTrue("has the choice", settings.opt.contains(settings.optChoices.unreachableCode))
+    assertFalse("is not enabled", settings.optUnreachableCode)
+  }
+  @Test def `kill switch disables inline`(): Unit = {
+    val settings = new Settings()
+    settings.processArguments("-opt:inline:**" :: "-opt:none" :: Nil, true)
+    assertTrue("has the choice", settings.optInlineFrom.nonEmpty)
     assertFalse("is not enabled", settings.optInlinerEnabled)
   }
   @Test def `t12036 don't consume dash option as arg`(): Unit = {

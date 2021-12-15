@@ -15,10 +15,18 @@ import scala.tools.testkit.BytecodeTesting._
 class InlineSourceMatcherTest extends BytecodeTesting {
   import compiler._
 
-  override def compilerArgs = "-opt:inline -Wopt"
-  def setInlineFrom(s: String): Unit = {
-    //global.settings.optInlineFrom.value = s.split(':').toList
-    global.settings.optChoices.inline.selections = s.split(':').toList
+  override def compilerArgs = "-Wopt"
+
+  // takes non-standard colon-separated patterns
+  def withInlineFrom(s: String)(body: => Unit): Unit = {
+    val saved = global.settings.optChoices.inlineFrom.selections
+    global.settings.optChoices.inlineFrom.selections = s.split(':').toList
+    try body finally global.settings.optChoices.inlineFrom.selections = saved
+  }
+  def withNoInline(body: => Unit): Unit = {
+    val saved = global.settings.optChoices.inlineFrom.selections
+    global.settings.optChoices.inlineFrom.selections = Nil
+    try body finally global.settings.optChoices.inlineFrom.selections = saved
   }
 
   case class E(regex: String, negated: Boolean = false, terminal: Boolean = true)
@@ -186,10 +194,10 @@ class InlineSourceMatcherTest extends BytecodeTesting {
     def n(): Unit = assertInvoke(getMethod(compileClass(code), "t"), "C", "f")
     def y(): Unit = assertNoInvoke(getMethod(compileClass(code), "t"))
 
-    setInlineFrom(""); n()
-    setInlineFrom("C"); y()
-    setInlineFrom("**:!**.C"); n()
-    setInlineFrom("**:!**.C:C"); y()
+    withNoInline(n())
+    withInlineFrom("C")(y())
+    withInlineFrom("**:!**.C")(n())
+    withInlineFrom("**:!**.C:C")(y())
   }
 
   @Test
@@ -205,26 +213,22 @@ class InlineSourceMatcherTest extends BytecodeTesting {
         |}}
       """.stripMargin
 
-    {
-      setInlineFrom("")
+    withNoInline {
       val List(_, _, e) = compileClasses(code)
       assertInvoke(getMethod(e, "t1"), "a/C", "f")
       assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
     }
-    {
-      setInlineFrom("a.C")
+    withInlineFrom("a.C") {
       val List(_, _, e) = compileClasses(code)
       assertNoInvoke(getMethod(e, "t1"))
       assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
     }
-    {
-      setInlineFrom("a.C*")
+    withInlineFrom("a.C*") {
       val List(_, _, e) = compileClasses(code)
       assertNoInvoke(getMethod(e, "t1"))
       assertDoesNotInvoke(getMethod(e, "t2"), "f") // t2 still has an invocation to the getter `D`
     }
-    {
-      setInlineFrom("a.C*:!a.C*$")
+    withInlineFrom("a.C*:!a.C*$") {
       val List(_, _, e) = compileClasses(code)
       assertNoInvoke(getMethod(e, "t1"))
       assertInvoke(getMethod(e, "t2"), "a/C$D$", "f")
@@ -235,13 +239,11 @@ class InlineSourceMatcherTest extends BytecodeTesting {
   def inlineFromSources(): Unit = {
     val a = "class A { @inline final def f = 1 }"
     val b = "class B { def t(a: A) = a.f }"
-    setInlineFrom("<sources>")
-
-    {
+    withInlineFrom("<sources>") {
       val List(_, cb) = compileClasses(s"$a\n$b")
       assertNoInvoke(getMethod(cb, "t"))
     }
-    {
+    withInlineFrom("<sources>") {
       val List(_, cb) = compileClassesSeparately(List(a, b))
       assertInvoke(getMethod(cb, "t"), "A", "f")
     }

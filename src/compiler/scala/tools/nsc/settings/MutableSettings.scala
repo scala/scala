@@ -555,7 +555,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
    * not present in the multiChoiceSetting.value set, only their expansion.
    */
   abstract class MultiChoiceEnumeration extends Enumeration {
-    case class Choice(name: String, help: String = "", expandsTo: List[Choice] = Nil) extends Val(name) {
+    case class Choice(name: String, help: String = "", expandsTo: List[Choice] = Nil, requiresSelections: Boolean = false) extends Val(name) {
       var selections: List[String] = Nil
     }
     def wildcardChoices: ValueSet = values.filter { case c: Choice => c.expandsTo.isEmpty case _ => true }
@@ -613,6 +613,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     private def badChoice(s: String) = errorFn(s"'$s' is not a valid choice for '$name'")
     private def isChoice(s: String) = s == "_" || choices.contains(pos(s))
+    private def choiceOf(s: String): domain.Choice = domain.withName(pos(s)).asInstanceOf[domain.Choice]
 
     private def pos(s: String) = s.stripPrefix("-")
     private def isPos(s: String) = !s.startsWith("-")
@@ -711,6 +712,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
             else {
               if (isChoice(argx)) {
                 if (selections.nonEmpty) add(argx, selections.split(",").toList)
+                else if (argx != "_" && isPos(argx) && choiceOf(argx).requiresSelections) errorFn(s"'$argx' requires '$argx:<selection>'. See '$name:help'.")
                 else add(argx)  // this case also adds "_"
                 postSetHook()   // support -opt:l:method
               }

@@ -15,7 +15,7 @@ import PartialFunction.cond
 
 @RunWith(classOf[JUnit4])
 class PatmatBytecodeTest extends BytecodeTesting {
-  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:all -opt:inline:**"))
+  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:inline:**"))
 
   import compiler._
 

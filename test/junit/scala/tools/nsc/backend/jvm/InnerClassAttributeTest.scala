@@ -14,7 +14,7 @@ import scala.tools.testkit.BytecodeTesting._
 class InnerClassAttributeTest extends BytecodeTesting {
   import compiler._
 
-  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:all -opt:inline:**"))
+  val optCompiler = cached("optCompiler", () => newCompiler(extraArgs = "-opt:inline:**"))
 
   @Test
   def javaInnerClassInGenericSignatureOnly(): Unit = {
