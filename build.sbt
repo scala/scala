@@ -741,9 +741,9 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
         "org.ops4j.pax.exam" % "pax-exam-link-assembly" % paxExamVersion,
         "org.ops4j.pax.url" % "pax-url-aether" % "2.4.1",
         "org.ops4j.pax.swissbox" % "pax-swissbox-tracker" % "1.8.1",
-        "ch.qos.logback" % "logback-core" % "1.1.3",
-        "ch.qos.logback" % "logback-classic" % "1.1.3",
-        "org.slf4j" % "slf4j-api" % "1.7.12",
+        "ch.qos.logback" % "logback-core" % "1.2.8",
+        "ch.qos.logback" % "logback-classic" % "1.2.8",
+        "org.slf4j" % "slf4j-api" % "1.7.32",
         framework % "test"
       )
     },
