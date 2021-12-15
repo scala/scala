@@ -10,9 +10,9 @@ In 2014, you -- the Scala community -- matched the core team at EPFL in number o
 
 We are super happy about this, and are eager to make your experience contributing to Scala productive and satisfying, so that we can keep up this growth. We can't do this alone (nor do we want to)!
 
-This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to scala/contributors (Gitter) or contributors.scala-lang.org (Discourse).)
+This is why we're collecting these notes on how to contribute, and we hope you'll share your experience to improve the process for the next contributor! (Feel free to send a PR for this note, send your thoughts to \#scala-contributors (on [Discord](https://discord.com/invite/scala)) or contributors.scala-lang.org (Discourse).)
 
-By the way, the team at Lightbend is: @lrytz, @retronym, @SethTisue, and  @dwijnand.
+By the way, the team at Lightbend is: @lrytz, @retronym, @SethTisue, and @dwijnand.
 
 ## What kind of PR are you submitting?
 
@@ -285,8 +285,7 @@ See the [scala-jenkins-infra repo](https://github.com/scala/scala-jenkins-infra)
 ### Pass code review
 
 Your PR will need to be assigned to one or more reviewers. You can suggest reviewers
-yourself; if you're not sure, see the list in [README.md](README.md) or ask on scala/contributors (Gitter)
-or contributors.scala-lang.org (Discourse).
+yourself; if you're not sure, see the list in [README.md](README.md) or ask on \#scala-contributors (on [Discord](https://discord.com/invite/scala)) or contributors.scala-lang.org (Discourse).
 
 To assign a reviewer, add a "review by @reviewer" to the PR description or in a
 comment on your PR.
@@ -300,8 +299,8 @@ and `push -f` to the branch. This is to keep the git history clean. Additional c
 are OK if they stand on their own.
 
 Once all these conditions are met, we will merge your changes -- if we
-agree with it!  We are available on scala/contributors (Gitter) or
-contributors.scala-lang.org (Discourse) to discuss changes beforehand,
+agree with it!  We are available on \#scala-contributors (on [Discord](https://discord.com/invite/scala))
+or contributors.scala-lang.org (Discourse) to discuss changes beforehand,
 before you put in the coding work.
 
 

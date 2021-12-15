@@ -26,8 +26,8 @@ For more information on building and developing the core of Scala, read the rest
 
 # Get in touch!
 
-In order to get in touch with other Scala contributors, join
-[scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
+In order to get in touch with other Scala contributors, join the
+\#scala-contributors channel on the [Scala Discord](https://discord.com/invite/scala) chat, or post on
 [contributors.scala-lang.org](https://contributors.scala-lang.org) (Discourse).
 
 If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
