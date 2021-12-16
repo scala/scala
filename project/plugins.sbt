@@ -3,7 +3,7 @@ scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
-libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bndlib" % "5.3.0"
+libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bndlib" % "6.1.0"
 
 enablePlugins(BuildInfoPlugin)
 
