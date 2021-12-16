@@ -32,4 +32,4 @@ concurrentRestrictions in Global := Seq(
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.2")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
