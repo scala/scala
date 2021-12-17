@@ -253,19 +253,17 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
 
     // fill() returns false if no more sequences can be produced
-    private def fill(): Boolean = {
-      if (!self.hasNext) false
+    private def fill(): Boolean = filled || self.hasNext && {
       // the first time we grab size, but after that we grab step
-      else if (buffer.isEmpty) go(size)
-      else go(step)
+      val need = if (buffer.isEmpty) size else step
+      go(need)
     }
 
-    def hasNext = filled || fill()
+    def hasNext = fill()
 
     @throws[NoSuchElementException]
     def next(): immutable.Seq[B] = {
-      if (!filled) fill()
-      if (!filled) Iterator.empty.next()
+      if (!fill()) Iterator.empty.next()
       filled = false
       immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
     }
