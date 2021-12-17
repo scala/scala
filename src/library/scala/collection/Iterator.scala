@@ -146,7 +146,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   /** A flexible iterator for transforming an `Iterator[A]` into an
-   *  Iterator[Seq[A]], with configurable sequence size, step, and
+   *  `Iterator[Seq[A]]`, with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
    *
    *  Typical uses can be achieved via methods `grouped` and `sliding`.
@@ -155,10 +155,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
-    private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
+    private[this] val buffer = ArrayBuffer.empty[B]           // the buffer
     private[this] var filled = false                          // whether the buffer is "hot"
-    private[this] var _partial = true                         // whether we deliver short sequences
-    private[this] var pad: Option[() => B] = None             // what to pad short sequences with
+    private[this] var partial = true                          // whether we deliver short sequences
+    private[this] var pad: () => B = null                     // what to pad short sequences with
 
     /** Public functions which can be used to configure the iterator before use.
      *
@@ -171,7 +171,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      *  @note    This method is mutually exclusive with `withPartial(true)`.
      */
     def withPadding(x: => B): this.type = {
-      pad = Some(() => x)
+      pad = () => x
       this
     }
     /** Public functions which can be used to configure the iterator before use.
@@ -186,10 +186,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      *  @note    This method is mutually exclusive with `withPadding`.
      */
     def withPartial(x: Boolean): this.type = {
-      _partial = x
-      if (_partial) // reset pad since otherwise it will take precedence
-        pad = None
-
+      partial = x
+      if (partial) pad = null   // reset pad since otherwise it will take precedence
       this
     }
 
@@ -212,7 +210,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       buf
     }
 
-    private def padding(x: Int) = immutable.ArraySeq.untagged.fill(x)(pad.get())
+    private def padding(x: Int) = immutable.ArraySeq.untagged.fill(x)(pad())
     private def gap = (step - size) max 0
 
     private def go(count: Int) = {
@@ -225,7 +223,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         // was: extra checks so we don't calculate length unless there's reason
         // but since we took the group eagerly, just use the fast length
         val shortBy = count - res.length
-        if (shortBy > 0 && pad.isDefined) res ++ padding(shortBy) else res
+        if (shortBy > 0 && pad != null) res ++ padding(shortBy) else res
       }
       lazy val len = xs.length
       lazy val incomplete = len < count
@@ -248,8 +246,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       }
 
       if (xs.isEmpty) false                         // self ran out of elements
-      else if (_partial) deliver(len min size)      // if _partial is true, we deliver regardless
-      else if (incomplete) false                    // !_partial && incomplete means no more seqs
+      else if (partial) deliver(len min size)       // if partial is true, we deliver regardless
+      else if (incomplete) false                    // !partial && incomplete means no more seqs
       else if (isFirst) deliver(len)                // first element
       else deliver(step min size)                   // the typical case
     }
@@ -263,13 +261,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
 
     def hasNext = filled || fill()
+
     @throws[NoSuchElementException]
     def next(): immutable.Seq[B] = {
-      if (!filled)
-        fill()
-
-      if (!filled)
-        throw new NoSuchElementException("next on empty iterator")
+      if (!filled) fill()
+      if (!filled) Iterator.empty.next()
       filled = false
       immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
     }
