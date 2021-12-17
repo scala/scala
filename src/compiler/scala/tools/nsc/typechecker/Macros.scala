@@ -610,6 +610,31 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     }
 
     protected def expand(desugared: Tree): Tree = {
+      def positionsToOffset(expanded: Tree) = {
+        // Macros might have spliced arguments with range positions into non-compliant
+        // locations, notably, under a tree without a range position. Or, they might
+        // splice a tree that `resetAttrs` has assigned NoPosition.
+        //
+        // Here, we just convert all positions in the tree to offset positions, and
+        // convert NoPositions to something sensible.
+        //
+        // Given that the IDE now sees the expandee (by using -Ymacro-expand:discard),
+        // this loss of position fidelity shouldn't cause any real problems.
+        //
+        // Alternatively, we could pursue a way to exclude macro expansions from position
+        // invariant checking, or find a way not to touch expansions that happen to validate.
+        //
+        // This would be useful for cases like:
+        //
+        //    macro1 { macro2 { "foo" } }
+        //
+        // to allow `macro1` to see the range position of the "foo".
+        val expandedPos = enclosingMacroPosition.focus
+        def fixPosition(pos: Position) =
+          if (pos == NoPosition) expandedPos else pos.focus
+        expanded.foreach(t => t.pos = fixPosition(t.pos))
+        expanded
+      }
       def showDetailed(tree: Tree) = showRaw(tree, printIds = true, printTypes = true)
       def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
@@ -631,8 +656,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             }
             expanded match {
               case Success(expanded) =>
-                // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
-                val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
+                // duplicate expanded tree to avoid structural sharing in macro-genrated trees
+                // see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
+                val expanded1 = try onSuccess(positionsToOffset(duplicateAndKeepPositions(expanded))) finally popMacroContext()
                 if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
                 if (settings.Ymacroexpand.value == settings.MacroExpand.Discard && !typer.context.isSearchingForImplicitParam) {
                   suppressMacroExpansion(expandee)
@@ -827,29 +853,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             macroLogLite("" + expanded + "\n" + showRaw(expanded))
             val freeSyms = expanded.freeSyms
             freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
-            // Macros might have spliced arguments with range positions into non-compliant
-            // locations, notably, under a tree without a range position. Or, they might
-            // splice a tree that `resetAttrs` has assigned NoPosition.
-            //
-            // Here, we just convert all positions in the tree to offset positions, and
-            // convert NoPositions to something sensible.
-            //
-            // Given that the IDE now sees the expandee (by using -Ymacro-expand:discard),
-            // this loss of position fidelity shouldn't cause any real problems.
-            //
-            // Alternatively, we could pursue a way to exclude macro expansions from position
-            // invariant checking, or find a way not to touch expansions that happen to validate.
-            //
-            // This would be useful for cases like:
-            //
-            //    macro1 { macro2 { "foo" } }
-            //
-            // to allow `macro1` to see the range position of the "foo".
-            val expandedPos = enclosingMacroPosition.focus
-            def fixPosition(pos: Position) =
-              if (pos == NoPosition) expandedPos else pos.focus
-            expanded.foreach(t => t.pos = fixPosition(t.pos))
-
             val result = atPos(enclosingMacroPosition.focus)(expanded)
             Success(result)
           }
