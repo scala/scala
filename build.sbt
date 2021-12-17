@@ -47,7 +47,7 @@ val jolDep            = "org.openjdk.jol"                % "jol-core"        % "
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"           % versionProps("jline.version")
 val jansiDep          = "org.fusesource.jansi"           % "jansi"           % "1.12"
-val antDep            = "org.apache.ant"                 % "ant"             % "1.9.16"
+val antDep            = "org.apache.ant"                 % "ant"             % "1.10.12"
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"  % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"       % "1.3.0"
 
@@ -415,7 +415,7 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.10",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.10.8",
       "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.13.0",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.7"
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.10"
     )
   )
 
