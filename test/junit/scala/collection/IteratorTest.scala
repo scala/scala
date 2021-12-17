@@ -1,10 +1,11 @@
 package scala.collection
 
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.Assert.{assertThrows => _, _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.util.chaining._
 import scala.tools.testkit.AssertUtil._
 
 import Seq.empty
@@ -13,6 +14,133 @@ import Seq.empty
 class IteratorTest {
 
   private def from0 = Iterator.from(0)
+
+  private class Counted(limit: Int) extends Iterator[Int] {
+    val max = limit - 1
+    var probed, last, i = -1
+    def hasNext = (i < max).tap(_ => probed = i)
+    def next() = { if (i >= max) Iterator.empty.next() else { i += 1 ; i } }.tap(last = _)
+  }
+  private def counted = new Counted(Int.MaxValue)
+  private def limited(n: Int) = new Counted(n)
+
+  @Test def `grouped delivers groups`: Unit = {
+    val it = counted
+    val g  = it.grouped(3)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 4, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(3,4,5), res)
+  }
+  @Test def `grouped delivers partials`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 1, res.length)
+    assertEquals(List(6), res)
+  }
+  @Test def `grouped delivers impartials`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(false)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertFalse(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+  }
+  @Test def `grouped delivers impadded impartials`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(false).withPadding(42)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertFalse(g.hasNext)
+  }
+  @Test def `grouped delivers impadded partials`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(true).withPadding(42)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertFalse(g.hasNext)
+    assertEquals(List(6,42,42), res)
+  }
+  @Test def `grouped delivers orthogonal padding`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(false).withPartial(true)  // don't lose padding function
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertFalse(g.hasNext)
+    assertEquals(List(6,42,42), res)
+  }
+  @Test def `grouped delivers sliding groups`: Unit = {
+    val it = counted
+    val g  = it.sliding(3, step = 2)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 3, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(2,3,4), res)
+  }
+  @Test def `grouped delivers impartial sliding groups`: Unit = {
+    val it = limited(7)
+    val g  = it.sliding(3, step = 2).withPartial(false)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    res = g.next()
+    assertEquals(List(4,5,6), res)
+    assertFalse(g.hasNext)
+  }
+  @Test def `grouped delivers skipping groups`: Unit = {
+    val it = counted
+    val g  = it.sliding(3, step = 5)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(0,1,2), res)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(5,6,7), res)
+  }
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
     var counter = 0

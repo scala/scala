@@ -3,9 +3,9 @@ object Test {
   def it = (1 to 10).iterator
   def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(it: Iterator[Seq[T]]): Unit = {
     val xs = it.toList
-    def fail(msg: String) = "assertion failed on %s: %s".format(xs, msg)
-    assert(xs.size == expectedLength, fail("expected length " + expectedLength))
-    assert(xs.last == expectedLast, fail("expected last " + expectedLast))
+    def fail(msg: String) = s"assertion failed on $xs: $msg"
+    assert(xs.size == expectedLength, fail(s"expected length $expectedLength"))
+    assert(xs.last == expectedLast, fail(s"expected last $expectedLast"))
   }
 
   def main(args: Array[String]): Unit = {
