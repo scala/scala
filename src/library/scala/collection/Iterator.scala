@@ -155,7 +155,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
-    private[this] val buffer = ArrayBuffer.empty[B]           // the buffer
+    private[this] val buffer = {                              // the buffer
+      val k = self.knownSize
+      if (k > 0) new ArrayBuffer[B](k min size)               // if k < size && !partial, buffer will grow on padding
+      else ArrayBuffer.empty[B]
+    }
     private[this] var filled = false                          // whether the buffer is "hot"
     private[this] var partial = true                          // whether we deliver short sequences
     private[this] var pad: () => B = null                     // what to pad short sequences with
@@ -229,6 +233,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
           index += 1
         }
         if (partial && pad != null) {
+          buffer.sizeHint(size)
           while (index < size) {
             buffer += pad()
             index += 1
@@ -254,7 +259,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       if (!fill()) Iterator.empty.next()
       else {
         filled = false
-        immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
+        val res = immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
+        if (step == size)
+          buffer.clear()   // clear eagerly only if not stepping (which requires previous) and skipping (which needs to know whether to skip)
+        res
       }
   }
 

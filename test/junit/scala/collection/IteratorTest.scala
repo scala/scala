@@ -8,6 +8,8 @@ import org.junit.runners.JUnit4
 import scala.util.chaining._
 import scala.tools.testkit.AssertUtil._
 
+import java.lang.ref._
+
 import Seq.empty
 
 @RunWith(classOf[JUnit4])
@@ -140,6 +142,30 @@ class IteratorTest {
     res = g.next()
     assertEquals("got a group", 3, res.length)
     assertEquals(List(5,6,7), res)
+  }
+  @Test def `grouped does not allocate overeagerly`: Unit = {
+    val it = List(1,2,3).iterator
+    val g  = it.grouped(Int.MaxValue)
+    assertTrue(g.hasNext)
+    assertEquals(List(1,2,3), g.next())
+  }
+  @Test def `grouped does not hold elements`: Unit = {
+    val thing = new Object
+    val ref = new WeakReference(thing)
+    locally {
+      val it = Iterator(thing).grouped(1)
+      assertEquals(List(thing), it.next())
+    }
+    locally {
+      val it = Iterator.continually(ref.get()).grouped(1)
+      assertNotReachable(thing, it)(it.next())
+    }
+  }
+  @Test def `sliding must hold elements`: Unit = {
+    val thing = new Object
+    val ref = new WeakReference(thing)
+    val it = Iterator.continually(ref.get()).sliding(2,1)
+    assertFails(_.contains("Root <iterator> held reference")) { assertNotReachable(thing, it)(it.next()) }
   }
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
@@ -762,8 +788,6 @@ class IteratorTest {
   }
 
   @Test def `flatMap is memory efficient in previous element`(): Unit = {
-    import java.lang.ref._
-    import scala.util.chaining._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
     class C extends Iterable[String] {
