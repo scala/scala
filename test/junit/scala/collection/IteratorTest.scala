@@ -971,5 +971,49 @@ class IteratorTest {
     assertEquals(3, it3.next())
     assertTrue("concatted tail of it3 should be next", it3.hasNext)
   }
+  @Test def `Some iterator grouped/sliding unit tests`: Unit = {
+    def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(actual: Iterator[Seq[T]]): Unit = {
+      val xs = actual.toList
+      def failmsg(msg: String) = s"assertion failed on $xs: $msg"
+      assertEquals(failmsg(s"expected length $expectedLength"), expectedLength, xs.size)
+      assertEquals(failmsg(s"expected last $expectedLast"), expectedLast, xs.last)
+    }
 
+    def it = (1 to 10).iterator
+    val itSum = it.to(LazyList).sum
+    for (i <- it) {
+      // sum of the groups == sum of the original
+      val thisSum = ((it grouped i) map (_.sum)).to(LazyList).sum
+      assert(thisSum == itSum, s"$thisSum != $itSum" )
+    }
+
+    // grouped
+    assertThat(4, List(10)) { it grouped 3 }
+    assertThat(3, List(7, 8, 9)) { it grouped 3 withPartial false }
+    assertThat(4, List(10, -1, -1)) { it grouped 3 withPadding -1 }
+
+    // testing by-name padding, showing that this behavior was intended by the Author
+    val padIt = it
+    assertThat(4, List(10, 1, 2)) { it grouped 3 withPadding padIt.next() }
+
+    // sliding
+    assertThat(8, List(8, 9, 10)) { it sliding 3 }
+    assertThat(3, (3 to 10).toList) { it sliding 8 }
+    assertThat(2, List(9, 10)) { it.sliding(8, 8) }
+    assertThat(1, (1 to 8).toList) { it.sliding(8, 8) withPartial false }
+    assertThat(2, List(9, 10, -1, -1, -1)) { it.sliding(5, 8) withPadding -1 }
+    assertThat(1, (1 to 5).toList) { it.sliding(5, 8) withPartial false }
+
+    // larger step than window
+    assertThat(5, List(9)) { it.sliding(1, 2) }
+    assertThat(3, List(9, 10)) { it.sliding(2, 4) }
+
+    // make sure it throws past the end
+    assertThrows[NoSuchElementException] {
+      val slid = List(1,2,3).sliding(2)
+      slid.next()
+      slid.next()
+      slid.next()
+    }
+  }
 }
