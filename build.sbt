@@ -414,7 +414,7 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
       "com.fasterxml.jackson.core" % "jackson-core" % "2.13.0",
       "com.fasterxml.jackson.core" % "jackson-annotations" % "2.13.0",
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.10.8",
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.10",
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.13.1",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0"
     )
   )
