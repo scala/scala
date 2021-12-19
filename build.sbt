@@ -410,13 +410,16 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.13.0",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.13.0",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.10.8",
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.10",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0"
-    )
+    libraryDependencies ++= {
+      val jacksonVersion = "2.13.1"
+      Seq(
+        "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      )
+    }
   )
 
 lazy val compiler = configureAsSubproject(project)
