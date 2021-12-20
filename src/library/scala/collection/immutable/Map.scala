@@ -92,13 +92,11 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   @`inline` final override def -- (keys: IterableOnce[K]): C = removedAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
-    *  @param    key the key
-    *  @param    value the value
-    *  @tparam   V1 the type of the added value
-    *  @return   A new map with the new key/value mapping added to this map.
-    *
-    *    @inheritdoc
-    */
+   *  @param    key the key
+   *  @param    value the value
+   *  @tparam   V1 the type of the added value
+   *  @return   A new map with the new key/value mapping added to this map.
+   */
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
   /**
