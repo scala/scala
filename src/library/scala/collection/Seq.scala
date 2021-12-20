@@ -75,6 +75,7 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
   * @define Coll `Seq`
   */
 trait SeqOps[+A, +CC[_], +C] extends Any
+  with PartialFunction[Int, A]
   with IterableOps[A, CC, C] { self =>
 
   override def view: SeqView[A] = new SeqView.Id[A](this)
