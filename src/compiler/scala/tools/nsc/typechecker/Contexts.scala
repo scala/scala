@@ -19,12 +19,14 @@ import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, List
 import scala.util.chaining._
 import scala.tools.nsc.Reporting.WarningCategory
 
+import PartialFunction.cond
+
 /**
  *  @author  Martin Odersky
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
+  import definitions.{AnnotationPackage, JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
 
@@ -47,7 +49,7 @@ trait Contexts { self: Analyzer =>
     // Possible lists of root imports
     val javaList         = JavaLangPackage :: Nil
     val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
-    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
+    val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: /*AnnotationPackage ::*/ Nil
   }
   private lazy val NoJavaMemberFound = (NoType, NoSymbol)
 
@@ -147,26 +149,38 @@ trait Contexts { self: Analyzer =>
   private def defaultRootImports: List[Symbol] = {
     import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
 
-    if (settings.imports.isSetByUser)
-      settings.imports.value.map {
-        case "java.lang"    => JavaLangPackage
-        case "scala"        => ScalaPackage
-        case "scala.Predef" => PredefModule
-        case s              =>
-          getModuleIfDefined(s) orElse
-          getPackageObjectIfDefined(s) orElse
-          getPackageIfDefined(s) orElse {
-            globalError(s"bad preamble import $s")
-            NoSymbol
-          }
-      }
-    else RootImports.completeList
+    val rooted =
+      if (settings.imports.isSetByUser)
+        settings.imports.value.map {
+          case "java.lang"    => JavaLangPackage
+          case "scala"        => ScalaPackage
+          case "scala.Predef" => PredefModule
+          case s              =>
+            getModuleIfDefined(s) orElse
+            getPackageObjectIfDefined(s) orElse
+            getPackageIfDefined(s) orElse {
+              globalError(s"bad preamble import $s")
+              NoSymbol
+            }
+        }
+      else RootImports.completeList
+    def mark(sym: Symbol): sym.type = sym.updateAttachment(AnnotationContext)
+    val annotations =
+      if (settings.Yannotations.isSetByUser)
+        settings.Yannotations.value.map {
+          case "scala.annotation" => mark(AnnotationPackage)
+          case p                  => mark(getPackageIfDefined(p)) orElse NoSymbol.tap(_ => globalError(s"bad annotation package $p"))
+        }
+      else Nil
+    rooted ++ annotations
   }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) =>
-      c.make(gen.mkWildcardImport(sym), unit = unit)
-    )
+    val rootImportsContext = rootImports(unit).foldLeft(startContext) { (c, sym) =>
+      val t = gen.mkWildcardImport(sym)
+      if (sym.hasAttachment[AnnotationContext.type]) t.updateAttachment(AnnotationContext)
+      c.make(t, unit = unit)
+    }
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -295,6 +309,8 @@ trait Contexts { self: Analyzer =>
     protected[Contexts] def importOrNull: ImportInfo = null
     /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ and magic REPL imports) */
     def isRootImport: Boolean = false
+    /** An annotation context is the root context for `scala.annotation` or user-defined annotation packages. */
+    def isAnnotation: Boolean = false
 
     var pendingStabilizers: List[Tree] = Nil
 
@@ -664,20 +680,10 @@ trait Contexts { self: Analyzer =>
     def make(tree: Tree = tree, owner: Symbol = owner,
              scope: Scope = scope, unit: CompilationUnit = unit,
              reporter: ContextReporter = this.reporter): Context = {
-      val isTemplateOrPackage = tree match {
-        case _: Template | _: PackageDef => true
-        case _                           => false
-      }
-      val isDefDef = tree match {
-        case _: DefDef => true
-        case _         => false
-      }
-      val isImport = tree match {
-        // The guard is for scala/bug#8403. It prevents adding imports again in the context created by
-        // `Namer#createInnerNamer`
-        case _: Import if tree != this.tree => true
-        case _                              => false
-      }
+      val isTemplateOrPackage = cond(tree) { case _: Template | _: PackageDef => true }
+      val isDefDef = cond(tree) { case _: DefDef => true }
+      // Don't add imports again in the context created by `Namer#createInnerNamer` (scala/bug#8403)
+      val isImport = cond(tree) { case _: Import => tree != this.tree }
       val sameOwner = owner == this.owner
       val prefixInChild =
         if (isTemplateOrPackage) owner.thisType
@@ -692,7 +698,8 @@ trait Contexts { self: Analyzer =>
       // The blank canvas
       val c = if (isImport) {
         val isRootImport = !tree.pos.isDefined || isReplImportWrapperImport(tree)
-        new ImportContext(tree, owner, scope, unit, this, isRootImport, innerDepth(isRootImport), reporter)
+        val isAnnotation = isRootImport && tree.hasAttachment[AnnotationContext.type]
+        new ImportContext(tree, owner, scope, unit, this, isRootImport, isAnnotation, innerDepth(isRootImport), reporter)
       } else
         new Context(tree, owner, scope, unit, this, innerDepth(isRootImport = false), reporter)
 
@@ -1471,17 +1478,18 @@ trait Contexts { self: Analyzer =>
       var impSel: ImportSelector = null
       var impSym: Symbol = NoSymbol
       val importCursor = new ImportCursor(thisContext, name)
-      import importCursor.{imp1, imp2}
+      import importCursor.{imp1, imp2, imp1Ctx, imp2Ctx}
 
-      def lookupImport(imp: ImportInfo, requireExplicit: Boolean): (ImportSelector, Symbol) = {
-        val pair @ (sel, sym) = imp.importedSelectedSymbol(name, requireExplicit)
-        if (sym == NoSymbol) pair
-        else {
-          val sym1 = thisContext.importedAccessibleSymbol(imp, sym).filter(qualifies)
-          if (sym1 eq sym) pair
-          else (sel, sym1)
-        }
-      }
+      def lookupImport(imp: ImportInfo, impCtx: Context, requireExplicit: Boolean): (ImportSelector, Symbol) =
+        if (impCtx.isAnnotation && !thisContext.inAnnotation) TupleOfNullAndNoSymbol
+        else
+          imp.importedSelectedSymbol(name, requireExplicit) match {
+            case pair @ (_, NoSymbol) => pair
+            case pair @ (sel, sym) =>
+              val sym1 = thisContext.importedAccessibleSymbol(imp, sym).filter(qualifies)
+              if (sym1 eq sym) pair
+              else (sel, sym1)
+          }
 
       /* Java: A single-type-import declaration d in a compilation unit c of package p
        * that imports a type named n shadows, throughout c, the declarations of:
@@ -1517,7 +1525,7 @@ trait Contexts { self: Analyzer =>
 
         while (!impSym.exists && importCursor.imp1Exists && importCanShadowAtDepth(importCursor.imp1)) {
           val javaRule = thisContext.unit.isJava && defIsLevel4
-          val (sel, sym) = lookupImport(imp1, requireExplicit = javaRule)
+          val (sel, sym) = lookupImport(imp1, imp1Ctx, requireExplicit = javaRule)
           impSel = sel
           impSym = sym
           if (!impSym.exists)
@@ -1589,7 +1597,7 @@ trait Contexts { self: Analyzer =>
         // and proceed. If we cannot, issue an ambiguity error.
         while (lookupError == null && importCursor.keepLooking) {
           // If not at the same depth, only an explicit import can induce an ambiguity.
-          val (sel, other) = lookupImport(imp2, requireExplicit = !importCursor.sameDepth)
+          val (sel, other) = lookupImport(imp2, imp2Ctx, requireExplicit = !importCursor.sameDepth)
 
           @inline def imp1wins(): Unit = { importCursor.advanceImp2() }
           @inline def imp2wins(): Unit = { impSel = sel ; impSym = other ; importCursor.advanceImp1Imp2() }
@@ -1617,7 +1625,7 @@ trait Contexts { self: Analyzer =>
   final class ImportContext private[Contexts] (
                             tree: Tree, owner: Symbol, scope: Scope,
                             unit: CompilationUnit, outer: Context,
-                            override val isRootImport: Boolean, depth: Int,
+                            override val isRootImport: Boolean, override val isAnnotation: Boolean, depth: Int,
                             reporter: ContextReporter) extends Context(tree, owner, scope, unit, outer, depth, reporter) {
     private[this] val impInfo: ImportInfo = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
 
@@ -1911,9 +1919,9 @@ trait Contexts { self: Analyzer =>
   val ImportType = global.ImportType
 
   /** Walks a pair of references (`imp1` and `imp2`) up the context chain to ImportContexts */
-  private final class ImportCursor(var ctx: Context, name: Name) {
-    private var imp1Ctx = ctx.enclosingImport
-    private var imp2Ctx = imp1Ctx.outer.enclosingImport
+  private final class ImportCursor(ctx: Context, name: Name) {
+    var imp1Ctx = ctx.enclosingImport
+    var imp2Ctx = imp1Ctx.outer.enclosingImport
 
     def advanceImp1Imp2(): Unit = {
       imp1Ctx = imp2Ctx; imp2Ctx = imp1Ctx.outer.enclosingImport

@@ -197,6 +197,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
     lazy val RuntimePackage       = getPackage("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
+    lazy val AnnotationPackage    = getPackage("scala.annotation")
+    lazy val AnnotationPackageClass = AnnotationPackage.moduleClass.asClass
 
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
       case java.lang.Void.TYPE      => UnitClass

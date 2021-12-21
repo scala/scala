@@ -73,6 +73,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NullaryOverrideAdapted
     this.ChangeOwnerAttachment
     this.InterpolatedString
+    this.AnnotationContext
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -234,6 +235,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaPackageClass
     definitions.RuntimePackage
     definitions.RuntimePackageClass
+    definitions.AnnotationPackage
+    definitions.AnnotationPackageClass
     definitions.AnyClass
     definitions.AnyRefClass
     definitions.ObjectClass

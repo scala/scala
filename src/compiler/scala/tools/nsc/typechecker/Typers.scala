@@ -5966,7 +5966,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case tree: Assign           => typedAssign(tree.lhs, tree.rhs)
         case tree: NamedArg         => typedAssign(tree.lhs, tree.rhs)
         case tree: Super            => typedSuper(tree)
-        case tree: Annotated        => typedAnnotated(tree)
+        case tree: Annotated        => if (!context.inAnnotation) context.withinAnnotation(typedAnnotated(tree)) else typedAnnotated(tree)
         case tree: Return           => typedReturn(tree)
         case tree: Try              => typedTry(tree)
         case tree: Throw            => typedThrow(tree)

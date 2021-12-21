@@ -135,4 +135,6 @@ trait StdAttachments {
   case class ChangeOwnerAttachment(originalOwner: Symbol)
 
   case object InterpolatedString extends PlainAttachment
+
+  case object AnnotationContext extends PlainAttachment
 }

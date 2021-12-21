@@ -1890,30 +1890,31 @@ trait Namers extends MethodSynthesis {
      * they were added only in typer, depending on the compilation order, they may
      * or may not be visible.
      */
-    def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
+    def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] = {
       annotations.filterNot(_ eq null).map { ann =>
         val ctx = typer.context
         // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
         def computeInfo: AnnotationInfo = enteringTyper {
-          val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
+          val annotSig = ctx.withinAnnotation(newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee)))
           if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
         }
         ann match {
           case treeInfo.Applied(Select(New(tpt), _), _, _) =>
             // We can defer typechecking the arguments of annotations. This is important to avoid cycles in
             // checking `hasAnnotation(UncheckedStable)` during typechecking.
-            def computeSymbol = enteringTyper {
+            def computeSymbol = enteringTyper { ctx.withinAnnotation {
               val tptCopy = tpt.duplicate
               val silentTyper  = newTyper(ctx.makeSilent(newtree = tptCopy))
               // Discard errors here, we'll report them in `computeInfo`.
               val tpt1 = silentTyper.typedTypeConstructor(tptCopy)
               tpt1.tpe.finalResultType.typeSymbol
-            }
+            }}
             AnnotationInfo.lazily(computeSymbol, computeInfo)
           case _ =>
             AnnotationInfo.lazily(computeInfo)
         }
       }
+    }
 
     private def annotate(sym: Symbol, annotSigs: List[AnnotationInfo]): Unit = {
       sym setAnnotations annotSigs

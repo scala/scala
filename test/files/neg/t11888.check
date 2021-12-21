@@ -1,0 +1,4 @@
+t11888.scala:7: error: not found: type nowarn
+  def f: nowarn  // but only in annotation context
+         ^
+1 error

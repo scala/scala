@@ -221,6 +221,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
        |
     """
   ))
+  val Yannotations    = MultiStringSetting(name="-Yannotations", arg="package", descr="Custom annotation packages, such as scala.annotation.", helpText=Some("Add annotation package to root contexts."))
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
 
   val YprintTrees = ChoiceSetting(

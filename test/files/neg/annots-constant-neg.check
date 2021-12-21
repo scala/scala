@@ -65,14 +65,14 @@ Test.scala:63: error: Array constants have to be specified using the `Array(...)
 Test.scala:66: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE
   @Ann(value = 0, b = java.lang.Integer.TYPE) def u16 = 0 // err
                                         ^
-Test.scala:69: error: Java annotation SuppressWarnings is abstract; cannot be instantiated
+Test.scala:69: error: unknown parameter name: value
+Error occurred in an application involving default arguments.
+  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
+                                                       ^
+Test.scala:69: error: no arguments allowed for nullary constructor SuppressWarnings: (): SuppressWarnings
 Error occurred in an application involving default arguments.
   @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
                             ^
-Test.scala:69: error: not found: value value
-Error occurred in an application involving default arguments.
-  @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
-                                                 ^
 Test.scala:71: error: annotation argument needs to be a constant; found: new scala.inline()
   @Ann(value = 0, c = Array(new inline)) def u18 = 0 // err
                             ^
