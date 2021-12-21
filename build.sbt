@@ -168,6 +168,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   (run / fork) := true,
   (run / connectInput) := true,
   (Compile / scalacOptions) += "-Ywarn-unused:imports",
+  // work around https://github.com/scala/bug/issues/11534
+  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
   (Compile / doc / scalacOptions) ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -606,6 +608,7 @@ lazy val partest = configureAsSubproject(project)
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
+    Compile / javacOptions += "-XDenableSunApiLintControl",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-jline-embedded"), (organization.value, "scala-compiler-doc")),
     fixPom(
