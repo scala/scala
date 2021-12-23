@@ -56,7 +56,21 @@ class IteratorTest {
     assertEquals("got a group", 1, res.length)
     assertEquals(List(6), res)
   }
-  @Test def `grouped delivers impartials`: Unit = {
+  @Test def `grouped partial means default keep the segment`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(true)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 1, res.length)
+    assertEquals(List(6), res)
+  }
+  @Test def `grouped impartial means drop the segment`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPartial(false)
     assertTrue(g.hasNext)
@@ -67,7 +81,20 @@ class IteratorTest {
     assertFalse(g.hasNext)
     assertEquals("underlying is probed at n-1", 6, it.probed)
   }
-  @Test def `grouped delivers impadded impartials`: Unit = {
+  @Test def `grouped delivers padded segment`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertFalse(g.hasNext)
+    assertEquals(List(6,42,42), res)
+  }
+  @Test def `grouped padded segment ignores partial flag false`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPartial(false).withPadding(42)
     assertTrue(g.hasNext)
@@ -75,9 +102,12 @@ class IteratorTest {
     assertTrue(g.hasNext)
     res = g.next()
     assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    res = g.next()
     assertFalse(g.hasNext)
+    assertEquals(List(6,42,42), res)
   }
-  @Test def `grouped delivers impadded partials`: Unit = {
+  @Test def `grouped padded segment ignores partial flag true`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPartial(true).withPadding(42)
     assertTrue(g.hasNext)
@@ -86,24 +116,50 @@ class IteratorTest {
     res = g.next()
     assertEquals("got a group", 3, res.length)
     assertTrue(g.hasNext)
-    assertEquals("underlying is probed at n-1", 6, it.probed)
     res = g.next()
     assertFalse(g.hasNext)
     assertEquals(List(6,42,42), res)
   }
-  @Test def `grouped delivers orthogonal padding`: Unit = {
+  @Test def `grouped partial true ignores padding`: Unit = {
     val it = limited(7)
-    val g  = it.grouped(3).withPadding(42).withPartial(false).withPartial(true)  // don't lose padding function
+    val g  = it.grouped(3).withPadding(42).withPartial(true)
     assertTrue(g.hasNext)
     var res = g.next()
     assertTrue(g.hasNext)
     res = g.next()
     assertEquals("got a group", 3, res.length)
     assertTrue(g.hasNext)
-    assertEquals("underlying is probed at n-1", 6, it.probed)
     res = g.next()
     assertFalse(g.hasNext)
-    assertEquals(List(6,42,42), res)
+    assertEquals(List(6), res)
+  }
+  // improved semantics is that setting partial flag always resets padding
+  @Test def `grouped partial false also ignores padding`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(false)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertFalse(g.hasNext)
+  }
+  /* Previous behavior:
+    scala> (1 to 7).iterator.grouped(3).withPadding(42).withPartial(false).toList
+    val res16: List[Seq[Int]] = List(ArraySeq(1, 2, 3), ArraySeq(4, 5, 6), ArraySeq(7, 42, 42))
+
+    scala> (1 to 7).iterator.grouped(3).withPadding(42).withPartial(true).withPartial(false).toList
+    val res17: List[Seq[Int]] = List(ArraySeq(1, 2, 3), ArraySeq(4, 5, 6))
+  */
+  @Test def `grouped config has no history`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(true).withPartial(false)  // same as previous test
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertFalse(g.hasNext)
   }
   @Test def `grouped delivers sliding groups`: Unit = {
     val it = counted

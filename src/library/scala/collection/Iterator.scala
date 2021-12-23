@@ -147,9 +147,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   /** A flexible iterator for transforming an `Iterator[A]` into an
    *  `Iterator[Seq[A]]`, with configurable sequence size, step, and
-   *  strategy for dealing with elements which don't fit evenly.
+   *  strategy for dealing with remainder elements which don't fit evenly
+   *  into the last group.
    *
-   *  Typical uses can be achieved via methods `grouped` and `sliding`.
+   *  A `GroupedIterator` is yielded by `grouped` and by `sliding`,
+   *  where the `step` may differ from the group `size`.
    */
   class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends AbstractIterator[immutable.Seq[B]] {
 
@@ -161,34 +163,39 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       else ArrayBuffer.empty[B]
     }
     private[this] var filled = false                          // whether the buffer is "hot"
-    private[this] var partial = true                          // whether we deliver short sequences
-    private[this] var pad: () => B = null                     // what to pad short sequences with
+    private[this] var partial = true                          // whether to emit partial sequence
+    private[this] var padding: () => B = null                 // what to pad short sequences with
+    private[this] def pad = padding != null                   // irrespective of partial flag
 
     /** Specifies a fill element used to pad a partial segment
      *  so that all segments have the same size.
      *
-     *  If a fill element has not been configured, the last segment
-     *  may be returned with less than `size` elements.
+     *  Any previous setting of `withPartial` is ignored,
+     *  as the last group will always be padded to `size` elements.
      *
-     *  But if the iterator has been configured `withPartial(false)`,
-     *  the partial segment is dropped and any padding element is ignored.
+     *  The by-name argument is evaluated for each fill element.
      *
      *  @param x The element that will be appended to the last segment, if necessary.
      *  @return  The same iterator, and ''not'' a new iterator.
      *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-     *  @note    Padding requires `withPartial(true)`, which is the default setting.
+     *  @note    This method is mutually exclusive with `withPartial`.
      *  @group Configuration
      */
     def withPadding(x: => B): this.type = {
-      pad = () => x
+      padding = () => x
+      partial = true        // redundant, as padding always results in complete segment
       this
     }
-    /** Select whether to drop the last segment if it has less than `size` elements.
+    /** Specify whether to drop the last segment if it has less than `size` elements.
      *
      *  If this flag is `false`, elements of a partial segment at the end of the iterator
      *  are not returned.
      *
      *  The flag defaults to `true`.
+     *
+     *  Any previous setting of `withPadding` is ignored,
+     *  as the last group will never be padded.
+     *  A partial segment is either retained or dropped, per the flag.
      *
      *  @param x `true` if partial segments may be returned, `false` otherwise.
      *  @return  The same iterator, and ''not'' a new iterator.
@@ -198,20 +205,22 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      */
     def withPartial(x: Boolean): this.type = {
       partial = x
+      padding = null
       this
     }
 
-    /** Eagerly fetch size elements to buffer.
+    /** Eagerly fetch `size` elements to buffer.
      *
      *  If buffer is dirty and stepping, copy prefix.
      *  If skipping, skip ahead.
      *  Fetch remaining elements.
-     *  If unable to deliver size, then pad if desired.
+     *  If unable to deliver size, then pad if padding enabled, otherwise drop segment.
      *  Returns true if successful in delivering `count` elements,
      *  or padded segment, or partial segment.
      */
     private def fulfill(): Boolean = {
       var done = false
+      // keep prefix of previous buffer if stepping, or skip ahead
       if (buffer.size > 0)
         if (step < size)
           buffer.dropInPlace(step)
@@ -221,28 +230,29 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
             self.next(): Unit
             dropping -= 1
           }
-          done = dropping > 0
+          done = dropping > 0   // skip failed
           buffer.clear()
         }
         else
-          buffer.clear()
+          buffer.clear()        // redundant
       var index = buffer.size
       if (!done) {
+        // advance to rest of segment if possible
         while (index < size && self.hasNext) {
           buffer += self.next()
           index += 1
         }
-        if (partial && pad != null) {
+        // if unable to complete segment, pad if possible
+        if (index < size && pad) {
           buffer.sizeHint(size)
           while (index < size) {
-            buffer += pad()
+            buffer += padding()
             index += 1
           }
-          // future breaking tweak: by-name pad should be taken as lazy
-          //buffer.padToInPlace(size, pad())
-          //index = size
+          // future breaking tweak: by-name padding should be taken as lazy: buffer.padToInPlace(size, padding()) ; index = size
         }
       }
+      // segment must have data, and must be complete unless they allow partial
       val ok = index > 0 && (partial || index == size)
       if (!ok && buffer.size > 0)
         buffer.clear()      // don't retain elements that will never be returned
