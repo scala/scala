@@ -240,19 +240,23 @@ class IteratorTest {
   }
 
   // test/files/run/iterator-concat.scala
-  @Test def concatIsStackFriendly(): Unit = {
-    // Create `size` Function0s, each of which evaluates to an Iterator
-    // which produces 1. Then fold them over ++ to get a single iterator,
-    // which should sum to "size".
-    def mk(size: Int): Iterator[Int] = {
-      //val closures = (1 to size).toList.map(x => (() => Iterator(1)))
-      //closures.foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
-      List.fill(size)(() => Iterator(1)).foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
+  @Test def `concat is stack friendly`: Unit = {
+    // Create `size` Function0s, each of which evaluates to an Iterator which produces 1.
+    // Then fold them over ++ to get a single iterator, which should sum to "size".
+    var minStack = Int.MaxValue
+    var maxStack = 0
+    def gen: Int = {
+      val depth = Thread.currentThread.getStackTrace.length     // prefer Luke StackWalker, count `ConcatIterator.next`
+      minStack = minStack min depth
+      maxStack = maxStack max depth
+      1
     }
-    assertEquals(100,    mk(100).sum)
-    assertEquals(1000,   mk(1000).sum)
-    assertEquals(10000,  mk(10000).sum)
-    assertEquals(100000, mk(100000).sum)
+    //was: val closures = (1 to size).toList.map(x => (() => Iterator(1))); closures.foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
+    def mk(size: Int): Iterator[Int] = Iterator.fill(size)(Iterator.fill(1)(gen)).foldLeft(Iterator.empty[Int])(_ ++ _)
+    val limit = 100                         // was: big number was to challenge stack depth
+    val it = mk(limit)
+    assertEquals(limit, it.sum)             // ensure valid construction
+    assertEquals(minStack, maxStack)        // include delta if assumption fails?
   }
 
   @Test def from(): Unit = {
