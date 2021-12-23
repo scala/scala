@@ -25,6 +25,7 @@ class IteratorTest {
   }
   private def counted = new Counted(Int.MaxValue)
   private def limited(n: Int) = new Counted(n)
+  private def assertEqualResult[A](expected: Seq[Seq[A]])(actual: Iterator[Seq[A]]) = assertSameElements(expected, actual)
 
   @Test def `grouped delivers groups`: Unit = {
     val it = counted
@@ -97,52 +98,23 @@ class IteratorTest {
   @Test def `grouped padded segment ignores partial flag false`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPartial(false).withPadding(42)
-    assertTrue(g.hasNext)
-    var res = g.next()
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertEquals("got a group", 3, res.length)
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertFalse(g.hasNext)
-    assertEquals(List(6,42,42), res)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6,42,42)))(g)
   }
   @Test def `grouped padded segment ignores partial flag true`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPartial(true).withPadding(42)
-    assertTrue(g.hasNext)
-    var res = g.next()
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertEquals("got a group", 3, res.length)
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertFalse(g.hasNext)
-    assertEquals(List(6,42,42), res)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6,42,42)))(g)
   }
   @Test def `grouped partial true ignores padding`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPadding(42).withPartial(true)
-    assertTrue(g.hasNext)
-    var res = g.next()
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertEquals("got a group", 3, res.length)
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertFalse(g.hasNext)
-    assertEquals(List(6), res)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6)))(g)
   }
   // improved semantics is that setting partial flag always resets padding
   @Test def `grouped partial false also ignores padding`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPadding(42).withPartial(false)
-    assertTrue(g.hasNext)
-    var res = g.next()
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertEquals("got a group", 3, res.length)
-    assertFalse(g.hasNext)
+    assertEqualResult(List(List(0,1,2),List(3,4,5)))(g)
   }
   /* Previous behavior:
     scala> (1 to 7).iterator.grouped(3).withPadding(42).withPartial(false).toList
@@ -154,12 +126,7 @@ class IteratorTest {
   @Test def `grouped config has no history`: Unit = {
     val it = limited(7)
     val g  = it.grouped(3).withPadding(42).withPartial(true).withPartial(false)  // same as previous test
-    assertTrue(g.hasNext)
-    var res = g.next()
-    assertTrue(g.hasNext)
-    res = g.next()
-    assertEquals("got a group", 3, res.length)
-    assertFalse(g.hasNext)
+    assertEqualResult(List(List(0,1,2),List(3,4,5)))(g)
   }
   @Test def `grouped delivers sliding groups`: Unit = {
     val it = counted
