@@ -12,7 +12,7 @@
 
 package scala.collection
 
-import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder}
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
@@ -157,15 +157,19 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
-    private[this] val buffer = {                              // the buffer
-      val k = self.knownSize
-      if (k > 0) new ArrayBuffer[B](k min size)               // if k < size && !partial, buffer will grow on padding
-      else ArrayBuffer.empty[B]
-    }
+    private[this] var buffer: Array[B] = null                 // current result
+    private[this] var prev: Array[B] = null                   // if sliding, overlap from previous result
+    private[this] var first = true                            // if !first, advancing may skip ahead
     private[this] var filled = false                          // whether the buffer is "hot"
     private[this] var partial = true                          // whether to emit partial sequence
     private[this] var padding: () => B = null                 // what to pad short sequences with
     private[this] def pad = padding != null                   // irrespective of partial flag
+    private[this] def newBuilder = {
+      val b = ArrayBuilder.make[Any]
+      val k = self.knownSize
+      if (k > 0) b.sizeHint(k min size)                       // if k < size && !partial, buffer will grow on padding
+      b
+    }
 
     /** Specifies a fill element used to pad a partial segment
      *  so that all segments have the same size.
@@ -219,43 +223,39 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      *  or padded segment, or partial segment.
      */
     private def fulfill(): Boolean = {
+      val builder = newBuilder
       var done = false
-      // keep prefix of previous buffer if stepping, or skip ahead
-      if (buffer.size > 0)
-        if (step < size)
-          buffer.dropInPlace(step)
-        else if (step > size) {
-          var dropping = step - size
-          while (dropping > 0 && self.hasNext) {
-            self.next(): Unit
-            dropping -= 1
-          }
-          done = dropping > 0   // skip failed
-          buffer.clear()
+      // keep prefix of previous buffer if stepping
+      if (prev != null) builder.addAll(prev)
+      // skip ahead
+      if (!first && step > size) {
+        var dropping = step - size
+        while (dropping > 0 && self.hasNext) {
+          self.next(): Unit
+          dropping -= 1
         }
-        else
-          buffer.clear()        // redundant
-      var index = buffer.size
+        done = dropping > 0   // skip failed
+      }
+      var index = builder.length
       if (!done) {
         // advance to rest of segment if possible
         while (index < size && self.hasNext) {
-          buffer += self.next()
+          builder.addOne(self.next())
           index += 1
         }
         // if unable to complete segment, pad if possible
         if (index < size && pad) {
-          buffer.sizeHint(size)
+          builder.sizeHint(size)
           while (index < size) {
-            buffer += padding()
+            builder.addOne(padding())
             index += 1
           }
-          // future breaking tweak: by-name padding should be taken as lazy: buffer.padToInPlace(size, padding()) ; index = size
         }
       }
       // segment must have data, and must be complete unless they allow partial
       val ok = index > 0 && (partial || index == size)
-      if (!ok && buffer.size > 0)
-        buffer.clear()      // don't retain elements that will never be returned
+      if (ok) buffer = builder.result().asInstanceOf[Array[B]]
+      else prev = null
       ok
     }
 
@@ -269,9 +269,15 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       if (!fill()) Iterator.empty.next()
       else {
         filled = false
-        val res = immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
-        if (step == size)
-          buffer.clear()   // clear eagerly only if not stepping (which requires previous) and skipping (which needs to know whether to skip)
+        // if stepping, retain overlap in prev
+        if (step < size) {
+          if (first) prev = buffer.drop(step)
+          else if (buffer.length == size) Array.copy(src = buffer, srcPos = step, dest = prev, destPos = 0, length = size - step)
+          else prev = null
+        }
+        val res = immutable.ArraySeq.unsafeWrapArray(buffer).asInstanceOf[immutable.ArraySeq[B]]
+        buffer = null
+        first = false
         res
       }
   }

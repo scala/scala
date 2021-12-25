@@ -154,7 +154,7 @@ class IteratorTest {
   }
   @Test def `grouped delivers skipping groups`: Unit = {
     val it = counted
-    val g  = it.sliding(3, step = 5)
+    val g  = it.sliding(size = 3, step = 5)
     assertTrue(g.hasNext)
     var res = g.next()
     assertEquals("underlying is probed at n-1", 1, it.probed)
