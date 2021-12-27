@@ -149,6 +149,7 @@ grammar:
                       |  ‘throw’ Expr
                       |  ‘return’ [Expr]
                       |  [SimpleExpr ‘.’] id ‘=’ Expr
+                      |  PrefixOperator SimpleExpr ‘=’ Expr
                       |  SimpleExpr1 ArgumentExprs ‘=’ Expr
                       |  PostfixExpr
                       |  PostfixExpr Ascription
@@ -156,7 +157,8 @@ grammar:
   PostfixExpr       ::=  InfixExpr [id [nl]]
   InfixExpr         ::=  PrefixExpr
                       |  InfixExpr id [nl] InfixExpr
-  PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
+  PrefixExpr        ::=  [PrefixOperator] SimpleExpr
+  PrefixOperator    ::=  ‘-’ | ‘+’ | ‘~’ | ‘!’
   SimpleExpr        ::=  ‘new’ (ClassTemplate | TemplateBody)
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
