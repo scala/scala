@@ -458,26 +458,26 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-compile-core_2.12/jars/zinc-compile-core_2.12-1.3.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-compile_2.12/jars/zinc-compile_2.12-1.3.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-persist_2.12/jars/zinc-persist_2.12-1.3.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-lm-integration_2.12/jars/zinc-lm-integration_2.12-1.3.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-lm-integration_2.12/jars/zinc-lm-integration_2.12-1.6.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc_2.12/jars/zinc_2.12-1.3.4.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main_2.12/jars/main_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/actions_2.12/jars/actions_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion_2.12/jars/completion_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections_2.12/jars/collections_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/run_2.12/jars/run_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/task-system_2.12/jars/task-system_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tasks_2.12/jars/tasks_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/testing_2.12/jars/testing_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-agent/jars/test-agent-1.3.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main_2.12/jars/main_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/actions_2.12/jars/actions_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion_2.12/jars/completion_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections_2.12/jars/collections_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/run_2.12/jars/run_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/task-system_2.12/jars/task-system_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tasks_2.12/jars/tasks_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/testing_2.12/jars/testing_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-agent/jars/test-agent-1.6.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings_2.12/jars/main-settings_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/core-macros_2.12/jars/core-macros_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command_2.12/jars/command_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logic_2.12/jars/logic_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/protocol_2.12/jars/protocol_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/scripted-sbt-redux_2.12/jars/scripted-sbt-redux_2.12-1.3.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/scripted-plugin_2.12/jars/scripted-plugin_2.12-1.3.13.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings_2.12/jars/main-settings_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/core-macros_2.12/jars/core-macros_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command_2.12/jars/command_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logic_2.12/jars/logic_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/protocol_2.12/jars/protocol_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/scripted-sbt-redux_2.12/jars/scripted-sbt-redux_2.12-1.6.0.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/scripted-plugin_2.12/jars/scripted-plugin_2.12-1.6.0.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-core/jars/jmh-core-1.19.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-asm/jars/jmh-generator-asm-1.19.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-bytecode/jars/jmh-generator-bytecode-1.19.jar!/" />
@@ -489,14 +489,14 @@
       </CLASSES>
       <JAVADOC />
       <SOURCES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-1.3.13-sources.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main_2.12/jars/main_2.12-1.3.13-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/sbt/jars/sbt-1.6.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main_2.12/jars/main_2.12-1.6.0-sources.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/io_2.12/jars/io_2.12-1.3.4-sources.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion_2.12/jars/completion_2.12-1.3.13-sources.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections_2.12/jars/collections_2.12-1.3.13-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion_2.12/jars/completion_2.12-1.6.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections_2.12/jars/collections_2.12-1.6.0-sources.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/librarymanagement-core_2.12/jars/librarymanagement-core_2.12-1.3.4-sources.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings_2.12/jars/main-settings_2.12-1.3.13-sources.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command_2.12/jars/command_2.12-1.3.13-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings_2.12/jars/main-settings_2.12-1.6.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/command_2.12/jars/command_2.12-1.6.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="scalacheck-deps">
