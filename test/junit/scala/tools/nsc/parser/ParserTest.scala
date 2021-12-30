@@ -45,4 +45,24 @@ class ParserTest extends BytecodeTesting{
     assertEquals("var y: Int = 42", codeOf(y.pos))
     assertEquals("var x: Int = _", codeOf(x.pos))
   }
+
+  @Test
+  def `t11572 range pos of use case`: Unit = {
+    val code =
+      """|/** This is a lengthy comment.
+         | *  @usecase f()
+         | *  @inheritDoc
+         | */""".stripMargin
+    import compiler._, global._
+    val run = new Run     // DocComment requires run.reporting to deprecate @usecase
+    val src = newSourceFile(code)
+    val unit = new CompilationUnit(src)
+    val codePos = rangePos(src, 0, 0, code.length)
+    val doc = DocComment(code, pos = codePos)
+    for (UseCase(DocComment(_,p2,_),_,p1) <- doc.useCases)
+      List(p1, p2).foreach(p => assertTrue(s"$codePos must include $p", codePos.includes(p)))
+    assertTrue(run.reporting.allConditionalWarnings.isEmpty)
+    run.reporting.reportSuspendedMessages(unit)
+    assertFalse(run.reporting.allConditionalWarnings.isEmpty)
+  }
 }
