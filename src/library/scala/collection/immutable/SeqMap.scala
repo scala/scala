@@ -16,12 +16,14 @@ package immutable
 
 import scala.collection.mutable.{Builder, ReusableBuilder}
 
-/** A generic trait for ordered immutable maps. Concrete classes have to provide
- *  functionality for the abstract methods in `SeqMap`.
+/** A base trait for ordered, immutable maps.
  *
- *  Methods that return a new map, such as [[removed]] and [[updated]], must preserve ordering.
+ *  Note that the [[equals]] method for [[SeqMap]] compares key-value pairs
+ *  without regard to ordering.
  *
- *  Note that when checking for equality, [[SeqMap]] does not take ordering into account.
+ *  All behavior is defined in terms of the abstract methods in `SeqMap`.
+ *  It is sufficient for concrete subclasses to implement those methods.
+ *  Methods that return a new map, in particular [[removed]] and [[updated]], must preserve ordering.
  *
  *  @tparam K      the type of the keys contained in this linked map.
  *  @tparam V      the type of the values associated with the keys in this linked map.
