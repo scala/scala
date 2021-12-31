@@ -1,0 +1,4 @@
+t12514.scala:10: error: t.type forSome { val t: Test.T } is not a legal prefix for a constructor
+  val y = new (t.type forSome { val t: T })#Y {}
+                                            ^
+1 error
