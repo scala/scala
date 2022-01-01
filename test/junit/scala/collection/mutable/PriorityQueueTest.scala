@@ -110,4 +110,18 @@ class PriorityQueueTest {
       }
     }
   }
+  @Test def `pq may be rebuilt after mutation`: Unit = {
+    case class Thing(var s: String)
+    implicit val `order by s`: Ordering[Thing] = implicitly[Ordering[String]].on(_.s)
+    val pq = PriorityQueue.empty[Thing]
+    val thingOne = Thing("abc")
+    val thingTwo = Thing("def")
+    pq.addOne(thingOne)
+    pq.addOne(thingTwo)
+    assertEquals(thingTwo, pq.clone.dequeue())
+    thingTwo.s = "aaa"
+    val newly = PriorityQueue.from(pq)
+    assertEquals(thingOne, newly.dequeue())
+    assertEquals(thingTwo, pq.clone.dequeue())
+  }
 }

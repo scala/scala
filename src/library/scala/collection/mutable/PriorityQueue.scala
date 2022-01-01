@@ -41,6 +41,10 @@ import scala.math.Ordering
  *  To do this non-destructively, duplicate the `PriorityQueue` first;
  *  the `clone` method is a suitable way to obtain a disposable copy.
  *
+ *  Client keys are assumed to be immutable. Mutating keys may violate
+ *  the invariant of the underlying heap-ordered tree. Note that [[clone]]
+ *  does not rebuild the underlying tree.
+ *
  *  {{{
  *  scala> val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
  *  val pq: scala.collection.mutable.PriorityQueue[Int] = PriorityQueue(7, 3, 5, 1, 2)
