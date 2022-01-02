@@ -14,6 +14,7 @@ package scala
 
 import java.lang.{ StringBuilder => JLSBuilder }
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuilder
 
 /** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users
@@ -219,32 +220,15 @@ object StringContext {
     val nameLength = input.length
     // The final pattern is as long as all the chunks, separated by 1-character
     // glob-wildcard placeholders
-    val patternLength = {
-      var n = numWildcards
-      for(chunk <- patternChunks) {
-        n += chunk.length
-      }
-      n
-    }
+    val patternLength = patternChunks.iterator.map(_.length).sum + numWildcards
 
     // Convert the input pattern chunks into a single sequence of shorts; each
     // non-negative short represents a character, while -1 represents a glob wildcard
     val pattern = {
-      val arr = new Array[Short](patternLength)
-      var i = 0
-      var first = true
-      for(chunk <- patternChunks) {
-        if (first) first = false
-        else {
-          arr(i) = -1
-          i += 1
-        }
-        for(c <- chunk) {
-          arr(i) = c.toShort
-          i += 1
-        }
-      }
-      arr
+      val b = new ArrayBuilder.ofShort ; b.sizeHint(patternLength)
+      patternChunks.head.foreach(c => b.addOne(c.toShort))
+      patternChunks.tail.foreach { s => b.addOne(-1) ; s.foreach(c => b.addOne(c.toShort)) }
+      b.result()
     }
 
     // Lookup table for each character in the pattern to check whether or not
@@ -252,20 +236,15 @@ object StringContext {
     // glob wildcard it represents, while -1 means it doesn't represent any
     val matchIndices = {
       val arr = Array.fill(patternLength + 1)(-1)
-      var i = 0
-      var j = 0
-      for(chunk <- patternChunks) {
-        if (j < numWildcards) {
-          i += chunk.length
-          arr(i) = j
-          i += 1
-          j += 1
-        }
+      patternChunks.init.zipWithIndex.foldLeft(0) { case (ttl, (chunk, i)) =>
+        val sum = ttl + chunk.length
+        arr(sum) = i
+        sum + 1
       }
       arr
     }
 
-    while(patternIndex < patternLength || inputIndex < nameLength) {
+    while (patternIndex < patternLength || inputIndex < nameLength) {
       matchIndices(patternIndex) match {
         case -1 => // do nothing
         case n =>

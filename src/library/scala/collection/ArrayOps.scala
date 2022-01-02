@@ -173,6 +173,9 @@ object ArrayOps {
     * an implementation that copies the data to a boxed representation for use with `Arrays.sort`.
     */
   private final val MaxStableSortLength = 300
+
+  /** Avoid an allocation in [[collect]]. */
+  private val fallback: Any => Any = _ => fallback
 }
 
 /** This class serves as a wrapper for `Array`s with many of the operations found in
@@ -1010,18 +1013,13 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *                `pf` to each element on which it is defined and collecting the results.
     *                The order of the elements is preserved.
     */
-  def collect[B : ClassTag](pf: PartialFunction[A, B]): Array[B] = {
-    var i = 0
-    var matched = true
-    def d(x: A): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
+  def collect[B: ClassTag](pf: PartialFunction[A, B]): Array[B] = {
+    val fallback: Any => Any = ArrayOps.fallback
     val b = ArrayBuilder.make[B]
-    while(i < xs.length) {
-      matched = true
-      val v = pf.applyOrElse(xs(i), d)
-      if(matched) b += v
+    var i = 0
+    while (i < xs.length) {
+      val v = pf.applyOrElse(xs(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[B])
       i += 1
     }
     b.result()
@@ -1029,17 +1027,12 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   /** Finds the first element of the array for which the given partial function is defined, and applies the
     * partial function to it. */
-  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = {
+  def collectFirst[B](@deprecatedName("f","2.13.9") pf: PartialFunction[A, B]): Option[B] = {
+    val fallback: Any => Any = ArrayOps.fallback
     var i = 0
-    var matched = true
-    def d(x: A): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
-    while(i < xs.length) {
-      matched = true
-      val v = f.applyOrElse(xs(i), d)
-      if(matched) return Some(v)
+    while (i < xs.length) {
+      val v = pf.applyOrElse(xs(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) return Some(v.asInstanceOf[B])
       i += 1
     }
     None
