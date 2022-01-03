@@ -488,28 +488,23 @@ abstract class LambdaLift extends InfoTransform {
           if (sym.isLocalToBlock) liftDef(withFreeParams)
           else withFreeParams
 
-        case ValDef(mods, name, tpt, rhs) =>
-          if (sym.isCapturedVariable) {
-            val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
-
-            val refTypeSym = sym.tpe.typeSymbol
-
-            val factoryCall = typer.typedPos(rhs.pos) {
-              rhs match {
-                case EmptyTree =>
-                  val zeroMSym   = refZeroMethod(refTypeSym)
-                  gen.mkMethodCall(zeroMSym, Nil)
-                case arg =>
-                  val createMSym = refCreateMethod(refTypeSym)
-                  gen.mkMethodCall(createMSym, arg :: Nil)
-              }
+        case ValDef(mods, name, tpt, rhs) if sym.isCapturedVariable =>
+          val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
+          val refTypeSym = sym.tpe.typeSymbol
+          val factoryCall = typer.typedPos(rhs.pos) {
+            rhs match {
+              case EmptyTree =>
+                val zeroMSym   = refZeroMethod(refTypeSym)
+                gen.mkMethodCall(zeroMSym, Nil)
+              case arg =>
+                val createMSym = refCreateMethod(refTypeSym)
+                gen.mkMethodCall(createMSym, arg :: Nil)
             }
-
-            if (settings.warnCaptured)
-              reporter.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.")
-
-            treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
-          } else tree
+          }
+          if (settings.warnCaptured)
+            reporter.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.")
+          treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
+        case ValDef(_, _, _, _) => tree
         case Return(Block(stats, value)) =>
           Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
         case Return(expr) =>
