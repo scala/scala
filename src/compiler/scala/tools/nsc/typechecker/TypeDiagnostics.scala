@@ -530,6 +530,13 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       )
     def isExisting(sym: Symbol) = sym != null && sym.exists
 
+    // so trivial that it never consumes params
+    def isTrivial(rhs: Tree): Boolean =
+      rhs.symbol == Predef_??? || rhs.tpe =:= NothingTpe || (rhs match {
+        case Literal(_) => true
+        case _          => isConstantType(rhs.tpe) || isSingleType(rhs.tpe)
+      })
+
     override def traverse(t: Tree): Unit = {
       val sym = t.symbol
       t match {
@@ -541,7 +548,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
               else if (sym.isSynthetic && sym.isImplicit) return
-              else if (!sym.isConstructor && rhs.symbol != Predef_???)
+              else if (!sym.isConstructor && !isTrivial(rhs))
                 for (vs <- vparamss) params ++= vs.map(_.symbol)
               defnTrees += m
             case _ =>
