@@ -1126,9 +1126,10 @@ trait Namers extends MethodSynthesis {
         case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt)
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
-
-      val defnTpe = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
-      tree.tpt defineType defnTpe setPos tree.pos.focus
+      tree.tpt.defineType {
+        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
+        else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
+      }.setPos(tree.pos.focus)
       tree.tpt.tpe
     }
 
