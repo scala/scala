@@ -6,10 +6,8 @@ import scala.annotation.experimental
 
 object MacroCompat {
 
-  @experimental
   implicit def pos: Position = macro Macros.posImpl // implemented in test/tasty/run/pre/tastytest/package.scala
 
-  @experimental
   implicit inline def pos: Position = ${ Macros3.posImpl }
 
   def testCase(test: => Any)(using Position): String =

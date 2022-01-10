@@ -15,7 +15,7 @@ object AnythingIsPossible {
 
   type IntSpecial = Int @unchecked
 
-  class Match extends Box((0: @unchecked) match {
+  class Match extends Box((0: Int @unchecked) match {
     case n if n > 50    => "big"
     case 26 | 24        => "26 | 24"
     case a @ _ if a > 0 => "small"

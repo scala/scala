@@ -6,30 +6,20 @@ import scala.annotation.experimental
 
 object MacroCompat {
 
-  @experimental
   implicit def pos: Position = macro Position.posImpl
-
-  @experimental
   implicit inline def pos: Position = ${ Macros3.posImpl }
 
-  @experimental
   def constInt[T](x: T): Int = macro Macros.constIntImpl[T]
-
-  @experimental
   inline def constInt[T](x: T): Int = ${ Macros3.constIntImpl[T]('x) }
 
   object Bundles {
-    @experimental
-    def mono: Int = macro MacroImpl.mono
 
-    @experimental
+    def mono: Int = macro MacroImpl.mono
     inline def mono: Int = ${ Macros3.monoImpl }
 
-    @experimental
     def poly[T]: String = macro MacroImpl.poly[T]
-
-    @experimental
     inline def poly[T]: String = ${ Macros3.polyImpl[T] }
+
   }
 
   def testCase(test: => Any)(implicit pos: Position): (String, Position) =
