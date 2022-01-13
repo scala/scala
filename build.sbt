@@ -186,7 +186,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   pomExtra := {
     <scm>
       <connection>scm:git:git://github.com/scala/scala.git</connection>
-      <url>https://github.com/scala/scala.git</url>
+      <url>https://github.com/scala/scala</url>
     </scm>
       <issueManagement>
         <system>GitHub</system>
