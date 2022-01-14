@@ -1,11 +1,14 @@
 package scala.collection
 
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.Assert.{assertThrows => _, _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.util.chaining._
 import scala.tools.testkit.AssertUtil._
+
+import java.lang.ref._
 
 import Seq.empty
 
@@ -13,6 +16,180 @@ import Seq.empty
 class IteratorTest {
 
   private def from0 = Iterator.from(0)
+
+  private class Counted(limit: Int) extends Iterator[Int] {
+    val max = limit - 1
+    var probed, last, i = -1
+    def hasNext = (i < max).tap(_ => probed = i)
+    def next() = { if (i >= max) Iterator.empty.next() else { i += 1 ; i } }.tap(last = _)
+  }
+  private def counted = new Counted(Int.MaxValue)
+  private def limited(n: Int) = new Counted(n)
+  private def assertEqualResult[A](expected: Seq[Seq[A]])(actual: Iterator[Seq[A]]) = assertSameElements(expected, actual)
+
+  @Test def `grouped delivers groups`: Unit = {
+    val it = counted
+    val g  = it.grouped(3)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 4, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(3,4,5), res)
+  }
+  @Test def `grouped delivers partials`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 1, res.length)
+    assertEquals(List(6), res)
+  }
+  @Test def `grouped partial means default keep the segment`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(true)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 1, res.length)
+    assertEquals(List(6), res)
+  }
+  @Test def `grouped impartial means drop the segment`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(false)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertFalse(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+  }
+  @Test def `grouped delivers padded segment`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    res = g.next()
+    assertFalse(g.hasNext)
+    assertEquals(List(6,42,42), res)
+  }
+  @Test def `grouped padded segment ignores partial flag false`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(false).withPadding(42)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6,42,42)))(g)
+  }
+  @Test def `grouped padded segment ignores partial flag true`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPartial(true).withPadding(42)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6,42,42)))(g)
+  }
+  @Test def `grouped partial true ignores padding`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(true)
+    assertEqualResult(List(List(0,1,2),List(3,4,5),List(6)))(g)
+  }
+  // improved semantics is that setting partial flag always resets padding
+  @Test def `grouped partial false also ignores padding`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(false)
+    assertEqualResult(List(List(0,1,2),List(3,4,5)))(g)
+  }
+  /* Previous behavior:
+    scala> (1 to 7).iterator.grouped(3).withPadding(42).withPartial(false).toList
+    val res16: List[Seq[Int]] = List(ArraySeq(1, 2, 3), ArraySeq(4, 5, 6), ArraySeq(7, 42, 42))
+
+    scala> (1 to 7).iterator.grouped(3).withPadding(42).withPartial(true).withPartial(false).toList
+    val res17: List[Seq[Int]] = List(ArraySeq(1, 2, 3), ArraySeq(4, 5, 6))
+  */
+  @Test def `grouped config has no history`: Unit = {
+    val it = limited(7)
+    val g  = it.grouped(3).withPadding(42).withPartial(true).withPartial(false)  // same as previous test
+    assertEqualResult(List(List(0,1,2),List(3,4,5)))(g)
+  }
+  @Test def `grouped delivers sliding groups`: Unit = {
+    val it = counted
+    val g  = it.sliding(3, step = 2)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 3, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(2,3,4), res)
+  }
+  @Test def `grouped delivers impartial sliding groups`: Unit = {
+    val it = limited(7)
+    val g  = it.sliding(3, step = 2).withPartial(false)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertTrue(g.hasNext)
+    res = g.next()
+    res = g.next()
+    assertEquals(List(4,5,6), res)
+    assertFalse(g.hasNext)
+  }
+  @Test def `grouped delivers skipping groups`: Unit = {
+    val it = counted
+    val g  = it.sliding(size = 3, step = 5)
+    assertTrue(g.hasNext)
+    var res = g.next()
+    assertEquals("underlying is probed at n-1", 1, it.probed)
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(0,1,2), res)
+    assertTrue(g.hasNext)
+    assertEquals("underlying is probed at n-1", 6, it.probed)
+    res = g.next()
+    assertEquals("got a group", 3, res.length)
+    assertEquals(List(5,6,7), res)
+  }
+  @Test def `grouped does not allocate overeagerly`: Unit = {
+    val it = List(1,2,3).iterator
+    val g  = it.grouped(Int.MaxValue)
+    assertTrue(g.hasNext)
+    assertEquals(List(1,2,3), g.next())
+  }
+  @Test def `grouped does not hold elements`: Unit = {
+    val thing = new Object
+    val ref = new WeakReference(thing)
+    locally {
+      val it = Iterator(thing).grouped(1)
+      assertEquals(List(thing), it.next())
+    }
+    locally {
+      val it = Iterator.continually(ref.get()).grouped(1)
+      assertNotReachable(thing, it)(it.next())
+    }
+  }
+  @Test def `sliding must hold elements`: Unit = {
+    val thing = new Object
+    val ref = new WeakReference(thing)
+    val it = Iterator.continually(ref.get()).sliding(2,1)
+    assertFails(_.contains("Root <iterator> held reference")) { assertNotReachable(thing, it)(it.next()) }
+  }
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
     var counter = 0
@@ -63,19 +240,23 @@ class IteratorTest {
   }
 
   // test/files/run/iterator-concat.scala
-  @Test def concatIsStackFriendly(): Unit = {
-    // Create `size` Function0s, each of which evaluates to an Iterator
-    // which produces 1. Then fold them over ++ to get a single iterator,
-    // which should sum to "size".
-    def mk(size: Int): Iterator[Int] = {
-      //val closures = (1 to size).toList.map(x => (() => Iterator(1)))
-      //closures.foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
-      List.fill(size)(() => Iterator(1)).foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
+  @Test def `concat is stack friendly`: Unit = {
+    // Create `size` Function0s, each of which evaluates to an Iterator which produces 1.
+    // Then fold them over ++ to get a single iterator, which should sum to "size".
+    var minStack = Int.MaxValue
+    var maxStack = 0
+    def gen: Int = {
+      val depth = Thread.currentThread.getStackTrace.length     // prefer Luke StackWalker, count `ConcatIterator.next`
+      minStack = minStack min depth
+      maxStack = maxStack max depth
+      1
     }
-    assertEquals(100,    mk(100).sum)
-    assertEquals(1000,   mk(1000).sum)
-    assertEquals(10000,  mk(10000).sum)
-    assertEquals(100000, mk(100000).sum)
+    //was: val closures = (1 to size).toList.map(x => (() => Iterator(1))); closures.foldLeft(Iterator.empty: Iterator[Int])((res, f) => res ++ f())
+    def mk(size: Int): Iterator[Int] = Iterator.fill(size)(Iterator.fill(1)(gen)).foldLeft(Iterator.empty[Int])(_ ++ _)
+    val limit = 100                         // was: big number was to challenge stack depth
+    val it = mk(limit)
+    assertEquals(limit, it.sum)             // ensure valid construction
+    assertEquals(minStack, maxStack)        // include delta if assumption fails?
   }
 
   @Test def from(): Unit = {
@@ -634,8 +815,6 @@ class IteratorTest {
   }
 
   @Test def `flatMap is memory efficient in previous element`(): Unit = {
-    import java.lang.ref._
-    import scala.util.chaining._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
     class C extends Iterable[String] {
@@ -819,5 +998,49 @@ class IteratorTest {
     assertEquals(3, it3.next())
     assertTrue("concatted tail of it3 should be next", it3.hasNext)
   }
+  @Test def `Some iterator grouped/sliding unit tests`: Unit = {
+    def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(actual: Iterator[Seq[T]]): Unit = {
+      val xs = actual.toList
+      def failmsg(msg: String) = s"assertion failed on $xs: $msg"
+      assertEquals(failmsg(s"expected length $expectedLength"), expectedLength, xs.size)
+      assertEquals(failmsg(s"expected last $expectedLast"), expectedLast, xs.last)
+    }
 
+    def it = (1 to 10).iterator
+    val itSum = it.to(LazyList).sum
+    for (i <- it) {
+      // sum of the groups == sum of the original
+      val thisSum = ((it grouped i) map (_.sum)).to(LazyList).sum
+      assert(thisSum == itSum, s"$thisSum != $itSum" )
+    }
+
+    // grouped
+    assertThat(4, List(10)) { it grouped 3 }
+    assertThat(3, List(7, 8, 9)) { it grouped 3 withPartial false }
+    assertThat(4, List(10, -1, -1)) { it grouped 3 withPadding -1 }
+
+    // testing by-name padding, showing that this behavior was intended by the Author
+    val padIt = it
+    assertThat(4, List(10, 1, 2)) { it grouped 3 withPadding padIt.next() }
+
+    // sliding
+    assertThat(8, List(8, 9, 10)) { it sliding 3 }
+    assertThat(3, (3 to 10).toList) { it sliding 8 }
+    assertThat(2, List(9, 10)) { it.sliding(8, 8) }
+    assertThat(1, (1 to 8).toList) { it.sliding(8, 8) withPartial false }
+    assertThat(2, List(9, 10, -1, -1, -1)) { it.sliding(5, 8) withPadding -1 }
+    assertThat(1, (1 to 5).toList) { it.sliding(5, 8) withPartial false }
+
+    // larger step than window
+    assertThat(5, List(9)) { it.sliding(1, 2) }
+    assertThat(3, List(9, 10)) { it.sliding(2, 4) }
+
+    // make sure it throws past the end
+    assertThrows[NoSuchElementException] {
+      val slid = List(1,2,3).sliding(2)
+      slid.next()
+      slid.next()
+      slid.next()
+    }
+  }
 }
