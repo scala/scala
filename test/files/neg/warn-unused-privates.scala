@@ -50,10 +50,16 @@ trait Accessors {
   private var v3: Int = 0 // warn, never got
   private var v4: Int = 0 // no warn
 
+  private[this] var v5 = 0 // warn, never set
+  private[this] var v6 = 0 // warn, never got
+  private[this] var v7 = 0 // no warn
+
   def bippy(): Int = {
-    v3 = 5
-    v4 = 6
-    v2 + v4
+    v3 = 3
+    v4 = 4
+    v6 = 6
+    v7 = 7
+    v2 + v4 + v5 + v7
   }
 }
 
@@ -63,10 +69,16 @@ class StableAccessors {
   private var s3: Int = 0 // warn, never got
   private var s4: Int = 0 // no warn
 
+  private[this] var s5 = 0 // warn, never set
+  private[this] var s6 = 0 // no warn, limitation
+  private[this] var s7 = 0 // no warn
+
   def bippy(): Int = {
-    s3 = 5
-    s4 = 6
-    s2 + s4
+    s3 = 3
+    s4 = 4
+    s6 = 6
+    s7 = 7
+    s2 + s4 + s5 + s7
   }
 }
 

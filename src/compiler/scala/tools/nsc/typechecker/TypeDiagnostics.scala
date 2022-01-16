@@ -512,8 +512,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val params    = mutable.Set[Symbol]()
     val patvars   = mutable.Set[Symbol]()
 
-    def defnSymbols = defnTrees.toList map (_.symbol)
-    def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
+    def varsWithoutSetters = defnTrees.iterator.map(_.symbol).filter(t => t.isVar && !isExisting(t.setter))
 
     def qualifiesTerm(sym: Symbol) = (
       (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || isEffectivelyPrivate(sym))
@@ -653,7 +652,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       clean.sortBy(treepos)
     }
     // local vars which are never set, except those already returned in unused
-    def unsetVars = localVars.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
+    def unsetVars = varsWithoutSetters.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).toList.sortBy(sympos)
     def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
     def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
     def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
@@ -707,23 +706,15 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
-          val what = (
+          val what =
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (
-              sym.isVar
-                || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))
-            ) s"var ${sym.name.getterName.decoded}"
-            else if (
-              sym.isVal
-                || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE)))
-                || sym.isLazy
-            ) s"val ${sym.name.decoded}"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.name.getterName.decoded}" }
+            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.getterName.decoded}" }
+            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.getterName.decoded}"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.name.decoded}"
             else if (sym.isMethod) s"method ${sym.name.decoded}"
             else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"
-          )
           emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
