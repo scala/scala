@@ -14,6 +14,7 @@ package scala
 package reflect
 package io
 
+import java.lang.Boolean.{getBoolean => booleanProperty}
 import java.net.URL
 import java.io.{ByteArrayInputStream, FilterInputStream, IOException, InputStream}
 import java.io.{File => JFile}
@@ -34,7 +35,7 @@ import ZipArchive._
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object ZipArchive {
-  private[io] val closeZipFile = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
+  private[io] val closeZipFile = booleanProperty("scala.classpath.closeZip")
 
   private[io] final val RootEntry = "/"
 
