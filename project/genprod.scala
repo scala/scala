@@ -100,14 +100,15 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 object FunctionZero extends Function(0) {
   override def genprodString  = "\n// genprod generated these sources at: " + java.time.Instant.now()
   override def covariantSpecs = "@specialized(Specializable.Primitives) "
-  override def descriptiveComment = "  " + functionNTemplate.format("javaVersion", "anonfun0",
-"""
- *    val javaVersion = () => sys.props("java.version")
+  override def descriptiveComment = "  " + functionNTemplate.format("greeting", "anonfun0",
+raw"""
+ *    val name = "world"
+ *    val greeting = () => s"hello, $$name"
  *
  *    val anonfun0 = new Function0[String] {
- *      def apply(): String = sys.props("java.version")
+ *      def apply(): String = s"hello, $$name"
  *    }
- *    assert(javaVersion() == anonfun0())
+ *    assert(greeting() == anonfun0())
  * """)
   override def moreMethods = ""
 }
@@ -207,8 +208,10 @@ class Function(val i: Int) extends Group("Function") with Arity {
   def descriptiveComment  = ""
   def functionNTemplate =
 """
- *  In the following example, the definition of %s is a
- *  shorthand for the anonymous class definition %s:
+ *  In the following example, the definition of `%s` is
+ *  shorthand, conceptually, for the anonymous class definition
+ *  `%s`, although the implementation details of how the
+ *  function value is constructed may differ:
  *
  *  {{{
  *  object Main extends App {%s}

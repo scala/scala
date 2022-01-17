@@ -45,8 +45,10 @@ object Function1 {
 
 /** A function of 1 parameter.
  *  
- *  In the following example, the definition of succ is a
- *  shorthand for the anonymous class definition anonfun1:
+ *  In the following example, the definition of `succ` is
+ *  shorthand, conceptually, for the anonymous class definition
+ *  `anonfun1`, although the implementation details of how the
+ *  function value is constructed may differ:
  *
  *  {{{
  *  object Main extends App {
