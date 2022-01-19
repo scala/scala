@@ -2939,6 +2939,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def isPackageObject    = isModule && (rawname == nme.PACKAGE)
 
+    override def isExistentiallyBound = this hasFlag EXISTENTIAL
+
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
     override def resolveOverloadedFlag(flag: Long) = flag match {

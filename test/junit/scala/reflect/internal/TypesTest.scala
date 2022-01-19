@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.{After, Assert, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import scala.annotation.StaticAnnotation
 import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
@@ -14,6 +15,9 @@ class TypesTest {
 
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._, definitions._
+
+  type EmptyList[A] = Nil.type
+  class ann[A] extends StaticAnnotation
 
   @Test
   def testRefinedTypeSI8611(): Unit = {
@@ -418,5 +422,15 @@ class TypesTest {
     interestingCombos foreach { case (result, checks) =>
       checks.foreach(check => assertTrue(lub(check) =:= result))
     }
+  }
+
+  @Test
+  def testTypeStability(): Unit = {
+    assertTrue(typeOf[EmptyList[Int]].isStable)
+    assertTrue(typeOf[EmptyList[T] forSome { type T }].isStable)
+    assertTrue(typeOf[Nil.type forSome { type T }].isStable)
+    assertTrue(typeOf[Nil.type @ann[Int]].isStable)
+    assertTrue(typeOf[Nil.type @ann[T] forSome { type T }].isStable)
+    assertFalse(typeOf[x.type forSome { val x: String }].isStable)
   }
 }

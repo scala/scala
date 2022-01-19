@@ -909,14 +909,13 @@ trait Definitions extends api.StandardDefinitions {
      */
     @tailrec
     final def isStable(tp: Type): Boolean = tp match {
-      case _: SingletonType                             => true
-      case NoPrefix                                     => true
+      case NoPrefix | _: SingletonType                  => true
       case TypeRef(_, NothingClass | SingletonClass, _) => true
-      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.upperBound.typeSymbol isSubClass SingletonClass
+      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.upperBound.typeSymbol.isSubClass(SingletonClass)
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
-      case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
+      case _: TypeRef                                   => val norm = tp.normalize; (norm ne tp) && isStable(norm)
       case TypeVar(origin, _)                           => isStable(origin)
-      case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
+      case ExistentialType(qs, underlying)              => isStable(deriveTypeWithWildcards(qs)(underlying))
       case _: SimpleTypeProxy                           => isStable(tp.underlying)
       case _                                            => false
     }
