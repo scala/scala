@@ -38,7 +38,7 @@ import scala.build._, VersionUtil._
 val junitDep          = "junit"                          % "junit"                            % "4.13.2"
 val junitInterfaceDep = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
 val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.15.4"                          % Test
-val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.13"
+val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
 val jnaDep            = "net.java.dev.jna"               % "jna"                              % versionProps("jna.version")
@@ -195,7 +195,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   pomExtra := {
     <scm>
       <connection>scm:git:git://github.com/scala/scala.git</connection>
-      <url>https://github.com/scala/scala.git</url>
+      <url>https://github.com/scala/scala</url>
     </scm>
       <issueManagement>
         <system>GitHub</system>

@@ -7,7 +7,7 @@ object ScaladocSettings {
 
   // when this changes, the integrity check in HtmlFactory.scala also needs updating
   val webjarResources = Seq(
-    "org.webjars" % "jquery" % "3.5.1"
+    "org.webjars" % "jquery" % "3.6.0"
   )
 
   def extractResourcesFromWebjar = Def.task {
@@ -17,8 +17,8 @@ object ScaladocSettings {
     IO.createDirectory(dest)
     // externalDependencyClasspath (not dependencyClasspath) to avoid compiling
     // upstream projects (library, reflect, compiler) on bsp `buildTarget/resources`
-    val classpathes = (Compile / externalDependencyClasspath).value
-    val files: Seq[File] = classpathes.filter(isWebjar).flatMap { classpathEntry =>
+    val classpaths = (Compile / externalDependencyClasspath).value
+    val files: Seq[File] = classpaths.filter(isWebjar).flatMap { classpathEntry =>
       val jarFile = classpathEntry.data
       IO.unzip(jarFile, dest)
     }
