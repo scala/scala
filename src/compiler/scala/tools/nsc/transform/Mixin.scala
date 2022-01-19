@@ -103,10 +103,9 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
    *  @param acc        The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
    */
-  private def rebindSuper(base: Symbol, acc: Symbol, mixinClass: Symbol): Symbol = {
-    val site = base.thisType
-
+  private def rebindSuper(base: Symbol, acc: Symbol, mixinClass: Symbol): Symbol =
     exitingSpecialize {
+      val site = base.thisType
       // the specialized version T$sp of a trait T will have a super accessor that has the same alias
       // as the super accessor in trait T; we must rebind super
       // from the vantage point of the original trait T, not the specialized T$sp
@@ -138,7 +137,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
       sym
     }
-  }
 
 // --------- type transformation -----------------------------------------------
 
