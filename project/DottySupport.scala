@@ -26,7 +26,7 @@ object TastySupport {
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "3.0.0"
+  val dottyVersion = "3.1.1-RC2"
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(
@@ -38,11 +38,12 @@ object DottySupport {
     // Needed to compile scala3-library together with scala-library
     compileOrder := CompileOrder.Mixed,
 
-    // Add the scala3-library sources to the sourcepath
+    // Add the scala3-library sources to the sourcepath and disable fatal warnings
     Compile / scalacOptions := {
       val old = (Compile / scalacOptions).value
+      val withoutFatalWarnings = old.filter(opt => opt != "-Werror" && !opt.startsWith("-Wconf"))
 
-      val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = old.span(_ != "-sourcepath")
+      val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = withoutFatalWarnings.span(_ != "-sourcepath")
 
       val newSourcepath =
         ((Compile / sourceManaged).value / "scala3-library-src").getAbsolutePath +
