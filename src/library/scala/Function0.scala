@@ -11,24 +11,27 @@
  */
 
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: 2020-02-01T04:13:22.795Z
+// genprod generated these sources at: 2022-01-17T20:47:12.170348200Z
 
 package scala
 
 
 /** A function of 0 parameters.
  *  
- *  In the following example, the definition of javaVersion is a
- *  shorthand for the anonymous class definition anonfun0:
+ *  In the following example, the definition of `greeting` is
+ *  shorthand, conceptually, for the anonymous class definition
+ *  `anonfun0`, although the implementation details of how the
+ *  function value is constructed may differ:
  *
  *  {{{
  *  object Main extends App {
- *    val javaVersion = () => sys.props("java.version")
+ *    val name = "world"
+ *    val greeting = () => s"hello, $name"
  *
  *    val anonfun0 = new Function0[String] {
- *      def apply(): String = sys.props("java.version")
+ *      def apply(): String = s"hello, $name"
  *    }
- *    assert(javaVersion() == anonfun0())
+ *    assert(greeting() == anonfun0())
  * }
  *  }}}
  */
