@@ -86,13 +86,8 @@ abstract class BackendUtils extends PerRunInit {
   })
 
 
-  lazy val majorVersion: LazyVar[Int] = perRunLazy(this)(classfileVersion.get & 0xFF)
-
-  lazy val emitStackMapFrame: LazyVar[Boolean] = perRunLazy(this)(majorVersion.get >= 50)
-
   lazy val extraProc: LazyVar[Int] = perRunLazy(this)(
-    asm.ClassWriter.COMPUTE_MAXS |
-      (if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0)
+    asm.ClassWriter.COMPUTE_MAXS | asm.ClassWriter.COMPUTE_FRAMES
   )
 
   /*
