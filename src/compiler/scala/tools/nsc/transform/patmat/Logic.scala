@@ -752,17 +752,15 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
       private val uniques = new mutable.HashMap[Type, Const]
       private[TreesAndTypesDomain] def unique(tp: Type, mkFresh: => Const): Const =
-        uniques.get(tp).getOrElse(
-          uniques.find {case (oldTp, oldC) => oldTp =:= tp} match {
-            case Some((_, c)) =>
-              debug.patmat("unique const: "+ ((tp, c)))
-              c
-            case _ =>
-              val fresh = mkFresh
-              debug.patmat("uniqued const: "+ ((tp, fresh)))
-              uniques(tp) = fresh
-              fresh
+        uniques.getOrElse(tp, {
+          // normalize to increase the chance of structural equality and reduce the cost of =:=
+          val normalized = tp.map(_.normalize)
+          uniques.getOrElseUpdate(normalized, {
+            val const = uniques.keysIterator.find(_ =:= normalized).fold(mkFresh)(uniques)
+            debug.patmat(s"unique const: ${tp -> const}")
+            const
           })
+        })
 
       private val trees = mutable.HashSet.empty[Tree]
 
