@@ -781,6 +781,7 @@ expression ´e´.
 
 ```ebnf
 Expr1        ::=  [SimpleExpr ‘.’] id ‘=’ Expr
+               |  PrefixOperator SimpleExpr ‘=’ Expr
                |  SimpleExpr1 ArgumentExprs ‘=’ Expr
 ```
 
@@ -795,6 +796,9 @@ setter method `´x´_=` as member, then the assignment
 `´x´_=(´e\,´)` of that setter method.  Analogously, an
 assignment `´f.x´ = ´e´` to a parameterless method ´x´
 is interpreted as the invocation `´f.x´_=(´e\,´)`.
+If ´x´ is an application of a unary operator, then the expression
+is interpreted as though it were written as the explicit application
+`´x´.unary_´\mathit{op}´`, namely, as `´x´.unary_´\mathit{op}´_=(´e\,´)`.
 
 An assignment `´f´(´\mathit{args}\,´) = ´e´` with a method application to the
 left of the ‘`=`’ operator is interpreted as
