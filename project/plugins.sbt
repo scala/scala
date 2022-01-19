@@ -17,10 +17,10 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.9.2")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.1")
 
 libraryDependencies ++= Seq(
-  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.1.201703071140-r",
+  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
   "org.slf4j" % "slf4j-nop" % "1.7.32",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
   )
@@ -31,6 +31,4 @@ Global / concurrentRestrictions := Seq(
 
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.2")
-
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
