@@ -166,7 +166,7 @@ private final class DelegatingReporter(
     noWarn: Boolean,
     private[this] var delegate: xsbti.Reporter
 ) extends scala.tools.nsc.reporters.Reporter {
-  def dropDelegate(): Unit = { delegate = null }
+  def dropDelegate(): Unit = { delegate = ReporterSink }
   def error(msg: String): Unit = error(FakePos("scalac"), msg)
   def printSummary(): Unit = delegate.printSummary()
 
@@ -209,4 +209,14 @@ private final class DelegatingReporter(
     override val severity = sev
     override def toString = s"[$severity] $pos: $message"
   }
+}
+
+private object ReporterSink extends xsbti.Reporter {
+  def reset() = ()
+  def hasErrors() = false
+  def hasWarnings() = false
+  def printSummary() = ()
+  def problems() = Array.empty[xsbti.Problem]
+  def log(problem: xsbti.Problem) = ()
+  def comment(pos: xsbti.Position, msg: String) = ()
 }
