@@ -1,0 +1,4 @@
+usage_2.scala:3: error: test type arguments [Int] do not conform to empty type parameter list
+  println(scala.testing.Macros.m[Int])
+                                ^
+1 error

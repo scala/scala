@@ -1224,16 +1224,16 @@ trait ContextErrors extends splain.SplainErrors {
           kindErrors.toList.mkString("\n", ", ", ""))
       }
 
-      private[scala] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean) = {
+      private[scala] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean): String = {
         if (explaintypes) {
-          val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
+          val bounds = tparams.map(_.info.instantiateTypeParams(tparams, targs).bounds)
           foreach2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ))
           foreach2(targs, bounds)((targ, bound) => explainTypes(targ, bound.hi))
         }
+        def bracketed(items: List[_]) = items.mkString("[", ",", "]")
+        val bounds = tparams.headOption.map(h => s"${h.owner}'s type parameter bounds ${bracketed(tparams.map(_.defString))}").getOrElse("empty type parameter list")
 
-        prefix + "type arguments " + targs.mkString("[", ",", "]") +
-        " do not conform to " + tparams.head.owner + "'s type parameter bounds " +
-        (tparams map (_.defString)).mkString("[", ",", "]")
+        s"${prefix}type arguments ${bracketed(targs)} do not conform to ${bounds}"
       }
 
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
