@@ -280,6 +280,7 @@ trait CompilerControl { self: Global =>
     val sym: Symbol
     val tpe: Type
     val accessible: Boolean
+    val aliasInfo: Option[ScopeMember]
     def implicitlyAdded = false
     def symNameDropLocal: Name = if (sym.name.isTermName) sym.name.dropLocal else sym.name
 
@@ -298,7 +299,8 @@ trait CompilerControl { self: Global =>
     tpe: Type,
     accessible: Boolean,
     inherited: Boolean,
-    viaView: Symbol) extends Member {
+    viaView: Symbol,
+    aliasInfo: Option[ScopeMember] = None) extends Member {
     // should be a case class parameter, but added as a var instead to preserve compatibility with the IDE
     var prefix: Type = NoType
     override def implicitlyAdded = viaView != NoSymbol
@@ -308,7 +310,8 @@ trait CompilerControl { self: Global =>
     sym: Symbol,
     tpe: Type,
     accessible: Boolean,
-    viaImport: Tree) extends Member {
+    viaImport: Tree,
+    aliasInfo: Option[ScopeMember] = None) extends Member {
     // should be a case class parameter, but added as a var instead to preserve compatibility with the IDE
     var prefix: Type = NoType
   }

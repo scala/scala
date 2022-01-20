@@ -350,7 +350,7 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
     }
 
     val parsedLineWord = parsedLine.word()
-    result.candidates.filter(_.name == parsedLineWord) match {
+    result.candidates.filter(c => c.name == parsedLineWord || c.alias.fold(false)(a => a == parsedLineWord)) match {
       case Nil =>
       case exacts =>
         val declStrings = exacts.map(_.declString()).filterNot(_ == "")
