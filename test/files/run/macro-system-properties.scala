@@ -8,7 +8,7 @@ object Test extends ReplTest {
   }
 
   def code = """
-    import scala.language.experimental._, scala.reflect.macros.blackbox.Context
+    import scala.language.experimental.macros, scala.reflect.macros.blackbox.Context
     object GrabContext {
       def lastContext = Option(System.getProperties.get("lastContext").asInstanceOf[reflect.macros.runtime.Context])
       // System.properties lets you stash true globals (unlike statics which are classloader scoped)

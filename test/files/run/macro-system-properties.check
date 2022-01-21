@@ -1,6 +1,6 @@
 
-scala> import scala.language.experimental._, scala.reflect.macros.blackbox.Context
-import scala.language.experimental._
+scala> import scala.language.experimental.macros, scala.reflect.macros.blackbox.Context
+import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
 scala>     object GrabContext {

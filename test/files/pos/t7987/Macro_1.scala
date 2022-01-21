@@ -1,4 +1,4 @@
-import scala.language.experimental._
+import scala.language.experimental.macros
 
 object Macro {
   def apply[A](a: A): A = macro impl[A]
