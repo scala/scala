@@ -1047,7 +1047,9 @@ trait Scanners extends ScannersCommon {
           getInterpolatedIdentRest()
         } else {
           val expectations = "$$, $\", $identifier or ${expression}"
-          syntaxError(s"invalid string interpolation $$$ch, expected: $expectations")
+          syntaxError(charOffset - 2, s"invalid string interpolation $$$ch, expected: $expectations")
+          putChar('$')
+          getStringPart(multiLine, seenEscapedQuote)  // consume rest of interpolation, taking $ as literal
         }
       } else {
         val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))
