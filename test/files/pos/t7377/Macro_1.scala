@@ -1,4 +1,4 @@
-import language.experimental._
+import language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
 object M {

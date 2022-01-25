@@ -1,7 +1,7 @@
 package p1
 
 import scala.reflect.macros.blackbox._
-import language.experimental._
+import language.experimental.macros
 
 object Macro {
   def impl(c: Context): c.Tree = {
