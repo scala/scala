@@ -243,6 +243,17 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     }
   }
 
+  def registerRequiredDirectInterface(alias: Symbol, clazz: Symbol, msg: Type => String): Unit = {
+    val owner = alias.owner
+    if (owner.isJavaDefined && owner.isInterface) {
+      if (!clazz.parentSymbolsIterator.contains(owner)) {
+        val suggestedParent = exitingTyper(clazz.info.baseType(owner))
+        reporter.error(clazz.pos, msg(suggestedParent))
+      } else
+        erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += owner
+    }
+  }
+
   /** Add all members to be mixed in into a (non-trait-) class
    *  These are:
    *    for every mixin trait T that is not also inherited by the superclass:
@@ -346,13 +357,8 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
               reporter.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
                 mixinMember.alias, mixinClass))
             case alias1 =>
-              if (alias1.owner.isJavaDefined && alias1.owner.isInterface) {
-                if (!clazz.parentSymbolsIterator.contains(alias1.owner)) {
-                  val suggestedParent = exitingTyper(clazz.info.baseType(alias1.owner))
-                  reporter.error(clazz.pos, s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $suggestedParent is directly extended by $clazz.")
-                } else
-                  erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += alias1.owner
-              }
+              registerRequiredDirectInterface(alias1, clazz, parent =>
+                s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $parent is directly extended by $clazz.")
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
@@ -579,8 +585,11 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
          */
         def completeSuperAccessor(stat: Tree) = stat match {
           case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${stat.symbol.alias.owner} . ${stat.symbol.alias}")
-            val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
+            val alias = stat.symbol.alias
+            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${alias.owner} . ${alias}")
+            registerRequiredDirectInterface(alias, clazz, parent =>
+              s"Unable to implement a super accessor, $parent needs to be directly extended by $clazz.")
+            val body = atPos(stat.pos)(Apply(SuperSelect(clazz, alias), vparams map (v => Ident(v.symbol))))
             val pt   = stat.symbol.tpe.resultType
 
             copyDefDef(stat)(rhs = enteringMixin(transform(localTyper.typed(body, pt))))
