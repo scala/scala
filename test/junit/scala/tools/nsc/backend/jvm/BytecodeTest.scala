@@ -411,4 +411,21 @@ class BytecodeTest extends BytecodeTesting {
           assertInvoke(c, "scala/runtime/Statics", "releaseFence")
     }
   }
+
+  @Test
+  def t12340(): Unit = {
+    val code =
+      """class C {
+        |  def foo(param: String) = {
+        |    trait T {
+        |      def bar = param
+        |    }
+        |    (new T {}).bar
+        |  }
+        |}""".stripMargin
+    val List(_, cAnon, _) = compileClasses(code)
+    // field for caputred param is not final
+    assertEquals(Opcodes.ACC_PRIVATE, cAnon.fields.asScala.find(_.name.startsWith("param")).get.access)
+    assertInvoke(getMethod(cAnon, "<init>"), "scala/runtime/Statics", "releaseFence")
+  }
 }
