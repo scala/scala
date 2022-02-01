@@ -1,0 +1,4 @@
+Test.scala:1: error: Unable to implement a super accessor, A needs to be directly extended by class C.
+class C extends B {
+      ^
+1 error
