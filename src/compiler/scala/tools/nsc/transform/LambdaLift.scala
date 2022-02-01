@@ -291,10 +291,14 @@ abstract class LambdaLift extends InfoTransform {
           proxies(owner) =
             for (fv <- freeValues.toList) yield {
               val proxyName = proxyNames.getOrElse(fv, fv.name)
-              debuglog(s"new proxy ${proxyName} in ${owner.fullLocationString}")
+              debuglog(s"new proxy $proxyName in ${owner.fullLocationString}")
               val proxy =
                 if (owner.isTrait) {
-                  val accessorFlags = newFlags.toLong | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS
+                  val accessorFlags = newFlags | ACCESSOR | SYNTHESIZE_IMPL_IN_SUBCLASS
+                  // scala-dev#408: fields for locals captured in a trait are non-final (created in mixin), as they are
+                  // assigned in a trait setter. For safe publication, subclass constructors need to call releaseFence.
+                  // We need to add the attachment in lambdalift, as mixin runs after the constructors phase.
+                  owner.children.foreach(_.primaryConstructor.updateAttachment(ConstructorNeedsFence))
 
                   // TODO do we need to preserve pre-erasure info for the accessors (and a NullaryMethodType for the getter)?
                   // can't have a field in the trait, so add a setter
@@ -304,7 +308,7 @@ abstract class LambdaLift extends InfoTransform {
                   // the getter serves as the proxy -- entered below
                   owner.newMethod(proxyName.getterName, fv.pos, accessorFlags | STABLE) setInfo MethodType(Nil, fv.info)
                 } else
-                  owner.newValue(proxyName.toTermName, fv.pos, newFlags.toLong | PrivateLocal) setInfo fv.info
+                  owner.newValue(proxyName.toTermName, fv.pos, newFlags | PrivateLocal) setInfo fv.info
 
               if (owner.isClass) owner.info.decls enter proxy
               proxy
