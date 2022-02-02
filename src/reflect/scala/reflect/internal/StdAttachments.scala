@@ -135,4 +135,7 @@ trait StdAttachments {
   case class ChangeOwnerAttachment(originalOwner: Symbol)
 
   case object InterpolatedString extends PlainAttachment
+
+  // Use of _root_ is in correct leading position of selection
+  case object RootSelection extends PlainAttachment
 }

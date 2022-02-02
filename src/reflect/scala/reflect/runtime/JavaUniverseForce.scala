@@ -73,6 +73,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NullaryOverrideAdapted
     this.ChangeOwnerAttachment
     this.InterpolatedString
+    this.RootSelection
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

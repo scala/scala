@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Werror
 package p
 package _root_
 object Test {

@@ -6147,58 +6147,47 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     @inline final def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode, WildcardType)
 
     // if a package id is a selection from _root_ in scope, warn about semantics and set symbol for typedQualifier
-    @inline final def typedPackageQualifier(tree: Tree): Tree = typedQualifier(packageQualifierTraverser(tree))
+    @inline final def typedPackageQualifier(tree: Tree): Tree = typedQualifier(checkRootOfPackageQualifier(tree))
 
-    object packageQualifierTraverser extends Traverser {
-      def checkRootSymbol(t: Tree): Unit =
-        context.lookupSymbol(nme.ROOTPKG, p => p.hasPackageFlag && !p.isRootPackage) match {
-          case LookupSucceeded(_, sym) =>
-            runReporting.warning(
-              t.pos,
-              s"${nme.ROOTPKG} in root position in package definition does not refer to the root package, but to ${sym.fullLocationString}, which is in scope",
-              WarningCategory.Other,
-              currentOwner)
-            t.setSymbol(sym)
-          case _ => ()
-        }
-      override def traverse(tree: Tree): Unit =
-        tree match {
-          case Select(id@Ident(nme.ROOTPKG), _) if !id.hasExistingSymbol => checkRootSymbol(id)
-          case _ => super.traverse(tree)
-        }
+    def checkRootOfPackageQualifier(q: Tree): Tree = {
+      q match {
+        case Select(id @ Ident(nme.ROOTPKG), _) if !id.hasExistingSymbol && id.hasAttachment[RootSelection.type] =>
+          context.lookupSymbol(nme.ROOTPKG, p => p.hasPackageFlag && !p.isRootPackage) match {
+            case LookupSucceeded(_, sym) =>
+              runReporting.warning(
+                id.pos,
+                s"${nme.ROOTPKG} in root position in package definition does not refer to the root package, but to ${sym.fullLocationString}, which is in scope",
+                WarningCategory.Other,
+                context.owner)
+              id.removeAttachment[RootSelection.type]
+              id.setSymbol(sym)
+            case _ =>
+          }
+        case _ =>
+      }
+      q
     }
 
     /** If import from path starting with _root_, warn if there is a _root_ value in scope,
      *  and ensure _root_ can only be the root package in that position.
      */
-    @inline def checkRootOfQualifier(q: Tree, mode: Mode): Tree =
-      if (mode.typingPatternOrTypePat) patternQualifierTraverser(q) else nonpatternQualifierTraverser(q)
-
-    abstract class QualifierTraverser extends Traverser {
-      def startContext: Context
-      def checkRootSymbol(t: Tree): Unit = {
-        startContext.lookupSymbol(nme.ROOTPKG, !_.isRootPackage) match {
-          case LookupSucceeded(_, sym) =>
-            runReporting.warning(
-              t.pos,
-              s"${nme.ROOTPKG} in root position of qualifier refers to the root package, not ${sym.fullLocationString}, which is in scope",
-              WarningCategory.Other,
-              currentOwner)
-            t.setSymbol(rootMirror.RootPackage)
-          case _ => ()
-        }
+    def checkRootOfQualifier(q: Tree, mode: Mode): Tree = {
+      q match {
+        case Ident(nme.ROOTPKG) if !q.hasExistingSymbol && q.hasAttachment[RootSelection.type] =>
+          val startContext = if (mode.typingPatternOrTypePat) context.outer else context
+          startContext.lookupSymbol(nme.ROOTPKG, !_.isRootPackage) match {
+            case LookupSucceeded(_, sym) =>
+              runReporting.warning(
+                q.pos,
+                s"${nme.ROOTPKG} in root position of qualifier refers to the root package, not ${sym.fullLocationString}, which is in scope",
+                WarningCategory.Other,
+                context.owner)
+            case _ =>
+          }
+          q.setSymbol(rootMirror.RootPackage)
+        case _ =>
       }
-      override def traverse(tree: Tree): Unit =
-        tree match {
-          case Select(id@Ident(nme.ROOTPKG), _) if !id.hasExistingSymbol => checkRootSymbol(id)
-          case _ => super.traverse(tree)
-        }
-    }
-    object patternQualifierTraverser extends QualifierTraverser {
-      override def startContext = context.outer
-    }
-    object nonpatternQualifierTraverser extends QualifierTraverser {
-      override def startContext = context
+      q
     }
 
     /** Types function part of an application */
