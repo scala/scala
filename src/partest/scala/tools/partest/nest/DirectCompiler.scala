@@ -151,11 +151,10 @@ class DirectCompiler(val runner: Runner) {
       else runner.genFail(s"compilation failed")
     }
 
-    try {
+    try
       if (suiteRunner.config.optCompilerPath.isEmpty) execCompile()
       else execOtherCompiler()
-    }
-    catch   { case t: Throwable => reportError(t.getMessage) ; runner.genCrash(t) }
-    finally { logWriter.close() }
+    catch runner.crashHandler
+    finally logWriter.close()
   }
 }
