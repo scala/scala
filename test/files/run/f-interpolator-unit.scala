@@ -1,14 +1,8 @@
-package scala.lang.stringinterpol
-
 import java.text.DecimalFormat
 
-import org.junit.Assert.{ assertThrows => _, _ }
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-
 import scala.language.implicitConversions
-import scala.tools.testkit.AssertUtil._
+
+// extracted from the junit test, which requires bootstrapping
 
 object StringContextTestUtils {
   private val decimalSeparator: Char = new DecimalFormat().getDecimalFormatSymbols().getDecimalSeparator()
@@ -31,38 +25,29 @@ object StringContextTestUtils {
   }
 }
 
-@RunWith(classOf[JUnit4])
-class StringContextTest {
+object Test extends App {
 
   import StringContext._
   import StringContextTestUtils.StringContextOps
 
-  @Test def noEscape() = {
+  def assertEquals(s0: String, s1: String) = assert(s0 == s1, s"$s0 == $s1")
+
+  def noEscape() = {
     val s = "string"
     val res = processEscapes(s)
     assertEquals(s, res)
   }
-  @Test def tabbed() = {
+  def tabbed() = {
     val s = """a\tb"""
     val res = processEscapes(s)
     assertEquals("a\tb", res)
   }
-  @Test def quoted() = {
+  def quoted() = {
     val s = """hello, \"world\""""
     val res = processEscapes(s)
     assertEquals("""hello, "world"""", res)
   }
-  @Test def badly() = assertThrows[InvalidEscapeException] {
-    val s = """Scala\"""
-    val res = processEscapes(s)
-    assertEquals("Scala", res)
-  }
-  @Test def noOctal() = assertThrows[InvalidEscapeException] {
-    val s = """\123cala"""
-    val res = processEscapes(s)
-    assertEquals("Scala", res)
-  }
-  @Test def t5856(): Unit = {
+  def t5856(): Unit = {
     class X {
       override def toString = "Test"
 
@@ -78,41 +63,36 @@ class StringContextTest {
     new X().thistle()   // this'll be good
   }
 
-  @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
+  def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
 
   // verifying that the standard interpolators can be supplanted
-  @Test def antiHijack_?() = {
+  def antiHijack_?() = {
     object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any*) = "!!!!" } }
     import AllYourStringsAreBelongToMe._
     //assertEquals("????", s"????")
     assertEquals("!!!!", s"????") // OK to hijack core interpolator ids
   }
 
-  @Test def fIf() = {
+  def fIf() = {
     val res = f"${if (true) 2.5 else 2.5}%.2f"
     val expected = locally"2.50"
     assertEquals(expected, res)
   }
 
-  @Test def fIfNot() = {
+  def fIfNot() = {
     val res = f"${if (false) 2.5 else 3.5}%.2f"
     val expected = locally"3.50"
     assertEquals(expected, res)
   }
 
-  @Test def fHeteroArgs() = {
+  def fHeteroArgs() = {
     val res = f"${3.14}%.2f rounds to ${3}%d"
     val expected = locally"${"3.14"} rounds to 3"
     assertEquals(expected, res)
   }
 
-  @annotation.nowarn("msg=Boolean format is null test for non-Boolean")
-  @Test def `non booleans as boolean`(): Unit = {
-    assertEquals("false", f"${null}%b")
-    assertEquals("FALSE", f"${null}%B")
-  }
-
-  @Test def `f interpolator baseline`(): Unit = {
+  @annotation.nowarn
+  def `f interpolator baseline`(): Unit = {
 
     // ignore spurious warning scala/bug#11946
     type ignore = annotation.unused
@@ -148,12 +128,14 @@ class StringContextTest {
       f"${b_false}%b" -> "false",
       f"${b_true}%b"  -> "true",
 
+      f"${null}%b"  -> "false",
       f"${false}%b" -> "false",
       f"${true}%b"  -> "true",
       f"${true && false}%b"                 -> "false",
       f"${java.lang.Boolean.valueOf(false)}%b"  -> "false",
       f"${java.lang.Boolean.valueOf(true)}%b"   -> "true",
 
+      f"${null}%B"  -> "FALSE",
       f"${false}%B" -> "FALSE",
       f"${true}%B"  -> "TRUE",
       f"${java.lang.Boolean.valueOf(false)}%B"  -> "FALSE",
@@ -271,103 +253,14 @@ class StringContextTest {
     for ((f, s) <- ss) assertEquals(s, f)
   }
 
-  @Test
-  def globTests(): Unit = {
-    val cases = Seq(
-      // Empty literal
-      StringContext.glob(Seq(""), "")    -> Some(Nil),
-      StringContext.glob(Seq(""), "a")   -> None,
-      StringContext.glob(Seq(""), "b")   -> None,
-      StringContext.glob(Seq(""), "aa")  -> None,
-      StringContext.glob(Seq(""), "ab")  -> None,
-      StringContext.glob(Seq(""), "ba")  -> None,
-  
-      // Trivial literal
-      StringContext.glob(Seq("a"), "a")  -> Some(Nil),
-      StringContext.glob(Seq("a"), "b")  -> None,
-      StringContext.glob(Seq("a"), "aa") -> None,
-      StringContext.glob(Seq("a"), "ab") -> None,
-      StringContext.glob(Seq("a"), "ba") -> None,
-  
-      // Non-trivial literal
-      StringContext.glob(Seq("abc"), "abc")  -> Some(Nil),
-      StringContext.glob(Seq("abc"), "babc") -> None,
-      StringContext.glob(Seq("abc"), "aabc") -> None,
-      StringContext.glob(Seq("abc"), "abcb") -> None,
-      StringContext.glob(Seq("abc"), "cba")  -> None,
-      StringContext.glob(Seq("abc"), "abbc") -> None,
-  
-      // Single wildcard
-      StringContext.glob(Seq("a", "b"), "ab")      -> Some(Seq("")),
-      StringContext.glob(Seq("a", "b"), "a b")     -> Some(Seq(" ")),
-      StringContext.glob(Seq("a", "b"), "a    b")  -> Some(Seq("    ")),
-      StringContext.glob(Seq("a", "b"), "a***b")   -> Some(Seq("***")),
-      StringContext.glob(Seq("a", "b"), "a")       -> None,
-      StringContext.glob(Seq("a", "b"), "b")       -> None,
-      StringContext.glob(Seq("a", "b"), "abc")     -> None,
-      StringContext.glob(Seq("a", "b"), "cab")     -> None,
-      StringContext.glob(Seq("a", "b"), " ab ")    -> None,
-  
-      // Leading wildcard
-      StringContext.glob(Seq("", "b"), "ab")     -> Some(Seq("a")),
-      StringContext.glob(Seq("", "b"), "a b")    -> Some(Seq("a ")),
-      StringContext.glob(Seq("", "b"), "a    b") -> Some(Seq("a    ")),
-      StringContext.glob(Seq("", "b"), "a***b")  -> Some(Seq("a***")),
-      StringContext.glob(Seq("", "b"), "a")      -> None,
-      StringContext.glob(Seq("", "b"), "b")      -> Some(Seq("")),
-      StringContext.glob(Seq("", "b"), "abc")    -> None,
-      StringContext.glob(Seq("", "b"), "cab")    -> Some(Seq("ca")),
-      StringContext.glob(Seq("", "b"), " ab ")   -> None,
-  
-      // Trailing wildcard
-      StringContext.glob(Seq("a", ""), "ab")     -> Some(Seq("b")),
-      StringContext.glob(Seq("a", ""), "a b")    -> Some(Seq(" b")),
-      StringContext.glob(Seq("a", ""), "a    b") -> Some(Seq("    b")),
-      StringContext.glob(Seq("a", ""), "a***b")  -> Some(Seq("***b")),
-      StringContext.glob(Seq("a", ""), "a")      -> Some(Seq("")),
-      StringContext.glob(Seq("a", ""), "b")      -> None,
-      StringContext.glob(Seq("a", ""), "abc")    -> Some(Seq("bc")),
-      StringContext.glob(Seq("a", ""), "cab")    -> None,
-      StringContext.glob(Seq("a", ""), " ab ")   -> None,
-  
-      // Lonely wildcard
-      StringContext.glob(Seq("", ""), "ab")      -> Some(Seq("ab")),
-      StringContext.glob(Seq("", ""), "a b")     -> Some(Seq("a b")),
-      StringContext.glob(Seq("", ""), "a    b")  -> Some(Seq("a    b")),
-      StringContext.glob(Seq("", ""), "a***b")   -> Some(Seq("a***b")),
-      StringContext.glob(Seq("", ""), "a")       -> Some(Seq("a")),
-      StringContext.glob(Seq("", ""), "b")       -> Some(Seq("b")),
-      StringContext.glob(Seq("", ""), "abc")     -> Some(Seq("abc")),
-      StringContext.glob(Seq("", ""), "cab")     -> Some(Seq("cab")),
-      StringContext.glob(Seq("", ""), " ab ")    -> Some(Seq(" ab ")),
-  
-      // Ambiguous lonely wildcard
-      StringContext.glob(Seq("", "", ""), "ab")      -> Some(Seq("", "ab")),
-      StringContext.glob(Seq("", "", ""), "a b")     -> Some(Seq("", "a b")),
-      StringContext.glob(Seq("", "", ""), "a    b")  -> Some(Seq("", "a    b")),
-      StringContext.glob(Seq("", "", ""), "a***b")   -> Some(Seq("", "a***b")),
-      StringContext.glob(Seq("", "", ""), "a")       -> Some(Seq("", "a")),
-      StringContext.glob(Seq("", "", ""), "b")       -> Some(Seq("", "b")),
-      StringContext.glob(Seq("", "", ""), "abc")     -> Some(Seq("", "abc")),
-      StringContext.glob(Seq("", "", ""), "cab")     -> Some(Seq("", "cab")),
-      StringContext.glob(Seq("", "", ""), " ab ")    -> Some(Seq("", " ab ")),
-  
-      // Multiple wildcards
-      StringContext.glob(Seq("a", "bb", "c"), "a__bb___c") -> Some(Seq("__", "___")),
-      StringContext.glob(Seq("a", "bb", "c"), "abbc")      -> Some(Seq("", "")),
-      StringContext.glob(Seq("a", "bb", "c"), "aabbbc")    -> Some(Seq("a", "b")),
-      // Kind ambiguous
-      StringContext.glob(Seq("a", "bb", "c"), "abbbc")     -> Some(Seq("", "b")),
-      // Failures
-      StringContext.glob(Seq("a", "bb", "c"), "a")         -> None,
-      StringContext.glob(Seq("a", "bb", "c"), "abc")       -> None,
-      StringContext.glob(Seq("a", "bb", "c"), "abb")       -> None,
-      StringContext.glob(Seq("a", "bb", "c"), "bbc")       -> None,
-      StringContext.glob(Seq("a", "bb", "c"), "bbaaac")    -> None,
-  
-      // Many many ambiguous wildcards
-      StringContext.glob(Seq.fill(100)("a"), "a" * 200) -> Some(Seq.fill(98)("") :+ "a" * 100)
-    )
-    for((lhs, rhs) <- cases) assertEquals(rhs, lhs)
-  }
+  noEscape()
+  tabbed()
+  quoted()
+  t5856()
+  t6631_baseline()
+  antiHijack_?()
+  fIf()
+  fIfNot()
+  fHeteroArgs()
+  `f interpolator baseline`()
 }
