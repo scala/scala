@@ -20,7 +20,7 @@ object ErasedTypes {
 
   object ErasedCompileTimeOps {
     @experimental
-    erased def theNothing: Nothing = ???
+    erased def theString: String = compiletime.erasedValue
   }
 
 }
