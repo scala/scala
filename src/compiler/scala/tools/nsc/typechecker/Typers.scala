@@ -1245,6 +1245,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           inferExprAlternative(tree, pt)
           adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
+          if (hasUndets && settings.lintUniversalMethods && (isCastSymbol(tree.symbol) || isTypeTestSymbol(tree.symbol)) && context.undetparams.exists(_.owner == tree.symbol))
+            context.warning(tree.pos, s"missing type argument to ${tree.symbol}", WarningCategory.LintAdaptedArgs)
           val resTpDeconst = // keep constant types when they are safe to fold. erasure eliminates constant types modulo some exceptions, so keep those.
             if (isBeforeErasure && tree.symbol.isAccessor && tree.symbol.hasFlag(STABLE) && treeInfo.isExprSafeToInline(tree)) restpe
             else restpe.deconst

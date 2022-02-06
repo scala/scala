@@ -1,0 +1,9 @@
+universal-lint.scala:4: warning: missing type argument to method isInstanceOf
+  def f = List("").map(_.isInstanceOf)
+                         ^
+universal-lint.scala:5: warning: missing type argument to method asInstanceOf
+  def g = List("").map(_.asInstanceOf)
+                         ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
