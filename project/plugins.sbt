@@ -30,6 +30,6 @@ concurrentRestrictions in Global := Seq(
   Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970
 )
 
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.5")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
