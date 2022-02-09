@@ -4996,13 +4996,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (sc.isErroneous) err
                   else NormalTypeError(tree, s"${err.errMsg}; signature for interpolation must be `StringContext.apply(String*)`")
                 case Apply(Select(_, nm), badargs) =>
-                  if (badargs.exists(_.isErroneous)) err
+                  if (badargs.exists(arg => arg.isErroneous || arg.pos.includes(err.errPos) && arg.pos != err.errPos)) err
                   else NormalTypeError(tree, s"${err.errMsg}; incompatible interpolation method $nm")
                 case x => throw new MatchError(x)
               }
             else err
           typeErrors.foreach(err => context.issue(adjust(err)))
-          warnings foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
+          warnings.foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
           setError(treeCopy.Apply(tree, fun, args))
         }
 
