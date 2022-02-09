@@ -1652,12 +1652,19 @@ trait Definitions extends api.StandardDefinitions {
       def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
         val owner = sym.safeOwner
         (owner == MethodHandleClass || owner == VarHandleClass) && {
-          if (PolymorphicSignatureClass eq NoSymbol) {
-            // Hack to find the annotation under `scalac -release 8` on JDK 9+, in which the lookup of `PolymorphicSignatureClass` above fails
-            // We fall back to looking for a stub symbol with the expected flattened name.
-            sym.annotations.exists(_.atp.typeSymbolDirect.name == PolymorphicSignatureName)
+          def isNativeVarargs = sym.hasAnnotation(NativeAttr) && (sym.paramss match {
+            case List(List(p)) => definitions.isJavaRepeatedParamType(p.info)
+            case _ => false
+          })
+          def hasPolymorphicSignatureAnnotationLegacyCheck = {
+            if (PolymorphicSignatureClass eq NoSymbol) {
+              // Hack to find the annotation under `scalac -release 8` on JDK 9+, in which the lookup of `PolymorphicSignatureClass` above fails
+              // We fall back to looking for a stub symbol with the expected flattened name.
+              sym.annotations.exists(_.atp.typeSymbolDirect.name == PolymorphicSignatureName)
+            }
+            else sym.hasAnnotation(PolymorphicSignatureClass)
           }
-          else sym.hasAnnotation(PolymorphicSignatureClass)
+          isNativeVarargs || hasPolymorphicSignatureAnnotationLegacyCheck
         }
       }
 
