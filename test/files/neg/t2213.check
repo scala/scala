@@ -1,5 +1,5 @@
 t2213.scala:9: error: class C needs to be abstract.
-Missing implementations for 4 members. Stub implementations follow:
+Missing implementations for 4 members of class A.
   def f: Int = ???
   def g: Int = ???
   val x: Int = ???
@@ -8,7 +8,7 @@ Missing implementations for 4 members. Stub implementations follow:
 class C extends A {}
       ^
 t2213.scala:11: error: object creation impossible.
-Missing implementations for 4 members. Stub implementations follow:
+Missing implementations for 4 members of class A.
   def f: Int = ???
   def g: Int = ???
   val x: Int = ???

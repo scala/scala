@@ -1,6 +1,7 @@
-S.scala:1: error: class S needs to be abstract. Missing implementation for:
-  def g(y: Int, z: java.util.List): Int // inherited from class J
-(Note that java.util.List does not match java.util.List[String]. To implement this raw type, use java.util.List[_])
+S.scala:1: error: class S needs to be abstract.
+Missing implementation for member of class J:
+  def g(y: Int, z: java.util.List[_]): Int = ??? // implements `def g(y: Int, z: java.util.List): Int`; java.util.List does not match java.util.List[String]. To implement this raw type, use java.util.List[_]
+
 class S extends J {
       ^
 1 error
