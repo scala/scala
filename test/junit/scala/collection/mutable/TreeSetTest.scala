@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -52,4 +52,35 @@ class TreeSetTest {
       assertEquals(expected, src filter set)
     }
   }
+
+  @Test
+  def min(): Unit = {
+    val nonEmptySet = mutable.TreeSet(2, 4, -1, 3)
+    assertEquals(-1, nonEmptySet.min)
+    assertEquals(4, nonEmptySet.min(implicitly[Ordering[Int]].reverse))
+
+    try {
+      TreeSet.empty[Int].min
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.min", e.getMessage)
+    }
+  }
+
+  @Test
+  def max(): Unit = {
+    val nonEmptySet = mutable.TreeSet(2, 4, -1, 3)
+    assertEquals(4, nonEmptySet.max)
+    assertEquals(-1, nonEmptySet.max(implicitly[Ordering[Int]].reverse))
+
+    try {
+      mutable.TreeSet.empty[Int].max
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.max", e.getMessage)
+    }
+  }
+
 }
