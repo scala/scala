@@ -1504,9 +1504,10 @@ self =>
       }
       if (in.token == STRINGLIT) partsBuf += literal()
 
-      // Documenting that it is intentional that the ident is not rooted for purposes of virtualization
-      //val t1 = atPos(o2p(start)) { Select(Select (Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
-      val t1 = atPos(o2p(start)) { Ident(nme.StringContextName) }
+      // Scala 2 allowed uprooted Ident for purposes of virtualization
+      val t1 =
+        if (currentRun.isScala3) atPos(o2p(start)) { Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
+        else atPos(o2p(start)) { Ident(nme.StringContextName) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) } updateAttachment InterpolatedString
       t2 setPos t2.pos.makeTransparent
       val t3 = Select(t2, interpolator) setPos t2.pos
