@@ -595,7 +595,8 @@ abstract class RefChecks extends Transform {
                 m.name == underlying.name &&
                 sameLength(m.paramLists, abstractParamLists) &&
                 sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
-                sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
+                sameLength(m.tpe.typeParams, underlying.tpe.typeParams) &&
+                !(m.isJavaDefined && m.hasFlag(JAVA_DEFAULTMETHOD))
               }
               matchingArity match {
                 // So far so good: only one candidate method
@@ -618,8 +619,6 @@ abstract class RefChecks extends Transform {
                         s": ${c1.fullLocationString} is a subclass of ${c2.fullLocationString}, but method parameter types must match exactly."
                       val addendum = (
                         if (abstractSym == concreteSym) {
-                          // TODO: what is the optimal way to test for a raw type at this point?
-                          // Compilation has already failed so we shouldn't have to worry overmuch about forcing types.
                           if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             s". To implement this raw type, use ${rawToExistential(pa)}"
                           else if (pa.prefix =:= pc.prefix)
