@@ -617,7 +617,12 @@ abstract class RefChecks extends Transform {
                       val concreteSym = pc.typeSymbol
                       def subclassMsg(c1: Symbol, c2: Symbol) =
                         s": ${c1.fullLocationString} is a subclass of ${c2.fullLocationString}, but method parameter types must match exactly."
-                      val addendum = (
+                      def wrongSig = {
+                        val m = concrete
+                        fullyInitializeSymbol(m)
+                        m.defStringSeenAs(clazz.tpe_*.memberType(m))
+                      }
+                      val addendum =
                         if (abstractSym == concreteSym) {
                           if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             s". To implement this raw type, use ${rawToExistential(pa)}"
@@ -628,8 +633,7 @@ abstract class RefChecks extends Transform {
                         }
                         else if (abstractSym.isSubClass(concreteSym)) subclassMsg(abstractSym, concreteSym)
                         else if (concreteSym.isSubClass(abstractSym)) subclassMsg(concreteSym, abstractSym)
-                        else ""
-                      )
+                        else s" in `$wrongSig`"
                       s"$pa does not match $pc$addendum"
                     case Nil if missingImplicit => "overriding member must declare implicit parameter list" // other overriding gotchas
                     case _ => ""

@@ -1,6 +1,6 @@
 t9138.scala:9: error: class D needs to be abstract.
 Missing implementation for member of class C:
-  def f(t: B)(s: String): B = ??? // String does not match Int
+  def f(t: B)(s: String): B = ??? // String does not match Int in `def f(b: B)(i: Int): B`
 
 class D extends C[B] {
       ^
@@ -12,7 +12,7 @@ object Derived extends Base[String] {
        ^
 t9138.scala:29: error: class DDD needs to be abstract.
 Missing implementation for member of class CCC:
-  def f(t: B, s: String): B = ??? // T does not match Int
+  def f(t: B, s: String): B = ??? // T does not match Int in `def f(b: Int, i: String): Int`
 
 class DDD extends CCC[B] {
       ^

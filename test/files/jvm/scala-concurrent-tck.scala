@@ -145,7 +145,7 @@ class FutureCallbacks extends TestBase {
   test("testOnFailure")(testOnFailure())
   test("testOnFailureWhenSpecialThrowable")(testOnFailureWhenSpecialThrowable(5, new Error))
   // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
-  //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
+  //TODO: this test is currently problematic, because NonFatal does not catch InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
   test("testThatNestedCallbacksDoNotYieldStackOverflow")(testThatNestedCallbacksDoNotYieldStackOverflow())
   test("testOnFailureWhenTimeoutException")(testOnFailureWhenTimeoutException())
