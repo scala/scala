@@ -736,7 +736,8 @@ lazy val junit = project.in(file("test") / "junit")
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
-    Test / unmanagedSourceDirectories := List(baseDirectory.value)
+    Test / unmanagedSourceDirectories := List(baseDirectory.value),
+    Test / headerSources := Nil,
   )
 
 lazy val tasty = project.in(file("test") / "tasty")
