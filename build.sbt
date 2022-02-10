@@ -693,7 +693,8 @@ lazy val junit = project.in(file("test") / "junit")
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     (Compile / unmanagedSourceDirectories) := Nil,
-    (Test / unmanagedSourceDirectories) := List(baseDirectory.value)
+    (Test / unmanagedSourceDirectories) := List(baseDirectory.value),
+    Test / headerSources := Nil,
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
