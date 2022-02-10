@@ -1,12 +1,12 @@
 abstract-report2.scala:3: error: class Foo needs to be abstract.
 Missing implementations for 13 members of trait Collection.
-  def add(x$1: Int): Boolean = ???
-  def addAll(x$1: java.util.Collection[_ <: Int]): Boolean = ???
+  def add(x$1: Int): Boolean = ??? // implements `def add(x$1: E): Boolean`
+  def addAll(x$1: java.util.Collection[_ <: Int]): Boolean = ??? // implements `def addAll(x$1: java.util.Collection[_ <: E]): Boolean`
   def clear(): Unit = ???
   def contains(x$1: Object): Boolean = ???
   def containsAll(x$1: java.util.Collection[_]): Boolean = ???
   def isEmpty(): Boolean = ???
-  def iterator(): java.util.Iterator[Int] = ???
+  def iterator(): java.util.Iterator[Int] = ??? // implements `def iterator(): java.util.Iterator[E]`
   def remove(x$1: Object): Boolean = ???
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
@@ -18,13 +18,13 @@ class Foo extends Collection[Int]
       ^
 abstract-report2.scala:5: error: class Bar needs to be abstract.
 Missing implementations for 13 members of trait Collection.
-  def add(x$1: List[_ <: String]): Boolean = ???
-  def addAll(x$1: java.util.Collection[_ <: List[_ <: String]]): Boolean = ???
+  def add(x$1: List[_ <: String]): Boolean = ??? // implements `def add(x$1: E): Boolean`
+  def addAll(x$1: java.util.Collection[_ <: List[_ <: String]]): Boolean = ??? // implements `def addAll(x$1: java.util.Collection[_ <: E]): Boolean`
   def clear(): Unit = ???
   def contains(x$1: Object): Boolean = ???
   def containsAll(x$1: java.util.Collection[_]): Boolean = ???
   def isEmpty(): Boolean = ???
-  def iterator(): java.util.Iterator[List[_ <: String]] = ???
+  def iterator(): java.util.Iterator[List[_ <: String]] = ??? // implements `def iterator(): java.util.Iterator[E]`
   def remove(x$1: Object): Boolean = ???
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
@@ -36,13 +36,13 @@ class Bar extends Collection[List[_ <: String]]
       ^
 abstract-report2.scala:7: error: class Baz needs to be abstract.
 Missing implementations for 13 members of trait Collection.
-  def add(x$1: T): Boolean = ???
-  def addAll(x$1: java.util.Collection[_ <: T]): Boolean = ???
+  def add(x$1: T): Boolean = ??? // implements `def add(x$1: E): Boolean`
+  def addAll(x$1: java.util.Collection[_ <: T]): Boolean = ??? // implements `def addAll(x$1: java.util.Collection[_ <: E]): Boolean`
   def clear(): Unit = ???
   def contains(x$1: Object): Boolean = ???
   def containsAll(x$1: java.util.Collection[_]): Boolean = ???
   def isEmpty(): Boolean = ???
-  def iterator(): java.util.Iterator[T] = ???
+  def iterator(): java.util.Iterator[T] = ??? // implements `def iterator(): java.util.Iterator[E]`
   def remove(x$1: Object): Boolean = ???
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
@@ -55,17 +55,17 @@ class Baz[T] extends Collection[T]
 abstract-report2.scala:21: error: class Dingus needs to be abstract.
 Missing implementations for 7 members.
   // Members declared in scala.collection.IterableOnce
-  def iterator: Iterator[(Set[Int], String)] = ???
+  def iterator: Iterator[(Set[Int], String)] = ??? // implements `def iterator: Iterator[A]`
 
   // Members declared in scala.collection.IterableOps
-  protected def coll: List[(Set[Int], String)] = ???
-  protected def fromSpecific(coll: scala.collection.IterableOnce[(Set[Int], String)]): List[(Set[Int], String)] = ???
-  def iterableFactory: scala.collection.IterableFactory[List] = ???
-  protected def newSpecificBuilder: scala.collection.mutable.Builder[(Set[Int], String),List[(Set[Int], String)]] = ???
-  def toIterable: Iterable[(Set[Int], String)] = ???
+  protected def coll: List[(Set[Int], String)] = ??? // implements `protected def coll: C`
+  protected def fromSpecific(coll: scala.collection.IterableOnce[(Set[Int], String)]): List[(Set[Int], String)] = ??? // implements `protected def fromSpecific(coll: scala.collection.IterableOnce[A @scala.annotation.unchecked.uncheckedVariance]): C`
+  def iterableFactory: scala.collection.IterableFactory[List] = ??? // implements `def iterableFactory: scala.collection.IterableFactory[CC]`
+  protected def newSpecificBuilder: scala.collection.mutable.Builder[(Set[Int], String),List[(Set[Int], String)]] = ??? // implements `protected def newSpecificBuilder: scala.collection.mutable.Builder[A @scala.annotation.unchecked.uncheckedVariance,C]`
+  def toIterable: Iterable[(Set[Int], String)] = ??? // implements `def toIterable: Iterable[A]`
 
   // Members declared in Xyz
-  def foo(x: List[Int]): Boolean = ???
+  def foo(x: List[Int]): Boolean = ??? // implements `def foo(x: T): Boolean`
 
 class Dingus extends Bippy[String, Set[Int], List[Int]]
       ^

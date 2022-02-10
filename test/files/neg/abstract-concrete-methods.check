@@ -1,6 +1,6 @@
 abstract-concrete-methods.scala:7: error: class Outer2 needs to be abstract.
 Missing implementation for member of trait Outer:
-  def score(i: Outer2#Inner): Double = ??? // This#Inner does not match Outer2#Inner: class Inner in class Outer2 is a subclass of trait Inner in trait Outer, but method parameter types must match exactly.
+  def score(i: Outer2#Inner): Double = ??? // implements `def score(i: This#Inner): Double`; This#Inner does not match Outer2#Inner: class Inner in class Outer2 is a subclass of trait Inner in trait Outer, but method parameter types must match exactly.
 
 class Outer2 extends Outer[Outer2] {
       ^

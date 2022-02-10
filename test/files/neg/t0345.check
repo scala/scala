@@ -1,6 +1,6 @@
 t0345.scala:2: error: object creation impossible.
 Missing implementation for member of trait Lizt:
-  def cons(a: Nothing): Unit = ???
+  def cons(a: Nothing): Unit = ??? // implements `def cons(a: A): Unit`
 
     val empty = new Lizt[Nothing] {
                     ^

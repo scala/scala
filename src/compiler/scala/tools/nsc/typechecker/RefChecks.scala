@@ -662,10 +662,11 @@ abstract class RefChecks extends Transform {
                 val diagnostic = diagnose(m, accessors)
                 if (diagnostic == null) null
                 else {
-                  val s0 = infoString0(m, showLocation = false)
+                  val s0a = infoString0(m, showLocation = false)
                   fullyInitializeSymbol(m)
+                  val s0b = m.defString
                   val s1 = m.defStringSeenAs(clazz.tpe_*.memberType(m))
-                  val implMsg = if (s0 != s1) s"implements `$s0`" else ""
+                  val implMsg = if (s1 != s0a) s"implements `$s0a`" else if (s1 != s0b) s"implements `$s0b`" else ""
                   val spacer  = if (diagnostic.nonEmpty && implMsg.nonEmpty) "; " else ""
                   val comment = if (diagnostic.nonEmpty || implMsg.nonEmpty) s" // $implMsg$spacer$diagnostic" else ""
                   s"$s1 = ???$comment"
