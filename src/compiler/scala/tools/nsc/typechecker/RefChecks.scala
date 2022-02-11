@@ -595,7 +595,8 @@ abstract class RefChecks extends Transform {
                 m.name == underlying.name &&
                 sameLength(m.paramLists, abstractParamLists) &&
                 sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
-                sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
+                sameLength(m.tpe.typeParams, underlying.tpe.typeParams) &&
+                !(m.isJavaDefined && m.hasFlag(JAVA_DEFAULTMETHOD))
               }
               matchingArity match {
                 // So far so good: only one candidate method
@@ -616,10 +617,13 @@ abstract class RefChecks extends Transform {
                       val concreteSym = pc.typeSymbol
                       def subclassMsg(c1: Symbol, c2: Symbol) =
                         s": ${c1.fullLocationString} is a subclass of ${c2.fullLocationString}, but method parameter types must match exactly."
-                      val addendum = (
+                      def wrongSig = {
+                        val m = concrete
+                        fullyInitializeSymbol(m)
+                        m.defStringSeenAs(clazz.tpe_*.memberType(m))
+                      }
+                      val addendum =
                         if (abstractSym == concreteSym) {
-                          // TODO: what is the optimal way to test for a raw type at this point?
-                          // Compilation has already failed so we shouldn't have to worry overmuch about forcing types.
                           if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             s". To implement this raw type, use ${rawToExistential(pa)}"
                           else if (pa.prefix =:= pc.prefix)
@@ -629,8 +633,7 @@ abstract class RefChecks extends Transform {
                         }
                         else if (abstractSym.isSubClass(concreteSym)) subclassMsg(abstractSym, concreteSym)
                         else if (concreteSym.isSubClass(abstractSym)) subclassMsg(concreteSym, abstractSym)
-                        else ""
-                      )
+                        else s" in `$wrongSig`"
                       s"$pa does not match $pc$addendum"
                     case Nil if missingImplicit => "overriding member must declare implicit parameter list" // other overriding gotchas
                     case _ => ""
@@ -659,10 +662,11 @@ abstract class RefChecks extends Transform {
                 val diagnostic = diagnose(m, accessors)
                 if (diagnostic == null) null
                 else {
-                  val s0 = infoString0(m, showLocation = false)
+                  val s0a = infoString0(m, showLocation = false)
                   fullyInitializeSymbol(m)
+                  val s0b = m.defString
                   val s1 = m.defStringSeenAs(clazz.tpe_*.memberType(m))
-                  val implMsg = if (s0 != s1) s"implements `$s0`" else ""
+                  val implMsg = if (s1 != s0a) s"implements `$s0a`" else if (s1 != s0b) s"implements `$s0b`" else ""
                   val spacer  = if (diagnostic.nonEmpty && implMsg.nonEmpty) "; " else ""
                   val comment = if (diagnostic.nonEmpty || implMsg.nonEmpty) s" // $implMsg$spacer$diagnostic" else ""
                   s"$s1 = ???$comment"

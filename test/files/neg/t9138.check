@@ -1,24 +1,24 @@
 t9138.scala:9: error: class D needs to be abstract.
 Missing implementation for member of class C:
-  def f(t: B)(s: String): B = ??? // String does not match Int
+  def f(t: B)(s: String): B = ??? // implements `def f(t: T)(s: String): T`; String does not match Int in `def f(b: B)(i: Int): B`
 
 class D extends C[B] {
       ^
 t9138.scala:19: error: object creation impossible.
 Missing implementation for member of trait Base:
-  def foo(a: String)(b: Int): Nothing = ???
+  def foo(a: String)(b: Int): Nothing = ??? // implements `def foo(a: A)(b: Int): Nothing`
 
 object Derived extends Base[String] {
        ^
 t9138.scala:29: error: class DDD needs to be abstract.
 Missing implementation for member of class CCC:
-  def f(t: B, s: String): B = ??? // T does not match Int
+  def f(t: B, s: String): B = ??? // implements `def f(t: T, s: String): T`; T does not match Int in `def f(b: Int, i: String): Int`
 
 class DDD extends CCC[B] {
       ^
 t9138.scala:43: error: object creation impossible.
 Missing implementation for member of trait Model:
-  def create(conditionalParams: ImplementingParamTrait)(implicit d: Double): Int = ??? // overriding member must declare implicit parameter list
+  def create(conditionalParams: ImplementingParamTrait)(implicit d: Double): Int = ??? // implements `def create(conditionalParams: P)(implicit d: Double): Int`; overriding member must declare implicit parameter list
 
 object Obj extends Model[ImplementingParamTrait] {
        ^

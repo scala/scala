@@ -4,7 +4,7 @@ Missing implementations for 2 members.
   def canEqual(that: Any): Boolean = ???
 
   // Members declared in scala.Product2
-  def _2: Double = ???
+  def _2: Double = ??? // implements `def _2: T2`
 
 class ComplexRect(val _1:Double, _2:Double) extends Complex {
       ^

@@ -1,14 +1,14 @@
 abstract-report.scala:1: error: class Unimplemented needs to be abstract.
 Missing implementations for 6 members.
   // Members declared in scala.collection.IterableOnce
-  def iterator: Iterator[String] = ???
+  def iterator: Iterator[String] = ??? // implements `def iterator: Iterator[A]`
 
   // Members declared in scala.collection.IterableOps
-  protected def coll: List[String] = ???
-  protected def fromSpecific(coll: scala.collection.IterableOnce[String]): List[String] = ???
-  def iterableFactory: scala.collection.IterableFactory[List] = ???
-  protected def newSpecificBuilder: scala.collection.mutable.Builder[String,List[String]] = ???
-  def toIterable: Iterable[String] = ???
+  protected def coll: List[String] = ??? // implements `protected def coll: C`
+  protected def fromSpecific(coll: scala.collection.IterableOnce[String]): List[String] = ??? // implements `protected def fromSpecific(coll: scala.collection.IterableOnce[A @scala.annotation.unchecked.uncheckedVariance]): C`
+  def iterableFactory: scala.collection.IterableFactory[List] = ??? // implements `def iterableFactory: scala.collection.IterableFactory[CC]`
+  protected def newSpecificBuilder: scala.collection.mutable.Builder[String,List[String]] = ??? // implements `protected def newSpecificBuilder: scala.collection.mutable.Builder[A @scala.annotation.unchecked.uncheckedVariance,C]`
+  def toIterable: Iterable[String] = ??? // implements `def toIterable: Iterable[A]`
 
 class Unimplemented extends scala.collection.IterableOps[String, List, List[String]]
       ^
