@@ -71,44 +71,27 @@ private[scala] trait PropertiesTrait {
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
   def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name)).orElse(propOrNone("scala." + name))
 
-  /** The numeric portion of the runtime Scala version, if this is a final
-   *  release.  If for instance the versionString says "version 2.9.0.final",
-   *  this would return Some("2.9.0").
-   *
-   *  @return Some(version) if this is a final release build, None if
-   *  it is an RC, Beta, etc. or was built from source, or if the version
-   *  cannot be read.
+  /** The version of the Scala runtime, if this is not a snapshot.
    */
-  val releaseVersion =
-    for {
-      v <- scalaPropOrNone("maven.version.number")
-      if !(v endsWith "-SNAPSHOT")
-    } yield v
+  val releaseVersion = scalaPropOrNone("maven.version.number").filterNot(_.endsWith("-SNAPSHOT"))
 
-  /** The development Scala version, if this is not a final release.
-   *  The precise contents are not guaranteed, but it aims to provide a
-   *  unique repository identifier (currently the svn revision) in the
-   *  fourth dotted segment if the running version was built from source.
-   *
-   *  @return Some(version) if this is a non-final version, None if this
-   *  is a final release or the version cannot be read.
+  /** The version of the Scala runtime, if this is a snapshot.
    */
-  val developmentVersion =
-    for {
-      v <- scalaPropOrNone("maven.version.number")
-      if v endsWith "-SNAPSHOT"
-      ov <- scalaPropOrNone("version.number")
-    } yield ov
+  val developmentVersion = scalaPropOrNone("maven.version.number").filter(_.endsWith("-SNAPSHOT")).flatMap(_ => scalaPropOrNone("version.number"))
 
-  /** Either the development or release version if known, otherwise
-   *  the empty string.
+  /** The version of the Scala runtime, or the empty string if unknown.
+   *
+   *  Note that the version of the Scala library need not correlate with the version of the Scala compiler
+   *  used to emit either the library or user code.
+   *
+   *  For example, Scala 3.0 and 3.1 use the Scala 2.13 library, which is reflected in this version string.
+   *  For the Dotty version, see `dotty.tools.dotc.config.Properties.versionNumberString`.
    */
   def versionNumberString = scalaPropOrEmpty("version.number")
 
-  /** The version number of the jar this was loaded from plus "version " prefix,
-   *  or "version (unknown)" if it cannot be determined.
+  /** A verbose alternative to [[versionNumberString]].
    */
-  val versionString         = "version " + scalaPropOrElse("version.number", "(unknown)")
+  val versionString         = s"version ${scalaPropOrElse("version.number", "(unknown)")}"
   val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2022, LAMP/EPFL and Lightbend, Inc.")
 
   /** This is the encoding to use reading in source files, overridden with -encoding.
