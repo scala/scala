@@ -486,7 +486,6 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       with StrictOptimizedMapOps[String, String, mutable.Map, mutable.Map[String, String]]
       with StrictOptimizedIterableOps[(String, String), mutable.Iterable, mutable.Map[String, String]]
       with Serializable {
-    unzip
 
     override def size = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty

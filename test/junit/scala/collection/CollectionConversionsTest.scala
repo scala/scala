@@ -75,5 +75,16 @@ class CollectionConversionsTest {
     }
     assertEquals(1, x)
   }
+  @Test def `t11976 head-scratcher`: Unit = {
+    import scala.jdk.CollectionConverters._
+    val myProps = new java.util.Properties
+    myProps.put("a", "A")
+    var x = 0
+    myProps.asScala.partition { case (key, value) =>
+      x += 1
+      true
+    }
+    assertEquals(1, x)
+  }
 }
 
