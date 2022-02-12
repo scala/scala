@@ -1068,6 +1068,20 @@ trait Types
 
     def mapOver(map: TypeMap): Type = this
     def foldOver(folder: TypeFolder): Unit = {}
+
+    /** A total ordering between types that refines the subtype inheritance graph
+      * (i.e. `subtype.isLess(supertype)` always holds). The ordering is given by:
+      * the inverse of `baseTypeSeq.length`, followed by `typeSymbol.id`.
+      *
+      * Similar to [[Symbol.isLess]] but works for applied abstract types as well.
+      */
+    final def isLess(that: Type): Boolean = {
+      val thisSym = this.typeSymbol
+      val thatSym = that.typeSymbol
+      if (thisSym == thatSym) return false
+      val diff = this.baseTypeSeq.length - that.baseTypeSeq.length
+      diff > 0 || diff == 0 && thisSym.id < thatSym.id
+    }
   }
 
 // Subclasses ------------------------------------------------------------

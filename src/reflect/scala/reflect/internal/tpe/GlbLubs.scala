@@ -42,7 +42,7 @@ private[internal] trait GlbLubs {
       }
     }
 
-    val sorted       = btsMap.toList.sortWith((x, y) => x._1.typeSymbol isLess y._1.typeSymbol)
+    val sorted       = btsMap.toList.sortWith((x, y) => x._1 isLess y._1)
     val maxSeqLength = sorted.map(_._2.size).max
     val padded       = sorted map (_._2.padTo(maxSeqLength, NoType))
     val transposed   = padded.transpose
@@ -111,17 +111,16 @@ private[internal] trait GlbLubs {
       // isFinished: tsBts.exists(typeListIsEmpty)
       // Is the frontier made up of types with the same symbol?
       var isUniformFrontier =  true
-      var sym = headOf(0).typeSymbol
+      var tpe = headOf(0)
       // var tsYs = tsBts
       var ix = 0
-      while (! isFinished && ix < baseTypeSeqs.length){
-        if (ices(ix) == baseTypeSeqs(ix).length)
+      while (!isFinished && ix < baseTypeSeqs.length) {
+        if (ices(ix) == baseTypeSeqs(ix).length) {
           isFinished = true
-        else {
-          val btySym = headOf(ix).typeSymbol
-          isUniformFrontier = isUniformFrontier && (sym eq btySym)
-          if (btySym isLess sym)
-            sym = btySym
+        } else {
+          val bty = headOf(ix)
+          isUniformFrontier &&= tpe.typeSymbol == bty.typeSymbol
+          if (bty isLess tpe) tpe = bty
         }
         ix += 1
       }
@@ -159,9 +158,8 @@ private[internal] trait GlbLubs {
           // frontier is not uniform yet, move it beyond the current minimal symbol;
           // lather, rinse, repeat
           var jx = 0
-          while (jx < baseTypeSeqs.length){
-            if (headOf(jx).typeSymbol == sym)
-              ices(jx) += 1
+          while (jx < baseTypeSeqs.length) {
+            if (headOf(jx).typeSymbol == tpe.typeSymbol) ices(jx) += 1
             jx += 1
           }
           if (printLubs) {
