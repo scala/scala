@@ -682,7 +682,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
-    //scalacOptions ++= Seq("-feature", "-opt:all", "-opt:inline:scala/**", "-Wopt"),
+    //scalacOptions ++= Seq("-feature", "-opt:inline:scala/**", "-Wopt"),
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
     // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
     // should not be needed once sbt-jmh 0.4.3 is out (https://github.com/sbt/sbt-jmh/pull/207)

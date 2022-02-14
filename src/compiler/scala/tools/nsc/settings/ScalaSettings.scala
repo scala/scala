@@ -321,12 +321,12 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val localOptimizations = List(simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
     val lMethod = Choice(
       "local",
-      localOptimizations.mkString("Enable intra-method optimizations: ", ",", "."),
+      (defaultOptimizations ::: localOptimizations).mkString("Enable intra-method optimizations: ", ",", "."),
       expandsTo = defaultOptimizations ::: localOptimizations)
 
     val inlineFrom = Choice(
       "inline",
-      s"Inline method invocations from specified sites; enables all optimizations; see -Yopt-inline-heuristics.\n$inlineHelp",
+      s"Inline method invocations and enable all optimizations; specify where to inline from, as shown below. See also -Yopt-inline-heuristics.\n$inlineHelp",
       expandsTo = defaultOptimizations ::: localOptimizations,
       requiresSelections = true
     )
@@ -341,7 +341,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val opt = MultiChoiceSetting(
     name = "-opt",
     helpArg = "optimization",
-    descr = "Enable optimizations, `help` for details.",
+    descr = "Enable optimizations: `-opt:local`, `-opt:inline:<pattern>`; `-opt:help` for details.",
     domain = optChoices,
   ).withPostSetHook { ss =>
     // kludge alert: will be invoked twice, with selections available 2nd time
@@ -385,7 +385,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def optInlineFrom: List[String] = optChoices.inlineFrom.selections
 
   def inlineHelp =
-      """Patterns for classfile names from which the inliner is allowed to pull in code.
+      """
+        |Inlining requires a list of patterns defining where code can be inlined from: `-opt:inline:p1,p2`.
+        |
         |  *              Matches classes in the empty package
         |  **             All classes
         |  a.C            Class a.C
@@ -398,13 +400,13 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
         |  <sources>      Classes defined in source files compiled in the current compilation, either
         |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
-        |The setting requires a list of patterns: `-opt:inline:p1,p2`. The setting can be passed
-        |multiple times, the list of patterns gets extended. A leading `!` marks a pattern as excluding.
-        |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
-        |For example, `a.**,!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |`-opt:inline:p` may be specified multiple times to extend the list of patterns.
+        |A leading `!` means exclude anything that matches the pattern. The last matching pattern wins.
+        |For example, `a.**,!a.b.**` includes classes in `a` and sub-packages, but not in `a.b` and sub-packages.
         |
-        |Note: on the command line you might need to quote patterns containing `*` to prevent the shell
-        |from expanding it to a list of files in the current directory.""".stripMargin
+        |When patterns are supplied on a command line, it is usually necessary to quote special shell characters
+        |such as `*`, `<`, `>`, and `$`: `'-opt:inline:p.*,!p.C$D' '-opt:inline:<sources>'`.
+        |Quoting may not be needed in a build file.""".stripMargin
 
   @deprecated("Deprecated alias", since="2.13.8")
   val xoptInlineFrom = MultiStringSetting(
