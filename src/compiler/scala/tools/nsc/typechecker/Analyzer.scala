@@ -118,9 +118,9 @@ trait Analyzer extends AnyRef
           // interactive typed may finish by throwing a `TyperResult`
           if (!settings.Youtline) {
             for (workItem <- unit.toCheck) workItem()
-            if (settings.warnUnusedImport)
+            if (!settings.isScaladoc && settings.warnUnusedImport)
               warnUnusedImports(unit)
-            if (settings.warnUnused.isSetByUser)
+            if (!settings.isScaladoc && settings.warnUnused.isSetByUser)
               new checkUnused(typer).apply(unit)
           }
         }
