@@ -65,19 +65,18 @@ trait Contexts { self: Analyzer =>
   )
 
   private lazy val allUsedSelectors =
-    mutable.Map[ImportInfo, Set[ImportSelector]]() withDefaultValue Set()
+    mutable.Map.empty[ImportInfo, Set[ImportSelector]].withDefaultValue(Set.empty)
   private lazy val allImportInfos =
-    mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
+    mutable.Map.empty[CompilationUnit, List[(ImportInfo, Symbol)]].withDefaultValue(Nil)
 
-  def warnUnusedImports(unit: CompilationUnit) = {
-    type Culled = (Position, Symbol, String)
-    def cullUnusedSelections(infos0: List[(ImportInfo, Symbol)]): List[Culled] = {
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
+    def warnUnusedSelections(infos0: List[(ImportInfo, Symbol)]): Unit = {
+      type Culled = (Position, Symbol, String)
       var unused = List.empty[Culled]
       @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
         infos match {
           case (info, owner) :: rest =>
             val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-            // since we are going in reverse order, add unused selectors from right to left, last to first
             def checkSelectors(selectors: List[ImportSelector]): Unit =
               selectors match {
                 case selector :: rest =>
@@ -91,20 +90,9 @@ trait Contexts { self: Analyzer =>
           case _ =>
         }
       loop(infos0)
-      unused
+      unused.foreach { case (pos, owner, origin) => runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, owner, origin) }
     }
-    def warnUnusedSelection(unused: Culled): Unit =
-      unused match {
-        case (pos, site, origin) =>
-          runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, site = site, origin = origin)
-        case _ =>
-      }
-    // begin
-    if (!unit.isJava)
-      allImportInfos.remove(unit) match {
-        case Some(importInfos) => cullUnusedSelections(importInfos).foreach(warnUnusedSelection)
-        case _                 => ()
-      }
+    allImportInfos.remove(unit).foreach(warnUnusedSelections)
   }
 
   var lastAccessCheckDetails: String = ""
