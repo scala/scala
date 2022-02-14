@@ -3,6 +3,7 @@ name: Scala Merge CI
 on:
   push:
     branches: ['2.*.x']
+  pull_request:
 
 defaults:
   run:
