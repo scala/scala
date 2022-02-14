@@ -162,8 +162,8 @@ private final class CachedCompiler0(
 
       run.compileFiles(sources)
       processUnreportedWarnings(run)
-      underlyingReporter.problems.foreach(
-        p => callback.problem(p.category, p.position, p.message, p.severity, true)
+      underlyingReporter.problems.foreach(p =>
+        callback.problem(p.category, p.position, p.message, p.severity, true)
       )
     }
 

@@ -102,10 +102,11 @@ abstract class Compat {
       sym.setter(base, hasExpandedName)
 
     // copied from 2.12.1 sources
-    private def needsExpandedSetterName: Boolean = (
-      if (sym.isMethod) sym.hasStableFlag && !sym.isLazy
-      else sym.hasNoFlags(LAZY | MUTABLE)
-    )
+    private def needsExpandedSetterName: Boolean =
+      (
+        if (sym.isMethod) sym.hasStableFlag && !sym.isLazy
+        else sym.hasNoFlags(LAZY | MUTABLE)
+      )
 
     // unexpandedName replaces originalName in 2.11
     @inline final def unexpandedName: Name = sym.originalName

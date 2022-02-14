@@ -96,7 +96,10 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           case Some(classOrModuleDef) =>
             memberRef(ClassDependency(classOrModuleDef, dep))
           case None =>
-            reporter.echo(unit.position(0), Feedback.OrphanTopLevelImports) // package-info.java & empty scala files
+            reporter.echo(
+              unit.position(0),
+              Feedback.OrphanTopLevelImports
+            ) // package-info.java & empty scala files
             orphanImportsReported = true
         }
       }
@@ -286,8 +289,10 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       assert(fromClass.isClass, Feedback.expectedClassSymbol(fromClass))
       val depClass = enclOrModuleClass(dep)
       val dependency = ClassDependency(fromClass, depClass)
-      if (!cache.contains(dependency) &&
-          !depClass.isRefinementClass) {
+      if (
+        !cache.contains(dependency) &&
+        !depClass.isRefinementClass
+      ) {
         process(dependency)
         cache.add(dependency)
         ()

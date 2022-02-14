@@ -37,9 +37,10 @@ object Compat {
   }
 
   object OriginalTreeTraverser {
-    private[this] val cls = try {
-      Class.forName("scala.tools.nsc.typechecker.StdAttachments$OriginalTreeAttachment")
-    } catch { case _: Throwable => null }
+    private[this] val cls =
+      try {
+        Class.forName("scala.tools.nsc.typechecker.StdAttachments$OriginalTreeAttachment")
+      } catch { case _: Throwable => null }
 
     private object Reflective extends OriginalTreeTraverser {
       private[this] val ct = scala.reflect.ClassTag[AnyRef](cls)

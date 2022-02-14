@@ -458,7 +458,8 @@ class ExtractAPI[GlobalType <: Global](
     val decls = info.decls.toList
     val declsNoModuleCtor = if (s.isModuleClass) removeConstructors(decls) else decls
     val declSet = decls.toSet
-    val inherited = info.nonPrivateMembers.toList.filterNot(declSet) // private members are not inherited
+    val inherited =
+      info.nonPrivateMembers.toList.filterNot(declSet) // private members are not inherited
     mkStructure(s, ancestorTypes, declsNoModuleCtor, inherited)
   }
 
@@ -843,8 +844,8 @@ class ExtractAPI[GlobalType <: Global](
       //
       // `initialize` for sbt/zinc#998: 2.13 identifies Java annotations by flags. Up to 2.13.6, this is done
       // without forcing the info of `ann.atp.typeSymbol`, flags are missing it's still a `ClassfileLoader`.
-      annotations.filter(
-        ann => !isStub(ann.atp.typeSymbol) && { ann.atp.typeSymbol.initialize; ann.isStatic }
+      annotations.filter(ann =>
+        !isStub(ann.atp.typeSymbol) && { ann.atp.typeSymbol.initialize; ann.isStatic }
       )
     }
 

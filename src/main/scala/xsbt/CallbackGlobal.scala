@@ -92,12 +92,12 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
   /** Phase that analyzes the generated class files and maps them to sources. */
   object sbtAnalyzer extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
-    val phaseName = Analyzer.name
-    val runsAfter = List("jvm")
-    override val runsBefore = List("terminal")
-    val runsRightAfter = None
-  } with SubComponent {
+        val global: ZincCompiler.this.type = ZincCompiler.this
+        val phaseName = Analyzer.name
+        val runsAfter = List("jvm")
+        override val runsBefore = List("terminal")
+        val runsRightAfter = None
+      } with SubComponent {
     val analyzer = new Analyzer(global)
     def newPhase(prev: Phase) = analyzer.newPhase(prev)
     def name = phaseName
@@ -105,13 +105,13 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
   /** Phase that extracts dependency information */
   object sbtDependency extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
-    val phaseName = Dependency.name
-    val runsAfter = List(API.name)
-    override val runsBefore = List("refchecks")
-    // Keep API and dependency close to each other -- we may want to merge them in the future.
-    override val runsRightAfter = Some(API.name)
-  } with SubComponent {
+        val global: ZincCompiler.this.type = ZincCompiler.this
+        val phaseName = Dependency.name
+        val runsAfter = List(API.name)
+        override val runsBefore = List("refchecks")
+        // Keep API and dependency close to each other -- we may want to merge them in the future.
+        override val runsRightAfter = Some(API.name)
+      } with SubComponent {
     val dependency = new Dependency(global)
     def newPhase(prev: Phase) = dependency.newPhase(prev)
     def name = phaseName
@@ -124,14 +124,14 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
    *       irrespective of whether we typecheck from source or unpickle previously compiled classes.
    */
   object apiExtractor extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
-    val phaseName = API.name
-    val runsAfter = List("typer")
-    override val runsBefore = List("erasure")
-    // TODO: Consider migrating to "uncurry" for `runsBefore`.
-    // TODO: Consider removing the system property to modify which phase is used for API extraction.
-    val runsRightAfter = Option(System.getProperty("sbt.api.phase")) orElse Some("pickler")
-  } with SubComponent {
+        val global: ZincCompiler.this.type = ZincCompiler.this
+        val phaseName = API.name
+        val runsAfter = List("typer")
+        override val runsBefore = List("erasure")
+        // TODO: Consider migrating to "uncurry" for `runsBefore`.
+        // TODO: Consider removing the system property to modify which phase is used for API extraction.
+        val runsRightAfter = Option(System.getProperty("sbt.api.phase")) orElse Some("pickler")
+      } with SubComponent {
     val api = new API(global)
     def newPhase(prev: Phase) = api.newPhase(prev)
     def name = phaseName

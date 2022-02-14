@@ -121,7 +121,8 @@ private object DelegatingReporter {
             // work around for https://github.com/scala/bug/issues/11865 by falling back to start pos
             case _: ArrayIndexOutOfBoundsException =>
               startLine
-          } else None
+          }
+        else None
       val endColumn =
         if (pos.isRange)
           try {
@@ -130,7 +131,8 @@ private object DelegatingReporter {
             // work around for https://github.com/scala/bug/issues/11865 by falling back to start pos
             case _: ArrayIndexOutOfBoundsException =>
               startColumn
-          } else None
+          }
+        else None
 
       new PositionImpl(
         Option(sourcePath),
