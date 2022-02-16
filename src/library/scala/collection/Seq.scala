@@ -540,11 +540,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else new PermutationsItr
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original sequence, with the elements taken in order.  Thus, `"xy"` and `"yy"`
-    *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
+    *  the original sequence, with the elements taken in order of their first occurrence.  Thus, `"yy"` and `"yx"`
+    *  are both length-2 combinations of `"yxy"`, but `"xy"` is not.  If there is
     *  more than one way to generate the same subsequence, only one will be returned.
     *
-    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
+    *  For example, `"yxyy"` has three different ways to generate `"yx"` depending on
     *  whether the first, second, or third `"y"` is selected.  However, since all are
     *  identical, only one will be chosen.  Which of the three will be taken is an
     *  implementation detail that is not defined.
@@ -552,7 +552,10 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  $willForceEvaluation
     *
     *  @return   An Iterator which traverses the possible n-element combinations of this $coll.
-    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
+    *  @example {{{
+    *    "abbbc".combinations(2) = Iterator(ab, ac, bb, bc)
+    *    "bab".combinations(2) = Iterator(bb, ba)
+    *  }}}
     */
   def combinations(n: Int): Iterator[C] =
     if (n < 0 || n > size) Iterator.empty

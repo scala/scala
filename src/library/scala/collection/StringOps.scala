@@ -1594,17 +1594,20 @@ final class StringOps(private val s: String) extends AnyVal {
   def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.unwrap)
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original string, with the chars taken in order.  Thus, `"xy"` and `"yy"`
-    *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
+    *  the original string, with the chars taken in order of their first occurrence.  Thus, `"yy"` and `"yx"`
+    *  are both length-2 combinations of `"yxy"`, but `"xy"` is not.  If there is
     *  more than one way to generate the same subsequence, only one will be returned.
     *
-    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
+    *  For example, `"yxyy"` has three different ways to generate `"yx"` depending on
     *  whether the first, second, or third `"y"` is selected.  However, since all are
     *  identical, only one will be chosen.  Which of the three will be taken is an
     *  implementation detail that is not defined.
     *
     *  @return   An Iterator which traverses the possible n-element combinations of this string.
-    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
+    *  @example {{{
+    *    "abbbc".combinations(2) = Iterator(ab, ac, bb, bc)
+    *    "bab".combinations(2) = Iterator(bb, ba)
+    *  }}}
     *  @note     $unicodeunaware
     */
   def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.unwrap)
