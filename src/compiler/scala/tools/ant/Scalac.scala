@@ -23,6 +23,7 @@ import org.apache.tools.ant.util.facade.{FacadeTaskHelper, ImplementationSpecifi
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.io.{Path => SPath}
 import scala.tools.nsc.reporters.{ ConsoleReporter, Reporter }
+import scala.tools.nsc.settings.StandardScalaSettings
 
 /** An Ant task to compile with the new Scala compiler (NSC).
  *
@@ -99,7 +100,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   /** Defines valid values for the `target` property. */
   object Target extends PermissibleValue {
-    val values = List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8")
+    val values = StandardScalaSettings.AllPermissibleTargetValues
   }
 
   /** Defines valid values for the `deprecation` and `unchecked` properties. */

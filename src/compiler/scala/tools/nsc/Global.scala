@@ -33,6 +33,7 @@ import scala.tools.nsc.io.{AbstractFile, SourceReader}
 import scala.tools.nsc.plugins.Plugins
 import scala.tools.nsc.profile.Profiler
 import scala.tools.nsc.reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
+import scala.tools.nsc.settings.StandardScalaSettings
 import scala.tools.nsc.symtab.classfile.Pickler
 import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
 import scala.tools.nsc.transform._
@@ -1368,10 +1369,15 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
         runReporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
-      val supportedTarget = "jvm-1.8"
-      if (settings.target.value != supportedTarget) {
-        runReporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget, "2.12.0", site = "", origin = "")
-        settings.target.value = supportedTarget
+      if (!StandardScalaSettings.SupportedTargetVersions.contains(settings.target.value)) {
+        runReporting.deprecationWarning(
+          NoPosition,
+          settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + StandardScalaSettings.DefaultTargetVersion,
+          since = "2.12.16",
+          site = "",
+          origin = ""
+        )
+        settings.target.value = StandardScalaSettings.DefaultTargetVersion
       }
       settings.conflictWarning.foreach(runReporting.warning(NoPosition, _, WarningCategory.Other, site = ""))
     }

@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package settings
 
+import scala.tools.nsc.settings.StandardScalaSettings.{AllTargetVersions, DefaultTargetVersion, SupportedTargetVersions}
 import scala.tools.util.PathResolver.Defaults
 
 /** Settings which aren't behind a -X, -Y, or -P option.
@@ -54,8 +55,7 @@ trait StandardScalaSettings { _: MutableSettings =>
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withPostSetHook { s => if (s) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
-  val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.",
-                          List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"), "jvm-1.8")
+  val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.", AllTargetVersions, SupportedTargetVersions, DefaultTargetVersion) withPreSetHook normalizeTarget
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -65,4 +65,22 @@ trait StandardScalaSettings { _: MutableSettings =>
   val usemanifestcp =  BooleanSetting ("-usemanifestcp", "Utilize the manifest in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing.")
   val version =        BooleanSetting ("-version", "Print product version and exit.")
+
+  // Support passe prefixes of -target values:
+  //   - `jvm-` (from back when we also had `msil`)
+  //   - `1.` (from back when Java 2 was a possibility)
+  // `-target:1.jvm-13` is ridiculous, though.
+  private[this] def normalizeTarget(in: String): String = in.stripPrefix("jvm-").stripPrefix("1.")
+}
+
+object StandardScalaSettings {
+  // not final in case some separately compiled client code wanted to depend on updated values
+  val MinTargetVersion = 5
+  val MinSupportedTargetVersion = 8
+  val MaxTargetVersion = 18
+  val DefaultTargetVersion = "8"
+
+  private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).toList
+  val SupportedTargetVersions: List[String] = (MinSupportedTargetVersion to MaxTargetVersion).map(_.toString).toList
+  val AllPermissibleTargetValues: List[String] = AllTargetVersions.flatMap(v => v :: s"jvm-1.$v" :: s"jvm-$v" :: s"1.$v" :: Nil)
 }

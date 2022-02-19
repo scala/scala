@@ -77,8 +77,19 @@ abstract class BackendUtils extends PerRunInit {
   private[this] lazy val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(this)(sideEffectFreeConstructors.get.map(_._1))
 
   lazy val classfileVersion: LazyVar[Int] = perRunLazy(this)(compilerSettings.target match {
-    case "jvm-1.8" => asm.Opcodes.V1_8
-  })
+      case "8"  => asm.Opcodes.V1_8
+      case "9"  => asm.Opcodes.V9
+      case "10" => asm.Opcodes.V10
+      case "11" => asm.Opcodes.V11
+      case "12" => asm.Opcodes.V12
+      case "13" => asm.Opcodes.V13
+      case "14" => asm.Opcodes.V14
+      case "15" => asm.Opcodes.V15
+      case "16" => asm.Opcodes.V16
+      case "17" => asm.Opcodes.V17
+      case "18" => asm.Opcodes.V18
+      // to be continued...
+    })
 
 
   lazy val majorVersion: LazyVar[Int] = perRunLazy(this)(classfileVersion.get & 0xFF)

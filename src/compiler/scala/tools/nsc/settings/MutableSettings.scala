@@ -230,9 +230,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   def BooleanSetting(name: String, descr: String, default: Boolean = false) = add(new BooleanSetting(name, descr, default))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp))
-  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil) =
+  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], supported: List[String], default: String, choicesHelp: List[String] = Nil) =
     ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp).withPostSetHook(sett =>
-      if (sett.value != default) {
+      if (!supported.contains(sett.value)) {
         sett.withDeprecationMessage(s"${name}:${sett.value} is deprecated, forcing use of $default")
         sett.value = default
       }
@@ -846,6 +846,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     protected var v: T = default
     def indexOfChoice: Int = choices indexOf value
 
+    private[this] var _preSetHook: String => String = s => s
+    def withPreSetHook(hook: String => String): this.type = { _preSetHook = hook ; this }
+
     private def choicesHelpMessage = if (choicesHelp.isEmpty) "" else {
       val choiceLength = choices.map(_.length).max + 1
       val formatStr = s"  %-${choiceLength}s %s%n"
@@ -861,7 +864,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
 
-    override def tryToSetColon(args: List[String]) = args match {
+    override def tryToSetColon(args: List[String]) = args map _preSetHook match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
       case List("help")                   => sawHelp = true; SomeOfNil
       case List(x) if choices contains x  => value = x ; SomeOfNil
