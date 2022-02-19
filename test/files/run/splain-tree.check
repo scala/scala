@@ -16,12 +16,10 @@ i1a invalid because
             !I p: tpes.I8
 ――――――――――――――i8 invalid because
               !I p: tpes.I9
-
 ――――――――――i6b invalid because
           !I p: tpes.I8
 ――――――――――――i8 invalid because
             !I p: tpes.I9
-
 ――――i3b invalid because
     !I p: tpes.I4
 ――――――i4 invalid because
@@ -34,7 +32,10 @@ i1a invalid because
             !I p: tpes.I8
 ――――――――――――――i8 invalid because
               !I p: tpes.I9
-
+――――――――――i6b invalid because
+          !I p: tpes.I8
+――――――――――――i8 invalid because
+            !I p: tpes.I9
 i1b invalid because
 !I p: tpes.I6
 ――i6a invalid because
@@ -43,5 +44,51 @@ i1b invalid because
     !I p: tpes.I8
 ――――――i8 invalid because
       !I p: tpes.I9
+――i6b invalid because
+  !I p: tpes.I8
+――――i8 invalid because
+    !I p: tpes.I9
+  implicitly[I1]
+            ^
+newSource1.scala:28: error: implicit error;
+!I e: tpes.I1
+i1a invalid because
+!I p: tpes.I2
+⋮
+――i3a invalid because
+  !I p: tpes.I4
+  ⋮
+――――i6a invalid because
+    !I p: tpes.I7
+    ⋮
+――――――――i8 invalid because
+        !I p: tpes.I9
+――――i6b invalid because
+    !I p: tpes.I8
+――――――i8 invalid because
+      !I p: tpes.I9
+――i3b invalid because
+  !I p: tpes.I4
+  ⋮
+――――i6a invalid because
+    !I p: tpes.I7
+    ⋮
+――――――――i8 invalid because
+        !I p: tpes.I9
+――――i6b invalid because
+    !I p: tpes.I8
+――――――i8 invalid because
+      !I p: tpes.I9
+i1b invalid because
+!I p: tpes.I6
+――i6a invalid because
+  !I p: tpes.I7
+  ⋮
+――――――i8 invalid because
+      !I p: tpes.I9
+――i6b invalid because
+  !I p: tpes.I8
+――――i8 invalid because
+    !I p: tpes.I9
   implicitly[I1]
             ^

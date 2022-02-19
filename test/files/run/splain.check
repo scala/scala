@@ -2,7 +2,6 @@ newSource1.scala:13: error: implicit error;
 !I e: ImplicitChain.II
 ImplicitChain.g invalid because
 !I impPar3: ImplicitChain.I1
-⋮
 ――ImplicitChain.i1 invalid because
   !I impPar7: ImplicitChain.I3
   implicitly[II]
@@ -13,6 +12,10 @@ newSource1.scala:6: error: type mismatch;
     ^
 newSource1.scala:7: error: implicit error;
 !I e: Bounds.F[Bounds.Arg]
+Bounds.g invalid because
+nonconformant bounds;
+[Bounds.Arg, scala.Nothing]
+[A <: Bounds.Base, B]
   implicitly[F[Arg]]
             ^
 newSource1.scala:4: error: implicit error;
@@ -116,7 +119,6 @@ Ordering.ordered invalid because
 !I asComparable: java.lang.Object => java.lang.Comparable[_$2]
   No implicit view available from Object => Comparable[_ >: Object].
 
-⋮
 Ordering.comparatorToOrdering invalid because
 !I cmp: java.util.Comparator[java.lang.Object]
     ms.map(_ => o)
