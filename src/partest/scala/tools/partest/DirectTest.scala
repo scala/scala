@@ -115,7 +115,7 @@ abstract class DirectTest {
     catch {
       case t: Exception =>
         println(t.getMessage)
-        t.printStackTrace
+        t.printStackTrace()
         sys.exit(1)
     }
 
