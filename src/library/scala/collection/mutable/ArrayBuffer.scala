@@ -19,7 +19,6 @@ import java.util.Arrays
 import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-import scala.util.chaining._
 
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
@@ -54,6 +53,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   @transient private[this] var mutationCount: Int = 0
 
+  // needs to be `private[collection]` or `protected[collection]` for parallel-collections
   protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
 
@@ -67,6 +67,13 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit = {
     array = ArrayBuffer.ensureSize(array, size0, n)
+  }
+
+  // TODO 3.T: should be `protected`, perhaps `protected[this]`
+  /** Ensure that the internal array has at least `n` additional cells more than `size0`. */
+  private[mutable] def ensureAdditionalSize(n: Int): Unit = {
+    // `.toLong` to ensure `Long` arithmetic is used and prevent `Int` overflow
+    array = ArrayBuffer.ensureSize(array, size0, size0.toLong + n)
   }
 
   def sizeHint(size: Int): Unit =
@@ -135,8 +142,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def addOne(elem: A): this.type = {
     mutationCount += 1
+    ensureAdditionalSize(1)
     val oldSize = size0
-    ensureSize(oldSize + 1)
     size0 = oldSize + 1
     this(oldSize) = elem
     this
@@ -149,7 +156,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
         val elemsLength = elems.size0
         if (elemsLength > 0) {
           mutationCount += 1
-          ensureSize(length + elemsLength)
+          ensureAdditionalSize(elemsLength)
           Array.copy(elems.array, 0, array, length, elemsLength)
           size0 = length + elemsLength
         }
@@ -161,7 +168,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
     checkWithinBounds(index, index)
     mutationCount += 1
-    ensureSize(size0 + 1)
+    ensureAdditionalSize(1)
     Array.copy(array, index, array, index + 1, size0 - index)
     size0 += 1
     this(index) = elem
@@ -179,9 +186,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
         val elemsLength = elems.size
         if (elemsLength > 0) {
           mutationCount += 1
+          ensureAdditionalSize(elemsLength)
           val len = size0
-          val newSize = len + elemsLength
-          ensureSize(newSize)
           Array.copy(array, index, array, index + elemsLength, len - index)
           // if `elems eq this`, this copy is safe because
           //   - `elems.array eq this.array`
@@ -191,7 +197,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
           //   - `System.arraycopy` will effectively "read" all the values before
           //     overwriting any of them when two arrays are the the same reference
           IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
-          size0 = newSize // update size AFTER the copy, in case we're inserting a proxy
+          size0 = len + elemsLength // update size AFTER the copy, in case we're inserting a proxy
         }
       case _ => insertAll(index, ArrayBuffer.from(elems))
     }
@@ -265,12 +271,13 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 @SerialVersionUID(3L)
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   final val DefaultInitialSize = 16
+  private[this] val emptyArray = new Array[AnyRef](0)
 
-  // Avoid reallocation of buffer if length is known.
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] = {
     val k = coll.knownSize
     if (k >= 0) {
-      val array = new Array[AnyRef](k max DefaultInitialSize)
+      // Avoid reallocation of buffer if length is known
+      val array = ensureSize(emptyArray, 0, k) // don't duplicate sizing logic, and check VM array size limit
       IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
       new ArrayBuffer[B](array, k)
     }
@@ -284,33 +291,49 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 
-  // if necessary, copy (n elements of) the array to a new array of capacity n.
-  // Should use Array.copyOf(array, resizeEnsuring(array.length, n))?
-  //
-  private def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
-    def resizeEnsuring(length: Int, end: Int, n: Int): Int = {
-      var newSize: Long = length
-      newSize = math.max(newSize * 2, DefaultInitialSize)
-      while (newSize < n) newSize *= 2
-      if (newSize <= Int.MaxValue) newSize.toInt
-      else if (end == Int.MaxValue) throw new Exception(s"Collections can not have more than ${Int.MaxValue} elements")
-      else Int.MaxValue
+  /**
+   * @param arrayLen  the length of the backing array
+   * @param targetLen the minimum length to resize up to
+   * @return -1 if no resizing is needed, or the size for the new array otherwise
+   */
+  private def resizeUp(arrayLen: Long, targetLen: Long): Int = {
+    if (targetLen <= arrayLen) -1
+    else {
+      if (targetLen > Int.MaxValue) throw new Exception(s"Collections cannot have more than ${Int.MaxValue} elements")
+      IterableOnce.checkArraySizeWithinVMLimit(targetLen.toInt) // safe because `targetSize <= Int.MaxValue`
+
+      val newLen = math.max(targetLen, math.max(arrayLen * 2, DefaultInitialSize))
+      math.min(newLen, scala.runtime.PStatics.VM_MaxArraySize).toInt
     }
-    if (n <= array.length) array
-    else new Array[AnyRef](resizeEnsuring(array.length, end, n)).tap(Array.copy(array, 0, _, 0, end))
   }
-  private def downsize(array: Array[AnyRef], requiredLength: Int): Array[AnyRef] = {
-    def resizeDown(length: Int, requiredLength: Int): Int = {
-      var newSize: Long = length
-      // ensure that newSize is a power of 2 (this tweak is not motivated)
-      if (newSize == Int.MaxValue) newSize += 1
-      val minLength = math.max(requiredLength, DefaultInitialSize)
-      while (newSize / 2 >= minLength) newSize /= 2
-      if (newSize <= Int.MaxValue) newSize.toInt
-      else Int.MaxValue
+  // if necessary, copy (curSize elements of) the array to a new array of capacity n.
+  // Should use Array.copyOf(array, resizeEnsuring(array.length))?
+  private def ensureSize(array: Array[AnyRef], curSize: Int, targetSize: Long): Array[AnyRef] = {
+    val newLen = resizeUp(array.length, targetSize)
+    if (newLen < 0) array
+    else {
+      val res = new Array[AnyRef](newLen)
+      System.arraycopy(array, 0, res, 0, curSize)
+      res
     }
-    if (requiredLength >= array.length) array
-    else new Array[AnyRef](resizeDown(array.length, requiredLength)).tap(Array.copy(array, 0, _, 0, requiredLength))
+  }
+
+  /**
+   * @param arrayLen  the length of the backing array
+   * @param targetLen the length to resize down to, if smaller than `arrayLen`
+   * @return -1 if no resizing is needed, or the size for the new array otherwise
+   */
+  private def resizeDown(arrayLen: Int, targetLen: Int): Int =
+    if (targetLen >= arrayLen) -1 else math.max(targetLen, 0)
+  private def downsize(array: Array[AnyRef], targetSize: Int): Array[AnyRef] = {
+    val newLen = resizeDown(array.length, targetSize)
+    if (newLen < 0) array
+    else if (newLen == 0) emptyArray
+    else {
+      val res = new Array[AnyRef](newLen)
+      System.arraycopy(array, 0, res, 0, targetSize)
+      res
+    }
   }
 }
 
