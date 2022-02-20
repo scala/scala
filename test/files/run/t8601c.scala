@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:**
 //
 object Test {
   def loadField(x: scala.runtime.IntRef): Unit = x.elem

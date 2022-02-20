@@ -1,5 +1,5 @@
 
-// scalac: -opt-warnings -opt:l:inline -opt-inline-from:** -Xfatal-warnings
+// scalac: -opt:inline:** -Wopt -Werror
 //
 class C {
     val cv = Map[Int, Int](1 -> 2)

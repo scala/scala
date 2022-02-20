@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:** -Xfatal-warnings -deprecation:false -opt-warnings:none
+// scalac: -opt:inline:** -Wopt:none -Werror -deprecation:false
 //
 
 object Test extends App {

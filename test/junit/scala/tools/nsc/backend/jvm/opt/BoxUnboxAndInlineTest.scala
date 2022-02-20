@@ -17,7 +17,7 @@ import scala.tools.testkit.BytecodeTesting._
   */
 @RunWith(classOf[JUnit4])
 class BoxUnboxAndInlineTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:l:inline -opt-inline-from:**/*"
+  override def compilerArgs = "-opt:inline:**/*"
   import compiler._
 
   // Was crashing in 2.13.x once https://github.com/scala/scala/pull/9433 was merged in.

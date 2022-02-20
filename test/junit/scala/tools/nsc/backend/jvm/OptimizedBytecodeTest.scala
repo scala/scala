@@ -11,7 +11,7 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class OptimizedBytecodeTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:l:inline -opt-inline-from:** -opt-warnings"
+  override def compilerArgs = "-opt:inline:** -Wopt"
   import compiler._
 
   @Test

@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:**
 //
 object Test extends App {
   for (i <- 0 to 1) {

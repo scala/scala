@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:** -Wopt
 //
 object Test extends App {
   println(new A_1.Inner())

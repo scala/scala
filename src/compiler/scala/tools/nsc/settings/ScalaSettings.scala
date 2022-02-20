@@ -307,30 +307,31 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val allowSkipCoreModuleInit = Choice("allow-skip-core-module-init", "Allow eliminating unused module loads for core modules of the standard library (e.g., Predef, ClassTag).")
     val assumeModulesNonNull    = Choice("assume-modules-non-null",     "Assume loading a module never results in null (happens if the module is accessed in its super constructor).")
     val allowSkipClassLoading   = Choice("allow-skip-class-loading",    "Allow optimizations that can skip or delay class loading.")
-    val inline                  = Choice("inline",                      "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
+    val ell                     = Choice("l",                           "Deprecated l:none, l:default, l:method, l:inline.")
 
-    // l:none is not an expanding option, unlike the other l: levels. But it is excluded from -opt:_ below.
-    val lNone = Choice("l:none",
-      "Disable optimizations. Takes precedence: `-opt:l:none,+box-unbox` / `-opt:l:none -opt:box-unbox` don't enable box-unbox.")
+    // none is not an expanding option. It is excluded from -opt:_ below.
+    val lNone = Choice("none", "Disable all optimizations, including explicit options.")
 
-    private val defaultChoices = List(unreachableCode)
+    val defaultOptimizations = List(unreachableCode)
     val lDefault = Choice(
-      "l:default",
-      "Enable default optimizations: " + defaultChoices.mkString("", ",", "."),
-      expandsTo = defaultChoices)
+      "default",
+      defaultOptimizations.mkString("Enable default optimizations: ", ",", "."),
+      expandsTo = defaultOptimizations)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
+    val localOptimizations = List(simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
     val lMethod = Choice(
-      "l:method",
-      "Enable intra-method optimizations: " + methodChoices.mkString("", ",", "."),
-      expandsTo = methodChoices)
+      "local",
+      (defaultOptimizations ::: localOptimizations).mkString("Enable intra-method optimizations: ", ",", "."),
+      expandsTo = defaultOptimizations ::: localOptimizations)
 
-    private val inlineChoices = List(lMethod, inline)
-    val lInline = Choice("l:inline",
-      "Enable cross-method optimizations (note: inlining requires -opt-inline-from): " + inlineChoices.mkString("", ",", "."),
-      expandsTo = inlineChoices)
+    val inlineFrom = Choice(
+      "inline",
+      s"Inline method invocations and enable all optimizations; specify where to inline from, as shown below. See also -Yopt-inline-heuristics.\n$inlineHelp",
+      expandsTo = defaultOptimizations ::: localOptimizations,
+      requiresSelections = true
+    )
 
-    // "l:none" is excluded from wildcard expansion so that -opt:_ does not disable all settings
+    // "none" is excluded from wildcard expansion so that -opt:_ does not disable all settings
     override def wildcardChoices = super.wildcardChoices.filter(_ ne lNone)
   }
 
@@ -340,16 +341,28 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val opt = MultiChoiceSetting(
     name = "-opt",
     helpArg = "optimization",
-    descr = "Enable optimizations, `help` for details.",
+    descr = "Enable optimizations: `-opt:local`, `-opt:inline:<pattern>`; `-opt:help` for details.",
     domain = optChoices,
-  )
+  ).withPostSetHook { ss =>
+    // kludge alert: will be invoked twice, with selections available 2nd time
+    // for -opt:l:method reset the ell selections then enable local
+    if (ss.contains(optChoices.ell) && optChoices.ell.selections.nonEmpty) {
+      val todo = optChoices.ell.selections.map {
+        case "none"    => "none"
+        case "default" => "default"
+        case "method"  => "local"
+        case "inline"  => "local"   // enable all except inline, see -opt-inline-from
+      }
+      optChoices.ell.selections = Nil
+      ss.tryToSetColon(todo)
+    }
+  }
 
-  private def optEnabled(choice: optChoices.Choice) = {
-    !opt.contains(optChoices.lNone) && {
+  private def optEnabled(choice: optChoices.Choice) =
+    !optNone && {
       opt.contains(choice) ||
       !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
     }
-  }
 
   def optNone                    = opt.contains(optChoices.lNone)
   def optUnreachableCode         = optEnabled(optChoices.unreachableCode)
@@ -363,18 +376,18 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def optAllowSkipCoreModuleInit = optEnabled(optChoices.allowSkipCoreModuleInit)
   def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
   def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
-  def optInlinerEnabled          = optEnabled(optChoices.inline)
+  def optInlinerEnabled          = !optInlineFrom.isEmpty && !optNone
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
   def optUseAnalyzerCache        = opt.isSetByUser && !optNone && (optBuildCallGraph || opt.value.size > 1)
 
-  val optInlineFrom = MultiStringSetting(
-    "-opt-inline-from",
-    "patterns",
-    "Patterns for classfile names from which to allow inlining, `help` for details.",
-    helpText = Some(
-      """Patterns for classfile names from which the inliner is allowed to pull in code.
+  def optInlineFrom: List[String] = optChoices.inlineFrom.selections
+
+  def inlineHelp =
+      """
+        |Inlining requires a list of patterns defining where code can be inlined from: `-opt:inline:p1,p2`.
+        |
         |  *              Matches classes in the empty package
         |  **             All classes
         |  a.C            Class a.C
@@ -387,13 +400,22 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
         |  <sources>      Classes defined in source files compiled in the current compilation, either
         |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
-        |The setting accepts a list of patterns: `-opt-inline-from:p1,p2`. The setting can be passed
-        |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.
-        |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
-        |For example, `a.**,!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |`-opt:inline:p` may be specified multiple times to extend the list of patterns.
+        |A leading `!` means exclude anything that matches the pattern. The last matching pattern wins.
+        |For example, `a.**,!a.b.**` includes classes in `a` and sub-packages, but not in `a.b` and sub-packages.
         |
-        |Note: on the command-line you might need to quote patterns containing `*` to prevent the shell
-        |from expanding it to a list of files in the current directory.""".stripMargin))
+        |When patterns are supplied on a command line, it is usually necessary to quote special shell characters
+        |such as `*`, `<`, `>`, and `$`: `'-opt:inline:p.*,!p.C$D' '-opt:inline:<sources>'`.
+        |Quoting may not be needed in a build file.""".stripMargin
+
+  @deprecated("Deprecated alias", since="2.13.8")
+  val xoptInlineFrom = MultiStringSetting(
+    "-opt-inline-from",
+    "patterns",
+    "Patterns for classfile names from which to allow inlining, `help` for details.",
+    helpText = Some(inlineHelp))
+      //.withDeprecationMessage("use -opt:inline:**")
+      .withPostSetHook(from => opt.add("inline", from.value))
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -413,15 +435,26 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   }
 
   val optWarnings = MultiChoiceSetting(
-    name = "-opt-warnings",
+    name = "-Wopt",
     helpArg = "warning",
     descr = "Enable optimizer warnings, `help` for details.",
     domain = optWarningsChoices,
-    default = Some(List(optWarningsChoices.atInlineFailed.name))) withPostSetHook { _ =>
+    default = Some(List(optWarningsChoices.atInlineFailed.name))
+  ).withPostSetHook { _ =>
     // no need to set `Wconf` to `silent` if optWarnings is none, since no warnings are reported
     if (optWarningsSummaryOnly) Wconf.tryToSet(List(s"cat=optimizer:ws"))
     else Wconf.tryToSet(List(s"cat=optimizer:w"))
   }
+  @deprecated("Deprecated alias", since="2.13.8")
+  val xoptWarnings = MultiChoiceSetting(
+    name = "-opt-warnings",
+    helpArg = "warning",
+    descr = "Enable optimizer warnings, `help` for details.",
+    domain = optWarningsChoices,
+    default = Some(List(optWarningsChoices.atInlineFailed.name))
+  ).withPostSetHook { ow =>
+    optWarnings.value = ow.value
+  }//.withDeprecationMessage("Use -Wopt instead.")
 
   def optWarningsSummaryOnly: Boolean = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
 
@@ -519,11 +552,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val future        = BooleanSetting("-Xfuture", "Replaced by -Xsource.").withDeprecationMessage("Not used since 2.13.")
   val optimise      = BooleanSetting("-optimize", "Enables optimizations.")
     .withAbbreviation("-optimise")
-    .withDeprecationMessage("Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.")
-    .withPostSetHook(_ => {
-      opt.enable(optChoices.lInline)
-      optInlineFrom.value = List("**")
-    })
+    .withDeprecationMessage("Since 2.12, enables -opt:inline:**. This can be dangerous.")
+    .withPostSetHook(_ => opt.add("inline", List("**")))
   val Xexperimental = BooleanSetting("-Xexperimental", "Former graveyard for language-forking extensions.")
     .withDeprecationMessage("Not used since 2.13.")
 

@@ -11,12 +11,12 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlineWarningTest extends BytecodeTesting {
-  def optInline = "-opt:l:inline -opt-inline-from:**"
-  override def compilerArgs = s"$optInline -opt-warnings"
+  def optInline = "-opt:inline:**"
+  override def compilerArgs = s"$optInline -Wopt"
 
   import compiler._
 
-  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = s"$optInline -opt-warnings:_"))
+  val compilerWarnAll = cached("compilerWarnAll", () => newCompiler(extraArgs = s"$optInline -Wopt:_"))
 
   @Test
   def nonFinal(): Unit = {

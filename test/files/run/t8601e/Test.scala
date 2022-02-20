@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:**
 class C {
   def foo: Unit = {StaticInit.fld}
 }

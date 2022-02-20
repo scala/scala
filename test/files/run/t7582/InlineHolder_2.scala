@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:** -opt-warnings
+// scalac: -opt:inline:** -Wopt
 package p1 {
   object InlineHolder {
     @inline def inlinable = (p1.PackageProtectedJava_1.protectedMethod(): @noinline) + 1

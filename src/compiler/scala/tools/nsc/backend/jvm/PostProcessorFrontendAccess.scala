@@ -211,7 +211,7 @@ object PostProcessorFrontendAccess {
       val optAllowSkipClassLoading: Boolean = s.optAllowSkipClassLoading
 
       val optInlinerEnabled: Boolean = s.optInlinerEnabled
-      val optInlineFrom: List[String] = s.optInlineFrom.value
+      val optInlineFrom: List[String] = s.optInlineFrom
       val optInlineHeuristics: String = s.YoptInlineHeuristics.value
 
       val optWarningNoInlineMixed: Boolean = s.optWarningNoInlineMixed

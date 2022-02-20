@@ -11,7 +11,7 @@ object Test extends DirectTest {
 
   override def extraSettings = {
     val classpath = List(sys.props("partest.lib"), testOutput.path).mkString(sys.props("path.separator"))
-    s"-cp $classpath -opt:l:inline -opt-inline-from:** -Yopt-inline-heuristics:everything -opt-warnings:_"
+    s"-cp $classpath -opt:inline:** -Yopt-inline-heuristics:everything -Wopt:_"
   }
 
   override def show(): Unit = {

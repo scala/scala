@@ -1,5 +1,5 @@
 
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:** -Wopt
 //
 class Crashy {
   def g(): Option[Any] = None
