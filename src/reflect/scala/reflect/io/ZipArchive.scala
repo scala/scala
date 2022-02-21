@@ -38,6 +38,14 @@ import ZipArchive._
  */
 object ZipArchive {
   private[io] val closeZipFile = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
+  // The maximum number of entries retained in the pool associated with each FileZipArchive. FileZipArchive
+  // instances are shared across compiler threads (unless -YdisableFlatCpCaching), but to actually enable
+  // concurrent access to the data per-thread instance of the underlying j.u.ZipFile must be created. These
+  // are pooled for later usage
+  private[io] val zipFilePoolCapacity = {
+    val default = Runtime.getRuntime.availableProcessors().max(4)
+    sys.props.get("scala.classpath.zipFilePool.capacity").map(_.toInt).getOrElse(default)
+  }
 
   private[io] final val RootEntry = "/"
 
@@ -146,7 +154,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
 final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArchive(file, release) {
   def this(file: JFile) = this(file, None)
   private object zipFilePool {
-    private[this] val zipFiles = new ArrayBlockingQueue[ZipFile](Runtime.getRuntime.availableProcessors())
+    private[this] val zipFiles = new ArrayBlockingQueue[ZipFile](ZipArchive.zipFilePoolCapacity)
 
     def acquire: ZipFile = {
       val zf = zipFiles.poll(0, TimeUnit.MILLISECONDS)
