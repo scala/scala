@@ -1726,18 +1726,82 @@ abstract class RefChecks extends Transform {
     }
 
     // Verify classes extending AnyVal meet the requirements
-    private def checkAnyValSubclass(clazz: Symbol) = {
+    private def checkAnyValSubclass(clazz: Symbol) =
       if (clazz.isDerivedValueClass) {
         if (clazz.isTrait)
           reporter.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
         else if (clazz.hasAbstractFlag)
           reporter.error(clazz.pos, "`abstract` modifier cannot be used with value classes")
       }
-    }
 
     private def checkUnexpandedMacro(t: Tree) =
       if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro)
         reporter.error(t.pos, "macro has not been expanded")
+
+    // if expression in statement position (of template or block)
+    // looks like a useful value that should not be ignored, warn and return true
+    // User specifies that an expression is boring by ascribing `e: Unit`.
+    // The subtree `e` will bear an attachment, but may be wrapped in adaptations.
+    private def checkInterestingResultInStatement(t: Tree): Boolean = {
+      def isUninterestingSymbol(sym: Symbol): Boolean =
+        sym != null && (
+          sym.isConstructor ||
+          sym.hasPackageFlag ||
+          sym.isPackageObjectOrClass ||
+          sym == BoxedUnitClass ||
+          sym == AnyClass ||
+          sym == AnyRefClass ||
+          sym == AnyValClass
+        )
+      def isUninterestingType(tpe: Type): Boolean =
+        tpe != null && (
+          isUnitType(tpe) ||
+          tpe.typeSymbol.isBottomClass ||
+          tpe =:= UnitTpe ||
+          tpe =:= BoxedUnitTpe ||
+          isTrivialTopType(tpe)
+        )
+      // java lacks this.type idiom to distinguish side-effecting method, so ignore result of invoking java method.
+      def isJavaApplication(t: Tree): Boolean = t match {
+        case Apply(f, _) => f.symbol.isJavaDefined && !isUniversalMember(f.symbol)
+        case _ => false
+      }
+      // The quirk of typechecking if is that the LUB often results in boring types.
+      // Parser adds suppressing attachment on `if (b) expr` when user has `-Wnonunit-if:false`.
+      def checkInterestingShapes(t: Tree): Boolean =
+        t match {
+          case If(_, thenpart, elsepart) => checkInterestingShapes(thenpart) | checkInterestingShapes(elsepart) // strict or
+          //case Block(_, Apply(label, Nil)) if label.symbol != null && nme.isLoopHeaderLabel(label.symbol.name) => false
+          case Block(_, res) => checkInterestingShapes(res)
+          case Match(_, cases) => cases.exists(k => checkInterestingShapes(k.body))
+          case _ => checksForInterestingResult(t)
+        }
+      // tests for various flavors of blandness in expressions.
+      def checksForInterestingResult(t: Tree): Boolean = (
+           !t.isDef && !treeInfo.isPureDef(t)     // ignore defs
+        && !isUninterestingSymbol(t.symbol)       // ctors, package, Unit, Any
+        && !isUninterestingType(t.tpe)            // bottom types, Unit, Any
+        && !treeInfo.isThisTypeResult(t)          // buf += x
+        && !treeInfo.isSuperConstrCall(t)         // just a thing
+        && !treeInfo.hasExplicitUnit(t)           // suppressed by explicit expr: Unit
+        && !isJavaApplication(t)                  // Java methods are inherently side-effecting
+      )
+      // begin checkInterestingResultInStatement
+      settings.warnNonUnitStatement.value && checkInterestingShapes(t) && {
+        val msg = "unused value"
+        val where = t match {
+          case Block(_, res) => res
+          case If(_, thenpart, Literal(Constant(()))) =>
+            thenpart match {
+              case Block(_, res) => res
+              case _ => thenpart
+            }
+          case _ => t
+        }
+        refchecksWarning(where.pos, msg, WarningCategory.OtherPureStatement)
+        true
+      }
+    } // end checkInterestingResultInStatement
 
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
@@ -1778,14 +1842,12 @@ abstract class RefChecks extends Transform {
 
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
-            for (stat <- body) {
-              if (treeInfo.isPureExprForWarningPurposes(stat)) {
+            for (stat <- body)
+              if (!checkInterestingResultInStatement(stat) && treeInfo.isPureExprForWarningPurposes(stat)) {
                 val msg = "a pure expression does nothing in statement position"
                 val clause = if (body.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
                 refchecksWarning(stat.pos, s"$msg$clause", WarningCategory.OtherPureStatement)
               }
-            }
-
             validateBaseTypes(currentOwner)
             checkOverloadedRestrictions(currentOwner, currentOwner)
             // scala/bug#7870 default getters for constructors live in the companion module
@@ -1852,7 +1914,8 @@ abstract class RefChecks extends Transform {
                            // probably not, until we allow parameterised extractors
             tree
 
-          case Block(stats, expr) =>
+          case blk @ Block(stats, expr) =>
+            // diagnostic info
             val (count, result0, adapted) =
               expr match {
                 case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
@@ -1862,7 +1925,7 @@ abstract class RefChecks extends Transform {
             val isMultiline = stats.lengthCompare(1 - count) > 0
 
             def checkPure(t: Tree, supple: Boolean): Unit =
-              if (!analyzer.explicitlyUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
+              if (!treeInfo.hasExplicitUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
                 val msg = "a pure expression does nothing in statement position"
                 val parens = if (isMultiline) "multiline expressions might require enclosing parentheses" else ""
                 val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
@@ -1871,8 +1934,8 @@ abstract class RefChecks extends Transform {
                   else if (!parens.isEmpty) s"$msg; $parens" else msg
                 refchecksWarning(t.pos, text, WarningCategory.OtherPureStatement)
               }
-            // check block for unintended expr placement
-            stats.foreach(checkPure(_, supple = false))
+            // check block for unintended "expression in statement position"
+            stats.foreach { t => if (!checkInterestingResultInStatement(t)) checkPure(t, supple = false) }
             if (result0.nonEmpty) checkPure(result0, supple = true)
 
             def checkImplicitlyAdaptedBlockResult(t: Tree): Unit =

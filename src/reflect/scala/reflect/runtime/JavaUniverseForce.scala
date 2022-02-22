@@ -77,6 +77,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ChangeOwnerAttachment
     this.InterpolatedString
     this.RootSelection
+    this.TypedExpectingUnitAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
