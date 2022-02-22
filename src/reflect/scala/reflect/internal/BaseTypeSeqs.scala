@@ -193,9 +193,8 @@ trait BaseTypeSeqs {
     val tsym = tp.typeSymbol
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
-    val buf = new mutable.ListBuffer[Type]
+    val buf = mutable.ListBuffer.empty[Type]
     buf += tsym.tpe_*
-    var btsSize = 1
     if (parents.nonEmpty) {
       val nparents = parents.length
       val pbtss = new Array[BaseTypeSeq](nparents)
@@ -251,12 +250,9 @@ trait BaseTypeSeqs {
           i += 1
         }
         buf += intersectionTypeForLazyBaseType(minTypes) // TODO this reverses the order. Does this matter? Or should this be minTypes.reverse?
-        btsSize += 1
       }
     }
-    val elems = new Array[Type](btsSize)
-    @annotation.unused val copied = buf.copyToArray(elems, 0)
-    //assert(copied == btsSize, "array copied")
+    val elems = buf.toArray
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
     newBaseTypeSeq(parents, elems)
   }
