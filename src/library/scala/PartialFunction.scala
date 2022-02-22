@@ -218,7 +218,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *  The action function is invoked only for its side effects; its result is ignored.
    *
    *  Note that expression `pf.runWith(action)(x)` is equivalent to
-   *  {{{ if(pf isDefinedAt x) { action(pf(x)); true } else false }}}
+   *  {{{ if (pf isDefinedAt x) { action(pf(x)); true } else false }}}
    *  except that `runWith` is implemented via `applyOrElse` and thus potentially more efficient.
    *  Using `runWith` avoids double evaluation of pattern matchers and guards for partial function literals.
    *  @see `applyOrElse`.
@@ -229,7 +229,9 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    */
   def runWith[U](action: B => U): A => Boolean = { x =>
     val z = applyOrElse(x, checkFallback[B])
-    if (!fallbackOccurred(z)) { action(z); true } else false
+    val wasDefinedAt = !fallbackOccurred(z)
+    if (wasDefinedAt) action(z)
+    wasDefinedAt
   }
 }
 
