@@ -52,7 +52,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
     }
     if (!it.hasNext) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${i-1})")
     b += elem
-    it.next()
+    it.next(): Unit
     while (it.hasNext) b += it.next()
     b.result()
   }
@@ -68,7 +68,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
     b ++= other
     i = replaced
     while (i > 0 && it.hasNext) {
-      it.next()
+      it.next(): Unit
       i -= 1
     }
     while (it.hasNext) b += it.next()

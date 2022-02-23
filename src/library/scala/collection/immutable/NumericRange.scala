@@ -112,7 +112,7 @@ sealed class NumericRange[T](
     var count = 0
     var current = start
     while (count < length) {
-      f(current)
+      f(current): Unit
       current += step
       count += 1
     }

@@ -147,13 +147,13 @@ class OpenHashMap[Key, Value](initialSize : Int)
   }
 
   // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
-  override def update(key: Key, value: Value): Unit = put(key, value)
+  override def update(key: Key, value: Value): Unit = put(key, value): Unit
 
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
-  def addOne (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
+  def addOne (kv: (Key, Value)): this.type = { put(kv._1, kv._2): Unit; this }
 
   @deprecatedOverriding("subtractOne should not be overridden in order to maintain consistency with remove.", "2.11.0")
-  def subtractOne (key: Key): this.type = { remove(key); this }
+  def subtractOne (key: Key): this.type = { remove(key): Unit; this }
 
   override def put(key: Key, value: Value): Option[Value] =
     put(key, hashOf(key), value)
@@ -257,7 +257,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
 
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
+    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get): Unit)
     it
   }
 
@@ -273,17 +273,17 @@ class OpenHashMap[Key, Value](initialSize : Int)
     */
   override def foreach[U](f : ((Key, Value)) => U): Unit = {
     val startModCount = modCount
-    foreachUndeletedEntry(entry => {
+    foreachUndeletedEntry { entry =>
       if (modCount != startModCount) throw new ConcurrentModificationException
-      f((entry.key, entry.value.get))}
-    )
+      f((entry.key, entry.value.get)): Unit
+    }
   }
   override def foreachEntry[U](f : (Key, Value) => U): Unit = {
     val startModCount = modCount
-    foreachUndeletedEntry(entry => {
+    foreachUndeletedEntry { entry =>
       if (modCount != startModCount) throw new ConcurrentModificationException
-      f(entry.key, entry.value.get)}
-    )
+      f(entry.key, entry.value.get): Unit
+    }
   }
 
   private[this] def foreachUndeletedEntry(f : Entry => Unit): Unit = {

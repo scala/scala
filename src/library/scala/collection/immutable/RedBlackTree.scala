@@ -273,7 +273,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = {
     if (tree.left ne null) _foreach(tree.left, f)
-    f((tree.key, tree.value))
+    f((tree.key, tree.value)): Unit
     if (tree.right ne null) _foreach(tree.right, f)
   }
 
@@ -281,7 +281,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = {
     if (tree.left ne null) _foreachKey(tree.left, f)
-    f((tree.key))
+    f((tree.key)): Unit
     if (tree.right ne null) _foreachKey(tree.right, f)
   }
 
@@ -289,7 +289,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
     if (tree.left ne null) _foreachEntry(tree.left, f)
-    f(tree.key, tree.value)
+    f(tree.key, tree.value): Unit
     if (tree.right ne null) _foreachEntry(tree.right, f)
   }
 
@@ -568,22 +568,22 @@ private[collection] object RedBlackTree {
 
     //mutable APIs
     private[RedBlackTree] def makeImmutable: Tree[A, B] = {
-      def makeImmutableImpl() = {
+      def makeImmutableImpl(): this.type = {
         if (isMutable) {
           var size = 1
           if (_left ne null) {
-            _left.makeImmutable
+            _left.makeImmutable: Unit
             size += _left.count
           }
           if (_right ne null) {
-            _right.makeImmutable
+            _right.makeImmutable: Unit
             size += _right.count
           }
           _count |= size //retains colour
         }
         this
       }
-      makeImmutableImpl()
+      makeImmutableImpl(): Unit
       this
     }
 

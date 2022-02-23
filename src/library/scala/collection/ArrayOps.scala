@@ -474,9 +474,9 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
     val res1, res2 = ArrayBuilder.make[A]
     var i = 0
-    while(i < xs.length) {
+    while (i < xs.length) {
       val x = xs(i)
-      (if(p(x)) res1 else res2) += x
+      (if (p(x)) res1 else res2) += x
       i += 1
     }
     (res1.result(), res2.result())
@@ -506,11 +506,11 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     val res1 = ArrayBuilder.make[A1]
     val res2 = ArrayBuilder.make[A2]
     var i = 0
-    while(i < xs.length) {
-      f(xs(i)) match {
+    while (i < xs.length) {
+      (f(xs(i)) match {
         case Left(x) => res1 += x
         case Right(x) => res2 += x
-      }
+      }): Unit
       i += 1
     }
     (res1.result(), res2.result())
@@ -1315,18 +1315,19 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     * Note: [U] parameter needed to help scalac's type inference.
     */
   def foreach[U](f: A => U): Unit = {
+    def g(a: A): Unit = f(a)
     val len = xs.length
     var i = 0
     (xs: Any @unchecked) match {
-      case xs: Array[AnyRef]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Int]     => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Double]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Long]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Float]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Char]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Byte]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Short]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
-      case xs: Array[Boolean] => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[AnyRef]  => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Int]     => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Double]  => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Long]    => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Float]   => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Char]    => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Byte]    => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Short]   => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Boolean] => while (i < len) { g(xs(i).asInstanceOf[A]); i = i+1 }
     }
   }
 
@@ -1476,7 +1477,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   /** Create a copy of this array with the specified element type. */
   def toArray[B >: A: ClassTag]: Array[B] = {
     val destination = new Array[B](xs.length)
-    copyToArray(destination, 0)
+    copyToArray(destination, 0): Unit
     destination
   }
 

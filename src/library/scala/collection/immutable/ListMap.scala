@@ -94,7 +94,7 @@ sealed class ListMap[K, +V]
         override def foreachEntry[U](f: (K, V) => U): Unit = {
           var curr: ListMap[K, V] = ListMap.this
           while (curr.nonEmpty) {
-            f(curr.key, curr.value)
+            f(curr.key, curr.value): Unit
             curr = curr.next
           }
         }

@@ -62,7 +62,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
   @tailrec
   override final def foreach[U](f: A => U): Unit = {
     if (!this.isEmpty) {
-      f(head)
+      f(head): Unit
       tail.foreach(f)
     }
   }
@@ -238,7 +238,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     */
   override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     force
-    addStringNoForce(sb.underlying, start, sep, end)
+    addStringNoForce(sb.underlying, start, sep, end): Unit
     sb
   }
 

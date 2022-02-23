@@ -44,7 +44,7 @@ class SyncChannel[A] {
       }
     }
 
-    writeReq.get
+    writeReq.get: Unit
   }
 
   def read: A = {

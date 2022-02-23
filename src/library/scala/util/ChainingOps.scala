@@ -37,7 +37,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *  @return       the original value `self`.
     */
   def tap[U](f: A => U): A = {
-    f(self)
+    f(self): Unit
     self
   }
 

@@ -398,7 +398,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     new AbstractIterator[Match] {
       def hasNext = matchIterator.hasNext
       def next(): Match = {
-        matchIterator.next()
+        matchIterator.next(): Unit
         new Match(matchIterator.source, matchIterator.matcher, matchIterator._groupNames).force
       }
     }
@@ -752,7 +752,7 @@ object Regex {
     /** The match itself with matcher-dependent lazy vals forced,
      *  so that match is valid even once matcher is advanced.
      */
-    def force: this.type = { starts; ends; this }
+    def force: this.type = { starts: Unit; ends: Unit; this }
   }
 
   /** An extractor object for Matches, yielding the matched string.
@@ -832,9 +832,9 @@ object Regex {
      */
     def next(): String = {
       nextSeen match {
-        case 0 => if (!hasNext) throw new NoSuchElementException ; next()
+        case 0 => if (!hasNext) throw new NoSuchElementException ; next(): Unit
         case 1 => nextSeen = 2
-        case 2 => nextSeen = 0 ; next()
+        case 2 => nextSeen = 0 ; next(): Unit
         case 3 => throw new NoSuchElementException
       }
       matcher.group
@@ -869,14 +869,14 @@ object Regex {
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
-      def next() = { self.next(); new Match(source, matcher, _groupNames).force }
+      def next() = { self.next(): Unit; new Match(source, matcher, _groupNames).force }
     }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support. */
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
-      def next() = { self.next(); new Match(source, matcher, _groupNames).force }
+      def next() = { self.next(): Unit; new Match(source, matcher, _groupNames).force }
     }
   }
 

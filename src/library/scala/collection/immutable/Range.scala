@@ -187,7 +187,7 @@ sealed abstract class Range(
     if (!isEmpty) {
       var i = start
       while (true) {
-        f(i)
+        f(i): Unit
         if (i == lastElement) return
         i += step
       }

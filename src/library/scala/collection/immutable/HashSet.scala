@@ -167,7 +167,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   /** Applies a function f to each element, and its corresponding **original** hash, in this Set
     * Stops iterating the first time that f returns `false`.*/
-  @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
+  @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f): Unit
 
   def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
     case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
@@ -537,7 +537,7 @@ private final class BitmapIndexedSetNode[A](
 
       val subNodeNew: SetNode[A] = subNode match {
         case subNodeBm: BitmapIndexedSetNode[A] if (bitpos & shallowlyMutableNodeMap) != 0 =>
-          subNodeBm.updateWithShallowMutations(element, originalHash, elementHash, shift + BitPartitionSize, 0)
+          subNodeBm.updateWithShallowMutations(element, originalHash, elementHash, shift + BitPartitionSize, 0): Unit
           subNodeBm
         case _ =>
           val subNodeNew = subNode.updated(element, originalHash, elementHash, shift + BitPartitionSize)
@@ -934,7 +934,7 @@ private final class BitmapIndexedSetNode[A](
     val thisPayloadArity = payloadArity
     var i = 0
     while (i < thisPayloadArity) {
-      f(getPayload(i))
+      f(getPayload(i)): Unit
       i += 1
     }
 
@@ -1775,7 +1775,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
   def foreach[U](f: A => U): Unit = {
     val iter = content.iterator
     while (iter.hasNext) {
-      f(iter.next())
+      f(iter.next()): Unit
     }
   }
 

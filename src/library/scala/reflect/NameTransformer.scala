@@ -123,7 +123,7 @@ object NameTransformer {
                 buf = new StringBuilder()
                 buf.append(name.substring(0, i))
               }
-              buf.append(ops.op)
+              buf.append(ops.op): Unit
               i += ops.code.length()
             }
             /* Handle the decoding of Unicode glyphs that are
@@ -140,7 +140,7 @@ object NameTransformer {
                 buf = new StringBuilder()
                 buf.append(name.substring(0, i))
               }
-              buf.append(str)
+              buf.append(str): Unit
               /* 2 for "$u", 4 for hexadecimal number */
               i += 6
               unicode = true

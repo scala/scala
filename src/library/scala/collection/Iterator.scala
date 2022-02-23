@@ -449,7 +449,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
     while (i < from && hasNext) {
-      next()
+      next(): Unit
       i += 1
     }
 
@@ -949,7 +949,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     override def hasNext = self.hasNext
     override def next() = {
       val _next = self.next()
-      f(_next)
+      f(_next): Unit
       _next
     }
   }
@@ -1223,7 +1223,7 @@ object Iterator extends IterableFactory[Iterator] {
     private def skip(): Unit =
       while (dropping > 0) {
         if (underlying.hasNext) {
-          underlying.next()
+          underlying.next(): Unit
           dropping -= 1
         } else
           dropping = 0

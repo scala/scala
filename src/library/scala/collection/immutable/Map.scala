@@ -255,7 +255,7 @@ object Map extends MapFactory[Map] {
     def removed(key: K): Map[K, V] =
       if (key == key1) Map.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1))
+      f((key1, value1)): Unit
     }
     override def exists(p: ((K, V)) => Boolean): Boolean = p((key1, value1))
     override def forall(p: ((K, V)) => Boolean): Boolean = p((key1, value1))
@@ -337,7 +337,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map1(key1, value1)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2))
+      f((key1, value1)): Unit; f((key2, value2)): Unit
     }
     override def exists(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) || p((key2, value2))
     override def forall(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) && p((key2, value2))
@@ -443,7 +443,7 @@ object Map extends MapFactory[Map] {
       else if (key == key3) new Map2(key1, value1, key2, value2)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2)); f((key3, value3))
+      f((key1, value1)): Unit; f((key2, value2)): Unit; f((key3, value3)): Unit
     }
     override def exists(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) || p((key2, value2)) || p((key3, value3))
     override def forall(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) && p((key2, value2)) && p((key3, value3))
@@ -566,7 +566,7 @@ object Map extends MapFactory[Map] {
       else if (key == key4) new Map3(key1, value1, key2, value2, key3, value3)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
+      f((key1, value1)): Unit; f((key2, value2)): Unit; f((key3, value3)): Unit; f((key4, value4)): Unit
     }
     override def exists(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) || p((key2, value2)) || p((key3, value3)) || p((key4, value4))
     override def forall(p: ((K, V)) => Boolean): Boolean = p((key1, value1)) && p((key2, value2)) && p((key3, value3)) && p((key4, value4))
@@ -649,9 +649,7 @@ private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, 
 
   override def clear(): Unit = {
     elems = Map.empty
-    if (hashMapBuilder != null) {
-      hashMapBuilder.clear()
-    }
+    if (hashMapBuilder != null) hashMapBuilder.clear()
     switchedToHashMapBuilder = false
   }
 
@@ -669,14 +667,11 @@ private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, 
         elems = elems.updated(key, value)
       } else {
         switchedToHashMapBuilder = true
-        if (hashMapBuilder == null) {
-          hashMapBuilder = new HashMapBuilder
-        }
-        elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder)
+        if (hashMapBuilder == null) hashMapBuilder = new HashMapBuilder
+        elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder): Unit
         hashMapBuilder.addOne(key, value)
       }
     }
-
     this
   }
 

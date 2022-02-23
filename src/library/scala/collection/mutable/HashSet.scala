@@ -94,13 +94,13 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     sizeHint(xs.knownSize)
     xs match {
       case hm: immutable.HashSet[A] =>
-        hm.foreachWithHash((k, h) => addElem(k, improveHash(h)))
+        hm.foreachWithHash((k, h) => addElem(k, improveHash(h)): Unit)
         this
       case hm: mutable.HashSet[A] =>
         val iter = hm.nodeIterator
         while (iter.hasNext) {
           val next = iter.next()
-          addElem(next.key, next.hash)
+          addElem(next.key, next.hash): Unit
         }
         this
       case _ => super.addAll(xs)
@@ -115,7 +115,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     xs match {
       case hs: immutable.HashSet[A] =>
         hs.foreachWithHashWhile { (k, h) =>
-          remove(k, improveHash(h))
+          remove(k, improveHash(h)): Unit
           size > 0
         }
         this
@@ -123,7 +123,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
         val iter = hs.nodeIterator
         while (iter.hasNext) {
           val next = iter.next()
-          remove(next.key, next.hash)
+          remove(next.key, next.hash): Unit
           if (size == 0) return this
         }
         this
@@ -345,9 +345,9 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
-  @`inline` def addOne(elem: A): this.type = { add(elem); this }
+  @`inline` def addOne(elem: A): this.type = { add(elem): Unit; this }
 
-  @`inline` def subtractOne(elem: A): this.type = { remove(elem); this }
+  @`inline` def subtractOne(elem: A): this.type = { remove(elem): Unit; this }
 
   override def knownSize: Int = size
 
@@ -432,7 +432,7 @@ object HashSet extends IterableFactory[HashSet] {
 
     @tailrec
     def foreach[U](f: K => U): Unit = {
-      f(_key)
+      f(_key): Unit
       if(_next ne null) _next.foreach(f)
     }
 

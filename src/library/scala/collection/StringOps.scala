@@ -1034,7 +1034,7 @@ final class StringOps(private val s: String) extends AnyVal {
     val len = s.length
     var i = 0
     while(i < len) {
-      f(s.charAt(i))
+      f(s.charAt(i)): Unit
       i += 1
     }
   }
@@ -1437,8 +1437,8 @@ final class StringOps(private val s: String) extends AnyVal {
     val len = s.length
     while(i < len) {
       f(s.charAt(i)) match {
-        case Left(c) => res1.append(c)
-        case Right(c) => res2.append(c)
+        case Left(c) => res1.append(c): Unit
+        case Right(c) => res2.append(c): Unit
       }
       i += 1
     }

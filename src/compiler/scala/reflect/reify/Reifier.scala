@@ -65,12 +65,14 @@ abstract class Reifier extends States
       if (universe exists (_.isErroneous)) CannotReifyErroneousPrefix(universe)
       if (universe.tpe == null) CannotReifyUntypedPrefix(universe)
 
+      def reifyTraceOut[A](msg: => String)(a: A) = reifyTrace(msg)(a): Unit
+
       val result = reifee match {
         case tree: Tree =>
-          reifyTrace("reifying = ")(if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
-          reifyTrace("reifee is located at: ")(tree.pos)
-          reifyTrace("universe = ")(universe)
-          reifyTrace("mirror = ")(mirror)
+          reifyTraceOut("reifying = ")(if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
+          reifyTraceOut("reifee is located at: ")(tree.pos)
+          reifyTraceOut("universe = ")(universe)
+          reifyTraceOut("mirror = ")(mirror)
           if (tree exists (_.isErroneous)) CannotReifyErroneousReifee(tree)
           if (tree.tpe == null) CannotReifyUntypedReifee(tree)
           val pipeline = mkReificationPipeline
@@ -83,9 +85,9 @@ abstract class Reifier extends States
           ReifiedTree(universe, mirror, symtab, rtree, tpe, rtpe, reificationIsConcrete)
 
         case tpe: Type =>
-          reifyTrace("reifying = ")(tpe.toString)
-          reifyTrace("universe = ")(universe)
-          reifyTrace("mirror = ")(mirror)
+          reifyTraceOut("reifying = ")(tpe.toString)
+          reifyTraceOut("universe = ")(universe)
+          reifyTraceOut("mirror = ")(mirror)
           val rtree = reify(tpe)
           ReifiedType(universe, mirror, symtab, tpe, rtree, reificationIsConcrete)
 

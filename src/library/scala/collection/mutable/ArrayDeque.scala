@@ -112,8 +112,8 @@ class ArrayDeque[A] protected (
         case srcLength if mustGrow(srcLength + n) =>
           val finalLength = srcLength + n
           val array2 = ArrayDeque.alloc(finalLength)
-          it.copyToArray(array2.asInstanceOf[Array[A]])
-          copySliceToArray(srcStart = 0, dest = array2, destStart = srcLength, maxItems = n)
+          it.copyToArray(array2.asInstanceOf[Array[A]]): Unit
+          copySliceToArray(srcStart = 0, dest = array2, destStart = srcLength, maxItems = n): Unit
           reset(array = array2, start = 0, end = finalLength)
 
         // Just fill up from (start - srcLength) to (start - 1) and move back start
@@ -151,9 +151,9 @@ class ArrayDeque[A] protected (
       val finalLength = n + 1
       if (mustGrow(finalLength)) {
         val array2 = ArrayDeque.alloc(finalLength)
-        copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
+        copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx): Unit
         array2(idx) = elem.asInstanceOf[AnyRef]
-        copySliceToArray(srcStart = idx, dest = array2, destStart = idx + 1, maxItems = n)
+        copySliceToArray(srcStart = idx, dest = array2, destStart = idx + 1, maxItems = n): Unit
         reset(array = array2, start = 0, end = finalLength)
       } else if (n <= idx * 2) {
         var i = n - 1
@@ -198,9 +198,9 @@ class ArrayDeque[A] protected (
         // Either we resize right away or move prefix left or suffix right
         if (mustGrow(finalLength)) {
           val array2 = ArrayDeque.alloc(finalLength)
-          copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
-          it.copyToArray(array2.asInstanceOf[Array[A]], idx)
-          copySliceToArray(srcStart = idx, dest = array2, destStart = idx + srcLength, maxItems = n)
+          copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx): Unit
+          it.copyToArray(array2.asInstanceOf[Array[A]], idx): Unit
+          copySliceToArray(srcStart = idx, dest = array2, destStart = idx + srcLength, maxItems = n): Unit
           reset(array = array2, start = 0, end = finalLength)
         } else if (2*idx >= n) { // Cheaper to shift the suffix right
           var i = n - 1
@@ -240,8 +240,8 @@ class ArrayDeque[A] protected (
       // Else, choose the shorter: either move the prefix (0 until idx) right OR the suffix (idx+removals until n) left
       if (shouldShrink(finalLength)) {
         val array2 = ArrayDeque.alloc(finalLength)
-        copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
-        copySliceToArray(srcStart = suffixStart, dest = array2, destStart = idx, maxItems = n)
+        copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx): Unit
+        copySliceToArray(srcStart = suffixStart, dest = array2, destStart = idx, maxItems = n): Unit
         reset(array = array2, start = 0, end = finalLength)
       } else if (2*idx <= finalLength) { // Cheaper to move the prefix right
         var i = suffixStart - 1
@@ -444,7 +444,7 @@ class ArrayDeque[A] protected (
     */
   def clear(): Unit = {
     while(nonEmpty) {
-      removeHeadAssumingNonEmpty()
+      removeHeadAssumingNonEmpty(): Unit
     }
   }
 
@@ -529,7 +529,7 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]]): Unit
       new ArrayDeque[B](array, start = 0, end = s)
     } else new ArrayDeque[B]() ++= coll
   }

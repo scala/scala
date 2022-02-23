@@ -571,7 +571,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def foreach[U](f: A => U): Unit = {
     val it = iterator
-    while(it.hasNext) f(it.next())
+    while (it.hasNext) f(it.next()): Unit
   }
 
   /** Tests whether a predicate holds for all elements of this $coll.
@@ -821,7 +821,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     else {
       val it = iterator
       var len = 0
-      while (it.hasNext) { len += 1; it.next() }
+      while (it.hasNext) { len += 1; it.next(): Unit }
       len
     }
   }
@@ -1291,7 +1291,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) {
       val destination = new Array[B](knownSize)
-      copyToArray(destination, 0)
+      copyToArray(destination, 0): Unit
       destination
     }
     else mutable.ArrayBuilder.make[B].addAll(this).result()

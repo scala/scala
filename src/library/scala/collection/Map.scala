@@ -241,7 +241,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     val it = iterator
     while (it.hasNext) {
       val next = it.next()
-      f(next._1, next._2)
+      f(next._1, next._2): Unit
     }
   }
 

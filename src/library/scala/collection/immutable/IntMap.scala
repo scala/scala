@@ -216,13 +216,13 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     */
   override final def foreach[U](f: ((Int, T)) => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
-    case IntMap.Tip(key, value) => f((key, value))
+    case IntMap.Tip(key, value) => f((key, value)): Unit
     case IntMap.Nil =>
   }
 
   override def foreachEntry[U](f: (IntMapUtils.Int, T) => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
-    case IntMap.Tip(key, value) => f(key, value)
+    case IntMap.Tip(key, value) => f(key, value): Unit
     case IntMap.Nil =>
   }
 
@@ -239,7 +239,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     */
   final def foreachKey[U](f: Int => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
-    case IntMap.Tip(key, _) => f(key)
+    case IntMap.Tip(key, _) => f(key): Unit
     case IntMap.Nil =>
   }
 
@@ -256,7 +256,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     */
   final def foreachValue[U](f: T => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
-    case IntMap.Tip(_, value) => f(value)
+    case IntMap.Tip(_, value) => f(value): Unit
     case IntMap.Nil =>
   }
 

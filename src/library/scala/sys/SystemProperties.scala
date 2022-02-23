@@ -48,9 +48,9 @@ extends mutable.AbstractMap[String, String] {
   override def contains(key: String): Boolean =
     wrapAccess(super.contains(key)) exists (x => x)
 
-  override def clear(): Unit = wrapAccess(System.getProperties().clear())
-  def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
-  def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
+  override def clear(): Unit = wrapAccess(System.getProperties().clear()): Unit
+  def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)): Unit ; this }
+  def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)): Unit ; this }
 
   @annotation.nowarn("cat=deprecation") // AccessControlException is deprecated on JDK 17
   def wrapAccess[T](body: => T): Option[T] =

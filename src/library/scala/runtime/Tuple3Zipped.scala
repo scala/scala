@@ -119,7 +119,7 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
     val elems3 = coll3.iterator
 
     while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
-      f(elems1.next(), elems2.next(), elems3.next())
+      f(elems1.next(), elems2.next(), elems3.next()): Unit
     }
   }
 

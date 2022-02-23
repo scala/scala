@@ -279,7 +279,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
         val it = iterator
         while (it.hasNext) {
           if (i == otherSize) return 1
-          it.next()
+          it.next(): Unit
           i += 1
         }
         i - otherSize
@@ -332,8 +332,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
         val thisIt = this.iterator
         val thatIt = that.iterator
         while (thisIt.hasNext && thatIt.hasNext) {
-          thisIt.next()
-          thatIt.next()
+          thisIt.next(): Unit
+          thatIt.next(): Unit
         }
         java.lang.Boolean.compare(thisIt.hasNext, thatIt.hasNext)
       }
@@ -837,7 +837,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def inits: Iterator[C] = iterateUntilEmpty(_.init)
 
-  override def tapEach[U](f: A => U): C = fromSpecific(new View.Map(this, { (a: A) => f(a); a }))
+  override def tapEach[U](f: A => U): C = fromSpecific(new View.Map(this, { (a: A) => f(a): Unit; a }))
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {

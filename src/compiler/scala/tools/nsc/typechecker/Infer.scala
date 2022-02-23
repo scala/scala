@@ -84,12 +84,12 @@ trait Infer extends Checkable {
       val ptVars = appliedType(samTyCon, tvars)
 
       // carry over info from pt
-      ptVars <:< samTp
+      ptVars <:< samTp: Unit
 
       val samInfoWithTVars = ptVars.memberInfo(sam)
 
       // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
-      funTp <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
+      funTp <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType): Unit
 
       // solve constraints tracked by tvars
       val targs = solvedTypes(tvars, tparams, varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
@@ -1401,7 +1401,7 @@ trait Infer extends Checkable {
           }
           // todo: missing test case for bests.isEmpty
           bests match {
-            case best :: Nil                              => tree setSymbol best setType (pre memberType best)
+            case best :: Nil                              => tree.setSymbol(best).setType(pre.memberType(best))
             case best :: competing :: _ if alts0.nonEmpty =>
               // scala/bug#6912 Don't give up and leave an OverloadedType on the tree.
               //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try

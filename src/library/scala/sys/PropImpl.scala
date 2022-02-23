@@ -27,8 +27,8 @@ private[sys] class PropImpl[+T](val key: String, valueFn: String => T) extends P
   }
   def setValue[T1 >: T](newValue: T1): T = {
     val old = value
-    if (newValue == null) set(null)
-    else set("" + newValue)
+    if (newValue == null) set(null): Unit
+    else set("" + newValue): Unit
     old
   }
   def get: String =

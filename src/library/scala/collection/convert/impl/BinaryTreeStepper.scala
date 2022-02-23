@@ -132,7 +132,7 @@ extends EfficientSplit {
       val leftCurrent = myCurrent
       var leftMax = maxLength
       index = -1
-      detach(root)
+      detach(root): Unit
       myCurrent = root
       leftMax -= 2+index
       maxLength -= 2+leftIndex

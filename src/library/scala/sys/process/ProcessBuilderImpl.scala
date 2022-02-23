@@ -183,7 +183,7 @@ private[process] trait ProcessBuilderImpl {
             case NonFatal(_) => -2
           }
         }
-      }
+      }: Unit
       lazilyListed.lazyList
     }
 
@@ -197,7 +197,7 @@ private[process] trait ProcessBuilderImpl {
       val streamed = Streamed[String](nonZeroException, capacity)
       val process  = run(BasicIO(withInput, streamed.process, log))
 
-      Spawn("LineStream")(streamed done process.exitValue())
+      Spawn("LineStream")(streamed.done(process.exitValue())): Unit
       streamed.stream()
     }
 

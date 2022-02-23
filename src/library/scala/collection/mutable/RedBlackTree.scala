@@ -437,7 +437,7 @@ private[collection] object RedBlackTree {
 
   private[this] def foreachNodeNonNull[A, B, U](node: Node[A, B], f: ((A, B)) => U): Unit = {
     if (node.left ne null) foreachNodeNonNull(node.left, f)
-    f((node.key, node.value))
+    f((node.key, node.value)): Unit
     if (node.right ne null) foreachNodeNonNull(node.right, f)
   }
 
@@ -445,7 +445,7 @@ private[collection] object RedBlackTree {
     def g(node: Node[A, _]): Unit = {
       val l = node.left
       if(l ne null) g(l)
-      f(node.key)
+      f(node.key): Unit
       val r = node.right
       if(r ne null) g(r)
     }
@@ -457,7 +457,7 @@ private[collection] object RedBlackTree {
     def g(node: Node[A, B]): Unit = {
       val l = node.left
       if(l ne null) g(l)
-      f(node.key, node.value)
+      f(node.key, node.value): Unit
       val r = node.right
       if(r ne null) g(r)
     }

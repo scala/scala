@@ -32,7 +32,7 @@ trait Placeholders { self: Quasiquotes =>
   lazy val code = {
     val sb = new StringBuilder()
 
-    def appendPart(value: String, pos: Position) = {
+    def appendPart(value: String, pos: Position): Unit = {
       val start = sb.length
       sb.append(value)
       val end = sb.length

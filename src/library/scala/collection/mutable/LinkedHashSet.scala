@@ -62,7 +62,7 @@ class LinkedHashSet[A]
       override def foreachEntry[U](f: Entry => U): Unit = {
         var cur = firstEntry
         while (cur ne null) {
-          f(cur)
+          f(cur): Unit
           cur = cur.later
         }
       }
@@ -90,12 +90,12 @@ class LinkedHashSet[A]
   def contains(elem: A): Boolean = table.findEntry(elem) ne null
 
   def addOne(elem: A): this.type = {
-    table.findOrAddEntry(elem, null)
+    table.findOrAddEntry(elem, null): Unit
     this
   }
 
   def subtractOne(elem: A): this.type = {
-    remove(elem)
+    remove(elem): Unit
     this
   }
 
@@ -124,7 +124,7 @@ class LinkedHashSet[A]
   override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
-      f(cur.key)
+      f(cur.key): Unit
       cur = cur.later
     }
   }

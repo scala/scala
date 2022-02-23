@@ -208,7 +208,7 @@ final class TreeSeqMap[K, +V] private (
         val iter = ordering.iterator
         var i = 0
         while (i < f) {
-          iter.next()
+          iter.next(): Unit
           i += 1
         }
         while (i < u) {
@@ -254,7 +254,7 @@ final class TreeSeqMap[K, +V] private (
     while (iter.hasNext) {
       val k = iter.next()
       val (_, v) = mapping(k)
-      pf.runWith({ case (k2, v2) => bdr.addOne((k2, v2)) })((k, v))
+      pf.runWith({ case (k2, v2) => bdr.addOne((k2, v2)) })((k, v)): Unit
     }
     bdr.result()
   }
@@ -589,7 +589,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
           } else b2
         } else if (zero(ordinal, m)) throw new IllegalArgumentException(s"Append called with ordinal out of range: $ordinal is not greater than current max ordinal ${this.ordinal}")
         else {
-          r.appendInPlace1(b, ordinal, value)
+          r.appendInPlace1(b, ordinal, value): Unit
           this
         }
     }

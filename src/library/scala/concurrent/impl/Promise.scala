@@ -117,7 +117,7 @@ private[concurrent] object Promise {
      * INTERNAL API
      */
     override final def apply(resolved: Try[T]): Unit =
-      tryComplete0(get(), resolved)
+      tryComplete0(get(), resolved): Unit
 
     /**
      * Returns the associated `Future` with this `Promise`
@@ -148,7 +148,7 @@ private[concurrent] object Promise {
             if (right ne null)
               zipped.tryComplete(try Success(f(left.get, right.get)) catch { case e if NonFatal(e) => Failure(e) })
           case f => // Can only be Failure
-            zipped.tryComplete(f.asInstanceOf[Failure[R]])
+            zipped.tryComplete(f.asInstanceOf[Failure[R]]): Unit
         }
 
         val thatF: Try[U] => Unit = {
@@ -157,10 +157,10 @@ private[concurrent] object Promise {
             if (left ne null)
               zipped.tryComplete(try Success(f(left.get, right.get)) catch { case e if NonFatal(e) => Failure(e) })
           case f => // Can only be Failure
-            zipped.tryComplete(f.asInstanceOf[Failure[R]])
+            zipped.tryComplete(f.asInstanceOf[Failure[R]]): Unit
         }
         // Cheaper than this.onComplete since we already polled the state
-        this.dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_onComplete, thisF, executor))
+        this.dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_onComplete, thisF, executor)): Unit
         that.onComplete(thatF)
         zipped.future
       }
@@ -213,7 +213,7 @@ private[concurrent] object Promise {
 
 
     override final def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit =
-      dispatchOrAddCallbacks(get(), new Transformation[T, Unit](Xform_onComplete, func, executor))
+      dispatchOrAddCallbacks(get(), new Transformation[T, Unit](Xform_onComplete, func, executor)): Unit
 
     override final def failed: Future[Throwable] =
       if (!get().isInstanceOf[Success[_]]) super.failed
@@ -252,7 +252,7 @@ private[concurrent] object Promise {
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
     final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
-      tryAwait0(atMost)
+      tryAwait0(atMost): Unit
       this
     }
 
@@ -365,7 +365,7 @@ private[concurrent] object Promise {
       if (state.isInstanceOf[Link[_]]) {
         val next = if (compareAndSet(state, resolved)) state.asInstanceOf[Link[T]].get() else this
         next.unlink(resolved)
-      } else tryComplete0(state, resolved)
+      } else tryComplete0(state, resolved): Unit
     }
 
     @throws[IOException]

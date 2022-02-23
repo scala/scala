@@ -140,8 +140,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def original = orig
     def setOriginal(t: Tree): this.type = {
       orig = t
-      this setPos t.pos
-      this
+      this.setPos(t.pos)
     }
 
     override def toString = completeAnnotationToString(this)
@@ -172,7 +171,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
 
-    override def completeInfo(): Unit = forcedInfo
+    override def completeInfo(): Unit = forcedInfo: Unit
   }
 
   final class ExtraLazyAnnotationInfo(sym: => Symbol, lazyInfo: => AnnotationInfo) extends LazyAnnotationInfo(lazyInfo) {

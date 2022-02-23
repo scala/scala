@@ -330,7 +330,7 @@ sealed abstract class List[+A]
   @inline final override def foreach[U](f: A => U): Unit = {
     var these = this
     while (!these.isEmpty) {
-      f(these.head)
+      f(these.head): Unit
       these = these.tail
     }
   }

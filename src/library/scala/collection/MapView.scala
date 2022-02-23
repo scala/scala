@@ -146,7 +146,7 @@ object MapView extends MapViewFactory {
     override def get(key: K): Option[V] = {
       underlying.get(key) match {
         case s @ Some(v) =>
-          f((key, v))
+          f((key, v)): Unit
           s
         case None => None
       }

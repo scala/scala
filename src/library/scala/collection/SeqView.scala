@@ -27,7 +27,7 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   override def drop(n: Int): SeqView[A] = new SeqView.Drop(this, n)
   override def takeRight(n: Int): SeqView[A] = new SeqView.TakeRight(this, n)
   override def dropRight(n: Int): SeqView[A] = new SeqView.DropRight(this, n)
-  override def tapEach[U](f: A => U): SeqView[A] = new SeqView.Map(this, { (a: A) => f(a); a })
+  override def tapEach[U](f: A => U): SeqView[A] = new SeqView.Map(this, { (a: A) => f(a): Unit; a })
 
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
@@ -163,7 +163,7 @@ object SeqView {
         else if (len == 1) List(underlying.head)
         else {
           val arr = new Array[Any](len) // Array[Any] =:= Array[AnyRef]
-          underlying.copyToArray(arr)
+          underlying.copyToArray(arr): Unit
           java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
           // casting the Array[AnyRef] to Array[A] and creating an ArraySeq from it
           // is safe because:

@@ -112,14 +112,14 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = put0(key, value, false): Unit
 
   override def put(key: K, value: V): Option[V] = put0(key, value, true) match {
     case null => None
     case sm => sm
   }
 
-  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
+  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false): Unit; this }
 
   @`inline` private[this] def put0(key: K, value: V, getOld: Boolean): Some[V] = {
     if(contentSize + 1 >= threshold) growTable(table.length * 2)
@@ -168,7 +168,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     var n: LLNode = old.next
     while(n ne null) {
       val root = table(idx).asInstanceOf[RBNode]
-      insertIntoExisting(root, idx, n.key, n.hash, n.value, root)
+      insertIntoExisting(root, idx, n.key, n.hash, n.value, root): Unit
       n = n.next
     }
   }
@@ -403,7 +403,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     if(contentSize + 1 >= threshold) growTable(table.length * 2)
     // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
     val newIdx = if (table0 eq table) idx else index(hash)
-    put0(key, default, false, hash, newIdx)
+    put0(key, default, false, hash, newIdx): Unit
     default
   }
 
@@ -802,19 +802,19 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
 
     def foreach[U](f: ((K, V)) => U): Unit = {
       if(left ne null) left.foreach(f)
-      f((key, value))
+      f((key, value)): Unit
       if(right ne null) right.foreach(f)
     }
 
     def foreachEntry[U](f: (K, V) => U): Unit = {
       if(left ne null) left.foreachEntry(f)
-      f(key, value)
+      f(key, value): Unit
       if(right ne null) right.foreachEntry(f)
     }
 
     def foreachNode[U](f: RBNode[K, V] => U): Unit = {
       if(left ne null) left.foreachNode(f)
-      f(this)
+      f(this): Unit
       if(right ne null) right.foreachNode(f)
     }
   }
@@ -871,17 +871,17 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
     }
 
     @tailrec def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key, value))
+      f((key, value)): Unit
       if(next ne null) next.foreach(f)
     }
 
     @tailrec def foreachEntry[U](f: (K, V) => U): Unit = {
-      f(key, value)
+      f(key, value): Unit
       if(next ne null) next.foreachEntry(f)
     }
 
     @tailrec def foreachNode[U](f: LLNode[K, V] => U): Unit = {
-      f(this)
+      f(this): Unit
       if(next ne null) next.foreachNode(f)
     }
   }

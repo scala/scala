@@ -185,7 +185,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
-      replaceRefEq(k, v, f(k, v))
+      replaceRefEq(k, v, f(k, v)): Unit
     }
     this
   }

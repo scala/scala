@@ -94,7 +94,7 @@ private[process] trait ProcessImpl {
     def isAlive()   = processThread.isAlive()
     def destroy()   = destroyer()
     def exitValue() = futureValue() getOrElse scala.sys.error("No exit code: process destroyed.")
-    def start()     = { futureThread ;() }
+    def start()     = futureThread: Unit
 
     protected lazy val (processThread, (futureThread, futureValue), destroyer) = {
       val code = new LinkedBlockingQueue[Option[Int]](1)
@@ -263,7 +263,7 @@ private[process] trait ProcessImpl {
   private[process] class SimpleProcess(p: JProcess, inputThread: Thread, outputThreads: List[Thread]) extends Process {
     override def isAlive() = p.isAlive()
     override def exitValue() = {
-      try p.waitFor()                   // wait for the process to terminate
+      try p.waitFor(): Unit             // wait for the process to terminate
       finally interrupt()
       outputThreads foreach (_.join())  // this ensures that all output is complete before returning (waitFor does not ensure this)
 

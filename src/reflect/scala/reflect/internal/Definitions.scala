@@ -227,17 +227,17 @@ trait Definitions extends api.StandardDefinitions {
     /** Fully initialize the symbol, type, or scope.
      */
     def fullyInitializeSymbol(sym: Symbol): Symbol = {
-      sym.initialize
+      sym.initialize: Unit
       // Watch out for those darn raw types on method parameters
       if (sym.owner.initialize.isJavaDefined)
         sym.cookJavaRawInfo()
 
-      fullyInitializeType(sym.info)
-      fullyInitializeType(sym.tpe_*)
+      fullyInitializeType(sym.info): Unit
+      fullyInitializeType(sym.tpe_*): Unit
       sym
     }
     def fullyInitializeType(tp: Type): Type = {
-      tp.typeParams foreach fullyInitializeSymbol
+      tp.typeParams.foreach(fullyInitializeSymbol)
       mforeach(tp.paramss)(fullyInitializeSymbol)
       tp
     }

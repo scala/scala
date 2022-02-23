@@ -149,7 +149,7 @@ object Predef extends LowPriorityImplicits {
 
   // miscellaneous -----------------------------------------------------
   scala.`package`                         // to force scala package object to be seen.
-  scala.collection.immutable.List         // to force Nil, :: to be seen.
+  scala.collection.immutable.List: Unit   // to force Nil, :: to be seen.
 
   /**  @group aliases */
   type Function[-A, +B] = Function1[A, B]

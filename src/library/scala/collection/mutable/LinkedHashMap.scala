@@ -94,7 +94,7 @@ class LinkedHashMap[K, V]
       override def foreachEntry[U](f: Entry => U): Unit = {
         var cur = firstEntry
         while (cur ne null) {
-          f(cur)
+          f(cur): Unit
           cur = cur.later
         }
       }
@@ -160,9 +160,9 @@ class LinkedHashMap[K, V]
     e.value
   }
 
-  def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2); this }
+  def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2): Unit; this }
 
-  def subtractOne(key: K): this.type = { remove(key); this }
+  def subtractOne(key: K): this.type = { remove(key): Unit; this }
 
   def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
     private[this] var cur = firstEntry
@@ -201,7 +201,7 @@ class LinkedHashMap[K, V]
     (previousValue, nextValue) match {
       case (None, None) => // do nothing
       case (Some(_), None) =>
-        remove0(entry)
+        remove0(entry): Unit
         table.removeEntry0(key, keyIndex)
 
       case (None, Some(value)) =>
@@ -225,7 +225,7 @@ class LinkedHashMap[K, V]
   override def foreach[U](f: ((K, V)) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
-      f((cur.key, cur.value))
+      f((cur.key, cur.value)): Unit
       cur = cur.later
     }
   }
@@ -233,7 +233,7 @@ class LinkedHashMap[K, V]
   override def foreachEntry[U](f: (K, V) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
-      f(cur.key, cur.value)
+      f(cur.key, cur.value): Unit
       cur = cur.later
     }
   }

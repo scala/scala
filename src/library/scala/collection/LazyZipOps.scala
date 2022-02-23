@@ -109,7 +109,7 @@ final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterabl
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator
 
-    while (elems1.hasNext && elems2.hasNext) f(elems1.next(), elems2.next())
+    while (elems1.hasNext && elems2.hasNext) f(elems1.next(), elems2.next()): Unit
   }
 
   private def toIterable: View[(El1, El2)] = new AbstractView[(El1, El2)] {
@@ -245,7 +245,7 @@ final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
     val elems3 = coll3.iterator
 
     while (elems1.hasNext && elems2.hasNext && elems3.hasNext)
-      f(elems1.next(), elems2.next(), elems3.next())
+      f(elems1.next(), elems2.next(), elems3.next()): Unit
   }
 
   private def toIterable: View[(El1, El2, El3)] = new AbstractView[(El1, El2, El3)] {
@@ -383,7 +383,7 @@ final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
     val elems4 = coll4.iterator
 
     while (elems1.hasNext && elems2.hasNext && elems3.hasNext && elems4.hasNext)
-      f(elems1.next(), elems2.next(), elems3.next(), elems4.next())
+      f(elems1.next(), elems2.next(), elems3.next(), elems4.next()): Unit
   }
 
   private def toIterable: View[(El1, El2, El3, El4)] = new AbstractView[(El1, El2, El3, El4)] {

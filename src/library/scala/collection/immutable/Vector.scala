@@ -47,11 +47,11 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
               as.unsafeArray.asInstanceOf[Arr1]
             case it: Iterable[E] =>
               val a1 = new Arr1(knownSize)
-              it.copyToArray(a1.asInstanceOf[Array[Any]])
+              it.copyToArray(a1.asInstanceOf[Array[Any]]): Unit
               a1
             case _ =>
               val a1 = new Arr1(knownSize)
-              it.iterator.copyToArray(a1.asInstanceOf[Array[Any]])
+              it.iterator.copyToArray(a1.asInstanceOf[Array[Any]]): Unit
               a1.asInstanceOf[Arr1]
           }
           new Vector1[E](a1)
@@ -1892,7 +1892,7 @@ private object VectorStatics {
     val len = a.length
     if(level == 0) {
       while(i < len) {
-        f(a(i).asInstanceOf[A])
+        f(a(i).asInstanceOf[A]): Unit
         i += 1
       }
     } else {
@@ -1965,7 +1965,7 @@ private object VectorStatics {
           case s =>
             val prefix1b = new Arr1(prefix1.length + s)
             System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
-            it.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+            it.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0): Unit
             prefix1b
         }
       } else null
@@ -1974,7 +1974,7 @@ private object VectorStatics {
       if(s > 0 && s <= WIDTH-prefix1.length) {
         val prefix1b = new Arr1(prefix1.length + s)
         System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
-        it.iterator.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+        it.iterator.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0): Unit
         prefix1b
       } else null
   }
@@ -1987,7 +1987,7 @@ private object VectorStatics {
           case 1 => copyAppend(suffix1, it.head.asInstanceOf[AnyRef])
           case s =>
             val suffix1b = copyOf(suffix1, suffix1.length + s)
-            it.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+            it.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length): Unit
             suffix1b
         }
       } else null
@@ -1995,7 +1995,7 @@ private object VectorStatics {
       val s = it.knownSize
       if(s > 0 && s <= WIDTH-suffix1.length) {
         val suffix1b = copyOf(suffix1, suffix1.length + s)
-        it.iterator.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+        it.iterator.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length): Unit
         suffix1b
       } else null
   }
@@ -2158,7 +2158,7 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
   override def slice(from: Int, until: Int): Iterator[A] = {
     val _until =
       if(from > 0) {
-        drop(from)
+        drop(from): Unit
         until - from
       } else until
     take(_until)
@@ -2185,8 +2185,8 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
 
   protected[immutable] def split(at: Int): NewVectorIterator[A] = {
     val it2 = clone().asInstanceOf[NewVectorIterator[A]]
-    it2.take(at)
-    drop(at)
+    it2.take(at): Unit
+    drop(at): Unit
     it2
   }
 }

@@ -162,7 +162,7 @@ final class LongAccumulator
 
   override def foreach[U](f: Long => U): Unit = {
     val s = stepper
-    while (s.hasStep) f(s.nextStep())
+    while (s.hasStep) f(s.nextStep()): Unit
   }
 
   def map(f: Long => Long): LongAccumulator = {
@@ -184,10 +184,7 @@ final class LongAccumulator
   def collect(pf: PartialFunction[Long, Long]): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper
-    while (s.hasStep) {
-      val n = s.nextStep()
-      pf.runWith(b.addOne)(n)
-    }
+    while (s.hasStep) pf.runWith(b.addOne)(s.nextStep()): Unit
     b.result()
   }
 

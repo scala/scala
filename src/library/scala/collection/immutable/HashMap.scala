@@ -772,7 +772,7 @@ private final class BitmapIndexedMapNode[K, +V](
         val key0Hash = improve(key0UnimprovedHash)
 
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
-        migrateFromInlineToNodeInPlace(bitpos, key0Hash, subNodeNew)
+        migrateFromInlineToNodeInPlace(bitpos, key0Hash, subNodeNew): Unit
         shallowlyMutableNodeMap | bitpos
       }
     } else if ((nodeMap & bitpos) != 0) {
@@ -785,7 +785,7 @@ private final class BitmapIndexedMapNode[K, +V](
 
       val subNodeNew: MapNode[K, V1] = subNode match {
         case subNodeBm: BitmapIndexedMapNode[K, V] if (bitpos & shallowlyMutableNodeMap) != 0 =>
-          subNodeBm.updateWithShallowMutations(key, value, originalHash, keyHash, shift + BitPartitionSize, 0)
+          subNodeBm.updateWithShallowMutations(key, value, originalHash, keyHash, shift + BitPartitionSize, 0): Unit
           subNodeBm
         case _ =>
           val result = subNode.updated(key, value, originalHash, keyHash, shift + BitPartitionSize, replaceValue = true)
@@ -1073,7 +1073,7 @@ private final class BitmapIndexedMapNode[K, +V](
     val iN = payloadArity // arity doesn't change during this operation
     var i = 0
     while (i < iN) {
-      f(getPayload(i))
+      f(getPayload(i)): Unit
       i += 1
     }
 
@@ -1089,7 +1089,7 @@ private final class BitmapIndexedMapNode[K, +V](
     val iN = payloadArity // arity doesn't change during this operation
     var i = 0
     while (i < iN) {
-      f(getKey(i), getValue(i))
+      f(getKey(i), getValue(i)): Unit
       i += 1
     }
 
@@ -2256,7 +2256,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
             val subNodeNew: MapNode[K, V] =
               bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
 
-            bm.migrateFromInlineToNodeInPlace(bitpos, key0Hash, subNodeNew)
+            bm.migrateFromInlineToNodeInPlace(bitpos, key0Hash, subNodeNew): Unit
           }
 
         } else if ((bm.nodeMap & bitpos) != 0) {

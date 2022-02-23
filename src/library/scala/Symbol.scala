@@ -67,9 +67,9 @@ private[scala] abstract class UniquenessCache[K, V >: Null] {
           // wind up with one String as the key and a different String as
           // the name field in the Symbol, which can lead to surprising GC
           // behavior and duplicate Symbols. See scala/bug#6706.
-          map remove name
+          map.remove(name): Unit
           val sym = valueFromKey(name)
-          map.put(name, new WeakReference(sym))
+          map.put(name, new WeakReference(sym)): Unit
           sym
         }
       }

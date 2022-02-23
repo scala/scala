@@ -265,7 +265,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  @param f The side-effecting function to execute.
    */
   def foreach[U](f: B => U): Unit = this match {
-    case Right(b) => f(b)
+    case Right(b) => f(b): Unit
     case _        =>
   }
 
@@ -546,7 +546,7 @@ object Either {
      *  @param f The side-effecting function to execute.
      */
     def foreach[U](f: A => U): Unit = e match {
-      case Left(a) => f(a)
+      case Left(a) => f(a): Unit
       case _       => ()
     }
 
@@ -705,7 +705,7 @@ object Either {
      *  @param f The side-effecting function to execute.
      */
     def foreach[U](f: B => U): Unit = e match {
-      case Right(b) => f(b)
+      case Right(b) => f(b): Unit
       case _        => ()
     }
 

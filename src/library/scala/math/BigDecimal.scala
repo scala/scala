@@ -459,10 +459,9 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   }
 
 
-  private def noArithmeticException(body: => Unit): Boolean = {
-    try   { body ; true }
+  private def noArithmeticException[A](body: => A): Boolean =
+    try   { body: Unit ; true }
     catch { case _: ArithmeticException => false }
-  }
 
   def isWhole = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
 

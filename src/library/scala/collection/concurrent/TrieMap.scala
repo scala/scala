@@ -79,7 +79,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
   def GCAS(old: MainNode[K, V], n: MainNode[K, V], ct: TrieMap[K, V]): Boolean = {
     n.WRITE_PREV(old)
     if (CAS(old, n)) {
-      GCAS_Complete(n, ct)
+      GCAS_Complete(n, ct): Unit
       /*READ*/n.prev eq null
     } else false
   }
@@ -394,7 +394,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
   private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int): Unit = {
     val m = nd.GCAS_READ(ct)
     m match {
-      case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
+      case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct): Unit
       case _ =>
     }
   }
@@ -789,7 +789,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   private def RDCSS_ROOT(ov: INode[K, V], expectedmain: MainNode[K, V], nv: INode[K, V]): Boolean = {
     val desc = RDCSS_Descriptor(ov, expectedmain, nv)
     if (CAS_ROOT(ov, desc)) {
-      RDCSS_Complete(abort = false)
+      RDCSS_Complete(abort = false): Unit
       /*READ*/desc.committed
     } else false
   }
@@ -929,7 +929,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   }
 
   def subtractOne(k: K) = {
-    remove(k)
+    remove(k): Unit
     this
   }
 

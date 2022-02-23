@@ -234,7 +234,7 @@ private[collection] /*abstract class*/ trait HashTable[A, B, Entry >: Null <: Ha
 
     while (es != null) {
       val next = es.next // Cache next in case f removes es.
-      f(es.asInstanceOf[Entry])
+      f(es.asInstanceOf[Entry]): Unit
       es = next
 
       while (es == null && idx > 0) {

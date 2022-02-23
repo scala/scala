@@ -110,7 +110,7 @@ final class Tuple2Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2]](p
     val elems2 = coll2.iterator
 
     while (elems1.hasNext && elems2.hasNext) {
-      f(elems1.next(), elems2.next())
+      f(elems1.next(), elems2.next()): Unit
     }
   }
 

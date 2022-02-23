@@ -723,7 +723,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else if (len > 1) {
       b.sizeHint(len)
       val arr = new Array[Any](len)
-      copyToArray(arr)
+      copyToArray(arr): Unit
       java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
       var i = 0
       while (i < len) {
@@ -892,7 +892,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         }
         case Some(1) => None
         case Some(n) => Some(n - 1)
-      }
+      }: Unit
       include
     })
   }
@@ -917,7 +917,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         }
         case Some(1) => None
         case Some(n) => Some(n - 1)
-      }
+      }: Unit
       include
     })
   }

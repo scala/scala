@@ -99,13 +99,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
     xs match {
       case hm: immutable.HashMap[K, V] =>
-        hm.foreachWithHash((k, v, h) => put0(k, v, improveHash(h), getOld = false))
+        hm.foreachWithHash((k, v, h) => put0(k, v, improveHash(h), getOld = false): Unit)
         this
       case hm: mutable.HashMap[K, V] =>
         val iter = hm.nodeIterator
         while (iter.hasNext) {
           val next = iter.next()
-          put0(next.key, next.value, next.hash, getOld = false)
+          put0(next.key, next.value, next.hash, getOld = false): Unit
         }
         this
       case thatMap: Map[K, V] =>
@@ -183,7 +183,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     xs match {
       case hs: immutable.HashSet[K] =>
         hs.foreachWithHashWhile { (k, h) =>
-          remove0(k, improveHash(h))
+          remove0(k, improveHash(h)): Unit
           size > 0
         }
         this
@@ -191,7 +191,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         val iter = hs.nodeIterator
         while (iter.hasNext) {
           val next = iter.next()
-          remove0(next.key, next.hash)
+          remove0(next.key, next.hash): Unit
           if (size == 0) return this
         }
         this
@@ -455,7 +455,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         if(contentSize + 1 >= threshold) growTable(table.length * 2)
         // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
         val newIdx = if (table0 eq table) idx else index(hash)
-        put0(key, default, false, hash, newIdx)
+        put0(key, default, false, hash, newIdx): Unit
         default
       }
     }
@@ -471,11 +471,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     case nd => Some(nd.value)
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = put0(key, value, false): Unit
 
-  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
+  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false): Unit; this }
 
-  def subtractOne(elem: K): this.type = { remove0(elem); this }
+  def subtractOne(elem: K): this.type = { remove0(elem): Unit; this }
 
   override def knownSize: Int = size
 
@@ -624,13 +624,13 @@ object HashMap extends MapFactory[HashMap] {
 
     @tailrec
     def foreach[U](f: ((K, V)) => U): Unit = {
-      f((_key, _value))
+      f((_key, _value)): Unit
       if(_next ne null) _next.foreach(f)
     }
 
     @tailrec
     def foreachEntry[U](f: (K, V) => U): Unit = {
-      f(_key, _value)
+      f(_key, _value): Unit
       if(_next ne null) _next.foreachEntry(f)
     }
 

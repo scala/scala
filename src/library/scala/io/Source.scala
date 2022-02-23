@@ -226,11 +226,10 @@ abstract class Source extends Iterator[Char] with Closeable {
       else if (ch == '\r') {
         if (iter.hasNext && iter.head == '\n')
           iter.next()
-
         false
       }
       else {
-        sb append ch
+        sb.append(ch): Unit
         true
       }
     }

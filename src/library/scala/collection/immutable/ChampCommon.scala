@@ -206,7 +206,7 @@ private[immutable] abstract class ChampBaseReverseIterator[T <: Node[T]] {
   def this(rootNode: T) = {
     this()
     pushNode(rootNode)
-    searchNextValueNode()
+    searchNextValueNode(): Unit
   }
 
   private final def setupPayloadNode(node: T): Unit = {

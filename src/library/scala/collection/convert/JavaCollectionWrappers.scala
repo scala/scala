@@ -155,7 +155,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
-              ms remove e
+              ms.remove(e): Unit
               prev = None
             case _ =>
               throw new UnsupportedOperationException("remove")
@@ -381,7 +381,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       val i = underlying.entrySet().iterator()
       while (i.hasNext) {
         val entry = i.next()
-        f(entry.getKey, entry.getValue)
+        f(entry.getKey, entry.getValue): Unit
       }
     }
 

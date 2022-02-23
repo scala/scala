@@ -338,12 +338,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *  unless the `f` throws an exception.
     */
   @tailrec
-  override def foreach[U](f: A => U): Unit = {
+  override def foreach[U](f: A => U): Unit =
     if (!isEmpty) {
-      f(head)
+      f(head): Unit
       tail.foreach(f)
     }
-  }
 
   /** LazyList specialization of foldLeft which allows GC to collect along the
     * way.
@@ -509,7 +508,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
-  override def tapEach[U](f: A => U): LazyList[A] = map { a => f(a); a }
+  override def tapEach[U](f: A => U): LazyList[A] = map { a => f(a): Unit ; a }
 
   private def mapImpl[B](f: A => B): LazyList[B] =
     newLL {
@@ -849,7 +848,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     force
-    addStringNoForce(sb.underlying, start, sep, end)
+    addStringNoForce(sb.underlying, start, sep, end): Unit
     sb
   }
 

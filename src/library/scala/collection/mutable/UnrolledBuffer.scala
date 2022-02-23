@@ -177,7 +177,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 
   @tailrec final def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
-      remove(idx)
+      remove(idx): Unit
       remove(idx, count-1)
     }
 
@@ -280,7 +280,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         val chunksz = unrolled.size
         while (i < chunksz) {
           val elem = chunkarr(i)
-          f(elem)
+          f(elem): Unit
           i += 1
         }
         i = 0
@@ -319,7 +319,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       // allocate a new node and store element
       // then make it point to this
       val newhead = new Unrolled[T](buff)
-      newhead append elem
+      newhead.append(elem): Unit
       newhead.next = this
       newhead
     }
@@ -347,7 +347,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       var i = 0
       while (i < size) {
         if(array(i) == elem) {
-          remove(i, buffer)
+          remove(i, buffer): Unit
           return true
         }
         i += 1

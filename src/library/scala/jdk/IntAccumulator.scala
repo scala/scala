@@ -167,7 +167,7 @@ final class IntAccumulator
 
   override def foreach[U](f: Int => U): Unit = {
     val s = stepper
-    while (s.hasStep) f(s.nextStep())
+    while (s.hasStep) f(s.nextStep()): Unit
   }
 
   def map(f: Int => Int): IntAccumulator = {
@@ -191,7 +191,7 @@ final class IntAccumulator
     val s = stepper
     while (s.hasStep) {
       val n = s.nextStep()
-      pf.runWith(b.addOne)(n)
+      pf.runWith(b.addOne)(n): Unit
     }
     b.result()
   }
