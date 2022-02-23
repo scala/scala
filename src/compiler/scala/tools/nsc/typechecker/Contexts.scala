@@ -808,7 +808,7 @@ trait Contexts { self: Analyzer =>
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
     private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reporter.error(fixPosition(pos), msg)
+    def error(pos: Position, msg: String)                                    = reporter.errorAndDumpIfDebug(fixPosition(pos), msg)
     /** Issue/throw the given error message according to the current mode for error reporting. */
     def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner)
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site)
@@ -1643,7 +1643,7 @@ trait Contexts { self: Analyzer =>
     type Error = AbsTypeError
     type Warning = (Position, String, WarningCategory, Symbol)
 
-    def issue(err: AbsTypeError)(implicit context: Context): Unit = error(context.fixPosition(err.errPos), addDiagString(err.errMsg))
+    def issue(err: AbsTypeError)(implicit context: Context): Unit = errorAndDumpIfDebug(context.fixPosition(err.errPos), addDiagString(err.errMsg))
 
     def echo(msg: String): Unit = echo(NoPosition, msg)
 
@@ -1654,6 +1654,13 @@ trait Contexts { self: Analyzer =>
       runReporting.warning(pos, msg, category, site)
 
     def error(pos: Position, msg: String): Unit
+
+    final def errorAndDumpIfDebug(pos: Position, msg: String): Unit = {
+      error(pos, msg)
+      if (settings.VdebugTypeError.value) {
+        Thread.dumpStack()
+      }
+    }
 
     protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = ()
 
@@ -1686,7 +1693,7 @@ trait Contexts { self: Analyzer =>
           if (target.isBuffering) {
             target ++= errors
           } else {
-            errors.foreach(e => target.error(e.errPos, e.errMsg))
+            errors.foreach(e => target.errorAndDumpIfDebug(e.errPos, e.errMsg))
           }
           // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
           // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
