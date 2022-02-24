@@ -1599,30 +1599,53 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     */
   def sliding(size: Int, step: Int = 1): Iterator[Array[A]] = mutable.ArraySeq.make(xs).sliding(size, step).map(_.toArray[A])
 
-  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original array, with the elements taken in order.  Thus, `Array("x", "y")` and `Array("y", "y")`
-    *  are both length-2 combinations of `Array("x", "y", "y")`, but `Array("y", "x")` is not.  If there is
-    *  more than one way to generate the same subsequence, only one will be returned.
-    *
-    *  For example, `Array("x", "y", "y", "y")` has three different ways to generate `Array("x", "y")` depending on
-    *  whether the first, second, or third `"y"` is selected.  However, since all are
-    *  identical, only one will be chosen.  Which of the three will be taken is an
-    *  implementation detail that is not defined.
-    *
-    *  @return   An Iterator which traverses the possible n-element combinations of this array.
-    *  @example  {{{
-    *  Array("a", "b", "b", "b", "c").combinations(2) == Iterator(Array(a, b), Array(a, c), Array(b, b), Array(b, c))
-    *  }}}
-    */
+  /** Iterates over combinations of elements.
+   *
+   *  A '''combination''' of length `n` is a sequence of `n` elements selected in order of their first index in this sequence.
+   *
+   *  For example, `"xyx"` has two combinations of length 2. The `x` is selected first: `"xx"`, `"xy"`.
+   *  The sequence `"yx"` is not returned as a combination because it is subsumed by `"xy"`.
+   *
+   *  If there is more than one way to generate the same combination, only one will be returned.
+   *
+   *  For example, the result `"xy"` arbitrarily selected one of the `x` elements.
+   *
+   *  As a further illustration, `"xyxx"` has three different ways to generate `"xy"` because there are three elements `x`
+   *  to choose from. Moreover, there are three unordered pairs `"xx"` but only one is returned.
+   *
+   *  It is not specified which of these equal combinations is returned. It is an implementation detail
+   *  that should not be relied on. For example, the combination `"xx"` does not necessarily contain
+   *  the first `x` in this sequence. This behavior is observable if the elements compare equal
+   *  but are not identical.
+   *
+   *  As a consequence, `"xyx".combinations(3).next()` is `"xxy"`: the combination does not reflect the order
+   *  of the original sequence, but the order in which elements were selected, by "first index";
+   *  the order of each `x` element is also arbitrary.
+   *
+   *  @return   An Iterator which traverses the n-element combinations of this array
+   *  @example {{{
+   *    Array('a', 'b', 'b', 'b', 'c').combinations(2).map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(a, b)
+   *    // Array(a, c)
+   *    // Array(b, b)
+   *    // Array(b, c)
+   *    Array('b', 'a', 'b').combinations(2).map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(b, b)
+   *    // Array(b, a)
+   *  }}}
+   */
   def combinations(n: Int): Iterator[Array[A]] = mutable.ArraySeq.make(xs).combinations(n).map(_.toArray[A])
 
-  /** Iterates over distinct permutations.
-    *
-    *  @return   An Iterator which traverses the distinct permutations of this array.
-    *  @example {{{
-    *  Array("a", "b", "b").permutations == Iterator(Array(a, b, b), Array(b, a, b), Array(b, b, a))
-    *  }}}
-    */
+  /** Iterates over distinct permutations of elements.
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this array.
+   *  @example {{{
+   *    Array('a', 'b', 'b').permutations.map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(a, b, b)
+   *    // Array(b, a, b)
+   *    // Array(b, b, a)
+   *  }}}
+   */
   def permutations: Iterator[Array[A]] = mutable.ArraySeq.make(xs).permutations.map(_.toArray[A])
 
   // we have another overload here, so we need to duplicate this method
