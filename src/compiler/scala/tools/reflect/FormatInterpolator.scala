@@ -35,6 +35,12 @@ abstract class FormatInterpolator {
   private def bail(msg: String) = global.abort(msg)
 
   def interpolateF: Tree = c.macroApplication match {
+    //case q"$_(..$parts).f($args: _*)" =>
+    case Applied(Select(Apply(_, parts), _), _, (treeInfo.WildcardStarArg(args) :: Nil) :: Nil) =>
+      args match {
+        case Apply(_, args1) if args.tpe <:< seqType(AnyTpe) => interpolated(parts, args1)
+        case _ => c.abort(args.pos, "sequence arg is not a Seq") ; c.macroApplication
+      }
     //case q"$_(..$parts).f(..$args)" =>
     case Applied(Select(Apply(_, parts), _), _, argss) =>
       val args = argss.flatten
@@ -141,10 +147,13 @@ abstract class FormatInterpolator {
             val cv = Conversion(matches.next(), part0.pos, argc)
             if (cv.isLiteral) insertStringConversion()
             else if (cv.isIndexed) {
-              if (cv.index.getOrElse(-1) == n) accept(cv)
+              val index = cv.index.getOrElse(-1)
+              if (index == n) accept(cv)
+              else if (index > args.length)
+                cv.errorAt(Index)(s"Index ($index) lacks an arg (max ${args.length})") // should not happen, cv was verified
               else {
                 // "$x$y%1" where "%1" follows a splice but does not apply to it
-                c.warning(cv.groupPosAt(Index, 0), "Index is not this arg")
+                cv.warningAt(Index)("Index is not this arg")
                 insertStringConversion()
               }
             }
@@ -161,6 +170,10 @@ abstract class FormatInterpolator {
       }
     }
     loop(parts, n = 0)
+
+    // if args were varargs, use the rest, which can be referenced by index
+    if (actuals.length < args.length)
+      actuals ++= args.drop(actuals.length)
 
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
     val format = amended.mkString

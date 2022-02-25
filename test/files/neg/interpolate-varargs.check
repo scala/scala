@@ -1,0 +1,7 @@
+interpolate-varargs.scala:4: error: Argument index out of range
+     f"%2$$d${42}%s"    // error: Argument index out of range
+        ^
+interpolate-varargs.scala:5: error: Argument index out of range
+  :: f"%3$$d${List(42,17): _*}%s"    // error: Argument index out of range
+        ^
+2 errors
