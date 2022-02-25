@@ -1381,15 +1381,33 @@ abstract class RefChecks extends Transform {
             s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", "")
       }
     }
-    private def isRepeatedParamArg(tree: Tree) = currentApplication match {
-      case Apply(fn, args) =>
-        (    args.nonEmpty
-          && (args.last eq tree)
-          && (fn.tpe.params.length == args.length)
-          && isRepeatedParamType(fn.tpe.params.last.tpe)
-        )
-      case _ =>
-        false
+    private def checkRepeatedParamArg(tree: Tree): Unit = {
+      val bailure = "such annotations are only allowed in arguments to *-parameters"
+      val err = currentApplication match {
+        case Apply(fn, args) =>
+          val ok = (    args.nonEmpty
+                    && (args.last eq tree)
+                    && (fn.tpe.params.length == args.length)
+                    &&  isRepeatedParamType(fn.tpe.params.last.tpe)
+                   )
+          if (ok) null
+          else if (!args.exists(tree.eq)) bailure
+          else {
+            val i = args.indexWhere(tree.eq)
+            val isLast = i == args.length - 1
+            val formal = if (i >= fn.tpe.params.length - 1) fn.tpe.params.last.tpe else fn.tpe.params(i).tpe
+            val isRepeated = isRepeatedParamType(formal)
+            val lastly = if (!isLast) ";\nsequence argument must be the last argument" else ""
+            val solely = if (fn.tpe.params.length == 1) "single" else "corresponding"
+            if (isRepeated)
+              s"it is not the only argument to be passed to the $solely repeated parameter $formal$lastly"
+            else
+              s"the $solely parameter has type $formal which is not a repeated parameter type$lastly"
+          }
+        case _ => bailure
+      }
+      if (err != null)
+        reporter.error(tree.pos, s"Sequence argument type annotation `: _*` cannot be used here:\n$err")
     }
 
     private object RefCheckTypeMap extends TypeMap {
@@ -1796,9 +1814,8 @@ abstract class RefChecks extends Transform {
             enterReference(tree.pos, tpt.tpe.typeSymbol)
             tree
 
-          case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
-            reporter.error(tree.pos, "no `: _*` annotation allowed here\n"+
-              "(such annotations are only allowed in arguments to *-parameters)")
+          case treeInfo.WildcardStarArg(_) =>
+            checkRepeatedParamArg(tree)
             tree
 
           case Ident(name) =>
