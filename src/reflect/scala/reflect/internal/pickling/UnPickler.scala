@@ -399,10 +399,10 @@ abstract class UnPickler {
         ThisType(sym)
       }
 
-      def fixJavaObjectType(typeRef: Type): Type = {
-        if (classRoot.isJava && typeRef =:= definitions.ObjectTpe) {
+      def mkTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+        if (classRoot.isJava && (sym == definitions.ObjectClass)) {
           definitions.ObjectTpeJava
-        } else typeRef
+        } else TypeRef(pre, sym, args)
       }
 
       // We're stuck with the order types are pickled in, but with judicious use
@@ -415,7 +415,7 @@ abstract class UnPickler {
         case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // scala/bug#7596 account for overloading
         case SUPERtpe                  => SuperType(readTypeRef(), readTypeRef())
         case CONSTANTtpe               => ConstantType(readConstantRef())
-        case TYPEREFtpe                => fixJavaObjectType(TypeRef(readTypeRef(), readSymbolRef(), readTypes()))
+        case TYPEREFtpe                => mkTypeRef(readTypeRef(), readSymbolRef(), readTypes())
         case TYPEBOUNDStpe             => TypeBounds(readTypeRef(), readTypeRef())
         case REFINEDtpe | CLASSINFOtpe => CompoundType(readSymbolRef(), readTypes())
         case METHODtpe                 => MethodTypeRef(readTypeRef(), readSymbols())
