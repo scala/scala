@@ -25,31 +25,36 @@ trait FastStringInterpolator extends FormatInterpolator {
   // to `"hello \n world ".+(Test.this.foo)`
   private def interpolated(macroApp: Tree, isRaw: Boolean): Tree =
     macroApp match {
-      case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), interpol@_), args0) if
-        stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
+      case Apply(Select(stringCtx@Apply(stringCtxApply@Select(qualSC, _), parts), interpol@_), args0) if
+        stringCtxApply.symbol == currentRun.runDefinitions.StringContext_apply &&
         treeInfo.isQualifierSafeToElide(qualSC) &&
         parts.forall(treeInfo.isLiteralString) &&
         parts.length == (args0.length + 1) =>
-        val args = args0 match {
+        args0 match {
           case treeInfo.WildcardStarArg(expr) :: Nil =>
-            expr match {
-              case Apply(_, args1) if expr.tpe <:< seqType(AnyTpe) => args1
-              case _ => c.abort(expr.pos, "sequence arg is not a Seq") ; args0
+            if (expr.tpe <:< seqType(AnyTpe))
+              expr match {
+                case Apply(_, args1) => assembled(parts, args1, isRaw)
+                case _ => fallback(stringCtx, Select(expr, "mkString") :: Nil, isRaw)
+              }
+            else {
+              c.abort(expr.pos, "sequence arg is not a Seq")
+              fallback(stringCtx, expr :: Nil, isRaw)
             }
-          case _ => args0
+          case _ => assembled(parts, args0, isRaw)
         }
-        assembled(parts, args, isRaw)
       // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
-      case t@Apply(Select(someStringContext, interpol@_), args) =>
-        q"""{
-          val sc = $someStringContext
-          _root_.scala.StringContext.standardInterpolator(
-            ${if(isRaw) q"_root_.scala.Predef.identity" else q"_root_.scala.StringContext.processEscapes"},
-            $args,
-            sc.parts)
-        }"""
+      case t@Apply(Select(someStringContext, interpol@_), args) => fallback(someStringContext, args, isRaw)
       case x => throw new MatchError(x)
     }
+  private def fallback(stringContext: Tree, args: List[Tree], isRaw: Boolean): Tree =
+    q"""{
+      val sc = $stringContext
+      _root_.scala.StringContext.standardInterpolator(
+        ${if (isRaw) q"_root_.scala.Predef.identity" else q"_root_.scala.StringContext.processEscapes"},
+        $args,
+        sc.parts)
+    }"""
   private def assembled(parts: List[Tree], args: List[Tree], isRaw: Boolean): Tree = {
     val treated =
       try
