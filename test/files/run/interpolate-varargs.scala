@@ -5,6 +5,7 @@ object Test extends App {
   :: f"%1$$d${42}%s"      // same
   :: f"%2$$d${42}${17}"   // 174217
   :: f"%2$$d${List(42,17): _*}%s"    // 1742, was: error: Argument index out of range
+  :: s"prefix${List(42,17): _*}suffix"
   :: Nil
 
   ss.foreach(println)

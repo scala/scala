@@ -37,7 +37,7 @@ class Unplugged(val global: Global) extends Plugin {
         //val res = Try(createFile(path, perms))
         //assert(res.isSuccess)
         file.delete()
-        assert(file.createNewFile() && file.setReadOnly())
+        assert(file.createNewFile() && file.setReadOnly(), "could not create file RO")
       }
     }
   }

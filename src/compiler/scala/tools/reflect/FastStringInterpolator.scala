@@ -14,6 +14,7 @@ package scala.tools.reflect
 
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
+  import definitions._
 
   // fast track entry for StringContext.s
   def interpolateS: Tree = interpolated(c.macroApplication, false)
@@ -22,85 +23,97 @@ trait FastStringInterpolator extends FormatInterpolator {
 
   // rewrite a tree like `scala.StringContext.apply("hello \\n ", " ", "").s("world", Test.this.foo)`
   // to `"hello \n world ".+(Test.this.foo)`
-  private def interpolated(macroApp: Tree, isRaw: Boolean): Tree = macroApp match {
-    case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), _interpol), args) if
-      stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
-      treeInfo.isQualifierSafeToElide(qualSC) &&
-      parts.forall(treeInfo.isLiteralString) &&
-      parts.length == (args.length + 1) =>
-
-      val treated = 
-        try
-          parts.mapConserve {
-            case lit @ Literal(Constant(stringVal: String)) =>
-              val value =
-                if (isRaw && currentRun.isScala3) stringVal
-                else if (isRaw) {
-                  val processed = StringContext.processUnicode(stringVal)
-                  if (processed != stringVal) {
-                    val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
-                      case ((p, o), i) if p != o => i
-                    }.getOrElse(processed.length - 1)
-
-                    runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
-                  }
-                  processed
-                }
-                else StringContext.processEscapes(stringVal)
-              val k = Constant(value)
-              // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
-              treeCopy.Literal(lit, k).setType(ConstantType(k))
-            case x => throw new MatchError(x)
-          }
-        catch {
-          case ie: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(ie.index), ie.getMessage)
-          case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
-        }
-
-      val argsIndexed = args.toVector
-      val concatArgs = collection.mutable.ListBuffer[Tree]()
-      val numLits = parts.length
-      foreachWithIndex(treated.tail) { (lit, i) =>
-        val treatedContents = lit.asInstanceOf[Literal].value.stringValue
-        val emptyLit = treatedContents.isEmpty
-        if (i < numLits - 1) {
-          concatArgs += argsIndexed(i)
-          if (!emptyLit) concatArgs += lit
-        } else if (!emptyLit) {
-          concatArgs += lit
-        }
-      }
-      def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
-        atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
-
-      var result: Tree = treated.head
-      val chunkSize = 32
-      if (concatArgs.lengthCompare(chunkSize) <= 0) {
-        concatArgs.foreach { t =>
-          result = mkConcat(t.pos, result, t)
-        }
-      } else {
-        concatArgs.toList.grouped(chunkSize).foreach {
-          case group =>
-            var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
-            group.foreach { t =>
-              chunkResult = mkConcat(t.pos, chunkResult, t)
+  private def interpolated(macroApp: Tree, isRaw: Boolean): Tree =
+    macroApp match {
+      case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), interpol@_), args0) if
+        stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
+        treeInfo.isQualifierSafeToElide(qualSC) &&
+        parts.forall(treeInfo.isLiteralString) &&
+        parts.length == (args0.length + 1) =>
+        val args = args0 match {
+          case treeInfo.WildcardStarArg(expr) :: Nil =>
+            expr match {
+              case Apply(_, args1) if expr.tpe <:< seqType(AnyTpe) => args1
+              case _ => c.abort(expr.pos, "sequence arg is not a Seq") ; args0
             }
-            result = mkConcat(chunkResult.pos, result, chunkResult)
+          case _ => args0
         }
+        assembled(parts, args, isRaw)
+      // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
+      case t@Apply(Select(someStringContext, interpol@_), args) =>
+        q"""{
+          val sc = $someStringContext
+          _root_.scala.StringContext.standardInterpolator(
+            ${if(isRaw) q"_root_.scala.Predef.identity" else q"_root_.scala.StringContext.processEscapes"},
+            $args,
+            sc.parts)
+        }"""
+      case x => throw new MatchError(x)
+    }
+  private def assembled(parts: List[Tree], args: List[Tree], isRaw: Boolean): Tree = {
+    val treated =
+      try
+        parts.mapConserve {
+          case lit @ Literal(Constant(stringVal: String)) =>
+            val value =
+              if (isRaw && currentRun.isScala3) stringVal
+              else if (isRaw) {
+                val processed = StringContext.processUnicode(stringVal)
+                if (processed != stringVal) {
+                  val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
+                    case ((p, o), i) if p != o => i
+                  }.getOrElse(processed.length - 1)
+
+                  runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
+                }
+                processed
+              }
+              else StringContext.processEscapes(stringVal)
+            val k = Constant(value)
+            // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
+            treeCopy.Literal(lit, k).setType(ConstantType(k))
+          case x => throw new MatchError(x)
+        }
+      catch {
+        case ie: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(ie.index), ie.getMessage)
+        case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
       }
 
-      result
+    val argsIndexed = args.toVector
+    val concatArgs = collection.mutable.ListBuffer.empty[Tree]
+    val numLits = parts.length
+    foreachWithIndex(treated.tail) { (lit, i) =>
+      val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+      val emptyLit = treatedContents.isEmpty
+      if (i < numLits - 2) {
+        concatArgs += argsIndexed(i)
+        if (!emptyLit) concatArgs += lit
+      } else {
+        if (i <= argsIndexed.length)
+          argsIndexed.drop(i).foreach(concatArgs.+=)
+        if (!emptyLit) concatArgs += lit
+      }
+    }
+    def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
+      atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
 
-    // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
-    case t@Apply(Select(someStringContext, _interpol), args) =>
-      q"""{
-        val sc = $someStringContext
-        _root_.scala.StringContext.standardInterpolator(
-          ${if(isRaw) q"_root_.scala.Predef.identity" else q"_root_.scala.StringContext.processEscapes"},
-          $args,
-          sc.parts)
-      }"""
-    case x => throw new MatchError(x)
+    var result: Tree = treated.head
+    val chunkSize = 32
+    if (concatArgs.lengthCompare(chunkSize) <= 0) {
+      concatArgs.foreach { t =>
+        result = mkConcat(t.pos, result, t)
+      }
+    } else {
+      concatArgs.toList.grouped(chunkSize).foreach {
+        case group =>
+          var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
+          group.foreach { t =>
+            chunkResult = mkConcat(t.pos, chunkResult, t)
+          }
+          result = mkConcat(chunkResult.pos, result, chunkResult)
+      }
+    }
+
+    result
   }
 }
