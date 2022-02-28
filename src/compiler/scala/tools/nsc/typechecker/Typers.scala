@@ -3620,7 +3620,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // regardless of typer's mode
                 val invalidAdaptation = t.symbol != null && !checkValidAdaptation(t, args)
                 // only bail if we're typing an expression (and not inside another application)
-                if (invalidAdaptation && mode.typingExprNotFun) EmptyTree else t
+                if (invalidAdaptation && mode.typingExprNotFun) EmptyTree
+                else t.removeAttachment[MultiargInfixAttachment.type]       // don't warn if we tupled
               }
               def reset(): Tree = {
                 context.undetparams = savedUndetparams
@@ -5023,9 +5024,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           !mode.inPatternMode && nme.isOpAssignmentName(TermName(name.decode)) && !qual.exists(_.isErroneous)
 
         def reportError(error: SilentTypeError): Tree = {
-          error.reportableErrors foreach context.issue
-          error.warnings foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
-          args foreach (arg => typed(arg, mode, ErrorType))
+          error.reportableErrors.foreach(context.issue)
+          error.warnings.foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
+          args.foreach(typed(_, mode, ErrorType))
           setError(tree)
         }
         def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
@@ -5079,15 +5080,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case SilentResultValue(fun1) =>
             val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
             if (settings.areStatisticsEnabled) statistics.incCounter(typedApplyCount)
-            val noSecondTry = (
-                 isPastTyper
-              || context.inSecondTry
-              || (fun2.symbol ne null) && fun2.symbol.isConstructor
-              || isImplicitMethodType(fun2.tpe)
-            )
             val isFirstTry = fun2 match {
-              case Select(_, _) => !noSecondTry && mode.inExprMode
-              case _            => false
+              case Select(_, _) => mode.inExprMode && {
+                val noSecondTry = (
+                     isPastTyper
+                  || context.inSecondTry
+                  || (fun2.symbol ne null) && fun2.symbol.isConstructor
+                  || isImplicitMethodType(fun2.tpe)
+                )
+                !noSecondTry
+              }
+              case _ => false
             }
             if (isFirstTry)
               tryTypedApply(fun2, args)

@@ -582,7 +582,7 @@ trait Infer extends Checkable {
         }
       }
       val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty) {
+      if (settings.warnInferAny && !fn.isEmpty) {
         // Can warn about inferring Any/AnyVal/Object as long as they don't appear
         // explicitly anywhere amongst the formal, argument, result, or expected type.
         // ...or lower bound of a type param, since they're asking for it.
