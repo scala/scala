@@ -643,12 +643,18 @@ abstract class RefChecks extends Transform {
             }
             else ""
           }
-          // Avoid spurious duplicates: first gather any missing members.
-          val (missing, rest): (List[Symbol], Iterator[Symbol]) = {
-            val memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-            val (missing0, rest0) = memberList.iterator.partition(m => m.isDeferred & !ignoreDeferred(m))
-            (missing0.toList, rest0)
+          def filtered[A](it: Iterator[A])(p: A => Boolean)(q: A => Boolean): (List[A], List[A]) = {
+            var ps, qs: List[A] = Nil
+            while (it.hasNext) {
+              val a = it.next()
+              if (p(a)) ps ::= a
+              else if (q(a)) qs ::= a
+            }
+            (ps, qs)
           }
+          // Avoid extra allocations with reverseIterator. Filter for abstract members of interest, and bad abstract override.
+          val (missing, abstractIncomplete): (List[Symbol], List[Symbol]) =
+            filtered(clazz.info.nonPrivateMembersAdmitting(VBRIDGE).reverseIterator)(m => m.isDeferred & !ignoreDeferred(m))(m => m.isAbstractOverride && m.isIncompleteIn(clazz))
           if (missing.nonEmpty) {
             // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
             val byName = missing.groupBy(_.name.getterName)
@@ -688,7 +694,7 @@ abstract class RefChecks extends Transform {
             abstractClassErrorStubs(line0, stubs)
 
             // Check the remainder for invalid absoverride.
-            for (member <- rest if member.isAbstractOverride && member.isIncompleteIn(clazz)) {
+            for (member <- abstractIncomplete) {
               val explanation = member.superSymbolIn(clazz) match {
                 case NoSymbol => ", but no concrete implementation could be found in a base class"
                 case other    => " and overrides incomplete superclass member\n" + infoString(other)
