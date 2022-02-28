@@ -1,0 +1,6 @@
+t12531.scala:3: error: type mismatch;
+ found   : String("")
+ required: Int
+  def format(i: Int): String = s"${format("")}"
+                                          ^
+1 error
