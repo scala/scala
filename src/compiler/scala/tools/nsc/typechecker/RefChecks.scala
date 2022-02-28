@@ -692,15 +692,14 @@ abstract class RefChecks extends Transform {
               if (isMulti) s"Missing implementations for ${count}${val p = singleParent ; if (p.isEmpty) " members" else p}."
               else s"Missing implementation${val p = singleParent ; if (p.isEmpty) p else s" for$p"}:"
             abstractClassErrorStubs(line0, stubs)
-
-            // Check the remainder for invalid absoverride.
-            for (member <- abstractIncomplete) {
-              val explanation = member.superSymbolIn(clazz) match {
-                case NoSymbol => ", but no concrete implementation could be found in a base class"
-                case other    => " and overrides incomplete superclass member\n" + infoString(other)
-              }
-              mustBeMixin(s"${infoString(member)} is marked `abstract` and `override`$explanation")
+          }
+          // Check the remainder for invalid absoverride.
+          for (member <- abstractIncomplete) {
+            val explanation = member.superSymbolIn(clazz) match {
+              case NoSymbol => ", but no concrete implementation could be found in a base class"
+              case other    => " and overrides incomplete superclass member\n" + infoString(other)
             }
+            mustBeMixin(s"${infoString(member)} is marked `abstract` and `override`$explanation")
           }
         } // end checkNoAbstractMembers
 

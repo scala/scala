@@ -1,0 +1,4 @@
+abstract-report3.scala:4: error: Member method t of mixin trait T is missing a concrete super implementation.
+abstract class C extends T      // mixin
+               ^
+1 error
