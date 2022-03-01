@@ -57,7 +57,7 @@ self =>
 
   protected[this] override def parCombiner = ParMap.newCombiner[K, V]
 
-  /** A new immutable map containing updating this map with a given key/value mapping.
+  /** A new immutable map updating this map with a given key/value mapping.
    *  @param    key the key
    *  @param    value the value
    *  @return   A new map with the new key/value mapping
