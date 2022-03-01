@@ -1,9 +1,11 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
+import org.junit.Assert.{fail => _, _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class ListSetTest {
@@ -56,6 +58,11 @@ class ListSetTest {
   @Test
   def hasCorrectOrderAfterPlusPlus(): Unit = {
     val foo = ListSet(1)
+
+    assertSame(foo, foo ++ foo)
+    assertSame(foo, foo ++ ListSet.empty)
+    assertSame(foo, foo ++ Nil)
+
     var bar = foo ++ ListSet()
     assertEquals(List(1), bar.iterator.toList)
 
@@ -79,6 +86,13 @@ class ListSetTest {
 
     bar = foo ++ ListSet(1, 2, 3, 4, 5, 6)
     assertEquals(List(1, 2, 3, 4, 5, 6), bar.iterator.toList)
+    assertSameElements(List(1, 2, 3, 4, 5, 6), bar.iterator)
+  }
+  @Test
+  def `t12316 ++ is correctly ordered`(): Unit = {
+    // was: ListSet(1, 2, 3, 42, 43, 44, 29, 28, 27, 12, 11, 10)
+    assertEquals(ListSet(1,2,3,42,43,44,10,11,12,27,28,29), ListSet(1,2,3,42,43,44) ++ ListSet(10,11,12,42,43,44,27,28,29))
+    assertSameElements(List(1,2,3,42,43,44,10,11,12,27,28,29), ListSet(1,2,3,42,43,44) ++ ListSet(10,11,12,42,43,44,27,28,29))
   }
 
   @Test
