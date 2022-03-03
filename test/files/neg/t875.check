@@ -1,17 +1,30 @@
-t875.scala:3: error: no `: _*` annotation allowed here
-(such annotations are only allowed in arguments to *-parameters)
-  val ys = List(1, 2, 3, xs: _*)
+t875.scala:3: error: Sequence argument type annotation `: _*` cannot be used here:
+it is not the only argument to be passed to the single repeated parameter Int*
+  val ys = List(1, 2, 3, xs: _*)      // error alignment with 1 param
                            ^
-t875.scala:6: error: no `: _*` annotation allowed here
-(such annotations are only allowed in arguments to *-parameters)
-  mkList1(xs: _*)
+t875.scala:6: error: Sequence argument type annotation `: _*` cannot be used here:
+the single parameter has type Int which is not a repeated parameter type
+  mkList1(xs: _*)                     // error not varargs
             ^
-t875.scala:15: error: no `: _*` annotation allowed here
-(such annotations are only allowed in arguments to *-parameters)
-  f(true, 1, xs: _*)
+t875.scala:15: error: Sequence argument type annotation `: _*` cannot be used here:
+it is not the only argument to be passed to the corresponding repeated parameter Int*
+  f(true, 1, xs: _*)                  // error alignment with many params
                ^
-t875.scala:16: error: no `: _*` annotation allowed here
-(such annotations are only allowed in arguments to *-parameters)
-  g(1, xs:_*)
+t875.scala:16: error: Sequence argument type annotation `: _*` cannot be used here:
+it is not the only argument to be passed to the single repeated parameter Int*
+  g(1, xs: _*)                        // error alignment with 1 param
          ^
-4 errors
+t875.scala:18: error: Sequence argument type annotation `: _*` cannot be used here:
+it is not the only argument to be passed to the corresponding repeated parameter Int*;
+sequence argument must be the last argument
+  f(true, xs: _*, 17)                 // error alignment with many params, not last
+            ^
+t875.scala:20: error: Sequence argument type annotation `: _*` cannot be used here:
+such annotations are only allowed in arguments to *-parameters
+  val zs = xs: _*                     // error not even close
+             ^
+t875.scala:22: error: Sequence argument type annotation `: _*` cannot be used here:
+the single parameter has type Any which is not a repeated parameter type
+  val txt = s"${List(42): _*}"
+                        ^
+7 errors
