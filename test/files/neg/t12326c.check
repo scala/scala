@@ -1,0 +1,6 @@
+t12326c.scala:8: warning: Unused import
+  import scala.concurrent.ExecutionContext.Implicits._
+                                                     ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

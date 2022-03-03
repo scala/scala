@@ -65,24 +65,24 @@ trait Contexts { self: Analyzer =>
   )
 
   private lazy val allUsedSelectors =
-    mutable.Map[ImportInfo, Set[ImportSelector]]() withDefaultValue Set()
+    mutable.Map.empty[ImportInfo, Set[ImportSelector]].withDefaultValue(Set.empty)
   private lazy val allImportInfos =
-    mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
+    mutable.Map.empty[CompilationUnit, List[(ImportInfo, Symbol)]].withDefaultValue(Nil)
 
-  def warnUnusedImports(unit: CompilationUnit) = {
-    def cullUnusedSelections(infos0: List[(ImportInfo, Symbol)]): List[(Position, Symbol)] = {
-      var unused = List.empty[(Position, Symbol)]
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
+    def warnUnusedSelections(infos0: List[(ImportInfo, Symbol)]): Unit = {
+      type Culled = (Position, Symbol, String)
+      var unused = List.empty[Culled]
       @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
         infos match {
           case (info, owner) :: rest =>
             val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-            // since we are going in reverse order, add unused selectors from right to left, last to first
             def checkSelectors(selectors: List[ImportSelector]): Unit =
               selectors match {
                 case selector :: rest =>
                   checkSelectors(rest)
                   if (!selector.isMask && !used(selector))
-                    unused ::= ((info.posOf(selector), owner))
+                    unused ::= ((info.posOf(selector), owner, info.fullSelectorString(selector)))
                 case _ =>
               }
             checkSelectors(info.tree.selectors)
@@ -90,20 +90,9 @@ trait Contexts { self: Analyzer =>
           case _ =>
         }
       loop(infos0)
-      unused
+      unused.foreach { case (pos, owner, origin) => runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, owner, origin) }
     }
-    @tailrec def warnUnusedSelections(unused: List[(Position, Symbol)]): Unit =
-      unused match {
-        case (pos, site) :: rest =>
-          runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, site = site)
-          warnUnusedSelections(rest)
-        case _ =>
-      }
-    if (!unit.isJava)
-      allImportInfos.remove(unit) match {
-        case Some(importInfos) => warnUnusedSelections(cullUnusedSelections(importInfos))
-        case _                 => ()
-      }
+    allImportInfos.remove(unit).foreach(warnUnusedSelections)
   }
 
   var lastAccessCheckDetails: String = ""
@@ -1874,6 +1863,9 @@ trait Contexts { self: Analyzer =>
         case _                  => (current, result)
       }
     }
+
+    def fullSelectorString(s: ImportSelector): String =
+      s"${if (qual.tpe.isError) tree.toString else qual.tpe.typeSymbol.fullName}.${selectorString(s)}"
 
     private def selectorString(s: ImportSelector): String =
       if (s.isWildcard) "_"
