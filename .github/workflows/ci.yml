@@ -10,14 +10,13 @@ defaults:
 
 jobs:
   build_and_test:
-    name: Windows
-    runs-on: windows-latest
+    name: Test
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - java: 8
-          - java: 17
+        os: [ubuntu-latest, windows-latest]
+        java: [8, 11, 17]
+    runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
       - name: Checkout
