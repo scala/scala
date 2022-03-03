@@ -101,6 +101,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     if (terse) {
       if (state.isSkipped) { printS(); Nil }
       else if (state.isOk) { printDot() ; Nil }
+      else if (state.shortStatus(0) == '?') { printUnknown() ; Nil }
       else { printEx() ; statusLine(state, durationMs) :: errInfo }
     } else {
       echo(statusLine(state, durationMs))

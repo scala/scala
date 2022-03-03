@@ -80,16 +80,14 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   lazy val outDir = { outFile.mkdirs() ; outFile }
 
-  def showCrashInfo(t: Throwable): Unit = {
-    System.err.println(s"Crashed running test $testIdent: " + t)
-    if (!suiteRunner.terse)
-      System.err.println(stackTraceString(t))
-  }
-  protected def crashHandler: PartialFunction[Throwable, TestState] = {
-    case t: InterruptedException =>
-      genTimeout()
+  // if there is a checkfile, log message for diff; otherwise log stack trace for post-mortem
+  def crashHandler: PartialFunction[Throwable, TestState] = {
+    case _: InterruptedException => genTimeout()
+    case t: FatalError if checkFile.canRead =>
+      logFile.appendAll(s"fatal error: ${t.getMessage}")
+      genCrash(t)
     case t: Throwable =>
-      showCrashInfo(t)
+      if (!suiteRunner.terse) System.err.println(s"Crashed running test $testIdent: " + t)
       logFile.appendAll(stackTraceString(t))
       genCrash(t)
   }
