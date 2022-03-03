@@ -1593,31 +1593,55 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.unwrap)
 
-  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original string, with the chars taken in order of their first occurrence.  Thus, `"yy"` and `"yx"`
-    *  are both length-2 combinations of `"yxy"`, but `"xy"` is not.  If there is
-    *  more than one way to generate the same subsequence, only one will be returned.
-    *
-    *  For example, `"yxyy"` has three different ways to generate `"yx"` depending on
-    *  whether the first, second, or third `"y"` is selected.  However, since all are
-    *  identical, only one will be chosen.  Which of the three will be taken is an
-    *  implementation detail that is not defined.
-    *
-    *  @return   An Iterator which traverses the possible n-element combinations of this string.
-    *  @example {{{
-    *    "abbbc".combinations(2) = Iterator(ab, ac, bb, bc)
-    *    "bab".combinations(2) = Iterator(bb, ba)
-    *  }}}
-    *  @note     $unicodeunaware
-    */
+  /** Iterates over combinations of elements.
+   *
+   *  A '''combination''' of length `n` is a sequence of `n` elements selected in order of their first index in this sequence.
+   *
+   *  For example, `"xyx"` has two combinations of length 2. The `x` is selected first: `"xx"`, `"xy"`.
+   *  The sequence `"yx"` is not returned as a combination because it is subsumed by `"xy"`.
+   *
+   *  If there is more than one way to generate the same combination, only one will be returned.
+   *
+   *  For example, the result `"xy"` arbitrarily selected one of the `x` elements.
+   *
+   *  As a further illustration, `"xyxx"` has three different ways to generate `"xy"` because there are three elements `x`
+   *  to choose from. Moreover, there are three unordered pairs `"xx"` but only one is returned.
+   *
+   *  It is not specified which of these equal combinations is returned. It is an implementation detail
+   *  that should not be relied on. For example, the combination `"xx"` does not necessarily contain
+   *  the first `x` in this sequence. This behavior is observable if the elements compare equal
+   *  but are not identical.
+   *
+   *  As a consequence, `"xyx".combinations(3).next()` is `"xxy"`: the combination does not reflect the order
+   *  of the original sequence, but the order in which elements were selected, by "first index";
+   *  the order of each `x` element is also arbitrary.
+   *
+   *  @return   An Iterator which traverses the n-element combinations of this string.
+   *  @example {{{
+   *    "abbbc".combinations(2).foreach(println)
+   *    // ab
+   *    // ac
+   *    // bb
+   *    // bc
+   *    "bab".combinations(2).foreach(println)
+   *    // bb
+   *    // ba
+   *  }}}
+   *  @note     $unicodeunaware
+   */
   def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.unwrap)
 
-  /** Iterates over distinct permutations.
-    *
-    *  @return   An Iterator which traverses the distinct permutations of this string.
-    *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
-    *  @note     $unicodeunaware
-    */
+  /** Iterates over distinct permutations of elements.
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this string.
+   *  @example {{{
+   *    "abb".permutations.foreach(println)
+   *    // abb
+   *    // bab
+   *    // bba
+   *  }}}
+   *  @note     $unicodeunaware
+   */
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
 
