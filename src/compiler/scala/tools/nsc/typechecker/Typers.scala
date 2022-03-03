@@ -1511,6 +1511,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context.error(tparam.pos, "type parameter of value class may not be specialized")
     }
 
+    private def warnMultiargInfix(tree: Tree): Unit =
+      context.warning(tree.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+
     /** Typechecks a parent type reference.
      *
      *  This typecheck is harder than it might look, because it should honor early
@@ -2415,7 +2418,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated) && !meth.isSynthetic)
             meth.paramss match {
               case (h :: _ :: _) :: Nil if !h.isImplicit && Chars.isOperatorPart(meth.name.decoded.head) =>
-                context.warning(meth.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+                warnMultiargInfix(ddef)
               case _ =>
             }
 
@@ -5052,6 +5055,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val erred = qual1.exists(_.isErroneous) || args.exists(_.isErroneous)
               if (erred) reportError(error) else {
                 val convo = convertToAssignment(fun, qual1, name, args)
+                if (settings.multiargInfix && tree.hasAttachment[MultiargInfixAttachment.type] && args.lengthCompare(1) > 0)
+                  warnMultiargInfix(tree)
                 silent(op = _.typed1(convo, mode, pt)) match {
                   case SilentResultValue(t) => t
                   case err: SilentTypeError => reportError(
@@ -5125,7 +5130,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               tree1 modifyType (_.finalResultType)
               tree1
             case tree1 @ Apply(_, args1) if settings.multiargInfix && tree.hasAttachment[MultiargInfixAttachment.type] && args1.lengthCompare(1) > 0 =>
-              context.warning(tree1.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+              warnMultiargInfix(tree1)
               tree1
             case tree1                                                               => tree1
           }

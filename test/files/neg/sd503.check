@@ -31,5 +31,14 @@ sd503.scala:70: warning: multiarg infix syntax looks like a tuple and will be de
 sd503.scala:80: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def f = this lines_! (42, 27)                                               // warn usage, of course
                ^
-8 warnings
+sd503.scala:86: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def +(i: Int, j: Int): Adder = new Adder(c + i*j)   // warn multiarg symbolic def
+      ^
+sd503.scala:92: warning: multiarg infix syntax looks like a tuple and will be deprecated
+    x = x + (3, 9)                 // warn multiarg infix apply
+          ^
+sd503.scala:102: warning: multiarg infix syntax looks like a tuple and will be deprecated
+    x += (3, 9)                    // warn multiarg infix assignment!
+      ^
+11 warnings
 2 errors
