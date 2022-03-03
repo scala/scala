@@ -12,47 +12,47 @@ stringinterpolation_macro-neg.scala:16: error: too few arguments for interpolate
                              ^
 stringinterpolation_macro-neg.scala:19: error: type mismatch;
  found   : String
- required: Boolean
+ required: Boolean, Null
   f"$s%b"
      ^
 stringinterpolation_macro-neg.scala:20: error: type mismatch;
  found   : String
- required: Char
+ required: Char, Byte, Short, Int
   f"$s%c"
      ^
 stringinterpolation_macro-neg.scala:21: error: type mismatch;
  found   : Double
- required: Char
+ required: Char, Byte, Short, Int
   f"$f%c"
      ^
 stringinterpolation_macro-neg.scala:22: error: type mismatch;
  found   : String
- required: Int
+ required: Int, Long, Byte, Short, BigInt
   f"$s%x"
      ^
 stringinterpolation_macro-neg.scala:23: error: type mismatch;
  found   : Boolean
- required: Int
+ required: Int, Long, Byte, Short, BigInt
   f"$b%d"
      ^
 stringinterpolation_macro-neg.scala:24: error: type mismatch;
  found   : String
- required: Int
+ required: Int, Long, Byte, Short, BigInt
   f"$s%d"
      ^
 stringinterpolation_macro-neg.scala:25: error: type mismatch;
  found   : Double
- required: Int
+ required: Int, Long, Byte, Short, BigInt
   f"$f%o"
      ^
 stringinterpolation_macro-neg.scala:26: error: type mismatch;
  found   : String
- required: Double
+ required: Double, Float, BigDecimal
   f"$s%e"
      ^
 stringinterpolation_macro-neg.scala:27: error: type mismatch;
  found   : Boolean
- required: Double
+ required: Double, Float, BigDecimal
   f"$b%f"
      ^
 stringinterpolation_macro-neg.scala:32: error: type mismatch;
