@@ -41,3 +41,10 @@ test/files/neg/abstract-report2.scala:23: error: class JustOne needs to be abstr
 (Note that Array[T with Object] does not match java.util.function.IntFunction[Array[T with Object]])
 class JustOne extends Collection[Int] {
  */
+
+trait U { def t(): Int }
+trait T extends U { abstract override def t(): Int = super.t() + 1 }
+class C extends T               // refchecks
+trait V extends U { abstract override def t(): Int = super.t() + 1 }
+trait W extends V { abstract override def t(): Int = super.t() + 1 }
+class D extends W

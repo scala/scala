@@ -537,10 +537,7 @@ abstract class RefChecks extends Transform {
         val abstractErrors = ListBuffer.empty[String]
         def abstractErrorMessage = abstractErrors.mkString("\n")
 
-        def mustBeMixin(msg: String): Unit = addError(mustBeMixin = true, msg, supplement = "")
-        def abstractClassError(msg: String): Unit = addError(mustBeMixin = false, msg, supplement = "")
-        def abstractClassErrorStubs(msg: String, stubs: String): Unit = addError(mustBeMixin = false, msg, supplement = stubs)
-        def addError(mustBeMixin: Boolean, msg: String, supplement: String): Unit = {
+        def abstractClassError(msg: String, supplement: String = "", mustBeMixin: Boolean = false): Unit = {
           def prelude =
             if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible."
             else if (mustBeMixin) s"$clazz needs to be a mixin."
@@ -573,6 +570,8 @@ abstract class RefChecks extends Transform {
 
         // 2. Check that only abstract classes have deferred members
         def checkNoAbstractMembers(): Unit = {
+          val NoError = null.asInstanceOf[String]
+          val EmptyDiagnostic = ""
           def diagnose(member: Symbol, accessors: List[Symbol]): String = {
             val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
@@ -581,7 +580,7 @@ abstract class RefChecks extends Transform {
             val isMultiple = accessors.size > 1
 
             if (accessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
-              if (member.isSetter && isMultiple) null // If both getter and setter are missing, squelch the setter error.
+              if (member.isSetter && isMultiple) NoError // If both getter and setter are missing, squelch the setter error.
               else if (member.isSetter) "an abstract var requires a setter in addition to the getter"
               else if (member.isGetter && !isMultiple) "an abstract var requires a getter in addition to the setter"
               else "variables need to be initialized to be defined"
@@ -636,20 +635,14 @@ abstract class RefChecks extends Transform {
                         else s" in `$wrongSig`"
                       s"$pa does not match $pc$addendum"
                     case Nil if missingImplicit => "overriding member must declare implicit parameter list" // other overriding gotchas
-                    case _ => ""
+                    case _ => EmptyDiagnostic
                   }
-                case _ => ""
+                case _ => EmptyDiagnostic
               }
             }
-            else ""
+            else EmptyDiagnostic
           }
-          // Avoid spurious duplicates: first gather any missing members.
-          val (missing, rest): (List[Symbol], Iterator[Symbol]) = {
-            val memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-            val (missing0, rest0) = memberList.iterator.partition(m => m.isDeferred & !ignoreDeferred(m))
-            (missing0.toList, rest0)
-          }
-          if (missing.nonEmpty) {
+          def emitErrors(missing: List[Symbol]): Unit = {
             // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
             val byName = missing.groupBy(_.name.getterName)
             // There may be 1 or more missing members declared in 1 or more parents.
@@ -657,10 +650,10 @@ abstract class RefChecks extends Transform {
             val byOwner = missing.groupBy(_.owner).toList
             val announceOwner = byOwner.size > 1
             def membersStrings(members: List[Symbol]) =
-              members.sortBy(_.name).map { m =>
+              members.sortBy(_.name).flatMap { m =>
                 val accessors = byName.getOrElse(m.name.getterName, Nil)
                 val diagnostic = diagnose(m, accessors)
-                if (diagnostic == null) null
+                if (diagnostic == NoError) Nil
                 else {
                   val s0a = infoString0(m, showLocation = false)
                   fullyInitializeSymbol(m)
@@ -669,9 +662,9 @@ abstract class RefChecks extends Transform {
                   val implMsg = if (s1 != s0a) s"implements `$s0a`" else if (s1 != s0b) s"implements `$s0b`" else ""
                   val spacer  = if (diagnostic.nonEmpty && implMsg.nonEmpty) "; " else ""
                   val comment = if (diagnostic.nonEmpty || implMsg.nonEmpty) s" // $implMsg$spacer$diagnostic" else ""
-                  s"$s1 = ???$comment"
+                  s"$s1 = ???$comment" :: Nil
                 }
-              }.filter(_ ne null)
+              }
             var count = 0
             val stubs =
               byOwner.sortBy(_._1.name.toString).flatMap {
@@ -685,16 +678,28 @@ abstract class RefChecks extends Transform {
             val line0 =
               if (isMulti) s"Missing implementations for ${count}${val p = singleParent ; if (p.isEmpty) " members" else p}."
               else s"Missing implementation${val p = singleParent ; if (p.isEmpty) p else s" for$p"}:"
-            abstractClassErrorStubs(line0, stubs)
-
-            // Check the remainder for invalid absoverride.
-            for (member <- rest if member.isAbstractOverride && member.isIncompleteIn(clazz)) {
-              val explanation = member.superSymbolIn(clazz) match {
-                case NoSymbol => ", but no concrete implementation could be found in a base class"
-                case other    => " and overrides incomplete superclass member\n" + infoString(other)
-              }
-              mustBeMixin(s"${infoString(member)} is marked `abstract` and `override`$explanation")
+            abstractClassError(line0, supplement = stubs)
+          }
+          def filtered[A](it: Iterator[A])(p: A => Boolean)(q: A => Boolean): (List[A], List[A]) = {
+            var ps, qs: List[A] = Nil
+            while (it.hasNext) {
+              val a = it.next()
+              if (p(a)) ps ::= a
+              else if (q(a)) qs ::= a
             }
+            (ps, qs)
+          }
+          // Avoid extra allocations with reverseIterator. Filter for abstract members of interest, and bad abstract override.
+          val (missing, abstractIncomplete): (List[Symbol], List[Symbol]) =
+            filtered(clazz.info.nonPrivateMembersAdmitting(VBRIDGE).reverseIterator)(m => m.isDeferred & !ignoreDeferred(m))(m => m.isAbstractOverride && m.isIncompleteIn(clazz))
+          if (missing.nonEmpty) emitErrors(missing)
+          // Check the remainder for invalid absoverride.
+          for (member <- abstractIncomplete) {
+            val explanation = member.superSymbolIn(clazz) match {
+              case NoSymbol => ", but no concrete implementation could be found in a base class"
+              case other    => " and overrides incomplete superclass member\n" + infoString(other)
+            }
+            abstractClassError(s"${infoString(member)} is marked `abstract` and `override`$explanation", mustBeMixin = true)
           }
         } // end checkNoAbstractMembers
 
