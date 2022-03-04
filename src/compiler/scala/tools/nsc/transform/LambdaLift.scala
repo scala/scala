@@ -18,6 +18,7 @@ import Flags._
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
+import scala.tools.nsc.Reporting.WarningCategory.LintPerformance
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -502,7 +503,7 @@ abstract class LambdaLift extends InfoTransform {
             }
           }
           if (settings.warnCaptured)
-            reporter.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.")
+            runReporting.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.", LintPerformance, sym)
           treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
         case ValDef(_, _, _, _) => tree
         case Return(Block(stats, value)) =>
