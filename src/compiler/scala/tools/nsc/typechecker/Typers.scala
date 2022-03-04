@@ -3966,7 +3966,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         def isDefaultArg(tree: Tree) = tree match {
-          case treeInfo.Applied(fun, _, _) => fun.symbol.isDefaultGetter
+          case treeInfo.Applied(fun, _, _) => fun.symbol != null && fun.symbol.isDefaultGetter
           case _ => false
         }
 
