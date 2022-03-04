@@ -424,6 +424,7 @@ trait Definitions extends api.StandardDefinitions {
     def isRepeated(param: Symbol)          = isRepeatedParamType(param.tpe_*)
     def isByName(param: Symbol)            = isByNameParamType(param.tpe_*)
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
+    def isTypeTestSymbol(sym: Symbol)      = sym == Any_isInstanceOf || sym == Object_isInstanceOf
 
     def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && (m.rawInfo match {
       case completer: LazyType => completer.isJavaVarargsMethod
