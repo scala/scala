@@ -104,7 +104,7 @@ trait ScannersCommon {
   }
 
   def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
-    val names = keywords sortBy (_._1.start) map { case (k, v) => (k.start, v) }
+    val names = keywords.sortBy(_._1.start).map { case (k, v) => (k.start, v) }
     val low   = names.head._1
     val high  = names.last._1
     val arr   = Array.fill(high - low + 1)(defaultToken)
@@ -1515,7 +1515,7 @@ trait Scanners extends ScannersCommon {
     nme.HASHkw      -> HASH,
     nme.ATkw        -> AT,
     nme.MACROkw     -> IDENTIFIER,
-    nme.THENkw      -> IDENTIFIER)
+    )
 
   private var kwOffset: Offset = -1
   private val kwArray: Array[Token] = {
@@ -1528,7 +1528,7 @@ trait Scanners extends ScannersCommon {
 
   final val softModifierNames = Set(nme.open, nme.infix)
 
-  final val scala3Keywords = Set(nme.`enum`, nme.`export`, nme.`given`)
+  final val scala3Keywords = Set(nme.`enum`, nme.`export`, nme.`given`, nme.`then`)
 
 // Token representation ----------------------------------------------------
 
