@@ -3879,6 +3879,27 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val pending = ListBuffer[AbsTypeError]()
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
+      def rangeFinder(): (Int, Int) =
+        if (settings.Yrangepos && annotee.get.pos.isDefined) {
+          val p = annotee.get.pos
+          (p.start, p.end)
+        } else {
+          // compute approximate range
+          var s = unit.source.length
+          var e = 0
+          object setRange extends ForeachTreeTraverser({ child =>
+            val pos = child.pos
+            if (pos.isDefined) {
+              s = s min pos.start
+              e = e max pos.end
+            }
+          }) {
+            // in `@nowarn @ann(deprecatedMethod) def foo`, the deprecation warning should show
+            override def traverseModifiers(mods: Modifiers): Unit = ()
+          }
+          setRange(annotee.get)
+          (s, e max s)
+        }
       def registerNowarn(info: AnnotationInfo): Unit = {
         if (annotee.isDefined && NowarnClass.exists && info.matches(NowarnClass) && !runReporting.suppressionExists(info.pos)) {
           val filters = (info.assocs: @unchecked) match {
@@ -3892,30 +3913,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 fs
               }
           }
-          val (start, end) =
-            if (settings.Yrangepos) {
-              val p = annotee.get.pos
-              (p.start, p.end)
-            } else {
-              // compute approximate range
-              var s = unit.source.length
-              var e = 0
-              object setRange extends ForeachTreeTraverser({ child =>
-                val pos = child.pos
-                if (pos.isDefined) {
-                  s = s min pos.start
-                  e = e max pos.end
-                }
-              }) {
-                // in `@nowarn @ann(deprecatedMethod) def foo`, the deprecation warning should show
-                override def traverseModifiers(mods: Modifiers): Unit = ()
-              }
-              setRange(annotee.get)
-              (s, e max s)
-            }
+          val (start, end) = rangeFinder()
           runReporting.addSuppression(Suppression(info.pos, filters, start, end))
         }
       }
+      def registerDeprecationSuppression(info: AnnotationInfo): Unit =
+        if (annotee.isDefined && info.matches(DeprecatedAttr) && !runReporting.suppressionExists(info.pos)) {
+          val (start, end) = rangeFinder()
+          runReporting.addSuppression(Suppression(info.pos, List(MessageFilter.Category(WarningCategory.Deprecation)), start, end, synthetic = true))
+        }
 
       def finish(res: AnnotationInfo): AnnotationInfo = {
         if (hasError) {
@@ -3923,6 +3929,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           ErroneousAnnotation
         } else {
           registerNowarn(res)
+          registerDeprecationSuppression(res)
           res
         }
       }

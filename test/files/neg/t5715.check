@@ -1,0 +1,15 @@
+t5715.scala:16: warning: then is a reserved word (since 2.10.0); usage as an identifier is deprecated
+  val y = new then                    // keyword and deprecated ref
+              ^
+t5715.scala:19: warning: then is a reserved word (since 2.10.0); usage as an identifier is deprecated
+  object then                         // keyword
+         ^
+t5715.scala:12: warning: class then in package example is deprecated (since 0.1): that was then
+  val u = new `then`                  // backticked but deprecated ref
+              ^
+t5715.scala:16: warning: class then in package example is deprecated (since 0.1): that was then
+  val y = new then                    // keyword and deprecated ref
+              ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error
