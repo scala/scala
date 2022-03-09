@@ -14,8 +14,10 @@ fi
 rm -rf "$WORKSPACE/resolutionScratch_"
 mkdir -p "$WORKSPACE/resolutionScratch_"
 
+SBT_VERSION=`grep sbt.version $WORKSPACE/project/build.properties | sed -n 's/sbt.version=\(.*\)/\1/p'`
+
 SBT_CMD=${SBT_CMD-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 1.6.2"
+SBT_CMD="$SBT_CMD -sbt-version $SBT_VERSION"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
