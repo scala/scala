@@ -311,6 +311,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaStringBufferClass
     definitions.JavaCharSequenceClass
     definitions.ListModule
+    definitions.ListModuleAlias
     definitions.NilModule
     definitions.SeqModule
     definitions.Collection_SeqModule

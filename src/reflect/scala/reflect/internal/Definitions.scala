@@ -18,6 +18,7 @@ import scala.annotation.{meta, migration, nowarn, tailrec}
 import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
+import PartialFunction.cond
 
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>
@@ -490,6 +491,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
          def List_apply       = getMemberMethod(ListModule, nme.apply)
+    lazy val ListModuleAlias  = getMemberValue(ScalaPackageClass, nme.List)
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type]
@@ -1712,21 +1714,23 @@ trait Definitions extends api.StandardDefinitions {
         assert(result == getMemberMethod(DefinitionsClass.this.Collection_SeqModule, nme.apply), "Expected collection.Seq and immutable.Seq to have the same apply member")
         result
       }
-      final def isListApply(tree: Tree): Boolean = {
-        /*
-         * This is translating uses of List() into Nil.  This is less
-         *  than ideal from a consistency standpoint, but it shouldn't be
-         *  altered without due caution.
-         *  ... this also causes bootstrapping cycles if List_apply is
-         *  forced during kind-arity checking, so it is guarded by additional
-         *  tests to ensure we're sufficiently far along.
-         */
-        (tree.symbol == List_apply) && (tree match {
-          case treeInfo.Applied(core @ Select(qual, _), _, _) =>
-            treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
-          case _ => false
-        })
+      /* This is for translating uses of List() into Nil.
+       *
+       * 2.12 would see scala.collection.immutable.List.apply[Nothing]
+       * 2.13 sees scala.`package`.List().apply or after typer scala.`package`.List().apply(scala.collection.immutable.Nil).$asInstanceOf[List]
+       *
+       * Conservative check to avoid cycles is restored.
+       */
+      final def isListApply(tree: Tree): Boolean =
+        tree.symbol.isInitialized && ListModule.hasCompleteInfo && (tree.symbol == List_apply || tree.symbol.name == nme.apply) && cond(tree) {
+          case treeInfo.Applied(Select(qual, _), _, _) =>
+            treeInfo.isQualifierSafeToElide(qual) && (qual.symbol == ListModule || qual.symbol == ListModuleAlias /*|| isListAlias(qual.tpe)*/)
+        }
+      /*
+      private def isListAlias(tpe: Type): Boolean = cond(tpe) {
+        case SingleType(_, _) => tpe.widen.typeSymbol.companionSymbol == ListModule
       }
+      */
 
       final def isSeqApply(tree: Tree): Boolean = isListApply(tree) || {
         /*
