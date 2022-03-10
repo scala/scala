@@ -29,6 +29,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.plugins.{OutputFileWriter, Plugin}
 import scala.tools.nsc.util.JarFactory
+import scala.util.chaining._
 
 abstract class ClassfileWriters {
   val postProcessor: PostProcessor
@@ -85,10 +86,12 @@ abstract class ClassfileWriters {
           }
       }
 
-      val withAdditionalFormats = if (settings.Ygenasmp.valueSetByUser.isEmpty && settings.Ydumpclasses.valueSetByUser.isEmpty) basicClassWriter else {
-        val asmp = settings.Ygenasmp.valueSetByUser map { dir: String => FileWriter(global, new PlainNioFile(getDirectory(dir)), None) }
-        val dump = settings.Ydumpclasses.valueSetByUser map { dir: String => FileWriter(global, new PlainNioFile(getDirectory(dir)), None) }
-        new DebugClassWriter(basicClassWriter, asmp, dump)
+      val withAdditionalFormats = {
+        def maybeDir(dir: Option[String]): Option[Path] = dir.map(getDirectory).filter(path => Files.exists(path).tap(ok => if (!ok) frontendAccess.backendReporting.error(NoPosition, s"Output dir does not exist: $path")))
+        def writer(out: Path) = FileWriter(global, new PlainNioFile(out), None)
+        val List(asmp, dump) = List(settings.Ygenasmp, settings.Ydumpclasses).map(s => maybeDir(s.valueSetByUser).map(writer)): @unchecked
+        if (asmp.isEmpty && dump.isEmpty) basicClassWriter
+        else new DebugClassWriter(basicClassWriter, asmp, dump)
       }
 
       val enableStats = settings.areStatisticsEnabled && settings.YaddBackendThreads.value == 1
