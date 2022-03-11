@@ -3797,10 +3797,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ =>
                 }
 
-                if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && currentRun.runDefinitions.isListApply(fun))
-                  atPos(tree.pos)(gen.mkNil setType restpe)
+                if (!isPastTyper && args.isEmpty && canTranslateEmptyListToNil && currentRun.runDefinitions.isListApply(fun))
+                  atPos(tree.pos)(gen.mkNil.setType(restpe))
                 else {
-                  val resTp = ifPatternSkipFormals(if (isPastTyper) restpe else restpe.deconst) // annoying issue with classOf that shouldn't be deconsted after typers (during fields phase)
+                  // annoying issue with classOf that shouldn't be deconsted after typers (during fields phase)
+                  val resTp = ifPatternSkipFormals(if (isPastTyper) restpe else restpe.deconst)
                   constfold(treeCopy.Apply(tree, fun, args2) setType resTp setPos pos2, context.owner)
                 }
               }

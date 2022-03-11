@@ -1,5 +1,6 @@
 import scala.tools.partest.ReplTest
 
+// Show that reify sees rewrite to Nil in typer
 object Test extends ReplTest {
   override def extraSettings = "-Xlog-free-types"
   def code = """

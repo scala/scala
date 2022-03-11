@@ -59,7 +59,8 @@ object Test extends App {
   // val c705: ({ @compileTimeOnly("C7") type C7[T] = List[T] })#C7[_] = ???
   val c706: C7 Either C7 = ???
   val c707a: List[C7] = ???
-  val c707b = List[C7]()
+  val c707b = List[C7]()      // eliminated by rewrite to Nil
+  val c707c = List.empty[C7]  // not yet eliminated by rewrite to Nil
   val c708a: T forSome { type T <: C7 } = ???
   // https://groups.google.com/forum/#!topic/scala-internals/5n07TiCnBZU
   // val c708b: T forSome { @compileTimeOnly("C7") type T } = ???
