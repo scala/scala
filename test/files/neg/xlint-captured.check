@@ -1,0 +1,9 @@
+xlint-captured.scala:10: warning: return statement uses an exception to pass control to the caller of the enclosing named method f
+  def f(): Unit = List(42).foreach(i => if (i > 27) return)
+                                                    ^
+xlint-captured.scala:5: warning: Modification of variable c within a closure causes it to be boxed.
+    var c = a // nok
+        ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

@@ -98,7 +98,7 @@ trait Warnings {
          |to prevent the shell from expanding patterns.""".stripMargin),
     prepend = true)
 
-  // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
+  // Non-lint warnings.
   val warnMacros           = ChoiceSetting(
     name    = "-Wmacros",
     helpArg = "mode",
@@ -116,6 +116,20 @@ trait Warnings {
   val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
   val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
   val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"
+
+  object PerformanceWarnings extends MultiChoiceEnumeration {
+    val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")
+    val NonlocalReturn = Choice("nonlocal-return", "A return statement used an exception for flow control.")
+  }
+  val warnPerformance = MultiChoiceSetting(
+    name    = "-Wperformance",
+    helpArg = "warning",
+    descr   = "Enable or disable specific lints for performance",
+    domain  = PerformanceWarnings,
+    default = Some(List("_"))
+  )
+  def warnCaptured       = warnPerformance.contains(PerformanceWarnings.Captured)
+  def warnNonlocalReturn = warnPerformance.contains(PerformanceWarnings.NonlocalReturn)
 
   object UnusedWarnings extends MultiChoiceEnumeration {
     val Imports   = Choice("imports",   "Warn if an import selector is not referenced.")
@@ -216,7 +230,6 @@ trait Warnings {
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
-  def warnNonlocalReturn         = lint contains NonlocalReturn
   def lintImplicitNotFound       = lint contains ImplicitNotFound
   def warnSerialization          = lint contains Serial
   def lintValPatterns            = lint contains ValPattern
@@ -241,6 +254,8 @@ trait Warnings {
     if (s contains Unused) warnUnused.enable(UnusedWarnings.Linted)
     else warnUnused.disable(UnusedWarnings.Linted)
     if (s.contains(Deprecation) && deprecation.isDefault) deprecation.value = true
+    if (s.contains(NonlocalReturn)) warnPerformance.enable(PerformanceWarnings.NonlocalReturn)
+    else warnPerformance.disable(PerformanceWarnings.NonlocalReturn)
   }
 
   // Backward compatibility.

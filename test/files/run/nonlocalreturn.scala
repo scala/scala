@@ -6,9 +6,7 @@ object Test {
     wrap({ return Some(1) ; None })
   }
 
-  def main(args: Array[String]): Unit = {
-    println(f())
-  }
+  def main(args: Array[String]): Unit = assert(f() == Some(1))
 }
 // java.lang.ClassCastException: scala.Some cannot be cast to scala.None$
 //  at Test$$anonfun$f$1.apply(nonlocalreturn.scala:5)

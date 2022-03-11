@@ -404,6 +404,7 @@ object Reporting {
     object LintRecurseWithDefault extends Lint; add(LintRecurseWithDefault)
     object LintUnitSpecialization extends Lint; add(LintUnitSpecialization)
     object LintMultiargInfix extends Lint; add(LintMultiargInfix)
+    object LintPerformance extends Lint; add(LintPerformance)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)

@@ -155,6 +155,9 @@ object StringOps {
     /** Creates a new non-strict filter which combines this filter with the given predicate. */
     def withFilter(q: Char => Boolean): WithFilter = new WithFilter(a => p(a) && q(a), s)
   }
+
+  /** Avoid an allocation in [[collect]]. */
+  private val fallback: Any => Any = _ => fallback
 }
 
 /** Provides extension methods for strings.
@@ -270,17 +273,12 @@ final class StringOps(private val s: String) extends AnyVal {
     *                `pf` to each char on which it is defined and collecting the results.
     */
   def collect(pf: PartialFunction[Char, Char]): String = {
+    val fallback: Any => Any = StringOps.fallback
     var i = 0
-    var matched = true
-    def d(x: Char): Char = {
-      matched = false
-      0
-    }
     val b = new StringBuilder
-    while(i < s.length) {
-      matched = true
-      val v = pf.applyOrElse(s.charAt(i), d)
-      if(matched) b += v
+    while (i < s.length) {
+      val v = pf.applyOrElse(s.charAt(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[Char])
       i += 1
     }
     b.result()
@@ -295,17 +293,12 @@ final class StringOps(private val s: String) extends AnyVal {
     *                `pf` to each char on which it is defined and collecting the results.
     */
   def collect[B](pf: PartialFunction[Char, B]): immutable.IndexedSeq[B] = {
+    val fallback: Any => Any = StringOps.fallback
     var i = 0
-    var matched = true
-    def d(x: Char): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
     val b = immutable.IndexedSeq.newBuilder[B]
-    while(i < s.length) {
-      matched = true
-      val v = pf.applyOrElse(s.charAt(i), d)
-      if(matched) b += v
+    while (i < s.length) {
+      val v = pf.applyOrElse(s.charAt(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[B])
       i += 1
     }
     b.result()
