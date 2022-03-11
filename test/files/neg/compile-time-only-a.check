@@ -65,22 +65,25 @@ compile-time-only-a.scala:61: error: C7
   val c707a: List[C7] = ???
              ^
 compile-time-only-a.scala:63: error: C7
+  val c707c = List.empty[C7]  // not yet eliminated by rewrite to Nil
+                         ^
+compile-time-only-a.scala:64: error: C7
   val c708a: T forSome { type T <: C7 } = ???
                ^
-compile-time-only-a.scala:66: error: C8
+compile-time-only-a.scala:67: error: C8
   val c709: (C8[Int], C8[C7]) = ???
             ^
-compile-time-only-a.scala:67: error: C8
+compile-time-only-a.scala:68: error: C8
   val c710: (C8[_] => C8[_]) = ???
                    ^
-compile-time-only-a.scala:74: error: placebo
+compile-time-only-a.scala:75: error: placebo
 class Test {
       ^
-compile-time-only-a.scala:75: error: placebo
+compile-time-only-a.scala:76: error: placebo
   @placebo def x = (2: @placebo)
                ^
-compile-time-only-a.scala:75: error: placebo
+compile-time-only-a.scala:76: error: placebo
   @placebo def x = (2: @placebo)
                         ^
 1 warning
-27 errors
+28 errors
