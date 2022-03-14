@@ -174,7 +174,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    */
   def convertToTypeName(tree: Tree): Option[RefTree] = tree match {
     case Select(qual, name) => Some(Select(qual, name.toTypeName))
-    case Ident(name)        => Some(Ident(name.toTypeName))
+    case Ident(name)        => Some(Ident(name.toTypeName).copyAttrs(tree))
     case _                  => None
   }
 

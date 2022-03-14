@@ -1,0 +1,12 @@
+t5715.scala:19: warning: Wrap `then` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+  object then                         // keyword
+         ^
+t5715.scala:12: warning: class then in package example is deprecated (since 0.1): that was then
+  val u = new `then`                  // backticked but deprecated ref
+              ^
+t5715.scala:16: warning: class then in package example is deprecated (since 0.1): that was then
+  val y = new then                    // keyword and deprecated ref
+              ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

@@ -209,7 +209,6 @@ trait StdNames {
     final val RETURNkw: TermName    = kw("return")
     final val SEALEDkw: TermName    = kw("sealed")
     final val SUPERkw: TermName     = kw("super")
-    final val THENkw: TermName      = kw("then")
     final val THISkw: TermName      = kw("this")
     final val THROWkw: TermName     = kw("throw")
     final val TRAITkw: TermName     = kw("trait")
@@ -680,6 +679,7 @@ trait StdNames {
     val `enum`: NameType          = nameType("enum")
     val `export`: NameType        = nameType("export")
     val `given`: NameType         = nameType("given")
+    val `then`: NameType          = nameType("then")
 
     // Scala 3 soft keywords
     val infix: NameType           = nameType("infix")

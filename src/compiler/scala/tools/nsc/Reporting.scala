@@ -89,7 +89,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           source <- suppressions.keysIterator.toList
           sups   <- suppressions.remove(source)
           sup    <- sups.reverse
-        } if (!sup.used) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
+        } if (!sup.used && !sup.synthetic) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
     }
 
     def reportSuspendedMessages(unit: CompilationUnit): Unit = {
@@ -630,7 +630,7 @@ object Reporting {
     }
   }
 
-  case class Suppression(annotPos: Position, filters: List[MessageFilter], start: Int, end: Int) {
+  case class Suppression(annotPos: Position, filters: List[MessageFilter], start: Int, end: Int, synthetic: Boolean = false) {
     private[this] var _used = false
     def used: Boolean = _used
     def markUsed(): Unit = { _used = true }
