@@ -31,12 +31,9 @@ private[runtime] object ModuleSerializationProxy {
       }
   }
 
-  private def rethrowRuntime(e: Throwable): Object = {
-    val cause = e.getCause
-    cause match {
-      case exception: RuntimeException => throw exception
-      case _ => throw new RuntimeException(cause)
-    }
+  private def rethrowRuntime(e: Throwable): Object = e match {
+    case re: RuntimeException => throw re
+    case _ => throw new RuntimeException(e)
   }
 }
 
