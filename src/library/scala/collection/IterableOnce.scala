@@ -605,7 +605,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /** Counts the number of elements in the $coll which satisfy a predicate.
     *
     *  $willNotTerminateInf
-    * 
+    *
     *  @param p     the predicate  used to test elements.
     *  @return      the number of elements satisfying the predicate `p`.
     */
@@ -694,6 +694,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
     */
+  @deprecated("Use foldLeft or foldRight instead", "2.13.9")
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.

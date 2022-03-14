@@ -38,15 +38,15 @@ class ArrayOpsTest {
     val a = Array(1,2,3)
     assertEquals(6, a.foldLeft(0){ (a, b) => a+b })
     assertEquals(6, a.foldRight(0){ (a, b) => a+b })
-    assertEquals(6, a.fold(0){ (a, b) => a+b })
+    assertEquals(6, a.fold(0){ (a, b) => a+b } : @annotation.nowarn)
     val b = Array[Int]()
     assertEquals(0, b.foldLeft(0){ (a, b) => a+b })
     assertEquals(0, b.foldRight(0){ (a, b) => a+b })
-    assertEquals(0, b.fold(0){ (a, b) => a+b })
+    assertEquals(0, b.fold(0){ (a, b) => a+b } : @annotation.nowarn)
     val c = Array(1)
     assertEquals(3, c.foldLeft(2){ (a, b) => a+b })
     assertEquals(3, c.foldRight(2){ (a, b) => a+b })
-    assertEquals(3, c.fold(2){ (a, b) => a+b })
+    assertEquals(3, c.fold(2){ (a, b) => a+b } : @annotation.nowarn)
   }
 
   @Test

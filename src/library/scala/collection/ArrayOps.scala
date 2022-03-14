@@ -500,7 +500,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this array to an [[scala.util.Either]]
     *
-    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]]. */
   def partitionMap[A1: ClassTag, A2: ClassTag](f: A => Either[A1, A2]): (Array[A1], Array[A2]) = {
     val res1 = ArrayBuilder.make[A1]
@@ -914,6 +914,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the elements, or `z` if this array is empty.
     */
+  @deprecated("Use foldLeft or foldRight instead", "2.13.9")
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Builds a new array by applying a function to all elements of this array.

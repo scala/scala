@@ -1113,6 +1113,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the chars and `z`, or `z` if this string is empty.
     */
+  @deprecated("Use foldLeft or foldRight instead", "2.13.9")
   @`inline` def fold[A1 >: Char](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Selects the first char of this string.

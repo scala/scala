@@ -1,0 +1,21 @@
+iterableonce-fold-deprecation.scala:10: warning: method fold in trait IterableOnceOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    new LowerCaseString("Foo").fold(' ')((_, _) => ' ')
+                               ^
+iterableonce-fold-deprecation.scala:11: warning: method fold in trait IterableOnceOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    Iterator.empty[Int].fold(0)(_ + _)
+                        ^
+iterableonce-fold-deprecation.scala:13: warning: method fold in trait IterableOnceOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    List(1, 3, 5).fold(0)(_ + _)
+                  ^
+iterableonce-fold-deprecation.scala:14: warning: method fold in trait IterableOnceOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    BitSet(1, 3, 5).fold(0)(_ + _)
+                    ^
+iterableonce-fold-deprecation.scala:15: warning: method fold in trait IterableOnceOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    Map(1 -> 'a', 3 -> 'b', 5 -> 'c').fold(0 -> 'z')((_, _) => 10 -> 'x')
+                                      ^
+iterableonce-fold-deprecation.scala:17: warning: method fold in class ArrayOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    Array(1, 3, 5).fold(0)(_ + _)
+                   ^
+iterableonce-fold-deprecation.scala:18: warning: method fold in class StringOps is deprecated (since 2.13.9): Use foldLeft or foldRight instead
+    "Foo".fold(' ')((_, _) => ' ')
+          ^
