@@ -340,7 +340,6 @@ class ExtractAPI[GlobalType <: Global](
       makeParameter(simpleName(s), tp, tp.typeSymbol, s)
     }
 
-    // paramSym is only for 2.8 and is to determine if the parameter has a default
     def makeParameter(
         name: String,
         tpe: Type,
@@ -692,9 +691,7 @@ class ExtractAPI[GlobalType <: Global](
   private def tparamID(s: Symbol): String =
     existentialRenamings.renaming(s) match {
       case Some(rename) =>
-        // can't use debuglog because it doesn't exist in Scala 2.9.x
-        if (settings.debug.value)
-          log("Renaming existential type variable " + s.fullName + " to " + rename)
+        debuglog(s"Renaming existential type variable ${s.fullName} to $rename")
         rename
       case None =>
         s.fullName
@@ -832,13 +829,6 @@ class ExtractAPI[GlobalType <: Global](
   private def staticAnnotations(annotations: List[AnnotationInfo]): List[AnnotationInfo] =
     if (annotations == Nil) Nil
     else {
-      // compat stub for 2.8/2.9
-      class IsStatic(ann: AnnotationInfo) {
-        def isStatic: Boolean =
-          ann.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass
-      }
-      implicit def compat(ann: AnnotationInfo): IsStatic = new IsStatic(ann)
-
       // `isStub` for scala/bug#11679: annotations of inherited members may be absent from the compile time
       // classpath so avoid calling `isNonBottomSubClass` on these stub symbols which would trigger an error.
       //
