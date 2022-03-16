@@ -422,7 +422,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @param  that    the sequence to test
    *  @param  from    the start index
    *  @return  the first index `>= from` such that the elements of this $coll starting at this index
-   *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+   *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
    */
   // TODO Should be implemented in a way that preserves laziness
   def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
@@ -455,7 +455,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  $mayNotTerminateInf
     *  @param  that    the sequence to test
     *  @return  the first index `>= 0` such that the elements of this $coll starting at this index
-    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
     */
   @deprecatedOverriding("Override indexOfSlice(that, from) instead - indexOfSlice(that) calls indexOfSlice(that, 0)", "2.13.0")
   def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
@@ -467,7 +467,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @param  that    the sequence to test
    *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
-   *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+   *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
    */
   def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = {
     val l = length
@@ -486,7 +486,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *
     *  @param  that    the sequence to test
     *  @return  the last index such that the elements of this $coll starting at this index
-    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
     */
   @deprecatedOverriding("Override lastIndexOfSlice(that, end) instead - lastIndexOfSlice(that) calls lastIndexOfSlice(that, Int.MaxValue)", "2.13.0")
   def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, Int.MaxValue)
