@@ -139,7 +139,7 @@ class ExtractAPI[GlobalType <: Global](
 
     def leaveExistentialTypeVariables(typeVariables: Seq[Symbol]): Unit = {
       nestingLevel -= 1
-      assert(nestingLevel >= 0)
+      assert(nestingLevel >= 0, s"nestingLevel = $nestingLevel")
       typeVariables.foreach(renameTo.remove)
     }
     def enterExistentialTypeVariables(typeVariables: Seq[Symbol]): Unit = {
@@ -315,8 +315,8 @@ class ExtractAPI[GlobalType <: Global](
       }
       t match {
         case PolyType(typeParams0, base) =>
-          assert(typeParams.isEmpty)
-          assert(valueParameters.isEmpty)
+          assert(typeParams.isEmpty, typeParams.toString)
+          assert(valueParameters.isEmpty, valueParameters.toString)
           build(base, typeParameters(in, typeParams0), Nil)
         case MethodType(params, resultType) =>
           build(resultType, typeParams, parameterList(params) :: valueParameters)
