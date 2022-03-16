@@ -337,7 +337,7 @@ object ScalaRunTime {
         val res = sub.toString
         if (multiline) s"s${tq}${res}${tq}" else s""""$res""""
       }
-      if (s.exists { case escapable() => true case _ => false }) escaped
+      if (s.exists(c => escapable.unapplySeq(c).nonEmpty)) escaped
       else if (s.contains(lineSeparator)) s"${tq}${s}${tq}"
       else s""""$s""""
     }
@@ -379,7 +379,8 @@ object ScalaRunTime {
     }
   } // end stringOf
   //lazy val escapable = raw"""[\x08\f\n\r\t\\"']|\R""".r.unanchored
-  private val escapable = raw"""[\x08\f\n\r\t\\"']""".r.unanchored
+  //private val escapable = raw"""[\x08\f\n\r\t\\"']""".r.unanchored
+  private val escapable = raw"""[\x08\f\t\\"']""".r.unanchored
   private final val tq = "\"\"\""
 
 

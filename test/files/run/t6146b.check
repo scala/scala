@@ -42,7 +42,7 @@ val mt1: u.Type = O.X.S1.type
 
 scala> global.typeDeconstruct.show(mt1)
 val res0: String =
-s"""TypeRef(
+"""TypeRef(
   pre = SingleType(pre = ThisType(object O), object X)
   TypeSymbol(class S1 extends C.this.F[T])
 )"""
