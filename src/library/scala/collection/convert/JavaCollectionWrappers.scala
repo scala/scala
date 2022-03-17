@@ -18,6 +18,7 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
 import scala.jdk.CollectionConverters._
+import scala.util.chaining._
 
 /** Wrappers for exposing Scala collections as Java collections and vice-versa */
 @SerialVersionUID(3L)
@@ -334,17 +335,34 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     def subtractOne(key: K): this.type = { underlying remove key; this }
 
     // support Some(null) if currently bound to null
-    override def put(k: K, v: V): Option[V] = {
-      val present = underlying.containsKey(k)
-      val result  = underlying.put(k, v)
-      if (present) Some(result) else None
-    }
+    override def put(k: K, v: V): Option[V] =
+      if (v == null) {
+        val present = underlying.containsKey(k)
+        val result  = underlying.put(k, v)
+        if (present) Some(result) else None
+      } else {
+        var result: Option[V] = None
+        def recompute(k0: K, v0: V): V = v.tap(_ =>
+          if (v0 != null) result = Some(v0)
+          else if (underlying.containsKey(k0)) result = Some(null.asInstanceOf[V])
+        )
+        underlying.compute(k, recompute)
+        result
+      }
 
     override def update(k: K, v: V): Unit = underlying.put(k, v)
 
     // support Some(null) if currently bound to null
-    override def remove(k: K): Option[V] =
-      if (underlying.containsKey(k)) Some(underlying.remove(k)) else None
+    override def remove(k: K): Option[V] = {
+      var result: Option[V] = None
+      def recompute(k0: K, v0: V): V = {
+        if (v0 != null) result = Some(v0)
+        else if (underlying.containsKey(k0)) result = Some(null.asInstanceOf[V])
+        null.asInstanceOf[V]
+      }
+      underlying.compute(k, recompute)
+      result
+    }
 
     def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
       val ui = underlying.entrySet.iterator
