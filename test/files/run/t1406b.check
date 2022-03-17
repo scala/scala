@@ -1,6 +1,9 @@
-newSource1.scala:4: error: illegal character '\ud801' missing low surrogate
-  def ? = x
-      ^
-newSource1.scala:5: error: illegal character '\udc00'
-  def ? = y
-      ^
+C(84)
+C(1764)
+C(1764)
+C(1806)
+C(1806)
+C(3528)
+C(3528)
+C(1806)
+C(3528)

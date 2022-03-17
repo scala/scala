@@ -15,7 +15,7 @@ The lexical syntax of Scala is given by the following grammar in EBNF form:
 ```ebnf
 whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
 upper            ::=  ‘A’ | … | ‘Z’ | ‘$’ and any character in Unicode categories Lu, Lt or Nl,
-                      and any character in Unicode categories Lo and Lm that don't have
+                      and any character in Unicode categories Lo and Lm that doesn't have
                       contributory property Other_Lowercase
 lower            ::=  ‘a’ | … | ‘z’ | ‘_’ and any character in Unicode category Ll,
                       and any character in Unicode categories Lo or Lm that has contributory
@@ -72,7 +72,7 @@ interpolatedStringPart
                  ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
 escape           ::=  ‘\$\$’
                    |  ‘\$"’
-                   |  ‘\$’ id
+                   |  ‘\$’ alphaid
                    |  ‘\$’ BlockExpr
 alphaid          ::=  upper idrest
                    |  varid

@@ -182,22 +182,26 @@ trait Scanners extends ScannersCommon {
     private def isSupplementary(high: Char, test: Int => Boolean, strict: Boolean = true): Boolean =
       isHighSurrogate(high) && {
         var res = false
-        nextChar()
-        val low = ch
+        val low = lookaheadReader.getc()
         if (isLowSurrogate(low)) {
-          nextChar()
-          val codepoint = toCodePoint(high, low)
-          if (isValidCodePoint(codepoint) && test(codepoint)) {
-            putChar(high)
-            putChar(low)
-            res = true
-          } else
-            syntaxError(f"illegal character '\\u$high%04x\\u$low%04x'")
-        } else if (!strict) {
+          val codePoint = toCodePoint(high, low)
+          if (isValidCodePoint(codePoint)) {
+            if (test(codePoint)) {
+              putChar(high)
+              putChar(low)
+              nextChar()
+              nextChar()
+              res = true
+            }
+          }
+          else syntaxError(f"illegal character '\\u$high%04x\\u$low%04x'")
+        }
+        else if (!strict) {
           putChar(high)
+          nextChar()
           res = true
-        } else
-          syntaxError(f"illegal character '\\u$high%04x' missing low surrogate")
+        }
+        else syntaxError(f"illegal character '\\u$high%04x' missing low surrogate")
         res
       }
     private def atSupplementary(ch: Char, f: Int => Boolean): Boolean =
@@ -621,8 +625,7 @@ trait Scanners extends ScannersCommon {
           putChar(ch)
           nextChar()
           getIdentRest()
-          if (ch == '"' && token == IDENTIFIER)
-            token = INTERPOLATIONID
+          if (ch == '"' && token == IDENTIFIER) token = INTERPOLATIONID
         case '<' => // is XMLSTART?
           def fetchLT() = {
             val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
@@ -729,12 +732,31 @@ trait Scanners extends ScannersCommon {
             }
             syntaxError(msg)
           }
+          /** Either at closing quote of charlit
+           *  or run the op and take it as a (deprecated) Symbol identifier.
+           */
+          def charLitOrSymbolAfter(op: () => Unit): Unit =
+            if (ch == '\'') {
+              nextChar()
+              token = CHARLIT
+              setStrVal()
+            } else {
+              op()
+              token = SYMBOLLIT
+              strVal = name.toString
+            }
           def fetchSingleQuote() = {
             nextChar()
-            if (isIdentifierStart(ch))
-              charLitOr(() => getIdentRest())
-            else if (isOperatorPart(ch) && (ch != '\\'))
-              charLitOr(() => getOperatorRest())
+            if (isIdentifierStart(ch)) {
+              putChar(ch)
+              nextChar()
+              charLitOrSymbolAfter(() => getIdentRest())
+            }
+            else if (isOperatorPart(ch) && (ch != '\\')) {
+              putChar(ch)
+              nextChar()
+              charLitOrSymbolAfter(() => getOperatorRest())
+            }
             else if (!isAtEnd && (ch != SU && ch != CR && ch != LF)) {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
@@ -801,12 +823,16 @@ trait Scanners extends ScannersCommon {
               putChar(ch)
               nextChar()
               getIdentRest()
+              if (ch == '"' && token == IDENTIFIER) token = INTERPOLATIONID
             } else if (isSpecial(ch)) {
               putChar(ch)
               nextChar()
               getOperatorRest()
             } else if (isSupplementary(ch, isUnicodeIdentifierStart)) {
               getIdentRest()
+              if (ch == '"' && token == IDENTIFIER) token = INTERPOLATIONID
+            } else if (isSupplementary(ch, isSpecial)) {
+              getOperatorRest()
             } else {
               syntaxError(f"illegal character '\\u$ch%04x'")
               nextChar()
@@ -872,7 +898,8 @@ trait Scanners extends ScannersCommon {
         putChar(ch)
         nextChar()
         getIdentOrOperatorRest()
-      case SU => // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
+      case ' ' | LF |   // optimize for common whitespace
+           SU =>        // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
         finishNamed()
       case _ =>
         if (isUnicodeIdentifierPart(ch)) {
@@ -888,6 +915,7 @@ trait Scanners extends ScannersCommon {
 
     @tailrec
     private def getOperatorRest(): Unit = (ch: @switch) match {
+      case ' ' | LF   => finishNamed()          // optimize
       case '~' | '!' | '@' | '#' | '%' |
            '^' | '*' | '+' | '-' | '<' |
            '>' | '?' | ':' | '=' | '&' |
@@ -899,24 +927,12 @@ trait Scanners extends ScannersCommon {
         else { putChar('/'); getOperatorRest() }
       case _ =>
         if (isSpecial(ch)) { putChar(ch); nextChar(); getOperatorRest() }
+        else if (isSupplementary(ch, isSpecial)) getOperatorRest()
         else finishNamed()
     }
 
-    private def getIdentOrOperatorRest(): Unit = {
-      if (isIdentifierPart(ch))
-        getIdentRest()
-      else ch match {
-        case '~' | '!' | '@' | '#' | '%' |
-             '^' | '*' | '+' | '-' | '<' |
-             '>' | '?' | ':' | '=' | '&' |
-             '|' | '\\' | '/' =>
-          getOperatorRest()
-        case _ =>
-          if (isSpecial(ch)) getOperatorRest()
-          else finishNamed()
-      }
-    }
-
+    private def getIdentOrOperatorRest(): Unit =
+      if (isIdentifierPart(ch) || isSupplementary(ch, isIdentifierPart)) getIdentRest() else getOperatorRest()
 
 // Literals -----------------------------------------------------------------
 
@@ -1040,10 +1056,6 @@ trait Scanners extends ScannersCommon {
           getInterpolatedIdentRest()
         } else if (atSupplementary(ch, isUnicodeIdentifierStart)) {
           finishStringPart()
-          putChar(ch)
-          nextRawChar()
-          putChar(ch)
-          nextRawChar()
           getInterpolatedIdentRest()
         } else {
           val expectations = "$$, $\", $identifier or ${expression}"
@@ -1370,23 +1382,6 @@ trait Scanners extends ScannersCommon {
 
       val detectedFloat: Boolean = base == 10 && ch == '.' && isDigit(lookaheadReader.getc())
       if (detectedFloat) restOfNonIntegralNumber() else restOfNumber()
-    }
-
-    /** Parse character literal if current character is followed by \',
-     *  or follow with given op and return a symbol literal token
-     */
-    def charLitOr(op: () => Unit): Unit = {
-      putChar(ch)
-      nextChar()
-      if (ch == '\'') {
-        nextChar()
-        token = CHARLIT
-        setStrVal()
-      } else {
-        op()
-        token = SYMBOLLIT
-        strVal = name.toString
-      }
     }
 
 // Errors -----------------------------------------------------------------
