@@ -33,7 +33,7 @@ package <empty> {
       <specialized> def apply$mcI$sp(): Int = $anonfun$foo$1.this.$outer.classParam.+($anonfun$foo$1.this.$outer.field()).+($anonfun$foo$1.this.methodParam$1).+($anonfun$foo$1.this.methodLocal$1);
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
       <synthetic> <stable> <artifact> def $outer(): T = $anonfun$foo$1.this.$outer;
-      final <bridge> <artifact> def apply(): Object = scala.Int.box($anonfun$foo$1.this.apply());
+      <bridge> <artifact> def apply(): Object = scala.Int.box($anonfun$foo$1.this.apply());
       <synthetic> <paramaccessor> private[this] val methodParam$1: Int = _;
       <synthetic> <paramaccessor> private[this] val methodLocal$1: Int = _
     };
@@ -73,7 +73,7 @@ package <empty> {
       } finally ();
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
       <synthetic> <stable> <artifact> def $outer(): T = $anonfun$tryy$1.this.$outer;
-      final <bridge> <artifact> def apply(): Object = {
+      <bridge> <artifact> def apply(): Object = {
         $anonfun$tryy$1.this.apply();
         scala.runtime.BoxedUnit.UNIT
       };
