@@ -50,34 +50,20 @@ trait ParsersCommon extends ScannersCommon { self =>
     def deprecationWarning(off: Offset, msg: String, since: String): Unit
     def accept(token: Token): Int
 
-    /** Methods inParensOrError and similar take a second argument which, should
-     *  the next token not be the expected opener (e.g. LPAREN) will be returned
-     *  instead of the contents of the groupers.  However in all cases accept(LPAREN)
-     *  will be called, so a parse error will still result.  If the grouping is
-     *  optional, in.token should be tested before calling these methods.
-     *
-     *  Skip trailing comma is pushed down to scanner because this abstract parser
-     *  doesn't have token info.
-     */
     @inline final def inGroupers[T](left: Token)(body: => T): T = {
       accept(left)
-      try body
-      finally {
-        in.skipTrailingComma(left + 1)
-        accept(left + 1)
-      }
+      val res = body
+      accept(left + 1)
+      res
     }
     @inline final def inParens[T](body: => T): T                  = inGroupers(LPAREN)(body)
-    @inline final def inParensOrError[T](body: => T, alt: T): T   = if (in.token == LPAREN) inParens(body) else { accept(LPAREN) ; alt }
-    @inline final def inParensOrUnit[T](body: => Tree): Tree      = inParensOrError(body, literalUnit)
-    @inline final def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
-
+    @inline final def inParensOrNil[T](body: => List[T]): List[T] = 
+      if (in.token == LPAREN) inGroupers(LPAREN)(body)
+      else { accept(LPAREN) ; Nil }
     @inline final def inBraces[T](body: => T): T                  = inGroupers(LBRACE)(body)
-    @inline final def inBracesOrError[T](body: => T, alt: T): T   = if (in.token == LBRACE) inBraces(body) else { accept(LBRACE) ; alt }
-    @inline final def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    @inline final def inBracesOrUnit[T](body: => Tree): Tree      = inBracesOrError(body, literalUnit)
-    @inline final def dropAnyBraces[T](body: => T): T             = if (in.token == LBRACE) inBraces(body) else body
-
+    @inline final def inBracesOrNil[T](body: => List[T]): List[T] =
+      if (in.token == LBRACE) inGroupers(LBRACE)(body)
+      else { accept(LBRACE) ; Nil }
     @inline final def inBrackets[T](body: => T): T                = inGroupers(LBRACKET)(body)
 
     /** Creates an actual Parens node (only used during parsing.)
@@ -85,21 +71,21 @@ trait ParsersCommon extends ScannersCommon { self =>
     @inline final def makeParens(body: => List[Tree]): Parens =
       Parens(inParens(if (in.token == RPAREN) Nil else body))
 
-    /** {{{ { `sep` part } }}}. */
-    def tokenSeparated[T](separator: Token, part: => T): List[T] = {
-      val ts = new ListBuffer[T]
-      ts += part
-
-      while (in.token == separator) {
-        in.nextToken()
-        ts += part
+    /** Collect comma-separated elements given a leading part. */
+    def tokenSeparated[T](leading: T, part: => T): List[T] =
+      if (in.token == COMMA) {
+        val ts = ListBuffer.empty[T].addOne(leading)
+        while (in.token == COMMA) {
+          in.nextToken()
+          ts += part
+        }
+        ts.toList
       }
-      ts.toList
-    }
+      else leading :: Nil
 
     /** {{{ { `sep` part } }}}. */
     def separatedToken[T](separator: Token, part: => T): List[T] = {
-      val ts = new ListBuffer[T]
+      val ts = ListBuffer.empty[T]
       while (in.token == separator) {
         in.nextToken()
         ts += part
@@ -107,8 +93,8 @@ trait ParsersCommon extends ScannersCommon { self =>
       ts.toList
     }
 
-    /** {{{ tokenSeparated }}}, with the separator fixed to commas. */
-    @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, part)
+    /** Collect comma-separated elements including the current token. */
+    def commaSeparated[T](part: => T): List[T] = tokenSeparated(leading = part, part)
   }
 }
 
@@ -825,31 +811,10 @@ self =>
       }
     }
 
-    /** {{{ part { `sep` part } }}}. */
-    override final def tokenSeparated[T](separator: Token, part: => T): List[T] = {
-      val ts   = ListBuffer.empty[T].addOne(part)
-      var done = in.token != separator
-      while (!done) {
-        val skippable = separator == COMMA && !in.region.isOutermost && in.isTrailingComma
-        if (!skippable) {
-          in.nextToken()
-          ts += part
-        }
-        done = (in.token != separator) || skippable
+    override def commaSeparated[T](part: => T): List[T] =
+      in.region.withCommasExpected {
+        tokenSeparated(leading = part, part)
       }
-      ts.toList
-    }
-
-    /** {{{ { `sep` part } }}}. */
-    override final def separatedToken[T](separator: Token, part: => T): List[T] = {
-      require(separator != COMMA, "separator cannot be a comma")
-      val ts = ListBuffer.empty[T]
-      while (in.token == separator) {
-        in.nextToken()
-        ts += part
-      }
-      ts.toList
-    }
 
     @inline final def caseSeparated[T](part: => T): List[T] = separatedToken(CASE, part)
     def readAnnots(part: => Tree): List[Tree] = separatedToken(AT, part)
@@ -1493,7 +1458,9 @@ self =>
       while (in.token == STRINGPART) {
         partsBuf += literal()
         exprsBuf += (
-          if (inPattern) dropAnyBraces(pattern())
+          if (inPattern) {
+            if (in.token == LBRACE) inBraces(pattern()) else pattern()
+          }
           else in.token match {
             case IDENTIFIER => atPos(in.offset)(Ident(ident()))
             case LBRACE     => expr()
@@ -3352,7 +3319,7 @@ self =>
      *  }}}
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
-    def templateStatSeq(isPre : Boolean): (ValDef, List[Tree]) = {
+    def templateStatSeq(isPre: Boolean): (ValDef, List[Tree]) = {
       var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
       if (isExprIntro) checkNoEscapingPlaceholders {

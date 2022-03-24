@@ -77,9 +77,6 @@ trait ScannersCommon {
     def incompleteInputError(off: Offset, msg: String): Unit
     def warning(off: Offset, msg: String, category: WarningCategory): Unit
     def deprecationWarning(off: Offset, msg: String, since: String): Unit
-
-    // advance past COMMA NEWLINE RBRACE (to whichever token is the matching close bracket)
-    def skipTrailingComma(right: Token): Boolean = false
   }
 
   // Hooks for ScaladocUnitScanner and ScaladocJavaUnitScanner
@@ -371,16 +368,6 @@ trait Scanners extends ScannersCommon {
         lookingAhead(afterLineEnd() && token == right || token == EOF)
       }
 
-    override def skipTrailingComma(right: Token): Boolean =
-      if (token == COMMA) {
-        // SIP-27 Trailing Comma (multi-line only) support
-        // If a comma is followed by a new line & then a closing paren, bracket or brace
-        // then it is a trailing comma and is ignored
-        val saved = new ScannerData {} copyFrom this
-        fetchToken()
-        (afterLineEnd() && token == right || token == EOF) || { copyFrom(saved) ; false }
-      } else false
-
     /** Allow an otherwise deprecated ident here */
     private var allowIdent: Name = nme.EMPTY
 
@@ -528,8 +515,8 @@ trait Scanners extends ScannersCommon {
     } // end nextToken
 
     // Join CASE + CLASS => CASECLASS, CASE + OBJECT => CASEOBJECT, SEMI + ELSE => ELSE
-    def postProcessToken(): Unit =
-      if (token == CASE) {
+    def postProcessToken(): Unit = (token: @switch) match {
+      case CASE =>
         prev copyFrom this
         val nextLastOffset = charOffset - 1
         fetchToken()
@@ -548,13 +535,24 @@ trait Scanners extends ScannersCommon {
           next copyFrom this
           this copyFrom prev
         }
-      } else if (token == SEMI) {
+      case SEMI =>
         prev copyFrom this
         fetchToken()
         if (token != ELSE) {
           next copyFrom this
           this copyFrom prev
         }
+      case COMMA =>
+        // SIP-27 Trailing Comma (multi-line only) support
+        // If a comma is followed by a new line & then a closing paren, bracket or brace
+        // then it is a trailing comma and is ignored
+        val right = region.closedBy
+        val saved = new ScannerData {} copyFrom this
+        fetchToken()
+        val isSkippable = region.commasExpected && (afterLineEnd() && token == right || token == EOF)
+        //val isSkippable = afterLineEnd() && (token == RPAREN || token == RBRACKET || token == RBRACE) || token == EOF
+        if (!isSkippable) copyFrom(saved)
+      case _ =>
       }
 
     /** Is current token first one after a newline? */
