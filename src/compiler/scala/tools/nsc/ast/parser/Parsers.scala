@@ -307,10 +307,10 @@ self =>
      */
     @inline final def lookingAhead[T](body: => T): T = {
       val saved = new ScannerData {} copyFrom in
-      val seps  = in.sepRegions
+      val seps  = in.region
       in.nextToken()
       try body finally {
-        in.sepRegions = seps
+        in.region = seps
         in.copyFrom(saved)
       }
     }
@@ -830,7 +830,7 @@ self =>
       val ts   = ListBuffer.empty[T].addOne(part)
       var done = in.token != separator
       while (!done) {
-        val skippable = separator == COMMA && in.sepRegions.nonEmpty && in.isTrailingComma(in.sepRegions.head)
+        val skippable = separator == COMMA && !in.region.isOutermost && in.isTrailingComma
         if (!skippable) {
           in.nextToken()
           ts += part
@@ -2162,7 +2162,7 @@ self =>
         def isCloseDelim = in.token match {
           case RBRACE => isXML
           case RPAREN => !isXML
-          case COMMA  => !isXML && in.isTrailingComma(RPAREN)
+          case COMMA  => !isXML && in.isTrailingComma
           case _      => false
         }
         def checkWildStar: Tree =

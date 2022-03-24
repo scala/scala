@@ -321,8 +321,10 @@ trait Scanners extends ScannersCommon {
       cbuf.clear()
     }
 
-    /** a stack of tokens which indicates whether line-ends can be statement separators
+    /** A stack of tokens which indicates whether line-ends can be statement separators
+     *  and whether a trailing comma is permitted before the closing delimiter for the region;
      *  also used for keeping track of nesting levels.
+     *
      *  We keep track of the closing symbol of a region. This can be
      *  RPAREN    if region starts with '('
      *  RBRACKET  if region starts with '['
@@ -332,27 +334,14 @@ trait Scanners extends ScannersCommon {
      *            (the STRINGLIT appears twice in succession on the stack iff the
      *             expression is a multiline string literal).
      */
-    var sepRegions: List[Token] = List()
+    var region: Region = new Region(EOF) { override def outer = null; override def toString = "outermost region" }
 
 // Get next token ------------------------------------------------------------
 
-    /** Are we directly in a string interpolation expression?
-     */
-    private def inStringInterpolation =
-      sepRegions.nonEmpty && sepRegions.head == STRINGLIT
-
-    /** Are we directly in a multiline string interpolation expression?
-     *  @pre inStringInterpolation
-     */
-    private def inMultiLineInterpolation =
-      inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
-
     /** Are we in a `${ }` block? such that RBRACE exits back into multiline string. */
-    private def inMultiLineInterpolatedExpression = {
-      sepRegions match {
-        case RBRACE :: STRINGLIT :: STRINGPART :: rest => true
-        case _ => false
-      }
+    private def inMultiLineInterpolatedExpression = region match {
+      case InBraces(InString(multi, _)) => multi
+      case _ => false
     }
 
     def lookingAhead[A](body: => A): A = {
@@ -376,8 +365,11 @@ trait Scanners extends ScannersCommon {
 
     // used by parser to distinguish pattern P(_*, p) from trailing comma.
     // EOF is accepted for REPL, which can't look ahead past the current line.
-    def isTrailingComma(right: Token): Boolean =
-      token == COMMA && lookingAhead(afterLineEnd() && token == right || token == EOF)
+    def isTrailingComma: Boolean =
+      token == COMMA && {
+        val right = region.closedBy
+        lookingAhead(afterLineEnd() && token == right || token == EOF)
+      }
 
     override def skipTrailingComma(right: Token): Boolean =
       if (token == COMMA) {
@@ -403,47 +395,45 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    // Adapt sepRegions according to last token
+    // Push or pop region, according to last token
     def adjustSepRegions(lastToken: Token): Unit = (lastToken: @switch) match {
-      case LPAREN =>
-        sepRegions = RPAREN :: sepRegions
-      case LBRACKET =>
-        sepRegions = RBRACKET :: sepRegions
+      case LPAREN | LBRACKET =>
+        region = InParens(lastToken, region)
       case LBRACE =>
-        sepRegions = RBRACE :: sepRegions
+        region = InBraces(region)
       case CASE =>
-        sepRegions = ARROW :: sepRegions
+        region = InCase(region)
       case RBRACE =>
-        while (!sepRegions.isEmpty && sepRegions.head != RBRACE)
-          sepRegions = sepRegions.tail
-        if (!sepRegions.isEmpty)
-          sepRegions = sepRegions.tail
-
+        region = region.enclosingWhere(_.isInstanceOf[InBraces])
+        if (!region.isOutermost) region = region.enclosing
         discardDocBuffer()
       case RBRACKET | RPAREN =>
-        if (!sepRegions.isEmpty && sepRegions.head == lastToken)
-          sepRegions = sepRegions.tail
-
+        region match {
+          case p @ InParens(_, outer) if lastToken == p.closedBy => region = outer
+          case _ =>
+        }
         discardDocBuffer()
       case ARROW =>
-        if (!sepRegions.isEmpty && sepRegions.head == lastToken)
-          sepRegions = sepRegions.tail
+        region match {
+          case InCase(outer) => region = outer
+          case _ =>
+        }
       case STRINGLIT =>
-        if (inMultiLineInterpolation)
-          sepRegions = sepRegions.tail.tail
-        else if (inStringInterpolation)
-          sepRegions = sepRegions.tail
+        region match {
+          case InString(_, outer) => region = outer
+          case _ =>
+        }
       case _ =>
     }
 
-    /** Advance beyond a case token without marking the CASE in sepRegions.
+    /** Advance beyond a case token without adjusting the region.
      *  This method should be called to skip beyond CASE tokens that are
      *  not part of matches, i.e. no ARROW is expected after them.
      */
     def skipCASE(): Unit = {
       assert(token == CASE, s"Internal error: skipCASE() called on non-case token $token")
       nextToken()
-      sepRegions = sepRegions.tail
+      if (!region.isOutermost) region = region.outer
     }
 
     /** True to warn about migration change in infix syntax. */
@@ -458,16 +448,12 @@ trait Scanners extends ScannersCommon {
       // Read a token or copy it from `next` tokenData
       if (next.token == EMPTY) {
         lastOffset = charOffset - 1
-        if (lastOffset > 0 && buf(lastOffset) == '\n' && buf(lastOffset - 1) == '\r') {
-          lastOffset -= 1
+        if (lastOffset > 0 && buf(lastOffset) == '\n' && buf(lastOffset - 1) == '\r') lastOffset -= 1
+        region match {
+          case InString(multiLine, _) if lastToken != STRINGPART => fetchStringPart(multiLine)
+          case _ => fetchToken()
         }
-        if (inStringInterpolation) fetchStringPart() else fetchToken()
-        if (token == ERROR) {
-          if (inMultiLineInterpolation)
-            sepRegions = sepRegions.tail.tail
-          else if (inStringInterpolation)
-            sepRegions = sepRegions.tail
-        }
+        if (token == ERROR) adjustSepRegions(STRINGLIT)
       } else {
         this copyFrom next
         next.token = EMPTY
@@ -520,12 +506,12 @@ trait Scanners extends ScannersCommon {
 
       /* Insert NEWLINE or NEWLINES if
        * - we are after a newline
-       * - we are within a { ... } or on toplevel (wrt sepRegions)
+       * - we are within a { ... } or on toplevel (wrt the region)
        * - the current token can start a statement and the one before can end it
        * insert NEWLINES if we are past a blank line, NEWLINE otherwise
        */
       if (!applyBracePatch() && afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
-          (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
+          (region.isOutermost || region.isInstanceOf[InBraces])) {
         if (pastBlankLine()) insertNL(NEWLINES)
         else if (!isLeadingInfixOperator) insertNL(NEWLINE)
         else if (!currentRun.isScala3) {
@@ -674,6 +660,10 @@ trait Scanners extends ScannersCommon {
         case '`' =>
           getBackquotedIdent()
         case '\"' =>
+          def stringPart(multiLine: Boolean) = {
+            getStringPart(multiLine)
+            region = InString(multiLine, region)
+          }
           def fetchDoubleQuote() = {
             if (token == INTERPOLATIONID) {
               nextRawChar()
@@ -684,9 +674,7 @@ trait Scanners extends ScannersCommon {
                   nextRawChar()                        // now eat it
                   offset += 3
                   nextRawChar()
-                  getStringPart(multiLine = true)
-                  sepRegions = STRINGPART :: sepRegions // indicate string part
-                  sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
+                  stringPart(multiLine = true)
                 } else {
                   nextChar()
                   token = STRINGLIT
@@ -694,8 +682,7 @@ trait Scanners extends ScannersCommon {
                 }
               } else {
                 offset += 1
-                getStringPart(multiLine = false)
-                sepRegions = STRINGLIT :: sepRegions // indicate single line string part
+                stringPart(multiLine = false)
               }
             } else {
               nextChar()
@@ -1078,9 +1065,9 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    private def fetchStringPart() = {
+    private def fetchStringPart(multiLine: Boolean) = {
       offset = charOffset - 1
-      getStringPart(multiLine = inMultiLineInterpolation)
+      getStringPart(multiLine)
     }
 
     private def isTripleQuote(): Boolean =
@@ -1814,4 +1801,41 @@ trait Scanners extends ScannersCommon {
 
     override def error(offset: Offset, msg: String): Unit = ()
   }
+
+  sealed abstract class Region(val closedBy: Token) {
+    /** The region enclosing this one, or `null` for the outermost region */
+    def outer: Region /*| Null*/
+
+    /** Is this region the outermost region? */
+    def isOutermost = outer == null
+
+    /** The enclosing region, which is required to exist */
+    def enclosing: Region = outer.asInstanceOf[Region]
+
+    def enclosingExists(p: Region => Boolean): Boolean = {
+      @tailrec def loop(r: Region): Boolean = p(r) || !r.isOutermost && loop(r.outer)
+      loop(this)
+    }
+
+    def enclosingWhere(p: Region => Boolean): Region = {
+      @tailrec def loop(r: Region): Region = if (p(r) || r.isOutermost) r else loop(r.outer)
+      loop(this)
+    }
+
+    private var myCommasExpected: Boolean = false
+
+    def withCommasExpected[T](op: => T): T = {
+      assert(!myCommasExpected, "scanning region with commas is not re-entrant")
+      myCommasExpected = true
+      val res = op
+      myCommasExpected = false
+      res
+    }
+
+    def commasExpected = myCommasExpected
+  }
+  final case class InString(multiLine: Boolean, outer: Region) extends Region(RBRACE)
+  final case class InParens(prefix: Token, outer: Region) extends Region(prefix + 1)
+  final case class InBraces(outer: Region) extends Region(RBRACE)
+  final case class InCase(outer: Region) extends Region(ARROW)
 }

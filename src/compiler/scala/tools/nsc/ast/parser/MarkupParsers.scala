@@ -420,7 +420,7 @@ trait MarkupParsers {
 
     def escapeToScala[A](op: => A, kind: String) = {
       xEmbeddedBlock = false
-      val res = saving[List[Int], A](parser.in.sepRegions, parser.in.sepRegions = _) {
+      val res = saving[Region, A](parser.in.region, parser.in.region = _) {
         parser.in resume LBRACE
         op
       }
