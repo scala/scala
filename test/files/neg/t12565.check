@@ -1,0 +1,4 @@
+t12565.scala:5: error: java.time.Instant does not have a constructor
+  def f = new java.time.Instant
+          ^
+1 error
