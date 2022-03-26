@@ -82,15 +82,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       domain  = languageFeatures
     ) withAbbreviation "--language"
   }
-  val release = StringSetting("-release", "release", "Compile for a specific version of the Java platform. Supported targets: 8, 9, ..., 17, 18", "").withPostSetHook { (value: StringSetting) =>
-    if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
-      errorFn.apply("-release is only supported on Java 9 and higher")
-    } else {
-      // TODO validate numeric value
-      // TODO validate release <= java.specification.version
-    }
-  } withAbbreviation "--release"
-  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /**
    * -X "Advanced" settings
