@@ -16,8 +16,8 @@ package typechecker
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
-import scala.util.chaining._
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 /**
  *  @author  Martin Odersky
@@ -133,24 +133,28 @@ trait Contexts { self: Analyzer =>
     }
   }
 
-  private def defaultRootImports: List[Symbol] = {
-    import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
-
+  private def defaultRootImports: List[Symbol] =
     if (settings.imports.isSetByUser)
       settings.imports.value.map {
         case "java.lang"    => JavaLangPackage
         case "scala"        => ScalaPackage
         case "scala.Predef" => PredefModule
-        case s              =>
-          getModuleIfDefined(s) orElse
-          getPackageObjectIfDefined(s) orElse
-          getPackageIfDefined(s) orElse {
-            globalError(s"bad preamble import $s")
-            NoSymbol
-          }
+        case name           =>
+          import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
+          getModuleIfDefined(name) orElse
+          getPackageObjectIfDefined(name) orElse
+          getPackageIfDefined(name) orElse {
+            // force package objects in prefixes
+            def force(pkg: String, next: String): String = {
+              val full = if (pkg.isEmpty) next else s"$pkg.$next"
+              getPackageIfDefined(full).tap(sym => if (sym != NoSymbol) openPackageModule(sym, force = true))
+              full
+            }
+            name.split('.').toList.init.foldLeft("")(force)
+            getModuleIfDefined(name)
+          } orElse NoSymbol.tap(_ => globalError(s"bad preamble import $name"))
       }
     else RootImports.completeList
-  }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
     val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) =>

@@ -51,19 +51,16 @@ trait Mirrors extends api.Mirrors {
       getModuleOrClass(path.toString, len, path.newName(_))
 
     private def getModuleOrClass(path: String, len: Int, toName: String => Name): Symbol = {
-      val point = path.lastIndexOf('.', len - 1)
-      val owner =
-        if (point > 0) getModuleOrClass(path, point, newTermName(_))
-        else RootClass
-
-      val name = toName(path.substring(point + 1, len))
-      val sym = owner.info member name
-      val result = if (name.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
+      val point  = path.lastIndexOf('.', len - 1)
+      val owner  = if (point > 0) getModuleOrClass(path, point, newTermName(_)) else RootClass
+      val name   = toName(path.substring(point + 1, len))
+      val sym    = owner.info.member(name)
+      val result = if (name.isTermName) sym.suchThat(_.hasFlag(MODULE)) else sym
       if (result != NoSymbol) result
       else {
         if (settings.isDebug) { log(sym.info); log(sym.info.members) }//debug
         thisMirror.missingHook(owner, name) orElse {
-          MissingRequirementError.notFound((if (name.isTermName) "object " else "class ")+path+" in "+thisMirror)
+          MissingRequirementError.notFound(s"${if (name.isTermName) "object" else "class"} $path in $thisMirror")
         }
       }
     }
@@ -71,7 +68,7 @@ trait Mirrors extends api.Mirrors {
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.
      *
-     *  Unlike `getModuleOrClass`, this function
+     *  Unlike `staticModuleOrClass`, this function
      *  loads unqualified names from the root package.
      */
     private def getModuleOrClass(path: String, toName: String => Name): Symbol =
@@ -149,7 +146,7 @@ trait Mirrors extends api.Mirrors {
     private def ensureModuleSymbol(fullname: String, sym: Symbol, allowPackages: Boolean): ModuleSymbol =
       sym match {
         case x: ModuleSymbol if allowPackages || !x.hasPackageFlag => x
-        case _                                                     => MissingRequirementError.notFound("object " + fullname)
+        case _                                                     => MissingRequirementError.notFound(s"object $fullname")
       }
 
     @deprecated("Use overload that accepts a String.", "2.13.0")
@@ -248,8 +245,7 @@ trait Mirrors extends api.Mirrors {
       try body
       catch { case _: MissingRequirementError => NoSymbol }
 
-    def init(): Unit = {
-      if (initialized) return
+    def init(): Unit = if (!initialized) {
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.
 
