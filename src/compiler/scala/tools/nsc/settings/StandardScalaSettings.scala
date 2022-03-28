@@ -69,8 +69,11 @@ trait StandardScalaSettings { _: MutableSettings =>
         if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false)) errorFn("-release cannot be less than -target")
       }
       .withAbbreviation("--target")
+      .withAbbreviation("--Xtarget")
+      .withAbbreviation("-Xtarget")
+      .withAbbreviation("-Xunchecked-java-output-version")
       .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
-  def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
+  def targetValue: String = releaseValue.getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -84,6 +87,7 @@ trait StandardScalaSettings { _: MutableSettings =>
   // Support passe prefixes of -target values:
   //   - `jvm-` (from back when we also had `msil`)
   //   - `1.` (from back when Java 2 was a possibility)
+  // Otherwise, `-release` could be `IntSetting`.
   private def normalizeTarget(in: String): String = {
     val jvmish = raw"jvm-(\d*)".r
     in match {
@@ -95,9 +99,12 @@ trait StandardScalaSettings { _: MutableSettings =>
 }
 
 object StandardScalaSettings {
-  // not final in case some separately compiled client code wanted to depend on updated values
   val MinTargetVersion = 8
-  val MaxTargetVersion = 19
+  val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
+    case SpecificScalaVersion(1, minor, _, _) => minor
+    case SpecificScalaVersion(major, _, _, _) => major
+    case _ => 19
+  }
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)
 }
