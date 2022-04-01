@@ -1050,7 +1050,7 @@ trait Definitions extends api.StandardDefinitions {
         }
 
         // fails in test/files/jvm/t10512b.scala
-        // { val res = samCache.getOrElseUpdate(tpSym, compute); assert(compute eq res, s"samOf($tp) cache discrepancy $compute <-> $res")
+        // { val res = samCache.getOrElseUpdate(tpSym, compute); assert(compute eq res, s"samOf($tp) cache discrepancy $compute <-> $res") }
 
         samCache.getOrElseUpdate(tpSym, compute)
       } else NoSymbol
@@ -1598,7 +1598,7 @@ trait Definitions extends api.StandardDefinitions {
     private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
-    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClassesSet contains sym
+    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClassesSet.contains(sym)
     def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
@@ -1759,17 +1759,17 @@ trait Definitions extends api.StandardDefinitions {
       // Methods treated specially by implicit search
       lazy val Predef_conforms = getMemberIfDefined(PredefModule, nme.conforms)
       lazy val SubTypeModule   = requiredModule[scala.<:<[_,_]]
-        lazy val SubType_refl  = getMemberMethod(SubTypeModule, nme.refl)
+      lazy val SubType_refl    = getMemberMethod(SubTypeModule, nme.refl)
 
-      lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
+      lazy val Predef_classOf  = getMemberMethod(PredefModule, nme.classOf)
 
-      lazy val Predef_double2Double = getMemberMethod(PredefModule, nme.double2Double)
-      lazy val Predef_float2Float = getMemberMethod(PredefModule, nme.float2Float)
-      lazy val Predef_byte2Byte = getMemberMethod(PredefModule, nme.byte2Byte)
-      lazy val Predef_short2Short = getMemberMethod(PredefModule, nme.short2Short)
-      lazy val Predef_char2Character = getMemberMethod(PredefModule, nme.char2Character)
-      lazy val Predef_int2Integer = getMemberMethod(PredefModule, nme.int2Integer)
-      lazy val Predef_long2Long = getMemberMethod(PredefModule, nme.long2Long)
+      lazy val Predef_double2Double   = getMemberMethod(PredefModule, nme.double2Double)
+      lazy val Predef_float2Float     = getMemberMethod(PredefModule, nme.float2Float)
+      lazy val Predef_byte2Byte       = getMemberMethod(PredefModule, nme.byte2Byte)
+      lazy val Predef_short2Short     = getMemberMethod(PredefModule, nme.short2Short)
+      lazy val Predef_char2Character  = getMemberMethod(PredefModule, nme.char2Character)
+      lazy val Predef_int2Integer     = getMemberMethod(PredefModule, nme.int2Integer)
+      lazy val Predef_long2Long       = getMemberMethod(PredefModule, nme.long2Long)
       lazy val Predef_boolean2Boolean = getMemberMethod(PredefModule, nme.boolean2Boolean)
 
       lazy val PreDef_primitives2Primitives =
@@ -1799,7 +1799,6 @@ trait Definitions extends api.StandardDefinitions {
         getMemberMethod(ScalaRunTimeModule, nme.wrapShortArray),
         getMemberMethod(ScalaRunTimeModule, nme.wrapUnitArray)
       )
-
 
       lazy val RuntimeStatics_ioobe = getMemberMethod(RuntimeStaticsModule, nme.ioobe)
 

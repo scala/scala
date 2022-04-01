@@ -2273,7 +2273,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           f(subTree)
       }
 
-      /** Check if a structurally defined method violates implementation restrictions.
+    /** Check if a structurally defined method violates implementation restrictions.
      *  A method cannot be called if it is a non-private member of a refinement type
      *  and if its parameter's types are any of:
      *    - the self-type of the refinement
