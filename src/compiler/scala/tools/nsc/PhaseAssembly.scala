@@ -133,14 +133,14 @@ trait PhaseAssembly {
           hl.to.before.filter(_.hard).toList match {
             case Seq() =>
               throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-            case sanity @ (head :: _ :: _) =>
+            case asm @ (head :: _ :: _) =>
               dump("phase-order")
-              val following = sanity.map(_.frm.phasename).sorted mkString ","
+              val following = asm.map(_.frm.phasename).sorted mkString ","
               throw new FatalError(s"Multiple phases want to run right after ${head.to.phasename}; followers: $following; created phase-order.dot")
-            case sanity =>
+            case asm =>
               val promote = hl.to.before.filter(e => !e.hard)
               hl.to.before.clear()
-              sanity foreach (edge => hl.to.before += edge)
+              asm.foreach(edge => hl.to.before += edge)
               for (edge <- promote) {
                 rerun = true
                 val msg = s"promote the dependency of ${edge.frm.phasename}: ${edge.to.phasename} => ${hl.frm.phasename}"

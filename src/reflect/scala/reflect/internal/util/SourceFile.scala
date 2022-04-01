@@ -201,7 +201,7 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
     if (lines.isEmpty || offset < lines.head || offset >= lines.last) throw new IndexOutOfBoundsException(offset.toString)
     @tailrec
     def findLine(lo: Int, hi: Int, mid: Int): Int = (
-      if (mid < lo || hi < mid) mid // minimal sanity check - as written this easily went into infinite loopyland
+      if (mid < lo || hi < mid) mid // minimal confidence check - as written this easily went into infinite loopyland
       else if (offset < lines(mid)) findLine(lo, mid - 1, (lo + mid - 1) / 2)
       else if (offset >= lines(mid + 1)) findLine(mid + 1, hi, (mid + 1 + hi) / 2)
       else mid

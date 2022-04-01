@@ -112,7 +112,7 @@ abstract class Erasure extends InfoTransform
     )
   )
 
-  /** This object is only used for sanity testing when -check:genjvm is set.
+  /** This object is only used for confidence checking when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.

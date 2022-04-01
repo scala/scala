@@ -204,7 +204,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     // expanded if necessary to disambiguate simple identifiers.
     val deepDealias = DealiasedType(tp)
     if (tp eq deepDealias) "" else {
-      // A sanity check against expansion being identical to original.
+      // A check against expansion being identical to original.
       val s = "" + deepDealias
       if (s == "" + tp) ""
       else "\n    (which expands to)  " + s
