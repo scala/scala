@@ -213,20 +213,20 @@ object Sorting {
   }
 
   // Why would you even do this?
-  private def booleanSort(a: Array[Boolean]): Unit = {
-    var i = 0
+  private def booleanSort(a: Array[Boolean], from: Int, until: Int): Unit = {
+    var i = from
     var n = 0
-    while (i < a.length) {
+    while (i < until) {
       if (!a(i)) n += 1
       i += 1
     }
     i = 0
     while (i < n) {
-      a(i) = false
+      a(from + i) = false
       i += 1
     }
-    while (i < a.length) {
-      a(i) = true
+    while (from + i < until) {
+      a(from + i) = true
       i += 1
     }
   }
@@ -238,14 +238,14 @@ object Sorting {
       // Note that runtime matches are covariant, so could actually be any Array[T] s.t. T is not primitive (even boxed value classes)
       if (a.length > 1 && (ord eq null)) throw new NullPointerException("Ordering")
       java.util.Arrays.sort(a, from, until, ord)
-    case a: Array[Int]     => if (ord eq Ordering.Int) java.util.Arrays.sort(a) else mergeSort[Int](a, from, until, ord)
+    case a: Array[Int]     => if (ord eq Ordering.Int) java.util.Arrays.sort(a, from, until) else mergeSort[Int](a, from, until, ord)
     case a: Array[Double]  => mergeSort[Double](a, from, until, ord)  // Because not all NaNs are identical, stability is meaningful!
-    case a: Array[Long]    => if (ord eq Ordering.Long) java.util.Arrays.sort(a) else mergeSort[Long](a, from, until, ord)
+    case a: Array[Long]    => if (ord eq Ordering.Long) java.util.Arrays.sort(a, from, until) else mergeSort[Long](a, from, until, ord)
     case a: Array[Float]   => mergeSort[Float](a, from, until, ord)   // Because not all NaNs are identical, stability is meaningful!
-    case a: Array[Char]    => if (ord eq Ordering.Char) java.util.Arrays.sort(a) else mergeSort[Char](a, from, until, ord)
-    case a: Array[Byte]    => if (ord eq Ordering.Byte) java.util.Arrays.sort(a) else mergeSort[Byte](a, from, until, ord)
-    case a: Array[Short]   => if (ord eq Ordering.Short) java.util.Arrays.sort(a) else mergeSort[Short](a, from, until, ord)
-    case a: Array[Boolean] => if (ord eq Ordering.Boolean) booleanSort(a) else mergeSort[Boolean](a, from, until, ord)
+    case a: Array[Char]    => if (ord eq Ordering.Char) java.util.Arrays.sort(a, from, until) else mergeSort[Char](a, from, until, ord)
+    case a: Array[Byte]    => if (ord eq Ordering.Byte) java.util.Arrays.sort(a, from, until) else mergeSort[Byte](a, from, until, ord)
+    case a: Array[Short]   => if (ord eq Ordering.Short) java.util.Arrays.sort(a, from, until) else mergeSort[Short](a, from, until, ord)
+    case a: Array[Boolean] => if (ord eq Ordering.Boolean) booleanSort(a, from, until) else mergeSort[Boolean](a, from, until, ord)
     // Array[Unit] is matched as an Array[AnyRef] due to covariance in runtime matching.  Not worth catching it as a special case.
     case null => throw new NullPointerException
   }

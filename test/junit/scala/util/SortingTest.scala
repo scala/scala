@@ -15,6 +15,8 @@ class SortingTest {
     { var i = 1; while (i < a.length) { if (a(i).i > a(i-1).i || (a(i).i == a(i-1).i && a(i).j < a(i-1).j)) return false; i += 1 }; true }
   
   def isSorted(a: Array[N]): Boolean = { var i = 1; while (i < a.length) { if (a(i).i < a(i-1).i) return false; i += 1 }; true }
+
+  def isSorted(a: Array[Int], from: Int, until: Int): Boolean = { var i = from + 1; while (i < until) { if (a(i) < a(i-1)) return false; i += 1 }; true }
   
   def isAntisorted(a: Array[N]): Boolean = { var i = 1; while (i < a.length) { if (a(i).i > a(i-1).i) return false; i += 1 }; true }
   
@@ -34,10 +36,14 @@ class SortingTest {
     val sxs = { val temp = xs.clone; Sorting.stableSort(temp); temp }
     val rxs = { val temp = xs.clone; Sorting.stableSort(temp)(backwardsN); temp }
     val sys = Sorting.stableSort(ys.clone.toIndexedSeq, (i: Int) => xs(i))
+
+    val xxs = Array.fill(size)(rng.nextInt(variety))
+    Sorting.stableSort(xxs, xxs.length / 2, xxs.length)
     
     assertTrue("Quicksort should be in order", isSorted(qxs))
     assertTrue("Quicksort should be in reverse order", isAntisorted(pxs))
     assertTrue("Stable sort should be sorted and stable", isStable(sxs))
+    assertTrue("Stable sort should only sort slice provided", isSorted(xxs, xxs.length / 2 , xxs.length))
     assertTrue("Stable sort should be reverse sorted but stable", isAntistable(rxs))
     assertTrue("Stable sorting by proxy should produce sorted stable list", isStable(sys.map(i => xs(i))))
     assertTrue("Quicksort should produce canonical ordering", (qxs zip zs).forall{ case (a,b) => a.i == b.i })
