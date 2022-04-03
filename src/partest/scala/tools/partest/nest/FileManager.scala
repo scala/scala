@@ -75,10 +75,11 @@ object FileManager {
    */
   def compareContents(original: Seq[String], revised: Seq[String], originalName: String = "a", revisedName: String = "b"): String = {
     import scala.jdk.CollectionConverters._
+    import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
 
-    val diff = difflib.DiffUtils.diff(original.asJava, revised.asJava)
+    val diff = DiffUtils.diff(original.asJava, revised.asJava)
     if (diff.getDeltas.isEmpty) ""
-    else difflib.DiffUtils.generateUnifiedDiff(originalName, revisedName, original.asJava, diff, 1).asScala.mkString("\n")
+    else UnifiedDiffUtils.generateUnifiedDiff(originalName, revisedName, original.asJava, diff, 1).asScala.mkString("\n")
   }
 
   def withTempFile[A](outFile: File, fileBase: String, lines: Seq[String])(body: File => A): A = {

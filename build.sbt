@@ -44,7 +44,7 @@ val jlineDep          = "org.jline"                      % "jline"              
 val jnaDep            = "net.java.dev.jna"               % "jna"                              % versionProps("jna.version")
 val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
-val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
+val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.11"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
@@ -443,6 +443,7 @@ lazy val compiler = configureAsSubproject(project)
     name := "scala-compiler",
     description := "Scala Compiler",
     libraryDependencies += asmDep,
+    libraryDependencies += diffUtilsDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= jlineDeps,
@@ -453,7 +454,11 @@ lazy val compiler = configureAsSubproject(project)
     // (with strings) to deal with mutual recursion
     Compile / packageBin / products :=
       (Compile / packageBin / products).value ++
-        Seq((Compile / dependencyClasspath).value.find(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)).contains((asmDep.organization, asmDep.name, asmDep.revision))).get.data) ++
+        (Compile / dependencyClasspath).value.filter(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)) match {
+          case Some((diffUtilsDep.organization, diffUtilsDep.name, diffUtilsDep.revision)) => true
+          case Some((asmDep.organization, asmDep.name, asmDep.revision)) => true
+          case _ => false
+        }).map(_.data) ++
         (LocalProject("interactive")   / Compile / packageBin / products).value ++
         (LocalProject("scaladoc")      / Compile / packageBin / products).value ++
         (LocalProject("repl")          / Compile / packageBin / products).value ++

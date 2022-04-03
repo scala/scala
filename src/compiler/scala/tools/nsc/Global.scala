@@ -207,20 +207,28 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     infolevel = InfoLevel.Verbose
 
     def showUnit(unit: CompilationUnit): Unit = {
-      print(" // " + unit.source)
+      print(s" // ${unit.source}")
       if (unit.body == null) println(": tree is null")
       else {
-        val source = util.stringFromWriter(w => newTreePrinter(w) print unit.body)
+        val source = util.stringFromWriter(w => newTreePrinter(w).print(unit.body))
 
         // treePrinter show unit.body
         if (lastPrintedSource == source)
-          println(": tree is unchanged since " + lastPrintedPhase)
+          println(s": tree is unchanged since $lastPrintedPhase")
         else {
-          lastPrintedPhase = phase.prev // since we're running inside "exitingPhase"
+          println()
+          if (settings.showTreeDiff) {
+            import scala.jdk.CollectionConverters._
+            import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
+            val diff = DiffUtils.diff(lastPrintedSource.linesIterator.toList.asJava, source.linesIterator.toList.asJava)
+            val unified = UnifiedDiffUtils.generateUnifiedDiff(lastPrintedPhase.name, phase.prev.name, lastPrintedSource.linesIterator.toList.asJava, diff, 1).asScala
+            unified.foreach(println)
+          }
+          else
+            println(source)
+          println()
+          lastPrintedPhase  = phase.prev // since we're running inside "exitingPhase"
           lastPrintedSource = source
-          println("")
-          println(source)
-          println("")
         }
       }
     }
