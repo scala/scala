@@ -508,10 +508,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *           elements of this $coll, and the other elements.
    */
   def splitAt(n: Int): (C, C) = {
-    object spanner extends (A => Boolean) {
+    class Spanner extends runtime.AbstractFunction1[A, Boolean] {
       var i = 0
       def apply(a: A) = i < n && { i += 1 ; true }
     }
+    val spanner = new Spanner
     span(spanner)
   }
 
@@ -987,7 +988,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (isEmpty)
       throw new UnsupportedOperationException("empty.maxBy")
 
-    object maximizer extends (A => Unit) {
+    class Maximizer extends runtime.AbstractFunction1[A, Unit] {
       var maxF: B = null.asInstanceOf[B]
       var maxElem: A = null.asInstanceOf[A]
       var first = true
@@ -999,6 +1000,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
         }
       }
     }
+    val maximizer = new Maximizer
     foreach(maximizer)
     maximizer.maxElem
   }
@@ -1035,7 +1037,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (isEmpty)
       throw new UnsupportedOperationException("empty.minBy")
 
-    object minimizer extends (A => Unit) {
+    class Minimizer extends runtime.AbstractFunction1[A, Unit] {
       var minF: B = null.asInstanceOf[B]
       var minElem: A = null.asInstanceOf[A]
       var first = true
@@ -1047,6 +1049,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
         }
       }
     }
+    val minimizer = new Minimizer
     foreach(minimizer)
     minimizer.minElem
   }

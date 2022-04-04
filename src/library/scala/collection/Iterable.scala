@@ -597,11 +597,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B])
       bldr += f(elem)
     }
-    object result extends Function[(K, Builder[B, CC[B]]), Unit] {
+    class Result extends runtime.AbstractFunction1[(K, Builder[B, CC[B]]), Unit] {
       var built = immutable.Map.empty[K, CC[B]]
       def apply(kv: (K, Builder[B, CC[B]])) =
         built = built.updated(kv._1, kv._2.result())
     }
+    val result = new Result
     m.foreach(result)
     result.built
   }
@@ -665,7 +666,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return        collection with intermediate results
     */
   def scanRight[B](z: B)(op: (A, B) => B): CC[B] = {
-    object scanner extends (A => Unit) {
+    class Scanner extends runtime.AbstractFunction1[A, Unit] {
       var acc = z
       var scanned = acc :: immutable.Nil
       def apply(x: A) = {
@@ -673,6 +674,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
         scanned ::= acc
       }
     }
+    val scanner = new Scanner
     reversed.foreach(scanner)
     iterableFactory.from(scanner.scanned)
   }
