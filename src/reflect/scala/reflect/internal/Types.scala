@@ -3587,7 +3587,7 @@ trait Types
        *    TC1[T1,..., TN] <: TC2[T'1,...,T'N]
        *  }}}
        *  Checks subtyping of higher-order type vars, and uses variances as defined in the
-       *  type parameter we're trying to infer (the result will be sanity-checked later).
+       *  type parameter we're trying to infer (the result will be confidence-checked later).
        */
       def unifyFull(tpe: Type): Boolean = {
         def unifiableKinds(lhs: List[Symbol], rhs: List[Symbol]): Boolean =

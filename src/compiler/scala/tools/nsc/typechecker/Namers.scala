@@ -2047,8 +2047,7 @@ trait Namers extends MethodSynthesis {
       // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
       // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant
       // checkNoConflict(ABSTRACT, FINAL)   // this one gives a bad error for non-@inline classes which extend AnyVal
-      // @PP: I added this as a sanity check because these flags are supposed to be
-      // converted to ABSOVERRIDE before arriving here.
+      // @PP: I added this as a check because these flags are supposed to be converted to ABSOVERRIDE before arriving here.
       checkNoConflict(ABSTRACT, OVERRIDE)
     }
   }

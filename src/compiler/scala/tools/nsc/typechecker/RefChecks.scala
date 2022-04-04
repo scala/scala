@@ -1101,7 +1101,7 @@ abstract class RefChecks extends Transform {
             // better to have lubbed and lost
             // We erase the lub because the erased type is closer to what happens at run time.
             // Also, the lub of `S` and `String` is, weirdly, the refined type `Serializable{}` (for `class S extends Serializable`),
-            // which means we can't just take its type symbol and look it up in our isMaybeValue Set. Erasure restores sanity.
+            // which means we can't just take its type symbol and look it up in our isMaybeValue Set.
             val commonRuntimeClass = erasedClass(global.lub(List(actual.tpe, receiver.tpe)))
             if (commonRuntimeClass == ObjectClass)
               unrelatedTypes()
@@ -1863,7 +1863,7 @@ abstract class RefChecks extends Transform {
                   else if (!parens.isEmpty) s"$msg; $parens" else msg
                 refchecksWarning(t.pos, text, WarningCategory.OtherPureStatement)
               }
-            // sanity check block for unintended expr placement
+            // check block for unintended expr placement
             stats.foreach(checkPure(_, supple = false))
             if (result0.nonEmpty) checkPure(result0, supple = true)
 

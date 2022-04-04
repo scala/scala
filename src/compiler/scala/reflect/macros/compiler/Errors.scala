@@ -60,7 +60,7 @@ trait Errors extends Traces {
   trait Error {
     self: MacroImplRefCompiler =>
 
-    // sanity check errors
+    // check errors
 
     def MacroImplReferenceWrongShapeError(isReplClassBased: Boolean = false) = implRefError(
       "macro implementation reference has wrong shape. required:\n"+
