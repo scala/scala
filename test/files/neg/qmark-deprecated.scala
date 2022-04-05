@@ -3,7 +3,7 @@
 
 class Foo[?] // error
 class Foo2[`?`] // ok
-class Bar[M[?] <: List[?]] // errors
+class Bar[M[?] <: List[?]] // error on the definition
 class Bar2[M[`?`] <: List[`?`]] // ok
 
 object G {
@@ -24,10 +24,10 @@ object I {
 object I2 {
   type `?` = Int // ok
 
-  val x: Array[?] = new Array[?](0) // errors
+  val x: Array[?] = new Array[?](0) // no error reported here because we stop before running typer
   val y: Array[`?`] = new Array[`?`](0) // ok
 
-  def foo1[T <: Array[?]](x: T): Array[?] = x // errors
+  def foo1[T <: Array[?]](x: T): Array[?] = x // ok
   def foo2[T <: Array[`?`]](x: T): Array[`?`] = x // ok
 
   def bar1[?] = {} // error

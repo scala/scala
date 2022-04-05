@@ -2,7 +2,7 @@ qmark-deprecated.scala:4: error: using `?` as a type name requires backticks.
 class Foo[?] // error
           ^
 qmark-deprecated.scala:6: error: using `?` as a type name requires backticks.
-class Bar[M[?] <: List[?]] // errors
+class Bar[M[?] <: List[?]] // error on the definition
             ^
 qmark-deprecated.scala:10: error: using `?` as a type name requires backticks.
   class ? { val x = 1 } // error
@@ -22,20 +22,4 @@ qmark-deprecated.scala:35: error: using `?` as a type name requires backticks.
 qmark-deprecated.scala:38: error: using `?` as a type name requires backticks.
   type A[?] = Int // error
          ^
-qmark-deprecated.scala:6: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
-class Bar[M[?] <: List[?]] // errors
-                       ^
-qmark-deprecated.scala:27: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
-  val x: Array[?] = new Array[?](0) // errors
-               ^
-qmark-deprecated.scala:27: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
-  val x: Array[?] = new Array[?](0) // errors
-                              ^
-qmark-deprecated.scala:30: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
-  def foo1[T <: Array[?]](x: T): Array[?] = x // errors
-                      ^
-qmark-deprecated.scala:30: warning: Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.
-  def foo1[T <: Array[?]](x: T): Array[?] = x // errors
-                                       ^
-5 warnings
 8 errors
