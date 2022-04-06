@@ -495,6 +495,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type]
+    lazy val SeqModuleAlias   = getMemberValue(ScalaPackageClass, nme.Seq)
     lazy val Collection_SeqModule       = requiredModule[scala.collection.Seq.type]
 
     // arrays and their members
@@ -1735,10 +1736,9 @@ trait Definitions extends api.StandardDefinitions {
 
       final def isSeqApply(tree: Tree): Boolean = isListApply(tree) || {
         /*
-         *  This is now also used for converting {Seq, List}.apply(a, b, c) to `a :: b :: c :: Nil`
-         *  in Cleanup.
+         * This is now also used for converting {Seq, List}.apply(a, b, c) to `a :: b :: c :: Nil` in CleanUp.
          */
-        def isSeqFactory(sym: Symbol) = sym == SeqModule || sym == Collection_SeqModule
+        def isSeqFactory(sym: Symbol) = sym == SeqModule || sym == SeqModuleAlias || sym == Collection_SeqModule
 
         (tree.symbol == Seq_apply) && (tree match {
           case treeInfo.Applied(core @ Select(qual, _), _, _) =>

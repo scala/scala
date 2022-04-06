@@ -314,6 +314,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ListModuleAlias
     definitions.NilModule
     definitions.SeqModule
+    definitions.SeqModuleAlias
     definitions.Collection_SeqModule
     definitions.ArrayModule
     definitions.ArrayModule_overloadedApply
