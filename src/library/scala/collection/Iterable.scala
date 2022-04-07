@@ -248,7 +248,16 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return  the last element of this $coll$ if it is nonempty,
     *           `None` if it is empty.
     */
-  def lastOption: Option[A] = if (isEmpty) None else Some(last)
+  def lastOption: Option[A] = {
+    val it = iterator
+    if (!it.hasNext) {
+      None
+    } else {
+      var lst = it.next()
+      while (it.hasNext) lst = it.next()
+      Some(lst)
+    }
+  }
 
   /** A view over the elements of this collection. */
   def view: View[A] = View.fromIteratorProvider(() => iterator)
