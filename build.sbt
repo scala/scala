@@ -397,8 +397,8 @@ lazy val reflect = configureAsSubproject(project)
                            "scala.tools.nsc;resolution:=optional;version=\"${range;[==,=+);${ver}}\","+
                            "*"),
     fixPom(
-      "/project/name" -> <name>Scala Compiler</name>,
-      "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
+      "/project/name" -> <name>Scala Reflect</name>,
+      "/project/description" -> <description>Reflection Library for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     MimaFilters.mimaSettings,
