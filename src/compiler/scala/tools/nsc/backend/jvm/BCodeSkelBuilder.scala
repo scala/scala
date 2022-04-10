@@ -385,9 +385,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         nxtIdx = if (isStaticMethod) 0 else 1
       }
 
-      def contains(locSym: Symbol): Boolean = { slots.contains(locSym) }
+      def contains(locSym: Symbol): Boolean = slots.contains(locSym)
 
-      def apply(locSym: Symbol): Local = { slots.apply(locSym) }
+      def apply(locSym: Symbol): Local = slots(locSym)
 
       /* Make a fresh local variable, ensuring a unique name.
        * The invoker must make sure inner classes are tracked for the sym's tpe.
@@ -398,14 +398,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         locSym
       }
 
-      def makeLocal(locSym: Symbol): Local = {
-        makeLocal(locSym, symInfoTK(locSym))
-      }
+      def makeLocal(locSym: Symbol): Local = makeLocal(locSym, symInfoTK(locSym))
 
-      def getOrMakeLocal(locSym: Symbol): Local = {
-        // `getOrElse` below has the same effect as `getOrElseUpdate` because `makeLocal()` adds an entry to the `locals` map.
-        slots.getOrElse(locSym, makeLocal(locSym))
-      }
+      // `getOrElse` has the same effect as `getOrElseUpdate` because `makeLocal()` adds an entry to the `locals` map.
+      def getOrMakeLocal(locSym: Symbol): Local = slots.getOrElse(locSym, makeLocal(locSym))
 
       private def makeLocal(sym: Symbol, tk: BType): Local = {
         assert(nxtIdx != -1, "not a valid start index")
@@ -428,7 +424,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val Local(tk, _, idx, _) = slots(locSym)
         bc.load(idx, tk)
       }
-
     }
 
     /* ---------------- Part 2 of program points, ie Labels in the ASM world ---------------- */
@@ -580,10 +575,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     } // end of method initJMethod
 
-
-    def genDefDef(dd: DefDef): Unit = {
-      // the only method whose implementation is not emitted: getClass()
-      if (definitions.isGetClass(dd.symbol)) { return }
+    // the only method whose implementation is not emitted: getClass()
+    def genDefDef(dd: DefDef): Unit = if (!definitions.isGetClass(dd.symbol)) {
       assert(mnode == null, "GenBCode detected nested method.")
 
       methSymbol  = dd.symbol
@@ -597,7 +590,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val DefDef(_, _, _, vparamss, _, rhs) = dd
       assert(vparamss.isEmpty || vparamss.tail.isEmpty, s"Malformed parameter list: $vparamss")
       val params = if (vparamss.isEmpty) Nil else vparamss.head
-      for (p <- params) { locals.makeLocal(p.symbol) }
+      for (p <- params) locals.makeLocal(p.symbol)
       // debug assert((params.map(p => locals(p.symbol).tk)) == asmMethodType(methSymbol).getArgumentTypes.toList, "debug")
 
       if (params.size > MaximumJvmParameters) {
@@ -627,11 +620,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
        * When duplicating a finally-contained LabelDef, another program-point is needed for the copy (each such copy has its own asm.Label),
        * but the same vars (given by the LabelDef's params) can be reused,
        * because no LabelDef ends up nested within itself after such duplication.
+       *
+       * The tail-calls xform results in symbols shared btw method-params and labelDef-params, thus the guard below.
        */
-      for(ld <- labelDefsAtOrUnder.getOrElse(dd.rhs, Nil); ldp <- ld.params; if !locals.contains(ldp.symbol)) {
-        // the tail-calls xform results in symbols shared btw method-params and labelDef-params, thus the guard above.
-        locals.makeLocal(ldp.symbol)
-      }
+      for {
+        ld  <- labelDefsAtOrUnder.getOrElse(dd.rhs, Nil)
+        ldp <- ld.params
+      } if (!locals.contains(ldp.symbol)) locals.makeLocal(ldp.symbol)
 
       if (!isAbstractMethod && !isNative) {
 
