@@ -102,7 +102,7 @@ trait Implicits extends splain.SplainData {
     val subtypeStart    = if (settings.areStatisticsEnabled) statistics.startCounter(subtypeImpl) else null
     val start           = if (settings.areStatisticsEnabled) statistics.startTimer(implicitNanos) else null
     if (shouldPrint)
-      typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
+      typingStack.printTyping(tree, s"typing implicit: $tree ${context.undetparamsString}")
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     ImplicitErrors.startSearch(pt)
     val dpt = if (isView) pt else dropByName(pt)
@@ -417,7 +417,7 @@ trait Implicits extends splain.SplainData {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
-        typingStack.printTyping(f"[search #$searchId] $what $msg")
+        typingStack.printTyping(s"[search #$searchId] $what $msg")
     }
 
     import infer._
@@ -750,7 +750,12 @@ trait Implicits extends splain.SplainData {
                   }
                   ps.isEmpty && as.nonEmpty && {
                     val lastArg = as.head
-                    as.tail.isEmpty && loop(restpe, lastArg)
+                    as.tail.isEmpty && {
+                      lastArg match {
+                        case RefinedType(_, syms) => syms.reverseIterator.exists(x => context.isAccessible(restpe.nonPrivateMember(x.name), restpe))
+                        case _ => true
+                      }
+                    } && loop(restpe, lastArg)
                   }
                 }
               }
@@ -1172,7 +1177,7 @@ trait Implicits extends splain.SplainData {
 
       val eligible: List[ImplicitInfo] = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
       if (eligible.nonEmpty)
-        printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, s"${eligible.size} eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively

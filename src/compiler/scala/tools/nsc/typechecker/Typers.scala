@@ -1342,9 +1342,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case EmptyTree  => qual
           case coercion   =>
             if (settings.logImplicitConv)
-              context.echo(qual.pos,
-                "applied implicit conversion from %s to %s = %s".format(
-                  qual.tpe, searchTemplate, coercion.symbol.defString))
+              context.echo(qual.pos, s"applied implicit conversion from ${qual.tpe} to ${searchTemplate} = ${coercion.symbol.defString}")
 
             typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         }
