@@ -713,13 +713,9 @@ self =>
     def isRawIdent = in.token == IDENTIFIER
 
     def isWildcardType = in.token == USCORE || isScala3WildcardType
-    def isScala3WildcardType = settings.isScala3 && isRawIdent && in.name == raw.QMARK
-    def checkQMarkUsage() =
-      if (!settings.isScala3 && isRawIdent && in.name == raw.QMARK)
-        deprecationWarning(in.offset,
-          "Wrap `?` in backticks to continue to use it as an identifier, or use `-Xsource:3` to use it as a wildcard like in Scala 3.", "2.13.6")
+    def isScala3WildcardType = isRawIdent && in.name == raw.QMARK
     def checkQMarkDefinition() =
-      if (isRawIdent && in.name == raw.QMARK)
+      if (isScala3WildcardType)
         syntaxError(in.offset, "using `?` as a type name requires backticks.")
     def checkKeywordDefinition() =
       if (isRawIdent && scala3Keywords.contains(in.name))
@@ -1149,7 +1145,6 @@ self =>
                 val scala3Wildcard = isScala3WildcardType
                 wildcardType(in.skipToken(), scala3Wildcard)
               } else {
-                checkQMarkUsage()
                 path(thisOK = false, typeOK = true) match {
                   case r @ SingletonTypeTree(_) => r
                   case r => convertToTypeId(r)
@@ -2075,7 +2070,6 @@ self =>
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else {
-          checkQMarkUsage()
           typ() match {
             case Ident(name: TypeName) if nme.isVariableName(name) =>
               atPos(start) { Bind(name, EmptyTree) }
