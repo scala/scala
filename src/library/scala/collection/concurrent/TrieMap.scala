@@ -21,6 +21,7 @@ import scala.collection.concurrent.TrieMap.RemovalPolicy
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.GrowableBuilder
+import scala.util.Try
 import scala.util.hashing.Hashing
 
 private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
@@ -1033,6 +1034,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     (if (nonReadOnly) readOnlySnapshot() else this).sizeIs == 0 // sizeIs checks knownSize
   override protected[this] def className = "TrieMap"
 
+  override def lastOption: Option[(K, V)] = if (isEmpty) None else Try(last).toOption
 }
 
 

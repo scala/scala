@@ -228,7 +228,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def headOption: Option[A] = {
     val it = iterator
-    if(it.hasNext) Some(it.next()) else None
+    if (it.hasNext) Some(it.next()) else None
   }
 
   /** Selects the last element.
