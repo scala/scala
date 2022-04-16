@@ -13,7 +13,8 @@
 package scala
 package io
 
-import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodingException, CodingErrorAction => Action }
+import java.nio.charset.{CharacterCodingException, Charset, CharsetDecoder, CharsetEncoder, CodingErrorAction => Action}
+import java.nio.charset.StandardCharsets.{ISO_8859_1, UTF_8}
 import scala.annotation.migration
 import scala.language.implicitConversions
 
@@ -81,8 +82,8 @@ trait LowPriorityCodecImplicits {
 }
 
 object Codec extends LowPriorityCodecImplicits {
-  final val ISO8859: Codec = new Codec(Charset forName "ISO-8859-1")
-  final val UTF8: Codec    = new Codec(Charset forName "UTF-8")
+  final val ISO8859: Codec = Codec(ISO_8859_1)
+  final val UTF8: Codec    = Codec(UTF_8)
 
   /** Optimistically these two possible defaults will be the same thing.
    *  In practice this is not necessarily true, and in fact Sun classifies
