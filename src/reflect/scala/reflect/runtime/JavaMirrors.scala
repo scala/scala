@@ -20,15 +20,16 @@ import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
 import scala.collection.immutable.ArraySeq
 
+import java.io.IOException
 import java.lang.{ Class => jClass, Package => jPackage }
+import java.lang.annotation.{ Annotation => jAnnotation }
+import java.lang.ref.{ WeakReference => jWeakReference }
 import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable,
   Parameter => jParameter, GenericDeclaration, GenericArrayType,
   ParameterizedType, WildcardType, AnnotatedElement }
-import java.lang.annotation.{ Annotation => jAnnotation }
-import java.io.IOException
-import java.lang.ref.{ WeakReference => jWeakReference }
+import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.reflect.internal.{ JavaAccFlags, MissingRequirementError }
 import internal.pickling.ByteCodecs
@@ -669,7 +670,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         loadBytes[String]("scala.reflect.ScalaSignature") match {
           case Some(ssig) =>
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
-            val bytes = ssig.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            val bytes = ssig.getBytes(UTF_8)
             val len = ByteCodecs.decode(bytes)
             assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
@@ -678,7 +679,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
                 info(s"unpickling Scala $clazz and $module with long Scala signature")
-                val encoded = slsig flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                val encoded = slsig.flatMap(_.getBytes(UTF_8))
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 assignAssociatedFile(clazz, module, jclazz)

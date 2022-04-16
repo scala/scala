@@ -16,7 +16,7 @@ package nsc
 
 import java.io.{Closeable, FileNotFoundException, IOException}
 import java.net.URL
-import java.nio.charset._
+import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}, StandardCharsets.UTF_8
 
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.{immutable, mutable}
@@ -1476,7 +1476,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           case pathString =>
             import java.nio.file._
             val path = Paths.get(pathString)
-            Files.write(path, argsFile.getBytes(StandardCharsets.UTF_8))
+            Files.write(path, argsFile.getBytes(UTF_8))
             reporter.echo(s"Compiler arguments written to: $path")
         }
       }

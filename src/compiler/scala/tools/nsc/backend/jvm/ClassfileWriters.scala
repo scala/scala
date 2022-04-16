@@ -15,7 +15,7 @@ package scala.tools.nsc.backend.jvm
 import java.io.{DataOutputStream, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{ClosedByInterruptException, FileChannel}
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
 import java.util
@@ -133,7 +133,7 @@ abstract class ClassfileWriters {
       override def writeClass(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = {
         basic.writeClass(className, bytes, sourceFile)
         asmp.foreach { writer =>
-          val asmBytes = AsmUtils.textify(AsmUtils.readClass(bytes)).getBytes(StandardCharsets.UTF_8)
+          val asmBytes = AsmUtils.textify(AsmUtils.readClass(bytes)).getBytes(UTF_8)
           writer.writeFile(classRelativePath(className, ".asm"), asmBytes)
         }
         dump.foreach { writer =>
