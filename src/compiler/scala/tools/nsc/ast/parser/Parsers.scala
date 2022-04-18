@@ -704,7 +704,7 @@ self =>
     def isRawIdent = in.token == IDENTIFIER
 
     def isWildcardType = in.token == USCORE || isScala3WildcardType
-    def isScala3WildcardType = currentRun.isScala3 && isRawIdent && in.name == raw.QMARK
+    def isScala3WildcardType = isRawIdent && in.name == raw.QMARK
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
