@@ -38,12 +38,17 @@ class SortingTest {
     val sys = Sorting.stableSort(ys.clone.toIndexedSeq, (i: Int) => xs(i))
 
     val xxs = Array.fill(size)(rng.nextInt(variety))
-    Sorting.stableSort(xxs, xxs.length / 2, xxs.length)
+    val sortSliceArray = xxs.clone(); Sorting.stableSort(sortSliceArray, xxs.length / 2, xxs.length)
+    val sliceMin = xxs.slice(xxs.length / 2, xxs.length).minOption.getOrElse(Int.MinValue)
+    val sliceAboveMinCountsEqual = xxs.slice(xxs.length / 2, xxs.length).count(_ >= sliceMin) == sortSliceArray.slice(xxs.length / 2, xxs.length).count(_ >= sliceMin)
+    val firstHalfUnchanged = xxs.slice(0, xxs.length / 2).toSeq == sortSliceArray.slice(0, xxs.length / 2).toSeq
     
     assertTrue("Quicksort should be in order", isSorted(qxs))
     assertTrue("Quicksort should be in reverse order", isAntisorted(pxs))
     assertTrue("Stable sort should be sorted and stable", isStable(sxs))
-    assertTrue("Stable sort should only sort slice provided", isSorted(xxs, xxs.length / 2 , xxs.length))
+    assertTrue("Stable sort on a slice should produce a sorted slice", isSorted(sortSliceArray, xxs.length / 2 , xxs.length))
+    assertTrue("Stable sort should not change values outside the provided range", firstHalfUnchanged)
+    assertTrue("Stable sort on a slice should produce a slice with the same count of elems larger than the slice min", sliceAboveMinCountsEqual)
     assertTrue("Stable sort should be reverse sorted but stable", isAntistable(rxs))
     assertTrue("Stable sorting by proxy should produce sorted stable list", isStable(sys.map(i => xs(i))))
     assertTrue("Quicksort should produce canonical ordering", (qxs zip zs).forall{ case (a,b) => a.i == b.i })
@@ -62,11 +67,13 @@ class SortingTest {
     
     for (size <- sizes) {
       val b = Array.fill(size)(rng.nextBoolean())
+      val sbs = b.clone(); Sorting.stableSort(sbs, sbs.length / 2, sbs.length)
       val bfwd = Sorting.stableSort(b.clone.toIndexedSeq)
       val bbkw = Sorting.stableSort(b.clone.toIndexedSeq, (x: Boolean, y: Boolean) => x && !y)
       assertTrue("All falses should be first", bfwd.dropWhile(_ == false).forall(_ == true))
       assertTrue("All falses should be last when sorted backwards", bbkw.dropWhile(_ == true).forall(_ == false))
       assertTrue("Sorting booleans should preserve the number of trues", b.count(_ == true) == bfwd.count(_ == true))
+      assertTrue("Slice sorting booleans should preserve the number of trues", b.slice(b.length / 2, b.length).count(_ == true) == sbs.slice(b.length / 2, b.length).count(_ == true))
       assertTrue("Backwards sorting booleans should preserve the number of trues", b.count(_ == true) == bbkw.count(_ == true))
       assertTrue("Sorting should not change the sizes of arrays", b.length == bfwd.length && b.length == bbkw.length)
     }
