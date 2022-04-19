@@ -24,7 +24,6 @@ import symtab.Flags._
  *    def productArity: Int
  *    def productElement(n: Int): Any
  *    def productPrefix: String
- *    def productIterator: Iterator[Any]
  *
  *  Selectively added to case classes/objects, unless a non-default
  *  implementation already exists:
@@ -113,11 +112,6 @@ trait SyntheticMethods extends ast.TreeDSL {
       sym.alternatives exists { m0 =>
         (m0 ne meth) && !m0.isDeferred && !m0.isSynthetic && (m0.owner != AnyValClass) && (typeInClazz(m0) matches typeInClazz(meth))
       }
-    }
-    def productIteratorMethod = {
-      createMethod(nme.productIterator, iteratorOfType(AnyTpe))(_ =>
-        gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(AnyTpe), List(mkThis))
-      )
     }
 
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree = 
@@ -265,7 +259,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         Product_productPrefix -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity -> (() => constantNullary(nme.productArity, arity)),
         Product_productElement -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
-        Product_iterator -> (() => productIteratorMethod),
         Product_canEqual -> (() => canEqualMethod)
       )
     }

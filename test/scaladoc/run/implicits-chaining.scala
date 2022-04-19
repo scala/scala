@@ -1,6 +1,6 @@
 import scala.tools.nsc.doc.model._
 import scala.tools.partest.ScaladocModelTest
-import language._
+import org.junit.Assert.{assertEquals, assertTrue}
 
 object Test extends ScaladocModelTest {
 
@@ -23,43 +23,43 @@ object Test extends ScaladocModelTest {
     val A = base._class("A")
 
     conv = A._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 2)
-    assert(conv.constraints.length == 1)
+    assertEquals(3, conv.members.length)
+    assertEquals(1, conv.constraints.length)
 
 //// class B ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     val B = base._class("B")
 
     conv = B._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 2)
-    assert(conv.constraints.length == 0)
+    assertEquals(3, conv.members.length)
+    assertEquals(0, conv.constraints.length)
 
 //// class C ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     val C = base._class("C")
 
-    assert(C._conversions(base.qualifiedName + ".convertToZ").isEmpty)
+    assertTrue(C._conversions(base.qualifiedName + ".convertToZ").isEmpty)
 
 //// class D ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     val D = base._class("D")
 
     conv = D._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 2)
-    assert(conv.constraints.length == 0)
+    assertEquals(3, conv.members.length)
+    assertEquals(0, conv.constraints.length)
 
 //// class E ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     val E = base._class("E")
 
     conv = E._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 2)
-    assert(conv.constraints.length == 0)
+    assertEquals(3, conv.members.length)
+    assertEquals(0, conv.constraints.length)
 
 //// class F ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     val F = base._class("F")
 
-    assert(F._conversions(base.qualifiedName + ".convertToZ").isEmpty)
+    assertTrue(F._conversions(base.qualifiedName + ".convertToZ").isEmpty)
   }
 }
