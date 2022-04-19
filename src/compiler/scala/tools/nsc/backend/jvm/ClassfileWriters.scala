@@ -239,10 +239,18 @@ abstract class ClassfileWriters {
     val noAttributes = Array.empty[FileAttribute[_]]
     private val isWindows = scala.util.Properties.isWin
 
+    private def checkName(component: Path): Unit = if (isWindows) {
+      val specials = raw"(?i)CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]".r
+      val name = component.toString
+      def warnSpecial(): Unit = frontendAccess.backendReporting.warning(NoPosition, s"path component is special Windows device: ${name}")
+      specials.findPrefixOf(name).foreach(prefix => if (prefix.length == name.length || name(prefix.length) == '.') warnSpecial())
+    }
+
     def ensureDirForPath(baseDir: Path, filePath: Path): Unit = {
       import java.lang.Boolean.TRUE
       val parent = filePath.getParent
       if (!builtPaths.containsKey(parent)) {
+        parent.iterator.forEachRemaining(checkName)
         try Files.createDirectories(parent, noAttributes: _*)
         catch {
           case e: FileAlreadyExistsException =>
@@ -257,6 +265,7 @@ abstract class ClassfileWriters {
           current = current.getParent
         }
       }
+      checkName(filePath.getFileName())
     }
 
     // the common case is that we are are creating a new file, and on MS Windows the create and truncate is expensive
