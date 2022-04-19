@@ -14,6 +14,7 @@ package scala.tools.nsc
 
 import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Collections, Locale}
@@ -101,7 +102,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
     builder.append("}\n")
     val path = logDir.resolve("projects.dot")
-    Files.write(path, builder.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+    Files.write(path, builder.toString.getBytes(UTF_8))
     reporterEcho("Wrote project dependency graph to: " + path.toAbsolutePath)
   }
 
@@ -348,7 +349,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     projects.iterator.flatMap(projectEvents).addString(sb, ",\n")
     trace.append("]}")
     val traceFile = logDir.resolve(s"build-${label}.trace")
-    Files.write(traceFile, trace.toString.getBytes())
+    Files.write(traceFile, trace.toString.getBytes(UTF_8))
     reporterEcho("Chrome trace written to " + traceFile.toAbsolutePath)
   }
 
