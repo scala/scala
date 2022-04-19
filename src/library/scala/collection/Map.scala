@@ -351,7 +351,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
-    lazy val keysSet = keys.toSet
+    lazy val keysSet = keys.iterator.to(immutable.Set)
     fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 
