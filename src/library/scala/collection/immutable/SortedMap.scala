@@ -108,11 +108,11 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
   override def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K, V1] = {
     // Implementation has been copied from `MapOps`
     val previousValue = this.get(key)
-    val nextValue = remappingFunction(previousValue)
-    (previousValue, nextValue) match {
-      case (None, None) => coll
-      case (Some(_), None) => this.removed(key).coll
-      case (_, Some(v)) => this.updated(key, v)
+    remappingFunction(previousValue) match {
+      case None            => previousValue.fold(coll)(_ => this.removed(key).coll)
+      case Some(nextValue) =>
+        if (previousValue.exists(_.asInstanceOf[AnyRef] eq nextValue.asInstanceOf[AnyRef])) coll
+        else coll.updated(key, nextValue)
     }
   }
   override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })(ordering)

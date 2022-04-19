@@ -113,11 +113,11 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
    */
   def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K,V1] = {
     val previousValue = this.get(key)
-    val nextValue = remappingFunction(previousValue)
-    (previousValue, nextValue) match {
-      case (None, None) => coll
-      case (Some(_), None) => this.removed(key).coll
-      case (_, Some(v)) => this.updated(key, v)
+    remappingFunction(previousValue) match {
+      case None            => previousValue.fold(coll)(_ => this.removed(key).coll)
+      case Some(nextValue) =>
+        if (previousValue.exists(_.asInstanceOf[AnyRef] eq nextValue.asInstanceOf[AnyRef])) coll
+        else coll.updated(key, nextValue)
     }
   }
 
