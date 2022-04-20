@@ -548,8 +548,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       0 until u2() foreach (_ => parseMethod())
       val needsConstructor = (
            !sawPrivateConstructor
-        && !(instanceScope containsName nme.CONSTRUCTOR)
-        && ((sflags & INTERFACE) == 0 || (sflags | JAVA_ANNOTATION) != 0)
+        && !instanceScope.containsName(nme.CONSTRUCTOR)
+        && ((sflags & (INTERFACE|JAVA_ANNOTATION)) == (INTERFACE|JAVA_ANNOTATION))
       )
       if (needsConstructor)
         instanceScope enter clazz.newClassConstructor(NoPosition)
