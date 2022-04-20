@@ -15,9 +15,11 @@ package collection
 package convert
 
 import java.util.{concurrent => juc}
+import java.util.{NavigableMap}
 import java.{lang => jl, util => ju}
 
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 import scala.util.chaining._
 
 /** Wrappers for exposing Scala collections as Java collections and vice-versa */
@@ -422,9 +424,9 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   /** Wraps a concurrent Java map as a Scala one.  Single-element concurrent
-    * access is supported; multi-element operations such as maps and filters
-    * are not guaranteed to be atomic.
-    */
+   *  access is supported; multi-element operations such as maps and filters
+   *  are not guaranteed to be atomic.
+   */
   @SerialVersionUID(3L)
   case class JConcurrentMapWrapper[K, V](underlying: juc.ConcurrentMap[K, V])
     extends AbstractJMapWrapper[K, V]
@@ -442,8 +444,14 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     def replace(k: K, v: V): Option[V] = Option(underlying.replace(k, v))
 
-    def replace(k: K, oldvalue: V, newvalue: V): Boolean =
-      underlying.replace(k, oldvalue, newvalue)
+    def replace(k: K, oldvalue: V, newvalue: V): Boolean = underlying.replace(k, oldvalue, newvalue)
+
+    override def lastOption: Option[(K, V)] =
+      underlying match {
+        case nav: NavigableMap[K @unchecked, V @unchecked] => Option(nav.lastEntry).map(e => (e.getKey, e.getValue))
+        case _ if isEmpty => None
+        case _ => Try(last).toOption
+      }
   }
 
   @SerialVersionUID(3L)

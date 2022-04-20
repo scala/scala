@@ -15,7 +15,6 @@ package collection.concurrent
 
 import scala.annotation.tailrec
 
-
 /** A template trait for mutable maps that allow concurrent access.
   *
   *  $concurrentmapinfo
