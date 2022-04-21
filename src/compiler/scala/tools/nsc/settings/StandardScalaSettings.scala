@@ -77,7 +77,7 @@ object StandardScalaSettings {
   // not final in case some separately compiled client code wanted to depend on updated values
   val MinTargetVersion = 5
   val MinSupportedTargetVersion = 8
-  val MaxTargetVersion = 18
+  val MaxTargetVersion = 19
   val DefaultTargetVersion = "8"
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).toList
