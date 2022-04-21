@@ -80,6 +80,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   object treeInfo extends {
     val global: Trees.this.type = self
   } with TreeInfo
+  import treeInfo._
 
   // --- additional cases in operations ----------------------------------
 
@@ -287,10 +288,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 transform(fn)
               case EmptyTree =>
                 tree
-              // The typer does not accept UnApply. Replace it to Apply, which can be retyped.
-              case UnApply(Apply(Select(prefix, termNames.unapply | termNames.unapplySeq),
-                                 List(Ident(termNames.SELECTOR_DUMMY))), args) =>
-                Apply(prefix, transformTrees(args))
+              // The typer does not accept UnApply. Replace it with Apply, which can be retyped.
+              case UnApply(Unapplied(Applied(Select(fun, nme.unapply | nme.unapplySeq), _, _)), args) =>
+                Apply(transform(fun), transformTrees(args))
               case _ =>
                 val dupl = tree.duplicate
                 // Typically the resetAttrs transformer cleans both symbols and types.
