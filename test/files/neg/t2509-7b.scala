@@ -1,4 +1,4 @@
-// scalac: -Xsource:3.0
+// scalac: -Yscala3-implicit-resolution
 class Both[-A, +B]
 
 trait Factory[A] {

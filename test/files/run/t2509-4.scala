@@ -1,4 +1,4 @@
-// scalac: -Xsource:3.0
+// scalac: -Yscala3-implicit-resolution
 import scala.language.implicitConversions
 
 class A
