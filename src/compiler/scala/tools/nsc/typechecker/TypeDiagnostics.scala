@@ -752,7 +752,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             && !isConvention(s)
           )
         for (s <- unusedPrivates.unusedParams if warnable(s))
-          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams, s)
+          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used\nType: ${s.tpe.toLongString}", WarningCategory.UnusedParams, s)
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
