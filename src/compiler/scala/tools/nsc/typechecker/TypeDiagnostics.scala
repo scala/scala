@@ -751,8 +751,14 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             && !isImplementation(s.owner)
             && !isConvention(s)
           )
-        for (s <- unusedPrivates.unusedParams if warnable(s))
-          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams, s)
+        for (s <- unusedPrivates.unusedParams if warnable(s)) {
+          val what =
+            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.name} of type ${s.tpe}"
+            else s"parameter ${s/*.name*/}"
+          val where =
+            if (s.owner.isAnonymousFunction) "anonymous function" else s.owner
+          emitUnusedWarning(s.pos, s"$what in $where is never used", WarningCategory.UnusedParams, s)
+        }
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {

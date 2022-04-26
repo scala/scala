@@ -31,12 +31,12 @@ warn-unused-params.scala:97: warning: parameter value i in anonymous function is
 warn-unused-params.scala:101: warning: parameter value ctx in method f is never used
   def f[A](implicit ctx: Context[A]) = answer
                     ^
-warn-unused-params.scala:102: warning: parameter value evidence$1 in method g is never used
+warn-unused-params.scala:102: warning: evidence parameter evidence$1 of type Context[A] in method g is never used
   def g[A: Context] = answer
-      ^
-warn-unused-params.scala:104: warning: parameter value evidence$2 in class Bound is never used
+           ^
+warn-unused-params.scala:104: warning: evidence parameter evidence$2 of type Context[A] in class Bound is never used
 class Bound[A: Context]
-             ^
+               ^
 error: No warnings can be incurred under -Werror.
 13 warnings
 1 error

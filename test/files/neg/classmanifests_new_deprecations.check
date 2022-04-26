@@ -1,6 +1,6 @@
 classmanifests_new_deprecations.scala:4: warning: type ClassManifest in package reflect is deprecated (since 2.10.0): use scala.reflect.ClassTag instead
   def rcm1[T: scala.reflect.ClassManifest] = ???
-            ^
+                            ^
 classmanifests_new_deprecations.scala:5: warning: type ClassManifest in package reflect is deprecated (since 2.10.0): use scala.reflect.ClassTag instead
   def rcm2[T](implicit evidence$1: scala.reflect.ClassManifest[T]) = ???
                                                  ^
