@@ -934,6 +934,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
     def compileTimeOnlyMessage  = getAnnotation(CompileTimeOnlyAttr) flatMap (_ stringArg 0)
 
+    def isExperimental = hasAnnotation(ExperimentalAnnotationClass)
+
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = hasFlag(STABLE | ARTIFACT) && (unexpandedName == nme.OUTER)
 

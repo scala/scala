@@ -1,0 +1,4 @@
+TestSaferExceptions_fail.scala:5: error: Unsupported Scala 3 erased context function type in bounds of type mayThrow: erased tastytest.SaferExceptions.CanThrowCapability[E] ?=> A; found in object tastytest.SaferExceptions.
+  def test = SaferExceptions.safeDiv(1, 0) // error
+                             ^
+1 error

@@ -3,10 +3,15 @@ package scala.tools.tastytest
 import scala.collection.immutable.ArraySeq
 import scala.util.{ Try, Success, chaining }, chaining._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
+import java.io.OutputStream
+import java.io.PrintWriter
 
 object Scalac extends Script.Command {
 
-  def scalac(out: String, additionalSettings: Seq[String], sources: String*): Try[Boolean] = {
+  def scalac(out: String, additionalSettings: Seq[String], sources: String*): Try[Boolean] =
+    scalac(Console.out, out, additionalSettings, sources:_*)
+
+  def scalac(writer: OutputStream, out: String, additionalSettings: Seq[String], sources: String*) = {
 
     def runCompile(global: Global): Boolean = {
       global.reporter.reset()
@@ -19,8 +24,10 @@ object Scalac extends Script.Command {
     def newCompiler(args: String*): Global =
       fromSettings(new Settings().tap(_.processArguments(args.toList, true)))
 
-    def fromSettings(settings: Settings): Global =
-      Global(settings, new ConsoleReporter(settings).tap(_.shortname = true))
+    def fromSettings(settings: Settings): Global = {
+      val pwriter = new PrintWriter(writer, true)
+      Global(settings, new ConsoleReporter(settings, Console.in, pwriter).tap(_.shortname = true))
+    }
 
     def compile(args: String*) =
       Try(runCompile(newCompiler(args: _*)))

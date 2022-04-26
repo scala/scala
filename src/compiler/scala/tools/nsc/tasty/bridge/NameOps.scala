@@ -54,6 +54,8 @@ trait NameOps { self: TastyUniverse =>
     final val Tuple: String = "Tuple"
     final val Matchable: String = "Matchable"
 
+    val ErasedFunctionN = raw"ErasedFunction(\d+)".r
+    val ErasedContextFunctionN = raw"ErasedContextFunction(\d+)".r
     val ContextFunctionN = raw"ContextFunction(\d+)".r
     val FunctionN        = raw"Function(\d+)".r
 

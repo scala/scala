@@ -443,6 +443,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TargetNameAnnotationClass
     definitions.StaticMethodAnnotationClass
     definitions.PolyFunctionClass
+    definitions.ExperimentalAnnotationClass
     definitions.BeanPropertyAttr
     definitions.BooleanBeanPropertyAttr
     definitions.CompileTimeOnlyAttr

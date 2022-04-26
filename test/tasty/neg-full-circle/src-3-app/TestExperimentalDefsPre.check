@@ -1,0 +1,17 @@
+-- Error: TestExperimentalDefsPre_fail.scala:4:10
+4 |  def test = new SubExperimentalNotExperimental
+  |          ^
+  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+-- Error: TestExperimentalDefsPre_fail.scala:4:17
+4 |  def test = new SubExperimentalNotExperimental
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+-- Error: TestExperimentalDefsPre_fail.scala:6:35
+6 |  class SubSubExperimental extends SubExperimentalNotExperimental
+  |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+-- Error: TestExperimentalDefsPre_fail.scala:6:8
+6 |  class SubSubExperimental extends SubExperimentalNotExperimental
+  |        ^
+  |extension of experimental class SubExperimentalNotExperimental must have @experimental annotation
+4 errors found

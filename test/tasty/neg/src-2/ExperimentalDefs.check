@@ -1,0 +1,25 @@
+ExperimentalDefs_fail.scala:10: error: object ExperimentalObj in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  def termRef = ExperimentalObj.foo // error
+                ^
+ExperimentalDefs_fail.scala:11: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  def typeRef = new Box[ExperimentalClass]() // error
+                    ^
+ExperimentalDefs_fail.scala:13: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  class SubExperimental extends ExperimentalClass // error
+                                ^
+ExperimentalDefs_fail.scala:14: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  class SuperExperimental extends Box[ExperimentalClass] // error
+                                  ^
+ExperimentalDefs_fail.scala:15: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  type RefExperimental = Box[ExperimentalClass] // error
+                         ^
+ExperimentalDefs_fail.scala:16: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  type MemberExperimental = { type Ref = ExperimentalClass } // error
+                            ^
+ExperimentalDefs_fail.scala:17: error: class ExperimentalClass in package tastytest is marked @experimental and therefore its enclosing scope must be experimental.
+  type AnnotatedRef = Box[Int] @ExperimentalClass // error
+                                ^
+ExperimentalDefs_fail.scala:19: error: object ExperimentalDefsPre is marked @experimental and therefore its enclosing scope must be experimental.
+  def refSubclassOfExperimental = new SubExperimentalNotExperimental() // error
+                                      ^
+8 errors
