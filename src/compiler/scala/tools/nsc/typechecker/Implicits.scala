@@ -752,7 +752,8 @@ trait Implicits extends splain.SplainData {
                     val lastArg = as.head
                     as.tail.isEmpty && {
                       lastArg match {
-                        case RefinedType(_, syms) => syms.reverseIterator.exists(x => context.isAccessible(restpe.nonPrivateMember(x.name), restpe))
+                        case RefinedType(_, syms) if !syms.isEmpty =>
+                          syms.reverseIterator.exists(x => context.isAccessible(restpe.nonPrivateMember(x.name), restpe))
                         case _ => true
                       }
                     } && loop(restpe, lastArg)
