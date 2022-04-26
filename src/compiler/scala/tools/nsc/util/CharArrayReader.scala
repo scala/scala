@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package util
 
+import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Chars._
 
 trait CharArrayReaderData {
@@ -44,6 +45,8 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
 
   val buf: Array[Char]
 
+  val bidiChars: ListBuffer[(Int, Int)] = ListBuffer.empty
+
   def decodeUni: Boolean = true
 
   /** An error routine to call on bad unicode escapes \\uxxxx. */
@@ -60,6 +63,8 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
       val c = buf(charOffset)
       ch = c
       charOffset += 1
+      if (isBiDiCharacter(ch))
+        bidiChars.+=((ch, charOffset))
       if (c == '\\') potentialUnicode()
       if (ch < ' ') {
         skipCR()
@@ -79,6 +84,8 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
       val c = buf(charOffset)
       ch = c
       charOffset += 1
+      if (isBiDiCharacter(ch))
+        bidiChars.+=((ch, charOffset))
       if (c == '\\') potentialUnicode()
     }
   }

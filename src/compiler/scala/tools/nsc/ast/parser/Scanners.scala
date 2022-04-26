@@ -663,7 +663,12 @@ trait Scanners extends ScannersCommon {
         case ']' =>
           nextChar(); token = RBRACKET
         case SU =>
-          if (isAtEnd) token = EOF
+          if (isAtEnd) {
+            bidiChars.foreach { case (char, offset) =>
+              syntaxError(offset, f"found unicode bidirectional character '\\u$char%04x'; use a unicode escape instead")
+            }
+            token = EOF
+          }
           else {
             syntaxError("illegal character")
             nextChar()

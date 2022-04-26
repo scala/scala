@@ -103,6 +103,14 @@ trait Chars {
          '|' | '/' | '\\' => true
     case c => isSpecial(c)
   }
+
+  def isBiDiCharacter(c: Char): Boolean = (c: @switch) match {
+    case '\u061c' |
+         '\u200e' | '\u200f' |
+         '\u202a' | '\u202b' | '\u202c' | '\u202d' | '\u202e' |
+         '\u2066' | '\u2067' | '\u2068' | '\u2069' => true
+    case _ => false
+  }
 }
 
 object Chars extends Chars { }
