@@ -32,6 +32,7 @@ import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try}
+import scala.util.Properties.javaSpecVersion
 import scala.util.control.ControlThrowable
 
 /** pos/t1234.scala or pos/t1234 if dir */
@@ -525,6 +526,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) { runner =
     def description = mkScalacString()
     lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
   }
+  case class SkipRound(fs: List[File], state: TestState) extends CompileRound {
+    def description: String = state.status
+    lazy val result = { pushTranscript(description); state }
+  }
 
   def compilationRounds(file: File): List[CompileRound] = {
     val sources = runner.sources(file)
@@ -544,7 +549,24 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) { runner =
       }
     }
 
-    groupedFiles(sources).flatMap(mixedCompileGroup)
+    val Range = """(\d+)(?:(\+)|(?: *\- *(\d+)))?""".r
+    val currentJavaVersion = javaSpecVersion.stripPrefix("1.").toInt
+    val skipStates = toolArgsFor(sources)("javaVersion", split = false).flatMap {
+      case v @ Range(from, plus, to) =>
+        val ok =
+          if (plus == null)
+            if (to == null) currentJavaVersion == from.toInt
+            else from.toInt <= currentJavaVersion && currentJavaVersion <= to.toInt
+          else
+            currentJavaVersion >= from.toInt
+        if (ok) None
+        else Some(genSkip(s"skipped on Java $javaSpecVersion, only running on $v"))
+      case v =>
+        Some(genFail(s"invalid javaVersion range in test comment: $v"))
+    }
+    skipStates.headOption
+      .map(state => List(SkipRound(List(file), state)))
+      .getOrElse(groupedFiles(sources).flatMap(mixedCompileGroup))
   }
 
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
@@ -560,21 +582,27 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) { runner =
     else runTestCommon()
 
   def runNegTest(): TestState = runInContext {
-    // pass if it checks and didn't crash the compiler
-    // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
+    // test result !isOk, usually because DNC. So pass/fail depending on whether diffIsOk (matches check file).
+    // Skip and Crash remain fails, except a Crash due to FatalError only will defer to check file comparison.
     def checked(r: CompileRound) = r.result match {
+      case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
       case dnc @ _ => diffIsOk
     }
-
-    compilationRounds(testFile).find(!_.result.isOk).map(checked).getOrElse(genFail("expected compilation failure"))
+    compilationRounds(testFile)
+      .find(r => !r.result.isOk || r.result.isSkipped)
+      .map(checked)
+      .getOrElse(genFail("expected compilation failure"))
   }
 
   // run compilation until failure, evaluate `andAlso` on success
   def runTestCommon(andAlso: => TestState = genPass): TestState = runInContext {
     // DirectCompiler already says compilation failed
-    val res = compilationRounds(testFile).find(!_.result.isOk).map(_.result).getOrElse(genPass)
-    res andAlso andAlso
+    compilationRounds(testFile)
+      .find(r => !r.result.isOk || r.result.isSkipped)
+      .map(_.result)
+      .getOrElse(genPass)
+      .andAlso(andAlso)
   }
 
   def extraClasspath = kind match {
