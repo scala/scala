@@ -30,7 +30,7 @@ sealed abstract class TestState {
 
   def shortStatus    = if (isOk) "ok" else "!!"
 
-  final def andAlso(next: => TestState): TestState = if (isOk) next else this
+  final def andAlso(next: => TestState): TestState = if (isOk && !isSkipped) next else this
 
   override def toString = status
 }

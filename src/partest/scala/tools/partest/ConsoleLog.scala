@@ -65,6 +65,7 @@ class ConsoleLog(colorEnabled: Boolean) {
   def echoWarning(msg: String) = echo(bold(red(msg)))
 
   def printDot(): Unit = printProgress(".")
+  def printS(): Unit   = printProgress(_warning + "s" +_default)
   def printEx(): Unit  = printProgress(_failure + "X" + _default)
   private def printProgress(icon: String): Unit = synchronized {
     if (dotCount >= DotWidth) {
