@@ -129,9 +129,9 @@ class UnreachableCodeTest extends ClearAfterClass {
     //   L2: ICONST_2            << dead
     //   L3: IRETURN             << dead
     //
-    // Finally, instructions in the dead basic blocks are replaced by ATHROW, as explained in
-    // a comment in BCodeBodyBuilder.
-    assertSameCode(noDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ATHROW), Op(ATHROW)))
+    // Finally, instructions in the dead basic blocks are replaced by NOP's and ATHROW's,
+    // as explained in a comment in BCodeBodyBuilder.
+    assertSameCode(noDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(NOP), Op(ATHROW)))
   }
 
   @Test

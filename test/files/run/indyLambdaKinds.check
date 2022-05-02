@@ -1,20 +1,20 @@
 Inlining into Main$.main
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 120 ins, after: 137 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 137 ins, after: 154 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 154 ins, after: 171 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 171 ins, after: 188 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 188 ins, after: 205 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 205 ins, after: 222 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 222 ins, after: 239 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 239 ins, after: 256 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 256 ins, after: 273 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 273 ins, after: 290 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 290 ins, after: 307 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 307 ins, after: 324 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 324 ins, after: 342 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 342 ins, after: 360 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 360 ins, after: 378 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 378 ins, after: 396 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 119 ins, after: 136 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 136 ins, after: 153 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 153 ins, after: 170 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 170 ins, after: 187 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 187 ins, after: 204 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 204 ins, after: 221 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 221 ins, after: 238 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 238 ins, after: 255 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 255 ins, after: 272 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 272 ins, after: 289 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 289 ins, after: 306 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 306 ins, after: 323 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 323 ins, after: 341 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 341 ins, after: 359 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 359 ins, after: 377 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 377 ins, after: 395 ins.
 Inlining into Main$.t1a: inlined A_1.a (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.
 Inlining into Main$.t2a: inlined A_1.b (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.
 Inlining into Main$.t3a: inlined A_1.c (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.

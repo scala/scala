@@ -1409,8 +1409,9 @@ class InlinerTest extends BytecodeTesting {
     // box-unbox will clean it up
     assertSameSummary(getMethod(c, "t"), List(
       ALOAD, "$anonfun$t$1", IFEQ /*A*/,
-      ICONST_1, IRETURN,
-      -1 /*A*/, ICONST_2, IRETURN))
+      ICONST_1, ISTORE, GOTO /*B*/,
+      -1 /*A*/, ICONST_2, ISTORE,
+      -1 /*B*/, ILOAD, IRETURN))
   }
 
   @Test

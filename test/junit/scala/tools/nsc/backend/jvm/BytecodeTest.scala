@@ -96,16 +96,14 @@ class BytecodeTest extends BytecodeTesting {
     // t1: no unnecessary GOTOs
     assertSameCode(getMethod(c, "t1"), List(
       VarOp(ILOAD, 1), Jump(IFEQ, Label(6)),
-      Op(ICONST_1), Jump(GOTO, Label(9)),
-      Label(6), Op(ICONST_2),
-      Label(9), Op(IRETURN)))
+      Op(ICONST_1), Op(IRETURN),
+      Label(6), Op(ICONST_2), Op(IRETURN)))
 
     // t2: no unnecessary GOTOs
     assertSameCode(getMethod(c, "t2"), List(
       VarOp(ILOAD, 1), IntOp(SIPUSH, 393), Jump(IF_ICMPNE, Label(7)),
-      Op(ICONST_1), Jump(GOTO, Label(10)),
-      Label(7), Op(ICONST_2),
-      Label(10), Op(IRETURN)))
+      Op(ICONST_1), Op(IRETURN),
+      Label(7), Op(ICONST_2), Op(IRETURN)))
 
     // t3: Array == is translated to reference equality, AnyRef == to null checks and equals
     assertSameCode(getMethod(c, "t3"), List(
@@ -137,9 +135,8 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ILOAD, 1), IntOp(BIPUSH, 10), Jump(IF_ICMPNE, Label(7)),
       VarOp(ILOAD, 2), Jump(IFNE, Label(12)),
       Label(7), VarOp(ILOAD, 1), Op(ICONST_1), Jump(IF_ICMPEQ, Label(16)),
-      Label(12), Op(ICONST_1), Jump(GOTO, Label(19)),
-      Label(16), Op(ICONST_2),
-      Label(19), Op(IRETURN)))
+      Label(12), Op(ICONST_1), Op(IRETURN),
+      Label(16), Op(ICONST_2), Op(IRETURN)))
 
     // t7: universal equality
     assertInvoke(getMethod(c, "t7"), "scala/runtime/BoxesRunTime", "equals")
@@ -176,7 +173,7 @@ class BytecodeTest extends BytecodeTesting {
       Label(0), Ldc(LDC, ""), VarOp(ASTORE, 1),
       Label(4), VarOp(ALOAD, 1), Jump(IFNULL, Label(20)),
       Label(9), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "foo", "()V", false), Label(13), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(17), Jump(GOTO, Label(4)),
-      Label(20), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", false), Label(25), Op(RETURN), Label(27)))
+      Label(20), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", false), Op(RETURN), Label(26)))
     val labels = t.instructions collect { case l: Label => l }
     val x = t.localVars.find(_.name == "x").get
     assertEquals(x.start, labels(1))
@@ -449,7 +446,7 @@ class BytecodeTest extends BytecodeTesting {
       Op(ICONST_0),
       Jump(IF_ICMPNE, Label(8)),
       VarOp(ILOAD, 2),
-      Jump(GOTO, Label(20)),
+      Op(IRETURN),
       Label(8),
       VarOp(ILOAD, 1),
       Op(ICONST_1),
@@ -460,8 +457,6 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ISTORE, 2),
       VarOp(ISTORE, 1),
       Jump(GOTO, Label(0)),
-      Label(20),
-      Op(IRETURN),
     ))
 
     // With changing the `this` value
@@ -490,7 +485,7 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ALOAD, 0),
       Field(GETFIELD, "IntList", "head", "I"),
       Op(IADD),
-      Jump(GOTO, Label(26)),
+      Op(IRETURN),
       Label(15),
       VarOp(ALOAD, 3),
       VarOp(ILOAD, 1),
@@ -500,8 +495,6 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ISTORE, 1),
       VarOp(ASTORE, 0),
       Jump(GOTO, Label(0)),
-      Label(26),
-      Op(IRETURN),
     ))
   }
 
@@ -745,20 +738,18 @@ class BytecodeTest extends BytecodeTesting {
       LookupSwitch(LOOKUPSWITCH, Label(26), List(1, 7, 8, 9), List(Label(6), Label(11), Label(16), Label(21))),
       Label(6),
       IntOp(BIPUSH, 10),
-      Jump(GOTO, Label(31)),
+      Op(IRETURN),
       Label(11),
       IntOp(BIPUSH, 20),
-      Jump(GOTO, Label(31)),
+      Op(IRETURN),
       Label(16),
       IntOp(BIPUSH, 30),
-      Jump(GOTO, Label(31)),
+      Op(IRETURN),
       Label(21),
       IntOp(BIPUSH, 40),
-      Jump(GOTO, Label(31)),
+      Op(IRETURN),
       Label(26),
       VarOp(ILOAD, 1),
-      Jump(GOTO, Label(31)),
-      Label(31),
       Op(IRETURN),
     ))
 
@@ -771,19 +762,19 @@ class BytecodeTest extends BytecodeTesting {
       LookupSwitch(LOOKUPSWITCH, Label(21), List(1, 2, 7, 8), List(Label(6), Label(6), Label(11), Label(16))),
       Label(6),
       IntOp(BIPUSH, 10),
-      Jump(GOTO, Label(40)),
+      Op(IRETURN),
       Label(11),
       IntOp(BIPUSH, 20),
-      Jump(GOTO, Label(40)),
+      Op(IRETURN),
       Label(16),
       IntOp(BIPUSH, 30),
-      Jump(GOTO, Label(40)),
+      Op(IRETURN),
       Label(21),
       VarOp(ILOAD, 2),
       IntOp(BIPUSH, 100),
       Jump(IF_ICMPLE, Label(29)),
       IntOp(BIPUSH, 20),
-      Jump(GOTO, Label(37)),
+      Op(IRETURN),
       Label(29),
       TypeOp(NEW, "scala/MatchError"),
       Op(DUP),
@@ -791,10 +782,6 @@ class BytecodeTest extends BytecodeTesting {
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false),
       Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
       Op(ATHROW),
-      Label(37),
-      Jump(GOTO, Label(40)),
-      Label(40),
-      Op(IRETURN),
     ))
   }
 
@@ -872,12 +859,11 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ILOAD, 3),
       Op(IADD),
       Invoke(INVOKEVIRTUAL, "java/io/Writer", "write", "(I)V", false),
-      Jump(GOTO, Label(40)),
+      Op(RETURN),
       Label(34),
       VarOp(ALOAD, 0),
       VarOp(ILOAD, 3),
       Invoke(INVOKESPECIAL, "SourceMapWriter", "writeBase64VLQSlowPath$1", "(I)V", false),
-      Label(40),
       Op(RETURN),
     ))
 

@@ -50,13 +50,14 @@ class TypeFlowAnalyzerTest extends BytecodeTesting {
 
   @Test
   def aaloadTypeNoMerge(): Unit = {
-    // two aaloads: the loaded type is `Object`
     val m = compileAsmMethod("def f(a: Array[String], b: Array[String]) = { if (a eq b) a(0) else b(0) }")
     val a = new NonLubbingTypeFlowAnalyzer(m, "C")
-    val v = a.frameAt(findInstr(m, "ARETURN")).getStack(0)
-    assertEquals(v.getType, BasicValue.REFERENCE_VALUE.getType)
-    assert(!v.isInstanceOf[AaloadValue])
-    assertEquals(a.preciseAaloadTypeDesc(v), "Ljava/lang/Object;")
+    for (instr <- findInstrs(m, "ARETURN")) {
+      val v = a.frameAt(instr).getStack(0)
+      assertEquals(v.getType, BasicValue.REFERENCE_VALUE.getType)
+      assert(v.isInstanceOf[AaloadValue])
+      assertEquals(a.preciseAaloadTypeDesc(v), "Ljava/lang/String;")
+    }
   }
 
   @Test
