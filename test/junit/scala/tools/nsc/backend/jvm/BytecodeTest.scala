@@ -325,4 +325,473 @@ class BytecodeTest extends BytecodeTesting {
     val mm = classOf[scala.collection.immutable.TreeMap[_, _]].getDeclaredMethod(mn, classOf[Object])
     assertEquals(mn, mm.getName)
   }
+
+  @Test def tailrecControlFlow(): Unit = {
+    // Without change of the `this` value
+
+    val sourceFoo =
+      s"""class Foo {
+         |  @scala.annotation.tailrec // explicit @tailrec here
+         |  final def fact(n: Int, acc: Int): Int =
+         |    if (n == 0) acc
+         |    else fact(n - 1, acc * n)
+         |}
+         """.stripMargin
+
+    val fooClass = compileClass(sourceFoo)
+
+    assertSameCode(getMethod(fooClass, "fact"), List(
+      Label(0),
+      VarOp(ILOAD, 1),
+      Op(ICONST_0),
+      Jump(IF_ICMPNE, Label(8)),
+      VarOp(ILOAD, 2),
+      Jump(GOTO, Label(20)),
+      Label(8),
+      VarOp(ILOAD, 1),
+      Op(ICONST_1),
+      Op(ISUB),
+      VarOp(ILOAD, 2),
+      VarOp(ILOAD, 1),
+      Op(IMUL),
+      VarOp(ISTORE, 2),
+      VarOp(ISTORE, 1),
+      Jump(GOTO, Label(0)),
+      Label(20),
+      Op(IRETURN),
+    ))
+
+    // With changing the `this` value
+
+    val sourceIntList =
+      s"""class IntList(head: Int, tail: IntList) {
+         |  // implicit @tailrec
+         |  final def sum(acc: Int): Int = {
+         |    val t = tail
+         |    if (t == null) acc + head
+         |    else t.sum(acc + head)
+         |  }
+         |}
+         """.stripMargin
+
+    val intListClass = compileClass(sourceIntList)
+
+    assertSameCode(getMethod(intListClass, "sum"), List(
+      Label(0),
+      VarOp(ALOAD, 0),
+      Field(GETFIELD, "IntList", "tail", "LIntList;"),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      Jump(IFNONNULL, Label(15)),
+      VarOp(ILOAD, 1),
+      VarOp(ALOAD, 0),
+      Field(GETFIELD, "IntList", "head", "I"),
+      Op(IADD),
+      Jump(GOTO, Label(26)),
+      Label(15),
+      VarOp(ALOAD, 3),
+      VarOp(ILOAD, 1),
+      VarOp(ALOAD, 0),
+      Field(GETFIELD, "IntList", "head", "I"),
+      Op(IADD),
+      VarOp(ISTORE, 1),
+      VarOp(ASTORE, 0),
+      Jump(GOTO, Label(0)),
+      Label(26),
+      Op(IRETURN),
+    ))
+  }
+
+  @Test def patmatControlFlow(): Unit = {
+    val source =
+      s"""class Foo {
+         |  def m1(xs: List[Int]): Int = xs match {
+         |    case x :: xr => x
+         |    case Nil     => 20
+         |  }
+         |
+         |  def m2(xs: List[Int]): Int = xs match {
+         |    case (1 | 2) :: xr => 10
+         |    case x :: xr => x
+         |    case _ => 20
+         |  }
+         |
+         |  def m3(xs: List[Int]): Unit = xs match {
+         |    case x :: _ => println(x)
+         |    case Nil    => println("nil")
+         |  }
+         |}
+         """.stripMargin
+
+    val fooClass = compileClass(source)
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m1"), List(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(20)),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 5),
+      VarOp(ILOAD, 5),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(44)),
+      Label(20),
+      Jump(GOTO, Label(23)),
+      Label(23),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(33)),
+      IntOp(BIPUSH, 20),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(44)),
+      Label(33),
+      Jump(GOTO, Label(36)),
+      Label(36),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(44),
+      VarOp(ILOAD, 2),
+      Op(IRETURN),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m2"), List(
+      Op(ICONST_0),
+      VarOp(ISTORE, 4),
+      Op(ACONST_NULL),
+      VarOp(ASTORE, 5),
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 6),
+      VarOp(ALOAD, 6),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(57)),
+      Op(ICONST_1),
+      VarOp(ISTORE, 4),
+      VarOp(ALOAD, 6),
+      TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
+      VarOp(ASTORE, 5),
+      VarOp(ALOAD, 5),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 7),
+      Op(ICONST_1),
+      VarOp(ILOAD, 7),
+      Jump(IF_ICMPNE, Label(28)),
+      Op(ICONST_1),
+      VarOp(ISTORE, 3),
+      Jump(GOTO, Label(47)),
+      Label(28),
+      Jump(GOTO, Label(31)),
+      Label(31),
+      Op(ICONST_2),
+      VarOp(ILOAD, 7),
+      Jump(IF_ICMPNE, Label(39)),
+      Op(ICONST_1),
+      VarOp(ISTORE, 3),
+      Jump(GOTO, Label(47)),
+      Label(39),
+      Jump(GOTO, Label(42)),
+      Label(42),
+      Op(ICONST_0),
+      VarOp(ISTORE, 3),
+      Jump(GOTO, Label(47)),
+      Label(47),
+      VarOp(ILOAD, 3),
+      Jump(IFEQ, Label(54)),
+      IntOp(BIPUSH, 10),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(82)),
+      Label(54),
+      Jump(GOTO, Label(60)),
+      Label(57),
+      Jump(GOTO, Label(60)),
+      Label(60),
+      VarOp(ILOAD, 4),
+      Jump(IFEQ, Label(73)),
+      VarOp(ALOAD, 5),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 8),
+      VarOp(ILOAD, 8),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(82)),
+      Label(73),
+      Jump(GOTO, Label(76)),
+      Label(76),
+      IntOp(BIPUSH, 20),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(82)),
+      Label(82),
+      VarOp(ILOAD, 2),
+      Op(IRETURN),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m3"), List(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(24)),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 5),
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
+      VarOp(ILOAD, 5),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
+      Field(GETSTATIC, "scala/runtime/BoxedUnit", "UNIT", "Lscala/runtime/BoxedUnit;"),
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(51)),
+      Label(24),
+      Jump(GOTO, Label(27)),
+      Label(27),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(40)),
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
+      Ldc(LDC, "nil"),
+      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
+      Field(GETSTATIC, "scala/runtime/BoxedUnit", "UNIT", "Lscala/runtime/BoxedUnit;"),
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(51)),
+      Label(40),
+      Jump(GOTO, Label(43)),
+      Label(43),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(51),
+      Op(RETURN),
+    ))
+  }
+
+  @Test def switchControlFlow(): Unit = {
+    val source =
+      s"""import scala.annotation.switch
+         |
+         |class Foo {
+         |  def m1(x: Int): Int = (x: @switch) match {
+         |    case 1 => 10
+         |    case 7 => 20
+         |    case 8 => 30
+         |    case 9 => 40
+         |    case _ => x
+         |  }
+         |
+         |  def m2(x: Int): Int = (x: @switch) match {
+         |    case (1 | 2)      => 10
+         |    case 7            => 20
+         |    case 8            => 30
+         |    case c if c > 100 => 20
+         |  }
+         |}
+         """.stripMargin
+
+    val fooClass = compileClass(source)
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m1"), List(
+      VarOp(ILOAD, 1),
+      VarOp(ISTORE, 2),
+      VarOp(ILOAD, 2),
+      LookupSwitch(LOOKUPSWITCH, Label(26), List(1, 7, 8, 9), List(Label(6), Label(11), Label(16), Label(21))),
+      Label(6),
+      IntOp(BIPUSH, 10),
+      Jump(GOTO, Label(31)),
+      Label(11),
+      IntOp(BIPUSH, 20),
+      Jump(GOTO, Label(31)),
+      Label(16),
+      IntOp(BIPUSH, 30),
+      Jump(GOTO, Label(31)),
+      Label(21),
+      IntOp(BIPUSH, 40),
+      Jump(GOTO, Label(31)),
+      Label(26),
+      VarOp(ILOAD, 1),
+      Jump(GOTO, Label(31)),
+      Label(31),
+      Op(IRETURN),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m2"), List(
+      VarOp(ILOAD, 1),
+      VarOp(ISTORE, 2),
+      VarOp(ILOAD, 2),
+      LookupSwitch(LOOKUPSWITCH, Label(21), List(1, 2, 7, 8), List(Label(6), Label(6), Label(11), Label(16))),
+      Label(6),
+      IntOp(BIPUSH, 10),
+      Jump(GOTO, Label(40)),
+      Label(11),
+      IntOp(BIPUSH, 20),
+      Jump(GOTO, Label(40)),
+      Label(16),
+      IntOp(BIPUSH, 30),
+      Jump(GOTO, Label(40)),
+      Label(21),
+      VarOp(ILOAD, 2),
+      IntOp(BIPUSH, 100),
+      Jump(IF_ICMPLE, Label(29)),
+      IntOp(BIPUSH, 20),
+      Jump(GOTO, Label(37)),
+      Label(29),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ILOAD, 2),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(37),
+      Jump(GOTO, Label(40)),
+      Label(40),
+      Op(IRETURN),
+    ))
+  }
+
+  @Test def ifThenElseControlFlow(): Unit = {
+    /* This is a test case coming from the Scala.js linker, where in Scala 2 we
+     * had to introduce a "useless" `return` to make the bytecode size smaller,
+     * measurably increasing performance (!).
+     */
+
+    val source =
+      s"""import java.io.Writer
+         |
+         |final class SourceMapWriter(out: Writer) {
+         |  private val Base64Map =
+         |      "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+         |      "abcdefghijklmnopqrstuvwxyz" +
+         |      "0123456789+/"
+         |
+         |  private final val VLQBaseShift = 5
+         |  private final val VLQBase = 1 << VLQBaseShift
+         |  private final val VLQBaseMask = VLQBase - 1
+         |  private final val VLQContinuationBit = VLQBase
+         |
+         |  def entryPoint(value: Int): Unit = writeBase64VLQ(value)
+         |
+         |  private def writeBase64VLQ(value0: Int): Unit = {
+         |    val signExtended = value0 >> 31
+         |    val value = (((value0 ^ signExtended) - signExtended) << 1) | (signExtended & 1)
+         |    if (value < 26) {
+         |      out.write('A' + value) // was `return out...`
+         |    } else {
+         |      def writeBase64VLQSlowPath(value0: Int): Unit = {
+         |        var value = value0
+         |        do {
+         |          var digit = value & VLQBaseMask
+         |          value = value >>> VLQBaseShift
+         |          if (value != 0)
+         |            digit |= VLQContinuationBit
+         |          out.write(Base64Map.charAt(digit))
+         |        } while (value != 0)
+         |      }
+         |      writeBase64VLQSlowPath(value)
+         |    }
+         |  }
+         |}
+         """.stripMargin
+
+    val sourceMapWriterClass = compileClass(source)
+
+    // ---------------
+
+    assertSameCode(getMethod(sourceMapWriterClass, "writeBase64VLQ"), List(
+      VarOp(ILOAD, 1),
+      IntOp(BIPUSH, 31),
+      Op(ISHR),
+      VarOp(ISTORE, 2),
+      VarOp(ILOAD, 1),
+      VarOp(ILOAD, 2),
+      Op(IXOR),
+      VarOp(ILOAD, 2),
+      Op(ISUB),
+      Op(ICONST_1),
+      Op(ISHL),
+      VarOp(ILOAD, 2),
+      Op(ICONST_1),
+      Op(IAND),
+      Op(IOR),
+      VarOp(ISTORE, 3),
+      VarOp(ILOAD, 3),
+      IntOp(BIPUSH, 26),
+      Jump(IF_ICMPGE, Label(34)),
+      VarOp(ALOAD, 0),
+      Field(GETFIELD, "SourceMapWriter", "out", "Ljava/io/Writer;"),
+      IntOp(BIPUSH, 65),
+      VarOp(ILOAD, 3),
+      Op(IADD),
+      Invoke(INVOKEVIRTUAL, "java/io/Writer", "write", "(I)V", false),
+      Jump(GOTO, Label(40)),
+      Label(34),
+      VarOp(ALOAD, 0),
+      VarOp(ILOAD, 3),
+      Invoke(INVOKESPECIAL, "SourceMapWriter", "writeBase64VLQSlowPath$1", "(I)V", false),
+      Label(40),
+      Op(RETURN),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(sourceMapWriterClass, "writeBase64VLQSlowPath$1"), List(
+      VarOp(ILOAD, 1),
+      VarOp(ISTORE, 2),
+      Label(4),
+      VarOp(ILOAD, 2),
+      IntOp(BIPUSH, 31),
+      Op(IAND),
+      VarOp(ISTORE, 3),
+      VarOp(ILOAD, 2),
+      Op(ICONST_5),
+      Op(IUSHR),
+      VarOp(ISTORE, 2),
+      VarOp(ILOAD, 2),
+      Op(ICONST_0),
+      Jump(IF_ICMPEQ, Label(29)),
+      VarOp(ILOAD, 3),
+      IntOp(BIPUSH, 32),
+      Op(IOR),
+      VarOp(ISTORE, 3),
+      Jump(GOTO, Label(29)),
+      Label(29),
+      VarOp(ALOAD, 0),
+      Field(GETFIELD, "SourceMapWriter", "out", "Ljava/io/Writer;"),
+      VarOp(ALOAD, 0),
+      Invoke(INVOKESPECIAL, "SourceMapWriter", "Base64Map", "()Ljava/lang/String;", false),
+      VarOp(ILOAD, 3),
+      Invoke(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false),
+      Invoke(INVOKEVIRTUAL, "java/io/Writer", "write", "(I)V", false),
+      VarOp(ILOAD, 2),
+      Op(ICONST_0),
+      Jump(IF_ICMPEQ, Label(47)),
+      Jump(GOTO, Label(4)),
+      Label(47),
+      Op(RETURN),
+    ))
+  }
 }
