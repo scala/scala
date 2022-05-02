@@ -2,7 +2,7 @@ package scala.tools.testing
 
 import java.io.{IOException, File}
 import java.nio.file.{Path, Files}
-import scala.util.{Properties, Try}
+import scala.util.Properties
 import Using.Releasable
 
 object TempDir {

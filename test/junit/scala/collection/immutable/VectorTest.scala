@@ -5,6 +5,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
+import scala.tools.testing.AssertUtil._
+
 @RunWith(classOf[JUnit4])
 class VectorTest {
 
@@ -26,5 +28,11 @@ class VectorTest {
     assertEquals(Vector.empty[Int], v takeRight Int.MinValue)
     assertEquals(v, v drop Int.MinValue)
     assertEquals(v, v dropRight Int.MinValue)
+  }
+  @Test def `VectorBuilder.clear retains nothing`: Unit = {
+    val b = new VectorBuilder[Object]()
+    val x = new Object
+    for (_ <- 0 to 16384) b += x
+    assertNotReachable(x, b)(b.clear())
   }
 }
