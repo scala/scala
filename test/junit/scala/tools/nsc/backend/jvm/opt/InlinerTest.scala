@@ -1443,17 +1443,10 @@ class InlinerTest extends BytecodeTesting {
     val c = compileClass(code)
 
     // box-unbox will clean it up
-    try assertSameSummary(getMethod(c, "t"), List(
+    assertSameSummary(getMethod(c, "t"), List(
       ALOAD, "$anonfun$t$1", IFEQ /*A*/,
       "$anonfun$t$2", IRETURN,
       -1 /*A*/, "$anonfun$t$3", IRETURN))
-    catch { case e: AssertionError =>
-      try assertSameSummary(getMethod(c, "t"), List( // this is the new behaviour, after restarr'ing
-        ALOAD, "debug", IFEQ /*A*/,
-        "$anonfun$t$2", IRETURN,
-        -1 /*A*/, "$anonfun$t$3", IRETURN))
-      catch { case _: AssertionError => throw e }
-    }
   }
 
   @Test
