@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testing.RunTesting
 
 object BoxUnboxTest {
@@ -12,6 +13,7 @@ object BoxUnboxTest {
 }
 
 @RunWith(classOf[JUnit4])
+@nowarn("msg=comparing values")
 class BoxUnboxTest extends RunTesting {
 
   @Test

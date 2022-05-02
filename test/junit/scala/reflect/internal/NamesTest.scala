@@ -1,11 +1,12 @@
 package scala.reflect.internal
 
-import scala.tools.testing.AssertUtil._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
+import scala.annotation.nowarn
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
+import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class NamesTest {
@@ -33,6 +34,7 @@ class NamesTest {
     assertTrue(h1 != f)
   }
 
+  @nowarn("msg=comparing values")
   @Test
   def termNamesNotEqualsTypeNames() {
     assert(h1 ne h1y)
