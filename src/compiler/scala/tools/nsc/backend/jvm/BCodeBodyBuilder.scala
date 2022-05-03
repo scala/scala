@@ -323,6 +323,24 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           abort(s"Unexpected New(${tpt.summaryString}/$tpt) reached GenBCode.\n" +
                 "  Call was genLoad" + ((tree, expectedType)))
 
+        case app @ Apply(fun, args) if fun.symbol.isLabel =>
+          // jump to a label
+          val sym = fun.symbol
+          getJumpDestOrCreate(sym) match {
+            case JumpDestination.Regular(label) =>
+              val lblDef = labelDef.getOrElse(sym, {
+                abort("Not found: " + sym + " in " + labelDef)
+              })
+              genLoadLabelArguments(args, lblDef, app.pos)
+              bc goTo label
+              generatedDest = LoadDestination.Jump(label)
+            case JumpDestination.LoadArgTo(paramType, jumpDest) =>
+              assert(args.sizeIs == 1, s"unexpected argument count for LoadArgTo label $sym")
+              val arg = args.head
+              genLoadTo(arg, paramType, jumpDest)
+              generatedDest = jumpDest
+          }
+
         case app : Apply =>
           generatedType = genApply(app, expectedType)
 
@@ -529,9 +547,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     private def genLabelDefTo(lblDf: LabelDef, expectedType: BType, dest: LoadDestination): Unit = {
       // duplication of LabelDefs contained in `finally`-clauses is handled when emitting RETURN. No bookkeeping for that required here.
       // no need to call index() over lblDf.params, on first access that magic happens (moreover, no LocalVariableTable entries needed for them).
-      markProgramPoint(programPoint(lblDf.symbol))
-      lineNumber(lblDf)
-      genLoadTo(lblDf.rhs, expectedType, dest)
+
+      // If we get inside genLabelDefTo, no one has or will register a non-regular jump destination for this LabelDef
+      (getJumpDestOrCreate(lblDf.symbol): @unchecked) match {
+        case JumpDestination.Regular(label) =>
+          markProgramPoint(label)
+          lineNumber(lblDf)
+          genLoadTo(lblDf.rhs, expectedType, dest)
+      }
     }
 
     private def genReturn(r: Return): Unit = {
@@ -684,11 +707,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case app @ Apply(fun, args) =>
           val sym = fun.symbol
 
-          if (sym.isLabel) { // jump to a label
-            def notFound() = abort("Not found: " + sym + " in " + labelDef)
-            genLoadLabelArguments(args, labelDef.getOrElse(sym, notFound()), app.pos)
-            bc goTo programPoint(sym)
-          } else if (isPrimitive(sym)) { // primitive method call
+          if (isPrimitive(sym)) { // primitive method call
             generatedType = genPrimitiveOp(app, expectedType)
           } else { // normal method call
             def isTraitSuperAccessorBodyCall = app.hasAttachment[UseInvokeSpecial.type]
@@ -856,8 +875,97 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val Block(stats, expr) = tree
       val savedScope = varsInScope
       varsInScope = Nil
-      stats foreach genStat
-      genLoadTo(expr, expectedType, dest)
+
+      /* Optimize common patmat-generated shapes, so that we can push the
+       * `dest` down the various cases.
+       *
+       * The two most common shapes are
+       *
+       *   {
+       *     initStats
+       *     case1() { ... matchEnd(caseBody1) ... }
+       *     ...
+       *     caseN() { ... matchEnd(caseBodyN) ... }
+       *     matchEnd(x: R) {
+       *       x
+       *     }
+       *   }
+       *
+       * for non-unit results, and
+       *
+       *   {
+       *     initStats
+       *     case1() { ... matchEnd(caseBody1) ... }
+       *     ...
+       *     caseN() { ... matchEnd(caseBodyN) ... }
+       *     matchEnd(x: BoxedUnit$) {
+       *       ()
+       *     }
+       *   }
+       *
+       * for unit results.
+       *
+       * If we do nothing, when we encounter the calls to `matchEnd` in the
+       * cases, we don't know yet what is the final `dest` of the block, so we
+       * cannot generate good code.
+       *
+       * Here, we recognize those shapes, and if we find them, we record a
+       * priori the ultimate `dest` of the full match. This allows to push
+       * `dest` to all the cases.
+       *
+       * For the transformation to be correct, control must not flow into
+       * `matchEnd` "normally" (i.e., not through a label apply). This is
+       * always the case for patmat-generated `matchEnd`s, but not for
+       * arbitrary LabelDefs. In particular, it is not true for
+       * tailrec-generarted LabelDefs. Therefore, we add specific tests to
+       * only recognize patmat-generated `matchEnd` labels this way.
+       *
+       * There are some rare cases where patmat will generate other shapes.
+       * For example, the source-code shape `return x match { ... }` transfers
+       * the `return` right around the `matchEnd`, for some reason, instead of
+       * around the entire Block. Those rare shapes are not recognized here.
+       * For them, the default (non-optimal) codegen will apply.
+       */
+
+      def default(): Unit = {
+        stats foreach genStat
+        genLoadTo(expr, expectedType, dest)
+      }
+
+      def optimizedMatch(sym: Symbol): Unit = {
+        if (dest == LoadDestination.FallThrough) {
+          val label = new asm.Label
+          jumpDest += ((sym -> JumpDestination.LoadArgTo(expectedType, LoadDestination.Jump(label))))
+          stats foreach genStat
+          markProgramPoint(label)
+        } else {
+          jumpDest += ((sym -> JumpDestination.LoadArgTo(expectedType, dest)))
+          stats foreach genStat
+        }
+      }
+
+      def isMatchEndLabelDef(tree: LabelDef): Boolean =
+        treeInfo.hasSynthCaseSymbol(tree) && tree.symbol.name.startsWith("matchEnd")
+
+      expr match {
+        case matchEnd @ LabelDef(_, singleArg :: Nil, body) if isMatchEndLabelDef(matchEnd) =>
+          val sym = matchEnd.symbol
+          body match {
+            case _ if jumpDest.contains(sym) =>
+              // We already generated a jump to this label in the regular way; we cannot optimize anymore
+              default()
+            case bodyIdent: Ident if bodyIdent.symbol == singleArg.symbol =>
+              optimizedMatch(sym)
+            case Literal(Constant(())) =>
+              optimizedMatch(sym)
+            case _ =>
+              default()
+          }
+
+        case _ =>
+          default()
+      }
+
       val end = currProgramPoint()
       if (emitVars) { // add entries to LocalVariableTable JVM attribute
         for ((sym, start) <- varsInScope.reverse) { emitLocalVarScope(sym, start, end) }
