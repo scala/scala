@@ -292,13 +292,19 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      *  A related map is `labelDef`: it has the same keys as `jumpDest` but its values are LabelDef nodes not asm.Labels.
      *
      */
-    var jumpDest: immutable.Map[ /* LabelDef */ Symbol, asm.Label ] = null
-    def programPoint(labelSym: Symbol): asm.Label = {
+    sealed abstract class JumpDestination
+    object JumpDestination {
+      case class Regular(label: asm.Label) extends JumpDestination
+      case class LoadArgTo(expectedType: BType, dest: LoadDestination) extends JumpDestination
+    }
+
+    var jumpDest: immutable.Map[ /* LabelDef */ Symbol, JumpDestination ] = null
+    def getJumpDestOrCreate(labelSym: Symbol): JumpDestination = {
       assert(labelSym.isLabel, s"trying to map a non-label symbol to an asm.Label, at: ${labelSym.pos}")
       jumpDest.getOrElse(labelSym, {
-        val pp = new asm.Label
-        jumpDest += (labelSym -> pp)
-        pp
+        val regularDest = JumpDestination.Regular(new asm.Label)
+        jumpDest += (labelSym -> regularDest)
+        regularDest
       })
     }
 
@@ -479,7 +485,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     // on entering a method
     def resetMethodBookkeeping(dd: DefDef) {
       locals.reset(isStaticMethod = methSymbol.isStaticMember)
-      jumpDest = immutable.Map.empty[ /* LabelDef */ Symbol, asm.Label ]
+      jumpDest = immutable.Map.empty
       // populate labelDefsAtOrUnder
       val ldf = new LabelDefsFinder(dd.rhs)
       ldf(dd.rhs)

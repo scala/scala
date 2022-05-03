@@ -485,11 +485,10 @@ class MethodLevelOptsTest extends BytecodeTesting {
     val c = compileClass(code)
 
     assertSameSummary(getMethod(c, "t"), List(
-      BIPUSH, ILOAD, IF_ICMPNE,
-      BIPUSH, ILOAD, IF_ICMPNE,
-      LDC, ASTORE, GOTO,
-      -1, LDC, ASTORE,
-      -1, ALOAD, ARETURN))
+      BIPUSH, ILOAD, IF_ICMPNE /*A*/,
+      BIPUSH, ILOAD, IF_ICMPNE /*A*/,
+      LDC, ARETURN,
+      -1 /*A*/, LDC, ARETURN))
   }
 
   @Test
