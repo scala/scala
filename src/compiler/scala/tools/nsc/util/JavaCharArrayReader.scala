@@ -14,8 +14,9 @@ package scala
 package tools.nsc
 package util
 
-import scala.reflect.internal.Chars._
 import scala.collection.immutable.ArraySeq
+import scala.reflect.internal.Chars._
+import scala.util.chaining._
 
 class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, startcol: int, */
                       decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
@@ -76,4 +77,8 @@ class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, s
 
   def copy: JavaCharArrayReader =
     new JavaCharArrayReader(buf, bp, /* nextcol, nextline, */ decodeUni, error)
+
+  // a copy of this reader that is primed to read starting at the current character.
+  def lookahead: JavaCharArrayReader =
+    new JavaCharArrayReader(buf, bp-1, /* nextcol, nextline, */ decodeUni, error).tap(_.next())
 }
