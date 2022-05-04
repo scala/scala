@@ -27,4 +27,8 @@ object Test extends App {
   println("====")
   println(valueOf[TextBlocks.emptyString.type])
   println("====")
+  println(valueOf[TextBlocks.XY.type])
+  println("====")
+  println(valueOf[TextBlocks.Octal.type])
+  println("====")
 }
