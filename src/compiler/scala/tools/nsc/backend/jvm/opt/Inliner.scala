@@ -498,27 +498,33 @@ abstract class Inliner {
 
       def drop(slot: Int) = returnReplacement add getPop(frame.peekStack(slot).getSize)
 
-      // for non-void methods, store the stack top into the return local variable
-      if (hasReturnValue) {
-        returnReplacement add returnValueStore(originalReturn)
-        stackHeight -= 1
-      }
+      if (stackHeight == (if (hasReturnValue) 1 else 0)) {
+        // In most cases, the xRETURN we found should be at an empty stack height,
+        // either because it comes from Java in statement position, or because
+        // it comes from Scala in a tail expression position. For this common
+        // case, we don't have to manipulate the stack at all; we only leave
+        // the optional return value on the stack before jumping
+      } else {
+        // Otherwise, we have to empty the stack and only leave the optional
+        // return value on the stack.
 
-      // drop the rest of the stack
-      for (i <- 0 until stackHeight) drop(i)
+        // for non-void methods, store the stack top into the return local variable
+        if (hasReturnValue) {
+          returnReplacement add returnValueStore(originalReturn)
+          stackHeight -= 1
+        }
+
+        // drop the rest of the stack
+        for (i <- 0 until stackHeight) drop(i)
+
+        // load the return value back on the stack
+        if (hasReturnValue)
+          returnReplacement add new VarInsnNode(returnType.getOpcode(ILOAD), returnValueIndex)
+      }
 
       returnReplacement add new JumpInsnNode(GOTO, postCallLabel)
       clonedInstructions.insert(inlinedReturn, returnReplacement)
       clonedInstructions.remove(inlinedReturn)
-    }
-
-    // Load instruction for the return value
-    if (hasReturnValue) {
-      val retVarLoad = {
-        val opc = returnType.getOpcode(ILOAD)
-        new VarInsnNode(opc, returnValueIndex)
-      }
-      clonedInstructions.insert(postCallLabel, retVarLoad)
     }
 
     undo.saveMethodState(callsiteMethod)
