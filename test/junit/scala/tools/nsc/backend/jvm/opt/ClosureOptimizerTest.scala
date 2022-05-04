@@ -41,7 +41,7 @@ class ClosureOptimizerTest extends BytecodeTesting {
       """.stripMargin
 
     val c = compileClass(code)
-    assertSameSummary(getMethod(c, "t"), List(ALOAD, "isEmpty", IFEQ /*10*/, ACONST_NULL, ASTORE, GOTO /*14*/, -1 /*10*/, ALOAD, ASTORE, -1 /*14*/, ALOAD, CHECKCAST, ARETURN))
+    assertSameSummary(getMethod(c, "t"), List(ALOAD, "isEmpty", IFEQ /*9*/, ACONST_NULL, GOTO /*12*/, -1 /*9*/, ALOAD, -1 /*12*/, CHECKCAST, ARETURN))
   }
 
   @Test
