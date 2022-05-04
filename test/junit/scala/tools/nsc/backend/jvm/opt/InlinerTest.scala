@@ -80,8 +80,8 @@ class InlinerTest extends BytecodeTesting {
     assertSameCode(gConv,
       List(
         VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
-        Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
-        Label(10), VarOp(ILOAD, 2), // load return value
+        Op(ICONST_1), Jump(GOTO, Label(10)), // load return value
+        Label(10),
         VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IADD), Op(IRETURN)))
 
     // line numbers are kept, so there's a line 2 (from the inlined f)
@@ -115,10 +115,8 @@ class InlinerTest extends BytecodeTesting {
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
 
     val gBeforeLocalOpt = VarOp(ALOAD, 0) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
-      VarOp(ASTORE, 2),
-      Jump(GOTO, Label(11)),
-      Label(11),
-      VarOp(ALOAD, 2),
+      Jump(GOTO, Label(14)),
+      Label(14),
       Op(ATHROW))
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)
@@ -372,13 +370,13 @@ class InlinerTest extends BytecodeTesting {
     assert(g1.maxStack == 7 && f1.maxStack == 6, s"${g1.maxStack} - ${f1.maxStack}")
 
     // locals in f1: this, x, a
-    // locals in g1 after inlining: this, this-of-f1, x, a, return value
-    assert(g1.maxLocals == 5 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
+    // locals in g1 after inlining: this, this-of-f1, x, a
+    assert(g1.maxLocals == 4 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
 
     // like maxStack in g1 / f1
     assert(g2.maxStack == 5 && f2.maxStack == 4, s"${g2.maxStack} - ${f2.maxStack}")
 
-    // like maxLocals for g1 / f1, but no return value
+    // like maxLocals for g1 / f1
     assert(g2.maxLocals == 4 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
   }
 
@@ -1443,17 +1441,10 @@ class InlinerTest extends BytecodeTesting {
     val c = compileClass(code)
 
     // box-unbox will clean it up
-    try assertSameSummary(getMethod(c, "t"), List(
+    assertSameSummary(getMethod(c, "t"), List(
       ALOAD, "$anonfun$t$1", IFEQ /*A*/,
       "$anonfun$t$2", IRETURN,
       -1 /*A*/, "$anonfun$t$3", IRETURN))
-    catch { case e: AssertionError =>
-      try assertSameSummary(getMethod(c, "t"), List( // this is the new behaviour, after restarr'ing
-        ALOAD, "debug", IFEQ /*A*/,
-        "$anonfun$t$2", IRETURN,
-        -1 /*A*/, "$anonfun$t$3", IRETURN))
-      catch { case _: AssertionError => throw e }
-    }
   }
 
   @Test
