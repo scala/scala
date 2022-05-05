@@ -244,7 +244,7 @@ object TastyTest {
     def scrub(source: String, output: String): String = {
       output.linesIterator.collect {
         case header if header.contains(source) =>
-          val filePart = source.split(Files.pathSep).last
+          val filePart = source.split(java.util.regex.Pattern.quote(Files.pathSep)).last
           header.trim.replace(source, filePart)
         case ok => ok
       }.mkString(System.lineSeparator())
