@@ -1515,6 +1515,15 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           emitLocalVarScopes()
           varsInScope = savedScope
 
+        case If(condp, thenp, elsep) =>
+          val innerSuccess = new asm.Label
+          val innerFailure = new asm.Label
+          genCond(condp, innerSuccess, innerFailure, targetIfNoJump = innerSuccess)
+          markProgramPoint(innerSuccess)
+          genCond(thenp, success, failure, targetIfNoJump = innerFailure)
+          markProgramPoint(innerFailure)
+          genCond(elsep, success, failure, targetIfNoJump)
+
         case _ => loadAndTestBoolean()
       }
 
