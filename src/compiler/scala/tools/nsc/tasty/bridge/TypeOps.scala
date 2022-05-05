@@ -36,8 +36,11 @@ trait TypeOps { self: TastyUniverse =>
 
   /** `*:` erases to either TupleXXL or Product */
   @inline final def genTupleIsUnsupported[T](name: String)(implicit ctx: Context): T = unsupportedError(s"generic tuple type $name in ${boundsString(ctx.owner)}")
-  @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"function type with more than 22 parameters in ${boundsString(ctx.owner)}: $tpeStr")
-  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type in ${boundsString(ctx.owner)}: $tpeStr")
+  @inline final def fnIsUnsupported[T](kind: String => String, tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"${kind("function type")} in ${boundsString(ctx.owner)}: $tpeStr")
+  @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = fnIsUnsupported(ft => s"$ft with more than 22 parameters", tpeStr)
+  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = fnIsUnsupported(ft => s"context $ft", tpeStr)
+  @inline final def erasedFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = fnIsUnsupported(ft => s"erased $ft", tpeStr)
+  @inline final def erasedCtxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = fnIsUnsupported(ft => s"erased context $ft", tpeStr)
   @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
   @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in ${boundsString(ctx.owner)}")
   @inline final def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
@@ -142,6 +145,7 @@ trait TypeOps { self: TastyUniverse =>
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
     final val TargetNameAnnotationClass: Symbol = u.definitions.TargetNameAnnotationClass
     final val StaticMethodAnnotationClass: Symbol = u.definitions.StaticMethodAnnotationClass
+    final val ExperimentalAnnotationClass: Symbol = u.definitions.ExperimentalAnnotationClass
 
     object PolyFunctionType {
 
@@ -258,12 +262,15 @@ trait TypeOps { self: TastyUniverse =>
 
     def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
 
-      def formatFnType(arrow: String, arity: Int, args: List[Type]): String = {
+      def formatFnType(arrow: String, isErased: Boolean, arity: Int, args: List[Type]): String = {
         val len = args.length
         assert(len == arity + 1) // tasty should be type checked already
         val res = args.last
         val params = args.init
-        val paramsBody = params.mkString(",")
+        val paramsBody = {
+          val body = params.mkString(",")
+          if (isErased) s"erased $body" else body
+        }
         val argList = if (len == 2) paramsBody else s"($paramsBody)"
         s"$argList $arrow $res"
       }
@@ -271,8 +278,10 @@ trait TypeOps { self: TastyUniverse =>
       def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
         case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
           unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
-        case ContextFunctionType(n) => ctxFnIsUnsupported(formatFnType("?=>", n, args))
-        case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", n, args))
+        case ContextFunctionType(n) => ctxFnIsUnsupported(formatFnType("?=>", isErased = false, n, args))
+        case ErasedContextFunctionType(n) => erasedCtxFnIsUnsupported(formatFnType("?=>", isErased = true, n, args))
+        case ErasedFunctionType(n) => erasedFnIsUnsupported(formatFnType("=>", isErased = true, n, args))
+        case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", isErased = false, n, args))
         case _ =>
           u.appliedType(tycon, args)
       }
@@ -326,15 +335,17 @@ trait TypeOps { self: TastyUniverse =>
       if (prefix.typeSymbol === u.definitions.ScalaPackage) {
         name match {
           case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
-            case tpnme.And                                              => AndTpe
-            case tpnme.Or                                               => unionIsUnsupported
-            case tpnme.ContextFunctionN(n) if (n.toInt > 0)             => ContextFunctionType(n.toInt)
-            case tpnme.FunctionN(n)        if (n.toInt > 22)            => FunctionXXLType(n.toInt)
-            case tpnme.TupleCons                                        => genTupleIsUnsupported("scala.*:")
-            case tpnme.Tuple               if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
-            case tpnme.AnyKind                                          => u.definitions.AnyTpe
-            case tpnme.Matchable                                        => u.definitions.AnyTpe
-            case _                                                      => doLookup
+            case tpnme.And                                                    => AndTpe
+            case tpnme.Or                                                     => unionIsUnsupported
+            case tpnme.ContextFunctionN(n)                                    => ContextFunctionType(n.toInt)
+            case tpnme.FunctionN(n)              if (n.toInt > 22)            => FunctionXXLType(n.toInt)
+            case tpnme.TupleCons                                              => genTupleIsUnsupported("scala.*:")
+            case tpnme.Tuple                     if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
+            case tpnme.AnyKind                                                => u.definitions.AnyTpe
+            case tpnme.Matchable                                              => u.definitions.AnyTpe
+            case tpnme.ErasedContextFunctionN(n) if n.toInt > 0               => ErasedContextFunctionType(n.toInt)
+            case tpnme.ErasedFunctionN(n)                                     => ErasedFunctionType(n.toInt)
+            case _                                                            => doLookup
           }
 
           case _ => doLookup
@@ -486,6 +497,14 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndTpe extends Type
 
+  case class ErasedFunctionType(arity: Int) extends Type {
+    assert(arity > 0)
+  }
+
+  case class ErasedContextFunctionType(arity: Int) extends Type {
+    assert(arity > 0)
+  }
+
   case class ContextFunctionType(arity: Int) extends Type {
     assert(arity > 0)
   }
@@ -495,7 +514,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private val SyntheticScala3Type =
-    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:|Tuple|Matchable)$$".r
+    raw"^(?:&|\||AnyKind|(?:Erased)?(?:Context)?Function\d+|\*:|Tuple|Matchable)$$".r
 
   sealed abstract trait TastyRepr extends u.Type {
     def tflags: TastyFlagSet

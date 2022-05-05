@@ -120,6 +120,8 @@ trait ContextOps { self: TastyUniverse =>
    */
   private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
 
+    def inOwner[T](op: Context => T): T = op(ctx.withOwner(sym.owner))
+
     def lookupChild(childTpe: Type): Symbol = {
       val child = symOfType(childTpe)
       assert(isSymbol(child), s"did not find symbol of sealed child ${showType(childTpe)}")
@@ -131,6 +133,8 @@ trait ContextOps { self: TastyUniverse =>
         child.moduleClass
       }
     }
+
+    var problematic: List[String] = Nil
 
     for (annot <- sym.annotations) {
       annot.completeInfo()
@@ -154,6 +158,16 @@ trait ContextOps { self: TastyUniverse =>
         ctx.log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
         sym.addChild(child)
       }
+      if ((annot.symbol eq defn.TargetNameAnnotationClass) ||
+          (annot.symbol eq defn.StaticMethodAnnotationClass)) {
+        problematic ::= inOwner { implicit ctx =>
+          unsupportedMessage(s"annotation on $sym: @$annot")
+        }
+      }
+    }
+    if (problematic.nonEmpty) {
+      sym.removeAnnotation(u.definitions.CompileTimeOnlyAttr)
+      sym.addAnnotation(u.definitions.CompileTimeOnlyAttr, u.Literal(u.Constant(problematic.head)))
     }
   }
 

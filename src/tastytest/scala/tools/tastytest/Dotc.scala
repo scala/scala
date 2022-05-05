@@ -8,6 +8,9 @@ import scala.reflect.runtime.ReflectionUtils
 import java.lang.reflect.{Modifier, Method}
 
 import ClasspathOps._
+import java.io.OutputStream
+import java.io.BufferedReader
+import java.io.PrintWriter
 
 object Dotc extends Script.Command {
 
@@ -36,37 +39,69 @@ object Dotc extends Script.Command {
   def invokeStatic(
       className: String,
       methodName: String,
-      args: Seq[String]
+      args: Seq[(Class[_], Any)],
   )(implicit cl: Dotc.ClassLoader): Try[Object] = {
     val cls = loadClass(className)
-    val method = cls.getMethod(methodName, classOf[Array[String]])
+    val (tpes, provided) = args.unzip
+    val method = cls.getMethod(methodName, tpes:_*)
     Try {
-      invokeStatic(method, Seq(args.toArray))
+      invokeStatic(method, provided)
     }
   }
 
   def invoke(method: Method, obj: AnyRef, args: Seq[Any])(implicit cl: Dotc.ClassLoader) = {
-    try cl.parent.asContext[AnyRef] {
+    inClassloader[AnyRef] {
       method.invoke(obj, args.toArray:_*)
+    }
+  }
+
+  def inClassloader[T](op: => T)(implicit cl: Dotc.ClassLoader): T = {
+    try cl.parent.asContext[T] {
+      op
     }
     catch {
       case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
     }
   }
 
-  private def dotcProcess(args: Seq[String])(implicit cl: Dotc.ClassLoader) = processMethod("dotty.tools.dotc.Main")(args)
+  def processMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    processMethodImpl(className)(args, None)
 
-  def processMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
+  private def makeConsoleReporter(stream: OutputStream)(implicit cl: Dotc.ClassLoader): Try[AnyRef] = Try {
+    val consoleReporterCls = loadClass("dotty.tools.dotc.reporting.ConsoleReporter")
+    val ctor = consoleReporterCls.getConstructor(classOf[BufferedReader], classOf[PrintWriter])
+    val pwriter = new PrintWriter(stream, true)
+    inClassloader[AnyRef] {
+      ctor.newInstance(Console.in, pwriter)
+    }
+  }
+
+  private def processMethodImpl(className: String)(args: Seq[String], writer: Option[OutputStream])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
     val reporterCls = loadClass("dotty.tools.dotc.reporting.Reporter")
     val Reporter_hasErrors = reporterCls.getMethod("hasErrors")
-    for (reporter <- invokeStatic(className, "process", args)) yield {
+    val processArgs: Try[Seq[(Class[_], Any)]] = {
+      writer match {
+        case Some(stream) =>
+          val callbackCls = loadClass("dotty.tools.dotc.interfaces.CompilerCallback")
+          for (myReporter <- makeConsoleReporter(stream)) yield
+            Seq(classOf[Array[String]] -> args.toArray, reporterCls -> myReporter, callbackCls -> null)
+        case _ =>
+          Try(Seq(classOf[Array[String]] -> args.toArray))
+      }
+    }
+    for {
+      args <- processArgs
+      reporter <- invokeStatic(className, "process", args)
+    } yield {
       val hasErrors = invoke(Reporter_hasErrors, reporter, Seq.empty).asInstanceOf[Boolean]
       !hasErrors
     }
   }
 
-  def mainMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] =
-    for (_ <- invokeStatic(className, "main", args)) yield ()
+  def mainMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = {
+    val mainArgs = Seq(classOf[Array[String]] -> args.toArray)
+    for (_ <- invokeStatic(className, "main", mainArgs)) yield ()
+  }
 
   def dotcVersion(implicit cl: Dotc.ClassLoader): String = {
     val compilerPropertiesClass = loadClass("dotty.tools.dotc.config.Properties")
@@ -74,7 +109,13 @@ object Dotc extends Script.Command {
     invokeStatic(Properties_simpleVersionString, Seq.empty).asInstanceOf[String]
   }
 
-  def dotc(out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
+  def dotc(out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    dotcImpl(None, out, classpath, additionalSettings, sources:_*)
+
+  def dotc(writer: OutputStream, out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    dotcImpl(Some(writer), out, classpath, additionalSettings, sources:_*)
+
+  def dotcImpl(writer: Option[OutputStream], out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
     if (sources.isEmpty) {
       Success(true)
     }
@@ -85,11 +126,12 @@ object Dotc extends Script.Command {
         "-classpath", libraryDeps.mkString(classpath + Files.classpathSep, Files.classpathSep, ""),
         "-deprecation",
         "-Xfatal-warnings",
+        "-color:never",
       ) ++ additionalSettings ++ sources
       if (TastyTest.verbose) {
         println(yellow(s"Invoking dotc (version $dotcVersion) with args: $args"))
       }
-      dotcProcess(args)
+      processMethodImpl("dotty.tools.dotc.Main")(args, writer)
     }
   }
 

@@ -117,6 +117,9 @@ trait SymbolOps { self: TastyUniverse =>
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
   }
 
+  /** Is this symbol annotated with `scala.annotation.experimental`? */
+  def symIsExperimental(sym: Symbol) = sym.hasAnnotation(defn.ExperimentalAnnotationClass)
+
   /** if isConstructor, make sure it has one non-implicit parameter list */
   def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
     if (isConstructor &&

@@ -9,6 +9,7 @@ object SourceKind {
   case object NoSource  extends SourceKind("")(filter = _ => false)
   case object Scala     extends SourceKind(".scala")()
   case object ScalaFail extends SourceKind("_fail.scala")()
+  case object ScalaPre  extends SourceKind("_pre.scala")()
   case object Check     extends SourceKind(".check")()
   case object SkipCheck extends SourceKind(".skipcheck")()
   case object Java      extends SourceKind(".java")()

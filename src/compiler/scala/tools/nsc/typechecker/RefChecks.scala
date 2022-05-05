@@ -1286,6 +1286,11 @@ abstract class RefChecks extends Transform {
         if (changed)
           refchecksWarning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}", WarningCategory.OtherMigration)
       }
+      if (sym.isExperimental && !currentOwner.ownerChain.exists(x => x.isExperimental)) {
+        val msg =
+          s"${sym.fullLocationString} is marked @experimental and therefore its enclosing scope must be experimental."
+        reporter.error(pos, msg)
+      }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       // async/await is expanded after erasure
       if (sym.isCompileTimeOnly && !inAnnotation && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
