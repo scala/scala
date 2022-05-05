@@ -452,6 +452,10 @@ private[collection] object JavaCollectionWrappers extends Serializable {
         case _ if isEmpty => None
         case _ => Try(last).toOption
       }
+
+    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
+      underlying.compute(key, (_: K, v: V) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
+    }
   }
 
   @SerialVersionUID(3L)
