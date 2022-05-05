@@ -332,6 +332,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       else
         None
     }
+    override def getOrElseUpdate(key: K, op: => V): V = underlying.computeIfAbsent(key, _ => op)
 
     def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
@@ -353,6 +354,10 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       }
 
     override def update(k: K, v: V): Unit = underlying.put(k, v)
+
+    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
+      underlying.compute(key, (_, v) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
+    }
 
     // support Some(null) if currently bound to null
     override def remove(k: K): Option[V] = {
@@ -434,6 +439,8 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def get(k: K) = Option(underlying get k)
 
+    override def getOrElseUpdate(key: K, op: => V): V = underlying.computeIfAbsent(key, _ => op)
+
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[K, V])
@@ -454,7 +461,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       }
 
     override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
-      underlying.compute(key, (_: K, v: V) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
+      underlying.compute(key, (_, v) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
     }
   }
 
