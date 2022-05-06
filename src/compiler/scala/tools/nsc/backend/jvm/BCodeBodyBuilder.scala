@@ -977,11 +977,18 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           default()
       }
 
-      val end = currProgramPoint()
-      if (emitVars) { // add entries to LocalVariableTable JVM attribute
+      emitLocalVarScopes()
+      varsInScope = savedScope
+    }
+
+    /** Add entries to the `LocalVariableTable` JVM attribute for all the vars in
+     *  `varsInScope`, ending at the current program point.
+     */
+    def emitLocalVarScopes(): Unit = {
+      if (emitVars) {
+        val end = currProgramPoint()
         for ((sym, start) <- varsInScope.reverse) { emitLocalVarScope(sym, start, end) }
       }
-      varsInScope = savedScope
     }
 
     def adapt(from: BType, to: BType) {
@@ -1428,6 +1435,26 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               } else
                 loadAndTestBoolean()
           }
+
+        // Explicitly exclude LabelDef's here because we don't want to break the match optimization in genBlockTo.
+        // Anyway, we wouldn't be able to push `genCond` further inside a `LabelDef`, so we're not losing any opportunity.
+        case Block(stats, expr) if !expr.isInstanceOf[LabelDef] =>
+          // Push the decision further down the `expr`.
+          val savedScope = varsInScope
+          varsInScope = Nil
+          stats foreach genStat
+          genCond(expr, success, failure, targetIfNoJump)
+          emitLocalVarScopes()
+          varsInScope = savedScope
+
+        case If(condp, thenp, elsep) =>
+          val innerSuccess = new asm.Label
+          val innerFailure = new asm.Label
+          genCond(condp, innerSuccess, innerFailure, targetIfNoJump = innerSuccess)
+          markProgramPoint(innerSuccess)
+          genCond(thenp, success, failure, targetIfNoJump = innerFailure)
+          markProgramPoint(innerFailure)
+          genCond(elsep, success, failure, targetIfNoJump)
 
         case _ => loadAndTestBoolean()
       }
