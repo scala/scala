@@ -413,6 +413,11 @@ class BytecodeTest extends BytecodeTesting {
          |    case x :: _ => println(x)
          |    case Nil    => println("nil")
          |  }
+         |
+         |  def m4(xs: List[Int]): Int = return xs match {
+         |    case x :: xr => x
+         |    case Nil     => 20
+         |  }
          |}
          """.stripMargin
 
@@ -560,6 +565,117 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ALOAD, 3),
       Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
       Op(ATHROW),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m4"), List(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(20)),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 5),
+      VarOp(ILOAD, 5),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(44)),
+      Label(20),
+      Jump(GOTO, Label(23)),
+      Label(23),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(33)),
+      IntOp(BIPUSH, 20),
+      VarOp(ISTORE, 2),
+      Jump(GOTO, Label(44)),
+      Label(33),
+      Jump(GOTO, Label(36)),
+      Label(36),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(44),
+      VarOp(ILOAD, 2),
+      Op(IRETURN),
+    ))
+
+    // ---------------
+
+    val sourcePatmatAdaptMatchEnd =
+      s"""class Tree
+         |
+         |trait RefTree extends Tree
+         |
+         |class A extends RefTree
+         |class B extends RefTree
+         |
+         |class PatmatAdaptMatchEnd {
+         |  def atPos[T <: Tree](tree: T): T = tree
+         |
+         |  def test(xs: List[Int]): Tree = {
+         |    val tree1 = atPos {
+         |      xs match {
+         |        case head :: tail => new A
+         |        case Nil          => new B
+         |      }
+         |    }
+         |    tree1
+         |  }
+         |}
+         """.stripMargin
+
+    val List(cA, cB, cPatmatAdaptMatchEnd, cRefTree, cTree) = compileClasses(sourcePatmatAdaptMatchEnd)
+
+    assertSameCode(getMethod(cPatmatAdaptMatchEnd, "test"), List(
+      VarOp(ALOAD, 0),
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(17)),
+      TypeOp(NEW, "A"),
+      Op(DUP),
+      Invoke(INVOKESPECIAL, "A", "<init>", "()V", false),
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(43)),
+      Label(17),
+      Jump(GOTO, Label(20)),
+      Label(20),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(32)),
+      TypeOp(NEW, "B"),
+      Op(DUP),
+      Invoke(INVOKESPECIAL, "B", "<init>", "()V", false),
+      VarOp(ASTORE, 2),
+      Jump(GOTO, Label(43)),
+      Label(32),
+      Jump(GOTO, Label(35)),
+      Label(35),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(43),
+      VarOp(ALOAD, 2),
+      TypeOp(CHECKCAST, "Tree"),
+      Invoke(INVOKEVIRTUAL, "PatmatAdaptMatchEnd", "atPos", "(LTree;)LTree;", false),
+      TypeOp(CHECKCAST, "RefTree"),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "Tree"),
+      Op(ARETURN),
     ))
   }
 
