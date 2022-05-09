@@ -5066,7 +5066,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             wrapErrors(t, (_.typed1(t, mode, pt)))
           }
 
-          val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.symbol, name)
+          val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.tpe.typeSymbol, name)
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
