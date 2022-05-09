@@ -10,6 +10,9 @@ object Test {
 
   // comm‮tne
 
+  // comment with direction indicator that isn't a threat:
+  //  - From the Latin "coævus": com- ‎("equal") in combination with aevum ‎(aevum, "age").
+
   """te‮tx"""
   raw"""te‮tx"""
 
