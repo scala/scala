@@ -80,7 +80,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
   protected val TASTYUUIDLength: Int = 16
-  private var sawPrivateConstructor = false
   private var YtastyReader          = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
@@ -544,13 +543,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       in.bp = fieldsStartBp
       0 until u2() foreach (_ => parseField())
-      sawPrivateConstructor = false
       0 until u2() foreach (_ => parseMethod())
-      val needsConstructor = (
-           !sawPrivateConstructor
-        && !instanceScope.containsName(nme.CONSTRUCTOR)
-        && ((sflags & (INTERFACE|JAVA_ANNOTATION)) == (INTERFACE|JAVA_ANNOTATION))
-      )
+      val needsConstructor = (sflags & JAVA_ANNOTATION) != 0L
       if (needsConstructor)
         instanceScope enter clazz.newClassConstructor(NoPosition)
 
@@ -617,10 +611,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     val jflags = readMethodFlags()
     val sflags = jflags.toScalaFlags
     if (jflags.isPrivate) {
-      val isConstructor = pool.getName(u2()).value == "<init>" // opt avoid interning a Name for private methods we're about to discard
-      if (isConstructor)
-        sawPrivateConstructor = true
-      in.skip(2); skipAttributes()
+      in.skip(4); skipAttributes()
     } else {
       if ((sflags & PRIVATE) != 0L) {
         in.skip(4); skipAttributes()
