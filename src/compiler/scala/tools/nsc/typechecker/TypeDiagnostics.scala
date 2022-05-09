@@ -531,7 +531,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
     // so trivial that it never consumes params
     def isTrivial(rhs: Tree): Boolean =
-      rhs.symbol == Predef_??? || rhs.tpe =:= NothingTpe || (rhs match {
+      rhs.symbol == Predef_??? || rhs.tpe == null || rhs.tpe =:= NothingTpe || (rhs match {
         case Literal(_) => true
         case _          => isConstantType(rhs.tpe) || isSingleType(rhs.tpe)
       })
