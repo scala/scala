@@ -75,7 +75,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
-  private var sawPrivateConstructor = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
 
@@ -532,13 +531,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       in.bp = fieldsStartBp
       0 until u2 foreach (_ => parseField())
-      sawPrivateConstructor = false
       0 until u2 foreach (_ => parseMethod())
-      val needsConstructor = (
-           !sawPrivateConstructor
-        && !(instanceScope containsName nme.CONSTRUCTOR)
-        && ((sflags & INTERFACE) == 0)
-      )
+      val needsConstructor = (sflags & JAVA_ANNOTATION) != 0
       if (needsConstructor)
         instanceScope enter clazz.newClassConstructor(NoPosition)
 
@@ -603,27 +597,20 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   def parseMethod() {
     val jflags = readMethodFlags()
-    val sflags = jflags.toScalaFlags
     if (jflags.isPrivate) {
-      val isConstructor = pool.getName(u2).value == "<init>" // opt avoid interning a Name for private methods we're about to discard
-      if (isConstructor)
-        sawPrivateConstructor = true
-      in.skip(2); skipAttributes()
+      in.skip(4); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L) {
-        in.skip(4); skipAttributes()
-      } else {
-        val name = readName()
-        val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
-        // Note: the info may be overwritten later with a generic signature
-        // parsed from SignatureATTR
-        val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2).value)
-        sym.info = lazyInfo
-        propagatePackageBoundary(jflags, sym)
-        parseAttributes(sym, lazyInfo)
-        addJavaFlagsAnnotations(sym, jflags)
-        getScope(jflags) enter sym
-      }
+      val name = readName()
+      val sflags = jflags.toScalaFlags
+      val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
+      // Note: the info may be overwritten later with a generic signature
+      // parsed from SignatureATTR
+      val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2).value)
+      sym.info = lazyInfo
+      propagatePackageBoundary(jflags, sym)
+      parseAttributes(sym, lazyInfo)
+      addJavaFlagsAnnotations(sym, jflags)
+      getScope(jflags) enter sym
     }
   }
 
