@@ -39,6 +39,8 @@ import scala.util.control.NonFatal
  *  @author Martin Odersky
  */
 abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
+  import ClassfileParser._
+
   val symbolTable: SymbolTable {
     def settings: Settings
   }
@@ -80,7 +82,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
   protected val TASTYUUIDLength: Int = 16
-  private var sawPrivateConstructor = false
   private var YtastyReader          = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
@@ -543,14 +544,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       parseAttributes(clazz, completer)
 
       in.bp = fieldsStartBp
-      0 until u2() foreach (_ => parseField())
-      sawPrivateConstructor = false
-      0 until u2() foreach (_ => parseMethod())
-      val needsConstructor = (
-           !sawPrivateConstructor
-        && !instanceScope.containsName(nme.CONSTRUCTOR)
-        && ((sflags & (INTERFACE|JAVA_ANNOTATION)) == (INTERFACE|JAVA_ANNOTATION))
-      )
+      u2() times parseField()
+      u2() times parseMethod()
+      val needsConstructor = (sflags & JAVA_ANNOTATION) != 0L
       if (needsConstructor)
         instanceScope enter clazz.newClassConstructor(NoPosition)
 
@@ -568,7 +564,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var sym = clazz.owner
     while (sym.isClass && !sym.isModuleClass) {
       for (t <- sym.tpe.typeArgs)
-        classTParams = classTParams + (t.typeSymbol.name -> t.typeSymbol)
+        classTParams += (t.typeSymbol.name -> t.typeSymbol)
 
       sym = sym.owner
     }
@@ -581,9 +577,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     if ((sflags & PRIVATE) != 0L) {
       in.skip(4); skipAttributes()
     } else {
-      val name    = readName()
+      val name     = readName()
       val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2()).value)
-      val sym     = ownerForFlags(jflags).newValue(name.toTermName, NoPosition, sflags)
+      val sym      = ownerForFlags(jflags).newValue(name.toTermName, NoPosition, sflags)
 
       // Note: the info may be overwritten later with a generic signature
       // parsed from SignatureATTR
@@ -615,27 +611,20 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   def parseMethod(): Unit = {
     val jflags = readMethodFlags()
-    val sflags = jflags.toScalaFlags
     if (jflags.isPrivate) {
-      val isConstructor = pool.getName(u2()).value == "<init>" // opt avoid interning a Name for private methods we're about to discard
-      if (isConstructor)
-        sawPrivateConstructor = true
-      in.skip(2); skipAttributes()
+      in.skip(4); skipAttributes()
     } else {
-      if ((sflags & PRIVATE) != 0L) {
-        in.skip(4); skipAttributes()
-      } else {
-        val name = readName()
-        val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
-        // Note: the info may be overwritten later with a generic signature
-        // parsed from SignatureATTR
-        val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2()).value)
-        sym.info = lazyInfo
-        propagatePackageBoundary(jflags, sym)
-        parseAttributes(sym, lazyInfo)
-        addJavaFlagsAnnotations(sym, jflags)
-        getScope(jflags) enter sym
-      }
+      val name = readName()
+      val sflags = jflags.toScalaFlags
+      val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
+      // Note: the info may be overwritten later with a generic signature
+      // parsed from SignatureATTR
+      val lazyInfo = new MemberTypeCompleter(name, jflags, pool.getExternalName(u2()).value)
+      sym.info = lazyInfo
+      propagatePackageBoundary(jflags, sym)
+      parseAttributes(sym, lazyInfo)
+      addJavaFlagsAnnotations(sym, jflags)
+      getScope(jflags) enter sym
     }
   }
 
@@ -865,7 +854,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case tpnme.RuntimeAnnotationATTR =>
             val numAnnots = u2()
           val annots = new ListBuffer[AnnotationInfo]
-            for (n <- 0 until numAnnots; annot <- parseAnnotation(u2()))
+          for (n <- 0 until numAnnots; annot <- parseAnnotation(u2()))
             annots += annot
           /* `sym.withAnnotations(annots)`, like `sym.addAnnotation(annot)`, prepends,
            * so if we parsed in classfile order we would wind up with the annotations
@@ -933,7 +922,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       }
     }
     // begin parseAttributes
-    for (i <- 0 until u2()) parseAttribute()
+    u2() times parseAttribute()
   }
 
 
@@ -967,15 +956,16 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       case ARRAY_TAG  =>
         val arr = new ArrayBuffer[ClassfileAnnotArg]()
         var hasError = false
-        for (i <- 0 until index)
+        index times {
           parseAnnotArg() match {
             case Some(c) => arr += c
             case None => hasError = true
           }
+        }
         if (hasError) None
         else Some(ArrayAnnotArg(arr.toArray))
       case ANNOTATION_TAG =>
-        parseAnnotation(index) map (NestedAnnotArg(_))
+        parseAnnotation(index).map(NestedAnnotArg(_))
     }
   }
 
@@ -989,7 +979,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     val nargs = u2()
     val nvpairs = new ListBuffer[(Name, ClassfileAnnotArg)]
     var hasError = false
-    for (i <- 0 until nargs) {
+    nargs times {
       val name = readName()
       parseAnnotArg() match {
         case Some(c) => nvpairs += ((name, c))
@@ -1016,7 +1006,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     * if the corresponding flag is set in `flags`.
     */
   def addJavaFlagsAnnotations(sym: Symbol, flags: JavaAccFlags): Unit =
-    flags.toScalaAnnotations(symbolTable) foreach (ann => sym.addAnnotation(ann))
+    flags.toScalaAnnotations(symbolTable).foreach(sym.addAnnotation(_))
 
   /** Enter own inner classes in the right scope. It needs the scopes to be set up,
    *  and implicitly current class' superclasses.
@@ -1179,7 +1169,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case ARRAY_TAG =>
           val num = u2()
-          for (i <- 0 until num) skipAnnotArg()
+          num times skipAnnotArg()
 
         case ANNOTATION_TAG =>
           in.skip(2) // type
@@ -1188,7 +1178,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       def skipAnnotArgs() = {
         val numArgs = u2()
-        for (i <- 0 until numArgs) {
+        numArgs times {
           in.skip(2)
           skipAnnotArg()
         }
@@ -1281,7 +1271,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()
-      for (_ <- 0 until entries) {
+      entries times {
         val innerIndex, outerIndex, nameIndex = u2()
         val jflags = readInnerClassFlags()
         if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0)
@@ -1501,4 +1491,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   protected def getScope(flags: JavaAccFlags): Scope =
     if (flags.isStatic) staticScope else instanceScope
+}
+object ClassfileParser {
+  private implicit class GoodTimes(val n: Int) extends AnyVal {
+    def times(body: => Unit) = (1 to n).foreach(_ => body)
+  }
 }
