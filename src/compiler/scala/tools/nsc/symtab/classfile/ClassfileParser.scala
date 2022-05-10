@@ -611,11 +611,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   def parseMethod(): Unit = {
     val jflags = readMethodFlags()
-    val sflags = jflags.toScalaFlags
-    if (jflags.isPrivate || ((sflags & PRIVATE) != 0L)) {
+    if (jflags.isPrivate) {
       in.skip(4); skipAttributes()
     } else {
       val name = readName()
+      val sflags = jflags.toScalaFlags
       val sym = ownerForFlags(jflags).newMethod(name.toTermName, NoPosition, sflags)
       // Note: the info may be overwritten later with a generic signature
       // parsed from SignatureATTR
