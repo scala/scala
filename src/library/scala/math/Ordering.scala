@@ -265,6 +265,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def hashCode(): Int = outer.hashCode() * reverseSeed
   }
 
+  @SerialVersionUID(-2996748994664583574L)
   private final class IterableOrdering[CC[X] <: Iterable[X], T](private val ord: Ordering[T]) extends Ordering[CC[T]] {
     def compare(x: CC[T], y: CC[T]): Int = {
       val xe = x.iterator
@@ -341,36 +342,43 @@ object Ordering extends LowPriorityOrderingImplicits {
   trait UnitOrdering extends Ordering[Unit] {
     def compare(x: Unit, y: Unit) = 0
   }
+  @SerialVersionUID(4089257611611206746L)
   implicit object Unit extends UnitOrdering
 
   trait BooleanOrdering extends Ordering[Boolean] {
     def compare(x: Boolean, y: Boolean): Int = java.lang.Boolean.compare(x, y)
   }
+  @SerialVersionUID(-94703182178890445L)
   implicit object Boolean extends BooleanOrdering
 
   trait ByteOrdering extends Ordering[Byte] {
     def compare(x: Byte, y: Byte): Int = java.lang.Byte.compare(x, y)
   }
+  @SerialVersionUID(-2268545360148786406L)
   implicit object Byte extends ByteOrdering
 
   trait CharOrdering extends Ordering[Char] {
     def compare(x: Char, y: Char): Int = java.lang.Character.compare(x, y)
   }
+  @SerialVersionUID(2588141633104296698L)
   implicit object Char extends CharOrdering
 
   trait ShortOrdering extends Ordering[Short] {
     def compare(x: Short, y: Short): Int = java.lang.Short.compare(x, y)
   }
+  @SerialVersionUID(4919657051864630912L)
   implicit object Short extends ShortOrdering
 
   trait IntOrdering extends Ordering[Int] {
     def compare(x: Int, y: Int): Int = java.lang.Integer.compare(x, y)
   }
+  @SerialVersionUID(-8412871093094815037L)
   implicit object Int extends IntOrdering with CachedReverse[Int]
 
   trait LongOrdering extends Ordering[Long] {
     def compare(x: Long, y: Long): Int = java.lang.Long.compare(x, y)
   }
+  @SerialVersionUID(-5231423581640563981L)
   implicit object Long extends LongOrdering
 
   /** `Ordering`s for `Float`s.
@@ -427,6 +435,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     trait TotalOrdering extends Ordering[Float] {
       def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
     }
+    @SerialVersionUID(2951539161283192433L)
     implicit object TotalOrdering extends TotalOrdering
 
     /** An ordering for `Float`s which is consistent with IEEE specifications
@@ -456,6 +465,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def max[U <: Float](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
       override def min[U <: Float](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
     }
+    @SerialVersionUID(2142189527751553605L)
     implicit object IeeeOrdering extends IeeeOrdering
   }
   @migration(
@@ -465,6 +475,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     "  The sort order of floats remains the same, however, with NaN at the end.\n" +
     "  Import Ordering.Float.IeeeOrdering to recover the previous behavior.\n" +
     "  See also https://www.scala-lang.org/api/current/scala/math/Ordering$$Float$.html.", "2.13.0")
+  @SerialVersionUID(-8500693657289762132L)
   implicit object DeprecatedFloatOrdering extends Float.TotalOrdering
 
   /** `Ordering`s for `Double`s.
@@ -521,6 +532,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     trait TotalOrdering extends Ordering[Double] {
       def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
     }
+    @SerialVersionUID(-831119229746134011L)
     implicit object TotalOrdering extends TotalOrdering
 
     /** An ordering for `Double`s which is consistent with IEEE specifications
@@ -550,6 +562,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def max[U <: Double](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
       override def min[U <: Double](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
     }
+    @SerialVersionUID(5722631152457877238L)
     implicit object IeeeOrdering extends IeeeOrdering
   }
   @migration(
@@ -559,26 +572,31 @@ object Ordering extends LowPriorityOrderingImplicits {
     "  The sort order of doubles remains the same, however, with NaN at the end.\n" +
     "  Import Ordering.Double.IeeeOrdering to recover the previous behavior.\n" +
     "  See also https://www.scala-lang.org/api/current/scala/math/Ordering$$Double$.html.", "2.13.0")
+  @SerialVersionUID(-7340686892557971538L)
   implicit object DeprecatedDoubleOrdering extends Double.TotalOrdering
 
   trait BigIntOrdering extends Ordering[BigInt] {
     def compare(x: BigInt, y: BigInt) = x.compare(y)
   }
+  @SerialVersionUID(-3075297647817530785L)
   implicit object BigInt extends BigIntOrdering
 
   trait BigDecimalOrdering extends Ordering[BigDecimal] {
     def compare(x: BigDecimal, y: BigDecimal) = x.compare(y)
   }
+  @SerialVersionUID(-833457937756812905L)
   implicit object BigDecimal extends BigDecimalOrdering
 
   trait StringOrdering extends Ordering[String] {
     def compare(x: String, y: String) = x.compareTo(y)
   }
+  @SerialVersionUID(1302240016074071079L)
   implicit object String extends StringOrdering
 
   trait SymbolOrdering extends Ordering[Symbol] {
     def compare(x: Symbol, y: Symbol): Int = x.name.compareTo(y.name)
   }
+  @SerialVersionUID(1996702162912307637L)
   implicit object Symbol extends SymbolOrdering
 
   trait OptionOrdering[T] extends Ordering[Option[T]] {
@@ -597,8 +615,11 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     override def hashCode(): Int = optionOrdering.hashCode() * optionSeed
   }
-  implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
-    new OptionOrdering[T] { val optionOrdering = ord }
+  implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] = {
+    @SerialVersionUID(6958068162830323876L)
+    class O extends  OptionOrdering[T] { val optionOrdering = ord }
+    new O()
+  }
 
   /** @deprecated Iterables are not guaranteed to have a consistent order, so the `Ordering`
     *             returned by this method may not be stable or meaningful. If you are using a type
@@ -613,6 +634,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Tuple2[T1, T2](implicit ord1: Ordering[T1], ord2: Ordering[T2]): Ordering[(T1, T2)] =
     new Tuple2Ordering(ord1, ord2)
 
+  @SerialVersionUID(4945084135299531202L)
   private[this] final class Tuple2Ordering[T1, T2](private val ord1: Ordering[T1],
                                                    private val ord2: Ordering[T2]) extends Ordering[(T1, T2)] {
     def compare(x: (T1, T2), y: (T1, T2)): Int = {
@@ -634,6 +656,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Tuple3[T1, T2, T3](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3]) : Ordering[(T1, T2, T3)] =
     new Tuple3Ordering(ord1, ord2, ord3)
 
+  @SerialVersionUID(-5367223704121832335L)
   private[this] final class Tuple3Ordering[T1, T2, T3](private val ord1: Ordering[T1],
                                                        private val ord2: Ordering[T2],
                                                        private val ord3: Ordering[T3]) extends Ordering[(T1, T2, T3)] {
@@ -659,6 +682,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Tuple4[T1, T2, T3, T4](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4]) : Ordering[(T1, T2, T3, T4)] =
     new Tuple4Ordering(ord1, ord2, ord3, ord4)
 
+  @SerialVersionUID(-6055313861145218178L)
   private[this] final class Tuple4Ordering[T1, T2, T3, T4](private val ord1: Ordering[T1],
                                                            private val ord2: Ordering[T2],
                                                            private val ord3: Ordering[T3],
@@ -689,6 +713,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Tuple5[T1, T2, T3, T4, T5](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5]): Ordering[(T1, T2, T3, T4, T5)] =
     new Tuple5Ordering(ord1, ord2, ord3, ord4, ord5)
 
+  @SerialVersionUID(-5517329921227646061L)
   private[this] final class Tuple5Ordering[T1, T2, T3, T4, T5](private val ord1: Ordering[T1],
                                                                private val ord2: Ordering[T2],
                                                                private val ord3: Ordering[T3],
@@ -720,6 +745,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5).hashCode()
   }
 
+  @SerialVersionUID(3045467524192969060L)
   implicit def Tuple6[T1, T2, T3, T4, T5, T6](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6]): Ordering[(T1, T2, T3, T4, T5, T6)] =
     new Tuple6Ordering(ord1, ord2, ord3, ord4, ord5, ord6)
 
@@ -761,6 +787,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Tuple7[T1, T2, T3, T4, T5, T6, T7](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7]): Ordering[(T1, T2, T3, T4, T5, T6, T7)] =
     new Tuple7Ordering(ord1, ord2, ord3, ord4, ord5, ord6, ord7)
 
+  @SerialVersionUID(1253188205893682451L)
   private[this] final class Tuple7Ordering[T1, T2, T3, T4, T5, T6, T7](private val ord1: Ordering[T1],
                                                                        private val ord2: Ordering[T2],
                                                                        private val ord3: Ordering[T3],
@@ -800,6 +827,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7).hashCode()
   }
 
+  @SerialVersionUID(4003095353309354068L)
   implicit def Tuple8[T1, T2, T3, T4, T5, T6, T7, T8](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8: Ordering[T8]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8)] =
     new Tuple8Ordering(ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8)
 
@@ -846,6 +874,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8).hashCode()
   }
 
+  @SerialVersionUID(8185342054829975001L)
   implicit def Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8 : Ordering[T8], ord9: Ordering[T9]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8, T9)] =
     new Tuple9Ordering(ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8, ord9)
 
