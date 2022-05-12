@@ -2600,8 +2600,10 @@ self =>
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
-            contextBoundBuf += atPos(in.skipToken()) {
-              AppliedTypeTree(typ(), List(Ident(pname)))
+            in.nextToken()
+            val colonBound = typ()
+            contextBoundBuf += atPos(colonBound.pos) {
+              AppliedTypeTree(colonBound, List(Ident(pname)))
             }
           }
         }
