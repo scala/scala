@@ -227,15 +227,16 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       name = "-Yprint-trees",
       helpArg = "style",
       descr = "How to print trees when -Vprint is enabled.",
-      choices = List("text", "compact", "format", "text+format"),
+      choices = List("text", "compact", "format", "text+format", "diff"),
       default = "text"
     ).withPostSetHook(pt => pt.value match {
-      case "text"        =>
       case "compact"     => XshowtreesCompact.value = true
       case "format"      => Xshowtrees.value = true
       case "text+format" => XshowtreesStringified.value = true
+      case _             =>
     })
 
+  def showTreeDiff: Boolean = YprintTrees.value == "diff"
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Vprint:) Print detailed ASTs in formatted form.").internalOnly()
   val XshowtreesCompact
                       = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Vprint:) Print detailed ASTs in compact form.").internalOnly()

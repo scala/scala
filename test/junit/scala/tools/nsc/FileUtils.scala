@@ -3,7 +3,7 @@ package scala.tools.nsc
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
-import difflib.DiffUtils
+import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.io.PlainNioFile
@@ -118,7 +118,7 @@ object FileUtils {
     val lines1 = lines(text1)
     val lines2 = lines(text2)
     val patch = DiffUtils.diff(lines1, lines2)
-    val value = DiffUtils.generateUnifiedDiff(path1.toString, path2.toString, lines1, patch, 10)
+    val value = UnifiedDiffUtils.generateUnifiedDiff(path1.toString, path2.toString, lines1, patch, 10)
     val diffToString = value.asScala.mkString("\n")
     diffToString
   }
