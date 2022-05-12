@@ -608,9 +608,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           case nme.CONSTRUCTOR => sym.owner.companion.isCaseClass
           case nme.copy        => sym.owner.typeSignature.member(nme.copy).isSynthetic
         }
-      def defaultGetterOK = sym.isDefaultGetter && !privateSyntheticDefault
-      def contextBoundOK = sym.isImplicit && settings.warnUnusedSynthetics
-      contextBoundOK || defaultGetterOK
+      sym.isParameter || sym.isParamAccessor || sym.isDefaultGetter && !privateSyntheticDefault
     }
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
@@ -745,7 +743,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           ||
             p.isImplicit && cond(p.tpe.typeSymbol) { case SameTypeClass | SubTypeClass | DummyImplicitClass => true }
         )
-        def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
+        def warningIsOnFor(s: Symbol) =
+          if (!s.isImplicit) settings.warnUnusedExplicits
+          else if (!s.isSynthetic) settings.warnUnusedImplicits
+          else settings.warnUnusedSynthetics
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
             && !isImplementation(s.owner)
