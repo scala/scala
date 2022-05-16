@@ -1,0 +1,6 @@
+t12591.scala:5: warning: evidence parameter evidence$1 of type Context[A] in method g is never used
+  def g[A: Context] = f
+           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
