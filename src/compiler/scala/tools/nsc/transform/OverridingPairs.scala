@@ -24,6 +24,7 @@ import scala.reflect.internal.SymbolPairs
  */
 abstract class OverridingPairs extends SymbolPairs {
   import global._
+  import definitions._
 
   // TODO: uncomment when deprecating the below
   // @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.OverridingPairs\.Cursor""")
@@ -51,8 +52,12 @@ abstract class OverridingPairs extends SymbolPairs {
       && !bothJavaOwnedAndEitherIsField(low, high)
       && !high.isPrivate               // private or private[this] members never are overridden
       && !exclude(low)                 // this admits private, as one can't have a private member that matches a less-private member.
-      && (lowMemberType matches (self memberType high))
+      && cursoryTest(self.memberType(high))
     ) // TODO we don't call exclude(high), should we?
+
+    /** Final type test for cursor.
+     */
+    protected def cursoryTest(hiMemberType: Type): Boolean = lowMemberType.matches(hiMemberType)
 
     override protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = {
       // Two Java-defined methods can be skipped if javac will check the overrides. Skipping is actually necessary to
@@ -86,5 +91,53 @@ abstract class OverridingPairs extends SymbolPairs {
     // Correctness of bridge generation relies on visiting each such class only once.
     override def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean =
       nonTraitParent.isNonBottomSubClass(lowClass) && nonTraitParent.isNonBottomSubClass(highClass)
+  }
+
+  /** For use before RefChecks, look also for matching varargs signatures where no bridges have been created yet.
+   *  Only checks for Scala overriding Java.
+   */
+  final class EarlyPairsCursor(base: Symbol) extends PairsCursor(base) {
+    override protected def cursoryTest(hiMemberType: Type): Boolean = super.cursoryTest(hiMemberType) || matchesVarargs(lowMemberType, hiMemberType)
+
+    def matchesVarargs(loMemberType: Type, hiMemberType: Type): Boolean =
+      loMemberType match {
+        case MethodType(loparams, lores) if loparams.nonEmpty && isScalaRepeatedParamType(loparams.last.tpe_*) =>
+          hiMemberType match {
+            case MethodType(hiparams, hires) if hiparams.nonEmpty && isJavaRepeatedParamType(hiparams.last.tpe_*) =>
+              matchesParams(loparams.init, hiparams.init) &&
+              matchesVararg(loparams.last.tpe_*, hiparams.last.tpe_*) &&
+              matchesQuantified(loparams, hiparams, lores, hires)
+            case _ => false
+          }
+        case PolyType(lotparams, lores) =>
+          hiMemberType match {
+            case PolyType(hitparams, hires) => matchesQuantified(lotparams, hitparams, lores, hires)
+            case _ => false
+          }
+        case _ => false
+      }
+    def matchesVararg(t1: Type, t2: Type): Boolean = {
+      val TypeRef(_, _, u1 :: Nil) = t1: @unchecked
+      val TypeRef(_, _, u2 :: Nil) = t2: @unchecked
+      u1 =:= u2
+    }
+    def matchesParams(syms1: List[Symbol], syms2: List[Symbol]): Boolean = syms1 match {
+      case Nil =>
+        syms2.isEmpty
+      case sym1 :: rest1 =>
+        syms2 match {
+          case Nil =>
+            false
+          case sym2 :: rest2 =>
+            val tp1 = sym1.tpe
+            val tp2 = sym2.tpe
+            tp1 =:= tp2 && matchesParams(rest1, rest2)
+        }
+    }
+    def matchesQuantified(params1: List[Symbol], params2: List[Symbol], res1: Type, res2: Type): Boolean =
+      sameLength(params1, params2) && {
+        val res21 = if (params1.corresponds(params2)(_ eq _)) res2 else res2.substSym(params2, params1)
+        matchesType(res1, res21, alwaysMatchSimple = true) || matchesVarargs(res1, res21)
+      }
   }
 }

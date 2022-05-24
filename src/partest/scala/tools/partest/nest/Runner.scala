@@ -117,6 +117,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     )
 
     pushTranscript(args mkString " ")
+    suiteRunner.verbose(files.mkString("% javac compiling ", " ", ""))
     if (runCommand(args, logFile)) genPass() else {
       genFail("java compilation failed")
     }

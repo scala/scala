@@ -734,7 +734,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.PairsCursor(classOf(m))
+          val opc = new overridingPairs.EarlyPairsCursor(classOf(m))
           opc.iterator.exists(pair => pair.low == m)
         }
         import PartialFunction._

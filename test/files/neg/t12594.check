@@ -1,0 +1,11 @@
+child_2.scala:4: warning: parameter value values in method takeMany is never used
+  def takeMany(values: String*): Unit = println()
+               ^
+child_2.scala:3: error: class Child needs to be abstract.
+Missing implementation for member of trait Parent_1:
+  def takeMany(x$1: Integer*): Unit = ??? // Integer* does not match String* in `def takeMany(values: String*): Unit`
+
+class Child extends Parent_1 {
+      ^
+1 warning
+1 error
