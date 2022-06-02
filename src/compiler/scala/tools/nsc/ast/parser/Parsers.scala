@@ -1853,9 +1853,14 @@ self =>
      *  }}}
      */
     def blockExpr(): Tree = atPos(in.offset) {
+      val start = in.offset
       inBraces {
         if (in.token == CASE) Match(EmptyTree, caseClauses())
         else block()
+      } match {
+        case b: Block if b.pos == NoPosition =>
+          b.setPos(r2p(start, start, in.lastOffset))
+        case t => t
       }
     }
 
