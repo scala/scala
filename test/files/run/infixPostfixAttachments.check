@@ -1,0 +1,8 @@
+t1 this.a(0) Set(InfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)).b(scala.Tuple2.apply[Int, Int](1, 2)).c(1, 2) Set(InfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)).b(scala.Tuple2.apply[Int, Int](1, 2)) Set(InfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)) Set(InfixAttachment)
+t4 this.d() Set(InfixAttachment)
+t6 this.d() Set(InfixAttachment)
+t6 this.d Set(PostfixAttachment)
+t8 this.e Set(PostfixAttachment)

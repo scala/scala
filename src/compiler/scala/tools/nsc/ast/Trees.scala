@@ -41,8 +41,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   case class InjectDerivedValue(arg: Tree)
        extends SymTree with TermTree
 
-  class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
-
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
 

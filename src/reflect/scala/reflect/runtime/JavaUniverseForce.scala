@@ -53,6 +53,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DelambdafyTarget
     this.JustMethodReference
     this.BackquotedIdentifierAttachment
+    this.PostfixAttachment
+    this.InfixAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
     this.ForAttachment

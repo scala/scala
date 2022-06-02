@@ -859,17 +859,18 @@ self =>
         case Parens(args) => mkNamed(args)
         case _            => right :: Nil
       }
+      def mkApply(fun: Tree, args: List[Tree]) = Apply(fun, args).updateAttachment(InfixAttachment)
       if (isExpr) {
         if (treeInfo.isLeftAssoc(op)) {
-          Apply(mkSelection(left), arguments)
+          mkApply(mkSelection(left), arguments)
         } else {
           val x = freshTermName()
           Block(
             List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
-            Apply(mkSelection(right), List(atPos(left.pos.makeTransparent)(Ident(x)))))
+            mkApply(mkSelection(right), List(atPos(left.pos.makeTransparent)(Ident(x)))))
         }
       } else {
-        Apply(Ident(op.encode), stripParens(left) :: arguments)
+        mkApply(Ident(op.encode), stripParens(left) :: arguments)
       }
     }
 
