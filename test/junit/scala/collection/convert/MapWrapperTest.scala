@@ -1,6 +1,6 @@
 package scala.collection.convert
 
-import java.util
+import java.{util => jutil}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.jdk.CollectionConverters._
+import scala.util.chaining._
 
 @RunWith(classOf[JUnit4])
 class MapWrapperTest {
@@ -63,7 +64,7 @@ class MapWrapperTest {
   // regression test for https://github.com/scala/bug/issues/10663
   @Test
   def testHashCodeEqualsMatchesJavaMap(): Unit = {
-    val jmap = new util.HashMap[String, String]()
+    val jmap = new jutil.HashMap[String, String]()
     jmap.put("scala", "rocks")
     jmap.put("java interop is fun!", "ya!")
     jmap.put("Ĺởồҝ ïŧ\\'ş ūŋǐčōđẹ", "whyyyy")
@@ -78,5 +79,32 @@ class MapWrapperTest {
     assertEquals(jmap.hashCode(), mapWrapper.hashCode())
     assertTrue(jmap == mapWrapper)
     assertTrue(mapWrapper == jmap)
+  }
+
+  // was: induce intermittent failure due to contention, where updater is called more than once
+  @Test def `t12586 updateWith should delegate to compute`: Unit = {
+    val limit = 100      // retries until trigger
+    @volatile var count = 0
+    val jmap = new jutil.concurrent.ConcurrentHashMap[String, String]()
+    class Loki extends Runnable {
+      @volatile var done = false
+      def run(): Unit = {
+        while (!done) {
+          jmap.put("KEY", "VALUE")
+          //Thread.`yield`()
+        }
+      }
+    }
+    val loki = new Loki
+    val runner = new Thread(loki).tap(_.start)
+    val wrapped = jmap.asScala
+    def updater(old: Option[String]) = { count += 1 ; old.map(_ * 2) }
+    for (i <- 1 to limit) {
+      count = 0
+      wrapped.updateWith("KEY")(updater)
+      assertEquals(s"index $i", 1, count)
+    }
+    loki.done = true
+    runner.join()
   }
 }

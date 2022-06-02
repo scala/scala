@@ -36,6 +36,9 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics"),  // private[scala]
     ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics$"), // private[scala]
 
+    // internal to wrappers
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.getOrElseUpdate"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.updateWith"),
   )
 
   override val buildSettings = Seq(
