@@ -9,7 +9,7 @@ t5702-neg-ugly-xbrace.scala:13: error: in XML literal: in XML content, please us
   ^
 t5702-neg-ugly-xbrace.scala:11: error:  I encountered a '}' where I didn't expect one, maybe this tag isn't closed <top>
     val <top>{a, z@_*)</top> = xml
-         ^
+        ^
 t5702-neg-ugly-xbrace.scala:14: error: illegal start of simple pattern
 }
 ^
