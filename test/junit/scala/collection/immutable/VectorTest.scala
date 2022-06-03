@@ -7,12 +7,11 @@ import org.junit.Test
 
 import scala.annotation.unused
 import scala.collection.mutable.{ListBuffer, StringBuilder}
-import scala.reflect.{ClassTag, classTag}
+import scala.tools.testkit.AssertUtil.intercept
 
 @RunWith(classOf[JUnit4])
 class VectorTest {
   import VectorUtils.validateDebug
-
 
   @Test
   def t12564(): Unit = {
@@ -119,15 +118,7 @@ class VectorTest {
       assertEquals(start, it.next())
     }
   }
-  def intercept[T <: Throwable: ClassTag](fn: => Any): T = {
-    try {
-      fn
-      fail(s"expected a ${classTag[T].runtimeClass.getName} to be thrown")
-      ???
-    } catch {
-      case x: T => x
-    }
-  }
+
   @Test
   def vectorIteratorDropToEnd(): Unit = {
     val underlying = Vector(0)
