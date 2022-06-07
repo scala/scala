@@ -376,6 +376,7 @@ lazy val library = configureAsSubproject(project)
     Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     //HERE
     Compile / scalacOptions += "-Wnonunit-statement",
+    Compile / scalacOptions += "-Wnonunit-if:false",
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
