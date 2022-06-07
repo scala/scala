@@ -229,7 +229,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    */
   def runWith[U](action: B => U): A => Boolean = { x =>
     val z = applyOrElse(x, checkFallback[B])
-    if (!fallbackOccurred(z)) { action(z); true } else false
+    if (!fallbackOccurred(z)) { action(z): Unit; true } else false
   }
 }
 

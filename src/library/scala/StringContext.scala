@@ -240,7 +240,7 @@ object StringContext {
         val sum = ttl + chunk.length
         arr(sum) = i
         sum + 1
-      }
+      }: Unit
       arr
     }
 
