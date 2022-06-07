@@ -155,15 +155,19 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   run / fork := true,
   run / connectInput := true,
   // uncomment for ease of development while breaking things
+  Compile / scalacOptions ++= Seq("-Xmaxerrs", "500", "-Xmaxwarns", "1000"),
+  Compile / scalacOptions ++= Seq("-opt-warnings:any-inline-failed"),
   //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   // work around https://github.com/scala/bug/issues/11534
   Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
+  Compile / scalacOptions += "-Wconf:cat=other-pure-statement&site=.*Macro.*:s",
   // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
   // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
   Compile / scalacOptions += "-Wconf:cat=optimizer:is",
   // We use @nowarn for some methods that are deprecated in Java > 8
   Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s",
   Compile / scalacOptions ++= Seq("-deprecation", "-feature"),
+  //Compile / scalacOptions += "-Wnonunit-statement",
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -174,6 +178,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-sourcepath", (ThisBuild / baseDirectory).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
+  maxErrors := 500,
   //maxErrors := 10,
   setIncOptions,
   // http://stackoverflow.com/questions/16934488
@@ -369,6 +374,8 @@ lazy val library = configureAsSubproject(project)
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
     Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
+    //HERE
+    Compile / scalacOptions += "-Wnonunit-statement",
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -491,6 +498,8 @@ lazy val compiler = configureAsSubproject(project)
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
+    //HERE
+    Compile / scalacOptions += "-Wnonunit-statement",
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
     ),
