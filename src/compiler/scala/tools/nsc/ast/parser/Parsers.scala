@@ -1218,12 +1218,12 @@ self =>
 
     def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
-    def selector(t0: Tree): Tree = {
+    def selector(start: Offset, t0: Tree): Tree = {
       val t = stripParens(t0)
       val point = if (isIdent) in.offset else in.lastOffset //scala/bug#8459
       //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
-        Select(t, ident(skipIt = false)) setPos r2p(t0.pos.start, point, in.lastOffset)
+        Select(t, ident(skipIt = false)) setPos r2p(start, point, in.lastOffset)
       else
         errorTermTree // has already been reported
     }
@@ -1241,14 +1241,14 @@ self =>
         in.nextToken()
         t = atPos(start) { This(tpnme.EMPTY) }
         if (!thisOK || in.token == DOT) {
-          t = selectors(t, typeOK, accept(DOT))
+          t = selectors(start, t, typeOK, accept(DOT))
         }
       } else if (in.token == SUPER) {
         in.nextToken()
         t = atPos(start) { Super(This(tpnme.EMPTY), mixinQualifierOpt()) }
         accept(DOT)
-        t = selector(t)
-        if (in.token == DOT) t = selectors(t, typeOK, in.skipToken())
+        t = selector(start, t)
+        if (in.token == DOT) t = selectors(start, t, typeOK, in.skipToken())
       } else {
         val tok = in.token
         val name = ident()
@@ -1262,29 +1262,29 @@ self =>
             in.nextToken()
             t = atPos(start) { This(name.toTypeName) }
             if (!thisOK || in.token == DOT)
-              t = selectors(t, typeOK, accept(DOT))
+              t = selectors(start, t, typeOK, accept(DOT))
           } else if (in.token == SUPER) {
             in.nextToken()
             t = atPos(start) { Super(This(name.toTypeName), mixinQualifierOpt()) }
             accept(DOT)
-            t = selector(t)
-            if (in.token == DOT) t = selectors(t, typeOK, in.skipToken())
+            t = selector(start, t)
+            if (in.token == DOT) t = selectors(start, t, typeOK, in.skipToken())
           } else {
-            t = selectors(t, typeOK, dotOffset)
+            t = selectors(start, t, typeOK, dotOffset)
           }
         }
       }
       t
     }
 
-    def selectors(t: Tree, typeOK: Boolean, dotOffset: Offset): Tree =
+    def selectors(start: Offset, t: Tree, typeOK: Boolean, dotOffset: Offset): Tree =
       if (typeOK && in.token == TYPE) {
         in.nextToken()
         atPos(t.pos.start, dotOffset) { SingletonTypeTree(t) }
       }
       else {
-        val t1 = selector(t)
-        if (in.token == DOT) { selectors(t1, typeOK, in.skipToken()) }
+        val t1 = selector(start, t)
+        if (in.token == DOT) { selectors(start, t1, typeOK, in.skipToken()) }
         else t1
       }
 
@@ -1312,7 +1312,7 @@ self =>
     def qualId(): Tree = {
       val start = in.offset
       val id = atPos(start) { Ident(ident()) }
-      if (in.token == DOT) { selectors(id, typeOK = false, in.skipToken()) }
+      if (in.token == DOT) { selectors(start, id, typeOK = false, in.skipToken()) }
       else id
     }
     /** Calls `qualId()` and manages some package state. */
@@ -1730,13 +1730,14 @@ self =>
      */
     def prefixExpr(): Tree = {
       if (isUnaryOp) {
-        atPos(in.offset) {
+        val start = in.offset
+        atPos(start) {
           if (lookingAhead(isSimpleExprIntro)) {
             val namePos = in.offset
             val uname = nme.toUnaryName(rawIdent().toTermName)
             if (uname == nme.UNARY_- && isNumericLit)
               /* start at the -, not the number */
-              simpleExprRest(literal(isNegated = true, start = namePos), canApply = true)
+              simpleExprRest(start, literal(isNegated = true, start = namePos), canApply = true)
             else
               Select(stripParens(simpleExpr()), uname)
           }
@@ -1762,6 +1763,7 @@ self =>
      */
     def simpleExpr(): Tree = {
       var canApply = true
+      val start = in.offset
       val t =
         if (isLiteral) literal()
         else in.token match {
@@ -1787,15 +1789,15 @@ self =>
           case _ =>
             syntaxErrorOrIncompleteAnd("illegal start of simple expression", skipIt = true)(errorTermTree)
         }
-      simpleExprRest(t, canApply = canApply)
+      simpleExprRest(start, t, canApply = canApply)
     }
 
-    def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
+    def simpleExprRest(start: Offset, t: Tree, canApply: Boolean): Tree = {
       if (canApply) newLineOptWhenFollowedBy(LBRACE)
       in.token match {
         case DOT =>
           in.nextToken()
-          simpleExprRest(selector(t), canApply = true)
+          simpleExprRest(start, selector(start, t), canApply = true)
         case LBRACKET =>
           val t1 = stripParens(t)
           t1 match {
@@ -1804,7 +1806,7 @@ self =>
               while (in.token == LBRACKET)
                 app = atPos(t.pos.start, in.offset)(TypeApply(app, exprTypeArgs()))
 
-              simpleExprRest(app, canApply = true)
+              simpleExprRest(start, app, canApply = true)
             case _ =>
               t1
           }
@@ -1820,7 +1822,7 @@ self =>
             }
             Apply(sel, argumentExprs())
           }
-          simpleExprRest(app, canApply = true)
+          simpleExprRest(start, app, canApply = true)
         case USCORE =>
           atPos(t.pos.start, in.skipToken()) { MethodValue(stripParens(t)) }
         case _ =>
@@ -1854,9 +1856,14 @@ self =>
      *  }}}
      */
     def blockExpr(): Tree = atPos(in.offset) {
+      val start = in.offset
       inBraces {
         if (in.token == CASE) Match(EmptyTree, caseClauses())
         else block()
+      } match {
+        case b: Block if b.pos == NoPosition =>
+          b.setPos(r2p(start, start, in.lastOffset))
+        case t => t
       }
     }
 
@@ -2564,7 +2571,7 @@ self =>
         in.nextToken()
         val t = atPos(start)(This(name))
         accept(DOT)
-        val result = selector(t)
+        val result = selector(start, t)
         accept(DOT)
         result
       }

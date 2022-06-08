@@ -170,8 +170,7 @@ trait MarkupParsers {
       xTakeUntil(handle.charData, () => r2p(start, mid, curOffset), "]]>")
     }
 
-    def xUnparsed: Tree = {
-      val start = curOffset
+    def xUnparsed(start: Int): Tree = {
       xTakeUntil(handle.unparsed, () => r2p(start, start, curOffset), "</xml:unparsed>")
     }
 
@@ -304,7 +303,7 @@ trait MarkupParsers {
      *                | xmlTag1 '/' '>'
      */
     def element: Tree = {
-      val start = curOffset
+      val start = curOffset - 1 // include <
       val (qname, attrMap) = xTag(())
       if (ch == '/') { // empty element
         xToken("/>")
@@ -313,7 +312,7 @@ trait MarkupParsers {
       else { // handle content
         xToken('>')
         if (qname == "xml:unparsed")
-          return xUnparsed
+          return xUnparsed(start)
 
         debugLastStartElement.push((start, qname))
         val ts = content
@@ -381,7 +380,7 @@ trait MarkupParsers {
         handle.isPattern = false
 
         val ts = new ArrayBuffer[Tree]
-        val start = curOffset
+        val start = curOffset - 1 // include <
         content_LT(ts)
 
         // parse more XML?
@@ -445,7 +444,7 @@ trait MarkupParsers {
      *                  | Name [S] '/' '>'
      */
     def xPattern: Tree = {
-      val start = curOffset
+      val start = curOffset - 1 // include <
       val qname = xName
       debugLastStartElement.push((start, qname))
       xSpaceOpt()
