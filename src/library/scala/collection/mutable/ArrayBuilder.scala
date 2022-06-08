@@ -61,9 +61,9 @@ sealed abstract class ArrayBuilder[T]
     val k = xs.knownSize
     if (k > 0) {
       ensureSize(this.size + k)
-      IterableOnce.copyElemsToArray(xs, elems, this.size): Unit
-      size += k
-    } else if (k < 0) super.addAll(xs)
+      size += IterableOnce.copyElemsToArray(xs, elems, this.size)
+    }
+    else if (k < 0) super.addAll(xs)
     this
   }
 }

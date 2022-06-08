@@ -529,9 +529,10 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]]): Unit
-      new ArrayDeque[B](array, start = 0, end = s)
-    } else new ArrayDeque[B]() ++= coll
+      val n = IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      new ArrayDeque[B](array, start = 0, end = n)
+    }
+    else new ArrayDeque[B]() ++= coll
   }
 
   def newBuilder[A]: Builder[A, ArrayDeque[A]] =
