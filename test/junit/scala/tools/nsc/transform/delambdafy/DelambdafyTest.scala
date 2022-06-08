@@ -24,7 +24,7 @@ object Delambdafy {
     }
     println(result)
     lazy val _foo = foo(result) {
-      case x :: xs if x isDefined => x.get.length
+      case x :: xs if x.isDefined => x.get.length
       case _ => 0
     }
     println(_foo)

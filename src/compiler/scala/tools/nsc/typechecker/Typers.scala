@@ -967,8 +967,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         if (!meth.isConstructor && checkCanEtaExpand()) typedEtaExpansion(tree, mode, pt)
-        else if (arity == 0 && checkCanAutoApply()) adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
-        else
+        else if (arity == 0 && checkCanAutoApply()) {
+          val apply = Apply(tree, Nil) setPos tree.pos
+          if (tree.hasAttachment[PostfixAttachment.type]) apply.updateAttachment(InfixAttachment)
+          adapt(typed(apply), mode, pt, original)
+        } else
           if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth) // `context.implicitsEnabled` implies we are not in a pattern
           else UnstableTreeError(tree)
       }
@@ -5426,7 +5429,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qualTyped = checkDead(context, typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
 
-            if (tree.isInstanceOf[PostfixSelect])
+            if (tree.hasAttachment[PostfixAttachment.type])
               checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
