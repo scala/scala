@@ -251,7 +251,7 @@ private[immutable] final class VectorMapBuilder[K, V] extends mutable.Builder[(K
 
   override def result(): VectorMap[K, V] = {
     if (aliased eq null) {
-        aliased = new VectorMap(vectorBuilder.result(), mapBuilder.result())
+      aliased = new VectorMap(vectorBuilder.result(), mapBuilder.result())
     }
     aliased
   }

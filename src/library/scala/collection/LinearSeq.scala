@@ -121,7 +121,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   override def foreach[U](f: A => U): Unit = {
     var these: LinearSeq[A] = coll
     while (!these.isEmpty) {
-      f(these.head)
+      f(these.head): Unit
       these = these.tail
     }
   }
