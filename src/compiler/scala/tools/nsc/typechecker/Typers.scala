@@ -913,7 +913,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth)
           else UnstableTreeError(tree)
 
-        def emptyApplication: Tree = adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+        def emptyApplication: Tree = {
+          val apply = Apply(tree, Nil) setPos tree.pos
+          if (tree.hasAttachment[PostfixAttachment.type]) apply.updateAttachment(InfixAttachment)
+          adapt(typed(apply), mode, pt, original)
+        }
 
         // constructors do not eta-expand
         if (meth.isConstructor) cantAdapt
@@ -5196,7 +5200,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qualTyped = checkDead(context, typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
 
-            if (tree.isInstanceOf[PostfixSelect])
+            if (tree.hasAttachment[PostfixAttachment.type])
               checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
