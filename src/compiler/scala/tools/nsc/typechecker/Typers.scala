@@ -5051,7 +5051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // so, when we can't find a member in the class scope, check the companion
       def inCompanionForJavaStatic(cls: Symbol, name: Name): Symbol =
         if (!(context.unit.isJava && cls.isClass)) NoSymbol else {
-          context.javaFindMember(cls.typeOfThis, name, _ => true)._2
+          context.javaFindMember(cls.typeOfThis, name, _.isStaticMember)._2
         }
 
       /* Attribute a selection where `tree` is `qual.name`.
