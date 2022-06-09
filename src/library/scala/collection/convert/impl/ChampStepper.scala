@@ -148,7 +148,7 @@ extends EfficientSplit {
             j -= 1
           }
           nodeCursorsAndLengths(2*fork) = i
-          searchNextValueNode()
+          searchNextValueNode(): Unit
         }
         semi
       }

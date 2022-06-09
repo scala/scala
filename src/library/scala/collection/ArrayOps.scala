@@ -476,7 +476,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     var i = 0
     while (i < xs.length) {
       val x = xs(i)
-      (if (p(x)) res1 else res2) += x
+      val part = if (p(x)) res1 else res2
+      part += x
       i += 1
     }
     (res1.result(), res2.result())
@@ -1315,7 +1316,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     * Note: [U] parameter needed to help scalac's type inference.
     */
   def foreach[U](f: A => U): Unit = {
-    def g(a: A): Unit = f(a)
+    @inline def g(a: A) = f(a): Unit
     val len = xs.length
     var i = 0
     (xs: Any @unchecked) match {
