@@ -630,8 +630,9 @@ Expressions can be constructed from operands and operators.
 ### Prefix Operations
 
 A prefix operation ´\mathit{op};e´ consists of a prefix operator ´\mathit{op}´, which
-must be one of the identifiers ‘`+`’, ‘`-`’,
-‘`!`’ or ‘`~`’. The expression ´\mathit{op};e´ is
+must be one of the identifiers ‘`+`’, ‘`-`’, ‘`!`’ or ‘`~`’,
+which must not be enclosed in backquotes.
+The expression ´\mathit{op};e´ is
 equivalent to the postfix method application
 `e.unary_´\mathit{op}´`.
 
