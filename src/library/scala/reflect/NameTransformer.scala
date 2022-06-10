@@ -70,25 +70,27 @@ object NameTransformer {
     var buf: StringBuilder = null
     val len = name.length()
     var i = 0
+    @inline def puts(s: String)  = buf.append(s) : Unit
+    @inline def putchar(c: Char) = buf.append(c) : Unit
     while (i < len) {
       val c = name charAt i
       if (c < nops && (op2code(c.toInt) ne null)) {
         if (buf eq null) {
           buf = new StringBuilder()
-          buf.append(name.substring(0, i))
+          puts(name.substring(0, i))
         }
-        buf.append(op2code(c.toInt))
-      /* Handle glyphs that are not valid Java/JVM identifiers */
+        puts(op2code(c.toInt))
       }
+      /* Handle glyphs that are not valid Java/JVM identifiers */
       else if (!Character.isJavaIdentifierPart(c)) {
         if (buf eq null) {
           buf = new StringBuilder()
-          buf.append(name.substring(0, i))
+          puts(name.substring(0, i))
         }
-        buf.append("$u%04X".format(c.toInt))
+        puts("$u%04X".format(c.toInt))
       }
       else if (buf ne null) {
-        buf.append(c)
+        putchar(c)
       }
       i += 1
     }

@@ -297,7 +297,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def define(tree: ImplDef): Symbol = {
         val freeTerms = tree.freeTerms
         if (freeTerms.nonEmpty) throw ToolBoxError(s"reflective toolbox has failed: cannot have free terms in a top-level definition")
-        verify(tree)
+        verify(tree) : Unit
         wrapInPackageAndCompile(nextWrapperModuleName(), tree)
       }
 

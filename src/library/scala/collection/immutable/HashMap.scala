@@ -2013,6 +2013,7 @@ private final class HashCollisionMapNode[K, +V ](
 
           builder.addOne(mergef(nextPayload, rightPayload))
         }
+        ()
       }
 
       var i = 0
