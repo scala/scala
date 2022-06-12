@@ -32,4 +32,12 @@ class StringBuilderTest {
     assertEquals("abc", res.toString)
     assertSame(b, res)
   }
+
+  @Test def `addString returns this builder`: Unit = {
+    val src = new StringBuilder("abc")
+    val b = new StringBuilder()
+    val res: b.type = src.addString(b, "X", ",", "Y")
+    assertEquals("Xa,b,cY", res.toString)
+    assertSame(b, res)
+  }
 }

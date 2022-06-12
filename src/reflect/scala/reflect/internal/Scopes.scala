@@ -469,7 +469,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
-    override def addString(sb: StringBuilder, start: String, sep: String, end: String) =
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type =
       toList.map(_.defString).addString(sb, start, sep, end)
 
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")

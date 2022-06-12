@@ -1191,7 +1191,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+  def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
     val jsb = b.underlying
     if (start.length != 0) jsb.append(start)
     val it = iterator
@@ -1227,7 +1227,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param sep   the separator string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  @inline final def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
+  @inline final def addString(b: StringBuilder, sep: String): b.type = addString(b, "", sep, "")
 
   /** Appends all elements of this $coll to a string builder.
     *  The written text consists of the string representations (w.r.t. the method
@@ -1249,7 +1249,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  b    the string builder to which elements are appended.
     *  @return      the string builder `b` to which elements were appended.
     */
-  @inline final def addString(b: StringBuilder): StringBuilder = addString(b, "")
+  @inline final def addString(b: StringBuilder): b.type = addString(b, "")
 
   /** Given a collection factory `factory`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:

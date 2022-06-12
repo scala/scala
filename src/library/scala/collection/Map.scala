@@ -338,7 +338,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = concat(xs)
 
-  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type =
     iterator.map { case (k, v) => s"$k -> $v" }.addString(sb, start, sep, end)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
