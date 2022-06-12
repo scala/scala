@@ -22,4 +22,14 @@ class StringBuilderTest {
     assertArrayEquals(Array('a', 'b'), b.toCharArray)
     assertArrayEquals(Array('a', 'b'), b.toArray)
   }
+
+  @Test def `mutating ops return this builder`: Unit = {
+    val b = new StringBuilder()
+    val res0: b.type = b.addOne('a')
+    val res1: b.type = res0.append("b")
+    val res2: b.type = res1.append("c": Any)
+    val res = res2
+    assertEquals("abc", res.toString)
+    assertSame(b, res)
+  }
 }
