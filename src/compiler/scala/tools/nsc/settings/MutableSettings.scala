@@ -398,11 +398,19 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     def errorMsg() = errorFn(s"invalid setting for $name $getValidText")
 
-    def tryToSet(args: List[String]) =
-      if (args.isEmpty) errorAndValue("missing argument", None)
-      else parseArgument(args.head) match {
-        case Some(i)  => value = i ; Some(args.tail)
-        case None     => errorMsg() ; None
+    def tryToSet(args: List[String]): Option[ResultOfTryToSet] =
+      args match {
+        case h :: rest =>
+          parseArgument(h) match {
+            case Some(i) => value = i; Some(rest)
+            case None    => errorMsg(); None
+          }
+        case Nil => errorAndValue("missing argument", None)
+      }
+    def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] =
+      args match {
+        case Nil | _ :: Nil => tryToSet(args)
+        case _              => errorAndValue("too many arguments", None)
       }
 
     def unparse: List[String] =
@@ -452,6 +460,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       case _  =>
         None
     }
+    def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] = errorAndValue(s"bad argument for $name", None)
     override def respondsTo(token: String) = token startsWith prefix
     def unparse: List[String] = value
   }
@@ -475,6 +484,11 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       case "help" :: rest if helpText.nonEmpty => sawHelp = true ; Some(rest)
       case h :: rest                           => value = h ; Some(rest)
     }
+    def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] =
+      args match {
+        case Nil | _ :: Nil => tryToSet(args)
+        case _              => errorAndValue("too many arguments", None)
+      }
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
     override def isHelping: Boolean = sawHelp
@@ -498,7 +512,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     // This method is invoked if there are no colonated args. In this case the default value is
     // used. No arguments are consumed.
-    override def tryToSet(args: List[String]) = {
+    def tryToSet(args: List[String]) = {
       default match {
         case Some(d) => value = d
         case None => errorFn(s"$name requires an argument, the syntax is $helpSyntax")
@@ -506,7 +520,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       Some(args)
     }
 
-    override def tryToSetColon(args: List[String]) = args match {
+    def tryToSetColon(args: List[String]) = args match {
       case x :: xs  => value = ScalaVersion(x, errorFn); Some(xs)
       case nil      => Some(nil)
     }
@@ -678,7 +692,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     }
 
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
-    override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     /** Try to set args, handling "help" and default.
@@ -805,7 +819,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       Some(rest)
     }
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
-    override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     def clear(): Unit         = (v = Nil)
@@ -851,9 +865,13 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def isHelping = sawHelp
     override def help = usageErrorMessage
 
-    def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
+    def tryToSet(args: List[String]) =
+      args match {
+        case Nil | Optionlike() :: _ => errorAndValue(usageErrorMessage, None)
+        case arg :: rest             => tryToSetColon(List(arg)).map(_ => rest)
+      }
 
-    override def tryToSetColon(args: List[String]) = args map _preSetHook match {
+    def tryToSetColon(args: List[String]) = args map _preSetHook match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
       case List("help")                   => sawHelp = true; SomeOfNil
       case List(x) if choices contains x  => value = x ; SomeOfNil
@@ -916,7 +934,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     private def splitDefault = default.split(',').toList
 
-    override def tryToSetColon(args: List[String]) = try {
+    def tryToSetColon(args: List[String]) = try {
       args match {
         case Nil  => if (default == "") errorAndValue("missing phase", None)
                      else tryToSetColon(splitDefault)
