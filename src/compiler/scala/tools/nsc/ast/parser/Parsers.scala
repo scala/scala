@@ -707,7 +707,7 @@ self =>
     def isIdentExcept(except: Name) = isIdent && in.name != except
     def isIdentOf(name: Name)       = isIdent && in.name == name
 
-    def isUnaryOp  = isIdent && raw.isUnary(in.name)
+    def isUnaryOp  = isRawIdent && raw.isUnary(in.name)
     def isRawStar  = isRawIdent && in.name == raw.STAR
     def isRawBar   = isRawIdent && in.name == raw.BAR
     def isRawIdent = in.token == IDENTIFIER

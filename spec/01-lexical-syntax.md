@@ -52,7 +52,7 @@ of operator characters.  Second, an identifier can start with an operator
 character followed by an arbitrary sequence of operator characters.
 The preceding two forms are called _plain_ identifiers.  Finally,
 an identifier may also be formed by an arbitrary string between
-back-quotes (host systems may impose some restrictions on which
+backquotes (host systems may impose some restrictions on which
 strings are legal for identifiers).  The identifier then is composed
 of all characters excluding the backquotes themselves.
 

@@ -1,0 +1,4 @@
+unary-unquoted.scala:7: error: ';' expected but integer literal found.
+  def i = `+` 42      // error not taken as unary prefix operator
+              ^
+1 error
