@@ -292,5 +292,5 @@ trait Constants extends api.Constants {
 
   object Constant extends ConstantExtractor
 
-  implicit val ConstantTag = ClassTag[Constant](classOf[Constant])
+  implicit val ConstantTag: ClassTag[Constant] = ClassTag[Constant](classOf[Constant])
 }

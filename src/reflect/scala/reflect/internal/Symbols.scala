@@ -2879,7 +2879,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.upperBound)
       else defString
   }
-  implicit val SymbolTag = ClassTag[Symbol](classOf[Symbol])
+  implicit val SymbolTag: ClassTag[Symbol] = ClassTag[Symbol](classOf[Symbol])
 
   /** A class for term symbols */
   class TermSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
@@ -3002,7 +3002,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
   }
-  implicit val TermSymbolTag = ClassTag[TermSymbol](classOf[TermSymbol])
+  implicit val TermSymbolTag: ClassTag[TermSymbol] = ClassTag[TermSymbol](classOf[TermSymbol])
 
   /** A class for module symbols */
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
@@ -3029,7 +3029,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       flatname
     }
   }
-  implicit val ModuleSymbolTag = ClassTag[ModuleSymbol](classOf[ModuleSymbol])
+  implicit val ModuleSymbolTag: ClassTag[ModuleSymbol] = ClassTag[ModuleSymbol](classOf[ModuleSymbol])
 
   /** A class for method symbols */
   class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
@@ -3100,7 +3100,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
   }
-  implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
+  implicit val MethodSymbolTag: ClassTag[MethodSymbol] = ClassTag[MethodSymbol](classOf[MethodSymbol])
 
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
@@ -3280,7 +3280,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     if (settings.areStatisticsEnabled) statistics.incCounter(typeSymbolCount)
   }
-  implicit val TypeSymbolTag = ClassTag[TypeSymbol](classOf[TypeSymbol])
+  implicit val TypeSymbolTag: ClassTag[TypeSymbol] = ClassTag[TypeSymbol](classOf[TypeSymbol])
 
   /** A class for type parameters viewed from inside their scopes
    *
@@ -3500,7 +3500,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     if (settings.areStatisticsEnabled) statistics.incCounter(classSymbolCount)
   }
-  implicit val ClassSymbolTag = ClassTag[ClassSymbol](classOf[ClassSymbol])
+  implicit val ClassSymbolTag: ClassTag[ClassSymbol] = ClassTag[ClassSymbol](classOf[ClassSymbol])
 
   /** A class for module class symbols
    *  Note: Not all module classes are of this type; when unpickled, we get
@@ -3624,13 +3624,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final override def asFreeTerm = this
     def value = value0
   }
-  implicit val FreeTermSymbolTag = ClassTag[FreeTermSymbol](classOf[FreeTermSymbol])
+  implicit val FreeTermSymbolTag: ClassTag[FreeTermSymbol] = ClassTag[FreeTermSymbol](classOf[FreeTermSymbol])
 
   class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi {
     final override def isFreeType = true
     final override def asFreeType = this
   }
-  implicit val FreeTypeSymbolTag = ClassTag[FreeTypeSymbol](classOf[FreeTypeSymbol])
+  implicit val FreeTypeSymbolTag: ClassTag[FreeTypeSymbol] = ClassTag[FreeTypeSymbol](classOf[FreeTypeSymbol])
 
   /** An object representing a missing symbol */
   class NoSymbol protected[Symbols]() extends Symbol(null, NoPosition, nme.NO_NAME) {
