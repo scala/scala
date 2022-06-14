@@ -1,5 +1,5 @@
-Unused_2.scala:9: warning: private method unusedMacro in object Unused is never used
-  private def unusedMacro(): Unit = macro UnusedMacro.usedMacroImpl
+Unused_2.scala:13: warning: private method fixme macro defs are eliminated at refchecks in object Unused is never used
+  private def `fixme macro defs are eliminated at refchecks` = println("Restore macro warnings")
               ^
 error: No warnings can be incurred under -Werror.
 1 warning

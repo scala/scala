@@ -116,13 +116,8 @@ trait Analyzer extends AnyRef
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
           // interactive typed may finish by throwing a `TyperResult`
-          if (!settings.Youtline) {
+          if (!settings.Youtline)
             for (workItem <- unit.toCheck) workItem()
-            if (!settings.isScaladoc && settings.warnUnusedImport)
-              warnUnusedImports(unit)
-            if (!settings.isScaladoc && settings.warnUnused.isSetByUser)
-              new checkUnused(typer).apply(unit)
-          }
         }
         finally {
           runReporting.reportSuspendedMessages(unit)

@@ -526,6 +526,27 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val runsRightAfter = None
   } with RefChecks
 
+  // phaseName = "lints"
+  object linz extends {
+    val global: Global.this.type = Global.this
+  } with SubComponent {
+    val phaseName = "lints"
+    val runsAfter = List("refchecks")
+    val runsRightAfter = Some("refchecks")
+
+    def newPhase(prev: Phase): GlobalPhase = new LintsPhase(prev)
+
+    private class LintsPhase(prev: Phase) extends GlobalPhase(prev) {
+      def name = phaseName
+      def apply(unit: CompilationUnit): Unit =
+        try if (!settings.Youtline && !settings.isScaladoc) {
+          if (settings.warnUnusedImport) analyzer.warnUnusedImports(unit)
+          if (settings.warnUnused.isSetByUser) new analyzer.checkUnused()(unit)
+        }
+        finally runReporting.reportSuspendedMessages(unit)
+    }
+  }
+
   // phaseName = "patmat"
   object patmat extends {
     val global: Global.this.type = Global.this
@@ -689,6 +710,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
+      linz                    -> "check for common errors",
       patmat                  -> "translate match expressions",
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",
@@ -1346,7 +1368,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     def phaseNamed(name: String): Phase =
       findOrElse(firstPhase.iterator)(_.name == name)(NoPhase)
 
-    /** All phases as of 3/2012 here for handiness; the ones in
+    /** All phases as of 2022 here for handiness; the ones in
      *  active use uncommented.
      */
     val parserPhase                  = phaseNamed("parser")
@@ -1357,6 +1379,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // val superaccessorsPhase          = phaseNamed("superaccessors")
     val picklerPhase                 = phaseNamed("pickler")
     val refchecksPhase               = phaseNamed("refchecks")
+    val lintsPhase                   = phaseNamed("lints")
     val uncurryPhase                 = phaseNamed("uncurry")
     // val fieldsPhase                  = phaseNamed("fields")
     // val tailcallsPhase               = phaseNamed("tailcalls")
@@ -1573,6 +1596,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         advancePhase()
       }
       profiler.finished()
+
+      if (reporter.hasErrors && lintsPhase != NoPhase && isBefore(lintsPhase)) lintsPhase.run()
 
       runReporting.runFinished(hasErrors = reporter.hasErrors)
 

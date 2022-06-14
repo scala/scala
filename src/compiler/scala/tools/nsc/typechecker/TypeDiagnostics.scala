@@ -546,7 +546,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
-              else if (sym.isSynthetic && sym.isImplicit) return
+              else if (sym.isSynthetic && sym.isImplicit) return        // bail on implicit class def
+              else if (sym.name.decoded.endsWith("$extension")) return  // bail on extension method
               else if (!sym.isConstructor && !isTrivial(rhs))
                 for (vs <- vparamss) params ++= vs.map(_.symbol)
               defnTrees += m
@@ -579,10 +580,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             case MethodType(_, _)     =>
             case SingleType(_, _)     =>
             case ConstantType(Constant(k: Type)) =>
-              log(s"classOf $k referenced from $currentOwner")
+              log(s"classOf $k referenced from ${currentOwner.fullLocationString}")
               treeTypes += k
             case _                    =>
-              log(s"${if (isAlias) "alias " else ""}$tp referenced from $currentOwner")
+              log(s"${if (isAlias) "alias " else ""}$tp referenced from ${currentOwner.fullLocationString}")
               treeTypes += tp
           }
         }
@@ -656,7 +657,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
   }
 
-  class checkUnused(typer: Typer) {
+  class checkUnused() {
 
     object skipMacroCall extends UnusedPrivates {
       override def qualifiesTerm(sym: Symbol): Boolean =
@@ -734,8 +735,18 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
+          def bridgedImplementation: Boolean = hasRepeatedParam(m.tpe) && !m.isBridge && {
+            val other = classOf(m).info.nonPrivateMemberAdmitting(m.name, VBRIDGE)
+            other != NoSymbol && other.isOverloaded && {
+              val toJavaRepeatedParam = SubstSymMap(RepeatedParamClass -> JavaRepeatedParamClass)
+              val varargsType = toJavaRepeatedParam(m.tpe)
+              def isBridge(b: Symbol) = b.tpe.matches(varargsType)
+              val bridge = other.alternatives.find(isBridge).getOrElse(NoSymbol)
+              bridge != NoSymbol && isImplementation(bridge)
+            }
+          }
           val opc = new overridingPairs.PairsCursor(classOf(m))
-          opc.iterator.exists(pair => pair.low == m)
+          opc.iterator.exists(_.low == m) || bridgedImplementation
         }
         import PartialFunction._
         def isConvention(p: Symbol): Boolean = (
@@ -762,7 +773,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         }
       }
     }
-    def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
+    def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
       val body = unit.body
       // TODO the message should distinguish whether the non-usage is before or after macro expansion.
       settings.warnMacros.value match {

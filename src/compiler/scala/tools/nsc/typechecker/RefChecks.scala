@@ -1228,9 +1228,9 @@ abstract class RefChecks extends Transform {
           }
           tree1
         }
-      case Import(_, _)                                                                       => EmptyTree
-      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => EmptyTree
-      case _                                                                                  => transform(tree)
+      case Import(_, _)                                                       => EmptyTree
+      case DefDef(mods, _, _, _, _, _) if mods.isMacro || tree.symbol.isMacro => EmptyTree
+      case _                                                                  => transform(tree)
     }
 
     /* Check whether argument types conform to bounds of type parameters */

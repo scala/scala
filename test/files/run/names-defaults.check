@@ -10,6 +10,12 @@ names-defaults.scala:369: warning: the parameter name s is deprecated: use x ins
 names-defaults.scala:371: warning: the parameter name x is deprecated: use s instead
   println(deprNam2.g(x = "sljkfd"))
                        ^
+names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+                             ^
+names-defaults.scala:269: warning: a pure expression does nothing in statement position
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+                             ^
 names-defaults.scala:35: warning: local var var2 in value <local Test> is never used
     var var2 = 0
         ^
@@ -22,12 +28,6 @@ names-defaults.scala:280: warning: local val v in method foo is never used
 names-defaults.scala:280: warning: local val u in method foo is never used
   class A2489x2 { def foo(): Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
                                                                                                   ^
-names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-    spawn(b = { val ttt = 1; ttt }, a = 0)
-                             ^
-names-defaults.scala:269: warning: a pure expression does nothing in statement position
-    spawn(b = { val ttt = 1; ttt }, a = 0)
-                             ^
 1: @
 get: $
 get: 2

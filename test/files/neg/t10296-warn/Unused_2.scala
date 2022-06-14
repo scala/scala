@@ -9,4 +9,6 @@ object Unused {
   private def unusedMacro(): Unit = macro UnusedMacro.usedMacroImpl
 
   def f() = usedMacro()
+
+  private def `fixme macro defs are eliminated at refchecks` = println("Restore macro warnings")
 }
