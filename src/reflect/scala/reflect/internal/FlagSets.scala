@@ -19,7 +19,7 @@ import scala.language.implicitConversions
 trait FlagSets extends api.FlagSets { self: SymbolTable =>
 
   type FlagSet = Long
-  implicit val FlagSetTag = ClassTag[FlagSet](classOf[FlagSet])
+  implicit val FlagSetTag: ClassTag[FlagSet] = ClassTag[FlagSet](classOf[FlagSet])
 
   implicit def addFlagOps(left: FlagSet): FlagOps =
     new FlagOpsImpl(left)
