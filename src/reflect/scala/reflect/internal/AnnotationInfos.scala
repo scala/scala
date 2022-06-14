@@ -77,7 +77,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  - or nested classfile annotations
    */
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
-  implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  implicit val JavaArgumentTag: ClassTag[ClassfileAnnotArg] = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
   case object UnmappableAnnotArg extends ClassfileAnnotArg
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
@@ -111,13 +111,13 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   type JavaArgument = ClassfileAnnotArg
   type LiteralArgument = LiteralAnnotArg
   val LiteralArgument = LiteralAnnotArg
-  implicit val LiteralArgumentTag = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
+  implicit val LiteralArgumentTag: ClassTag[LiteralAnnotArg] = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
   type ArrayArgument = ArrayAnnotArg
   val ArrayArgument = ArrayAnnotArg
-  implicit val ArrayArgumentTag = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
+  implicit val ArrayArgumentTag: ClassTag[ArrayAnnotArg] = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
   type NestedArgument = NestedAnnotArg
   val NestedArgument = NestedAnnotArg
-  implicit val NestedArgumentTag = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
+  implicit val NestedArgumentTag: ClassTag[NestedAnnotArg] = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
 
   /** A specific annotation argument that encodes an array of bytes as an
    *  array of `Long`. The type of the argument declared in the annotation
@@ -382,7 +382,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def unapply(annotation: Annotation): Option[(Type, List[Tree], ListMap[Name, ClassfileAnnotArg])] =
       Some((annotation.tpe, annotation.scalaArgs, annotation.javaArgs))
   }
-  implicit val AnnotationTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
+  implicit val AnnotationTag: ClassTag[AnnotationInfo] = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
 
   protected[scala] def annotationToTree(ann: Annotation): Tree = {
     def reverseEngineerArgs(): List[Tree] = {

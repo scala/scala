@@ -1102,7 +1102,7 @@ trait Trees extends api.Trees {
 
   object Modifiers extends ModifiersExtractor
 
-  implicit val ModifiersTag = ClassTag[Modifiers](classOf[Modifiers])
+  implicit val ModifiersTag: ClassTag[Modifiers] = ClassTag[Modifiers](classOf[Modifiers])
 
   // ---- values and creators ---------------------------------------
 
@@ -1956,7 +1956,7 @@ trait Trees extends api.Trees {
   implicit val CompoundTypeTreeTag    = ClassTag[CompoundTypeTree](classOf[CompoundTypeTree])
   implicit val DefDefTag              = ClassTag[DefDef](classOf[DefDef])
   implicit val DefTreeTag             = ClassTag[DefTree](classOf[DefTree])
-  implicit val ExistentialTypeTreeTag = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
+  implicit val ExistentialTypeTreeTag: ClassTag[ExistentialTypeTree] = ClassTag[ExistentialTypeTree](classOf[ExistentialTypeTree])
   implicit val FunctionTag            = ClassTag[Function](classOf[Function])
   implicit val GenericApplyTag        = ClassTag[GenericApply](classOf[GenericApply])
   implicit val IdentTag               = ClassTag[Ident](classOf[Ident])

@@ -456,11 +456,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
   }
 
-  implicit val ScopeTag = ClassTag[Scope](classOf[Scope])
+  implicit val ScopeTag: ClassTag[Scope] = ClassTag[Scope](classOf[Scope])
 
   type MemberScope = Scope
 
-  implicit val MemberScopeTag = ClassTag[MemberScope](classOf[MemberScope])
+  implicit val MemberScopeTag: ClassTag[MemberScope] = ClassTag[MemberScope](classOf[MemberScope])
 
   /** Create a new scope */
   def newScope: Scope = new Scope()
