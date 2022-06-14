@@ -29,7 +29,6 @@ jobs:
           - buildLocker
           - buildQuick
           - triggerScalaDist
-        after_failure: sleep 5 # avoid truncated logs
 
       # pull request validation (w/ mini-bootstrap)
       # "mini" in these senses:
@@ -44,7 +43,6 @@ jobs:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
-        after_failure: sleep 5 # avoid truncated logs
 
       # build the spec using jekyll
       - stage: build
@@ -59,7 +57,6 @@ jobs:
         - bundle exec jekyll build -s spec/ -d build/spec
         after_success:
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
-        after_failure: sleep 5 # avoid truncated logs
 
 env:
   global:
