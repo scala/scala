@@ -1,3 +1,10 @@
+#partest java9+
+error: Usage: -Yresolve-term-conflict:<strategy> where <strategy> choices are package, object, error (default: error).
+error: bad option: '-Yresolve-term-conflict'
+error: bad options: -release 8 -Yresolve-term-conflict
+error: flags file may only contain compiler options, found: -Yresolve-term-conflict
+4 errors
+#partest java8
 error: Usage: -Yresolve-term-conflict:<strategy> where <strategy> choices are package, object, error (default: error).
 error: bad option: '-Yresolve-term-conflict'
 error: bad options: -Yresolve-term-conflict
