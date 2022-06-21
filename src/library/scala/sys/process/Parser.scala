@@ -14,6 +14,11 @@ package scala.sys.process
 
 import scala.annotation.tailrec
 
+// This and scala/tools/cmd/CommandLineParser.scala are copies of each other
+// and should be maintained in parallel. (Ideally we'd eliminate
+// the duplication, which arose because we expected sys.process to
+// become a separate module.)
+
 /** A simple enough command line parser.
  */
 private[scala] object Parser {
@@ -49,9 +54,12 @@ private[scala] object Parser {
       while (!done && !terminal) pos += 1
       !done
     }
+    var escapedCur = false
     @tailrec
     def skipToDelim(): Boolean =
       cur match {
+        case _ if escapedCur      => escapedCur = false; bump(); skipToDelim()
+        case '\\'                 => escapedCur = true; bump(); skipToDelim()
         case q @ (DQ | SQ)        => { qpos += pos; bump(); skipToQuote(q) } && { qpos += pos; bump(); skipToDelim() }
         case -1                   => true
         case c if isWhitespace(c) => true

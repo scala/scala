@@ -42,4 +42,10 @@ class ParserTest {
     assertThrows[ParseException](tokenize(""""x"""))         // was assertEquals(List("\"x"), tokenize(""""x"""))
     assertThrows[ParseException](tokenize("""x'"""))
   }
+  @Test
+  def parserMoreQuotes(): Unit = {
+    assertEquals(List("""a\"b\"c"""), tokenize("""a\"b\"c"""))
+    assertEquals(List("a", "\\'b", "\\'", "c"), tokenize("""a \'b \' c"""))
+    assertEquals(List("a", "\\\\b ", "c"), tokenize("""a \\'b ' c"""))
+  }
 }
