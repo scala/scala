@@ -475,7 +475,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
     def argsFor(f: File): List[String] = {
       import scala.jdk.OptionConverters._
-      import scala.tools.cmd.CommandLineParser.tokenize
+      import scala.sys.process.{Parser => CommandLineParser}, CommandLineParser.tokenize
       val max  = 10
       val tag  = s"$tool:"
       val endc = "*" + "/"    // be forgiving of /* scalac: ... */

@@ -1,4 +1,3 @@
-import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc, nsc.doc
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter

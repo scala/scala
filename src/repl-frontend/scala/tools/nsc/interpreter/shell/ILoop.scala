@@ -655,7 +655,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def loadCommand(arg: String): Result = {
-    import scala.tools.cmd.CommandLineParser
+    import scala.sys.process.{Parser => CommandLineParser}
     def run(file: String, args: List[String], verbose: Boolean) = withFile(file) { f =>
       intp.interpret(s"val args: Array[String] = ${ args.map("\"" + _ + "\"").mkString("Array(", ",", ")") }")
       interpretAllFrom(f, verbose)

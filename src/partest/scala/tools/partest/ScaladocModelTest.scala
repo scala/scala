@@ -12,7 +12,7 @@
 
 package scala.tools.partest
 
-import scala.tools.cmd.CommandLineParser
+import scala.sys.process.{Parser => CommandLineParser}
 import scala.tools.nsc._
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
