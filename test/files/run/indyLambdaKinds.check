@@ -1,23 +1,23 @@
 Inlining into Main$.main
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 120 ins, after: 137 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 137 ins, after: 154 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 154 ins, after: 171 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 171 ins, after: 188 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 188 ins, after: 205 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 205 ins, after: 222 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 222 ins, after: 239 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 239 ins, after: 256 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 256 ins, after: 273 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 273 ins, after: 290 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 290 ins, after: 307 ins.
- inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 307 ins, after: 324 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 324 ins, after: 342 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 342 ins, after: 360 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 360 ins, after: 378 ins.
- inlined A_1.m1 (the callee is a small trivial method). Before: 378 ins, after: 396 ins.
-Inlining into Main$.t1a: inlined A_1.a (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.
-Inlining into Main$.t2a: inlined A_1.b (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.
-Inlining into Main$.t3a: inlined A_1.c (the callsite is annotated `@inline`). Before: 7 ins, after: 18 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 119 ins, after: 136 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 136 ins, after: 153 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 153 ins, after: 170 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 170 ins, after: 187 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 187 ins, after: 204 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 204 ins, after: 221 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 221 ins, after: 238 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 238 ins, after: 255 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 255 ins, after: 272 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 272 ins, after: 289 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 289 ins, after: 306 ins.
+ inlined scala/Predef$.println (the callee is a forwarder or alias method). Before: 306 ins, after: 323 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 323 ins, after: 337 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 337 ins, after: 351 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 351 ins, after: 365 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 365 ins, after: 379 ins.
+Inlining into Main$.t1a: inlined A_1.a (the callsite is annotated `@inline`). Before: 7 ins, after: 14 ins.
+Inlining into Main$.t2a: inlined A_1.b (the callsite is annotated `@inline`). Before: 7 ins, after: 14 ins.
+Inlining into Main$.t3a: inlined A_1.c (the callsite is annotated `@inline`). Before: 7 ins, after: 14 ins.
 Inlining into Main$.t4a: failed A_1.d (the callsite is annotated `@inline`). A_1::d(Ljava/lang/String;)Ljava/util/function/BiFunction; is annotated @inline but could not be inlined: The callee A_1::d(Ljava/lang/String;)Ljava/util/function/BiFunction; contains the instruction INVOKEDYNAMIC apply(Ljava/lang/String;)Ljava/util/function/BiFunction; [       // handle kind 0x6 : INVOKESTATIC       java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;       // arguments:       (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;,        // handle kind 0x6 : INVOKESTATIC       A_1.lambda$d$0(Ljava/lang/String;LA_1;Ljava/lang/String;)Ljava/lang/String;,        (LA_1;Ljava/lang/String;)Ljava/lang/String;     ] that would cause an IllegalAccessError when inlined into class Main$.
 Inlining into Main$.t4b: failed A_1.d (the callsite is annotated `@inline`). A_1::d(Ljava/lang/String;)Ljava/util/function/BiFunction; is annotated @inline but could not be inlined: The callee A_1::d(Ljava/lang/String;)Ljava/util/function/BiFunction; contains the instruction INVOKEDYNAMIC apply(Ljava/lang/String;)Ljava/util/function/BiFunction; [       // handle kind 0x6 : INVOKESTATIC       java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;       // arguments:       (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;,        // handle kind 0x6 : INVOKESTATIC       A_1.lambda$d$0(Ljava/lang/String;LA_1;Ljava/lang/String;)Ljava/lang/String;,        (LA_1;Ljava/lang/String;)Ljava/lang/String;     ] that would cause an IllegalAccessError when inlined into class Main$.
 Inlining into Main$.t5a: failed A_1.e (the callsite is annotated `@inline`). A_1::e(Ljava/lang/String;)Ljava/util/function/Function; is annotated @inline but could not be inlined: The callee A_1::e(Ljava/lang/String;)Ljava/util/function/Function; contains the instruction INVOKEDYNAMIC apply(Ljava/lang/String;)Ljava/util/function/Function; [       // handle kind 0x6 : INVOKESTATIC       java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;       // arguments:       (Ljava/lang/Object;)Ljava/lang/Object;,        // handle kind 0x6 : INVOKESTATIC       A_1.lambda$e$1(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;,        (Ljava/lang/String;)Ljava/lang/String;     ] that would cause an IllegalAccessError when inlined into class Main$.
@@ -25,15 +25,15 @@ Inlining into Main$.t5b: failed A_1.e (the callsite is annotated `@inline`). A_1
 Inlining into Main$.t6a: failed A_1.f (the callsite is annotated `@inline`). A_1::f(Ljava/lang/String;)Ljava/util/function/Function; is annotated @inline but could not be inlined: The callee A_1::f(Ljava/lang/String;)Ljava/util/function/Function; contains the instruction INVOKEDYNAMIC apply(Ljava/lang/String;)Ljava/util/function/Function; [       // handle kind 0x6 : INVOKESTATIC       java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;       // arguments:       (Ljava/lang/Object;)Ljava/lang/Object;,        // handle kind 0x6 : INVOKESTATIC       A_1.lambda$f$2(Ljava/lang/String;Ljava/lang/String;)LA_1;,        (Ljava/lang/String;)LA_1;     ] that would cause an IllegalAccessError when inlined into class Main$.
 Inlining into Main$.t6b: failed A_1.f (the callsite is annotated `@inline`). A_1::f(Ljava/lang/String;)Ljava/util/function/Function; is annotated @inline but could not be inlined: The callee A_1::f(Ljava/lang/String;)Ljava/util/function/Function; contains the instruction INVOKEDYNAMIC apply(Ljava/lang/String;)Ljava/util/function/Function; [       // handle kind 0x6 : INVOKESTATIC       java/lang/invoke/LambdaMetafactory.metafactory(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;       // arguments:       (Ljava/lang/Object;)Ljava/lang/Object;,        // handle kind 0x6 : INVOKESTATIC       A_1.lambda$f$2(Ljava/lang/String;Ljava/lang/String;)LA_1;,        (Ljava/lang/String;)LA_1;     ] that would cause an IllegalAccessError when inlined into class Main$.
 Inlining into Main$.t1b
- inlined A_1.a (the callsite is annotated `@inline`). Before: 11 ins, after: 22 ins.
+ inlined A_1.a (the callsite is annotated `@inline`). Before: 11 ins, after: 18 ins.
  rewrote invocations of closure allocated in Main$.t1b with body m1: INVOKEINTERFACE java/util/function/BiFunction.apply (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object; (itf)
- inlined A_1.m1 (the callee is a small trivial method). Before: 29 ins, after: 38 ins.
+ inlined A_1.m1 (the callee is a small trivial method). Before: 25 ins, after: 30 ins.
 Inlining into Main$.t2b
- inlined A_1.b (the callsite is annotated `@inline`). Before: 10 ins, after: 21 ins.
+ inlined A_1.b (the callsite is annotated `@inline`). Before: 10 ins, after: 17 ins.
  rewrote invocations of closure allocated in Main$.t2b with body m2: INVOKEINTERFACE java/util/function/Function.apply (Ljava/lang/Object;)Ljava/lang/Object; (itf)
- inlined A_1.m2 (the callee is a small trivial method). Before: 25 ins, after: 33 ins.
+ inlined A_1.m2 (the callee is a small trivial method). Before: 21 ins, after: 25 ins.
 Inlining into Main$.t3b
- inlined A_1.c (the callsite is annotated `@inline`). Before: 10 ins, after: 21 ins.
+ inlined A_1.c (the callsite is annotated `@inline`). Before: 10 ins, after: 17 ins.
  rewrote invocations of closure allocated in Main$.t3b with body <init>: INVOKEINTERFACE java/util/function/Function.apply (Ljava/lang/Object;)Ljava/lang/Object; (itf)
 warning: 6 optimizer warnings; re-run enabling -Wopt for details, or try -help
 m1

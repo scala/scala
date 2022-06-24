@@ -80,8 +80,8 @@ class InlinerTest extends BytecodeTesting {
       List(
         VarOp(ALOAD, 0),
         Op(POP), // pop receiver - we know the stack value is also in the local variable 0, so we use that local in the inlined code
-        Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
-        Label(10), VarOp(ILOAD, 2), // load return value
+        Op(ICONST_1), Jump(GOTO, Label(10)), // load return value
+        Label(10),
         VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IADD), Op(IRETURN)))
 
     // line numbers are kept, so there's a line 2 (from the inlined f)
@@ -115,11 +115,8 @@ class InlinerTest extends BytecodeTesting {
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
 
     val gBeforeLocalOpt = VarOp(ALOAD, 0) :: Op(POP) :: invokeQQQ ::: List(
-      VarOp(ASTORE, 1),
-      Jump(GOTO, Label(11)),
-      Label(11),
-      VarOp(ALOAD, 1),
-      Op(ACONST_NULL), VarOp(ASTORE, 1),
+      Jump(GOTO, Label(14)),
+      Label(14),
       Op(ATHROW))
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)
@@ -384,13 +381,13 @@ class InlinerTest extends BytecodeTesting {
     assert(g1.maxStack == 7 && f1.maxStack == 6, s"${g1.maxStack} - ${f1.maxStack}")
 
     // locals in f1: this, x, a
-    // locals in g1 after inlining: this, x, a (this is reused, return value ends up in slot of x)
-    assert(g1.maxLocals == 4 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
+    // locals in g1 after inlining: this, x, a (this is reused)
+    assert(g1.maxLocals == 3 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
 
     // like maxStack in g1 / f1
     assert(g2.maxStack == 5 && f2.maxStack == 4, s"${g2.maxStack} - ${f2.maxStack}")
 
-    // like maxLocals for g1 / f1, no return value
+    // like maxLocals for g1 / f1
     assert(g2.maxLocals == 3 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
   }
 
@@ -1234,7 +1231,7 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t6"), List(RETURN))
     assertSameSummary(getMethod(c, "t7"), List(RETURN))
     assertSameSummary(getMethod(c, "t8"), List(ICONST_1, ISTORE, LDC, DSTORE, LCONST_1, ILOAD, I2L, LADD, DLOAD, D2L, LADD, LRETURN))
-    assertSameSummary(getMethod(c, "t9"), List(ICONST_1, "valueOf", ASTORE, ALOAD, ACONST_NULL, ASTORE, ASTORE, GETSTATIC, ALOAD, "println", RETURN))
+    assertSameSummary(getMethod(c, "t9"), List(ICONST_1, "valueOf", ASTORE, GETSTATIC, ALOAD, "println", RETURN))
 
     // t9a inlines Range.foreach, which is quite a bit of code, so just testing the core
     assertInvoke(getMethod(c, "t9a"), "java/lang/Integer", "valueOf")
@@ -1887,19 +1884,19 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameSummary(getMethod(c, "t1"), List(
-      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ALOAD, ACONST_NULL, ASTORE, ASTORE, ALOAD, ACONST_NULL, ASTORE, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*39*/, ICONST_0, ISTORE, // init new array, loop counter
-      -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*39*/, // loop condition
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*37*/, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*15*/, ILOAD, ILOAD, IF_ICMPGE /*37*/, // loop condition
       ALOAD, ILOAD, IALOAD, ICONST_1, IADD, ISTORE, // compute element
       ALOAD, ILOAD, ILOAD, IASTORE, // store element
-      IINC, GOTO /*22*/, // increase counter, jump
-      -1 /*44*/, ALOAD, ARETURN)
+      IINC, GOTO /*15*/, // increase counter, jump
+      -1 /*37*/, ALOAD, ARETURN)
     )
     assertSameSummary(getMethod(c, "t2"), List(
-      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*38*/, ICONST_0, ISTORE, // init new array, loop counter
-      -1 /*15*/, ILOAD, ILOAD, IF_ICMPGE /*38*/, // loop condition
-      ALOAD, ILOAD, AALOAD, "trim", ASTORE, ALOAD, ACONST_NULL, ASTORE, ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, ACONST_NULL, ASTORE, // compute and store element
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*39*/, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*15*/, ILOAD, ILOAD, IF_ICMPGE /*39*/, // loop condition
+      ALOAD, ILOAD, AALOAD, "trim", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, ACONST_NULL, ASTORE, // compute and store element
       IINC, GOTO /*15*/, // increase counter, jump
-      -1 /*38*/, ALOAD, ARETURN)
+      -1 /*39*/, ALOAD, ARETURN)
     )
   }
 
@@ -2051,27 +2048,26 @@ class InlinerTest extends BytecodeTesting {
       List(
         // inlined first call
         VarOp(ALOAD, 0), VarOp(ILOAD, 1), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
-        // save and load result
-        VarOp(ISTORE, 8), Jump(GOTO, Label(15)), Label(15), VarOp(ILOAD, 8),
+        Jump(GOTO, Label(14)), Label(14),
         // store yy
         VarOp(LLOAD, 2), VarOp(LSTORE, 5),// store yy
         // inlined second call
         VarOp(ALOAD, 0), VarOp(ILOAD, 1), VarOp(LLOAD, 5), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
-        // store and load result, add
-        VarOp(ISTORE, 9), Jump(GOTO, Label(35)), Label(35), VarOp(ILOAD, 9), Op(IADD),
+        // add
+        Jump(GOTO, Label(32)), Label(32), Op(IADD),
         // store xx
         VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(ISTORE, 7),
         VarOp(ALOAD, 0), VarOp(ILOAD, 7), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
-        // store and load result, add
-        VarOp(ISTORE, 10), Jump(GOTO, Label(59)), Label(59), VarOp(ILOAD, 10), Op(IADD),
+        // add
+        Jump(GOTO, Label(53)), Label(53), Op(IADD),
         // inlined third call
         VarOp(ALOAD, 0), VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Invoke(INVOKEVIRTUAL, "C", "getClass", "()Ljava/lang/Class;", false), VarOp(ASTORE, 12), Op(POP2), VarOp(ISTORE, 11), Op(POP), Op(ICONST_0),
-        // store and load result, null out local, add
-        VarOp(ISTORE, 13), Jump(GOTO, Label(81)), Label(81), VarOp(ILOAD, 13), Op(ACONST_NULL), VarOp(ASTORE, 12), Op(IADD),
+        // null out local, add
+        Jump(GOTO, Label(72)), Label(72), Op(ACONST_NULL), VarOp(ASTORE, 12), Op(IADD),
         // inlined fourth call, with null test on parameter
-        VarOp(ALOAD, 4), VarOp(ILOAD, 1), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Jump(IFNONNULL, Label(98)), Op(ACONST_NULL), Op(ATHROW), Label(98), Op(ICONST_0),
-        // store and load result, add
-        VarOp(ISTORE, 14), Jump(GOTO, Label(104)), Label(104), VarOp(ILOAD, 14), Op(IADD),
+        VarOp(ALOAD, 4), VarOp(ILOAD, 1), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Jump(IFNONNULL, Label(88)), Op(ACONST_NULL), Op(ATHROW), Label(88), Op(ICONST_0),
+        // add
+        Jump(GOTO, Label(93)), Label(93), Op(IADD),
         Op(IRETURN))
     )
   }
@@ -2093,13 +2089,13 @@ class InlinerTest extends BytecodeTesting {
       // if (x.hashCode)
       VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false), Op(ICONST_0), Jump(IF_ICMPLE, Label(16)),
       // x = a
-      VarOp(ALOAD, 2), VarOp(ASTORE, 3), Jump(GOTO, Label(21)),
+      VarOp(ALOAD, 2), VarOp(ASTORE, 3), Jump(GOTO, Label(20)),
       // res = ""
-      Label(16), Ldc(LDC, ""), VarOp(ASTORE, 4), Jump(GOTO, Label(26)),
+      Label(16), Ldc(LDC, ""), Jump(GOTO, Label(23)),
       // res = x
-      Label(21), VarOp(ALOAD, 3), VarOp(ASTORE, 4),
+      Label(20), VarOp(ALOAD, 3),
       // arg-local, x = null
-      Label(26), VarOp(ALOAD, 4), Op(ACONST_NULL), VarOp(ASTORE, 2), Op(ACONST_NULL), VarOp(ASTORE, 3), Op(ACONST_NULL), VarOp(ASTORE, 4), VarOp(ASTORE, 1),
+      Label(23), Op(ACONST_NULL), VarOp(ASTORE, 2), Op(ACONST_NULL), VarOp(ASTORE, 3), VarOp(ASTORE, 1),
       // println(s)
       Field(GETSTATIC, "scala/Console$", "MODULE$", "Lscala/Console$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/Console$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
     )
@@ -2109,9 +2105,13 @@ class InlinerTest extends BytecodeTesting {
   def nullOutReturnLocal(): Unit = {
     val code =
       """class C {
-        |  @noinline def mark() = ()
-        |  @inline final def f(a: Object) = { mark(); a }
-        |  def t(a: Object) = f(a)
+        |  @noinline def mark(): Int = 1
+        |  @inline final def f(a: Object, b: Object): Object = {
+        |    val x = mark();
+        |    if (x + { if (x == 0) return b else 1 } == 0) a
+        |    else b
+        |  }
+        |  def t(a: Object, b: Object): Object = f(a, b)
         |}""".stripMargin
     val c = inlineOnlyCompiler.compileClass(code)
     assertSameCode(getMethod(c, "t").instructions.dropNonOp.dropWhile {
@@ -2119,15 +2119,32 @@ class InlinerTest extends BytecodeTesting {
       case _ => true
     },
       List(
-        Invoke(INVOKEVIRTUAL, "C", "mark", "()V", false),
+        Invoke(INVOKEVIRTUAL, "C", "mark", "()I", false),
+        VarOp(ISTORE, 3),
+        VarOp(ILOAD, 3),
+        VarOp(ILOAD, 3),
+        Op(ICONST_0),
+        Jump(IF_ICMPNE, Label(25)),
+        VarOp(ALOAD, 2),
+        VarOp(ASTORE, 4),      // store result value in local variable
+        Op(POP),               // pop the `x` from `x + ...` off the stack
+        VarOp(ALOAD, 4),       // load the result
+        Jump(GOTO, Label(38)), // jump to after-call
+        Label(25),
+        Op(ICONST_1),
+        Op(IADD),
+        Op(ICONST_0),
+        Jump(IF_ICMPNE, Label(33)),
         VarOp(ALOAD, 1),
-        VarOp(ASTORE, 2), // store result value in local variable
-        Jump(GOTO, Label(13)),
-        Label(13),
-        VarOp(ALOAD, 2), // load result
-        Op(ACONST_NULL), // null out result local variable
-        VarOp(ASTORE, 2),
-        Op(ARETURN)))
+        Jump(GOTO, Label(38)),
+        Label(33),
+        VarOp(ALOAD, 2),
+        Jump(GOTO, Label(38)),
+        Label(38),             // after-call
+        Op(ACONST_NULL),       // null out ...
+        VarOp(ASTORE, 4),      // ... the return local variable
+        Op(ARETURN),
+      ))
   }
 
   @Test

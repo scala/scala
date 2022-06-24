@@ -402,7 +402,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
 
     /* `tmp` (if non-null) is the symbol of the local-var used to preserve the result of the try-body, see `guardResult` */
     def emitFinalizer(finalizer: Tree, tmp: Symbol, isDuplicate: Boolean): Unit = {
-      var saved: immutable.Map[ /* LabelDef */ Symbol, asm.Label ] = null
+      var saved: immutable.Map[ /* LabelDef */ Symbol, JumpDestination ] = null
       if (isDuplicate) {
         saved = jumpDest
         for(ldef <- labelDefsAtOrUnder.getOrElse(finalizer, Nil)) {
