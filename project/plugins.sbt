@@ -20,7 +20,7 @@ buildInfoPackage := "scalabuild"
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.0")
 
 libraryDependencies ++= Seq(
-  "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
+  "org.eclipse.jgit" % "org.eclipse.jgit" % "6.2.0.202206071550-r",
   "org.slf4j" % "slf4j-nop" % "1.7.36",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
 )
