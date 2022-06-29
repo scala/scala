@@ -1916,6 +1916,7 @@ self =>
 
     /** {{{
      *  ArgumentExprs ::= `(` [Exprs] `)`
+     *                  | `(` `using` Exprs `)`
      *                  | [nl] BlockExpr
      *  }}}
      */
@@ -1924,9 +1925,15 @@ self =>
         if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
       )
       in.token match {
-        case LBRACE   => List(blockExpr())
-        case LPAREN   => inParens(if (in.token == RPAREN) Nil else args())
-        case _        => Nil
+        case LBRACE => List(blockExpr())
+        case LPAREN => inParens {
+          in.token match {
+            case RPAREN => Nil
+            case IDENTIFIER if in.name == nme.using && lookingAhead(isExprIntro) => in.nextToken() ; args()
+            case _ => args()
+          }
+        }
+        case _      => Nil
       }
     }
     /** A succession of argument lists. */
