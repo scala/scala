@@ -30,7 +30,7 @@ object Test extends CompilerTest {
     case dd: DefDef if dd.name.startsWith("t") =>
       dd.rhs.foreach(t => {
         if (!t.attachments.isEmpty)
-          println(s"${dd.symbol.name} $t ${t.attachments.all}")
+          println(s"${dd.symbol.name} $t ${t.attachments.all.toList.sortBy(_.toString)}")
       })
     case _ =>
   }

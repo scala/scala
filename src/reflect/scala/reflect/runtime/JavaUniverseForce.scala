@@ -55,6 +55,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.BackquotedIdentifierAttachment
     this.PostfixAttachment
     this.InfixAttachment
+    this.AutoApplicationAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
     this.ForAttachment
