@@ -1,0 +1,17 @@
+newSource1.scala:15: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method d,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  def t6 = this d
+                ^
+newSource1.scala:16: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method d,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  def t7 = this.d
+                ^
+t1 this.a(0) List(InfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)).b(scala.Tuple2.apply[Int, Int](1, 2)).c(1, 2) List(InfixAttachment, MultiargInfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)).b(scala.Tuple2.apply[Int, Int](1, 2)) List(InfixAttachment)
+t2 this.b(scala.Tuple2.apply[Int, Int](1, 2)) List(InfixAttachment)
+t6 this.d() List(InfixAttachment)
+t6 this.d List(PostfixAttachment)
+t8 this.e List(PostfixAttachment)
