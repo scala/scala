@@ -2993,7 +2993,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *
       * @return (argProtos, resProto) where argProtos.lengthCompare(numVparams) == 0
       */
-    private def argsResProtosFromFun(pt: Type, numVparams: Int, mode: Mode): (List[Type], Type) =
+    private def argsResProtosFromFun(pt: Type, numVparams: Int): (List[Type], Type) =
       pt match {
         case pt: OverloadedArgProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
         case _                                                                         =>
@@ -3036,7 +3036,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (numVparams > definitions.MaxFunctionArity)
         MaxFunctionArityError(fun, s", but $numVparams given")
       else {
-        val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams, mode)
+        val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams)
         // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
         if (isPastTyper) doTypedFunction(fun, resProto)
         else {
