@@ -2990,7 +2990,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *
       * @return (argProtos, resProto) where argProtos.lengthCompare(numVparams) == 0
       */
-    private def argsResProtosFromFun(pt: Type, numVparams: Int): (List[Type], Type) =
+    private def argsResProtosFromFun(pt: Type, numVparams: Int, mode: Mode): (List[Type], Type) =
       pt match {
         case pt: OverloadedArgProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
         case _                                                                         =>
@@ -3009,7 +3009,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else pt // allow type slack (pos/6221)
           }
 
-          unwrapWrapperTypes(ptNorm baseType FunctionSymbol) match {
+          unwrapWrapperTypes((ptNorm baseType FunctionSymbol) match {
+            case NoType | ErrorType => ptNorm // fallback to known type if no wrapped type
+            case t => t
+          }) match {
             case TypeRef(_, _, args :+ res) => (args, res) // if it's a TypeRef, we know its symbol will be FunctionSymbol
             case _ =>
               val dummyPt = if (pt == ErrorType) ErrorType else NoType
@@ -3027,10 +3030,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val vparams = fun.vparams
       val numVparams = vparams.length
-      if (numVparams > definitions.MaxFunctionArity) MaxFunctionArityError(fun, s", but $numVparams given")
+      if (numVparams > definitions.MaxFunctionArity)
+        MaxFunctionArityError(fun, s", but $numVparams given")
       else {
-        val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams)
-
+        val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams, mode)
         // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
         if (isPastTyper) doTypedFunction(fun, resProto)
         else {

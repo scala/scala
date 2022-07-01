@@ -2672,7 +2672,8 @@ trait Types
       s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass =>
+        args.headOption.map { _.toString }.getOrElse("") + "*"
       case ByNameParamClass if !args.isEmpty           => "=> " + args.head
       case _ if isFunctionTypeDirect(this)             =>
           // Aesthetics: printing Function1 as T => R rather than (T) => R
