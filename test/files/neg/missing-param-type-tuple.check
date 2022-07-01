@@ -1,16 +1,16 @@
 missing-param-type-tuple.scala:3: error: missing parameter type
   val x: ((Int, Int)) => Int = (a, b) => 0
-                                     ^
+                                    ^
 missing-param-type-tuple.scala:5: error: missing parameter type
   val y: ((Int, Int, Int)) => Int = (a, b, !!) => 0
-                                        ^
+                                         ^
 missing-param-type-tuple.scala:5: error: missing parameter type
   val y: ((Int, Int, Int)) => Int = (a, b, !!) => 0
-                                           ^
+                                             ^
 missing-param-type-tuple.scala:7: error: missing parameter type
   val z: ((Int, Int, Int)) => Int = (a, NotAVariablePatternName, c) => 0
                                                                ^
 missing-param-type-tuple.scala:7: error: missing parameter type
   val z: ((Int, Int, Int)) => Int = (a, NotAVariablePatternName, c) => 0
-                                                                 ^
+                                                                  ^
 5 errors
