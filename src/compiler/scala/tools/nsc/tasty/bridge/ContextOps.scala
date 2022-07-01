@@ -96,22 +96,22 @@ trait ContextOps { self: TastyUniverse =>
 
   /**Perform an operation within a context that has the mode `IndexStats` will force any collected annotations
    * afterwards */
-  def inIndexStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inIndexStatsContext[T](op: Context => T)(implicit ctx: Context): T = {
     val statsCtx = ctx.addMode(IndexStats)
-    op(statsCtx)
-    statsCtx.initialContext.forceAnnotations()
+    try op(statsCtx)
+    finally statsCtx.initialContext.forceAnnotations()
   }
 
   /** Perform an operation within a context that has the mode `InnerScope` will enter any inline methods afterwards */
-  def inInnerScopeContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inInnerScopeContext[T](op: Context => T)(implicit ctx: Context): T = {
     val innerCtx = ctx.addMode(InnerScope)
-    op(innerCtx)
-    innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
+    try op(innerCtx)
+    finally innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
   }
 
 
   /** an aggregate of `inInnerScopeContext` within `inIndexStatsContext` */
-  def inIndexScopedStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inIndexScopedStatsContext[T](op: Context => T)(implicit ctx: Context): T = {
     inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
   }
 

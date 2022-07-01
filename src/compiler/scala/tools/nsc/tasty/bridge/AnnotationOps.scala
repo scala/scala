@@ -18,16 +18,27 @@ import scala.tools.nsc.tasty.TastyUniverse
 trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
-  private[bridge] final def mkAnnotation(tree: Tree): u.Annotation = tree match {
-    case u.Apply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), args) =>
-      u.AnnotationInfo(tpt.tpe, args, Nil)
-    case u.Apply(u.TypeApply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), tpargs), args) =>
-      u.AnnotationInfo(u.appliedType(tpt.tpe, tpargs.map(_.tpe)), args, Nil)
-    case u.New(tpt) =>
-      // this is to handle incorrectly formatted annotations in dotty - https://github.com/lampepfl/dotty/issues/10113
-      u.AnnotationInfo(tpt.tpe, Nil, Nil)
-    case _ =>
-      throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
+  private[bridge] final def mkAnnotation(tree: Tree): u.Annotation = {
+    def go(tpargs: List[Type], args: List[Tree], tree: Tree): u.Annotation = tree match {
+      case u.Select(u.New(tpt), u.nme.CONSTRUCTOR) =>
+        val atp = if (tpargs.isEmpty) tpt.tpe else u.appliedType(tpt.tpe, tpargs)
+        u.AnnotationInfo(atp, args, Nil)
+      case u.TypeApply(pre, newTpArgs) if tpargs.isEmpty =>
+        go(newTpArgs.map(_.tpe), args, pre)
+      case u.Apply(pre, Nil) => // skip the empty term param list
+        go(tpargs, args, pre)
+      case u.Apply(pre, newArgs) if args.isEmpty =>
+        go(tpargs, newArgs, pre)
+      case _ =>
+        throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
+    }
+    tree match {
+      case u.New(tpt) =>
+        // this is to handle incorrectly formatted annotations in dotty - https://github.com/lampepfl/dotty/issues/10113
+        u.AnnotationInfo(tpt.tpe, Nil, Nil)
+      case _ =>
+        go(Nil, Nil, tree)
+    }
   }
 
   sealed abstract class DeferredAnnotation {
