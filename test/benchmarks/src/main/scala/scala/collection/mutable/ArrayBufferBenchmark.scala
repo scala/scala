@@ -148,4 +148,11 @@ class ArrayBufferBenchmark {
     bh.consume(b)
   }
 
+  @Benchmark def `min-max is reduction`(bh: Blackhole): Unit = bh.consume {
+    ref.max
+  }
+
+  @Benchmark def `sum is reduction`(bh: Blackhole): Unit = bh.consume {
+    ref.sum
+  }
 }

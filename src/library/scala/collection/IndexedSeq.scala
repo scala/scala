@@ -49,13 +49,23 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def reverseIterator: Iterator[A] = view.reverseIterator
 
-  override def foldRight[B](z: B)(op: (A, B) => B): B = {
-    val it = reverseIterator
-    var b = z
-    while (it.hasNext)
-      b = op(it.next(), b)
-    b
-  }
+  /* TODO 2.14+ uncomment and delete related code in IterableOnce
+  @tailrec private def foldl[B](start: Int, end: Int, z: B, op: (B, A) => B): B =
+    if (start == end) z
+    else foldl(start + 1, end, op(z, apply(start)), op)
+   */
+
+  @tailrec private def foldr[B](start: Int, end: Int, z: B, op: (A, B) => B): B =
+    if (start == end) z
+    else foldr(start, end - 1, op(apply(end - 1), z), op)
+
+  //override def foldLeft[B](z: B)(op: (B, A) => B): B = foldl(0, length, z, op)
+
+  override def foldRight[B](z: B)(op: (A, B) => B): B = foldr(0, length, z, op)
+
+  //override def reduceLeft[B >: A](op: (B, A) => B): B = if (length > 0) foldl(1, length, apply(0), op) else super.reduceLeft(op)
+
+  //override def reduceRight[B >: A](op: (A, B) => B): B = if (length > 0) foldr(0, length - 1, apply(length - 1), op) else super.reduceRight(op)
 
   override def view: IndexedSeqView[A] = new IndexedSeqView.Id[A](this)
 
