@@ -15,8 +15,8 @@ import java.io.OutputStream
 
 object TastyTest {
 
-  private[tastytest] val verbose = true
-  private[tastytest] val debug = true
+  private[tastytest] val verbose = false
+  private[tastytest] val debug = false
 
   private def log(s: => String): Unit =
     if (verbose) println(s)

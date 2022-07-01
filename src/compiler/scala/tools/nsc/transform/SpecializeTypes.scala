@@ -889,7 +889,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (ms.nonEmpty && clazz.isTrait && clazz.isInterface)
             clazz.resetFlag(INTERFACE)
 
-          if (normalizedMember.isMethod) {
+          if (normalizedMember.isMethod && !normalizedMember.isScala3Defined) {
             val newTpe = subst(outerEnv, normalizedMember.info)
             // only do it when necessary, otherwise the method type might be at a later phase already
             if (newTpe != normalizedMember.info) {
@@ -930,7 +930,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     sym :: (
-      if (!sym.isMethod || enteringTyper(sym.typeParams.isEmpty)) Nil
+      if (!sym.isMethod || sym.isScala3Defined || enteringTyper(sym.typeParams.isEmpty)) Nil
       else if (sym.hasDefault) {
         /* Specializing default getters is useless, also see scala/bug#7329 . */
         sym.resetFlag(SPECIALIZED)
@@ -1024,7 +1024,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specMember
     }
 
-    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym) || sym.isSuperAccessor) {
+    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym) || sym.isSuperAccessor
+      || sym.isScala3Defined) { // Scala 3 does not have specialised methods yet.
+    // ) {
       Nil
     } else {
       val stvars = specializedTypeVars(sym)
