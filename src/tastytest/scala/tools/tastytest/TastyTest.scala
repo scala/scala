@@ -15,7 +15,8 @@ import java.io.OutputStream
 
 object TastyTest {
 
-  private[tastytest] val verbose = false
+  private[tastytest] val verbose = true
+  private[tastytest] val debug = true
 
   private def log(s: => String): Unit =
     if (verbose) println(s)
@@ -34,9 +35,9 @@ object TastyTest {
   def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, testNames:_*)
   } yield ()
@@ -54,9 +55,9 @@ object TastyTest {
     _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
+    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
   /**Simulates a Scala 2 application that depends on a Scala 3 library, and is expected to fail compilation.
@@ -88,7 +89,7 @@ object TastyTest {
     (src3u, src2d, src3a) <- getFullCircleSources(srcRoot/src, src3appFilters = Set(Scala, Check, SkipCheck))
     out                   <- outDir.fold(tempDir(pkgName))(dir)
     _                     <- dotcPos(out, sourceRoot=srcRoot/src/"src-3-upstream", additionalDottySettings, src3u:_*)
-    _                     <- scalacPos(out, sourceRoot=srcRoot/src/"src-2-downstream", additionalSettings, src2d:_*)
+    _                     <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"src-2-downstream", additionalSettings, src2d:_*)
     _                     <- dotcNeg(out, additionalDottySettings, src3a:_*)
   } yield ()
 
@@ -104,10 +105,10 @@ object TastyTest {
   def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     (out1, out2)             <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
-    _                        <- scalacPos(out1, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
-    _                        <- scalacPos(out2, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
+    _                        <- scalacPos(out1, individualCapable=false, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
+    _                        <- scalacPos(out2, individualCapable=false, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
     _                        <- dotcPos(out2, out1, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                        <- scalacNeg(out2, additionalSettings, src2:_*)
+    _                        <- scalacNeg(out2,additionalSettings, src2:_*)
   } yield ()
 
   /**Same as `negSuite`, but in addition, the Scala 3 library depends on another upstream Scala 3 library,
@@ -130,9 +131,28 @@ object TastyTest {
     successWhen(Javac.javac(out, sources:_*))("javac failed to compile sources.")
   }
 
-  private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+  private def scalacPos(out: String, individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     log(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*))("scalac failed to compile sources.")
+    val res = {
+      if (debug && individualCapable) {
+        def compileIndividual(srcs: List[String]): Try[Boolean] = {
+          srcs match {
+            case Nil => Success(true)
+            case src :: rest =>
+              log(s"compiling source ${yellow(src)} with scalac.")
+              Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, src) match {
+                case Success(true) => compileIndividual(rest)
+                case err => err
+              }
+          }
+        }
+        compileIndividual(sources.toList)
+      }
+      else {
+        Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*)
+      }
+    }
+    successWhen(res)("scalac failed to compile sources.")
   }
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
