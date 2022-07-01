@@ -34,6 +34,15 @@ object FoundReq
 }
   """
 
+  final val foundReqSingleAbstractMethod = """
+object FoundReq extends App {
+  def f(x: AnyVal, f: Runnable) = 1
+  def f(x: Double, f: Runnable) = 2
+
+  f(3.0, () => println("doesn't work"))
+}
+  """
+
   def bounds: String = """
 object Bounds
 {
@@ -227,6 +236,7 @@ object a {
 
     run(chain)
     run(foundReq)
+    run(foundReqSingleAbstractMethod)
     run(bounds)
     run(longAnnotationMessage)
     run(longInfix)

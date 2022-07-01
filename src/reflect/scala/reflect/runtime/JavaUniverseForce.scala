@@ -56,6 +56,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SAMFunction
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
+    this.PostfixAttachment
+    this.InfixAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
     this.ForAttachment

@@ -11,6 +11,10 @@ newSource1.scala:6: error: type mismatch;
   FoundReq.L|FoundReq.R
   f(new L)
     ^
+newSource1.scala:5: error: type mismatch;
+  () => scala.Unit|Runnable
+  f(3.0, () => println("doesn't work"))
+            ^
 newSource1.scala:7: error: implicit error;
 !I e: Bounds.F[Bounds.Arg]
   implicitly[F[Arg]]

@@ -434,8 +434,11 @@ trait SplainFormatting extends SplainFormatters {
 
   def formatDiffImpl(found: Type, req: Type, top: Boolean): Formatted = {
     val (left, right) = dealias(found) -> dealias(req)
-    if (left =:= right) formatType(left, top)
-    else if (left.typeSymbol == right.typeSymbol) formatDiffInfix(left, right, top)
+
+    val normalized = Seq(left, right).map(_.normalize).distinct
+    if (normalized.size == 1) return formatType(normalized.head, top)
+
+    if (left.typeSymbol == right.typeSymbol) formatDiffInfix(left, right, top)
     else formatDiffSpecial(left, right, top).getOrElse(formatDiffSimple(left, right))
   }
 

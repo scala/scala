@@ -70,8 +70,24 @@ trait Contexts { self: Analyzer =>
     mutable.Map.empty[CompilationUnit, List[(ImportInfo, Symbol)]].withDefaultValue(Nil)
 
   def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
+    def msg(sym: Symbol) = sym.deprecationMessage.map(": " + _).getOrElse("")
+    def checkDeprecatedElementInPath(selector: ImportSelector, info: ImportInfo): String = {
+      def badName(name: Name) =
+        info.qual.tpe.member(name) match {
+          case m if m.isDeprecated => Some(s" of deprecated $m${msg(m)}")
+          case _ => None
+        }
+      val badSelected =
+        if (!selector.isMask && selector.isSpecific) badName(selector.name).orElse(badName(selector.name.toTypeName))
+        else None
+      def badFrom = {
+        val sym = info.qual.symbol
+        if (sym.isDeprecated) Some(s" from deprecated $sym${msg(sym)}") else None
+      }
+      badSelected.orElse(badFrom).getOrElse("")
+    }
     def warnUnusedSelections(infos0: List[(ImportInfo, Symbol)]): Unit = {
-      type Culled = (Position, Symbol, String)
+      type Culled = (ImportSelector, ImportInfo, Symbol)
       var unused = List.empty[Culled]
       @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
         infos match {
@@ -82,7 +98,7 @@ trait Contexts { self: Analyzer =>
                 case selector :: rest =>
                   checkSelectors(rest)
                   if (!selector.isMask && !used(selector))
-                    unused ::= ((info.posOf(selector), owner, info.fullSelectorString(selector)))
+                    unused ::= ((selector, info, owner))
                 case _ =>
               }
             checkSelectors(info.tree.selectors)
@@ -90,7 +106,13 @@ trait Contexts { self: Analyzer =>
           case _ =>
         }
       loop(infos0)
-      unused.foreach { case (pos, owner, origin) => runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, owner, origin) }
+      unused.foreach {
+        case (selector, info, owner) =>
+          val pos = info.posOf(selector)
+          val origin = info.fullSelectorString(selector)
+          val addendum = checkDeprecatedElementInPath(selector, info)
+          runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin)
+      }
     }
     allImportInfos.remove(unit).foreach(warnUnusedSelections)
   }

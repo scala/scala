@@ -453,15 +453,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   // all sources in a round may contribute flags via // scalac: -flags
-  // if a javaVersion isn't specified, require the minimum viable using -release 8 to avoid gotcha in CI.
   def flagsForCompilation(sources: List[File]): List[String] = {
-    import scala.util.Properties.isJavaAtLeast
-    var perFile = toolArgsFor(sources)("scalac")
-    if (parentFile.getParentFile.getName == "macro-annot")
-      perFile ::= "-Ymacro-annotations"
-    if (isJavaAtLeast(9) && !perFile.exists(_.startsWith("-release")) && toolArgsFor(sources)("javaVersion", split = false).isEmpty)
-      perFile :::= List("-release", "8")
-    perFile
+    val perFile = toolArgsFor(sources)("scalac")
+    if (parentFile.getParentFile.getName == "macro-annot") "-Ymacro-annotations" :: perFile
+    else perFile
   }
 
   // inspect sources for tool args
