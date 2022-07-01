@@ -215,7 +215,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
       else new WidenedCharArrayStepper(array, 0, array.length)
       ).asInstanceOf[S with EfficientSplit]
 
-    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type = {
       val jsb = sb.underlying
       if (start.length != 0) jsb.append(start)
       val len = array.length

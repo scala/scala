@@ -847,7 +847,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type = {
     force
     addStringNoForce(sb.underlying, start, sep, end)
     sb

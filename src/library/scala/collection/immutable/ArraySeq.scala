@@ -475,7 +475,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         case _ => super.prepended(elem)
       }
 
-    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type =
       (new MutableArraySeq.ofChar(unsafeArray)).addString(sb, start, sep, end)
   }
 
