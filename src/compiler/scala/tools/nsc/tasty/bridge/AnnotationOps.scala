@@ -41,19 +41,19 @@ trait AnnotationOps { self: TastyUniverse =>
     }
   }
 
-  sealed abstract class DeferredAnnotation {
+  sealed abstract class DeferredAnnotation(annotSym: Symbol) {
 
-    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo
+    protected def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo
     private[bridge] final def lzy(annotee: Symbol)(implicit ctx: Context): u.LazyAnnotationInfo = {
-      u.AnnotationInfo.lazily(eager(annotee))
+      u.AnnotationInfo.lazily(annotSym, eager(annotee))
     }
   }
 
   object DeferredAnnotation {
 
-    def fromTree(tree: Symbol => Context => Tree): DeferredAnnotation = {
-      new DeferredAnnotation {
-        private[bridge] final def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
+    def fromTree(annotSym: Symbol)(tree: Symbol => Context => Tree): DeferredAnnotation = {
+      new DeferredAnnotation(annotSym) {
+        protected final def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
           val atree = tree(annotee)(ctx)
           mkAnnotation(atree)
         }

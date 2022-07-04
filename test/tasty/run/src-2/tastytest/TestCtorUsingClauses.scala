@@ -15,4 +15,17 @@ object TestCtorUsingClauses extends Suite("TestCtorUsingClauses") {
 
   test(assert(new CtorUsingClauses.Annotated().j === 47))
   test(assert(new CtorUsingClauses.AnnotatedOld().k === 97))
+
+  def compiletimeAsserts = {
+    def test1 = forceAnnots[
+      CtorUsingClauses.Annotated,
+      CtorUsingClauses.CtxAnnot,
+      "new tastytest.CtorUsingClauses.CtxAnnot(tastytest#CtorUsingClauses.CtorUsingClause.given_Int.type)"
+    ]
+    def test2 = forceAnnots[
+      CtorUsingClauses.AnnotatedOld,
+      CtorUsingClauses.CtxAnnotOld,
+      "new tastytest.CtorUsingClauses.CtxAnnotOld(tastytest#CtorUsingClauses.CtorUsingClause.given_Int.type)"
+    ]
+  }
 }

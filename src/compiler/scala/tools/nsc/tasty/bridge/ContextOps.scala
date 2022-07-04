@@ -115,8 +115,9 @@ trait ContextOps { self: TastyUniverse =>
     inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
   }
 
-  /**Forces lazy annotations, if one is `scala.annotation.internal.Child` then it will add the referenced type as a
-   * sealed child.
+  /**Analyses critical annotations, critical annotations will be forced as they are necessary to
+   * the reading of TASTy. E.g. `scala.annotation.internal.Child` is a critical annotation that
+   * must be forced to add its first type argument as a sealed child.
    */
   private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
 
@@ -137,8 +138,7 @@ trait ContextOps { self: TastyUniverse =>
     var problematic: List[String] = Nil
 
     for (annot <- sym.annotations) {
-      annot.completeInfo()
-      if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
+      if (annot.symbol === defn.ChildAnnot) {
         val child = {
           val child0 = lookupChild(annot.tpe.typeArgs.head)
           if (child0 eq sym) {
@@ -161,6 +161,7 @@ trait ContextOps { self: TastyUniverse =>
       if ((annot.symbol eq defn.TargetNameAnnotationClass) ||
           (annot.symbol eq defn.StaticMethodAnnotationClass)) {
         problematic ::= inOwner { implicit ctx =>
+          annot.completeInfo() // these should be safe to force
           unsupportedMessage(s"annotation on $sym: @$annot")
         }
       }
@@ -196,7 +197,7 @@ trait ContextOps { self: TastyUniverse =>
         }
         else {
           log(s"eagerly adding annotations to ${showSym(sym)}")
-          analyseAnnotations(sym.setAnnotations(annots.map(_.eager(sym))))
+          analyseAnnotations(sym.setAnnotations(annots.map(_.lzy(sym))))
         }
       }
     }

@@ -706,7 +706,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           rdr.readTerm()(ctx)
         }
       )(annotCtx.retractMode(IndexScopedStats))
-      DeferredAnnotation.fromTree(mkTree)
+      DeferredAnnotation.fromTree(annotSym)(mkTree)
     }
 
     private def traceAnnotation(annotStart: Addr, annotSym: Symbol, annotee: Symbol) = TraceInfo[Tree](
