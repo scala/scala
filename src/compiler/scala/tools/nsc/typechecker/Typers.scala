@@ -3012,7 +3012,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else pt // allow type slack (pos/6221)
           }
 
-          unwrapWrapperTypes(ptNorm baseType FunctionSymbol) match {
+          unwrapWrapperTypes((ptNorm baseType FunctionSymbol) match {
+            case NoType | ErrorType => ptNorm // fallback to known type if no wrapped type
+            case t => t
+          }) match {
             case TypeRef(_, _, args :+ res) => (args, res) // if it's a TypeRef, we know its symbol will be FunctionSymbol
             case _ =>
               val dummyPt = if (pt == ErrorType) ErrorType else NoType
@@ -3030,10 +3033,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val vparams = fun.vparams
       val numVparams = vparams.length
-      if (numVparams > definitions.MaxFunctionArity) MaxFunctionArityError(fun, s", but $numVparams given")
+      if (numVparams > definitions.MaxFunctionArity)
+        MaxFunctionArityError(fun, s", but $numVparams given")
       else {
         val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams)
-
         // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
         if (isPastTyper) doTypedFunction(fun, resProto)
         else {
