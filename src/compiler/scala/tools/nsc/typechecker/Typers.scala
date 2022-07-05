@@ -3012,7 +3012,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else pt // allow type slack (pos/6221)
           }
 
-          unwrapWrapperTypes(ptNorm baseType FunctionSymbol) match {
+          unwrapWrapperTypes((ptNorm baseType FunctionSymbol) match {
+            case NoType | ErrorType => ptNorm // fallback to known type if no wrapped type
+            case t => t
+          }) match {
             case TypeRef(_, _, args :+ res) => (args, res) // if it's a TypeRef, we know its symbol will be FunctionSymbol
             case _ =>
               val dummyPt = if (pt == ErrorType) ErrorType else NoType
