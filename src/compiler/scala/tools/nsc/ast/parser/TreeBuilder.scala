@@ -57,7 +57,7 @@ abstract class TreeBuilder {
 
   /** Tree for `od op`, start is start0 if od.pos is borked. */
   def makePostfixSelect(start: Int, end: Int, od: Tree, op: Name): Tree = {
-    atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
+    atPos(r2p(start, end, end + op.length)) { Select(od, op.encode) }.updateAttachment(PostfixAttachment)
   }
 
   /** Create tree representing a while loop */

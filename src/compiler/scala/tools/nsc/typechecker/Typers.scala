@@ -967,8 +967,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         if (!meth.isConstructor && checkCanEtaExpand()) typedEtaExpansion(tree, mode, pt)
-        else if (arity == 0 && checkCanAutoApply()) adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
-        else
+        else if (arity == 0 && checkCanAutoApply()) {
+          val apply = Apply(tree, Nil) setPos tree.pos
+          if (tree.hasAttachment[PostfixAttachment.type]) apply.updateAttachment(InfixAttachment)
+          adapt(typed(apply), mode, pt, original)
+        } else
           if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth) // `context.implicitsEnabled` implies we are not in a pattern
           else UnstableTreeError(tree)
       }
@@ -3009,7 +3012,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else pt // allow type slack (pos/6221)
           }
 
-          unwrapWrapperTypes(ptNorm baseType FunctionSymbol) match {
+          unwrapWrapperTypes((ptNorm baseType FunctionSymbol) match {
+            case NoType | ErrorType => ptNorm // fallback to known type if no wrapped type
+            case t => t
+          }) match {
             case TypeRef(_, _, args :+ res) => (args, res) // if it's a TypeRef, we know its symbol will be FunctionSymbol
             case _ =>
               val dummyPt = if (pt == ErrorType) ErrorType else NoType
@@ -3027,10 +3033,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val vparams = fun.vparams
       val numVparams = vparams.length
-      if (numVparams > definitions.MaxFunctionArity) MaxFunctionArityError(fun, s", but $numVparams given")
+      if (numVparams > definitions.MaxFunctionArity)
+        MaxFunctionArityError(fun, s", but $numVparams given")
       else {
         val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams)
-
         // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
         if (isPastTyper) doTypedFunction(fun, resProto)
         else {
@@ -5253,7 +5259,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // so, when we can't find a member in the class scope, check the companion
       def inCompanionForJavaStatic(cls: Symbol, name: Name): Symbol =
         if (!(context.unit.isJava && cls.isClass)) NoSymbol else {
-          context.javaFindMember(cls.typeOfThis, name, _ => true)._2
+          context.javaFindMember(cls.typeOfThis, name, _.isStaticMember)._2
         }
 
       /* Attribute a selection where `tree` is `qual.name`.
@@ -5426,7 +5432,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val qualTyped = checkDead(context, typedQualifier(qual, mode))
             val tree1 = typedSelect(tree, qualTyped, name)
 
-            if (tree.isInstanceOf[PostfixSelect])
+            if (tree.hasAttachment[PostfixAttachment.type])
               checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)

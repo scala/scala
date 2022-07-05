@@ -7,12 +7,11 @@ import org.junit.Test
 
 import scala.annotation.unused
 import scala.collection.mutable.{ListBuffer, StringBuilder}
-import scala.reflect.{ClassTag, classTag}
+import scala.tools.testkit.AssertUtil.intercept
 
 @RunWith(classOf[JUnit4])
 class VectorTest {
   import VectorUtils.validateDebug
-
 
   @Test
   def t12564(): Unit = {
@@ -47,7 +46,7 @@ class VectorTest {
   }
 
   @Test
-  def hasCorrectAppenedAndPrependedAll(): Unit = {
+  def hasCorrectAppendedAndPrependedAll(): Unit = {
     val els = Vector(1 to 1000: _*)
 
     for (i <- 0 until els.size) {
@@ -119,15 +118,7 @@ class VectorTest {
       assertEquals(start, it.next())
     }
   }
-  def intercept[T <: Throwable: ClassTag](fn: => Any): T = {
-    try {
-      fn
-      fail(s"expected a ${classTag[T].runtimeClass.getName} to be thrown")
-      ???
-    } catch {
-      case x: T => x
-    }
-  }
+
   @Test
   def vectorIteratorDropToEnd(): Unit = {
     val underlying = Vector(0)
@@ -441,6 +432,29 @@ class VectorTest {
   @Test def testAppendWithTinyLhs(): Unit = {
     (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => Vector(i) ++ v }
     (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => v.prependedAll(Vector(i)) }
+  }
+
+  @Test def `t12598 bad index on prependedAll`: Unit = {
+    val v = Vector.from(1 to 10000)
+    val (pre, suf) = v.splitAt(1)
+    val v2 = suf.prependedAll(pre)
+    validateDebug(v2)
+    // Validation failed: assertion failed: sum of slice lengths (1024) at prefix2 should be equal to prefix length (1023)
+    // [error] Vector3(lengths=[32, 1023, 9215, 9984, 10000])
+    assertEquals(10000, v.last)
+    assertEquals(10000, v2(v2.length-1)) // ArrayIndexOutOfBoundsException
+    assertEquals(1024, v2(1023))
+  }
+  @Test def `t12598b bad index on prependedAll`: Unit = {
+    val v = Vector.from(1 to 1000000)
+    val (pre, suf) = v.splitAt(1)
+    val v2 = suf.prependedAll(pre)
+    validateDebug(v2)
+    // Validation failed: assertion failed: sum of slice lengths (1024) at prefix2 should be equal to prefix length (1023)
+    // [error] Vector3(lengths=[32, 1023, 9215, 9984, 10000])
+    assertEquals(1000000, v.last)
+    assertEquals(1000000, v2(v2.length-1)) // ArrayIndexOutOfBoundsException
+    assertEquals(1024, v2(1023))
   }
 }
 

@@ -102,6 +102,15 @@ object AssertUtil {
     case (result, duration) => f(duration) ; result
   }
 
+  /** Expect the exception is thrown by evaluating `body`.
+   */
+  def intercept[T <: Throwable: ClassTag](body: => Any): Unit = assertThrown[T](_ => true)(body)
+
+  /** Expect the exception thrown with exactly the given message.
+   */
+  def interceptMessage[T <: Throwable: ClassTag](expected: String)(body: => Any): Unit =
+    assertThrown[T](_.getMessage == expected)(body)
+
   /** Check that throwable T (or a subclass) was thrown during evaluation of `body`,
    *  and that its message satisfies the `checkMessage` predicate.
    *  Any other exception is propagated.
@@ -111,6 +120,9 @@ object AssertUtil {
 
   private val Unthrown = new ControlThrowable {}
 
+  /** Assert that the exception was thrown while evaluating `body`,
+   *  and that the exception instance satisfies the `checker` predicate.
+   */
   def assertThrown[T <: Throwable: ClassTag](checker: T => Boolean)(body: => Any): Unit =
     try {
       body

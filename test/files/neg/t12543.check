@@ -1,0 +1,4 @@
+t12543.scala:10: error: value of is not a member of object java.util.List
+    val ss = java.util.List.of("Hello", who)
+                            ^
+1 error

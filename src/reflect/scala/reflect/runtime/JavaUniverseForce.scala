@@ -56,6 +56,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SAMFunction
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
+    this.PostfixAttachment
+    this.InfixAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
     this.ForAttachment
@@ -314,6 +316,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ListModuleAlias
     definitions.NilModule
     definitions.SeqModule
+    definitions.SeqModuleAlias
     definitions.Collection_SeqModule
     definitions.ArrayModule
     definitions.ArrayModule_overloadedApply

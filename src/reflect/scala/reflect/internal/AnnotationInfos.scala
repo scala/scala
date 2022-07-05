@@ -80,7 +80,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   @nowarn("""cat=deprecation&origin=scala\.reflect\.api\.Annotations\.JavaArgumentApi""")
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
   type JavaArgument = ClassfileAnnotArg
-  implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
+  implicit val JavaArgumentTag: ClassTag[ClassfileAnnotArg] = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
   case object UnmappableAnnotArg extends ClassfileAnnotArg
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
@@ -319,7 +319,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def unapply(annotation: Annotation): Some[(Type, List[Tree], ListMap[Name, ClassfileAnnotArg])] =
       Some((annotation.tpe, annotation.scalaArgs, annotation.javaArgs))
   }
-  implicit val AnnotationTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
+  implicit val AnnotationTag: ClassTag[AnnotationInfo] = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
 
   protected[scala] def annotationToTree(ann: Annotation): Tree = {
     def reverseEngineerArgs(): List[Tree] = {

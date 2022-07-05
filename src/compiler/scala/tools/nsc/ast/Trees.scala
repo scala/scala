@@ -65,8 +65,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
-  class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
-
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree {
     override def transform(transformer: ApiTransformer): Tree =

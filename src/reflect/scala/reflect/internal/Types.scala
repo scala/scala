@@ -2672,7 +2672,8 @@ trait Types
       s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass =>
+        args.headOption.map { _.toString }.getOrElse("") + "*"
       case ByNameParamClass if !args.isEmpty           => "=> " + args.head
       case _ if isFunctionTypeDirect(this)             =>
           // Aesthetics: printing Function1 as T => R rather than (T) => R
@@ -5291,8 +5292,6 @@ trait Types
     "scala.collection.Iterable",
     "scala.collection.Iterator")
 
-  @deprecated("Use _.tpe", "2.12.12") // used by scala-meta, leave until they remove the dependency.
-  private[scala] val treeTpe = (t: Tree) => t.tpe
   private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
@@ -5344,23 +5343,23 @@ trait Types
 
 // -------------- Classtags --------------------------------------------------------
 
-  implicit val AnnotatedTypeTag = ClassTag[AnnotatedType](classOf[AnnotatedType])
-  implicit val BoundedWildcardTypeTag = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
-  implicit val ClassInfoTypeTag = ClassTag[ClassInfoType](classOf[ClassInfoType])
-  implicit val CompoundTypeTag = ClassTag[CompoundType](classOf[CompoundType])
-  implicit val ConstantTypeTag = ClassTag[ConstantType](classOf[ConstantType])
-  implicit val ExistentialTypeTag = ClassTag[ExistentialType](classOf[ExistentialType])
-  implicit val MethodTypeTag = ClassTag[MethodType](classOf[MethodType])
-  implicit val NullaryMethodTypeTag = ClassTag[NullaryMethodType](classOf[NullaryMethodType])
-  implicit val PolyTypeTag = ClassTag[PolyType](classOf[PolyType])
-  implicit val RefinedTypeTag = ClassTag[RefinedType](classOf[RefinedType])
-  implicit val SingletonTypeTag = ClassTag[SingletonType](classOf[SingletonType])
-  implicit val SingleTypeTag = ClassTag[SingleType](classOf[SingleType])
-  implicit val SuperTypeTag = ClassTag[SuperType](classOf[SuperType])
-  implicit val ThisTypeTag = ClassTag[ThisType](classOf[ThisType])
-  implicit val TypeBoundsTag = ClassTag[TypeBounds](classOf[TypeBounds])
-  implicit val TypeRefTag = ClassTag[TypeRef](classOf[TypeRef])
-  implicit val TypeTagg = ClassTag[Type](classOf[Type])
+  implicit val AnnotatedTypeTag: ClassTag[AnnotatedType] = ClassTag[AnnotatedType](classOf[AnnotatedType])
+  implicit val BoundedWildcardTypeTag: ClassTag[BoundedWildcardType] = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
+  implicit val ClassInfoTypeTag: ClassTag[ClassInfoType] = ClassTag[ClassInfoType](classOf[ClassInfoType])
+  implicit val CompoundTypeTag: ClassTag[CompoundType] = ClassTag[CompoundType](classOf[CompoundType])
+  implicit val ConstantTypeTag: ClassTag[ConstantType] = ClassTag[ConstantType](classOf[ConstantType])
+  implicit val ExistentialTypeTag: ClassTag[ExistentialType] = ClassTag[ExistentialType](classOf[ExistentialType])
+  implicit val MethodTypeTag: ClassTag[MethodType] = ClassTag[MethodType](classOf[MethodType])
+  implicit val NullaryMethodTypeTag: ClassTag[NullaryMethodType] = ClassTag[NullaryMethodType](classOf[NullaryMethodType])
+  implicit val PolyTypeTag: ClassTag[PolyType] = ClassTag[PolyType](classOf[PolyType])
+  implicit val RefinedTypeTag: ClassTag[RefinedType] = ClassTag[RefinedType](classOf[RefinedType])
+  implicit val SingletonTypeTag: ClassTag[SingletonType] = ClassTag[SingletonType](classOf[SingletonType])
+  implicit val SingleTypeTag: ClassTag[SingleType] = ClassTag[SingleType](classOf[SingleType])
+  implicit val SuperTypeTag: ClassTag[SuperType] = ClassTag[SuperType](classOf[SuperType])
+  implicit val ThisTypeTag: ClassTag[ThisType] = ClassTag[ThisType](classOf[ThisType])
+  implicit val TypeBoundsTag: ClassTag[TypeBounds] = ClassTag[TypeBounds](classOf[TypeBounds])
+  implicit val TypeRefTag: ClassTag[TypeRef] = ClassTag[TypeRef](classOf[TypeRef])
+  implicit val TypeTagg: ClassTag[Type] = ClassTag[Type](classOf[Type])
 }
 
 object TypeConstants {

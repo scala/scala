@@ -186,7 +186,7 @@ object PostProcessorFrontendAccess {
 
       @inline def debug: Boolean = s.isDebug
 
-      val target: String = s.target.value
+      val target: String = s.targetValue
 
       private val singleOutDir = s.outputDirs.getSingleOutput
       // the call to `outputDirFor` should be frontendSynch'd, but we assume that the setting is not mutated during the backend

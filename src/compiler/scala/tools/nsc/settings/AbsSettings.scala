@@ -20,7 +20,7 @@ package settings
 
 trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   type Setting <: AbsSetting      // Fix to the concrete Setting type
-  type ResultOfTryToSet           // List[String] in mutable, (Settings, List[String]) in immutable
+  type ResultOfTryToSet           // List[String] in MutableSettings
   def errorFn: String => Unit
   protected def allSettings: scala.collection.Map[String, Setting]
 
@@ -66,14 +66,6 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     /* For tools which need to populate lists of available choices */
     def choices : List[String] = Nil
 
-    /** In mutable Settings, these return the same object with a var set.
-     *  In immutable, of course they will return a new object, which means
-     *  we can't use "this.type", at least not in a non-casty manner, which
-     *  is unfortunate because we lose type information without it.
-     *
-     *  ...but now they're this.type because of scala/bug#3462.  The immutable
-     *  side doesn't exist yet anyway.
-     */
     def withAbbreviation(name: String): this.type
     def withHelpSyntax(help: String): this.type
     def withDeprecationMessage(msg: String): this.type
@@ -101,19 +93,17 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     /** The help message to be printed if [[isHelping]]. */
     def help: String = ""
 
-    /** After correct Setting has been selected, tryToSet is called with the
-     *  remainder of the command line.  It consumes any applicable arguments and
-     *  returns the unconsumed ones.
+    /** Setting is presented the remaining command line arguments.
+     *  It should consume any applicable args and return the rest,
+     *  or `None` on error.
      */
     protected[nsc] def tryToSet(args: List[String]): Option[ResultOfTryToSet]
 
-    /** Commands which can take lists of arguments in form -Xfoo:bar,baz override
-     *  this method and accept them as a list.  It returns List[String] for
-     *  consistency with tryToSet, and should return its incoming arguments
-     *  unmodified on failure, and Nil on success.
+    /** Setting is presented arguments in form -Xfoo:bar,baz.
+     *  It should consume all the arguments and return an empty list,
+     *  or `None` on error. Unconsumed args may error.
      */
-    protected[nsc] def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] =
-      errorAndValue(s"'$name' does not accept multiple arguments", None)
+    protected[nsc] def tryToSetColon(args: List[String]): Option[ResultOfTryToSet]
 
     /** Attempt to set from a properties file style property value.
      *  Currently used by Eclipse SDT only.
