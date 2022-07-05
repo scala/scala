@@ -1234,7 +1234,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
             // This is really just trying to make the 100 or so implicits imported
             // by default into something readable.
             val memberGroups: List[List[Symbol]] = {
-              val groups = members groupBy (_.tpe.finalResultType) toList
+              val groups = members.groupBy(_.tpe.finalResultType).toList
               val (big, small) = groups partition (_._2.size > 3)
               val xss = (
                 (big sortBy (_._1.toString) map (_._2)) :+

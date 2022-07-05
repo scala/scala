@@ -73,6 +73,11 @@ trait StdAttachments {
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment
 
+  /** Indicates that a selection was postfix (on Select tree) */
+  case object PostfixAttachment extends PlainAttachment
+  /** Indicates that a application was infix (on Apply tree) */
+  case object InfixAttachment extends PlainAttachment
+
   /** A pattern binding exempt from unused warning.
    *
    *  Its host `Ident` has been created from a pattern2 binding, `case x @ p`.

@@ -2672,7 +2672,8 @@ trait Types
       s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass =>
+        args.headOption.map { _.toString }.getOrElse("") + "*"
       case ByNameParamClass if !args.isEmpty           => "=> " + args.head
       case _ if isFunctionTypeDirect(this)             =>
           // Aesthetics: printing Function1 as T => R rather than (T) => R
@@ -5291,8 +5292,6 @@ trait Types
     "scala.collection.Iterable",
     "scala.collection.Iterator")
 
-  @deprecated("Use _.tpe", "2.12.12") // used by scala-meta, leave until they remove the dependency.
-  private[scala] val treeTpe = (t: Tree) => t.tpe
   private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
