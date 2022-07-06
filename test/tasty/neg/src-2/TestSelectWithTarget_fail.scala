@@ -12,4 +12,9 @@ object TestSelectWithTarget {
   // harmless unless we specificially need to analyse them.
   def test = TestSelectWithTargetPre.forceAnnots[SelectWithTarget.type, SelectWithTarget.defAnnot]
 
+
+  def test2 = TestSelectWithTargetPre.forceAnnots[SelectWithTarget.MultiParamsAnnot, SelectWithTarget.mctorAnnot]
+
+  def test3 = SelectWithTarget.MultiParamsAnnotTpe.foo
+
 }

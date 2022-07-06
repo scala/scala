@@ -1,4 +1,11 @@
 TestSelectWithTarget_fail.scala:13: error: Unsupported Scala 3 selection of method foo with @targetName("fooString"); found in method selectFooString in object tastytest.SelectWithTarget.
   def test = TestSelectWithTargetPre.forceAnnots[SelectWithTarget.type, SelectWithTarget.defAnnot]
                                                 ^
+warning: Implementation limitation: multiple argument lists on annotations are
+currently not supported; ignoring arguments List(23) on
+@mctorAnnot("a")(23) method methodWithAnnotMultipleParams in class tastytest.SelectWithTarget.MultiParamsAnnot
+warning: Implementation limitation: multiple argument lists on annotations are
+currently not supported; ignoring arguments List(23) on
+type scala.Int @mctorAnnot("a")(23) of method foo in object tastytest.SelectWithTarget.MultiParamsAnnotTpe
+2 warnings
 1 error

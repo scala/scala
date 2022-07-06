@@ -223,9 +223,9 @@ trait TypeOps { self: TastyUniverse =>
     def IntersectionType(tps: Type*): Type = u.intersectionType(tps.toList)
     def IntersectionType(tps: List[Type]): Type = u.intersectionType(tps)
 
-    def AnnotatedType(tpe: Type, annot: Tree): Type = tpe match {
-      case u.AnnotatedType(annots, tpe) => u.AnnotatedType(annots :+ mkAnnotation(annot), tpe)
-      case _                            => u.AnnotatedType(mkAnnotation(annot) :: Nil   , tpe)
+    def AnnotatedType(tpe: Type, annot: Tree)(implicit ctx: Context): Type = tpe match {
+      case u.AnnotatedType(annots, tpe) => u.AnnotatedType(annots :+ mkAnnotation(annot, tpe), tpe)
+      case _                            => u.AnnotatedType(mkAnnotation(annot, tpe) :: Nil   , tpe)
     }
 
     def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)

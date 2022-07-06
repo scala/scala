@@ -18,17 +18,38 @@ import scala.tools.nsc.tasty.TastyUniverse
 trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
-  private[bridge] final def mkAnnotation(tree: Tree): u.Annotation = {
-    def go(tpargs: List[Type], args: List[Tree], tree: Tree): u.Annotation = tree match {
+  trait ShowKind[T] {
+    def showKind(annot: String, t: T)(implicit ctx: Context): String
+  }
+
+  object ShowKind {
+    implicit object ShowSymbol extends ShowKind[u.Symbol] {
+      def showKind(annot: String, t: u.Symbol)(implicit ctx: Context): String = s"$annot ${location(t)}"
+    }
+    implicit object ShowType extends ShowKind[u.Type] {
+      def showKind(annot: String, t: u.Type)(implicit ctx: Context): String =
+        s"type ${showType(t, wrap = false)} $annot of ${location(ctx.owner)}"
+    }
+  }
+
+  private[bridge] final def mkAnnotation[T: ShowKind](tree: Tree, annotee: T)(implicit ctx: Context): u.Annotation = {
+    def go(tpargs: List[Type], args: List[List[Tree]], tree: Tree): u.Annotation = tree match {
       case u.Select(u.New(tpt), u.nme.CONSTRUCTOR) =>
         val atp = if (tpargs.isEmpty) tpt.tpe else u.appliedType(tpt.tpe, tpargs)
-        u.AnnotationInfo(atp, args, Nil)
+        if (args.lengthIs > 1) {
+          val soFar = s"@${atp.typeSymbol.name.toString}${args.map(_.mkString("(", ", ", ")")).mkString("")}"
+          u.reporter.warning(u.NoPosition,
+            "Implementation limitation: multiple argument lists on annotations are\n"+
+            "currently not supported; ignoring arguments " + args(1) + " on\n"+
+           s"${implicitly[ShowKind[T]].showKind(soFar, annotee)}")
+        }
+        u.AnnotationInfo(atp, args.headOption.getOrElse(Nil), Nil)
       case u.TypeApply(pre, newTpArgs) if tpargs.isEmpty =>
         go(newTpArgs.map(_.tpe), args, pre)
       case u.Apply(pre, Nil) => // skip the empty term param list
         go(tpargs, args, pre)
-      case u.Apply(pre, newArgs) if args.isEmpty =>
-        go(tpargs, newArgs, pre)
+      case u.Apply(pre, newArgs) =>
+        go(tpargs, newArgs :: args, pre)
       case _ =>
         throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
     }
@@ -55,7 +76,7 @@ trait AnnotationOps { self: TastyUniverse =>
       new DeferredAnnotation(annotSym) {
         protected final def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
           val atree = tree(annotee)(ctx)
-          mkAnnotation(atree)
+          mkAnnotation(atree, annotee)
         }
       }
     }
