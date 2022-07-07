@@ -223,10 +223,18 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.IterableOnce[A]): C = fromSpecific(that match {
-    case that: collection.Iterable[A] => new View.Concat(this, that)
-    case _ => iterator.concat(that.iterator)
-  })
+  def concat(that: collection.IterableOnce[A]): C = this match {
+    case optimizedSet @ (_ : scala.collection.immutable.Set.Set1[A] | _: scala.collection.immutable.Set.Set2[A] | _: scala.collection.immutable.Set.Set3[A] | _: scala.collection.immutable.Set.Set4[A]) =>
+      // StrictOptimizedSetOps optimization of concat (these Sets cannot extend StrictOptimizedSetOps because of binary-incompatible return type; cf. PR #10036)
+      var result = optimizedSet.asInstanceOf[scala.collection.immutable.SetOps[A, scala.collection.immutable.Set, scala.collection.immutable.Set[A]]]
+      val it = that.iterator
+      while (it.hasNext) result = result + it.next()
+      result.asInstanceOf[C]
+    case _ => fromSpecific(that match {
+      case that: collection.Iterable[A] => new View.Concat(this, that)
+      case _ => iterator.concat(that.iterator)
+    })
+  }    
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
   def + (elem: A): C = fromSpecific(new View.Appended(this, elem))
