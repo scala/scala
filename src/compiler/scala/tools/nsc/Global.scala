@@ -1168,6 +1168,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
     val isScala3 = settings.isScala3
+    val isScala3ImplicitResolution = settings.Yscala3ImplicitResolution
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
