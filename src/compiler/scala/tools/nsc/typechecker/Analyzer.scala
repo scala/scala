@@ -92,7 +92,7 @@ trait Analyzer extends AnyRef
     def newPhase(prev: Phase): StdPhase = new TyperPhase(prev)
     final class TyperPhase(prev: Phase) extends StdPhase(prev) {
       override def keepsTypeParams = false
-      override def shouldSkipThisPhaseForJava: Boolean = !(settings.YpickleJava || createJavadoc)
+      override def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value && !createJavadoc
       resetTyper()
       // the log accumulates entries over time, even though it should not (Adriaan, Martin said so).
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
@@ -116,7 +116,7 @@ trait Analyzer extends AnyRef
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
           // interactive typed may finish by throwing a `TyperResult`
-          if (!settings.Youtline) {
+          if (!settings.Youtline.value) {
             for (workItem <- unit.toCheck) workItem()
             if (!settings.isScaladoc && settings.warnUnusedImport)
               warnUnusedImports(unit)

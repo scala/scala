@@ -204,7 +204,7 @@ trait ContextOps { self: TastyUniverse =>
 
     final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
-    final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
+    final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations.value
 
     def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Inline
 
@@ -213,7 +213,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def log(str: => String): Unit = {
-      if (u.settings.YdebugTasty) {
+      if (u.settings.YdebugTasty.value) {
         logImpl(str)
       }
     }
@@ -238,7 +238,7 @@ trait ContextOps { self: TastyUniverse =>
         op.tap(eval => logImpl(s"${yellow(id0)} ${cyan(s">>>")} ${magenta(i.res(eval))}$modStr"))
       }
 
-      if (u.settings.YdebugTasty) initialContext.subTrace(addInfo(info, op))
+      if (u.settings.YdebugTasty.value) initialContext.subTrace(addInfo(info, op))
       else op
     }
 

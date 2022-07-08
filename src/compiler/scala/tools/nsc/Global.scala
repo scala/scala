@@ -58,7 +58,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // the mirror --------------------------------------------------
 
   override def isCompilerUniverse = true
-  override val useOffsetPositions = !currentSettings.Yrangepos
+  override val useOffsetPositions = !currentSettings.Yrangepos.value
 
   type RuntimeClass = java.lang.Class[_]
   implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
@@ -371,7 +371,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
   }
 
-  if (settings.verbose || settings.Ylogcp)
+  if (settings.verbose.value || settings.Ylogcp.value)
     reporter.echo(
       s"[search path for source files: ${classPath.asSourcePathString}]\n" +
       s"[search path for class files: ${classPath.asClassPathString}]"
@@ -430,7 +430,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
-      if (settings.isDebug && (settings.verbose || currentRun.size < 5))
+      if (settings.isDebug && (settings.verbose.value || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
     }
 
@@ -494,7 +494,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   //
   // factory for phases: namer, packageobjects, typer
   lazy val analyzer =
-    if (settings.YmacroAnnotations) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
+    if (settings.YmacroAnnotations.value) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
     else new { val global: Global.this.type = Global.this } with Analyzer
 
   // phaseName = "superaccessors"
@@ -786,7 +786,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val maxName = phaseNames.map(_.length).max
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
-    val fmt     = if (settings.verbose || !elliptically) s"%${maxName}s  %2s  %s%n"
+    val fmt     = if (settings.verbose.value || !elliptically) s"%${maxName}s  %2s  %s%n"
                   else s"%${width}.${width}s  %2s  %.${maxDesc}s%n"
 
     val line1 = fmt.format("phase name", "id", title)
@@ -1126,7 +1126,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def echoPhaseSummary(ph: Phase) = {
     /* Only output a summary message under debug if we aren't echoing each file. */
-    if (settings.isDebug && !(settings.verbose || currentRun.size < 5))
+    if (settings.isDebug && !(settings.verbose.value || currentRun.size < 5))
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
@@ -1539,14 +1539,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           informTime(globalPhase.description, phaseTimer.nanos)
 
         // progress update
-        if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
+        if ((settings.Xprint containsPhase globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
           // print trees
-          if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
+          if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) nodePrinters.printAll()
           else printAllUnits()
         }
 
         // print the symbols presently attached to AST nodes
-        if (settings.Yshowsyms)
+        if (settings.Yshowsyms.value)
           trackerFactory.snapshot()
 
         // print members
@@ -1568,7 +1568,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           runCheckers()
 
         // output collected statistics
-        if (settings.YstatisticsEnabled && settings.Ystatistics.contains(phase.name))
+        if (settings.YstatisticsEnabled.value && settings.Ystatistics.contains(phase.name))
           printStatisticsFor(phase)
 
         advancePhase()
@@ -1609,7 +1609,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
-      if (settings.verbose)
+      if (settings.verbose.value)
         println("Name table size after compilation: " + nameTableSize + " chars")
     }
 
@@ -1688,14 +1688,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       List(statistics.retainedCount, statistics.retainedByType)
     private val parserStats = {
       import statistics.treeNodeCount
-      if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters
+      if (settings.YhotStatisticsEnabled.value) treeNodeCount :: hotCounters
       else List(treeNodeCount)
     }
 
     final def printStatisticsFor(phase: Phase) = {
       inform("*** Cumulative statistics at phase " + phase)
 
-      if (settings.YhotStatisticsEnabled) {
+      if (settings.YhotStatisticsEnabled.value) {
         // High overhead, only enable retained stats under hot stats
         statistics.retainedCount.value = 0
         for (c <- statistics.retainedByType.keys)
@@ -1708,7 +1708,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
       val quants: Iterable[statistics.Quantity] =
         if (phase.name == "parser") parserStats
-        else if (settings.YhotStatisticsEnabled) statistics.allQuantities
+        else if (settings.YhotStatisticsEnabled.value) statistics.allQuantities
         else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
       for (q <- quants if q.showAt(phase.name)) inform(q.line)
     }

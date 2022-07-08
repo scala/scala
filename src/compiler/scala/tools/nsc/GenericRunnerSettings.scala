@@ -64,5 +64,5 @@ class GenericRunnerSettings(error: String => Unit, pathFactory: PathFactory) ext
       "-nc",
       "do not use the legacy fsc compilation daemon").withAbbreviation("-nocompdaemon").withAbbreviation("--no-compilation-daemon")
       .withDeprecationMessage("scripts use cold compilation by default; use -Yscriptrunner for custom behavior")
-      .withPostSetHook { x: BooleanSetting => Yscriptrunner.value = if (x) "default" else "resident" }
+      .withPostSetHook { x: BooleanSetting => Yscriptrunner.value = if (x.value) "default" else "resident" }
 }

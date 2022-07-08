@@ -371,7 +371,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           !hasOverridingImplementation(m) || {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
               // Without a means to suppress this warning, I've thought better of it.
-              if (settings.warnValueOverrides) {
+              if (settings.warnValueOverrides.value) {
                  (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
                    typer.context.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics", WarningCategory.Other /* settings.warnValueOverrides is not exposed as compiler flag */)
                  }

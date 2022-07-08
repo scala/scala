@@ -25,7 +25,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
   protected[async] val tracing = new Tracing
 
   val phaseName: String = "async"
-  override def enabled: Boolean = settings.async
+  override def enabled: Boolean = settings.async.value
 
   private final case class AsyncAttachment(awaitSymbol: Symbol, postAnfTransform: Block => Block,
                                            stateDiagram: ((Symbol, Tree) => Option[String => Unit]),
@@ -42,7 +42,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
   final def markForAsyncTransform(owner: Symbol, method: DefDef, awaitMethod: Symbol,
                                   config: Map[String, AnyRef]): DefDef = {
     val pos = owner.pos
-    if (!settings.async)
+    if (!settings.async.value)
       reporter.warning(pos, s"${settings.async.name} must be enabled for async transformation.")
     sourceFilesToTransform += pos.source
     val postAnfTransform = config.getOrElse("postAnfTransform", (x: Block) => x).asInstanceOf[Block => Block]
@@ -61,7 +61,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
 
   /** Should refchecks defer reporting `@compileTimeOnly` errors for `sym` and instead let this phase issue the warning
    *  if they survive the async tranform? */
-  private[scala] def deferCompileTimeOnlyError(sym: Symbol): Boolean = settings.async && {
+  private[scala] def deferCompileTimeOnlyError(sym: Symbol): Boolean = settings.async.value && {
     awaits.contains(sym) || {
       val msg = sym.compileTimeOnlyMessage.getOrElse("")
       val shouldDefer =
@@ -77,7 +77,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     private lazy val liftableMap = new mutable.AnyRefMap[Symbol, (Symbol, List[Tree])]()
 
     override def transformUnit(unit: CompilationUnit): Unit = {
-      if (settings.async) {
+      if (settings.async.value) {
         // NoSourceFile can happen for, e.g., toolbox compilation; overestimate by always transforming them. See test/async/jvm/toolbox.scala
         val shouldTransform = unit.source == NoSourceFile || sourceFilesToTransform.contains(unit.source)
         if (shouldTransform) super.transformUnit(unit)

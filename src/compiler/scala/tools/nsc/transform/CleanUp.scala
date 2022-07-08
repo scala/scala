@@ -80,7 +80,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     def transformApplyDynamic(ad: ApplyDynamic) = {
       val qual0 = ad.qual
       val params = ad.args
-        if (settings.logReflectiveCalls)
+        if (settings.logReflectiveCalls.value)
           reporter.echo(ad.pos, "method invocation uses reflection")
 
         val typedPos = typedWithPos(ad.pos) _

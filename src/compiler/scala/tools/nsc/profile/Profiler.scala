@@ -30,7 +30,7 @@ import scala.tools.nsc.{Global, Phase, Settings}
 
 object Profiler {
   def apply(settings: Settings):Profiler =
-    if (!settings.YprofileEnabled) NoOpProfiler
+    if (!settings.YprofileEnabled.value) NoOpProfiler
     else {
       val reporter = settings.YprofileDestination.value match {
         case _ if !settings.YprofileDestination.isSetByUser => NoOpProfileReporter

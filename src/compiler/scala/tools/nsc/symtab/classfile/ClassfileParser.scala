@@ -162,7 +162,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         this.clazz        = clazz
         this.staticModule = module
         this.isScala      = false
-        this.YtastyReader = settings.YtastyReader
+        this.YtastyReader = settings.YtastyReader.value
 
         val magic = in.getInt(in.bp)
         if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
@@ -421,7 +421,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     //   - better owner than `NoSymbol`
     //   - remove eager warning
     val msg = s"Class $name not found - continuing with a stub."
-    if ((!settings.isScaladoc) && (settings.verbose || settings.isDeveloper))
+    if ((!settings.isScaladoc) && (settings.verbose.value || settings.isDeveloper))
       loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
     NoSymbol.newStubSymbol(name.toTypeName, msg)
   }

@@ -304,7 +304,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def shortSymbolClass = shortClassOfInstance(this)
     def symbolCreationString: String = (
       "%s%25s | %-40s | %s".format(
-        if (settings.uniqid) "%06d | ".format(id) else "",
+        if (settings.uniqid.value) "%06d | ".format(id) else "",
         shortSymbolClass,
         name.decode + " in " + owner,
         rawFlagString

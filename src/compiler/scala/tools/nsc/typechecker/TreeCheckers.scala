@@ -24,7 +24,7 @@ abstract class TreeCheckers extends Analyzer {
   override protected def onTreeCheckerError(pos: Position, msg: String): Unit = {
     // could thread the `site` through ContextReporter for errors, like we do for warnings, but it
     // looks like an overkill since it would only be used here.
-    if (settings.fatalWarnings)
+    if (settings.fatalWarnings.value)
       runReporting.warning(pos, "\n** Error during internal checking:\n" + msg, WarningCategory.OtherDebug, site = "")
   }
 
@@ -177,7 +177,7 @@ abstract class TreeCheckers extends Analyzer {
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
   def informFn(msg: Any): Unit = {
-    if (settings.verbose || settings.isDebug)
+    if (settings.verbose.value || settings.isDebug)
       println("[check: %s] %s".format(phase.prev, msg))
   }
 
@@ -195,7 +195,7 @@ abstract class TreeCheckers extends Analyzer {
   }
 
   def checkTrees(): Unit = {
-    if (settings.verbose)
+    if (settings.verbose.value)
       Console.println("[consistency check at the beginning of phase " + phase + "]")
 
     currentRun.units foreach (x => wrap(x)(check(x)))

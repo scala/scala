@@ -1294,7 +1294,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
-    if (settings.nospecialization && currentRun.compiles(sym)) {
+    if (settings.nospecialization.value && currentRun.compiles(sym)) {
       tpe
     } else tpe.resultType match {
       case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
@@ -1524,7 +1524,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   class SpecializationTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
-    override def transformUnit(unit: CompilationUnit): Unit = if (!settings.nospecialization) {
+    override def transformUnit(unit: CompilationUnit): Unit = if (!settings.nospecialization.value) {
       informProgress("specializing " + unit)
       try {
         exitingSpecialize(super.transformUnit(unit))

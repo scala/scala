@@ -118,7 +118,7 @@ abstract class FilteringReporter extends Reporter {
     }
     // Invoked when an error or warning is filtered by position.
     @inline def suppress = {
-      if (settings.prompt) doReport(pos, msg, severity)
+      if (settings.prompt.value) doReport(pos, msg, severity)
       else if (settings.isDebug) doReport(pos, s"[ suppressed ] $msg", severity)
       Suppress
     }

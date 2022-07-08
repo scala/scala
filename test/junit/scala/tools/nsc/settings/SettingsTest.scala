@@ -3,12 +3,10 @@ package settings
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class SettingsTest {
+  import SettingsTest._
   private def settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
 
   @Test def booleanSettingColon(): Unit = {
@@ -348,4 +346,9 @@ class SettingsTest {
     assertFalse(s.optInlinerEnabled)
     assertTrue(s.optBoxUnbox)
   }
+}
+object SettingsTest {
+  import language.implicitConversions
+  /** Support the common use case, `if (settings.debug) println("Hello, martin.")` Alas, incurs boxing and unboxing. */
+  @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 }

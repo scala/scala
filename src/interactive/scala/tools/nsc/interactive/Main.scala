@@ -37,7 +37,7 @@ object Main extends nsc.MainClass {
       compiler.askShutdown()
     }
     super.processSettingsHook() && (
-      if (this.settings.Yidedebug) { run() ; false } else true
+      if (this.settings.Yidedebug.value) { run() ; false } else true
     )
   }
 }

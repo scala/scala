@@ -76,7 +76,7 @@ abstract class HtmlPage extends Page { thisPage =>
   def writeFor(site: HtmlFactory): Unit = {
     writeFile(site)(writeHtml(site.encoding))
 
-    if (site.universe.settings.docRawOutput)
+    if (site.universe.settings.docRawOutput.value)
       writeFile(site, ".raw") {
         // we're only interested in the body, as this will go into the diff
         _.write(textOf(body))

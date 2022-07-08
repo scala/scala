@@ -651,7 +651,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // without it.  This is particularly bad because the availability of
       // generic information could disappear as a consequence of a seemingly
       // unrelated change.
-         settings.Ynogenericsig
+         settings.Ynogenericsig.value
       || sym.isArtifact
       || sym.isLiftedMethod
       || sym.isBridge
@@ -692,7 +692,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             catch { case _: Throwable => false }
           }
 
-      if (settings.Xverify) {
+      if (settings.Xverify.value) {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)

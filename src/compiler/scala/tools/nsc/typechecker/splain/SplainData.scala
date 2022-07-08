@@ -41,14 +41,14 @@ trait SplainData {
     def removeErrorsFor(tpe: Type): Unit = errors = errors.dropWhile(_.tpe == tpe)
 
     def startSearch(expectedType: Type): Unit = {
-      if (settings.Vimplicits) {
+      if (settings.Vimplicits.value) {
         if (!nested) errors = List()
         stack = expectedType :: stack
       }
     }
 
     def finishSearch(success: Boolean, expectedType: Type): Unit = {
-      if (settings.Vimplicits) {
+      if (settings.Vimplicits.value) {
         if (success) removeErrorsFor(expectedType)
         stack = stack.drop(1)
       }

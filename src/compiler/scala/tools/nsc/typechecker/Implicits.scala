@@ -444,7 +444,7 @@ trait Implicits extends splain.SplainData {
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
-      if (settings.debug)
+      if (settings.debug.value)
         reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
@@ -1509,7 +1509,7 @@ trait Implicits extends splain.SplainData {
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
-      if (settings.debug) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
+      if (settings.debug.value) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
       // otherwise -Vimplicits/-Vdebug will spam the long with zillions of "macros are disabled"

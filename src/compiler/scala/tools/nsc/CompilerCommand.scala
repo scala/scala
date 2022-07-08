@@ -105,14 +105,14 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def getInfoMessage(global: Global): String = {
     import settings._
 
-    if (version)            Properties.versionFor(cmdDesc)
-    else if (help)          usageMsg + global.pluginOptionsHelp
-    else if (Vhelp)         vusageMsg
-    else if (Whelp)         wusageMsg
-    else if (Xhelp)         xusageMsg
-    else if (Yhelp)         yusageMsg
-    else if (showPlugins)   global.pluginDescriptions
-    else if (showPhases)    global.phaseDescriptions + (
+    if (version.value)            Properties.versionFor(cmdDesc)
+    else if (help.value)          usageMsg + global.pluginOptionsHelp
+    else if (Vhelp.value)         vusageMsg
+    else if (Whelp.value)         wusageMsg
+    else if (Xhelp.value)         xusageMsg
+    else if (Yhelp.value)         yusageMsg
+    else if (showPlugins.value)   global.pluginDescriptions
+    else if (showPhases.value)    global.phaseDescriptions + (
       if (settings.isDebug) "\n" + global.phaseFlagDescriptions else ""
     )
     else if (genPhaseGraph.isSetByUser) {

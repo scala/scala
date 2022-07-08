@@ -65,7 +65,7 @@ class ReplCompletion(intp: Repl, val accumulator: Accumulator = new Accumulator)
       }
     } catch {
       case NonFatal(e) =>
-        if (intp.settings.debug)
+        if (intp.settings.debug.value)
           e.printStackTrace()
         NoCompletions
     }

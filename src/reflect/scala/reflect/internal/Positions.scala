@@ -171,7 +171,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
   }
   def validatePositions(tree: Tree): Unit = if (!useOffsetPositions) {
     object worker {
-      val trace = settings.Yposdebug && settings.verbose
+      val trace = settings.Yposdebug.value && settings.verbose.value
       val topTree = tree
 
       object solidChildrenCollector extends ChildSolidDescendantsCollector {

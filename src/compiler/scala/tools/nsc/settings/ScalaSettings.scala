@@ -188,9 +188,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts.", List("package", "object", "error"), "error")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
-                       .withPostSetHook(bs => if (bs) imports.value = Nil)
+                       .withPostSetHook(bs => if (bs.value) imports.value = Nil)
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
-                       .withPostSetHook(bs => if (bs && !noimports) imports.value = "java.lang" :: "scala" :: Nil)
+                       .withPostSetHook(bs => if (bs.value && !noimports.value) imports.value = "java.lang" :: "scala" :: Nil)
   val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom root imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
   sm"""|Specify a list of packages and objects to import from as "root" imports.
        |Root imports form the root context in which all Scala source is evaluated.
@@ -523,9 +523,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Ystatistics = PhasesSetting("-Vstatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
     .withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
     .withAbbreviation("-Ystatistics")
-  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s) StatisticsStatics.enableColdStatsAndDeoptimize())
+  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s.value) StatisticsStatics.enableColdStatsAndDeoptimize())
   val YhotStatisticsEnabled = BooleanSetting("-Vhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
-    .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize())
+    .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s.value && YstatisticsEnabled.value) StatisticsStatics.enableHotStatsAndDeoptimize())
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
   val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")

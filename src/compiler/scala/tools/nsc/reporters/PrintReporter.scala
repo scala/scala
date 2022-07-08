@@ -43,7 +43,7 @@ trait PrintReporter extends internal.Reporter {
   private def printMessage(msg: String): Unit = {
     writer.println(trimTrailing(msg))
     writer.flush()
-    if (settings.prompt) displayPrompt()
+    if (settings.prompt.value) displayPrompt()
   }
 
   /** Prints the message to the echoWriter, which is usually stdout. */

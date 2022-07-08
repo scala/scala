@@ -108,7 +108,7 @@ trait ContextErrors extends splain.SplainErrors {
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
     def typeErrorMsg(context: Context, found: Type, req: Type) =
-      if (context.openImplicits.nonEmpty && !settings.Vimplicits)
+      if (context.openImplicits.nonEmpty && !settings.Vimplicits.value)
          // OPT: avoid error string creation for errors that won't see the light of day, but predicate
         //       this on -Xsource:2.13 for bug compatibility with https://github.com/scala/scala/pull/7147#issuecomment-418233611
         "type mismatch"
@@ -1239,7 +1239,7 @@ trait ContextErrors extends splain.SplainErrors {
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
                           tparams: List[Symbol], kindErrors: List[String]) =
         issueNormalTypeError(tree,
-          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes))
+          NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes.value))
 
       //substExpr
       def PolymorphicExpressionInstantiationError(tree: Tree, undetparams: List[Symbol], pt: Type) =

@@ -21,7 +21,7 @@ object JarRunner extends CommonRunner {
     val jarURLs   = util.ClassPath expandManifestPath jarPath
     val urls      = if (jarURLs.isEmpty) io.File(jarPath).toURL +: settings.classpathURLs else jarURLs
 
-    if (settings.Ylogcp) {
+    if (settings.Ylogcp.value) {
       Console.err.println("Running jar with these URLs as the classpath:")
       urls foreach println
     }

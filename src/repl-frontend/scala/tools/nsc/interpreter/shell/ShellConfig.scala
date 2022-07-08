@@ -34,7 +34,7 @@ object ShellConfig {
       val filesToLoad: List[String] = settings.loadfiles.value
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
-      val doCompletion: Boolean = !(settings.noCompletion || batchMode)
+      val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
     }
@@ -43,7 +43,7 @@ object ShellConfig {
       val filesToLoad: List[String] = Nil
       val batchText: String = ""
       val batchMode: Boolean = false
-      val doCompletion: Boolean = !settings.noCompletion
+      val doCompletion: Boolean = !settings.noCompletion.value
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
     }

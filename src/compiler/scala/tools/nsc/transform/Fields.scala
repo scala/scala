@@ -501,7 +501,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         val newDecls =
           // under -Xcheckinit we generate all kinds of bitmaps, even when there are no lazy vals
-          if (expandedModulesAndLazyVals.isEmpty && mixedInAccessorAndFields.isEmpty && !settings.checkInit)
+          if (expandedModulesAndLazyVals.isEmpty && mixedInAccessorAndFields.isEmpty && !settings.checkInit.value)
             oldDecls.filterNot(omittableField)
           else {
             // must not alter `decls` directly
