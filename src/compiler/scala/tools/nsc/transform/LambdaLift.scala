@@ -505,8 +505,6 @@ abstract class LambdaLift extends InfoTransform {
 
             treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
           } else tree
-        case Return(Block(stats, value)) =>
-          Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
         case Return(expr) =>
           assert(sym == currentMethod, sym)
           tree
