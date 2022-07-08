@@ -40,8 +40,14 @@ import scala.collection.mutable.ListBuffer
  * 
  *  In Scala 3, `App` exists only in a limited form that does not support command line
  *  arguments and will be deprecated in the future. If programs need to cross-build
- *  between Scala 2 and Scala 3, it is recommended to use an explicit `main` method with
- *  an `Array[String]` argument instead.
+ *  between Scala 2 and Scala 3, it is recommended to use an explicit `main` method:
+ *  {{{
+ *  object Main {
+ *    def main(args: Array[String]): Unit = {
+ *      // your program here
+ *    }
+ *  }
+ *  }}}
  */
 @nowarn("""cat=deprecation&origin=scala\.DelayedInit""")
 trait App extends DelayedInit {
