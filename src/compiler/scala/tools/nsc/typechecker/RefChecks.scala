@@ -1267,9 +1267,12 @@ abstract class RefChecks extends Transform {
     // warnings after the first, but I think it'd be better if we didn't have to
     // arbitrarily choose one as more important than the other.
     private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
-      // If symbol is deprecated, and the point of reference is not enclosed
-      // in either a deprecated member or a scala bridge method, issue a warning.
-      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
+      // Issue a warning if symbol is deprecated, unless the point of reference is enclosed by a deprecated member,
+      // or has a deprecated companion.
+      if (sym.isDeprecated &&
+          // synthetic calls to deprecated case class constructor
+          !(sym.isConstructor && sym.owner.isCaseClass && currentOwner.isSynthetic) &&
+          !currentOwner.ownersIterator.exists(s => s.isDeprecated || s.companionClass.isDeprecated))
         runReporting.deprecationWarning(pos, sym, currentOwner)
 
       // Similar to deprecation: check if the symbol is marked with @migration
