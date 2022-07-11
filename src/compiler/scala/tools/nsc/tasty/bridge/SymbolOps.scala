@@ -17,6 +17,8 @@ import scala.tools.nsc.tasty.{SafeEq, TastyUniverse, ForceKinds, TastyModes}, Ta
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
 
+import scala.tools.nsc.tasty.TreeUnpickler.MaybeCycle.NoCycle
+
 /**This layer deals with selecting a member symbol from a type using a `TastyName`,
  * also contains factories for making type references to symbols.
  */
@@ -121,12 +123,19 @@ trait SymbolOps { self: TastyUniverse =>
   def symIsExperimental(sym: Symbol) = sym.hasAnnotation(defn.ExperimentalAnnotationClass)
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
-  def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
-    if (isConstructor &&
-      (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.isImplicit))
-      Nil :: termParamss
-    else
-      termParamss
+  def normalizeIfConstructor(owner: Symbol, termParamss: List[List[Symbol]], paramClauses: List[List[NoCycle]], isConstructor: Boolean): List[List[Symbol]] =
+    if (!isConstructor) termParamss
+    else {
+      paramClauses match {
+        case (vparam :: _) :: _ if vparam.tflags.is(Implicit, butNot=Given) => Nil :: termParamss
+        case _ =>
+          if (paramClauses.forall(paramClause => paramClause.nonEmpty && paramClause.head.tflags.is(Given))) {
+            termParamss :+ Nil
+          } else {
+            termParamss
+          }
+      }
+    }
 
   private[bridge] def lookupSymbol(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     deepComplete(space)

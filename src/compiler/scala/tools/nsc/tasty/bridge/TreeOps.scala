@@ -166,7 +166,7 @@ trait TreeOps { self: TastyUniverse =>
       }
     }
 
-    def Annotated(tpt: Tree, annot: Tree): Tree = {
+    def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
       if (annot.tpe.typeSymbol === defn.RepeatedAnnot
           && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
           && tpt.tpe.typeArgs.length == 1) {

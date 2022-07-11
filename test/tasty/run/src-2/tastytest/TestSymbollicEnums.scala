@@ -18,7 +18,7 @@ object TestSymbollicEnums extends Suite("TestSymbollicEnums") {
     }
   }
 
-  val Laws = new Laws[Long]
+  val Laws = new Laws[Long](implicitly[Interpreter[Long]])()
   import Laws._
 
   test(assert(additiveIdentity(getRandomNat.toLong.lit)))
