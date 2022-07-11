@@ -38,9 +38,20 @@ import scala.collection.mutable.ListBuffer
  *
  *  Future versions of this trait will no longer extend `DelayedInit`.
  * 
- *  In Scala 3, `App` exists only in a limited form that does not support command line
- *  arguments and will be deprecated in the future. If programs need to cross-build
- *  between Scala 2 and Scala 3, it is recommended to use an explicit `main` method:
+ *  In Scala 3, the `DelayedInit` feature was dropped. `App` exists only in a limited form
+ *  that also does not support command line arguments and will be deprecated in the future.
+ * 
+ *  [[https://docs.scala-lang.org/scala3/book/methods-main-methods.html @main]] methods are the
+ *  recommended scheme to generate programs that can be invoked from the command line in Scala 3.
+ * 
+ *  {{{
+ *  @main def runMyProgram(args: String*): Unit = {
+ *    // your program here
+ *  }
+ *  }}}
+ * 
+ *  If programs need to cross-build between Scala 2 and Scala 3, it is recommended to use an
+ *  explicit `main` method:
  *  {{{
  *  object Main {
  *    def main(args: Array[String]): Unit = {
