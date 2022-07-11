@@ -860,24 +860,19 @@ trait ContextErrors {
         val realex = ReflectionUtils.unwrapThrowable(ex)
         val message = {
           try {
-            // [Eugene] is there a better way?
-            // [Paul] See Exceptional.scala and Origins.scala.
-            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName endsWith "macroExpandWithRuntime")
+            val relevancyThreshold = realex.getStackTrace().indexWhere(_.getMethodName.endsWith("macroExpandWithRuntime"))
             if (relevancyThreshold == -1) None
             else {
-              var relevantElements = realex.getStackTrace().take(relevancyThreshold + 1)
-              def isMacroInvoker(este: StackTraceElement) = este.isNativeMethod || (este.getClassName != null && (este.getClassName contains "fastTrack"))
-              var threshold = relevantElements.reverse.indexWhere(isMacroInvoker) + 1
-              while (threshold != relevantElements.length && isMacroInvoker(relevantElements(relevantElements.length - threshold - 1))) threshold += 1
-              relevantElements = relevantElements dropRight threshold
-
-              realex.setStackTrace(relevantElements)
+              val relevantElements = realex.getStackTrace().take(relevancyThreshold - 1)
+              def isMacroInvoker(este: StackTraceElement) = este.getMethodName.startsWith("invoke")
+              val keep = relevantElements.reverse.dropWhile(isMacroInvoker).reverse
+              realex.setStackTrace(keep)
               Some(EOL + stackTraceString(realex))
             }
           } catch {
             // the code above tries various tricks to detect the relevant portion of the stack trace
-            // if these tricks fail, just fall back to uninformative, but better than nothing, getMessage
-            case NonFatal(ex) => // currently giving a spurious warning, see scala/bug#6994
+            // if these tricks fail, just fall back to uninformative, but better than nothing.
+            case NonFatal(ex) =>
               macroLogVerbose("got an exception when processing a macro generated exception\n" +
                               "offender = " + stackTraceString(realex) + "\n" +
                               "error = " + stackTraceString(ex))
