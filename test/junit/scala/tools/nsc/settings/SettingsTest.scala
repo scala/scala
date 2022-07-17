@@ -304,7 +304,6 @@ class SettingsTest {
       val d = Choice("d")
     }
     val m = s.MultiChoiceSetting("-m", "args", "magic sauce", mChoices, Some(List("a")))
-    println(s"m $m has value ${m.value}")
 
     def check(args: String*)(t: s.MultiChoiceSetting[mChoices.type] => Boolean): Boolean = {
       m.clear()
@@ -349,6 +348,6 @@ class SettingsTest {
 }
 object SettingsTest {
   import language.implicitConversions
-  /** Support the common use case, `if (settings.debug) println("Hello, martin.")` Alas, incurs boxing and unboxing. */
+  /** Avoid deprecated conversion. */
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 }
