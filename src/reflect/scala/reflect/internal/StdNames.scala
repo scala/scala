@@ -639,6 +639,7 @@ trait StdNames {
     // Scala 3 soft keywords
     val infix: NameType           = "infix"
     val open: NameType            = "open"
+    val using: NameType           = "using"
 
     // Scala 3 hard keywords
     val `given`: NameType         = "given"

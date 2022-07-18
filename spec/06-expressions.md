@@ -240,6 +240,7 @@ depending on whether `B` is mixed in with class `Root` or `A`.
 ```ebnf
 SimpleExpr    ::=  SimpleExpr1 ArgumentExprs
 ArgumentExprs ::=  ‘(’ [Exprs] ‘)’
+                |  ‘(’ ‘using’ Exprs ‘)’
                 |  ‘(’ [Exprs ‘,’] PostfixExpr ‘:’ ‘_’ ‘*’ ‘)’
                 |  [nl] BlockExpr
 Exprs         ::=  Expr {‘,’ Expr}
@@ -322,6 +323,9 @@ sum(List(1, 2, 3, 4))
 ```
 
 would not typecheck.
+
+An argument list may begin with the soft keyword `using` to facilitate cross-compilation with Scala 3.
+The keyword is ignored.
 
 ### Named and Default Arguments
 
