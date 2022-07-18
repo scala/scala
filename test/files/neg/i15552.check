@@ -1,0 +1,7 @@
+i15552.scala:4: error: not found: value g
+  def f() = g(42)(using ctx)  // error: no g
+            ^
+i15552.scala:22: error: not found: value using
+  def f() = g(using)          // error: no using, does not actually suggest Using
+              ^
+2 errors

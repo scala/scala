@@ -684,6 +684,7 @@ trait StdNames {
     // Scala 3 soft keywords
     val infix: NameType           = nameType("infix")
     val open: NameType            = nameType("open")
+    val using: NameType           = nameType("using")
 
     // Compiler utilized names
 
