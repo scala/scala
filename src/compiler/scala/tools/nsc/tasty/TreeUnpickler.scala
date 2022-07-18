@@ -470,7 +470,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         flags.is(Opaque) && !isClass
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (isClass && flags.is(Trait)) flags |= Abstract
-      if (tag === DEFDEF) flags |= Method
+      if (tag === DEFDEF) {
+        flags |= Method
+        if (name.isDefaultName)
+          flags |= HasDefault // this corresponds to DEFAULTPARAM
+      }
       if (tag === VALDEF) {
         if (flags.is(Inline) || ctx.owner.is(Trait))
           flags |= FieldAccessor
