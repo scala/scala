@@ -163,9 +163,10 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           }
         }
 
-        def files_s = failed0.map(_.testFile).mkString(""" \""" + "\n  ")
+        val bslash = "\\"
+        def files_s = failed0.map(_.testFile).mkString(s" ${bslash}\n  ")
         echo("# Failed test paths (this command will update checkfiles)")
-        echo(partestCmd + " --update-check \\\n  " + files_s + "\n")
+        echo(s"$partestCmd --update-check ${bslash}\n  $files_s\n")
       }
 
       if (printSummary) {
