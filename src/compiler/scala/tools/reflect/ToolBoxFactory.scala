@@ -383,11 +383,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     def typecheck(tree: u.Tree, mode: TypecheckMode = TERMmode, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
 
-      if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
+      if (compiler.settings.verbose.value) println("importing "+tree+", expectedType = "+expectedType)
       val ctree: compiler.Tree = importer.importTree(tree)
       val cexpectedType: compiler.Type = importer.importType(expectedType)
 
-      if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
+      if (compiler.settings.verbose.value) println("typing "+ctree+", expectedType = "+expectedType)
       val ttree: compiler.Tree = compiler.typecheck(ctree, cexpectedType, mode, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
       val uttree = exporter.importTree(ttree)
       uttree
@@ -406,12 +406,12 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
 
-      if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
+      if (compiler.settings.verbose.value) println(s"importing pt=$pt, tree=$tree, pos=$pos")
       val ctree: compiler.Tree = importer.importTree(tree)
       val cpt: compiler.Type = importer.importType(pt)
       val cpos: compiler.Position = importer.importPosition(pos)
 
-      if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
+      if (compiler.settings.verbose.value) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
       val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
       val uitree = exporter.importTree(itree)
       uitree
@@ -429,7 +429,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     def parse(code: String): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
-      if (compiler.settings.verbose) println("parsing "+code)
+      if (compiler.settings.verbose.value) println("parsing "+code)
       val ctree: compiler.Tree = compiler.parse(code)
       val utree = exporter.importTree(ctree)
       utree
@@ -438,20 +438,20 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     def compile(tree: u.Tree): () => Any = withCompilerApi { compilerApi =>
       import compilerApi._
 
-      if (compiler.settings.verbose) println("importing "+tree)
+      if (compiler.settings.verbose.value) println("importing "+tree)
       val ctree: compiler.Tree = importer.importTree(tree)
 
-      if (compiler.settings.verbose) println("compiling "+ctree)
+      if (compiler.settings.verbose.value) println("compiling "+ctree)
       compiler.compile(ctree)
     }
 
     def define(tree: u.ImplDef): u.Symbol = withCompilerApi { compilerApi =>
       import compilerApi._
 
-      if (compiler.settings.verbose) println("importing "+tree)
+      if (compiler.settings.verbose.value) println("importing "+tree)
       val ctree: compiler.ImplDef = importer.importTree(tree).asInstanceOf[compiler.ImplDef]
 
-      if (compiler.settings.verbose) println("defining "+ctree)
+      if (compiler.settings.verbose.value) println("defining "+ctree)
       val csym: compiler.Symbol = compiler.define(ctree)
       val usym = exporter.importSymbol(csym)
       usym

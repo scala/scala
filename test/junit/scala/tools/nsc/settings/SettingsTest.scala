@@ -3,12 +3,10 @@ package settings
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class SettingsTest {
+  import SettingsTest._
   private def settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
 
   @Test def booleanSettingColon(): Unit = {
@@ -306,7 +304,6 @@ class SettingsTest {
       val d = Choice("d")
     }
     val m = s.MultiChoiceSetting("-m", "args", "magic sauce", mChoices, Some(List("a")))
-    println(s"m $m has value ${m.value}")
 
     def check(args: String*)(t: s.MultiChoiceSetting[mChoices.type] => Boolean): Boolean = {
       m.clear()
@@ -348,4 +345,9 @@ class SettingsTest {
     assertFalse(s.optInlinerEnabled)
     assertTrue(s.optBoxUnbox)
   }
+}
+object SettingsTest {
+  import language.implicitConversions
+  /** Avoid deprecated conversion. */
+  @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 }

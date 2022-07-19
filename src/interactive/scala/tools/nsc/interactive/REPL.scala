@@ -39,7 +39,7 @@ object REPL {
     val settings = new Settings(replError)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
-    if (command.settings.version)
+    if (command.settings.version.value)
       reporter.echo(versionMsg)
     else {
       try {

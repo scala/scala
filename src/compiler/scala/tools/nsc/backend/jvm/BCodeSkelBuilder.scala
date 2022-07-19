@@ -214,7 +214,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       } else {
 
-        if (!settings.noForwarders) {
+        if (!settings.noForwarders.value) {
           val lmoc = claszSymbol.companionModule
           // add static forwarders if there are no name conflicts; see bugs #363 and #1735
           if (lmoc != NoSymbol) {

@@ -500,7 +500,7 @@ trait SplainFormatting extends SplainFormatters {
     chain.map(formatNestedImplicit).flatMap { case (h, t, _) => h :: t }
 
   def formatImplicitChain(chain: List[ImplicitError]): List[String] = {
-    val compact = if (settings.VimplicitsVerboseTree) None else formatImplicitChainTreeCompact(chain)
+    val compact = if (settings.VimplicitsVerboseTree.value) None else formatImplicitChainTreeCompact(chain)
     compact.getOrElse(formatImplicitChainTreeFull(chain))
   }
 

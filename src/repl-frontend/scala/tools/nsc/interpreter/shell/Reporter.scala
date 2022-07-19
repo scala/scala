@@ -98,7 +98,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     *  debugging information (like printing the classpath) is not rendered
     *  invisible due to the max message length.
     */
-  var truncationOK: Boolean = !settings.verbose
+  var truncationOK: Boolean = !settings.verbose.value
 
   def truncate(str: String): String =
     if (truncationOK && (maxPrintString != 0 && str.length > maxPrintString)) (str take maxPrintString - 3) + "..."
@@ -216,7 +216,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
       if (isSynthetic) printMessage("\n(To diagnose errors in synthetic code, try adding `// show` to the end of your input.)")
     }
-    if (settings.prompt) displayPrompt()
+    if (settings.prompt.value) displayPrompt()
   }
 
   def printMessage(msg: String): Unit =

@@ -94,8 +94,8 @@ abstract class Erasure extends InfoTransform
       if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
   }
 
-  override protected def verifyJavaErasure = settings.Xverify || settings.isDebug
-  private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
+  override protected def verifyJavaErasure = settings.Xverify.value || settings.isDebug
+  private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig.value && {
     def needs(tp: Type) = NeedsSigCollector(sym.isClassConstructor).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
   }

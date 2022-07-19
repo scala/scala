@@ -90,11 +90,11 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
     modelFactory.makeModel match {
       case Some(madeModel) =>
-        if (settings.verbose)
+        if (settings.verbose.value)
           reporter.echo("model contains " + modelFactory.templatesCount + " documentable templates")
         Some(madeModel)
       case None =>
-        if (settings.verbose)
+        if (settings.verbose.value)
           reporter.echo("no documentable class found in compilation units")
         None
     }
@@ -104,7 +104,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   val documentError: PartialFunction[Throwable, Unit] = {
     case NoCompilerRunException =>
-      if (settings.verbose)
+      if (settings.verbose.value)
         reporter.echo("No documentation generated with unsuccessful compiler run")
     case e @ (_:ClassNotFoundException | _:IllegalAccessException | _:InstantiationException | _:SecurityException | _:ClassCastException) =>
       reporter.error(null, s"Cannot load the doclet class ${settings.docgenerator.value} (specified with ${settings.docgenerator.name}): $e. Leaving the default settings will generate the html version of scaladoc.")
@@ -144,7 +144,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   }
 
   private[doc] def docdbg(msg: String): Unit = {
-    if (settings.Ydocdebug)
+    if (settings.Ydocdebug.value)
       println(msg)
   }
 }

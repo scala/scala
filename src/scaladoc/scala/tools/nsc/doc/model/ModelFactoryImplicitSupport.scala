@@ -177,7 +177,7 @@ trait ModelFactoryImplicitSupport {
         return Nil
       }
 
-      if (!settings.docImplicitsShowAll && viewSimplifiedType.resultType.typeSymbol == sym) {
+      if (!settings.docImplicitsShowAll.value && viewSimplifiedType.resultType.typeSymbol == sym) {
         // If, when looking at views for a class A, we find one that returns A as well
         // (possibly with different type parameters), we ignore it.
         // It usually is a way to build a "whatever" into an A, but we already have an A, as in:
@@ -267,7 +267,7 @@ trait ModelFactoryImplicitSupport {
       available match {
         case Some(true) =>
           Nil
-        case Some(false) if !settings.docImplicitsShowAll =>
+        case Some(false) if !settings.docImplicitsShowAll.value =>
           // if -implicits-show-all is not set, we get rid of impossible conversions (such as Numeric[String])
           throw new ImplicitNotFound(implType)
         case _ =>

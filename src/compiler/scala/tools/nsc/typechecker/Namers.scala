@@ -845,7 +845,7 @@ trait Namers extends MethodSynthesis {
           // check that lower bound is not an F-bound
           // but carefully: class Foo[T <: Bar[_ >: T]] should be allowed
           for (tp1 @ TypeRef(_, sym, _) <- lo) {
-            if (settings.breakCycles) {
+            if (settings.breakCycles.value) {
               if (!sym.maybeInitialize) {
                 log(s"Cycle inspecting $lo for possible f-bounds: ${sym.fullLocationString}")
                 return sym
@@ -1127,7 +1127,7 @@ trait Namers extends MethodSynthesis {
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
       tree.tpt.defineType {
-        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
+        if (currentRun.isScala3.value && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
         else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
@@ -1257,7 +1257,7 @@ trait Namers extends MethodSynthesis {
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
 
-      if (settings.YmacroAnnotations && treeInfo.isMacroAnnotation(cdef))
+      if (settings.YmacroAnnotations.value && treeInfo.isMacroAnnotation(cdef))
         typer.typedMacroAnnotation(cdef)
 
       pluginsTp
@@ -1471,7 +1471,7 @@ trait Namers extends MethodSynthesis {
             context.warning(ddef.pos, msg, WarningCategory.OtherNullaryOverride)
             meth.updateAttachment(NullaryOverrideAdapted)
           }
-          context.unit.toCheck += (if (currentRun.isScala3) error _ else warn _)
+          context.unit.toCheck += (if (currentRun.isScala3.value) error _ else warn _)
           ListOfNil
         } else vparamSymss
       }

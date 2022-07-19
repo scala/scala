@@ -283,7 +283,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     var seenMacroExpansionsFallingBack = false
 
     // i.e., summarize warnings
-    def summarizeErrors(): Unit = if (!reporter.hasErrors && !settings.nowarn) {
+    def summarizeErrors(): Unit = if (!reporter.hasErrors && !settings.nowarn.value) {
       for (c <- summarizedWarnings.keys.toList.sortBy(_.name))
         summarize(Action.WarningSummary, c)
       for (c <- summarizedInfos.keys.toList.sortBy(_.name))
@@ -295,7 +295,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       // todo: migrationWarnings
 
-      if (settings.fatalWarnings && reporter.hasWarnings)
+      if (settings.fatalWarnings.value && reporter.hasWarnings)
         reporter.error(NoPosition, "No warnings can be incurred under -Werror.")
     }
   }

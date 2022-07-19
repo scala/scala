@@ -148,7 +148,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
      */
     util.waitingForThreads {
       // either update the jar or don't use a cache jar at all, just use the class files, if they exist
-      if (settings.save) withLatestJar()
+      if (settings.save.value) withLatestJar()
       else {
         compile match {
           case Some(cp) if hasClassToRun(cp) => handler(cp.path)
@@ -173,7 +173,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     if (!f.exists) Some(new IOException(s"no such file: $scriptFile"))
     else if (!f.canRead) Some(new IOException(s"can't read: $scriptFile"))
     else if (f.isDirectory) Some(new IOException(s"can't compile a directory: $scriptFile"))
-    else if (!settings.nc && !f.isFile) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
+    else if (!settings.nc.value && !f.isFile) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
     else withCompiledScript(scriptFile) { runCompiled(_, scriptArgs) }
   }
 

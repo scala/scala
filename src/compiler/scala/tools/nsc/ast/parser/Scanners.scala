@@ -528,7 +528,7 @@ trait Scanners extends ScannersCommon {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         if (pastBlankLine()) insertNL(NEWLINES)
         else if (!isLeadingInfixOperator) insertNL(NEWLINE)
-        else if (!currentRun.isScala3) {
+        else if (!currentRun.isScala3.value) {
           val msg = """|Line starts with an operator that in future
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
@@ -978,7 +978,7 @@ trait Scanners extends ScannersCommon {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
-          if(!currentRun.isScala3) replaceUnicodeEscapesInTriple()
+          if(!currentRun.isScala3.value) replaceUnicodeEscapesInTriple()
           token = STRINGLIT
         } else
           getRawStringLit()
@@ -1283,7 +1283,7 @@ trait Scanners extends ScannersCommon {
           syntaxError("missing integer number") // e.g., 0x; previous error shadows this one
           0L
         } else {
-          if (settings.warnOctalLiteral && base == 10 && strVal.charAt(0) == '0' && strVal.length() > 1)
+          if (settings.warnOctalLiteral.value && base == 10 && strVal.charAt(0) == '0' && strVal.length() > 1)
             deprecationWarning("Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)", since="2.10")
           convertIt
         }

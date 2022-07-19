@@ -3147,7 +3147,7 @@ trait Types
 
     private def existentialClauses = {
       val str = quantified.map(_.existentialToString).mkString(" forSome { ", "; ", " }")
-      if (settings.explaintypes) "(" + str + ")" else str
+      if (settings.explaintypes.value) "(" + str + ")" else str
     }
 
     /** An existential can only be printed with wildcards if:
@@ -3764,7 +3764,7 @@ trait Types
         if (sym.owner.isTerm && (sym.owner != encl)) Some(sym.owner) else None
       ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
     }
-    private def levelString = if (settings.explaintypes) level else ""
+    private def levelString = if (settings.explaintypes.value) level else ""
     override def safeToString = (
       if ((constr eq null) || (inst eq null)) "TVar<" + originName + "=null>"
       else if (inst ne NoType) "=?" + inst
@@ -5218,12 +5218,12 @@ trait Types
 
   /** If option `explaintypes` is set, print a subtype trace for `found <:< required`. */
   def explainTypes(found: Type, required: Type): Unit = {
-    if (settings.explaintypes) withTypesExplained(found <:< required)
+    if (settings.explaintypes.value) withTypesExplained(found <:< required)
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `op(found, required)`. */
   def explainTypes(op: (Type, Type) => Any, found: Type, required: Type): Unit = {
-    if (settings.explaintypes) withTypesExplained(op(found, required))
+    if (settings.explaintypes.value) withTypesExplained(op(found, required))
   }
 
   /** Execute `op` while printing a trace of the operations on types executed. */

@@ -791,7 +791,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       val prunedStats = (defs filterNot omittableStat) ::: delayedHookDefs ::: constructors
 
       val statsWithInitChecks =
-        if (settings.checkInit) {
+        if (settings.checkInit.value) {
           val addChecks = new SynthInitCheckedAccessorsIn(currentOwner)
           prunedStats mapConserve {
             case dd: DefDef if addChecks.needsWrapping(dd) => deriveDefDef(dd)(addChecks.wrapRhsWithInitChecks(dd.symbol))

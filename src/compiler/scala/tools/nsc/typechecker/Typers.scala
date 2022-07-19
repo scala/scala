@@ -941,7 +941,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (arity == 0)
             expectingFunctionOfArity && warnEtaZero()
           else
-            expectingFunctionOfArity || expectingSamOfArity && warnEtaSam() || sourceLevel3
+            expectingFunctionOfArity || expectingSamOfArity && warnEtaSam() || sourceLevel3.value
         }
 
         def matchNullaryLoosely: Boolean = {
@@ -1103,7 +1103,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
           debuglog("error tree = " + tree)
-          if (settings.isDebug && settings.explaintypes) explainTypes(tree.tpe, pt)
+          if (settings.isDebug && settings.explaintypes.value) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
           else adaptMismatchedSkolems()
@@ -1114,7 +1114,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
           @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
-          @inline def warnValueDiscard(): Unit = if (!isPastTyper && settings.warnValueDiscard) {
+          @inline def warnValueDiscard(): Unit = if (!isPastTyper && settings.warnValueDiscard.value) {
             def isThisTypeResult = (tree, tree.tpe) match {
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
@@ -1130,7 +1130,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (isInharmonic)
                 // not `context.deprecationWarning` because they are not buffered in silent mode
                 context.warning(tree.pos, s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead.", WarningCategory.Deprecation)
-              else if (settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
+              else if (settings.warnNumericWiden.value) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
             }
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
@@ -1159,7 +1159,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     else EmptyTree
                   if (coercion ne EmptyTree) {
                     def msg = s"inferred view from ${tree.tpe} to $pt via $coercion: ${coercion.tpe}"
-                    if (settings.logImplicitConv) context.echo(tree.pos, msg)
+                    if (settings.logImplicitConv.value) context.echo(tree.pos, msg)
                     else debuglog(msg)
 
                     val viewApplied = new ApplyImplicitView(coercion, List(tree)) setPos tree.pos
@@ -1344,7 +1344,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         inferView(qual, qual.tpe, searchTemplate, reportAmbiguous, saveErrors) match {
           case EmptyTree  => qual
           case coercion   =>
-            if (settings.logImplicitConv)
+            if (settings.logImplicitConv.value)
               context.echo(qual.pos, s"applied implicit conversion from ${qual.tpe} to ${searchTemplate} = ${coercion.symbol.defString}")
 
             typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
@@ -1849,7 +1849,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               !(selfType <:< parentTypeOfThis)
           ) {
             pending += ParentSelfTypeConformanceError(parent, selfType)
-            if (settings.explaintypes) explainTypes(selfType, parentTypeOfThis)
+            if (settings.explaintypes.value) explainTypes(selfType, parentTypeOfThis)
           }
 
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
@@ -2457,7 +2457,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       warnTypeParameterShadow(tparams1, tdef.symbol)
 
       // @specialized should not be pickled when compiling with -no-specialize
-      if (settings.nospecialization && currentRun.compiles(tdef.symbol)) {
+      if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
         tdef.symbol.removeAnnotation(definitions.SpecializedClass)
         tdef.symbol.deSkolemize.removeAnnotation(definitions.SpecializedClass)
       }
@@ -3806,7 +3806,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   constfold(treeCopy.Apply(tree, fun, args2) setType resTp setPos pos2, context.owner)
                 }
               }
-              if (settings.warnDeadCode) {
+              if (settings.warnDeadCode.value) {
                 val sym = fun.symbol
                 if (sym != null && sym.isMethod && !sym.isConstructor) {
                   val suppress = sym == Object_synchronized || (sym.isLabel && treeInfo.isSynthCaseSymbol(sym))
@@ -3882,7 +3882,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
       def rangeFinder(): (Int, Int) =
-        if (settings.Yrangepos && annotee.get.pos.isDefined) {
+        if (settings.Yrangepos.value && annotee.get.pos.isDefined) {
           val p = annotee.get.pos
           (p.start, p.end)
         } else {
@@ -4913,7 +4913,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val result = typed(Function(Nil, methodValue) setSymbol funSym setPos pos, mode, pt)
 
-          if (currentRun.isScala3) {
+          if (currentRun.isScala3.value) {
             UnderscoreNullaryEtaError(methodValue)
           } else {
             context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2")
@@ -5463,7 +5463,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        */
       def typedIdent(tree: Tree, name: Name): Tree = {
         // setting to enable unqualified idents in empty package (used by the repl)
-        def inEmptyPackage = if (settings.exposeEmptyPackage) lookupInEmpty(name) else NoSymbol
+        def inEmptyPackage = if (settings.exposeEmptyPackage.value) lookupInEmpty(name) else NoSymbol
 
         def issue(err: AbsTypeError) = {
           // Avoiding some spurious error messages: see scala/bug#2388.

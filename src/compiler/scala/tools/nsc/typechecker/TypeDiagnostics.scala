@@ -487,7 +487,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     }
 
     def apply(context: Context, tree: Tree): Tree = {
-      if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
+      if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
         context.warning(tree.pos, "dead code following this construct", WarningCategory.WFlagDeadCode)
       tree
     }

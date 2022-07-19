@@ -122,7 +122,7 @@ trait Plugins { global: Global =>
         def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
         lazy val commonPhases = phaseNames intersect plugPhaseNames
 
-        def note(msg: String): Unit = if (settings.verbose) inform(msg format plug.name)
+        def note(msg: String): Unit = if (settings.verbose.value) inform(msg format plug.name)
         def fail(msg: String)       = { note(msg) ; withoutPlug }
 
         if (plugNames contains plug.name)

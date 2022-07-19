@@ -537,7 +537,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
               if (defSym == NoSymbol) cx = cx.outer
             }
           }
-          if (defSym == NoSymbol && settings.exposeEmptyPackage) {
+          if (defSym == NoSymbol && settings.exposeEmptyPackage.value) {
             defSym = rootMirror.EmptyPackageClass.info member name
           }
 

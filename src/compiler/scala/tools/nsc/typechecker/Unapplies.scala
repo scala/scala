@@ -97,7 +97,7 @@ trait Unapplies extends ast.TreeDSL {
   }
 
   private def applyShouldInheritAccess(mods: Modifiers) =
-    currentRun.isScala3 && (mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary))
+    currentRun.isScala3.value && (mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary))
 
   /** The module corresponding to a case class; overrides toString to show the module's name
    */
@@ -271,7 +271,7 @@ trait Unapplies extends ast.TreeDSL {
       val argss = mmap(paramss)(toIdent)
       val body: Tree = New(classTpe, argss)
       val copyMods =
-        if (currentRun.isScala3) {
+        if (currentRun.isScala3.value) {
           val inheritedMods = constrMods(cdef)
           Modifiers(SYNTHETIC | (inheritedMods.flags & AccessFlags), inheritedMods.privateWithin)
         }

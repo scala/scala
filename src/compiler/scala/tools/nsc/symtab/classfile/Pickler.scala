@@ -89,7 +89,7 @@ abstract class Pickler extends SubComponent {
                 if (writeToSigFile)
                   writeSigFile(sym, pickle)
               }
-              if (sigWriter.isDefined && settings.YpickleWriteApiOnly) {
+              if (sigWriter.isDefined && settings.YpickleWriteApiOnly.value) {
                 pickle(noPrivates = false, writeToSymData = true, writeToSigFile = false)
                 pickle(noPrivates = true, writeToSymData = false, writeToSigFile = true)
               } else {
@@ -142,7 +142,7 @@ abstract class Pickler extends SubComponent {
     private def closeSigWriter(): Unit = {
       sigWriter.foreach { writer =>
         writer.close()
-        if (settings.verbose)
+        if (settings.verbose.value)
           reporter.echo(NoPosition, "[sig files written]")
       }
     }

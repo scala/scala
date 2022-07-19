@@ -240,7 +240,7 @@ trait Warnings {
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
   def unitSpecialization         = lint contains UnitSpecialization
   def multiargInfix              = lint contains MultiargInfix
-  def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit: @nowarn("cat=deprecation"))
+  def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit.value: @nowarn("cat=deprecation"))
   def lintUniversalMethods       = lint.contains(UniversalMethods)
 
   // The Xlint warning group.

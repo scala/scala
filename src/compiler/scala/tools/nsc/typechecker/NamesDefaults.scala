@@ -553,7 +553,7 @@ trait NamesDefaults { self: Analyzer =>
         val NamedArg(Ident(name), rhs) = arg: @unchecked
         params indexWhere (p => matchesName(p, name, argIndex)) match {
           case -1 =>
-            val warnVariableInScope = !currentRun.isScala3 && context0.lookupSymbol(name, _.isVariable).isSuccess
+            val warnVariableInScope = !currentRun.isScala3.value && context0.lookupSymbol(name, _.isVariable).isSuccess
             UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope)
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)

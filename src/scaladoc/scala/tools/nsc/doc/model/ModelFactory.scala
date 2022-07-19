@@ -295,7 +295,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     assert(!(docTemplatesCache isDefinedAt sym), sym)
     docTemplatesCache += (sym -> this)
 
-    if (settings.verbose)
+    if (settings.verbose.value)
       inform("Creating doc template for " + sym)
 
     override def linkTarget: DocTemplateImpl = this
@@ -367,7 +367,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     // the implicit conversions are generated lazily, on completeModel
     lazy val conversions: List[ImplicitConversionImpl] =
-      if (settings.docImplicits) makeImplicitConversions(sym, this) else Nil
+      if (settings.docImplicits.value) makeImplicitConversions(sym, this) else Nil
 
     // members as given by the compiler
     lazy val memberSyms      = sym.info.members.filter(s => membersShouldDocument(s, this)).toList
@@ -1041,7 +1041,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   // whether or not to create a page for an {abstract,alias} type
   def typeShouldDocument(bSym: Symbol, inTpl: DocTemplateImpl) =
-    (settings.docExpandAllTypes && (bSym.sourceFile != null)) ||
+    (settings.docExpandAllTypes.value && (bSym.sourceFile != null)) ||
     (bSym.isAliasType || bSym.isAbstractType) &&
     { val rawComment = global.expandedDocComment(bSym, inTpl.sym)
       rawComment.contains("@template") || rawComment.contains("@documentable") }

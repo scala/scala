@@ -69,13 +69,20 @@ abstract class MutableSettings extends AbsSettings {
 
 object MutableSettings {
   import scala.language.implicitConversions
-  /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */
+  /** Support the common use case, `if (settings.debug) println("Hello, martin.")`.
+   *
+   *  Unfortunately, due to the way the `Settings` hierarchy is structured, this abstraction incurs boxing.
+   *  Although boxing the Boolean primitive may be a trivial cost for a single invocation,
+   *  it is significant for a test in a hot spot. Therefore, this method is deprecated.
+   *  For the convenience of plugin authors, it has not been removed outright.
+   */
+  @deprecated("Use `setting.value` directly to avoid boxing.", since="2.13.9")
   @inline implicit def reflectSettingToBoolean(s: MutableSettings#BooleanSetting): Boolean = s.value
 
   implicit class SettingsOps(private val settings: MutableSettings) extends AnyVal {
-    @inline final def areStatisticsEnabled = (StatisticsStatics.COLD_STATS_GETTER.invokeExact(): Boolean) && settings.YstatisticsEnabled
-    @inline final def areHotStatisticsEnabled = (StatisticsStatics.HOT_STATS_GETTER.invokeExact(): Boolean) && settings.YhotStatisticsEnabled
-    @inline final def isDebug: Boolean     = (StatisticsStatics.DEBUG_GETTER.invokeExact(): Boolean) && settings.debug
-    @inline final def isDeveloper: Boolean = (StatisticsStatics.DEVELOPER_GETTER.invokeExact(): Boolean) && settings.developer
+    @inline final def areStatisticsEnabled = (StatisticsStatics.COLD_STATS_GETTER.invokeExact(): Boolean) && settings.YstatisticsEnabled.value
+    @inline final def areHotStatisticsEnabled = (StatisticsStatics.HOT_STATS_GETTER.invokeExact(): Boolean) && settings.YhotStatisticsEnabled.value
+    @inline final def isDebug: Boolean     = (StatisticsStatics.DEBUG_GETTER.invokeExact(): Boolean) && settings.debug.value
+    @inline final def isDeveloper: Boolean = (StatisticsStatics.DEVELOPER_GETTER.invokeExact(): Boolean) && settings.developer.value
   }
 }

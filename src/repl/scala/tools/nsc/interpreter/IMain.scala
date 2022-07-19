@@ -421,7 +421,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   private[nsc] def replwarn(msg: => String): Unit = {
-    if (!settings.nowarnings)
+    if (!settings.nowarnings.value)
       reporter.printMessage(msg)
   }
 
@@ -1177,7 +1177,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         runReporting.summarizeErrors()
       if (reporter.hasErrors) Left(Error)
       else if (isIncomplete) Left(Incomplete)
-      else if (reporter.hasWarnings && settings.fatalWarnings) Left(Error)
+      else if (reporter.hasWarnings && settings.fatalWarnings.value) Left(Error)
       else Right((trees, unit.firstXmlPos))
     }.tap(_ => if (!isIncomplete) reporter.reset())
   }
@@ -1258,7 +1258,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     (implicits.toList,
       if (filtered.nonEmpty)
         "" // collected in implicits
-      else if (global.settings.nopredef || global.settings.noimports)
+      else if (global.settings.nopredef.value || global.settings.noimports.value)
         "No implicits have been imported."
       else
         "No implicits have been imported other than those in Predef."
@@ -1406,7 +1406,7 @@ object IMain {
    */
   private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
     import settings.{reporter => _, _}
-    val wasWarning = !nowarn
+    val wasWarning = !nowarn.value
     val oldMaxWarn = maxwarns.value
     val noisy = List(Xprint, Ytyperdebug, browse)
     val current = (Xprint.value, Ytyperdebug.value, browse.value)

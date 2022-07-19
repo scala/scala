@@ -613,20 +613,22 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       removeSubstOnly(treeMakers)
     }
 
-    def getSuppression(scrut: Tree): Suppression = scrut match {
-      case _ if settings.XnoPatmatAnalysis => Suppression.FullSuppression
-      case Typed(tree, tpt)                =>
-        val suppressExhaustive  = tpt.tpe.hasAnnotation(UncheckedClass)
-        val suppressUnreachable = tree match {
-          case Ident(name) => name.startsWith(nme.CHECK_IF_REFUTABLE_STRING) // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
-          case _           => false
-        }
-        Suppression(suppressExhaustive, suppressUnreachable)
-      case _                               => Suppression.NoSuppression
-    }
+    def getSuppression(scrut: Tree): Suppression =
+      if (settings.XnoPatmatAnalysis.value) Suppression.FullSuppression
+      else scrut match {
+        case Typed(tree, tpt) =>
+          val suppressExhaustive  = tpt.tpe.hasAnnotation(UncheckedClass)
+          val suppressUnreachable = tree match {
+            // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
+            case Ident(name) => name.startsWith(nme.CHECK_IF_REFUTABLE_STRING)
+            case _ => false
+          }
+          Suppression(suppressExhaustive, suppressUnreachable)
+        case _ => Suppression.NoSuppression
+      }
 
     def requiresSwitch(scrut: Tree, cases: List[List[TreeMaker]]): Boolean = {
-      if (settings.XnoPatmatAnalysis) false
+      if (settings.XnoPatmatAnalysis.value) false
       else scrut match {
         case Typed(tree, tpt) =>
           val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
