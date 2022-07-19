@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-import scala.tools.cmd.toArgs
+package scala.demo
+
+import scala.sys.process.Parser.tokenize
 import scala.tools.nsc.io._
 import scala.tools.partest.nest.{Reference, toOpt}
 import scala.util.chaining._
@@ -49,7 +51,7 @@ class PropertyMapper(reference: Reference) extends (((String, String)) => List[S
   def apply(kv: (String, String)): List[String] = {
     val (k, v) = kv
 
-    if (isPassThrough(k)) toArgs(v)
+    if (isPassThrough(k)) tokenize(v)
     else propNameToOptionName(k) match {
       case Some(optName)  => translate(optName, v)
       case _              => Nil

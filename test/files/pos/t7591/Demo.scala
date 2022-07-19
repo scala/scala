@@ -3,6 +3,8 @@
  * @author  Paul Phillips
  */
 
+package scala.demo
+
 import scala.tools.partest.nest.{ Instance, Interpolation, Meta, Spec }
 
 import scala.language.postfixOps

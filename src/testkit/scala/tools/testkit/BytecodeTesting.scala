@@ -19,9 +19,9 @@ import scala.collection.mutable.{Clearable, ListBuffer}
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
+import scala.sys.process.{Parser => CommandLineParser}
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
-import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.backend.jvm.{AsmUtils, MethodNode1}
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils

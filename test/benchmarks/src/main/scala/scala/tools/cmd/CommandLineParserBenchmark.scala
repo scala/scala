@@ -15,7 +15,7 @@ import org.openjdk.jmh.infra.Blackhole
 @State(Scope.Benchmark)
 class CommandLineParserBenchmark {
 
-  import CommandLineParser.tokenize
+  import scala.sys.process.Parser.tokenize
 
   @Param(Array("1000", "10000", "100000"))
   var argCount: Int = _
