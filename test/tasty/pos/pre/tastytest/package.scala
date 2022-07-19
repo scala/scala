@@ -14,6 +14,9 @@ package object tastytest {
   def compiletimeHasChild[T](child: String): Unit = macro Macros.hasChildImpl[T]
   def compiletimeHasNestedChildren[T](expected: String*): Unit = macro Macros.hasChildrenImpl[T]
 
+  /** Performs the test of tastytest.TestDefaultParamFlags. */
+  def compiletimeTestDefaultParamFlags[T](): Unit = macro Macros.testDefaultParamFlagsImpl[T]
+
   /** forces annotations of type `A` on methods from class `T` */
   def forceAnnots[T, A, S <: String with Singleton]: Unit = macro Macros.AnnotsBundle.forceAnnotsImpl[T, A, S]
 
@@ -104,6 +107,30 @@ package object tastytest {
 
     def hasChildImpl[T](c: Context)(child: c.Expr[String])(implicit T: c.WeakTypeTag[T]): c.Expr[Unit] =
       hasChildrenImpl(c)(child)
+
+    def testDefaultParamFlagsImpl[T](c: Context)()(implicit T: c.WeakTypeTag[T]): c.Expr[Unit] = {
+      locally {
+        val g = c.universe.asInstanceOf[scala.tools.nsc.Global]
+        import g._
+
+        val classSym = T.tpe.typeSymbol.asInstanceOf[Symbol]
+
+        val methodSym = classSym.info.decl(newTermName("method"))
+        assert(!methodSym.hasFlag(Flag.DEFAULTPARAM), "`method` should not have DEFAULTPARAM")
+
+        val List(List(aSym, bSym)) = methodSym.paramLists
+        assert(!aSym.hasFlag(Flag.DEFAULTPARAM), "`a` should not have DEFAULTPARAM")
+        assert(bSym.hasFlag(Flag.DEFAULTPARAM), "`b` should have DEFAULTPARAM")
+
+        val defaultAccessorSym = classSym.info.decl(newTermName("method$default$2"))
+        assert(defaultAccessorSym.hasFlag(Flag.DEFAULTPARAM), "`method$default$2` should have DEFAULTPARAM") // #12619
+      }
+
+      locally {
+        import c.universe._
+        c.Expr[Unit](q"()")
+      }
+    }
   }
 
   def getRandomNat: Int = ???
