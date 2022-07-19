@@ -920,11 +920,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
        * tailrec-generarted LabelDefs. Therefore, we add specific tests to
        * only recognize patmat-generated `matchEnd` labels this way.
        *
-       * There are some rare cases where patmat will generate other shapes.
-       * For example, the source-code shape `return x match { ... }` transfers
-       * the `return` right around the `matchEnd`, for some reason, instead of
-       * around the entire Block. Those rare shapes are not recognized here.
-       * For them, the default (non-optimal) codegen will apply.
+       * It is possible (e.g., in the presence of a compiler plugin) that the
+       * patmat-generated code gets transformed in a different shape, which we
+       * would not be able to recognize here. In those cases, the default
+       * (non-optimal) codegen will apply.
        */
 
       def default(): Unit = {
