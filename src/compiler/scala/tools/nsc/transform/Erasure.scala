@@ -802,6 +802,10 @@ abstract class Erasure extends InfoTransform
                 return result setType ErasedValueType(tref.sym, result.tpe)
 
             }
+          case tree @ Block(_, _: LabelDef) =>
+            // Push adaptations out to the block to preserve patmat tree shapes.
+            // This helps the back-end to generate better code.
+            super.typed1(adaptMember(tree), mode, WildcardType)
           case _ =>
             super.typed1(adaptMember(tree), mode, pt)
         }

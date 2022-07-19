@@ -516,6 +516,11 @@ class BytecodeTest extends BytecodeTesting {
          |    case x :: _ => println(x)
          |    case Nil    => println("nil")
          |  }
+         |
+         |  def m4(xs: List[Int]): Int = return xs match {
+         |    case x :: xr => x
+         |    case Nil     => 20
+         |  }
          |}
          """.stripMargin
 
@@ -685,6 +690,109 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ALOAD, 3),
       Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
       Op(ATHROW),
+    ))
+
+    // ---------------
+
+    assertSameCode(getMethod(fooClass, "m4"), List(
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(19)),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false),
+      VarOp(ISTORE, 5),
+      VarOp(ILOAD, 5),
+      Op(IRETURN),
+      Label(19),
+      Jump(GOTO, Label(22)),
+      Label(22),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(31)),
+      IntOp(BIPUSH, 20),
+      Op(IRETURN),
+      Label(31),
+      Jump(GOTO, Label(34)),
+      Label(34),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 3),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+    ))
+
+    // ---------------
+
+    val sourcePatmatAdaptMatchEnd =
+      s"""class Tree
+         |
+         |trait RefTree extends Tree
+         |
+         |class A extends RefTree
+         |class B extends RefTree
+         |
+         |class PatmatAdaptMatchEnd {
+         |  def atPos[T <: Tree](tree: T): T = tree
+         |
+         |  def test(xs: List[Int]): Tree = {
+         |    val tree1 = atPos {
+         |      xs match {
+         |        case head :: tail => new A
+         |        case Nil          => new B
+         |      }
+         |    }
+         |    tree1
+         |  }
+         |}
+         """.stripMargin
+
+    val List(cA, cB, cPatmatAdaptMatchEnd, cRefTree, cTree) = compileClasses(sourcePatmatAdaptMatchEnd)
+
+    assertSameCode(getMethod(cPatmatAdaptMatchEnd, "test"), List(
+      VarOp(ALOAD, 0),
+      VarOp(ALOAD, 1),
+      VarOp(ASTORE, 4),
+      VarOp(ALOAD, 4),
+      TypeOp(INSTANCEOF, "scala/collection/immutable/$colon$colon"),
+      Jump(IFEQ, Label(16)),
+      TypeOp(NEW, "A"),
+      Op(DUP),
+      Invoke(INVOKESPECIAL, "A", "<init>", "()V", false),
+      Jump(GOTO, Label(41)),
+      Label(16),
+      Jump(GOTO, Label(19)),
+      Label(19),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false),
+      Jump(IFEQ, Label(30)),
+      TypeOp(NEW, "B"),
+      Op(DUP),
+      Invoke(INVOKESPECIAL, "B", "<init>", "()V", false),
+      Jump(GOTO, Label(41)),
+      Label(30),
+      Jump(GOTO, Label(33)),
+      Label(33),
+      TypeOp(NEW, "scala/MatchError"),
+      Op(DUP),
+      VarOp(ALOAD, 4),
+      Invoke(INVOKESPECIAL, "scala/MatchError", "<init>", "(Ljava/lang/Object;)V", false),
+      Op(ATHROW),
+      Label(41),
+      TypeOp(CHECKCAST, "Tree"),
+      Invoke(INVOKEVIRTUAL, "PatmatAdaptMatchEnd", "atPos", "(LTree;)LTree;", false),
+      TypeOp(CHECKCAST, "RefTree"),
+      VarOp(ASTORE, 3),
+      VarOp(ALOAD, 3),
+      TypeOp(CHECKCAST, "Tree"),
+      Op(ARETURN),
     ))
   }
 

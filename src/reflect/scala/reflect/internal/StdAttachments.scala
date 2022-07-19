@@ -75,8 +75,10 @@ trait StdAttachments {
 
   /** Indicates that a selection was postfix (on Select tree) */
   case object PostfixAttachment extends PlainAttachment
-  /** Indicates that a application was infix (on Apply tree) */
+  /** Indicates that an application was infix (on Apply tree) */
   case object InfixAttachment extends PlainAttachment
+  /** Indicates that an application to `()` was inserted by the compiler */
+  case object AutoApplicationAttachment extends PlainAttachment
 
   /** A pattern binding exempt from unused warning.
    *

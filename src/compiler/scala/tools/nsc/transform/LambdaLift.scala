@@ -510,8 +510,6 @@ abstract class LambdaLift extends InfoTransform {
             runReporting.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.", LintPerformance, sym)
           treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
         case ValDef(_, _, _, _) => tree
-        case Return(Block(stats, value)) =>
-          Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
         case Return(expr) =>
           assert(sym == currentMethod, sym)
           tree

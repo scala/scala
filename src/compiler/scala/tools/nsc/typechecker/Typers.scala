@@ -968,7 +968,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (!meth.isConstructor && checkCanEtaExpand()) typedEtaExpansion(tree, mode, pt)
         else if (arity == 0 && checkCanAutoApply()) {
-          val apply = Apply(tree, Nil) setPos tree.pos
+          val apply = Apply(tree, Nil).setPos(tree.pos).updateAttachment(AutoApplicationAttachment)
           if (tree.hasAttachment[PostfixAttachment.type]) apply.updateAttachment(InfixAttachment)
           adapt(typed(apply), mode, pt, original)
         } else
