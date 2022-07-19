@@ -89,4 +89,8 @@ class ArraySeqBenchmark {
   private def oldMap[A, B](seq: ArraySeq[A])(f: A => B): ArraySeq[B] =
     seq.iterableFactory.tabulate(seq.length)(i => f(seq.apply(i)))
 
+  @Benchmark def `min-max is reduction`(bh: Blackhole): Unit = bh.consume {
+    integersS.max
+  }
+
 }

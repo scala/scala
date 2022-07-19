@@ -17,6 +17,7 @@ package mutable
 import java.util.Arrays
 
 import scala.annotation.nowarn
+import scala.annotation.tailrec
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 
@@ -258,6 +259,22 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     }
     this
   }
+
+  @tailrec private def foldl[B](start: Int, end: Int, z: B, op: (B, A) => B): B =
+    if (start == end) z
+    else foldl(start + 1, end, op(z, array(start).asInstanceOf[A]), op)
+
+  @tailrec private def foldr[B](start: Int, end: Int, z: B, op: (A, B) => B): B =
+    if (start == end) z
+    else foldr(start, end - 1, op(array(end - 1).asInstanceOf[A], z), op)
+
+  override def foldLeft[B](z: B)(op: (B, A) => B): B = foldl(0, length, z, op)
+
+  override def foldRight[B](z: B)(op: (A, B) => B): B = foldr(0, length, z, op)
+
+  override def reduceLeft[B >: A](op: (B, A) => B): B = if (length > 0) foldl(1, length, array(0).asInstanceOf[B], op) else super.reduceLeft(op)
+
+  override def reduceRight[B >: A](op: (A, B) => B): B = if (length > 0) foldr(0, length - 1, array(length - 1).asInstanceOf[B], op) else super.reduceRight(op)
 }
 
 /**
