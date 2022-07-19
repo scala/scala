@@ -78,9 +78,13 @@ object Instrumentation {
     res
   }
 
+  private val ignoredClasses = Set("scala/Console$", "scala/io/AnsiColor")
+
+  // Accommodate Console.println(stuff) but not Predef.println in instrumented code.
+  // That allows println(true), to avoid warning on true: Any for example.
   val standardFilter: MethodCallTrace => Boolean = t => {
-    // ignore all calls to Console trigger by printing
-    t.className != "scala/Console$" &&
+    // ignore all calls to classes triggered by Console.println
+    !ignoredClasses.contains(t.className) &&
     // console accesses DynamicVariable, let's discard it too
     !t.className.startsWith("scala/util/DynamicVariable")
   }
