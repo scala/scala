@@ -1282,8 +1282,8 @@ trait StdNames {
   // An unqualified method identifier is an identifier that is not the character sequence yield.
   class JavaRestrictedIdentifiers {
     final val RECORD: TermName = TermName("record")
-    final val VAR: TermName = TermName("var")
-    final val YIELD: TermName = TermName("yield")
+    final val VAR: TermName    = TermName("var")
+    final val YIELD: TermName  = TermName("yield")
   }
 
   sealed abstract class SymbolNames {

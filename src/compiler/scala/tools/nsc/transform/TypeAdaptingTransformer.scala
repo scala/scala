@@ -40,7 +40,6 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
       }
     }
 
-    private def isPrimitiveValueType(tpe: Type)      = isPrimitiveValueClass(tpe.typeSymbol)
     final def isPrimitiveValueMember(sym: Symbol)    = isPrimitiveValueClass(sym.owner)
     final def isMethodTypeWithEmptyParams(tpe: Type) = tpe.isInstanceOf[MethodType] && tpe.params.isEmpty
     final def applyMethodWithEmptyParams(qual: Tree) = Apply(qual, List()) setPos qual.pos setType qual.tpe.resultType

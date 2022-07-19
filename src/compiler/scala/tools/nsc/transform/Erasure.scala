@@ -714,7 +714,7 @@ abstract class Erasure extends InfoTransform
             case ErasedValueType(clazz, _) => targ.setType(clazz.tpe)
             case _ =>
           }
-            tree
+          tree
         case Select(qual, name) =>
           if (tree.symbol == NoSymbol) {
             tree
@@ -728,14 +728,18 @@ abstract class Erasure extends InfoTransform
           else if (tree.symbol.owner == AnyClass)
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, tree.symbol.name))))
           else {
-            var qual1 = typedQualifier(qual)
-            if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
-                 isErasedValueType(qual1.tpe))
-              qual1 = box(qual1)
-            else if (!isPrimitiveValueType(qual1.tpe) && isPrimitiveValueMember(tree.symbol))
-              qual1 = unbox(qual1, tree.symbol.owner.tpe)
+            val qual1 = {
+              val qual0 = typedQualifier(qual)
+              val isPrimitive = isPrimitiveValueType(qual0.tpe)
+              if (isPrimitive && !isPrimitiveValueMember(tree.symbol) || isErasedValueType(qual0.tpe))
+                box(qual0)
+              else if (!isPrimitive && isPrimitiveValueMember(tree.symbol))
+                unbox(qual0, tree.symbol.owner.tpe)
+              else
+                qual0
+            }
 
-            def selectFrom(qual: Tree) = treeCopy.Select(tree, qual, name)
+            def selectFrom(fromQual: Tree) = treeCopy.Select(tree, fromQual, name)
 
             if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe)) {
               tree.symbol = NoSymbol
