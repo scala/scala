@@ -543,14 +543,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           ArrayValue(TypeTree(elem.tpe), elem :: Nil)
         ).transform(this)
 
-      // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      // Seq(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      case Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
+      // <List or Seq>(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil))) but only for reference types
+      case StripCast(Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _)))))))
       if wrapArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod
-        && currentRun.runDefinitions.isSeqApply(appMeth) && rest.elems.lengthIs < transformListApplyLimit =>
-        val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
-          (acc, elem) => New(ConsClass, elem, acc)
-        )
+        && currentRun.runDefinitions.isSeqApply(appMeth)  // includes List
+        && rest.elems.lengthIs < transformListApplyLimit
+      =>
+        val consed = rest.elems.foldRight(gen.mkAttributedRef(NilModule): Tree)(New(ConsClass, _, _))
         // Limiting extra stack frames consumed by generated code
         reducingTransformListApply(rest.elems.length) {
           super.transform(typedWithPos(tree.pos)(consed))
