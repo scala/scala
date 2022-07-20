@@ -666,13 +666,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *            are the elements of this $coll.
     *           Returns `z` if this $coll is empty.
     */
-  def foldLeft[B](z: B)(op: (B, A) => B): B = if (this.isInstanceOf[IndexedSeq[_]]) foldl(this.asInstanceOf[IndexedSeq[A]], 0, z, op) else {
-    var result = z
-    val it = iterator
-    while (it.hasNext) {
-      result = op(result, it.next())
-    }
-    result
+  def foldLeft[B](z: B)(op: (B, A) => B): B = this match {
+    case seq: IndexedSeq[A @unchecked] => foldl(seq, 0, z, op)
+    case _ =>
+      var result = z
+      val it = iterator
+      while (it.hasNext) {
+        result = op(result, it.next())
+      }
+      result
   }
 
   /** Applies a binary operator to all elements of this $coll and a start value,
@@ -749,27 +751,24 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *           are the elements of this $coll.
     *  @throws UnsupportedOperationException if this $coll is empty.   */
   def reduceLeft[B >: A](op: (B, A) => B): B = this match {
-    case seq: IndexedSeq[A @unchecked] if seq.length > 0 =>
-      foldl(seq, 1, seq(0), op)
-
+    case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldl(seq, 1, seq(0), op)
     case _ =>
+      val it = iterator
+      if (it.isEmpty)
+        throw new UnsupportedOperationException("empty.reduceLeft")
 
-    val it = iterator
-    if (it.isEmpty)
-      throw new UnsupportedOperationException("empty.reduceLeft")
+      var first = true
+      var acc: B = null.asInstanceOf[B]
 
-    var first = true
-    var acc: B = null.asInstanceOf[B]
-
-    while (it.hasNext) {
-      val x = it.next()
-      if (first) {
-        acc = x
-        first = false
+      while (it.hasNext) {
+        val x = it.next()
+        if (first) {
+          acc = x
+          first = false
+        }
+        else acc = op(acc, x)
       }
-      else acc = op(acc, x)
-    }
-    acc
+      acc
   }
 
   /** Applies a binary operator to all elements of this $coll, going right to left.
@@ -787,11 +786,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def reduceRight[B >: A](op: (A, B) => B): B = this match {
     case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldr(seq, op)
     case _ =>
-    val it = iterator
-    if (it.isEmpty)
-      throw new UnsupportedOperationException("empty.reduceRight")
+      val it = iterator
+      if (it.isEmpty)
+        throw new UnsupportedOperationException("empty.reduceRight")
 
-    reversed.reduceLeft[B]((x, y) => op(y, x))
+      reversed.reduceLeft[B]((x, y) => op(y, x))
   }
 
   /** Optionally applies a binary operator to all elements of this $coll, going left to right.
