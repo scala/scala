@@ -236,6 +236,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaLangPackageClass
     definitions.ScalaPackage
     definitions.ScalaPackageClass
+    definitions.ScalaPackageObject
     definitions.RuntimePackage
     definitions.RuntimePackageClass
     definitions.AnyClass
@@ -316,6 +317,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ListModule
     definitions.ListModuleAlias
     definitions.NilModule
+    definitions.NilModuleAlias
     definitions.SeqModule
     definitions.SeqModuleAlias
     definitions.Collection_SeqModule

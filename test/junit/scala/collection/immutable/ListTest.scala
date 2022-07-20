@@ -6,11 +6,11 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.ref.WeakReference
-import scala.tools.testkit.{AllocationTest, CompileTime}
+import scala.tools.testkit.AllocationTest
 import scala.collection.Sizes
 
 @RunWith(classOf[JUnit4])
-class ListTest extends AllocationTest{
+class ListTest extends AllocationTest {
   /**
    * Test that empty iterator does not hold reference
    * to complete List
@@ -106,9 +106,7 @@ class ListTest extends AllocationTest{
     nonAllocating(List())
   }
 
-
   @Test def smallListAllocation(): Unit = {
-    if (CompileTime.versionNumberString == "2.13.2") return
     exactAllocates(Sizes.list * 1, "list  size 1")(List("0"))
     exactAllocates(Sizes.list * 2, "list  size 2")(List("0", "1"))
     exactAllocates(Sizes.list * 3, "list  size 3")(List("0", "1", ""))
