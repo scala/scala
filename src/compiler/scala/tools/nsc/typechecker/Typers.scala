@@ -882,8 +882,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         val arity = mt.params.length
 
-        val sourceLevel3 = currentRun.isScala3
-
         def warnTree = original orElse tree
 
         def warnEtaZero(): Boolean = {
@@ -941,7 +939,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (arity == 0)
             expectingFunctionOfArity && warnEtaZero()
           else
-            expectingFunctionOfArity || expectingSamOfArity && warnEtaSam() || sourceLevel3.value
+            expectingFunctionOfArity || expectingSamOfArity && warnEtaSam() || currentRun.isScala3
         }
 
         def matchNullaryLoosely: Boolean = {
@@ -4913,7 +4911,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val result = typed(Function(Nil, methodValue) setSymbol funSym setPos pos, mode, pt)
 
-          if (currentRun.isScala3.value) {
+          if (currentRun.isScala3) {
             UnderscoreNullaryEtaError(methodValue)
           } else {
             context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2")

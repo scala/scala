@@ -19,12 +19,12 @@ package settings
 
 import java.util.zip.Deflater
 
-import scala.language.existentials
-import scala.annotation.elidable
-import scala.tools.util.PathResolver.Defaults
+import scala.annotation.{elidable, nowarn}
 import scala.collection.mutable
+import scala.language.existentials
 import scala.reflect.internal.util.{ StatisticsStatics, StringContextStripMarginOps }
 import scala.tools.nsc.util.DefaultJarFactory
+import scala.tools.util.PathResolver.Defaults
 import scala.util.chaining._
 
 trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
@@ -124,6 +124,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
+  @nowarn("cat=deprecation")
   val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = ScalaVersion("2.13")).withPostSetHook { s =>
     if (s.value >= ScalaVersion("3"))
       isScala3.value = true
@@ -132,6 +133,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     else if (s.value < ScalaVersion("2.13"))
       errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
   }
+  @deprecated("Use currentRun.isScala3 instead", since="2.13.9")
   val isScala3           = BooleanSetting      ("isScala3", "Is -Xsource Scala 3?").internalOnly()
   // The previous "-Xsource" option is intended to be used mainly though ^ helper
 

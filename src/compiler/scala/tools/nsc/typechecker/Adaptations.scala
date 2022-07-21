@@ -97,7 +97,7 @@ trait Adaptations {
       }
       if (args.nonEmpty)
         warnAdaptation
-      else if (currentRun.isScala3.value)
+      else if (currentRun.isScala3)
         noAdaptation
       else
         deprecatedAdaptation

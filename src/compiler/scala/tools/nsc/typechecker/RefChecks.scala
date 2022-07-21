@@ -438,7 +438,7 @@ abstract class RefChecks extends Transform {
                   && !javaDetermined(member) && !member.overrides.exists(javaDetermined)
               ) {
                 val msg = "method with a single empty parameter list overrides method without any parameter list"
-                if (currentRun.isScala3.value)
+                if (currentRun.isScala3)
                   overrideErrorWithMemberInfo(msg)
                 else
                   refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
@@ -812,7 +812,7 @@ abstract class RefChecks extends Transform {
             .filter(c => c.exists && c.isClass)
           overridden foreach { sym2 =>
             def msg(what: String) = s"shadowing a nested class of a parent is $what but $clazz shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
-            if (currentRun.isScala3.value) reporter.error(clazz.pos, msg("unsupported"))
+            if (currentRun.isScala3) reporter.error(clazz.pos, msg("unsupported"))
             else runReporting.deprecationWarning(clazz.pos, clazz, currentOwner, msg("deprecated"), "2.13.2")
           }
         }
