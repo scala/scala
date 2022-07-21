@@ -1127,7 +1127,7 @@ trait Namers extends MethodSynthesis {
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
       tree.tpt.defineType {
-        if (currentRun.isScala3.value && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
+        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
         else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
@@ -1471,7 +1471,7 @@ trait Namers extends MethodSynthesis {
             context.warning(ddef.pos, msg, WarningCategory.OtherNullaryOverride)
             meth.updateAttachment(NullaryOverrideAdapted)
           }
-          context.unit.toCheck += (if (currentRun.isScala3.value) error _ else warn _)
+          context.unit.toCheck += (if (currentRun.isScala3) error _ else warn _)
           ListOfNil
         } else vparamSymss
       }

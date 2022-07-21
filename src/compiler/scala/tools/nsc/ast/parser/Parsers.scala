@@ -664,7 +664,7 @@ self =>
     }
 
     def isSoftModifier: Boolean =
-      currentRun.isScala3.value && in.token == IDENTIFIER && softModifierNames.contains(in.name)
+      currentRun.isScala3 && in.token == IDENTIFIER && softModifierNames.contains(in.name)
 
     /** Is the current token a soft modifier in a position where such a modifier is allowed? */
     def isValidSoftModifier: Boolean =
@@ -938,7 +938,7 @@ self =>
 
     /** Is current ident a `*`, and is it followed by a `)` or `, )`? */
     def followingIsScala3Vararg(): Boolean =
-      currentRun.isScala3.value && isRawStar && lookingAhead {
+      currentRun.isScala3 && isRawStar && lookingAhead {
         in.token == RPAREN ||
         in.token == COMMA && {
           in.nextToken()
@@ -1058,7 +1058,7 @@ self =>
                   tuple))),
             InfixMode.FirstOp
           )
-          if (currentRun.isScala3.value) andType(tpt) else tpt
+          if (currentRun.isScala3) andType(tpt) else tpt
         }
       }
       private def makeExistentialTypeTree(t: Tree) = {
@@ -1135,7 +1135,7 @@ self =>
               else
                 atPos(start)(makeSafeTupleType(inParens(types())))
             case _      =>
-              if (settings.isScala3.value && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
+              if (currentRun.isScala3 && (in.name == raw.PLUS || in.name == raw.MINUS) && lookingAhead(in.token == USCORE)) {
                 val start = in.offset
                 val identName = in.name.encode.append("_").toTypeName
                 in.nextToken()
@@ -1268,7 +1268,7 @@ self =>
        */
       def infixType(mode: InfixMode.Value): Tree = {
         val tpt = placeholderTypeBoundary { infixTypeRest(compoundType(), mode) }
-        if (currentRun.isScala3.value) andType(tpt) else tpt
+        if (currentRun.isScala3) andType(tpt) else tpt
       }
 
       /** {{{
@@ -1501,7 +1501,7 @@ self =>
 
       // Scala 2 allowed uprooted Ident for purposes of virtualization
       val t1 =
-        if (currentRun.isScala3.value) atPos(o2p(start)) { Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
+        if (currentRun.isScala3) atPos(o2p(start)) { Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
         else atPos(o2p(start)) { Ident(nme.StringContextName) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) } updateAttachment InterpolatedString
       t2 setPos t2.pos.makeTransparent
@@ -2040,7 +2040,7 @@ self =>
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          if (currentRun.isScala3.value) syntaxError(in.offset, msg("unsupported", without))
+          if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", without))
           else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
         }
         else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
@@ -2594,7 +2594,7 @@ self =>
         checkQMarkDefinition()
         checkKeywordDefinition()
         val pname: TypeName =
-          if (in.token == USCORE && (isAbstractOwner || !currentRun.isScala3.value)) {
+          if (in.token == USCORE && (isAbstractOwner || !currentRun.isScala3)) {
             if (!isAbstractOwner)
               deprecationWarning(in.offset, "Top-level wildcard is not allowed and will error under -Xsource:3", "2.13.7")
             in.nextToken()
@@ -2609,7 +2609,7 @@ self =>
           def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
                                      |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            if (currentRun.isScala3.value) syntaxError(in.offset, msg("unsupported"))
+            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported"))
             else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
@@ -2687,12 +2687,12 @@ self =>
         val selectors: List[ImportSelector] = in.token match {
           case USCORE =>
             List(wildImportSelector()) // import foo.bar._
-          case IDENTIFIER if currentRun.isScala3.value && in.name == raw.STAR =>
+          case IDENTIFIER if currentRun.isScala3 && in.name == raw.STAR =>
             List(wildImportSelector()) // import foo.bar.*
           case LBRACE =>
             importSelectors()          // import foo.bar.{ x, y, z }
           case _ =>
-            if (settings.isScala3.value && lookingAhead { isRawIdent && in.name == nme.as })
+            if (currentRun.isScala3 && lookingAhead { isRawIdent && in.name == nme.as })
               List(importSelector())  // import foo.bar as baz
             else {
               val nameOffset = in.offset
@@ -2737,7 +2737,7 @@ self =>
       // Treat an import of `*, given` or `given, *` as if it was an import of `*`
       // since the former in Scala 3 has the same semantics as the latter in Scala 2.
       val selectors =
-        if (currentRun.isScala3.value && selectors0.exists(_.isWildcard))
+        if (currentRun.isScala3 && selectors0.exists(_.isWildcard))
           selectors0.filterNot(sel => sel.name == nme.`given` && sel.rename == sel.name)
         else
           selectors0
@@ -2747,7 +2747,7 @@ self =>
     }
 
     def wildcardOrIdent() =
-      if (in.token == USCORE || settings.isScala3.value && isRawStar) { in.nextToken() ; nme.WILDCARD }
+      if (in.token == USCORE || currentRun.isScala3 && isRawStar) { in.nextToken() ; nme.WILDCARD }
       else ident()
 
     /** {{{
@@ -2761,7 +2761,7 @@ self =>
       var renameOffset = -1
 
       val rename =
-        if (in.token == ARROW || (settings.isScala3.value && isRawIdent && in.name == nme.as)) {
+        if (in.token == ARROW || (currentRun.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           renameOffset = in.offset
           if (name == nme.WILDCARD && !bbq) syntaxError(renameOffset, "Wildcard import cannot be renamed")
@@ -2915,7 +2915,7 @@ self =>
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs =
-            if (in.token == LBRACE && !currentRun.isScala3.value) {
+            if (in.token == LBRACE && !currentRun.isScala3) {
               missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
             }
             else {
@@ -2948,14 +2948,14 @@ self =>
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (currentRun.isScala3.value) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
+              if (currentRun.isScala3) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
               else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (currentRun.isScala3.value) syntaxError(in.offset, msg("unsupported", ": Unit ="))
+            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", ": Unit ="))
             else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
             restype = scalaUnitConstr
             blockExpr()
@@ -2975,7 +2975,7 @@ self =>
           def instead = DefDef(newmods, name.toTermName.decodedName, tparams, vparamss.drop(1), restype, rhs)
           def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `$instead`"
           def warnNilary(): Unit =
-            if (currentRun.isScala3.value) syntaxError(nameOffset, unaryMsg("unsupported"))
+            if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
             else deprecationWarning(nameOffset, unaryMsg("deprecated"), "2.13.4")
           vparamss match {
             case List(List())                               => warnNilary()
@@ -3104,7 +3104,7 @@ self =>
       checkKeywordDefinition()
       val nameOffset = in.offset
       val name = identForType()
-      if (currentRun.isScala3.value && in.token == LBRACKET && isAfterLineEnd)
+      if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
         deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
       atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
         savingClassContextBounds {
@@ -3113,7 +3113,7 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (currentRun.isScala3.value) "" else " nor view bounds `<% ...`"
+            val viewBoundsExist = if (currentRun.isScala3) "" else " nor view bounds `<% ...`"
               syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
@@ -3208,7 +3208,7 @@ self =>
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
           val advice =
-            if (currentRun.isScala3.value) "use trait parameters instead."
+            if (currentRun.isScala3) "use trait parameters instead."
             else "they will be replaced by trait parameters in 3.0, see the migration guide on avoiding var/val in traits."
           deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
@@ -3231,7 +3231,7 @@ self =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
-        if (currentRun.isScala3.value) syntaxError(tdef.pos.point, msg("unsupported"))
+        if (currentRun.isScala3) syntaxError(tdef.pos.point, msg("unsupported"))
         else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
@@ -3273,7 +3273,7 @@ self =>
       val templatePos = o2p(templateOffset)
 
       // warn now if user wrote parents for package object; `gen.mkParents` adds AnyRef to parents
-      if (currentRun.isScala3.value && name == nme.PACKAGEkw && !parents.isEmpty)
+      if (currentRun.isScala3 && name == nme.PACKAGEkw && !parents.isEmpty)
         deprecationWarning(tstart, """package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
                                      |drop the `extends` clause or use a regular object instead""".stripMargin, "3.0.0")
 

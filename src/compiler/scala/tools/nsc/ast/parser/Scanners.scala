@@ -528,7 +528,7 @@ trait Scanners extends ScannersCommon {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         if (pastBlankLine()) insertNL(NEWLINES)
         else if (!isLeadingInfixOperator) insertNL(NEWLINE)
-        else if (!currentRun.isScala3.value) {
+        else if (!currentRun.isScala3) {
           val msg = """|Line starts with an operator that in future
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
@@ -978,7 +978,7 @@ trait Scanners extends ScannersCommon {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
-          if(!currentRun.isScala3.value) replaceUnicodeEscapesInTriple()
+          if (!currentRun.isScala3) replaceUnicodeEscapesInTriple()
           token = STRINGLIT
         } else
           getRawStringLit()

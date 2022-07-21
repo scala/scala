@@ -1167,8 +1167,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     keepPhaseStack = settings.log.isSetByUser
 
     // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
-    val isScala3 = settings.isScala3
-    val isScala3ImplicitResolution = settings.Yscala3ImplicitResolution
+    @nowarn("cat=deprecation")
+    val isScala3: Boolean = settings.isScala3.value
+    val isScala3ImplicitResolution: Boolean = settings.Yscala3ImplicitResolution.value
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
