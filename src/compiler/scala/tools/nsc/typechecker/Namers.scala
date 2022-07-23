@@ -1210,7 +1210,7 @@ trait Namers extends MethodSynthesis {
         val modClass = companionSymbolOf(clazz, context).moduleClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
-          def hasCopy = (decls containsName nme.copy) || parents.exists(_.member(nme.copy).exists)
+          def hasCopy = decls.containsName(nme.copy) || parents.exists { p => val ov = p.member(nme.copy); ov.exists && !ov.isDeferred }
 
           // scala/bug#5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
           if (cdef.symbol == clazz && !hasCopy)
