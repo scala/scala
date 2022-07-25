@@ -15,11 +15,10 @@ package tools
 package nsc
 
 import java.util.regex.PatternSyntaxException
-
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.reflect.internal.util.{Position, SourceFile}
+import scala.reflect.internal.util.{NoSourceFile, Position, SourceFile}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
 import scala.util.matching.Regex
@@ -127,13 +126,16 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       }
     }
 
-    def issueIfNotSuppressed(warning: Message): Unit = {
-      if (suppressionsComplete(warning.pos.source)) {
+    def shouldSuspend(warning: Message): Boolean =
+      warning.pos.source != NoSourceFile && !suppressionsComplete(warning.pos.source)
+
+    def issueIfNotSuppressed(warning: Message): Unit =
+      if (shouldSuspend(warning))
+        suspendedMessages.getOrElseUpdate(warning.pos.source, mutable.LinkedHashSet.empty) += warning
+      else {
         if (!isSuppressed(warning))
           issueWarning(warning)
-      } else
-        suspendedMessages.getOrElseUpdate(warning.pos.source, mutable.LinkedHashSet.empty) += warning
-    }
+      }
 
     private def summarize(action: Action, category: WarningCategory): Unit = {
       def rerunMsg: String = {
