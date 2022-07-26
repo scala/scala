@@ -18,18 +18,15 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable.ListBuffer
-import scala.util.Properties.javaSpecVersion
+import scala.util.Properties.isJavaAtLeast
+import scala.util.Try
 
 @RunWith(classOf[JUnit4])
 class TargetTest {
 
   @Test def testSettingTargetSetting(): Unit = {
-    def check(in: String, expect: String) =
-      javaSpecVersion match {
-        case "1.8" => if (expect == "8") checkSuccess(in, expect) else checkFail(in)
-        case jdk if jdk.toInt >= expect.toInt => checkSuccess(in, expect)
-        case _ => checkFail(in)
-      }
+    def goodVersion(v: String): Boolean = Try(isJavaAtLeast(v)).getOrElse(false)
+    def check(in: String, expect: String) = if (goodVersion(expect)) checkSuccess(in, expect) else checkFail(in)
     def checkSuccess(in: String, expect: String) = {
       val settings = new Settings(err => fail(s"Error output: $err"))
       val (ok, _) = settings.processArgumentString(in)
@@ -54,6 +51,7 @@ class TargetTest {
     check("-target:jvm-9", "9")
     check("-target:9", "9")
     checkFail("-target:1.9")      // it's not Java 1.9, you reprobates!
+    checkFail("-target:jvm-1.9")
 
     check("-target:jvm-10", "10")
     check("-target:10", "10")
