@@ -1903,13 +1903,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         warnTypeParameterShadow(tparams1, clazz)
 
-        if (!isPastTyper) {
-          for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
-            val m = companionSymbolOf(clazz, context)
-            if (m != NoSymbol)
-              m.moduleClass.addAnnotation(AnnotationInfo(ann.atp, ann.args, Nil))
-          }
-        }
         treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
           .setType(NoType)
       } finally {

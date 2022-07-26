@@ -1,0 +1,15 @@
+t2799.scala:7: warning: trait T is deprecated: other mother
+class C[A: T] {
+           ^
+t2799.scala:8: warning: trait T is deprecated: other mother
+  def f = (t: T[A]) => null.asInstanceOf[T[A]]
+              ^
+t2799.scala:8: warning: trait T is deprecated: other mother
+  def f = (t: T[A]) => null.asInstanceOf[T[A]]
+                                         ^
+t2799.scala:9: warning: method int2float in object Int is deprecated (since 2.13.1): Implicit conversion from Int to Float is dangerous because it loses precision. Write `.toFloat` instead.
+  def g() = implicitly[Int => Float]
+                      ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

@@ -184,7 +184,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
 
   private def doGC(): Unit = {
     System.gc()
-    System.runFinalization()
+    System.runFinalization(): @nowarn("cat=deprecation") // since Java 18
   }
 
   reporter.header(this)
