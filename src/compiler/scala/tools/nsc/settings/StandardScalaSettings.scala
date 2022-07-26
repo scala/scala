@@ -15,6 +15,7 @@ package settings
 
 import scala.tools.nsc.settings.StandardScalaSettings.{AllTargetVersions, DefaultTargetVersion, SupportedTargetVersions}
 import scala.tools.util.PathResolver.Defaults
+import scala.util.Properties.{isJavaAtLeast, javaSpecVersion}
 
 /** Settings which aren't behind a -X, -Y, or -P option.
  *  When possible, the val and the option have identical names.
@@ -55,7 +56,30 @@ trait StandardScalaSettings { _: MutableSettings =>
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withPostSetHook { s => if (s) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
-  val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.", AllTargetVersions, SupportedTargetVersions, DefaultTargetVersion) withPreSetHook normalizeTarget
+  val release =
+    ChoiceSetting("-release", "release", "Compile for a version of the Java API and target class file.", AllTargetVersions, normalizeTarget(javaSpecVersion))
+    .withPostSetHook { setting =>
+      val current = setting.value.toInt
+      if (!isJavaAtLeast("9") && current > 8) errorFn.apply("-release is only supported on JVM 9 and higher")
+      if (target.valueSetByUser.map(_.toInt > current).getOrElse(false)) errorFn("-release cannot be less than -target")
+    }
+  def releaseValue: Option[String] = release.valueSetByUser
+  val target =
+    ChoiceSetting("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.", AllTargetVersions, DefaultTargetVersion)
+    .withPreSetHook(normalizeTarget)
+    .withPostSetHook { setting =>
+      if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false))
+        errorFn("-release cannot be less than -target")
+      if (!setting.deprecationMessage.isDefined)
+        if (SupportedTargetVersions.contains(setting.value))
+          setting.withDeprecationMessage("Use -release instead to compile against the correct platform API.")
+        else {
+          setting.withDeprecationMessage(s"${setting.name}:${setting.value} is deprecated, forcing use of $DefaultTargetVersion")
+          setting.value = DefaultTargetVersion   // triggers this hook
+        }
+    }
+    .withAbbreviation("--target")
+  def targetValue: String = releaseValue.getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -69,15 +93,28 @@ trait StandardScalaSettings { _: MutableSettings =>
   // Support passe prefixes of -target values:
   //   - `jvm-` (from back when we also had `msil`)
   //   - `1.` (from back when Java 2 was a possibility)
-  // `-target:1.jvm-13` is ridiculous, though.
-  private[this] def normalizeTarget(in: String): String = in.stripPrefix("jvm-").stripPrefix("1.")
+  private def normalizeTarget(in: String): String = {
+    val oldTarget = raw"1\.([5-8])".r
+    val oldJvm = raw"jvm-1\.([5-8])".r
+    val jvmish = raw"jvm-(\d*)".r
+    in match {
+      case oldJvm(n) => n
+      case oldTarget(n) => n
+      case jvmish(n) => n
+      case n => n
+    }
+  }
 }
 
 object StandardScalaSettings {
   // not final in case some separately compiled client code wanted to depend on updated values
   val MinTargetVersion = 5
   val MinSupportedTargetVersion = 8
-  val MaxTargetVersion = 19
+  val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
+    case SpecificScalaVersion(1, minor, _, _) => minor
+    case SpecificScalaVersion(major, _, _, _) => major
+    case _ => 19
+  }
   val DefaultTargetVersion = "8"
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).toList
