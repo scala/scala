@@ -489,25 +489,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     }
 
     def transformApply(tree: Apply, fun: Tree, args: List[Tree]): Tree = tree match {
-     /*
-      * This transformation should identify Scala symbol invocations in the tree and replace them
-      * with references to a statically cached instance.
-      *
-      * The reasoning behind this transformation is the following. Symbols get interned - they are stored
-      * in a global map which is protected with a lock. The reason for this is making equality checks
-      * quicker. But calling Symbol.apply, although it does return a unique symbol, accesses a locked object,
-      * making symbol access slow. To solve this, the unique symbol from the global symbol map in Symbol
-      * is accessed only once during class loading, and after that, the unique symbol is in the statically
-      * initialized call site returned by invokedynamic. Hence, it is cheap to both reach the unique symbol
-      * and do equality checks on it.
-      *
-      * And, finally, be advised - Scala's Symbol literal (scala.Symbol) and the Symbol class of the compiler
-      * have little in common.
-      */
-      case Apply(Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
-      if fun.symbol == Symbol_apply && !currentClass.isTrait && treeInfo.isQualifierSafeToElide(qual) =>
-
-        treeCopy.ApplyDynamic(tree, atPos(fun.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil).transform(this)
+      case Apply(Select(qual, nm), Nil) if nm == nme.Nil && qual.symbol == ScalaPackageObject =>
+        typedWithPos(tree.pos)(gen.mkNil)
 
       // Drop the TypeApply, which was used in Erasure to make `synchronized { ... } ` erase like `...`
       // (and to avoid boxing the argument to the polymorphic `synchronized` method).
@@ -541,9 +524,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               }
             }
         }
+
       case Apply(appMeth @ Select(appMethQual, _), elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) && treeInfo.isQualifierSafeToElide(appMethQual) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
+
       // See scala/bug#12201, should be rewrite as Primitive Array.
       // Match Array
       case Apply(appMeth @ Select(appMethQual, _), Apply(wrapRefArrayMeth, StripCast(ArrayValue(elemtpt, elems)) :: Nil) :: _ :: Nil) 
@@ -551,19 +536,20 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         typedWithPos(elemtpt.pos)(
           ArrayValue(TypeTree(elemtpt.tpe), elems)
         ).transform(this)
+
       case Apply(appMeth @ Select(appMethQual, _), elem :: (nil: RefTree) :: Nil)
       if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && treeInfo.isExprSafeToInline(nil) && treeInfo.isQualifierSafeToElide(appMethQual) =>
         typedWithPos(elem.pos)(
           ArrayValue(TypeTree(elem.tpe), elem :: Nil)
         ).transform(this)
-      // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      // Seq(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      case Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
+
+      // <List or Seq>(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil))) but only for reference types
+      case StripCast(Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _)))))))
       if wrapArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod
-        && currentRun.runDefinitions.isSeqApply(appMeth) && rest.elems.lengthIs < transformListApplyLimit =>
-        val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
-          (acc, elem) => New(ConsClass, elem, acc)
-        )
+        && currentRun.runDefinitions.isSeqApply(appMeth)  // includes List
+        && rest.elems.lengthIs < transformListApplyLimit
+      =>
+        val consed = rest.elems.foldRight(gen.mkAttributedRef(NilModule): Tree)(New(ConsClass, _, _))
         // Limiting extra stack frames consumed by generated code
         reducingTransformListApply(rest.elems.length) {
           super.transform(typedWithPos(tree.pos)(consed))
@@ -634,8 +620,27 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
       // Seq() ~> Nil (note: List() ~> Nil is rewritten in the Typer)
       case Apply(Select(_, _), List(nil))
-      if nil.symbol == NilModule && currentRun.runDefinitions.isSeqApply(fun) =>
+      if currentRun.runDefinitions.isNil(nil.symbol) && currentRun.runDefinitions.isSeqApply(fun) =>
         gen.mkAttributedRef(NilModule)
+
+      /* This transformation should identify Scala symbol invocations in the tree and replace them
+       * with references to a statically cached instance.
+       *
+       * The reasoning behind this transformation is the following. Symbols get interned - they are stored
+       * in a global map which is protected with a lock. The reason for this is making equality checks
+       * quicker. But calling Symbol.apply, although it does return a unique symbol, accesses a locked object,
+       * making symbol access slow. To solve this, the unique symbol from the global symbol map in Symbol
+       * is accessed only once during class loading, and after that, the unique symbol is in the statically
+       * initialized call site returned by invokedynamic. Hence, it is cheap to both reach the unique symbol
+       * and do equality checks on it.
+       *
+       * And, finally, be advised - Scala's Symbol literal (scala.Symbol) and the Symbol class of the compiler
+       * have little in common.
+       */
+      case Apply(Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
+      if fun.symbol == Symbol_apply && !currentClass.isTrait && treeInfo.isQualifierSafeToElide(qual) =>
+
+        treeCopy.ApplyDynamic(tree, atPos(fun.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil).transform(this)
 
       case _ =>
         super.transform(tree)
@@ -718,7 +723,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         super.transform(tree)
     }
 
-  } // CleanUpTransformer
+  } // end CleanUpTransformer
 
 
   private val objectMethods = Map[Name, TermName](

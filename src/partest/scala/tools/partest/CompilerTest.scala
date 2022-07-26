@@ -15,7 +15,11 @@ package scala.tools.partest
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc._
 
-/** For testing compiler internals directly.
+/** A DirectTest for testing compiler internals.
+ *  The test must implement the `check` function to check
+ *  the result of compiling the `code`; the test may override
+ *  `sources` instead to check multiple sources.
+ *
  *  Each source code string in "sources" will be compiled, and
  *  the check function will be called with the source code and the
  *  resulting CompilationUnit.  The check implementation should
@@ -28,9 +32,7 @@ abstract class CompilerTest extends DirectTest {
   lazy val global: Global = newCompiler()
   lazy val units: List[global.CompilationUnit] = compilationUnits(global)(sources: _ *)
   import global._
-  import definitions.{ compilerTypeFromTag }
-
-  override def extraSettings = "-usejavacp -d " + testOutput.path
+  import definitions.compilerTypeFromTag
 
   def show() = sources.lazyZip(units).foreach(check)
 

@@ -1,0 +1,15 @@
+[[syntax trees at end of                   cleanup]] // newSource1.scala
+package <empty> {
+  class C extends Object {
+    def f0(): Seq = scala.collection.immutable.Nil.$asInstanceOf[Seq]();
+    def f1(): Seq = scala.collection.immutable.Nil.$asInstanceOf[Seq]();
+    def g(): Seq = scala.collection.immutable.Nil.$asInstanceOf[Seq]();
+    def h(): Seq = scala.collection.immutable.Nil.$asInstanceOf[Seq]();
+    def nil(): scala.collection.immutable.Nil.type = scala.collection.immutable.Nil;
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    }
+  }
+}
+

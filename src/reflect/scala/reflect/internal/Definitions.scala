@@ -196,6 +196,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClass
     lazy val ScalaPackage         = getPackage("scala")
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
+    lazy val ScalaPackageObject   = getPackageObjectIfDefined("scala")
     lazy val RuntimePackage       = getPackage("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
 
@@ -493,6 +494,7 @@ trait Definitions extends api.StandardDefinitions {
          def List_apply       = getMemberMethod(ListModule, nme.apply)
     lazy val ListModuleAlias  = getMemberValue(ScalaPackageClass, nme.List)
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
+    lazy val NilModuleAlias   = getMemberValue(ScalaPackageClass, nme.Nil)
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type]
     lazy val SeqModuleAlias   = getMemberValue(ScalaPackageClass, nme.Seq)
@@ -1746,6 +1748,8 @@ trait Definitions extends api.StandardDefinitions {
           case _ => false
         })
       }
+
+      final def isNil(sym: Symbol) = sym == NilModule || sym == NilModuleAlias
 
       def isPredefClassOf(sym: Symbol) = if (PredefModule.hasCompleteInfo) sym == Predef_classOf else isPredefMemberNamed(sym, nme.classOf)
 

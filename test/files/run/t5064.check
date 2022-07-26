@@ -34,6 +34,6 @@ newSource1.scala:6: warning: a pure expression does nothing in statement positio
 [42:45]         scala.`package`.Seq()
 [42:45]         scala.`package`.Seq
 <42:45>         scala.`package`
-[48:51]         scala.`package`.Nil()
-[48:51]         scala.`package`.Nil
-<48:51>         scala.`package`
+[48:51]         scala.collection.immutable.Nil
+[48:51]         scala.collection.immutable
+[48:51]         scala.collection
