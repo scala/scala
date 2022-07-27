@@ -1788,7 +1788,6 @@ abstract class RefChecks extends Transform {
       )
       // begin checkInterestingResultInStatement
       settings.warnNonUnitStatement.value && checkInterestingShapes(t) && {
-        val msg = "unused value"
         val where = t match {
           case Block(_, res) => res
           case If(_, thenpart, Literal(Constant(()))) =>
@@ -1798,6 +1797,7 @@ abstract class RefChecks extends Transform {
             }
           case _ => t
         }
+        def msg = s"unused value of type ${where.tpe} (add `: Unit` to discard silently)"
         refchecksWarning(where.pos, msg, WarningCategory.OtherPureStatement)
         true
       }
