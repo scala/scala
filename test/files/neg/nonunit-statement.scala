@@ -189,3 +189,11 @@ final class ArrayOops[A](private val xs: Array[A]) extends AnyVal {
     }
   }
 }
+class Depends {
+  def f[A](a: A): a.type = a
+  def g() = {
+    val d = new Depends
+    f(d)
+    ()
+  }
+}

@@ -356,10 +356,12 @@ abstract class TreeInfo {
    *  where the op is an assignment operator.
    */
   def isThisTypeResult(tree: Tree): Boolean = tree match {
-    case Applied(fun @ Select(receiver, op), _, _) =>
+    case Applied(fun @ Select(receiver, op), _, argss) =>
       tree.tpe match {
-        case ThisType(sym) => sym == receiver.symbol
-        case SingleType(_, sym) => sym == receiver.symbol
+        case ThisType(sym) =>
+          sym == receiver.symbol
+        case SingleType(p, sym) =>
+          sym == receiver.symbol || argss.exists(_.exists(sym == _.symbol))
         case _ =>
           def check(sym: Symbol): Boolean =
             (sym == receiver.symbol) || {
