@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -release 8
+// scalac: -Xfatal-warnings -release:8
 // javaVersion: 9+
 
 class C {
