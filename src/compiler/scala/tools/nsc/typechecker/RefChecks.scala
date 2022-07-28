@@ -1770,7 +1770,7 @@ abstract class RefChecks extends Transform {
       // Parser adds suppressing attachment on `if (b) expr` when user has `-Wnonunit-if:false`.
       def checkInterestingShapes(t: Tree): Boolean =
         t match {
-          case If(_, thenpart, elsepart) => checkInterestingShapes(thenpart) | checkInterestingShapes(elsepart) // strict or
+          case If(_, thenpart, elsepart) => checkInterestingShapes(thenpart) || checkInterestingShapes(elsepart) // either or
           //case Block(_, Apply(label, Nil)) if label.symbol != null && nme.isLoopHeaderLabel(label.symbol.name) => false
           case Block(_, res) => checkInterestingShapes(res)
           case Match(_, cases) => cases.exists(k => checkInterestingShapes(k.body))

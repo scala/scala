@@ -363,7 +363,7 @@ abstract class TreeInfo {
         case SingleType(p, sym) =>
           sym == receiver.symbol || argss.exists(_.exists(sym == _.symbol))
         case _ =>
-          def check(sym: Symbol): Boolean =
+          def checkSingle(sym: Symbol): Boolean =
             (sym == receiver.symbol) || {
               receiver match {
                 case Apply(_, _) => Precedence(op.decoded).level == 0         // xs(i) += x
@@ -374,8 +374,8 @@ abstract class TreeInfo {
           @tailrec def loop(mt: Type): Boolean = mt match {
             case MethodType(_, restpe) =>
               restpe match {
-                case ThisType(sym) => check(sym)
-                case SingleType(_, sym) => check(sym)
+                case ThisType(sym) => checkSingle(sym)
+                case SingleType(_, sym) => checkSingle(sym)
                 case _ => loop(restpe)
               }
             case PolyType(_, restpe) => loop(restpe)
