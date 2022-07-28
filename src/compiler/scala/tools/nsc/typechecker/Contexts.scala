@@ -1246,6 +1246,14 @@ trait Contexts { self: Analyzer =>
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         thisContext.importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
+      var importLookupFor213MigrationWarning = false
+      def depthOk213 = {
+        settings.isScala213 && !thisContext.unit.isJava && !cx(ContextMode.InPackageClauseName) && defSym.exists && isPackageOwnedInDifferentUnit(defSym) && {
+          importLookupFor213MigrationWarning = true
+          true
+        }
+      }
+
       // Java: A single-type-import declaration d in a compilation unit c of package p
       // that imports a type named n shadows, throughout c, the declarations of:
       //
@@ -1259,15 +1267,27 @@ trait Contexts { self: Analyzer =>
       //     package clause in the same compilation unit where the definition occurs have
       //     highest precedence.
       //  2) Explicit imports have next highest precedence.
-      def depthOk(imp: ImportInfo) = (
-           imp.depth > symbolDepth
-        || (thisContext.unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
-      )
+      def depthOk(imp: ImportInfo) = {
+        imp.depth > symbolDepth ||
+          (thisContext.unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth) ||
+          depthOk213
+      }
 
       while (!impSym.exists && importCursor.imp1Exists && depthOk(importCursor.imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           importCursor.advanceImp1Imp2()
+      }
+
+      if (impSym.exists && importLookupFor213MigrationWarning) {
+        if (impSym != defSym && imp1.depth >= symbolDepth && !imp1.isExplicitImport(name)) {
+          val msg =
+            s"""This wildcard import imports ${impSym.fullName}, which is shadowed by ${defSym.fullName}.
+               |This is not according to the language specification and has changed in Scala 2.13, where ${impSym.fullName} takes precedence.
+               |To keep the same meaning in 2.12 and 2.13, un-import ${name} by adding `$name => _` to the import list.""".stripMargin
+          runReporting.warning(imp1.pos, msg, WarningCategory.Other, "")
+        }
+        impSym = NoSymbol
       }
 
       if (defSym.exists && impSym.exists) {
@@ -1705,6 +1725,8 @@ object ContextMode {
 
   /** Were default arguments used? */
   final val DiagUsedDefaults: ContextMode         = 1 << 18
+
+  final val InPackageClauseName: ContextMode      = 1 << 19
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers

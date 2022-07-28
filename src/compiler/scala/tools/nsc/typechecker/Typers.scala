@@ -5411,7 +5411,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedPackageDef(pdef0: PackageDef) = {
         val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, pdef0.stats))
-        val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
+        val pid1 = context.withMode(ContextMode.InPackageClauseName)(typedQualifier(pdef.pid).asInstanceOf[RefTree])
         assert(sym.moduleClass ne NoSymbol, sym)
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
                   .typedStats(pdef.stats, NoSymbol)

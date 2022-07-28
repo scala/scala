@@ -1,0 +1,8 @@
+Test1.scala:4: warning: This wildcard import imports a.O, which is shadowed by b.O.
+This is not according to the language specification and has changed in Scala 2.13, where a.O takes precedence.
+To keep the same meaning in 2.12 and 2.13, un-import O by adding `O => _` to the import list.
+import a._
+       ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
