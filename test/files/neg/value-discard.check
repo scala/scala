@@ -1,7 +1,7 @@
-value-discard.scala:6: warning: discarded non-Unit value
+value-discard.scala:6: warning: discarded non-Unit value of type Boolean
     mutable.Set[String]().remove("")   // expected to warn
                                 ^
-value-discard.scala:13: warning: discarded non-Unit value
+value-discard.scala:13: warning: discarded non-Unit value of type scala.collection.mutable.Set[String]
   def subtract(): Unit = mutable.Set.empty[String].subtractOne("")     // warn
                                                               ^
 value-discard.scala:17: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
