@@ -139,8 +139,10 @@ class Arguments {
 
   def addArgument(option: String, arg: String): Unit = arguments(option) = arg
 
-  def addPrefixed(prefix: String, arg: String): Unit =
+  def addPrefixed(prefix: String, arg: String): Unit = {
     prefixes.getOrElseUpdate(prefix, new mutable.HashSet) += arg
+    ()
+  }
 
   def addBinding(tag: String, key: String, value: String): Unit =
     if (key.length > 0)

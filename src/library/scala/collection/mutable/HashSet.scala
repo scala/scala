@@ -94,7 +94,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     sizeHint(xs.knownSize)
     xs match {
       case hm: immutable.HashSet[A] =>
-        hm.foreachWithHash((k, h) => addElem(k, improveHash(h)))
+        hm.foreachWithHash{(k, h) => addElem(k, improveHash(h)); () }
         this
       case hm: mutable.HashSet[A] =>
         val iter = hm.nodeIterator

@@ -114,10 +114,10 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     override def isEmpty = underlying.isEmpty
     override def iterator: Iterator[A] = underlying.iterator.asScala
     def apply(i: Int) = underlying.get(i)
-    def update(i: Int, elem: A) = underlying.set(i, elem)
+    def update(i: Int, elem: A) = { underlying.set(i, elem); () }
     def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
     def addOne(elem: A): this.type = { underlying add elem; this }
-    def insert(idx: Int,elem: A): Unit = underlying.subList(0, idx).add(elem)
+    def insert(idx: Int,elem: A): Unit = { underlying.subList(0, idx).add(elem); () }
     def insertAll(i: Int, elems: IterableOnce[A]) = {
       val ins = underlying.subList(0, i)
       elems.iterator.foreach(ins.add(_))
@@ -353,7 +353,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
         result
       }
 
-    override def update(k: K, v: V): Unit = underlying.put(k, v)
+    override def update(k: K, v: V): Unit = { underlying.put(k, v); () }
 
     override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
       underlying.compute(key, (_, v) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
@@ -506,7 +506,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
 
-    override def update(k: K, v: V): Unit = { underlying.put(k, v) }
+    override def update(k: K, v: V): Unit = { underlying.put(k, v); () }
 
     override def remove(k: K): Option[V] = Option(underlying remove k)
     def iterator = underlying.keys.asScala map (k => (k, underlying get k))
@@ -540,7 +540,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       if (r != null) Some(r.asInstanceOf[String]) else None
     }
 
-    override def update(k: String, v: String): Unit = { underlying.put(k, v) }
+    override def update(k: String, v: String): Unit = { underlying.put(k, v); () }
 
     override def remove(k: String): Option[String] = {
       val r = underlying remove k

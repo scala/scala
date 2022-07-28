@@ -60,9 +60,9 @@ abstract class CompletableFutureStateMachine(executor: Executor) extends AsyncSt
   private[this] var state$async: Int = 0
   protected def state: Int = state$async
   protected def state_=(s: Int): Unit = state$async = s
-  protected def completeFailure(t: Throwable): Unit = result$async.completeExceptionally(t)
-  protected def completeSuccess(value: AnyRef): Unit = result$async.complete(value)
-  protected def onComplete(f: CompletableFuture[AnyRef]): Unit = f.whenCompleteAsync(this)
+  protected def completeFailure(t: Throwable): Unit = { result$async.completeExceptionally(t); () }
+  protected def completeSuccess(value: AnyRef): Unit = { result$async.complete(value); () }
+  protected def onComplete(f: CompletableFuture[AnyRef]): Unit = { f.whenCompleteAsync(this); () }
   protected def getCompleted(f: CompletableFuture[AnyRef]): Try[AnyRef] = try {
     val r = f.getNow(this)
     if (r == this) null

@@ -231,6 +231,7 @@ class ListBuffer[A]
       if(p eq null) first = nx else p.next = nx
       len += 1
     }
+    ()
   }
 
   def prepend(elem: A): this.type = {
@@ -259,6 +260,7 @@ class ListBuffer[A]
         insertAfter(locate(idx), fresh)
       }
     }
+    ()
   }
 
   def remove(idx: Int): A = {

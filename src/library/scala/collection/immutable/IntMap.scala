@@ -176,6 +176,7 @@ import IntMap._
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@annotation.nowarn("cat=w-flag-value-discard")
 sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   with StrictOptimizedMapOps[Int, T, Map, IntMap[T]]
   with Serializable {

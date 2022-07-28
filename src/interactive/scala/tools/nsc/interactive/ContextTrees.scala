@@ -181,6 +181,7 @@ trait ContextTrees { self: Global =>
           loop(0, hi)
         }
       }
+      ()
     } catch {
       case ex: Throwable =>
         println(ex)

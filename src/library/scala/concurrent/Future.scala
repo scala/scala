@@ -728,6 +728,7 @@ object Future {
           val r = getAndSet(null)
           if (r ne null)
             r tryComplete v1 // tryComplete is likely to be cheaper than complete
+          ()
         }
       }
       while(i.hasNext && firstCompleteHandler.get != null) // exit early if possible

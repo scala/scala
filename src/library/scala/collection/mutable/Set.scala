@@ -64,6 +64,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def update(elem: A, included: Boolean): Unit = {
     if (included) add(elem)
     else remove(elem)
+    ()
   }
 
   /** Removes an element from this set.
@@ -81,7 +82,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
   @deprecated("Use filterInPlace instead", "2.13.0")
-  @inline final def retain(p: A => Boolean): Unit = filterInPlace(p)
+  @inline final def retain(p: A => Boolean): Unit = { filterInPlace(p); () }
 
   /** Removes all elements from the set for which do not satisfy a predicate.
     *  @param  p  the predicate used to test elements. Only elements for

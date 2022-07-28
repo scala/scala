@@ -46,6 +46,7 @@ class MetaParser(meta: String) {
       nextToken
       res.append("]")
     }
+    ()
   }
 
   def parse: Option[String] =

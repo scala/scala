@@ -19,6 +19,7 @@ import scala.concurrent.Future
 import scala.concurrent.impl.Promise.DefaultPromise
 import scala.util.{Failure, Success, Try}
 
+@annotation.nowarn("cat=w-flag-value-discard")
 private[scala] object FutureConvertersImpl {
   final class CF[T](val wrapped: Future[T]) extends CompletableFuture[T] with (Try[T] => Unit) {
     override def apply(t: Try[T]): Unit = t match {

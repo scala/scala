@@ -394,6 +394,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val what = if (isDefined) "define" else "import"
     log(what)
     replScope enter sym
+    ()
   }
 
   def recordRequest(req: Request): Unit = {

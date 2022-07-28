@@ -35,7 +35,7 @@ private[sys] class PropImpl[+T](val key: String, valueFn: String => T) extends P
     if (isSet) underlying.getOrElse(key, "")
     else ""
 
-  def clear(): Unit = underlying -= key
+  def clear(): Unit = { underlying -= key; () }
   def option: Option[T] = if (isSet) Some(value) else None
   def or[T1 >: T](alt: => T1): T1 = if (isSet) value else alt
 

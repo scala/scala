@@ -70,6 +70,7 @@ trait InteractiveAnalyzer extends Analyzer {
         case Some(att) => att.defaultGetters += default
         case None      => meth.updateAttachment(new DefaultsOfLocalMethodAttachment(default))
       }
+      ()
     }
     // this logic is needed in case typer was interrupted half
     // way through and then comes back to do the tree again. In
@@ -100,7 +101,7 @@ trait InteractiveAnalyzer extends Analyzer {
       val scope = context.scope
       @tailrec def search(e: ScopeEntry): Unit = {
         if ((e eq null) || (e.owner ne scope))
-          scope enter sym
+          (scope enter sym): Unit
         else if (e.sym ne sym)  // otherwise, aborts since we found sym
           search(e.tail)
       }
@@ -405,6 +406,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     })
     if (isPastNamer) super.openPackageModule(pkgClass, true)
     else analyzer.packageObjects.deferredOpen.add(pkgClass)
+    ()
   }
 
   // ----------------- Polling ---------------------------------------
@@ -801,6 +803,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   private def afterRunRemoveUnitsOf(sources: List[SourceFile]): Unit = {
     toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun ++= sources map (_.file) }
+    ()
   }
 
   /** A fully attributed tree located at position `pos` */
@@ -1312,7 +1315,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         try reloadSources(List(source))
         finally {
           waitLoadedTyped(source, response, keepLoaded, onSameThread = true)
-          if (!keepLoaded) removeUnitOf(source)
+          if (!keepLoaded) { removeUnitOf(source); () }
         }
     }
   }

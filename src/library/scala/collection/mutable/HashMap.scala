@@ -99,7 +99,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
     xs match {
       case hm: immutable.HashMap[K, V] =>
-        hm.foreachWithHash((k, v, h) => put0(k, v, improveHash(h), getOld = false))
+        hm.foreachWithHash{(k, v, h) => put0(k, v, improveHash(h), getOld = false); () }
         this
       case hm: mutable.HashMap[K, V] =>
         val iter = hm.nodeIterator
@@ -471,7 +471,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     case nd => Some(nd.value)
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = { put0(key, value, false); () }
 
   def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
 

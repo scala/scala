@@ -394,7 +394,9 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
   private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int): Unit = {
     val m = nd.GCAS_READ(ct)
     m match {
-      case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
+      case cn: CNode[K, V] =>
+        nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
+        ()
       case _ =>
     }
   }

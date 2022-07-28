@@ -149,6 +149,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     intp.bind("$r", replVals)
     // Then we import everything from $r.
     intp interpret s"import ${ intp.originalPath("$r") }._"
+    ()
   }
 
   trait LowPriorityInternalInfo {

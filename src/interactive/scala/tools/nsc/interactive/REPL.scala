@@ -104,16 +104,19 @@ object REPL {
     def doTypeAt(pos: Position): Unit = {
       comp.askTypeAt(pos, typeatResult)
       show(typeatResult)
+      ()
     }
 
     def doComplete(pos: Position): Unit = {
       comp.askTypeCompletion(pos, completeResult)
       show(completeResult)
+      ()
     }
 
     def doStructure(file: String): Unit = {
       comp.askParsedEntered(toSourceFile(file), keepLoaded = false, structureResult)
       show(structureResult)
+      ()
     }
 
     loop { line =>
@@ -121,12 +124,14 @@ object REPL {
         case "reload" :: args =>
           comp.askReload(args map toSourceFile, reloadResult)
           show(reloadResult)
+          ()
         case "reloadAndAskType" :: file :: millis :: Nil =>
           comp.askReload(List(toSourceFile(file)), reloadResult)
           Thread.sleep(millis.toLong)
           println("ask type now")
           comp.askLoadedTyped(toSourceFile(file), keepLoaded = true, typedResult)
           typedResult.get
+          ()
         case List("typeat", file, off1, off2) =>
           doTypeAt(makePos(file, off1, off2))
         case List("typeat", file, off1) =>

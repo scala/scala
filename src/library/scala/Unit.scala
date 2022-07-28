@@ -51,6 +51,7 @@ object Unit extends AnyValCompanion {
    *  @throws     ClassCastException  if the argument is not a scala.runtime.BoxedUnit
    *  @return     the Unit value ()
    */
+  @annotation.nowarn("cat=w-flag-value-discard")
   def unbox(x: java.lang.Object): Unit = x.asInstanceOf[scala.runtime.BoxedUnit]
 
   /** The String representation of the scala.Unit companion object. */

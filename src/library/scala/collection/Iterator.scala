@@ -700,6 +700,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       private def store(a: A): Unit = {
         if (lookahead == null) lookahead = new mutable.Queue[A]
         lookahead += a
+        ()
       }
       def hasNext = {
         if (status < 0) (lookahead ne null) && lookahead.nonEmpty

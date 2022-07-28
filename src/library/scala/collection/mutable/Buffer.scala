@@ -122,7 +122,7 @@ trait Buffer[A]
     *            of this buffer.
     */
   @deprecated("use dropInPlace instead", since = "2.13.4")
-  def trimStart(n: Int): Unit = dropInPlace(n)
+  def trimStart(n: Int): Unit = { dropInPlace(n); () }
 
   /** Removes the last ''n'' elements of this buffer.
     *
@@ -130,7 +130,7 @@ trait Buffer[A]
     *            of this buffer.
     */
   @deprecated("use dropRightInPlace instead", since = "2.13.4")
-  def trimEnd(n: Int): Unit = dropRightInPlace(n)
+  def trimEnd(n: Int): Unit = { dropRightInPlace(n); () }
 
   def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type
 

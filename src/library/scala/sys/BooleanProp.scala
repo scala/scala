@@ -42,7 +42,7 @@ object BooleanProp {
       case x: Boolean if !x   => val old = value ; clear() ; old
       case x                  => super.setValue(newValue)
     }
-    def enable()  = this setValue true
+    def enable()  = { this.setValue(true); () }
     def disable() = this.clear()
     def toggle()  = if (value) disable() else enable()
   }

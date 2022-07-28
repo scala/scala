@@ -174,6 +174,7 @@ class ArrayDeque[A] protected (
         _set(i, elem)
       }
     }
+    ()
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
@@ -227,6 +228,7 @@ class ArrayDeque[A] protected (
         }
       }
     }
+    ()
   }
 
   def remove(idx: Int, count: Int): Unit = {

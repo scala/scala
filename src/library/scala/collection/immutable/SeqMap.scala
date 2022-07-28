@@ -83,9 +83,11 @@ object SeqMap extends MapFactory[SeqMap] {
       if (key == key1) SeqMap.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
+      ()
     }
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
+      ()
     }
   }
 
@@ -116,11 +118,12 @@ object SeqMap extends MapFactory[SeqMap] {
       else if (key == key2) new SeqMap1(key1, value1)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2))
+      f((key1, value1)); f((key2, value2)); ()
     }
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)
+      ()
     }
   }
 
@@ -156,12 +159,13 @@ object SeqMap extends MapFactory[SeqMap] {
       else if (key == key3) new SeqMap2(key1, value1, key2, value2)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2)); f((key3, value3))
+      f((key1, value1)); f((key2, value2)); f((key3, value3)); ()
     }
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)
       f(key3, value3)
+      ()
     }
   }
 
@@ -214,13 +218,14 @@ object SeqMap extends MapFactory[SeqMap] {
       else if (key == key4) new SeqMap3(key1, value1, key2, value2, key3, value3)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
+      f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4)); ()
     }
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)
       f(key3, value3)
       f(key4, value4)
+      ()
     }
 
     private[SeqMap] def buildTo[V1 >: V](builder: Builder[(K, V1), SeqMap[K, V1]]): builder.type =

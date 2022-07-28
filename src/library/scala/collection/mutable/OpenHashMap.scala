@@ -147,7 +147,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
   }
 
   // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
-  override def update(key: Key, value: Value): Unit = put(key, value)
+  override def update(key: Key, value: Value): Unit = { put(key, value); () }
 
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
   def addOne (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
@@ -257,7 +257,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
 
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
-    foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
+    foreachUndeletedEntry{entry => it.put(entry.key, entry.hash, entry.value.get); () }
     it
   }
 
@@ -275,15 +275,17 @@ class OpenHashMap[Key, Value](initialSize : Int)
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) throw new ConcurrentModificationException
-      f((entry.key, entry.value.get))}
-    )
+      f((entry.key, entry.value.get))
+      ()
+    })
   }
   override def foreachEntry[U](f : (Key, Value) => U): Unit = {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) throw new ConcurrentModificationException
-      f(entry.key, entry.value.get)}
-    )
+      f(entry.key, entry.value.get)
+      ()
+    })
   }
 
   private[this] def foreachUndeletedEntry(f : Entry => Unit): Unit = {

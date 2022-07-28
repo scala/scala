@@ -78,13 +78,13 @@ trait Phased {
     val saved = get
     set(ph)
     try atCurrent(body)
-    finally set(saved)
+    finally { set(saved); () }
   }
   def atMulti[T](phs: Seq[PhaseName])(body: => T): Seq[T] = {
     val saved = multi
     setMulti(phs)
     try multi(body)
-    finally setMulti(saved)
+    finally { setMulti(saved); () }
   }
 
   def atMap[T](phs: Seq[PhaseName])(body: => T): Seq[(PhaseName, T)] =

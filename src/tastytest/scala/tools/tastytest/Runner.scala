@@ -25,7 +25,7 @@ class Runner private (classloader: ScalaClassLoader) {
 
   def runCaptured(name: String): Try[String] = {
     def kernel(out: OutputStream, err: OutputStream): Try[Unit] = Try {
-      try classloader.asContext[Unit](Runner_run.invoke(null, name, out, err))
+      try classloader.asContext[Unit](Runner_run.invoke(null, name, out, err): Unit)
       catch {
         case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
       }
@@ -61,7 +61,7 @@ object Runner extends Script.Command {
       val main     = objClass.getMethod("main", classOf[Array[String]])
       if (!Modifier.isStatic(main.getModifiers))
         throw new NoSuchMethodException(name + ".main is not static")
-      classloader.asContext[Unit](main.invoke(null, Array.empty[String]))
+      classloader.asContext[Unit](main.invoke(null, Array.empty[String]): Unit)
     }
     catch {
       case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)

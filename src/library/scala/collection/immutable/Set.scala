@@ -165,7 +165,7 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) Set.empty
       else this
     def iterator: Iterator[A] = Iterator.single(elem1)
-    override def foreach[U](f: A => U): Unit = f(elem1)
+    override def foreach[U](f: A => U): Unit = { f(elem1); () }
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
     override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] =
@@ -198,7 +198,7 @@ object Set extends IterableFactory[Set] {
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 }
 
     override def foreach[U](f: A => U): Unit = {
-      f(elem1); f(elem2)
+      f(elem1); f(elem2); ()
     }
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2)
@@ -249,7 +249,7 @@ object Set extends IterableFactory[Set] {
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 }
 
     override def foreach[U](f: A => U): Unit = {
-      f(elem1); f(elem2); f(elem3)
+      f(elem1); f(elem2); f(elem3); ()
     }
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2) || p(elem3)
@@ -304,7 +304,7 @@ object Set extends IterableFactory[Set] {
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 case 3 => elem4 }
 
     override def foreach[U](f: A => U): Unit = {
-      f(elem1); f(elem2); f(elem3); f(elem4)
+      f(elem1); f(elem2); f(elem3); f(elem4); ()
     }
     override def exists(p: A => Boolean): Boolean = {
       p(elem1) || p(elem2) || p(elem3) || p(elem4)

@@ -153,13 +153,14 @@ trait Imports {
       trailingBraces append "}\n"+ request.postwrap +"\n"
       accessPath append s".$iw"
     }
-    def addWrapper(): Unit =
+    def addWrapper(): Unit = {
       if (useMagicImport) {
         addLevelChangingImport()
       } else {
         addWrapperCode()
       }
       currentImps.clear()
+    }
     def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
 
     // imports from Predef are relocated to the template header to allow hiding.

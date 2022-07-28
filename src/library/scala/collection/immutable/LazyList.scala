@@ -859,7 +859,10 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     else if (!isEmpty) {
       b.append(head)
       var cursor = this
-      @inline def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
+      @inline def appendCursorElement(): Unit = {
+        b.append(sep).append(cursor.head)
+        ()
+      }
       var scout = tail
       @inline def scoutNonEmpty: Boolean = scout.stateDefined && !scout.isEmpty
       if ((cursor ne scout) && (!scout.stateDefined || (cursor.state ne scout.state))) {

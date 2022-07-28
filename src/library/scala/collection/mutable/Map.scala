@@ -101,7 +101,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     *  @param key    The key to update
     *  @param value  The new value
     */
-  def update(key: K, value: V): Unit = { coll += ((key, value)) }
+  def update(key: K, value: V): Unit = { coll += ((key, value)); () }
 
   /**
    * Update a mapping for the specified key and its current optionally-mapped value

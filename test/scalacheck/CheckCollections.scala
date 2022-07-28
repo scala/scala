@@ -36,6 +36,7 @@ object CheckCollectionsTest extends Properties("reflect.internal.util.Collection
         ys = 1   :: ys
     }
     map2Conserve(xs, ys){ case(x, y) => x.toLowerCase + y.toString }
+    ()
   }
 
 

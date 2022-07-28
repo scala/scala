@@ -253,6 +253,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
               Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), StandardOpenOption.APPEND)
           }
         }
+        ()
       }
 
       pushTranscript(s"<in process execution of $testIdent> > ${logFile.getName}")
@@ -396,6 +397,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       import suiteRunner.log._
       val emdash = bold(yellow("--"))
       pushTranscript(s"filtering ${logFile.getName}$EOL${elisions.mkString(emdash, EOL + emdash, EOL)}")
+      ()
     }
   }
 
@@ -694,7 +696,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def cleanup(state: TestState): Unit = {
     if (state.isOk) logFile.delete()
-    if (!suiteRunner.debug) Directory(outDir).deleteRecursively()
+    if (!suiteRunner.debug) {
+      Directory(outDir).deleteRecursively()
+      ()
+    }
   }
 
   // Colorize prompts according to pass/fail

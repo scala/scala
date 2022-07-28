@@ -2257,6 +2257,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
               bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
 
             bm.migrateFromInlineToNodeInPlace(bitpos, key0Hash, subNodeNew)
+            ()
           }
 
         } else if ((bm.nodeMap & bitpos) != 0) {

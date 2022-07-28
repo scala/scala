@@ -247,7 +247,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     if (nonEmpty) {
       b.append(head)
       var cursor = this
-      def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
+      def appendCursorElement(): Unit = { b.append(sep).append(cursor.head); () }
       if (tailDefined) {  // If tailDefined, also !isEmpty
         var scout = tail
         if (cursor ne scout) {

@@ -102,6 +102,7 @@ object Lexer {
         if (' ' <= ch && ch < 128) buf += ch
         else buf ++= "\\u" += toUDigit(ch >>> 12) += toUDigit(ch >>> 8) += toUDigit(ch >>> 4) += toUDigit(ch.toInt)
     }
+    ()
   }
 
   /** Returns given string enclosed in `"`-quotes with all string characters escaped

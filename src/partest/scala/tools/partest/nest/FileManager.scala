@@ -92,6 +92,7 @@ object FileManager {
       body(f)
     } finally {
       f.delete()
+      ()
     }
   }
 }

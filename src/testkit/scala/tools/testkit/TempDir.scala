@@ -50,12 +50,18 @@ object ReleasablePath {
   }
   // Delete a File on relese.
   implicit val deleteOnRelease2: Releasable[File] = new Releasable[File] {
-    override def release(releasee: File) = if (!Properties.isWin) releasee.delete()
+    override def release(releasee: File) = {
+      if (!Properties.isWin) releasee.delete()
+      ()
+    }
   }
 
   private def remove(path: Path): Unit = if (Files.isDirectory(path)) removeRecursively(path) else Files.delete(path)
 
-  private def removeRecursively(path: Path): Unit = Files.walkFileTree(path, new ZappingFileVisitor)
+  private def removeRecursively(path: Path): Unit = {
+    Files.walkFileTree(path, new ZappingFileVisitor)
+    ()
+  }
 
   private class ZappingFileVisitor extends SimpleFileVisitor[Path] {
     private def zap(path: Path) = { Files.delete(path) ; Continue }

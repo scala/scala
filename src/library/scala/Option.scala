@@ -434,7 +434,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    *  @see flatMap
    */
   @inline final def foreach[U](f: A => U): Unit = {
-    if (!isEmpty) f(this.get)
+    if (!isEmpty) { f(this.get); () }
   }
 
   /** Returns a $some containing the result of

@@ -112,7 +112,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = { put0(key, value, false); () }
 
   override def put(key: K, value: V): Option[V] = put0(key, value, true) match {
     case null => None

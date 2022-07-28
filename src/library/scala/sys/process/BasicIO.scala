@@ -255,6 +255,7 @@ object BasicIO {
   private[this] def appendLine(buffer: Appendable): String => Unit = line => {
     buffer append line
     buffer append Newline
+    ()
   }
 
   private[this] def transferFullyImpl(in: InputStream, out: OutputStream): Unit = {

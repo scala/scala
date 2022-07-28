@@ -28,6 +28,7 @@ private class ReplRealDir(dir: Directory) extends PlainDirectory(dir) with ReplD
   def clear() = {
     dir.deleteRecursively()
     dir.createDirectory()
+    ()
   }
 }
 

@@ -126,6 +126,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     else
       print("final var " + NameTransformer.decode(getName(name)))
     print(": " + getType(tpe) + ";").newline
+    ()
   }
 
   def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]): Unit = {
@@ -152,6 +153,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
         undent.newline
       case None =>
     }
+    ()
   }
 
   def printClassHeader(): Unit = {
@@ -218,6 +220,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
       }
       undent.print("}").newline
     }
+    ()
   }
 
 }

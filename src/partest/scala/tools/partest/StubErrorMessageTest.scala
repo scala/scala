@@ -55,5 +55,6 @@ trait StubErrorMessageTest extends StoreReporterDirectTest {
       print(if (report.severity == storeReporter.ERROR) "error: " else "")
       println(Position.formatMessage(report.pos, report.msg, true))
     }
+    ()
   }
 }

@@ -416,11 +416,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
       }
     case _                    => isValidLong && unifiedPrimitiveEquals(that)
   }
-  override def isValidByte  = noArithmeticException(toByteExact)
-  override def isValidShort = noArithmeticException(toShortExact)
+  override def isValidByte  = noArithmeticException{toByteExact; ()}
+  override def isValidShort = noArithmeticException{toShortExact; ()}
   override def isValidChar  = isValidInt && toIntExact >= Char.MinValue && toIntExact <= Char.MaxValue
-  override def isValidInt   = noArithmeticException(toIntExact)
-  def isValidLong  = noArithmeticException(toLongExact)
+  override def isValidInt   = noArithmeticException{toIntExact; ()}
+  def isValidLong  = noArithmeticException{toLongExact; ()}
 
   /** Tests whether this `BigDecimal` holds the decimal representation of a `Double`. */
   def isDecimalDouble = {

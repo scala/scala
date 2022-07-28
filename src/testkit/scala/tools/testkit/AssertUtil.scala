@@ -192,7 +192,7 @@ object AssertUtil {
   /** Assert no new threads, with some margin for arbitrary threads to exit. */
   def assertZeroNetThreads(body: => Unit): Unit = {
     val group = new ThreadGroup("junit")
-    try assertZeroNetThreads(group)(body)
+    try { assertZeroNetThreads(group)(body); () }
     finally group.destroy(): @nowarn("cat=deprecation") // deprecated since JDK 16, will be removed
   }
   def assertZeroNetThreads[A](group: ThreadGroup)(body: => A): Try[A] = {
@@ -229,7 +229,7 @@ object AssertUtil {
       }
 
     val timeout = 10 * 1000L
-    val thread = new Thread(group, () => test())
+    val thread = new Thread(group, () => { test(); () })
     def abort(): Try[A] = {
       group.interrupt()
       new Failure(new AssertionError("Test did not complete"))
@@ -323,11 +323,15 @@ class NoTrace[A](body: => A) extends Runnable {
     val group = new ThreadGroup("notrace") {
       override def uncaughtException(t: Thread, e: Throwable): Unit = synchronized {
         uncaught += ((t, e))
+        ()
       }
     }
     try assertZeroNetThreads(group)(body) match {
       case Success(a) => result = Some(a)
-      case Failure(e) => synchronized { uncaught += ((Thread.currentThread, e)) }
+      case Failure(e) => synchronized {
+        uncaught += ((Thread.currentThread, e))
+        ()
+      }
     }
     finally group.destroy(): @nowarn("cat=deprecation") // deprecated since JDK 16, will be removed
   }

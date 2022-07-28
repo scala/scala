@@ -14,5 +14,6 @@ object Runner {
         main.invoke(null, Array.empty[String])
       }
     }
+    ()
   }
 }

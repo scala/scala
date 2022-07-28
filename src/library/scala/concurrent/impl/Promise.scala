@@ -42,9 +42,11 @@ private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer 
   override def apply(value: Try[T]): Unit = {
     _result = value // This line MUST go before releaseShared
     releaseShared(1)
+    ()
   }
 }
 
+@annotation.nowarn("cat=w-flag-value-discard")
 private[concurrent] object Promise {
   /**
    * Link represents a completion dependency between 2 DefaultPromises.
