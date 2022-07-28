@@ -1117,7 +1117,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (!isThisTypeResult && !explicitlyUnit(tree)) context.warning(tree.pos, "discarded non-Unit value", WarningCategory.WFlagValueDiscard)
+            if (!isThisTypeResult && !explicitlyUnit(tree))
+              context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}",
+                WarningCategory.WFlagValueDiscard)
           }
           @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit =
             if (!isPastTyper) {
