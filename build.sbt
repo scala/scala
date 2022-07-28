@@ -158,6 +158,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   // work around https://github.com/scala/bug/issues/11534
   Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
+  Compile / scalacOptions += "-Wvalue-discard",
   // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
   // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
   Compile / scalacOptions += "-Wconf:cat=optimizer:is",
@@ -416,6 +417,7 @@ lazy val reflect = configureAsSubproject(project)
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
     Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
+    Compile / scalacOptions -= "-Wvalue-discard",  // enable someday?
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
@@ -494,6 +496,7 @@ lazy val compiler = configureAsSubproject(project)
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
     ),
+    Compile / scalacOptions -= "-Wvalue-discard",  // enable someday?
     Osgi.headers ++= Seq(
       "Import-Package" -> raw"""org.jline.keymap.*;resolution:=optional
                             |org.jline.reader.*;resolution:=optional
@@ -548,6 +551,7 @@ lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-front
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
     Compile / scalacOptions ++= Seq("-Xlint"),
+    Compile / scalacOptions -= "-Wvalue-discard",  // enable someday?
   )
   .settings(
     run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `replFrontend/run` works
@@ -570,6 +574,7 @@ lazy val scaladoc = configureAsSubproject(project)
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s",
     ),
+    Compile / scalacOptions -= "-Wvalue-discard",  // easier to enable here after re-STARR onto 2.13.9
   )
   .dependsOn(compiler)
 
@@ -739,6 +744,7 @@ lazy val junit = project.in(file("test") / "junit")
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
+    Compile / scalacOptions -= "-Wvalue-discard",  // enable someday?
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
