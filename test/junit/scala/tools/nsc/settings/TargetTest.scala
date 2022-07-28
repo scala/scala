@@ -18,32 +18,37 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable.ListBuffer
+import scala.util.Properties.isJavaAtLeast
+import scala.util.Try
 
 @RunWith(classOf[JUnit4])
 class TargetTest {
 
   @Test def testSettingTargetSetting(): Unit = {
-    def check(in: String, expect: String) = {
-      val settings = new Settings(err => fail(s"Error output: $err"))
-      val (ok, _) = settings.processArgumentString(in)
-      assertTrue(ok)
-      assertEquals(expect, settings.target.value)
-    }
+    def goodVersion(v: String): Boolean = Try(isJavaAtLeast(v)).getOrElse(false)
+    def check(in: String, expect: String) =
+      if (goodVersion(expect)) {
+        val settings = new Settings(err => fail(s"Error output: $err"))
+        val (ok, _) = settings.processArgumentString(in)
+        assertTrue(ok)
+        assertEquals(expect, settings.target.value)
+      }
+      else checkFail(in)
     def checkDeprecated(in: String, expect: String) = {
       val messages = ListBuffer.empty[String]
       val settings = new Settings(messages.append(_))
       val (ok, _) = settings.processArgumentString(in)
-      assertTrue(ok)
+      assertTrue(messages.toString, ok)
       assertTrue(messages.isEmpty)
-      assertTrue(settings.target.deprecationMessage.exists(_.contains("is deprecated, forcing use of")))
       assertEquals(expect, settings.target.value)
+      assertTrue(s"Expected forcing: ${settings.target.deprecationMessage}", settings.target.deprecationMessage.exists(_.contains("is deprecated, forcing use of")))
     }
     def checkFail(in: String) = {
       val messages = ListBuffer.empty[String]
       val settings = new Settings(messages.append(_))
       val (ok, _) = settings.processArgumentString(in)
       assertFalse(ok)
-      assertTrue(messages.nonEmpty)
+      assertFalse(messages.isEmpty)
       assertEquals(2, messages.size)   // bad choice + bad option
       assertTrue(messages.exists(_.startsWith("bad option")))
     }
@@ -64,7 +69,8 @@ class TargetTest {
 
     check("-target:jvm-9", "9")
     check("-target:9", "9")
-    // it's not Java 1.9, you reprobates!
+    checkFail("-target:jvm-1.9")
+    checkFail("-target:1.9")
 
     check("-target:jvm-10", "10")
     check("-target:10", "10")
