@@ -530,7 +530,7 @@ trait Internals { self: Universe =>
     /** Set symbol's type signature to given type.
      *  @return the symbol itself
      */
-    def setInfo[S <: Symbol](sym: S, tpe: Type): S
+    def setInfo[S <: Symbol](sym: S, tpe: Type): sym.type
 
     /** Set symbol's annotations to given annotations `annots`.
      */

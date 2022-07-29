@@ -1617,8 +1617,22 @@ self =>
           val cond = condExpr()
           newLinesOpt()
           val thenp = expr()
-          val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-          else literalUnit
+          val elsep =
+            if (in.token == ELSE) {
+              in.nextToken()
+              expr()
+            }
+            else {
+              // user asked to silence warnings on unibranch if; also suppresses value discard
+              if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
+                thenp match {
+                  case Block(_, res) => res.updateAttachment(TypedExpectingUnitAttachment)
+                  case _ => ()
+                }
+                thenp.updateAttachment(TypedExpectingUnitAttachment)
+              }
+              literalUnit
+            }
           If(cond, thenp, elsep)
         }
         parseIf

@@ -113,6 +113,10 @@ trait Warnings {
     )
   ) withAbbreviation "-Ywarn-macros"
   val warnDeadCode         = BooleanSetting("-Wdead-code", "Warn when dead code is identified.") withAbbreviation "-Ywarn-dead-code"
+  val warnNonUnitIf        = BooleanSetting("-Wnonunit-if", "Warn when if statements are non-Unit expressions, enabled by -Wnonunit-statement.")
+  import scala.language.existentials
+  val warnNonUnitStatement = BooleanSetting("-Wnonunit-statement", "Warn when block statements are non-Unit expressions.")
+    .enablingIfNotSetByUser(warnNonUnitIf :: Nil)
   val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
   val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
   val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"

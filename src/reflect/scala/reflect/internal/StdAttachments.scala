@@ -145,4 +145,8 @@ trait StdAttachments {
 
   // Use of _root_ is in correct leading position of selection
   case object RootSelection extends PlainAttachment
+
+  /** Marks a Typed tree with Unit tpt. */
+  case object TypedExpectingUnitAttachment
+  def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
 }

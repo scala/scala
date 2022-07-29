@@ -351,6 +351,42 @@ abstract class TreeInfo {
     case _                                    => false
   }
 
+  /** Is tree an application with result `this.type`?
+   *  Accept `b.addOne(x)` and also `xs(i) += x`
+   *  where the op is an assignment operator.
+   */
+  def isThisTypeResult(tree: Tree): Boolean = tree match {
+    case Applied(fun @ Select(receiver, op), _, argss) =>
+      tree.tpe match {
+        case ThisType(sym) =>
+          sym == receiver.symbol
+        case SingleType(p, sym) =>
+          sym == receiver.symbol || argss.exists(_.exists(sym == _.symbol))
+        case _ =>
+          def checkSingle(sym: Symbol): Boolean =
+            (sym == receiver.symbol) || {
+              receiver match {
+                case Apply(_, _) => Precedence(op.decoded).level == 0         // xs(i) += x
+                case _ => receiver.symbol != null &&
+                  (receiver.symbol.isGetter || receiver.symbol.isField)       // xs.addOne(x) for var xs
+              }
+            }
+          @tailrec def loop(mt: Type): Boolean = mt match {
+            case MethodType(_, restpe) =>
+              restpe match {
+                case ThisType(sym) => checkSingle(sym)
+                case SingleType(_, sym) => checkSingle(sym)
+                case _ => loop(restpe)
+              }
+            case PolyType(_, restpe) => loop(restpe)
+            case _ => false
+          }
+          fun.symbol != null && loop(fun.symbol.info)
+      }
+    case _ =>
+      tree.tpe.isInstanceOf[ThisType]
+  }
+
   /**
    * Named arguments can transform a constructor call into a block, e.g.
    *   <init>(b = foo, a = bar)
@@ -745,6 +781,16 @@ abstract class TreeInfo {
     val sym = if (tree.tpe != null) tree.tpe.typeSymbol else null
     ((sym ne null) && sym.initialize.isTrait)
   }
+
+  def hasExplicitUnit(tree: Tree): Boolean =
+    explicitlyUnit(tree) || {
+      tree match {
+        case Apply(f, _)           => hasExplicitUnit(f)
+        case TypeApply(f, _)       => hasExplicitUnit(f)
+        case AppliedTypeTree(f, _) => hasExplicitUnit(f)
+        case _                     => false
+      }
+    }
 
   /** Applications in Scala can have one of the following shapes:
    *

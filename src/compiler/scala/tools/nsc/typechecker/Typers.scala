@@ -750,7 +750,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (immediate) {
           action()
         } else {
-          unit.toCheck += (() => action())
+          unit.toCheck += (() => action(): Unit)
           true
         }
       }
@@ -1112,15 +1112,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
           @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
-          @inline def warnValueDiscard(): Unit = if (!isPastTyper && settings.warnValueDiscard.value) {
-            def isThisTypeResult = (tree, tree.tpe) match {
-              case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
-              case _ => false
-            }
-            if (!isThisTypeResult && !explicitlyUnit(tree))
-              context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}",
-                WarningCategory.WFlagValueDiscard)
-          }
+          @inline def warnValueDiscard(): Unit =
+            if (!isPastTyper && settings.warnValueDiscard.value && !treeInfo.isThisTypeResult(tree) && !treeInfo.hasExplicitUnit(tree))
+              context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
           @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit =
             if (!isPastTyper) {
               val isInharmonic = (
@@ -1245,7 +1239,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case ct @ FoldableConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
           adaptConstant(value)
         case OverloadedType(_, _) if !mode.inFunMode => // (1)
-          inferExprAlternative(tree, pt)
+          inferExprAlternative(tree, pt): Unit
           adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
           if (hasUndets && settings.lintUniversalMethods && (isCastSymbol(tree.symbol) || isTypeTestSymbol(tree.symbol)) && context.undetparams.exists(_.owner == tree.symbol))
@@ -4722,7 +4716,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedIf(tree: If): If = {
         val cond1 = checkDead(context, typedByValueExpr(tree.cond, BooleanTpe))
-        // One-legged ifs don't need a lot of analysis
+        // Unibranch if normally has unit value else, but synthetic code may emit empty else.
         if (tree.elsep.isEmpty)
           return treeCopy.If(tree, cond1, typed(tree.thenp, UnitTpe), tree.elsep) setType UnitTpe
 
