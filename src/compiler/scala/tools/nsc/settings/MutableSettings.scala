@@ -855,7 +855,11 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def isHelping = sawHelp
     override def help = usageErrorMessage
 
-    def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
+    def tryToSet(args: List[String]) =
+      args match {
+        case Nil => errorAndValue(usageErrorMessage, None)
+        case arg :: rest => tryToSetColon(List(arg)).map(_ => rest)
+      }
 
     override def tryToSetColon(args: List[String]) = args map _preSetHook match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
