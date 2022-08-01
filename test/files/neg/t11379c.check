@@ -1,0 +1,15 @@
+t11379c.scala:8: warning: discarded non-Unit value of type OneTypeParam[Unit]
+  def checkCompilerUnTyped: OneTypeParam[Unit] = unitValue.map(_ => unitValue)
+                                                                    ^
+t11379c.scala:9: warning: discarded non-Unit value of type OneTypeParam[Unit]
+  def checkCompilerTypedInner: OneTypeParam[Unit] = unitValue.map(_ => typedValue)
+                                                                       ^
+t11379c.scala:10: warning: discarded non-Unit value of type OneTypeParam[Unit]
+  def checkCompilerTypedOuter: OneTypeParam[Unit] = typedValue.map(_ => unitValue)
+                                                                        ^
+t11379c.scala:11: warning: discarded non-Unit value of type OneTypeParam[Unit]
+  def checkCompilerTypedBoth: OneTypeParam[Unit] = typedValue.map(_ => typedValue)
+                                                                       ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error
