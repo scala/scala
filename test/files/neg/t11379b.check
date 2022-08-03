@@ -1,0 +1,9 @@
+t11379b.scala:5: warning: discarded non-Unit value of type OneTypeParam[Unit]
+  def checkCompiler: OneTypeParam[Unit] = unitValue.map(_ => unitValue)
+                                                             ^
+t11379b.scala:11: warning: discarded non-Unit value of type TwoTypeParam[Nothing,Unit]
+  def checkCompiler: TwoTypeParam[String, Unit] = unitValue.map(_ => unitValue)
+                                                                     ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
