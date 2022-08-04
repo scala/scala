@@ -76,12 +76,12 @@ Missing implementation for member of trait Collection:
 class JustOne extends Collection[Int] {
       ^
 abstract-report2.scala:47: error: class C needs to be a mixin.
-absoverride def t(): Int (defined in trait T) is marked `abstract` and `override`, but no concrete implementation could be found in a base class
+abstract override def t(): Int (defined in trait T) is marked `abstract` and `override`, but no concrete implementation could be found in a base class
 class C extends T               // refchecks
       ^
 abstract-report2.scala:50: error: class D needs to be a mixin.
-absoverride def t(): Int (defined in trait W) is marked `abstract` and `override` and overrides incomplete superclass member
-absoverride def t(): Int (defined in trait V)
+abstract override def t(): Int (defined in trait W) is marked `abstract` and `override` and overrides incomplete superclass member
+abstract override def t(): Int (defined in trait V)
 class D extends W
       ^
 7 errors

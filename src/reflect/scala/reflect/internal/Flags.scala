@@ -437,7 +437,7 @@ class Flags extends ModifierFlags {
     case               MACRO => "<macro>"                             // (1L << 15)
     case         BYNAMEPARAM => "<bynameparam/captured/covariant>"    // (1L << 16)
     case       CONTRAVARIANT => "<contravariant/inconstructor/label>" // (1L << 17)
-    case         ABSOVERRIDE => "absoverride"                         // (1L << 18)
+    case         ABSOVERRIDE => "abstract override"                   // (1L << 18)
     case               LOCAL => "<local>"                             // (1L << 19)
     case                JAVA => "<java>"                              // (1L << 20)
     case           SYNTHETIC => "<synthetic>"                         // (1L << 21)
