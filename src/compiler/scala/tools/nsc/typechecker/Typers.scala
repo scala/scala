@@ -15,12 +15,11 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.{tailrec, unused}
-import scala.collection.mutable
+import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
-import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
 
@@ -2652,6 +2651,31 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val selector1  = checkDead(context, typedByValueExpr(selector))
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
+
+      def initChildren(sym: Symbol): Unit =
+        if (sym.isJava && sym.isSealed)
+          sym.attachments.get[PermittedSubclassSymbols] match {
+            case Some(PermittedSubclassSymbols(permits)) =>
+              for (child <- permits if child.isJava)
+                initChildren(child.initialize)
+            case _ =>
+              val seen = mutable.HashSet.empty[Symbol]
+              def populate(): Unit =
+                patmat.javaClassesByUnit.get(sym.pos.source) match {
+                  case Some(classes) =>
+                    classes.find(!seen(_)) match {
+                      case Some(unseen) =>
+                        seen += unseen
+                        unseen.initialize.companionSymbol.moduleClass.initialize
+                        if (unseen.hasAttachment[PermittedSubclassSymbols]) initChildren(unseen)
+                        populate()
+                      case _ =>
+                    }
+                  case _ =>
+                }
+              populate()
+          }
+      initChildren(selectorTp.typeSymbol)
 
       def finish(cases: List[CaseDef], matchType: Type) =
         treeCopy.Match(tree, selector1, cases) setType matchType

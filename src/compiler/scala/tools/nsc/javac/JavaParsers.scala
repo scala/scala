@@ -19,6 +19,7 @@ package javac
 import symtab.Flags
 import JavaTokens._
 import scala.annotation._
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
 import scala.reflect.internal.util.{ListOfNil, Position}
@@ -45,6 +46,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
+    def unit: CompilationUnit
 
     def freshName(prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
@@ -494,7 +496,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             in.nextToken()
           case _ =>
             val unsealed = 0L   // no flag for UNSEALED
-            def consume(added: FlagSet): false = { in.nextToken(); /*flags |= added;*/ false }
+            def consume(added: FlagSet): false = { in.nextToken(); flags |= added; false }
             def lookingAhead(s: String): Boolean = {
               import scala.reflect.internal.Chars._
               var i = 0
@@ -838,6 +840,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       else Nil
 
     def classDecl(mods: Modifiers): List[Tree] = {
+      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(CLASS)
       val pos = in.currentPos
       val name = identForType()
@@ -904,6 +907,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def interfaceDecl(mods: Modifiers): List[Tree] = {
+      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
