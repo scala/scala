@@ -1811,7 +1811,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (parent == DynamicClass) checkFeature(parentPos, currentRun.runDefinitions.DynamicsFeature)
 
       def validateParentClass(parent: Tree, superclazz: Symbol) =
-        if (!parent.isErrorTyped) {
+        if (!parent.isErrorTyped) { // redundant
           val psym = parent.tpe.typeSymbol.initialize
 
           if (!context.unit.isJava)
@@ -1876,7 +1876,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (!parents.isEmpty && parents.forall(!_.isErrorTyped)) {
         val superclazz = parents.head.tpe.typeSymbol
-        for (p <- parents) validateParentClass(p, superclazz)
+        parents.foreach(validateParentClass(_, superclazz))
       }
 
       pending.foreach(ErrorUtils.issueTypeError)
@@ -2054,7 +2054,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val body1 = pluginsEnterStats(this, namer.expandMacroAnnotations(templ.body))
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
-      validateParentClasses(parents1, selfType, clazz.isTrait)
+        validateParentClasses(parents1, selfType, clazz.isTrait)
       if (clazz.isCase)
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))
@@ -2088,11 +2088,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ctors.foreach(AuxConstrInConstantAnnotation(_, clazz))
       }
 
-
       if (clazz.isTrait) {
-        for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
-          context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.", WarningCategory.Other)
-        }
+        for (decl <- clazz.info.decls)
+          if (decl.isTerm && decl.isEarlyInitialized)
+            context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.", WarningCategory.Other)
       }
 
       treeCopy.Template(templ, parents1, self1, body3) setType clazz.tpe_*

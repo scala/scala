@@ -1011,13 +1011,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
 
-    /** A helper function for isEffectivelyFinal. */
-    private def isNotOverridden =
-      owner.isClass && (
-           owner.isEffectivelyFinal
-        || owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && overridingSymbol(c) == NoSymbol)
-      )
-
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
          hasFlag(FINAL | PACKAGE) && this != SingletonClass
@@ -1028,7 +1021,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isClass && !isRefinementClass && originalOwner.isTerm && children.isEmpty
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
-    final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)
+    final def isEffectivelyFinalOrNotOverridden: Boolean = {
+      def isNotOverridden =
+        owner.isClass && (
+             owner.isEffectivelyFinal
+          || owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && overridingSymbol(c) == NoSymbol)
+        )
+      isEffectivelyFinal || isTerm && !isDeferred && isNotOverridden
+    }
 
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass

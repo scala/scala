@@ -1426,7 +1426,7 @@ trait Trees extends api.Trees {
       else Modifiers(flags, privateWithin, newAnns) setPositions positions
     }
 
-    override def toString = "Modifiers(%s, %s, %s)".format(flagString, annotations mkString ", ", positions)
+    override def toString = s"Modifiers($flagString, ${annotations.mkString(",")}, $positions)"
   }
 
   object Modifiers extends ModifiersExtractor

@@ -1769,9 +1769,9 @@ trait Types
         }
       }
     }
-    //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG
+    //Console.println(s"baseTypeSeq(${tpe.typeSymbol}) = ${tpe.baseTypeSeqCache.toList}") //DEBUG
     if (tpe.baseTypeSeqCache eq undetBaseTypeSeq)
-      throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
+      throw new TypeError(s"illegal cyclic inheritance involving ${tpe.typeSymbol}")
   }
 
   protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
@@ -2792,8 +2792,9 @@ trait Types
         }
       }
     }
+    //Console.println(s"baseTypeSeq(${tpe.typeSymbol}) = ${tpe.baseTypeSeqCache.toList}") //DEBUG
     if (tpe.baseTypeSeqCache == undetBaseTypeSeq)
-      throw new TypeError("illegal cyclic inheritance involving " + tpe.sym)
+      throw new TypeError(s"illegal cyclic inheritance involving ${tpe.sym}")
   }
 
   /** A class representing a method type with parameters.

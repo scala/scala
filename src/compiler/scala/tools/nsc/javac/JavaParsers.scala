@@ -16,14 +16,14 @@
 package scala.tools.nsc
 package javac
 
-import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
-import scala.annotation.tailrec
+import scala.annotation._
+import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
-import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.ListOfNil
+import scala.reflect.internal.util.{ListOfNil, Position}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
@@ -493,11 +493,39 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case SYNCHRONIZED =>
             in.nextToken()
           case _ =>
-            val privateWithin: TypeName =
-              if (isPackageAccess && !inInterface) thisPackageName
-              else tpnme.EMPTY
-
-            return Modifiers(flags, privateWithin) withAnnotations annots
+            val unsealed = 0L   // no flag for UNSEALED
+            def consume(added: FlagSet): false = { in.nextToken(); /*flags |= added;*/ false }
+            def lookingAhead(s: String): Boolean = {
+              import scala.reflect.internal.Chars._
+              var i = 0
+              val n = s.length
+              val lookahead = in.in.lookahead
+              while (i < n && lookahead.ch != SU) {
+                if (lookahead.ch != s.charAt(i)) return false
+                lookahead.next()
+                i += 1
+              }
+              i == n && Character.isWhitespace(lookahead.ch)
+            }
+            val done = (in.token != IDENTIFIER) || (
+              in.name match {
+                case nme.javaRestrictedIdentifiers.SEALED => consume(Flags.SEALED)
+                case nme.javaRestrictedIdentifiers.UNSEALED => consume(unsealed)
+                case nme.javaRestrictedIdentifiers.NON =>
+                  !lookingAhead("-sealed") || {
+                    in.nextToken()
+                    in.nextToken()
+                    consume(unsealed)
+                  }
+                case _ => true
+              }
+            )
+            if (done) {
+              val privateWithin: TypeName =
+                if (isPackageAccess && !inInterface) thisPackageName
+                else tpnme.EMPTY
+              return Modifiers(flags, privateWithin) withAnnotations annots
+            }
         }
       }
       abort("should not be here")
@@ -802,6 +830,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         List()
       }
 
+    def permitsOpt() =
+      if (in.token == IDENTIFIER && in.name == nme.javaRestrictedIdentifiers.PERMITS) {
+        in.nextToken()
+        repsep(() => typ(), COMMA)
+      }
+      else Nil
+
     def classDecl(mods: Modifiers): List[Tree] = {
       accept(CLASS)
       val pos = in.currentPos
@@ -815,9 +850,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           javaLangObject()
         }
       val interfaces = interfacesOpt()
+      val permits = permitsOpt()
       val (statics, body) = typeBody(CLASS)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body))
+          .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
       })
     }
 
@@ -878,11 +915,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else {
           List(javaLangObject())
         }
+      val permits = permitsOpt()
       val (statics, body) = typeBody(INTERFACE)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
                  name, tparams,
                  makeTemplate(parents, body))
+          .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
       })
     }
 
@@ -905,7 +944,6 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken()
         } else {
-
           // See "14.3. Local Class and Interface Declarations"
           adaptRecordIdentifier()
           if (in.token == ENUM || in.token == RECORD || definesInterface(in.token))

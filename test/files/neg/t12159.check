@@ -1,0 +1,4 @@
+s.scala:11: error: not found: type ZZ
+class Z extends ZZ // fail compile: remove when source flags are restored
+                ^
+1 error
