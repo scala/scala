@@ -1043,7 +1043,7 @@ lazy val root: Project = (project in file("."))
     setIncOptions
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
+    scaladoc, scalap, testkit, partest, junit, scalacheck, tasty, tastytest, scalaDist).settings(
     Compile / sources := Seq.empty,
     onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
       |version=${(Global / version).value} scalaVersion=${(Global / scalaVersion).value}
