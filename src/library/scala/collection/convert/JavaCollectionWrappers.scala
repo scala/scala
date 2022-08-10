@@ -27,7 +27,7 @@ import scala.util.chaining._
 // not private[convert] because `WeakHashMap` uses JMapWrapper
 private[collection] object JavaCollectionWrappers extends Serializable {
   @SerialVersionUID(3L)
-  case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] with Serializable {
+  class IteratorWrapper[A](val underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next()
     def hasMoreElements = underlying.hasNext
@@ -36,13 +36,13 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
+  class JIteratorWrapper[A](val underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next
   }
 
   @SerialVersionUID(3L)
-  case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
+  class JEnumerationWrapper[A](val underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasMoreElements
     def next() = underlying.nextElement
   }
@@ -50,15 +50,15 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
     def size = underlying.size
-    override def iterator = IteratorWrapper(underlying.iterator)
+    override def iterator = new IteratorWrapper(underlying.iterator)
     override def isEmpty = underlying.isEmpty
   }
 
   @SerialVersionUID(3L)
-  case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable
+  class IterableWrapper[A](val underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable
 
   @SerialVersionUID(3L)
-  case class JIterableWrapper[A](underlying: jl.Iterable[A])
+  class JIterableWrapper[A](val underlying: jl.Iterable[A])
     extends AbstractIterable[A]
       with StrictOptimizedIterableOps[A, Iterable, Iterable[A]]
       with Serializable {
@@ -68,7 +68,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JCollectionWrapper[A](underlying: ju.Collection[A])
+  class JCollectionWrapper[A](val underlying: ju.Collection[A])
     extends AbstractIterable[A]
       with StrictOptimizedIterableOps[A, Iterable, Iterable[A]]
       with Serializable {
@@ -80,12 +80,12 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class SeqWrapper[A](underlying: Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
+  class SeqWrapper[A](val underlying: Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
   }
 
   @SerialVersionUID(3L)
-  case class MutableSeqWrapper[A](underlying: mutable.Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
+  class MutableSeqWrapper[A](val underlying: mutable.Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
     override def set(i: Int, elem: A) = {
       val p = underlying(i)
@@ -95,7 +95,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class MutableBufferWrapper[A](underlying: mutable.Buffer[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
+  class MutableBufferWrapper[A](val underlying: mutable.Buffer[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
     override def set(i: Int, elem: A) = { val p = underlying(i); underlying(i) = elem; p }
     override def add(elem: A) = { underlying += elem; true }
@@ -103,7 +103,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JListWrapper[A](underlying: ju.List[A])
+  class JListWrapper[A](val underlying: ju.List[A])
     extends mutable.AbstractBuffer[A]
       with SeqOps[A, mutable.Buffer, mutable.Buffer[A]]
       with StrictOptimizedSeqOps[A, mutable.Buffer, mutable.Buffer[A]]
@@ -126,7 +126,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     def clear() = underlying.clear()
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
     // expose clone methods.  Generically, they're protected.
-    override def clone(): JListWrapper[A] = JListWrapper(new ju.ArrayList[A](underlying))
+    override def clone(): JListWrapper[A] = new JListWrapper(new ju.ArrayList[A](underlying))
     def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type = {
       remove(from, replaced)
       insertAll(from, patch)
@@ -167,7 +167,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class MutableSetWrapper[A](underlying: mutable.Set[A]) extends SetWrapper[A](underlying) with Serializable {
+  class MutableSetWrapper[A](val underlying: mutable.Set[A]) extends SetWrapper[A](underlying) with Serializable {
     override def add(elem: A) = {
       val sz = underlying.size
       underlying += elem
@@ -180,7 +180,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JSetWrapper[A](underlying: ju.Set[A])
+  class JSetWrapper[A](val underlying: ju.Set[A])
     extends mutable.AbstractSet[A]
       with mutable.SetOps[A, mutable.Set, mutable.Set[A]]
       with StrictOptimizedSetOps[A, mutable.Set, mutable.Set[A]]
@@ -202,7 +202,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       underlying.clear()
     }
 
-    override def empty: mutable.Set[A] = JSetWrapper(new ju.HashSet[A])
+    override def empty: mutable.Set[A] = new JSetWrapper(new ju.HashSet[A])
 
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
     // expose clone methods.  Generically, they're protected.
@@ -290,7 +290,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class MutableMapWrapper[K, V](underlying: mutable.Map[K, V]) extends MapWrapper[K, V](underlying) {
+  class MutableMapWrapper[K, V](val underlying: mutable.Map[K, V]) extends MapWrapper[K, V](underlying) {
     override def put(k: K, v: V) = underlying.put(k, v) match {
       case Some(v1) => v1
       case None => null.asInstanceOf[V]
@@ -406,7 +406,9 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  class ConcurrentMapWrapper[K, V](override val underlying: concurrent.Map[K, V]) extends MutableMapWrapper[K, V](underlying) with juc.ConcurrentMap[K, V] {
+  class ConcurrentMapWrapper[K, V](underlying: concurrent.Map[K, V]) extends MutableMapWrapper[K, V](underlying) with juc.ConcurrentMap[K, V] {
+
+    def underlyingConcurrentMap: concurrent.Map[K, V] = underlying
 
     override def putIfAbsent(k: K, v: V) = underlying.putIfAbsent(k, v) match {
       case Some(v) => v
@@ -433,7 +435,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
    *  are not guaranteed to be atomic.
    */
   @SerialVersionUID(3L)
-  case class JConcurrentMapWrapper[K, V](underlying: juc.ConcurrentMap[K, V])
+  class JConcurrentMapWrapper[K, V](val underlying: juc.ConcurrentMap[K, V])
     extends AbstractJMapWrapper[K, V]
       with concurrent.Map[K, V] {
 
@@ -466,7 +468,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class DictionaryWrapper[K, V](underlying: mutable.Map[K, V]) extends ju.Dictionary[K, V] with Serializable {
+  class DictionaryWrapper[K, V](val underlying: mutable.Map[K, V]) extends ju.Dictionary[K, V] with Serializable {
     def size: Int = underlying.size
     def isEmpty: Boolean = underlying.isEmpty
     def keys: ju.Enumeration[K] = underlying.keysIterator.asJavaEnumeration
@@ -494,7 +496,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JDictionaryWrapper[K, V](underlying: ju.Dictionary[K, V]) extends mutable.AbstractMap[K, V] with Serializable {
+  class JDictionaryWrapper[K, V](val underlying: ju.Dictionary[K, V]) extends mutable.AbstractMap[K, V] with Serializable {
     override def size: Int = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
@@ -517,7 +519,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JPropertiesWrapper(underlying: ju.Properties)
+  class JPropertiesWrapper(underlying: ju.Properties)
     extends mutable.AbstractMap[String, String]
       with mutable.MapOps[String, String, mutable.Map, mutable.Map[String, String]]
       with StrictOptimizedMapOps[String, String, mutable.Map, mutable.Map[String, String]]
@@ -558,7 +560,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def clear() = underlying.clear()
 
-    override def empty = JPropertiesWrapper(new ju.Properties)
+    override def empty = new JPropertiesWrapper(new ju.Properties)
 
     def getProperty(key: String) = underlying.getProperty(key)
 

@@ -39,6 +39,11 @@ object MimaFilters extends AutoPlugin {
     // internal to wrappers
     ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.getOrElseUpdate"),
     ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.updateWith"),
+
+    // removing case classing from wrappers means synthetic methods and parent types and companions are missing
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#*"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
   )
 
   override val buildSettings = Seq(
