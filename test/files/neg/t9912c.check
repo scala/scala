@@ -1,0 +1,7 @@
+t9912c.scala:8: error: bridge generated for member method compareTo: (b: B): Int in class C3
+which overrides method compareTo: (t: T): Int in trait C2
+clashes with definition of method compareTo: (a: A): Int in class C1;
+both have erased type (t: A): Int
+class C3 extends C1 with C2[B] { def compareTo(b: B): Int = 1 }
+                                     ^
+1 error
