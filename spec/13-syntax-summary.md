@@ -97,7 +97,6 @@ grammar:
                       |  booleanLiteral
                       |  characterLiteral
                       |  stringLiteral
-                      |  interpolatedString
                       |  symbolLiteral
                       |  ‘null’
 
@@ -163,6 +162,7 @@ grammar:
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
   SimpleExpr1       ::=  Literal
+                      |  interpolatedString
                       |  Path
                       |  ‘_’
                       |  ‘(’ [Exprs] ‘)’

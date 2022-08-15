@@ -323,7 +323,6 @@ Literal  ::=  [‘-’] integerLiteral
            |  booleanLiteral
            |  characterLiteral
            |  stringLiteral
-           |  interpolatedString
            |  symbolLiteral
            |  ‘null’
 ```
@@ -510,6 +509,8 @@ escape                 ::= ‘$$’
                          | ‘$’ BlockExpr
 alphaid                ::= upper idrest
                          |  varid
+SimpleExpr1            ::=  Literal
+                         |  interpolatedString
 
 ```
 
