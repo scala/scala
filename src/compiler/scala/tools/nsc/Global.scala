@@ -1369,16 +1369,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
         runReporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
-      if (!StandardScalaSettings.SupportedTargetVersions.contains(settings.target.value)) {
-        runReporting.deprecationWarning(
-          NoPosition,
-          settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + StandardScalaSettings.DefaultTargetVersion,
-          since = "2.12.16",
-          site = "",
-          origin = ""
-        )
-        settings.target.value = StandardScalaSettings.DefaultTargetVersion
-      }
       settings.conflictWarning.foreach(runReporting.warning(NoPosition, _, WarningCategory.Other, site = ""))
     }
 

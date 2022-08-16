@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package settings
 
-import scala.tools.nsc.settings.StandardScalaSettings.{AllTargetVersions, DefaultTargetVersion, SupportedTargetVersions}
+import scala.tools.nsc.settings.StandardScalaSettings._
 import scala.tools.util.PathResolver.Defaults
 import scala.util.Properties.{isJavaAtLeast, javaSpecVersion}
 
@@ -71,15 +71,17 @@ trait StandardScalaSettings { _: MutableSettings =>
       if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false))
         errorFn("-release cannot be less than -target")
       if (!setting.deprecationMessage.isDefined)
-        if (SupportedTargetVersions.contains(setting.value))
-          setting.withDeprecationMessage("Use -release instead to compile against the correct platform API.")
-        else {
+        if (setting.value.toInt > MaxSupportedTargetVersion) {
+          setting.withDeprecationMessage(s"Scala 2.12 cannot emit valid class files for targets newer than $MaxSupportedTargetVersion (this is possible with Scala 2.13). Use -release to compile against a specific platform API version.")
+          setting.value = DefaultTargetVersion
+        } else if (setting.value.toInt < MinSupportedTargetVersion) {
           setting.withDeprecationMessage(s"${setting.name}:${setting.value} is deprecated, forcing use of $DefaultTargetVersion")
-          setting.value = DefaultTargetVersion   // triggers this hook
+          setting.value = DefaultTargetVersion
         }
     }
     .withAbbreviation("--target")
-  def targetValue: String = releaseValue.getOrElse(target.value)
+  // Unlike 2.13, don't use `releaseValue.getOrElse(target.value)`, because 2.12 doesn't have a fix for scala-dev#408
+  def targetValue: String = target.value
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -115,9 +117,9 @@ object StandardScalaSettings {
     case SpecificScalaVersion(major, _, _, _) => major
     case _ => 19
   }
+  val MaxSupportedTargetVersion = 8
   val DefaultTargetVersion = "8"
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).toList
-  val SupportedTargetVersions: List[String] = (MinSupportedTargetVersion to MaxTargetVersion).map(_.toString).toList
   val AllPermissibleTargetValues: List[String] = AllTargetVersions.flatMap(v => v :: s"jvm-1.$v" :: s"jvm-$v" :: s"1.$v" :: Nil)
 }
