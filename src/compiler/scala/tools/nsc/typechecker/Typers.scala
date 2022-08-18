@@ -5632,7 +5632,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedPackageDef(pdef0: PackageDef) = {
         val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, namer.expandMacroAnnotations(pdef0.stats)))
-        val pid1 = typedPackageQualifier(pdef.pid).asInstanceOf[RefTree]
+        val pid1 = context.withMode(ContextMode.InPackageClauseName)(typedPackageQualifier(pdef.pid).asInstanceOf[RefTree])
         assert(sym.moduleClass ne NoSymbol, sym)
         if (pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule))
           reporter.error(pdef.pos, s"There is name conflict between the ${pid1.symbol.fullName} and the package ${sym.fullName}.")
