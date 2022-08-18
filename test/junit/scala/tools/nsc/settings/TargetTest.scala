@@ -26,8 +26,8 @@ class TargetTest {
 
   @Test def testSettingTargetSetting(): Unit = {
     def goodVersion(v: String): Boolean = Try(isJavaAtLeast(v)).getOrElse(false)
-    def check(in: String, expect: String) =
-      if (goodVersion(expect)) {
+    def check(in: String, expect: String, minJvm: String = "8") =
+      if (goodVersion(minJvm)) {
         val settings = new Settings(err => fail(s"Error output: $err"))
         val (ok, _) = settings.processArgumentString(in)
         assertTrue(ok)
@@ -67,33 +67,33 @@ class TargetTest {
     check("-target:jvm-8", "8")
     check("-target:8", "8")
 
-    check("-target:jvm-9", "9")
-    check("-target:9", "9")
+    check("-target:jvm-9", "8", "9")
+    check("-target:9", "8", "9")
     checkFail("-target:jvm-1.9")
     checkFail("-target:1.9")
 
-    check("-target:jvm-10", "10")
-    check("-target:10", "10")
+    check("-target:jvm-10", "8", "10")
+    check("-target:10", "8", "10")
 
-    check("-target:jvm-11", "11")
-    check("-target:11", "11")
+    check("-target:jvm-11", "8", "11")
+    check("-target:11", "8", "11")
 
-    check("-target:jvm-12", "12")
-    check("-target:12", "12")
+    check("-target:jvm-12", "8", "12")
+    check("-target:12", "8", "12")
 
     // (scene missing)
 
-    check("-target:jvm-16", "16")
-    check("-target:16", "16")
+    check("-target:jvm-16", "8", "16")
+    check("-target:16", "8", "16")
 
-    check("-target:jvm-17", "17")
-    check("-target:17", "17")
+    check("-target:jvm-17", "8", "17")
+    check("-target:17", "8", "17")
 
-    check("-target:jvm-18", "18")
-    check("-target:18", "18")
+    check("-target:jvm-18", "8", "18")
+    check("-target:18", "8", "18")
 
-    check("-target:jvm-19", "19")
-    check("-target:19", "19")
+    check("-target:jvm-19", "8", "19")
+    check("-target:19", "8", "19")
 
     checkFail("-target:jvm-20")   // not yet...
     checkFail("-target:jvm-3000") // not in our lifetime
