@@ -1527,7 +1527,8 @@ trait Contexts { self: Analyzer =>
           @inline def importCompetesWithDefinition =
             if (thisContext.unit.isJava) imp.depth == symbolDepth && defIsLevel4
             else defIsLevel4
-          imp.depth > symbolDepth || importCompetesWithDefinition
+          !cx(ContextMode.InPackageClauseName) &&
+            (imp.depth > symbolDepth || importCompetesWithDefinition)
         }
 
         while (!impSym.exists && importCursor.imp1Exists && importCanShadowAtDepth(importCursor.imp1)) {
@@ -2031,6 +2032,8 @@ object ContextMode {
     * When set, Java annotations may be instantiated directly.
     */
   final val TypingAnnotation: ContextMode         = 1 << 19
+
+  final val InPackageClauseName: ContextMode      = 1 << 20
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
