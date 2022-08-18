@@ -6,12 +6,12 @@ t7187-deprecation.scala:17: error: type mismatch;
 t7187-deprecation.scala:19: error: type mismatch;
  found   : Int
  required: AcciSamZero
-  val t2AcciSam: AcciSamZero = m2 // error, nilary methods don't eta-expand to SAM types under -Xsource:3
+  val t2AcciSam: AcciSamZero = m2 // error, nilary methods don't eta-expand to SAM types
                                ^
 t7187-deprecation.scala:20: error: type mismatch;
  found   : Int
  required: SamZero
-  val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types under -Xsource:3
+  val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types
                        ^
 t7187-deprecation.scala:31: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead
   val t7 = m1 _ // error: eta-expanding a nullary method

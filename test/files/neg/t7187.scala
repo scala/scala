@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xlint:eta-zero -Xlint:eta-sam
+// scalac: -Xlint:deprecation,eta-zero,eta-sam
 //
 
 trait AcciSamOne { def apply(x: Int): Int }

@@ -884,28 +884,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def warnTree = original orElse tree
 
-        def warnEtaZero(): Boolean = {
-          if (!settings.warnEtaZero) return true
-          context.warning(tree.pos,
-            s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
-               |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
-            WarningCategory.LintEtaZero)
-          true
-        }
-
-        def warnEtaSam(): Boolean = {
-          if (!settings.warnEtaSam) return true
-          val sam = samOf(pt)
-          val samClazz = sam.owner
-          // TODO: we allow a Java class as a SAM type, whereas Java only allows the @FunctionalInterface on interfaces -- align?
-          if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
+        def warnEtaZero(): true =
+          if (!settings.warnEtaZero) true
+          else {
             context.warning(tree.pos,
-              s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
-                 |even though $samClazz is not annotated with `@FunctionalInterface`;
-                 |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
-              WarningCategory.LintEtaSam)
-          true
-        }
+              s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
+                 |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
+              WarningCategory.LintEtaZero)
+            true
+          }
+
+        def warnEtaSam(): true =
+          if (!settings.warnEtaSam && !currentRun.isScala3) true
+          else {
+            val sam = samOf(pt)
+            val samClazz = sam.owner
+            if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
+              context.warning(tree.pos,
+                s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
+                   |even though $samClazz is not annotated with `@FunctionalInterface`;
+                   |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
+                WarningCategory.LintEtaSam)
+            true
+          }
 
         // note that isFunctionProto(pt) does not work properly for Function0
         lazy val ptUnderlying =

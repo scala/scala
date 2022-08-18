@@ -1,0 +1,17 @@
+t11644a.scala:20: error: type mismatch;
+ found   : Int
+ required: AcciSamZero
+  val t2AcciSam: AcciSamZero = m2 // error, nilary methods don't eta-expand to SAM types
+                               ^
+t11644a.scala:21: error: type mismatch;
+ found   : Int
+ required: SamZero
+  val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types
+                       ^
+t11644a.scala:24: warning: Eta-expansion performed to meet expected type AcciSamOne, which is SAM-equivalent to Int => Int,
+even though trait AcciSamOne is not annotated with `@FunctionalInterface`;
+to suppress warning, add the annotation or write out the equivalent function literal.
+  val t3AcciSam: AcciSamOne = m3  // warn
+                              ^
+1 warning
+2 errors
