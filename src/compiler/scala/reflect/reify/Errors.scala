@@ -10,10 +10,12 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.reflect.reify
+package scala.reflect
+package reify
 
-import scala.reflect.macros.ReificationException
-import scala.reflect.macros.UnexpectedReificationException
+import internal.util.StringContextStripMarginOps
+import macros.ReificationException
+import macros.UnexpectedReificationException
 
 trait Errors {
   self: Reifier =>

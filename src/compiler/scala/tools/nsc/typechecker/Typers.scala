@@ -17,7 +17,7 @@ package typechecker
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.internal.{Chars, TypesStats}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics}
+import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
 import mutable.ListBuffer
@@ -901,9 +901,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val samClazz = sam.owner
             if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
               context.warning(tree.pos,
-                s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
+                sm"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
                    |even though $samClazz is not annotated with `@FunctionalInterface`;
-                   |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
+                   |to suppress warning, add the annotation or write out the equivalent function literal.""",
                 WarningCategory.LintEtaSam)
             true
           }
