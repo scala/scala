@@ -22,5 +22,7 @@ class EtaExpand214 {
 
   val t3: Int => Any = m3         // no warn
   val t3AcciSam: AcciSamOne = m3  // warn
+  val t3SamLit: AcciSamOne = (x: Int) => m3(x) // no warn
+  val t3SamPH: AcciSamOne = m3(_) // no warn
   val t3Sam: SamOne = m3          // no warn
 }

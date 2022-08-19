@@ -898,13 +898,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!settings.warnEtaSam && !currentRun.isScala3) true
           else {
             val sam = samOf(pt)
-            val samClazz = sam.owner
-            if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
-              context.warning(tree.pos,
-                sm"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
-                   |even though $samClazz is not annotated with `@FunctionalInterface`;
-                   |to suppress warning, add the annotation or write out the equivalent function literal.""",
-                WarningCategory.LintEtaSam)
+            if (sam.exists) {
+              val samClazz = sam.owner
+              if ((!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass)) {
+                val ft = samToFunctionType(pt)
+                val sample = Function(meth.paramss.head.map(ValDef(_)), Apply(meth, meth.paramss.head.map(p => Ident(p.name)): _*))
+                val places = Apply(meth, meth.paramss.head.map(_ => Ident(nme.USCOREkw)): _*)
+                context.warning(tree.pos,
+                  sm"""Eta-expansion to expected type $pt, which is not a function type but is SAM-convertible to $ft.
+                     |$samClazz should be annotated with `@FunctionalInterface` if eta-expansion is desired.
+                     |Or, avoid eta-expansion by writing the function literal `$sample` or `$places`.
+                     |This warning can be filtered with `-Wconf:cat=lint-eta-sam`.""",
+                  WarningCategory.LintEtaSam)
+              }
+            }
             true
           }
 
