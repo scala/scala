@@ -14,7 +14,7 @@ Write m2() to invoke method m2, or change the expected type.
                        ^
 t11644b.scala:22: warning: Eta-expansion to expected type AcciSamOne, which is not a function type but is SAM-convertible to Int => Int.
 trait AcciSamOne should be annotated with `@FunctionalInterface` if eta-expansion is desired.
-Or, avoid eta-expansion by writing the function literal `((x: Int) => m3(x))` or `m3(_)`.
+Avoid eta-expansion by writing the function literal `((x: Int) => m3(x))` or `m3(_)`.
 This warning can be filtered with `-Wconf:cat=lint-eta-sam`.
   val t3AcciSam: AcciSamOne = m3  // warn
                               ^

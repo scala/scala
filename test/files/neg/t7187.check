@@ -51,7 +51,7 @@ Write zap()() to invoke method zap, or change the expected type.
                           ^
 t7187.scala:40: warning: Eta-expansion to expected type AcciSamOne, which is not a function type but is SAM-convertible to Int => Int.
 trait AcciSamOne should be annotated with `@FunctionalInterface` if eta-expansion is desired.
-Or, avoid eta-expansion by writing the function literal `((x: Int) => zup(x))` or `zup(_)`.
+Avoid eta-expansion by writing the function literal `((x: Int) => zup(x))` or `zup(_)`.
 This warning can be filtered with `-Wconf:cat=lint-eta-sam`.
   val t5AcciSam: AcciSamOne = zup // ok, but warning
                               ^

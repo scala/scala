@@ -884,36 +884,37 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def warnTree = original orElse tree
 
-        def warnEtaZero(): true =
-          if (!settings.warnEtaZero) true
-          else {
+        def warnEtaZero(): true = {
+          if (settings.warnEtaZero) {
             context.warning(tree.pos,
               s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
                  |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
               WarningCategory.LintEtaZero)
-            true
           }
+          true
+        }
 
-        def warnEtaSam(): true =
-          if (!settings.warnEtaSam && !currentRun.isScala3) true
-          else {
+        def warnEtaSam(): true = {
+          if (settings.warnEtaSam || currentRun.isScala3) {
             val sam = samOf(pt)
             if (sam.exists) {
               val samClazz = sam.owner
-              if ((!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass)) {
+              val isJavaClass = samClazz.isJava && !samClazz.isInterface
+              if (!samClazz.hasAnnotation(definitions.FunctionalInterfaceClass)) {
                 val ft = samToFunctionType(pt)
                 val sample = Function(meth.paramss.head.map(ValDef(_)), Apply(meth, meth.paramss.head.map(p => Ident(p.name)): _*))
                 val places = Apply(meth, meth.paramss.head.map(_ => Ident(nme.USCOREkw)): _*)
+                val advice = if (isJavaClass) "" else s"\n$samClazz should be annotated with `@FunctionalInterface` if eta-expansion is desired."
                 context.warning(tree.pos,
-                  sm"""Eta-expansion to expected type $pt, which is not a function type but is SAM-convertible to $ft.
-                     |$samClazz should be annotated with `@FunctionalInterface` if eta-expansion is desired.
-                     |Or, avoid eta-expansion by writing the function literal `$sample` or `$places`.
-                     |This warning can be filtered with `-Wconf:cat=lint-eta-sam`.""",
+                  sm"""Eta-expansion to expected type $pt, which is not a function type but is SAM-convertible to $ft.$advice
+                      |Avoid eta-expansion by writing the function literal `$sample` or `$places`.
+                      |This warning can be filtered with `-Wconf:cat=lint-eta-sam`.""",
                   WarningCategory.LintEtaSam)
               }
             }
-            true
           }
+          true
+        }
 
         // note that isFunctionProto(pt) does not work properly for Function0
         lazy val ptUnderlying =
