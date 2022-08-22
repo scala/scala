@@ -13,6 +13,8 @@
 package scala.sys.process
 
 import scala.annotation.tailrec
+import collection.mutable.ListBuffer
+import Character.isWhitespace
 
 /** A simple enough command line parser using shell quote conventions.
  */
@@ -21,87 +23,54 @@ private[scala] object Parser {
   private final val SQ = '\''
   private final val EOF = -1
 
-  /** Split the line into tokens separated by whitespace or quotes.
+  /** Split the line into tokens separated by whitespace.
    *
-   *  @return either an error message or reverse list of tokens
+   *  Tokens may be surrounded by quotes and may contain whitespace or escaped quotes.
+   *
+   *  @return list of tokens
    */
   def tokenize(line: String, errorFn: String => Unit): List[String] = {
-    import Character.isWhitespace
-    import java.lang.{StringBuilder => Builder}
-    import collection.mutable.ArrayBuffer
+    val accum = ListBuffer.empty[String]
+    val buf   = new java.lang.StringBuilder
+    var pos   = 0
 
-    var accum: List[String] = Nil
-    var pos = 0
-    var start = 0
-    val qpos = new ArrayBuffer[Int](16)    // positions of paired quotes
+    def cur: Int = if (done) EOF else line.charAt(pos)
+    def bump()   = pos += 1
+    def put()    = { buf.append(cur.toChar); bump() }
+    def done     = pos >= line.length
 
-    def cur: Int  = if (done) EOF else line.charAt(pos)
-    def bump() = pos += 1
-    def done   = pos >= line.length
+    def skipWhitespace() = while (isWhitespace(cur)) bump()
 
-    // Skip to the next quote as given.
-    def skipToQuote(q: Int): Boolean = {
+    // Collect to end of word, handling quotes. False for missing end quote.
+    def word(): Boolean = {
       var escaped = false
-      def terminal: Boolean = cur match {
-        case _ if escaped => escaped = false ; false
-        case '\\'         => escaped = true ; false
-        case `q` | EOF    => true
-        case _            => false
-      }
-      while (!terminal) bump()
-      !done
-    }
-    // Skip to a word boundary, where words can be quoted and quotes can be escaped
-    def skipToDelim(): Boolean = {
-      var escaped = false
-      def quote() = { qpos += pos ; bump() }
+      var Q = EOF
+      var lastQ = 0
+      def inQuote = Q != EOF
+      def badquote() = errorFn(s"Unmatched quote [${lastQ}](${line.charAt(lastQ)})")
+      def finish(): Boolean = if (!inQuote) !escaped else { badquote(); false}
       @tailrec def advance(): Boolean = cur match {
-        case _ if escaped         => escaped = false ; bump() ; advance()
-        case '\\'                 => escaped = true ; bump() ; advance()
-        case q @ (DQ | SQ)        => { quote() ; skipToQuote(q) } && { quote() ; advance() }
-        case EOF                  => true
-        case c if isWhitespace(c) => true
-        case _                    => bump(); advance()
+        case EOF                              => finish()
+        case _ if escaped                     => escaped = false; put(); advance()
+        case '\\'                             => escaped = true; bump(); advance()
+        case q if q == Q                      => Q = EOF; bump(); advance()
+        case q @ (DQ | SQ) if !inQuote        => Q = q; lastQ = pos; bump(); advance()
+        case c if isWhitespace(c) && !inQuote => finish()
+        case _                                => put(); advance()
       }
       advance()
     }
-    def skipWhitespace() = while (isWhitespace(cur)) bump()
-    def copyText() = {
-      val buf = new Builder
-      var p = start
-      var i = 0
-      while (p < pos) {
-        if (i >= qpos.size) {
-          buf.append(line, p, pos)
-          p = pos
-        } else if (p == qpos(i)) {
-          buf.append(line, qpos(i)+1, qpos(i+1))
-          p = qpos(i+1)+1
-          i += 2
-        } else {
-          buf.append(line, p, qpos(i))
-          p = qpos(i)
-        }
-      }
-      buf.toString
-    }
     def text() = {
-      val res =
-        if (qpos.isEmpty) line.substring(start, pos)
-        else if (qpos(0) == start && qpos(1) == pos) line.substring(start+1, pos-1)
-        else copyText()
-      qpos.clear()
+      val res = buf.toString
+      buf.setLength(0)
       res
     }
-    def badquote() = errorFn(s"Unmatched quote [${qpos.last}](${line.charAt(qpos.last)})")
-
     @tailrec def loop(): List[String] = {
       skipWhitespace()
-      start = pos
-      if (done) accum.reverse
-      else if (!skipToDelim()) { badquote() ; Nil }
+      if (done) accum.toList
+      else if (!word()) Nil
       else {
-        accum ::= text()
+        accum += text()
         loop()
       }
     }
