@@ -16,7 +16,7 @@ object XMLUtil {
       }
       case e: Elem => {
         val child = e.child.map(stripGroup _)
-        Elem(e.prefix, e.label, e.attributes, e.scope, child : _*)
+        Elem(e.prefix, e.label, e.attributes, e.scope, e.minimizeEmpty, child : _*)
       }
       case _ => seq
     }
