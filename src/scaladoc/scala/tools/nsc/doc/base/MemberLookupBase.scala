@@ -146,8 +146,13 @@ trait MemberLookupBase {
     result
   }
 
+  private def removeBackticks(member: String): String =
+    if (member.matches("(`).+\\1"))
+      member.substring(1, member.length() - 1)
+    else member
+
   private def lookupInTemplate(pos: Position, member: String, container: Symbol, strategy: SearchStrategy): List[Symbol] = {
-    val name = member.stripSuffix("$").stripSuffix("!").stripSuffix("*")
+    val name = removeBackticks(member.stripSuffix("$").stripSuffix("!").stripSuffix("*"))
     def signatureMatch(sym: Symbol): Boolean = externalSignature(sym).startsWith(name)
 
     // We need to cleanup the bogus classes created by the .class file parser. For example, [[scala.Predef]] resolves
