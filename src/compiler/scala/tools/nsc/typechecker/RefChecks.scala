@@ -1323,15 +1323,14 @@ abstract class RefChecks extends Transform {
       && !otherSym.isProtected
       && !otherSym.isTypeParameterOrSkolem
       && !otherSym.isExistentiallyBound
-      && (otherSym isLessAccessibleThan memberSym)
-      && (otherSym isLessAccessibleThan memberSym.enclClass)
+      && memberSym.ownersIterator.forall(otherSym.isLessAccessibleThan(_))
     )
     private def lessAccessibleSymsInType(other: Type, memberSym: Symbol): List[Symbol] = {
       val extras = other match {
         case TypeRef(pre, _, args) =>
           // checking the prefix here gives us spurious errors on e.g. a private[process]
           // object which contains a type alias, which normalizes to a visible type.
-          args filterNot (_ eq NoPrefix) flatMap (tp => lessAccessibleSymsInType(tp, memberSym))
+          args.filterNot(_ eq NoPrefix).flatMap(lessAccessibleSymsInType(_, memberSym))
         case _ =>
           Nil
       }
@@ -1367,7 +1366,7 @@ abstract class RefChecks extends Transform {
         // or if the normalized type is, that's good too
         else if ((tpe ne tpe.normalize) && lessAccessibleSymsInType(tpe.dealiasWiden, member).isEmpty) ()
         // otherwise warn about the inaccessible syms in the unnormalized type
-        else inaccessible foreach (sym => warnLessAccessible(sym, member))
+        else inaccessible.foreach(warnLessAccessible(_, member))
       }
 
       // types of the value parameters
@@ -1823,7 +1822,7 @@ abstract class RefChecks extends Transform {
             if (settings.warnNullaryUnit)
               checkNullaryMethodReturnType(sym)
             if (settings.warnInaccessible) {
-              if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.isSynthetic)
+              if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.owner.isSealed && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
             }
             tree match {
