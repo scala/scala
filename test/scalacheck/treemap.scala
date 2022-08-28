@@ -12,7 +12,7 @@ object TreeMapTest extends Properties("TreeMap") {
       keys <- listOf(arbitrary[A])
       values <- listOfN(keys.size, arbitrary[B])
     } yield TreeMap(keys zip values: _*)
-  implicit def arbTreeMap[A : Arbitrary : Ordering, B : Arbitrary] = Arbitrary(genTreeMap[A, B])
+  implicit def arbTreeMap[A : Arbitrary : Ordering, B : Arbitrary]: Arbitrary[TreeMap[A, B]] = Arbitrary(genTreeMap[A, B])
 
   property("foreach/iterator consistency") = forAll { (subject: TreeMap[Int, String]) =>
     val it = subject.iterator

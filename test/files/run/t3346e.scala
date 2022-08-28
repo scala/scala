@@ -47,9 +47,9 @@ class FilterMapFixed[A, Repr <% IterableOps[A, Iterable, _]](a: Repr) {
 }
 
 object MyEnhancements {
-  implicit def toQS[Coll](a: Coll) = new QuickSort(a)
-  implicit def toFM[Coll](a: Coll) = new FilterMap(a)
-  implicit def toFM2[A, Repr <% IterableOps[A, Iterable, _]](a: Repr) = new FilterMapFixed(a)
+  implicit def toQS[Coll](a: Coll): QuickSort[Coll] = new QuickSort(a)
+  implicit def toFM[Coll](a: Coll): FilterMap[Coll] = new FilterMap(a)
+  implicit def toFM2[A, Repr <% IterableOps[A, Iterable, _]](a: Repr): FilterMapFixed[A,Repr] = new FilterMapFixed(a)
 }
 
 object Test extends App {

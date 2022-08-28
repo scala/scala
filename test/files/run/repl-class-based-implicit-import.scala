@@ -11,7 +11,7 @@ object Test extends ReplTest {
 
   def code = """
     |def showInt(implicit x: Int) = println(x)
-    |object IntHolder { implicit val myInt = 5 }
+    |object IntHolder { implicit val myInt: Int = 5 }
     |import IntHolder.myInt
     |showInt
     |class A; showInt

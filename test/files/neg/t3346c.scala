@@ -1,3 +1,5 @@
+import annotation._
+
 object Test extends App {
   //
   // An attempt to workaround scala/bug#2712, foiled by scala/bug#3346
@@ -32,15 +34,18 @@ object Test extends App {
   }
 
 
+  @nowarn
   implicit def ToTCValue[M[_], A](ma: M[A])(implicit M0: TC[M]) = new TCValue[M, A] {
-    implicit val M = M0
+    implicit val M: TC[M] = M0
     val self = ma
   }
   implicit def ToTCValueBin1[M[_, _], A, B](ma: M[A, B])(implicit M0: TC[({type λ[α]=M[A, α]})#λ]): TCValue[({type λ[α] = M[A, α]})#λ, B] = new TCValue[({type λ[α]=M[A, α]})#λ, B] {
+    @nowarn
     implicit val M = M0
     val self = ma
   }
   implicit def ToTCValueBin2[M[_, _], A, B](ma: M[A, B])(implicit M0: TC[({type λ[α]=M[α, B]})#λ]): TCValue[({type λ[α]=M[α, B]})#λ, A] = new TCValue[({type λ[α]=M[α, B]})#λ, A] {
+    @nowarn
     implicit val M = M0
     val self = ma
   }

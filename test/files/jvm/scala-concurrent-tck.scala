@@ -1055,7 +1055,7 @@ class ExecutionContextPrepare extends TestBase {
       delegate.reportFailure(t)
   }
 
-  implicit val ec = new PreparingExecutionContext
+  implicit val ec: ExecutionContext = new PreparingExecutionContext
 
   def testOnComplete(): Unit = once {
     done =>

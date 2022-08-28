@@ -17,9 +17,10 @@ object Test {
 }
 
 trait Features {
-  implicit def implicitously = scala.language.implicitConversions
-  implicit def reflectively  = scala.language.reflectiveCalls
-  implicit def postulously   = scala.language.postfixOps
+  import languageFeature._
+  implicit def implicitously: implicitConversions = scala.language.implicitConversions
+  implicit def reflectively: reflectiveCalls      = scala.language.reflectiveCalls
+  implicit def postulously: postfixOps            = scala.language.postfixOps
 }
 
 
@@ -40,7 +41,9 @@ trait MinimalScalaTest extends Output with Features with Vigil {
     if (throwables.nonEmpty) println(buffer.toString)
   }
 
-  implicit def stringops(s: String) = new {
+  type Ops = AnyRef{def should[U](snippets: => U): U; def in[U](snippet: => U): scala.collection.mutable.IndexedSeq[_ >: Char with Throwable] with scala.collection.mutable.AbstractSeq[_ >: Char with Throwable] with scala.collection.mutable.Growable[Char with Throwable] with java.io.Serializable}
+
+  implicit def stringops(s: String): Ops = new {
 
     def should[U](snippets: => U) = {
       bufferPrintln(s + " should:")
@@ -62,7 +65,8 @@ trait MinimalScalaTest extends Output with Features with Vigil {
 
   }
 
-  implicit def objectops(obj: Any) = new {
+  type OOps = AnyRef{def mustBe(other: Any): Unit; def mustEqual(other: Any): Unit}
+  implicit def objectops(obj: Any): OOps = new {
 
     def mustBe(other: Any) = assert(obj == other, s"$obj is not $other")
     def mustEqual(other: Any) = mustBe(other)

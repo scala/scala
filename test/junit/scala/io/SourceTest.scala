@@ -10,7 +10,7 @@ import java.io.{Console => _, _}
 
 class SourceTest {
 
-  private implicit val `our codec` = Codec.UTF8
+  private implicit val `our codec`: Codec = Codec.UTF8
   private val charSet = Codec.UTF8.charSet.name
 
   private def sampler = """

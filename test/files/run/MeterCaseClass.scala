@@ -20,7 +20,7 @@ package a {
 
     private[a] trait MeterArg
 
-    implicit val boxings = new BoxingConversions[Meter, Double] {
+    implicit val boxings: BoxingConversions[Meter, Double] = new BoxingConversions[Meter, Double] {
       def box(x: Double) = new Meter(x)
       def unbox(m: Meter) = m.underlying
     }
@@ -32,7 +32,7 @@ package a {
     override def toString = unbox.toString+"ft"
   }
   object Foot {
-    implicit val boxings = new BoxingConversions[Foot, Double] {
+    implicit val boxings: BoxingConversions[Foot, Double] = new BoxingConversions[Foot, Double] {
       def box(x: Double) = new Foot(x)
       def unbox(m: Foot) = m.unbox
     }
