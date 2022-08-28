@@ -66,8 +66,8 @@ object Sorting {
           else
             if (ord.compare(a(i0), a(iK)) < 0) i0
             else
-              if (ord.compare(a(iN - 1), a(iK)) <= 0) iN - 1
-              else iK
+              if (ord.compare(a(iN - 1), a(iK)) <= 0) iK
+              else iN - 1
         val pivot = a(pL)
         // pL is the start of the pivot block; move it into the middle if needed
         if (pL != iK) { a(pL) = a(iK); a(iK) = pivot; pL = iK }
