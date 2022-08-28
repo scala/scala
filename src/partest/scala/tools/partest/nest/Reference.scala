@@ -45,7 +45,7 @@ trait Reference extends Spec {
   final def apply(args: String*): ThisCommandLine = creator(propertyArgs ++ args flatMap expandArg)
 
   type OptionMagic = Opt.Reference
-  protected implicit def optionMagicAdditions(name: String) = new Opt.Reference(programInfo, options, name)
+  protected implicit def optionMagicAdditions(name: String): Opt.Reference = new Opt.Reference(programInfo, options, name)
 }
 
 object Reference {

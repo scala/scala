@@ -34,7 +34,7 @@ trait MemberHandlers {
     val front = if (leadingPlus) "+ " else ""
     front + (xs map string2codeQuoted mkString " + ")
   }
-  private implicit def name2string(name: Name) = name.toString
+  private implicit def name2string(name: Name): String = name.toString
 
   /** A traverser that finds all mentioned identifiers, i.e. things
    *  that need to be imported.  It might return extra names.

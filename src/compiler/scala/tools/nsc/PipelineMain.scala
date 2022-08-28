@@ -77,7 +77,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
   }
 
-  implicit val executor = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
+  implicit val executor: ExecutionContext = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
   def changeExtension(p: Path, newExtension: String): Path = {
     val fileName = p.getFileName.toString
     val changedFileName = fileName.lastIndexOf('.') match {

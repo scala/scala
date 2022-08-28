@@ -1098,7 +1098,7 @@ trait Internals { self: Universe =>
   trait CompatApi {
     /** @see [[CompatToken]] */
     @deprecated("compatibility with Scala 2.10 EOL", "2.13.0")
-    implicit val token = new CompatToken
+    implicit val token: CompatToken = new CompatToken
 
     /** Scala 2.10 compatibility enrichments for BuildApi. */
     @deprecated("compatibility with Scala 2.10 EOL", "2.13.0")
