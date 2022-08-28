@@ -149,4 +149,7 @@ trait StdAttachments {
   /** Marks a Typed tree with Unit tpt. */
   case object TypedExpectingUnitAttachment
   def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
+
+  /** For `val i = 42`, marks field as inferred so accessor (getter) can warn if implicit. */
+  case object FieldTypeInferred extends PlainAttachment
 }
