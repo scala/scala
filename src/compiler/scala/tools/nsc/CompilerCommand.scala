@@ -127,10 +127,10 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     import java.nio.file.{Files, Paths}
     import scala.jdk.CollectionConverters._
     def stripComment(s: String) = s.takeWhile(_ != '#')
-    val file = Paths.get(arg stripPrefix "@")
+    val file = Paths.get(arg.stripPrefix("@"))
     if (!Files.exists(file))
       throw new java.io.FileNotFoundException(s"argument file $file could not be found")
-    settings.splitParams(Files.readAllLines(file).asScala.map(stripComment).mkString(" "))
+    Files.readAllLines(file).asScala.map(stripComment).toList
   }
 
   // override this if you don't want arguments processed here
