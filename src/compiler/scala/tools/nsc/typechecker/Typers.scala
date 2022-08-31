@@ -5963,7 +5963,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Trees not allowed during pattern mode.
       def typedOutsidePatternMode(tree: Tree): Tree = tree match {
-        case tree: Block            => typerWithLocalContext(context.makeNewScope(tree, context.owner))(_.typedBlock(tree, mode, pt))
+        case tree: Block            =>
+          val blockContext = context.makeNewScope(tree, context.owner)
+          try typerWithLocalContext(blockContext)(_.typedBlock(tree, mode, pt))
+          finally context.undetparams ++= blockContext.undetparams
         case tree: If               => typedIf(tree)
         case tree: TypeApply        => typedTypeApply(tree)
         case tree: Function         => typedFunction(tree)

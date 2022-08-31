@@ -9,6 +9,23 @@ class TypedTreeTest extends BytecodeTesting {
   override def compilerArgs = "-Ystop-after:typer"
 
   @Test
+  def keepBlockUndetparams(): Unit = {
+    import compiler.global._
+    val code =
+      """class C {
+        |  def f = Option(Map("a" -> "c")).getOrElse { println(); Map.empty } // was: Map[_ >: String with K, Any]
+        |  def g = Option(Map("a" -> "c")).getOrElse { Map.empty }
+        |}
+        |""".stripMargin
+    val run = compiler.newRun()
+    run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
+    val t: Tree = run.units.next().body
+    val c: Symbol = t.collect { case cd: ClassDef => cd.symbol }.head
+    for (m <- List("f", "g"))
+      assertEquals(c.info.member(TermName("f")).tpe.toString, "scala.collection.immutable.Map[String,String]")
+  }
+
+  @Test
   def constantFoldedOriginalTreeAttachment(): Unit = {
     val code =
       """object O {
