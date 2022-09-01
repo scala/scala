@@ -973,5 +973,5 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 }
 
 private object Optionlike {
-  def unapply(s: String): Boolean = s.startsWith("-") && s != "-"
+  def unapply(s: String): Boolean = s.startsWith("-")
 }
