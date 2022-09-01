@@ -25,15 +25,17 @@ abstract class OverridingPairs extends SymbolPairs {
   import global._
 
   class Cursor(base: Symbol) extends super.Cursor(base) {
+    private lazy val isScala213 = settings.isScala213
+
     /** Symbols to exclude: Here these are constructors and private/artifact symbols,
      *  including bridges. But it may be refined in subclasses.
      */
-    override protected def exclude(sym: Symbol) = (
-         sym.isPrivateLocal
-      || sym.isArtifact
-      || sym.isConstructor
-      || (sym.isPrivate && sym.owner != base) // Privates aren't inherited. Needed for pos/t7475a.scala
-    )
+    override protected def exclude(sym: Symbol) = {
+      sym.isPrivateLocal && (sym.isParamAccessor || !isScala213) ||
+        sym.isArtifact ||
+        sym.isConstructor ||
+        (sym.isPrivate && sym.owner != base) // Privates aren't inherited. Needed for pos/t7475a.scala
+    }
 
     /** Types always match. Term symbols match if their member types
      *  relative to `self` match.
