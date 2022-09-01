@@ -51,17 +51,9 @@ class ParserTest {
   @Test def `leading quote is escaped`: Unit = {
     check("echo", "hello, world!")("""echo "hello, world!" """)
     check("echo", "hello, world!")("""echo hello,' 'world! """)
-    check("echo", """"hello,""", """world!"""")("""echo \"hello, world!\" """)
-    check("""a"b"c""")("""a\"b\"c""")
-    check("a", "'b", "'", "c")("""a \'b \' c""")
-    check("a", """\b """, "c")("""a \\'b ' c""")
-  }
-  /* backslash is stripped in normal shell usage.
-  ➜  ~ ls \"hello world\"
-  ls: cannot access '"hello': No such file or directory
-  ls: cannot access 'world"': No such file or directory
-  */
-  @Test def `escaped quotes lose backslash`: Unit = {
-    check("ls", "\"hello", "world\"")("""ls \"hello world\"""")
+    check("echo", """\"hello,""", """world!\"""")("""echo \"hello, world!\" """)
+    check("""a\"b\"c""")("""a\"b\"c""")
+    check("a", "\\'b", "\\'", "c")("""a \'b \' c""")
+    check("a", "\\\\b ", "c")("""a \\'b ' c""")
   }
 }
