@@ -21,6 +21,7 @@ import java.{lang => jl, util => ju}
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 import scala.util.chaining._
+import scala.util.control.ControlThrowable
 
 /** Wrappers for exposing Scala collections as Java collections and vice-versa */
 @SerialVersionUID(3L)
@@ -332,7 +333,12 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       else
         None
     }
-    override def getOrElseUpdate(key: K, op: => V): V = underlying.computeIfAbsent(key, _ => op)
+
+    override def getOrElseUpdate(key: K, op: => V): V =
+      underlying.computeIfAbsent(key, _ => op) match {
+        case null => update(key, null.asInstanceOf[V]); null.asInstanceOf[V]
+        case v    => v
+      }
 
     def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
@@ -355,8 +361,17 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def update(k: K, v: V): Unit = underlying.put(k, v)
 
-    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
-      underlying.compute(key, (_, v) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
+    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
+      def remap(k: K, v: V): V =
+        remappingFunction(Option(v)) match {
+          case Some(null) => throw PutNull
+          case Some(x)    => x
+          case None       => null.asInstanceOf[V]
+        }
+      try Option(underlying.compute(key, remap))
+      catch {
+        case PutNull => update(key, null.asInstanceOf[V]); Some(null.asInstanceOf[V])
+      }
     }
 
     // support Some(null) if currently bound to null
@@ -441,7 +456,11 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def get(k: K) = Option(underlying get k)
 
-    override def getOrElseUpdate(key: K, op: => V): V = underlying.computeIfAbsent(key, _ => op)
+    override def getOrElseUpdate(key: K, op: => V): V =
+      underlying.computeIfAbsent(key, _ => op) match {
+        case null => super/*[concurrent.Map]*/.getOrElseUpdate(key, op)
+        case v    => v
+      }
 
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
@@ -462,8 +481,17 @@ private[collection] object JavaCollectionWrappers extends Serializable {
         case _ => Try(last).toOption
       }
 
-    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = Option {
-      underlying.compute(key, (_, v) => remappingFunction(Option(v)).getOrElse(null.asInstanceOf[V]))
+    override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
+      def remap(k: K, v: V): V =
+        remappingFunction(Option(v)) match {
+          case Some(null) => throw PutNull // see scala/scala#10129
+          case Some(x)    => x
+          case None       => null.asInstanceOf[V]
+        }
+      try Option(underlying.compute(key, remap))
+      catch {
+        case PutNull => super/*[concurrent.Map]*/.updateWith(key)(remappingFunction)
+      }
     }
   }
 
@@ -572,4 +600,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     override def mapFactory = mutable.HashMap
   }
+
+  /** Thrown when certain Map operations attempt to put a null value. */
+  private val PutNull = new ControlThrowable {}
 }
