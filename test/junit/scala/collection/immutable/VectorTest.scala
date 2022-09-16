@@ -62,6 +62,33 @@ class VectorTest {
   }
 
   @Test
+  def testBuilderAddVector(): Unit = {
+    import VectorInline._
+    val b = new VectorBuilder[Int]
+    val expected1 = Vector.from(1 to 32).asInstanceOf[Vector1[Int]]
+    b.initFrom(expected1)
+    val expected2 = Vector.from(33 to 128).asInstanceOf[Vector2[Int]]
+    b.addAll(expected2) // uses addVector with Vector2, aligned
+    b.addOne(129)
+    val expected3 = Vector.from(130 to 224).asInstanceOf[Vector2[Int]]
+    b.addAll(expected3) // uses addVector with Vector2, but misaligned
+    b.addAll(Vector.from(225 to 4096)) // uses addVector with Vector3, aligned to 32, but not 1024
+    b.addAll(Vector.from(4097 to 8192)) // uses addVector with Vector3, aligned to 1024
+    b.addOne(8193) // builder still working for single element?
+    b.addAll(Vector.from(8193 to 234567).tail) // aligned to 1024, split at arbitrary number 234567
+    b.addAll(Vector.from(1 to 42 * WIDTH3).drop(234567)) // aligned to pow(32,3)
+    val res = b.result().asInstanceOf[Vector5[Int]]
+    assertEquals(1 to 42 * WIDTH3, res)
+
+    assertSame("b.initFrom did not keep original array but copied instead", expected1.prefix1, res.prefix1)
+
+//    assertSame(s"b.addVector did not keep original array but copied instead (${expected2.prefix1.head},...,${expected2.prefix1.last} vs ${res.prefix2(0).head},...,${res.prefix2(0).last}).", expected2.prefix1, res.prefix2(0)) // prefix1 is not reused, as addArr1 is called
+    assertSame("b.addVector did not keep original array but copied instead", expected2.data2(0), res.prefix2(1)) // expected2's arrays are reused
+
+    assertTrue("", expected3.suffix1.length != 32) // expected3 is misaligned
+  }
+
+  @Test
   def testBuilderInitWithLargeVector(): Unit = {
     val v    = Vector.fillSparse(Int.MaxValue / 4 * 3)("v")
     val copy =

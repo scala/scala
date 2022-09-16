@@ -1582,6 +1582,40 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     }
   }
 
+  private[this] def arrN(dim: Int): Array[AnyRef] = dim match {
+    case 1 => a1
+    case 2 => a2.asInstanceOf[Array[AnyRef]]
+    case 3 => a3.asInstanceOf[Array[AnyRef]]
+    case 4 => a4.asInstanceOf[Array[AnyRef]]
+    case 5 => a5.asInstanceOf[Array[AnyRef]]
+    case 6 => a6.asInstanceOf[Array[AnyRef]]
+  }
+
+  private[this] def addArrN(slice: Array[AnyRef], dim: Int): Unit = {
+    assert(dim >= 2)
+    if (slice.isEmpty) return
+    if (len1 == WIDTH) advance()
+    val sl        = slice.length
+    val bits      = if (dim == 6) BITS * dim + 1 else BITS * dim
+    val lBits     = BITS * (dim-1)
+    val width     = 1 << bits
+    val lWidth    = 1 << lBits
+    val lowerMask = lWidth - 1
+    val mask      = if (dim == 6) -1 else MASK
+    if ((lenRest & lowerMask) == 0) { // lenRest is multiple of lWidth, so the elements of this slice do not need to be split, so they can be reused
+      val copy1 = mmin(((width - lenRest) >>> lBits) & mask, sl)
+      val copy2 = sl - copy1
+      System.arraycopy(slice, 0, arrN(dim), (lenRest >>> lBits) & MASK, copy1)
+      advanceN(lWidth * copy1)
+      if (copy2 > 0) {
+        System.arraycopy(slice, copy1, arrN(dim), 0, copy2)
+        advanceN(lWidth * copy2)
+      }
+    } else { // this slice does not align, need to try lower dimensions
+      slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], dim-1))
+    }
+  }
+
   private[this] def addVector(xs: Vector[A]): this.type = {
     val sliceCount = xs.vectorSliceCount
     var sliceIdx = 0
@@ -1589,6 +1623,8 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       val slice = xs.vectorSlice(sliceIdx)
       vectorSliceDim(sliceCount, sliceIdx) match {
         case 1 => addArr1(slice.asInstanceOf[Arr1])
+        case n if len1 == WIDTH || len1 == 0 =>
+          addArrN(slice.asInstanceOf[Array[AnyRef]], n)
         case n => foreachRec(n-2, slice, addArr1)
       }
       sliceIdx += 1
@@ -1612,19 +1648,30 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     advance1(idx, xor)
   }
 
+  private[this] def advanceN(n: Int): Unit = if (n > 0) {
+    // assert(n % 32 == 0)
+    val idx = lenRest + n
+    val xor = idx ^ lenRest
+    lenRest = idx
+    len1 = 0
+    advance1(idx, xor)
+  }
+
   private[this] def advance1(idx: Int, xor: Int): Unit = {
-    if (xor < WIDTH2) { // level = 1
-      if (depth == 1) { a2 = new Array(WIDTH); a2(0) = a1; depth += 1 }
+    if (xor <= 0) {            // level = 6 or something very unexpected happened
+      throw new IllegalArgumentException(s"advance1($idx, $xor): a1=$a1, a2=$a2, a3=$a3, a4=$a4, a5=$a5, a6=$a6, depth=$depth")
+    } else if (xor < WIDTH2) { // level = 1
+      if (depth <= 1) { a2 = new Array(WIDTH); a2(0) = a1; depth = 2 }
       a1 = new Array(WIDTH)
       a2((idx >>> BITS) & MASK) = a1
     } else if (xor < WIDTH3) { // level = 2
-      if (depth == 2) { a3 = new Array(WIDTH); a3(0) = a2; depth += 1 }
+      if (depth <= 2) { a3 = new Array(WIDTH); a3(0) = a2; depth = 3 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a2((idx >>> BITS) & MASK) = a1
       a3((idx >>> BITS2) & MASK) = a2
     } else if (xor < WIDTH4) { // level = 3
-      if (depth == 3) { a4 = new Array(WIDTH); a4(0) = a3; depth += 1 }
+      if (depth <= 3) { a4 = new Array(WIDTH); a4(0) = a3; depth = 4 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1632,7 +1679,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
     } else if (xor < WIDTH5) { // level = 4
-      if (depth == 4) { a5 = new Array(WIDTH); a5(0) = a4; depth += 1 }
+      if (depth <= 4) { a5 = new Array(WIDTH); a5(0) = a4; depth = 5 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1641,8 +1688,8 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
       a5((idx >>> BITS4) & MASK) = a4
-    } else if (xor > 0) { // level = 5
-      if (depth == 5) { a6 = new Array(LASTWIDTH); a6(0) = a5; depth += 1 }
+    } else {                   // level = 5
+      if (depth <= 5) { a6 = new Array(LASTWIDTH); a6(0) = a5; depth = 6 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1652,9 +1699,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
       a5((idx >>> BITS4) & MASK) = a4
-      a6((idx >>> BITS5) & MASK) = a5
-    } else {                      // level = 6
-      throw new IllegalArgumentException(s"advance1($idx, $xor): a1=$a1, a2=$a2, a3=$a3, a4=$a4, a5=$a5, a6=$a6, depth=$depth")
+      a6(idx >>> BITS5) = a5
     }
   }
 
@@ -1662,6 +1707,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     val len = len1 + lenRest
     val realLen = len - offset
     if(realLen == 0) Vector.empty
+    else if(len < 0) throw new IndexOutOfBoundsException(s"Vector cannot have negative size $len")
     else if(len <= WIDTH) {
       if(realLen == WIDTH) new Vector1(a1)
       else new Vector1(copyOf(a1, realLen))
