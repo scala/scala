@@ -120,7 +120,7 @@ Once you've started an `sbt` session you can run one of the core commands:
     - Note that the `-bin` string marks the version binary compatible. Using it in
       sbt will cause the `scalaBinaryVersion` to be `2.12`. If the version is not
       binary compatible, we recommend using `-pre`, e.g., `2.13.0-pre-abcd123-SNAPSHOT`.
-    - Optionally `set publishArtifact in (Compile, packageDoc) in ThisBuild := false`
+    - Optionally `set ThisBuild / Compile / packageDoc / publishArtifact := false`
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on
