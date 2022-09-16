@@ -1099,7 +1099,7 @@ trait Namers extends MethodSynthesis {
      * value should not deconsted, so it has a use even in situations
      * whether it is otherwise redundant (such as in a singleton.)
      */
-    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
+    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type, tpt: Tree): Type = {
       // Are we inferring the result type of a stable symbol, whose type doesn't refer to a hidden symbol?
       // If we refer to an inaccessible symbol, let's hope widening will result in an expressible type.
       // (A LiteralType should be widened because it's too precise for a definition's type.)
@@ -1109,14 +1109,26 @@ trait Namers extends MethodSynthesis {
           case _ => sym.isStable && !refersToSymbolLessAccessibleThan(tpe, sym)
         }
 
+      def keepWhenMissResultTypeForSingleton: Option[Type] = {
+        sym.overrideChain.drop(1).map(_.tpe).headOption.flatMap {
+          case MethodType(_, rt) if !rt.typeSymbol.isAliasType && rt.isInstanceOf[SingletonType] && tpe <:< rt.dealiasWiden => Some(rt)
+          case _                                                                                                            => None
+        }
+      }
+
+      @inline def isOverrideAndMissRhs = sym.isOverride && tpt.isEmpty
+
       // Only final vals may be constant folded, so deconst inferred type of other members.
-      @inline def keepSingleton = if (sym.isFinal) tpe else tpe.deconst
+      @inline def keepSingleton: Type = if (sym.isFinal) tpe else tpe.deconst
 
       // Only widen if the definition can't keep its inferred singleton type,
       // (Also keep singleton type if so indicated by the expected type `pt`
       //  OPT: 99.99% of the time, `pt` will be `WildcardType`).
-      if (mayKeepSingletonType || (sym.isFinal && sym.isVal && !sym.isLazy) || ((pt ne WildcardType) && !(tpe.widen <:< pt)) || sym.isDefaultGetter) keepSingleton
-      else tpe.widen
+      if (mayKeepSingletonType || (sym.isFinal && sym.isVal && !sym.isLazy) || ((pt ne WildcardType) && !(tpe.widen <:< pt)) || sym.isDefaultGetter) {
+        keepSingleton
+      } else if (isOverrideAndMissRhs) { // see https://github.com/scala/bug/issues/12621
+        keepWhenMissResultTypeForSingleton.fold(tpe.widen)(slt => if (tpt.isEmpty) slt else tpe.widen)
+      } else tpe.widen
     }
 
     /** Computes the type of the body in a ValDef or DefDef, and
@@ -1149,7 +1161,7 @@ trait Namers extends MethodSynthesis {
             }
           }
         if (inferOverridden) pt
-        else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
+        else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt, tree.tpt))
              .tap(InferredImplicitError(tree, _, context))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
