@@ -289,11 +289,11 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
 
   override final def foreach[U](f: A => U): Unit = {
     val c = vectorSliceCount
-      var i = 0
-      while(i < c) {
-        foreachRec(vectorSliceDim(c, i)-1, vectorSlice(i), f)
-        i += 1
-      }
+    var i = 0
+    while (i < c) {
+      foreachRec(vectorSliceDim(c, i) - 1, vectorSlice(i), f)
+      i += 1
+    }
   }
 
   // The following definitions are needed for binary compatibility with ParVector
@@ -1538,7 +1538,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
         depth = 6
         offset = WIDTH5 - v6.len12345
         setLen(v6.length0 + offset)
-        a6 = new Arr6(WIDTH)
+        a6 = new Arr6(LASTWIDTH)
         a6(0) = copyPrepend(copyPrepend(copyPrepend(copyPrepend(v6.prefix1, v6.prefix2), v6.prefix3), v6.prefix4), v6.prefix5)
         System.arraycopy(d6, 0, a6, 1, d6.length)
         a5 = copyOf(s5, WIDTH)
@@ -1641,7 +1641,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
       a5((idx >>> BITS4) & MASK) = a4
-    } else if (xor < WIDTH6) { // level = 5
+    } else if (xor > 0) { // level = 5
       if (depth == 5) { a6 = new Array(LASTWIDTH); a6(0) = a5; depth += 1 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
@@ -1771,8 +1771,6 @@ private[immutable] object VectorInline {
   final val WIDTH4 = 1 << BITS4
   final val BITS5 = BITS * 5
   final val WIDTH5 = 1 << BITS5
-  final val BITS6 = BITS * 6
-  final val WIDTH6 = 1 << BITS6
   final val LASTWIDTH = WIDTH << 1 // 1 extra bit in the last level to go up to Int.MaxValue (2^31-1) instead of 2^30:
   final val Log2ConcatFaster = 5
 

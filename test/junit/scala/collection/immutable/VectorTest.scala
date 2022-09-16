@@ -47,7 +47,7 @@ class VectorTest {
 
   @Test
   def hasCorrectAppendedAndPrependedAll(): Unit = {
-    val els = Vector(1 to 1000: _*)
+    val els = Vector(1 to 1200: _*)
 
     for (i <- 0 until els.size) {
       val (prefix, suffix) = els.splitAt(i)
@@ -59,6 +59,17 @@ class VectorTest {
       assertEquals(els, prefix.toList ++: suffix)
       assertEquals(els, prefix.toList :++ suffix)
     }
+  }
+
+  @Test
+  def testBuilderInitWithLargeVector(): Unit = {
+    val v    = Vector.fillSparse(Int.MaxValue / 4 * 3)("v")
+    val copy =
+      new VectorBuilder[String]
+        .initFrom(v)
+        .result()
+    assertEquals(copy.size, v.size)
+    assertEquals(copy.take(500), v.take(500))
   }
 
   @Test
