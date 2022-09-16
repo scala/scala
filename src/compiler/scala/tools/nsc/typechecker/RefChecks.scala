@@ -66,6 +66,9 @@ abstract class RefChecks extends Transform {
     case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) => rtp1 <:< rtp2
     case (TypeRef(_, sym, _), _) if sym.isModuleClass        => overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix)
     case (_, TypeRef(_, sym, _)) if sym.isModuleClass        => overridesTypeInPrefix(tp1, NullaryMethodType(tp2), prefix)
+    case (MethodType(_, rtp1), MethodType(_, rtp2)) if rtp2.isInstanceOf[SingletonType] =>
+      // scala/bug#12621 Subclass override method of superclass without specifying a return type which depends on parameter.
+      rtp1.resultType <:< rtp2.resultType.dealiasWiden
     case _                                                   => tp1 <:< tp2
   }
 
