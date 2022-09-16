@@ -1691,37 +1691,85 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     }
   }
 
-  private[this] def arrN(dim: Int): Array[AnyRef] = dim match {
-    case 1 => a1
-    case 2 => a2.asInstanceOf[Array[AnyRef]]
-    case 3 => a3.asInstanceOf[Array[AnyRef]]
-    case 4 => a4.asInstanceOf[Array[AnyRef]]
-    case 5 => a5.asInstanceOf[Array[AnyRef]]
-    case 6 => a6.asInstanceOf[Array[AnyRef]]
-  }
-
   private[this] def addArrN(slice: Array[AnyRef], dim: Int): Unit = {
-    assert(dim >= 2)
+//    assert(dim >= 2)
+//    assert(lenRest % WIDTH == 0)
+//    assert(len1 == 0 || len1 == WIDTH)
     if (slice.isEmpty) return
     if (len1 == WIDTH) advance()
-    val sl        = slice.length
-    val bits      = if (dim == 6) BITS * dim + 1 else BITS * dim
-    val lBits     = BITS * (dim-1)
-    val width     = 1 << bits
-    val lWidth    = 1 << lBits
-    val lowerMask = lWidth - 1
-    val mask      = if (dim == 6) -1 else MASK
-    if ((lenRest & lowerMask) == 0) { // lenRest is multiple of lWidth, so the elements of this slice do not need to be split, so they can be reused
-      val copy1 = mmin(((width - lenRest) >>> lBits) & mask, sl)
-      val copy2 = sl - copy1
-      System.arraycopy(slice, 0, arrN(dim), (lenRest >>> lBits) & MASK, copy1)
-      advanceN(lWidth * copy1)
-      if (copy2 > 0) {
-        System.arraycopy(slice, copy1, arrN(dim), 0, copy2)
-        advanceN(lWidth * copy2)
-      }
-    } else { // this slice does not align, need to try lower dimensions
-      slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], dim-1))
+    val sl = slice.length
+    (dim: @switch) match {
+      case 2 =>
+        // lenRest is always a multiple of WIDTH
+        val copy1   = mmin(((WIDTH2 - lenRest) >>> BITS) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS) & MASK
+        System.arraycopy(slice, 0, a2, destPos, copy1)
+        advanceN(WIDTH * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a2, 0, copy2)
+          advanceN(WIDTH * copy2)
+        }
+      case 3 =>
+        if (lenRest % WIDTH2 != 0) {
+          // lenRest is not multiple of WIDTH2, so this slice does not align, need to try lower dimension
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 2))
+          return
+        }
+        val copy1   = mmin(((WIDTH3 - lenRest) >>> BITS2) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS2) & MASK
+        System.arraycopy(slice, 0, a3, destPos, copy1)
+        advanceN(WIDTH2 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a3, 0, copy2)
+          advanceN(WIDTH2 * copy2)
+        }
+      case 4 =>
+        if (lenRest % WIDTH3 != 0) {
+          // lenRest is not multiple of WIDTH3, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 3))
+          return
+        }
+        val copy1   = mmin(((WIDTH4 - lenRest) >>> BITS3) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS3) & MASK
+        System.arraycopy(slice, 0, a4, destPos, copy1)
+        advanceN(WIDTH3 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a4, 0, copy2)
+          advanceN(WIDTH3 * copy2)
+        }
+      case 5 =>
+        if (lenRest % WIDTH4 != 0) {
+          // lenRest is not multiple of WIDTH4, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 4))
+          return
+        }
+        val copy1   = mmin(((WIDTH5 - lenRest) >>> BITS4) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS4) & MASK
+        System.arraycopy(slice, 0, a5, destPos, copy1)
+        advanceN(WIDTH4 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a5, 0, copy2)
+          advanceN(WIDTH4 * copy2)
+        }
+      case 6 => // note width is now LASTWIDTH
+        if (lenRest % WIDTH5 != 0) {
+          // lenRest is not multiple of WIDTH5, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 5))
+          return
+        }
+        val copy1   = mmin((BITS * 6 + 1 - lenRest) >>> BITS5, sl)
+        val copy2   = sl - copy1
+        val destPos = lenRest >>> BITS5
+        System.arraycopy(slice, 0, a6, destPos, copy1)
+        advanceN(WIDTH5 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a6, 0, copy2)
+          advanceN(WIDTH5 * copy2)
+        }
     }
   }
 
