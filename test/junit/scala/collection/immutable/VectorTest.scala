@@ -89,6 +89,46 @@ class VectorTest {
   }
 
   @Test
+  def testBuilderAlignTo1(): Unit = {
+    // v3 == Vector(0, 1, ..., 1999), but alignment is no multiple of 32 or 1024
+    val v3 = Vector.tabulate(2042)(i => (i - 42).toString).drop(42).asInstanceOf[Vector3[AnyRef]]
+    for (i <- Seq(0, 5, 123, 949, 950, 982, 1024, 1999, 2000)) {
+      val (a, b) = v3.splitAt(i)
+      val res = new VectorBuilder[AnyRef]
+        .alignTo(i, b)
+        .addAll(a.toList) // ensure there is no alignment in a
+        .addAll(b)
+        .result()
+        .asInstanceOf[Vector3[AnyRef]]
+      assertEquals(s"values equal when split at $i", v3, res)
+      if (i < 950) // (v3.prefix1++v3.prefix2).size == 982. So when dropping >= 950 elements, and keeping prefix1 nonempty (=> has 32 elements), prefix2 would be empty. Instead, suffix2's content is stored in prefix2, so the alignment (len12) changes and it's okay.
+        assertEquals(s"alignment is the same when split at $i", v3.len12, res.len12)
+    }
+  }
+
+  @Test
+  def testBuilderAlignTo2(): Unit = {
+    val Large = 1 << 20
+    for (
+      size <- Seq(0, 1, 31, 1 << 5, 1 << 10, 1 << 15, 1 << 20, 1 << 25, 1 << 30, (1 << 31) - (1 << 26) - 1000);
+      i <- Seq(0, 1, 5, 123)
+    ) {
+//      println((i, size))
+      val v = if (size < Large) Vector.tabulate(size)(_.toString) else Vector.fillSparse(size)("v")
+      val prefix = Vector.fill(i)("prefix")
+      val res = new VectorBuilder[AnyRef]
+        .alignTo(i, v)
+        .addAll(prefix)
+        .addAll(v)
+        .result()
+      val vDesc = if (v.headOption.contains("v")) s"Vector(\"v\")*$size" else s"Vector(0,..,${size-1})"
+      assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).size", size + i, res.size)
+      assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).take($i)", prefix, res.take(i))
+      assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).drop($i)", v.take(Large), res.drop(i).take(Large))
+    }
+  }
+
+  @Test
   def testBuilderInitWithLargeVector(): Unit = {
     val v    = Vector.fillSparse(Int.MaxValue / 4 * 3)("v")
     val copy =

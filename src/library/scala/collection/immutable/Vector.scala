@@ -217,6 +217,8 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val it = this.iterator
       while (it.hasNext) v = v :+ it.next()
       v
+    } else if (prefix.knownSize >= 0 && prefix.knownSize < this.size) {
+      new VectorBuilder[B].alignTo(prefix.knownSize, this).addAll(prefix).addAll(this).result()
     } else super.prependedAll(prefix)
   }
 
@@ -234,6 +236,9 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val ri = this.reverseIterator
       while (ri.hasNext) v = v.prepended(ri.next())
       v
+    } else if (this.size < suffix.knownSize && suffix.isInstanceOf[Vector[_]]) {
+      val v = suffix.asInstanceOf[Vector[B]]
+      new VectorBuilder[B].alignTo(this.size, v).addAll(this).addAll(v).result()
     } else new VectorBuilder[B].initFrom(this).addAll(suffix).result()
   }
 
@@ -1394,6 +1399,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
   private[this] var a2: Arr2 = _
   private[this] var a1: Arr1 = new Arr1(WIDTH)
   private[this] var len1, lenRest, offset = 0
+  private[this] var prefixIsRightAligned = false
   private[this] var depth = 1
 
   @inline private[this] final def setLen(i: Int): Unit = {
@@ -1417,6 +1423,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     len1 = 0
     lenRest = 0
     offset = 0
+    prefixIsRightAligned = false
     depth = 1
   }
 
@@ -1559,6 +1566,108 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     this
   }
 
+  //TODO Make public; this method is only private for binary compatibility
+  private[collection] def alignTo(before: Int, bigVector: Vector[A]): this.type = {
+    if (len1 != 0 || lenRest != 0)
+      throw new UnsupportedOperationException("A non-empty VectorBuilder cannot be aligned retrospectively. Please call .reset() or use a new VectorBuilder.")
+    val (prefixLength, maxPrefixLength) = bigVector match {
+      case Vector0 => (0, 1)
+      case v1: Vector1[_] => (0, 1)
+      case v2: Vector2[_] => (v2.len1, WIDTH)
+      case v3: Vector3[_] => (v3.len12, WIDTH2)
+      case v4: Vector4[_] => (v4.len123, WIDTH3)
+      case v5: Vector5[_] => (v5.len1234, WIDTH4)
+      case v6: Vector6[_] => (v6.len12345, WIDTH5)
+    }
+    if (maxPrefixLength == 1) return this // does not really make sense to align for <= 32 element-vector
+    val overallPrefixLength = (before + prefixLength) % maxPrefixLength
+    offset = (maxPrefixLength - overallPrefixLength) % maxPrefixLength
+    // pretend there are already `offset` elements added
+    advanceN(offset & ~MASK)
+    len1 = offset & MASK
+    prefixIsRightAligned = true
+    this
+  }
+
+  /**
+   * Removes `offset` leading `null`s in the prefix.
+   * This is needed after calling `alignTo` and subsequent additions,
+   * directly before the result is used for creating a new Vector.
+   *
+   * example:
+   *     a2 = Array(null, ..., null, Array(null, .., null, 0, 1, .., x), Array(x+1, .., x+32), ...)
+   * becomes
+   *     a2 = Array(Array(0, 1, .., x), Array(x+1, .., x+32), ...)
+   */
+  private[this] def leftAlignPrefix(): Unit = {
+    var a: Array[AnyRef] = null // the array we modify
+    var aParent: Array[AnyRef] = null // a's parent, so aParent(0) == a
+    if (depth >= 6) {
+      a = a6.asInstanceOf[Array[AnyRef]]
+      val i = offset >>> BITS5
+      if (i > 0) {
+        a = copyOfRange(a, i, LASTWIDTH)
+        a6 = a.asInstanceOf[Arr6]
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 5) {
+      if (a == null) a = a5.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS4) & MASK
+      if (i > 0) {
+        a = copyOfRange(a, i, WIDTH)
+        if (depth == 5) a5 = a.asInstanceOf[Arr5]
+        else aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 4) {
+      if (a == null) a = a4.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS3) & MASK
+      if (i > 0) {
+        a = copyOfRange(a, i, WIDTH)
+        if (depth == 4) a4 = a.asInstanceOf[Arr4]
+        else aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 3) {
+      if (a == null) a = a3.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS2) & MASK
+      if (i > 0) {
+        a = copyOfRange(a, i, WIDTH)
+        if (depth == 3) a3 = a.asInstanceOf[Arr3]
+        else aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 2) {
+      if (a == null) a = a2.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS) & MASK
+      if (i > 0) {
+        a = copyOfRange(a, i, WIDTH)
+        if (depth == 2) a2 = a.asInstanceOf[Arr2]
+        else aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 1) {
+      if (a == null) a = a1.asInstanceOf[Array[AnyRef]]
+      val i = offset & MASK
+      if (i > 0) {
+        a = copyOfRange(a, i, WIDTH)
+        if (depth == 1) a1 = a.asInstanceOf[Arr1]
+        else aParent(0) = a
+      }
+    }
+    prefixIsRightAligned = false
+  }
+
   def addOne(elem: A): this.type = {
     if(len1 == WIDTH) advance()
     a1(len1) = elem.asInstanceOf[AnyRef]
@@ -1634,7 +1743,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
 
   override def addAll(xs: IterableOnce[A]): this.type = xs match {
     case v: Vector[_] =>
-      if(len1 == 0 && lenRest == 0) initFrom(v)
+      if(len1 == 0 && lenRest == 0 && !prefixIsRightAligned) initFrom(v)
       else addVector(v.asInstanceOf[Vector[A]])
     case _ =>
       super.addAll(xs)
@@ -1704,6 +1813,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
   }
 
   def result(): Vector[A] = {
+    if (prefixIsRightAligned) leftAlignPrefix()
     val len = len1 + lenRest
     val realLen = len - offset
     if(realLen == 0) Vector.empty

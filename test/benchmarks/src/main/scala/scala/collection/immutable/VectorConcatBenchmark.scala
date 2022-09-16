@@ -21,7 +21,7 @@ class VectorConcatBenchmark {
   var vAligned: Vector[AnyRef] = _
   var vShifted: Vector[AnyRef] = _
 
-  @Setup(Level.Trial) def init: Unit = {
+  @Setup(Level.Trial) def init(): Unit = {
     vAligned = Vector.fillSparse(size)(o)
     vShifted = Vector.fillSparse(size + 5)(o).drop(5)
   }
@@ -30,7 +30,7 @@ class VectorConcatBenchmark {
     var coll = a
     val coll1 = b
     var i = 0
-    while(i < 10) {
+    while(i < times) {
       coll = coll.appendedAll(coll1)
       i += 1
     }
