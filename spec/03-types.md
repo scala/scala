@@ -1025,7 +1025,7 @@ A value member of a volatile type cannot appear in a [path](#paths).
 A type is _volatile_ if it falls into one of four categories:
 
 A compound type `´T_1´ with … with ´T_n´ {´R\,´}`
-is volatile if one of the following two conditions hold.
+is volatile if one of the following three conditions hold.
 
 1. One of ´T_2 , \ldots , T_n´ is a type parameter or abstract type, or
 1. ´T_1´ is an abstract type and either the refinement ´R´
