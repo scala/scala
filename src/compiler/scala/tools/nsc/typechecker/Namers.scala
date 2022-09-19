@@ -1210,13 +1210,16 @@ trait Namers extends MethodSynthesis {
         val modClass = companionSymbolOf(clazz, context).moduleClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
-          def hasCopy =  {
-            val hasAbstractCopyMethod = parents.exists(_.member(nme.copy).isDeferred)
-            (decls containsName nme.copy) || !hasAbstractCopyMethod
+
+          def parentsHaveAbstractCopy: Boolean = {
+            val existsCopy = parents.filter(_.members.exists(_.name == nme.copy))
+            existsCopy.size == 1 && existsCopy.headOption.map(_.member(nme.copy).isDeferred).getOrElse(false)
           }
 
+          def hasCopy = (decls containsName nme.copy) || parents.exists(_.member(nme.copy).exists)
+
           // scala/bug#5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
-          if (cdef.symbol == clazz && !hasCopy)
+          if (cdef.symbol == clazz && (!hasCopy) || parentsHaveAbstractCopy)
             addCopyMethod(cdef, templateNamer)
         }
       }
