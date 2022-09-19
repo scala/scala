@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.8"),
+    mimaReferenceVersion := Some("2.13.9"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -31,19 +31,6 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
 
-    // scala/scala#9819
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.PriorityQueue#ResizableArrayAccess.p_ensureAdditionalSize"), // private[PriorityQueue]
-    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics"),  // private[scala]
-    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics$"), // private[scala]
-
-    // internal to wrappers
-    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.getOrElseUpdate"),
-    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.updateWith"),
-
-    // removing case classing from wrappers means synthetic methods and parent types and companions are missing
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#*"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.JavaCollectionWrappers$*"),
   )
 
   override val buildSettings = Seq(
