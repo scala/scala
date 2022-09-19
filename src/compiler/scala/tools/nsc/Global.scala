@@ -33,7 +33,6 @@ import scala.tools.nsc.io.{AbstractFile, SourceReader}
 import scala.tools.nsc.plugins.Plugins
 import scala.tools.nsc.profile.Profiler
 import scala.tools.nsc.reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
-import scala.tools.nsc.settings.StandardScalaSettings
 import scala.tools.nsc.symtab.classfile.Pickler
 import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
 import scala.tools.nsc.transform._
