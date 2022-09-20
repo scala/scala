@@ -592,6 +592,11 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           case _                  => ()
         }
       }
+      if (sym != null && sym.tpe.typeSymbol.isRefinementClass) {
+        // see scala/bug#12600, We should emit warn for alias which is a refined type
+        // but because of type discard, we can not check if it was used in type parameters, we also cannot exactly check if there is a duplicate alias.
+        treeTypes += sym.tpe
+      }
       super.traverse(t)
     }
     def isSuppressed(sym: Symbol): Boolean = sym.hasAnnotation(UnusedClass)
@@ -600,7 +605,9 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         && !isSuppressed(m)
         && !m.isTypeParameterOrSkolem // would be nice to improve this
         && (m.isPrivate || m.isLocalToBlock || isEffectivelyPrivate(m))
-        && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
+        && {
+        !treeTypes.exists(_.exists(_.typeSymbolDirect == m))
+      }
       )
     def isSyntheticWarnable(sym: Symbol) = {
       def privateSyntheticDefault: Boolean =
