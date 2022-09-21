@@ -2563,8 +2563,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _ => statsTyped
         }
 
-        treeCopy.Block(block, statsTyped2, expr1)
-          .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
+        // scala/bug#12590, skip inline if it has never been used or skip if it is a macro
+        val isMacro    = context.contextMode == ContextMode.MacrosEnabled
+        val skipInline = block.expr.exists(_.exists(px => block.stats.exists(_.symbol == px.symbol)))
+        val newTpe     = if (treeInfo.isExprSafeToInline(block) && (isMacro || skipInline)) expr1.tpe
+                         else expr1.tpe.deconst
+        
+        treeCopy.Block(block, statsTyped2, expr1).setType(newTpe)
       } finally {
         // enable escaping privates checking from the outside and recycle
         // transient flag
