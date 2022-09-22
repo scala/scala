@@ -1,9 +1,7 @@
 import scala.collection.immutable.VectorMap
 
 import org.scalacheck._
-import Arbitrary.arbitrary
 import Prop._
-import Gen._
 
 object VectorMapTest extends Properties("VectorMap") {
   property("transitive test") = {
@@ -24,7 +22,7 @@ object VectorMapTest extends Properties("VectorMap") {
     m1 != m2 ==> {
       val vm1 = VectorMap.from(m1)
       val vm2 = VectorMap.from(m2)
-      m1 != m2
+      vm1 != vm2
     }
   }
 }
