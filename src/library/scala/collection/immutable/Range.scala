@@ -373,11 +373,11 @@ sealed abstract class Range(
     if (x == end && !isInclusive) false
     else if (step > 0) {
       if (x < start || x > end) false
-      else (step == 1) || (((x - start) % step) == 0)
+      else (step == 1) || (Integer.remainderUnsigned(x - start, step) == 0)
     }
     else {
       if (x < end || x > start) false
-      else (step == -1) || (((x - start) % step) == 0)
+      else (step == -1) || (Integer.remainderUnsigned(start - x, -step) == 0)
     }
   }
   /* Seq#contains has a type parameter so the optimised contains above doesn't override it */

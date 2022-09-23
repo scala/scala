@@ -131,4 +131,30 @@ class NumericRangeTest {
       TestRange(BigDecimal(9.474), BigDecimal(49.474), BigDecimal(1)) //BigDecimal in "large" increments
       ).foreach(tr => assertEquals(foldListIncrement(tr).length, createRangeFromRangeTest(tr).length))
   }
+
+  @Test
+  def numericRangeContains() = {
+    def check(r: Range): List[Int] = {
+      r.filterNot(r.contains).toList
+    }
+
+    val testIncreaseCase = Int.MinValue until 1092265081 by 359972081
+
+    assertEquals(Nil, check(testIncreaseCase))
+    assertEquals(Nil, check(testIncreaseCase.drop(1)))
+    assertEquals(Nil, check(testIncreaseCase.drop(2)))
+    assertEquals(Nil, check(testIncreaseCase.drop(3)))
+    assertEquals(Nil, check(testIncreaseCase.start to testIncreaseCase.last by testIncreaseCase.step))
+    assertEquals(Nil, check(testIncreaseCase.inclusive))
+
+
+    val testDecreaseCase = Int.MaxValue until 1092265081 by -359972081
+
+    assertEquals(Nil, check(testDecreaseCase))
+    assertEquals(Nil, check(testDecreaseCase.drop(1)))
+    assertEquals(Nil, check(testDecreaseCase.drop(2)))
+    assertEquals(Nil, check(testDecreaseCase.drop(3)))
+    assertEquals(Nil, check(testDecreaseCase.start to testIncreaseCase.last by testIncreaseCase.step))
+    assertEquals(Nil, check(testDecreaseCase.inclusive))
+  }
 }
