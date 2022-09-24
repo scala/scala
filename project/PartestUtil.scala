@@ -36,7 +36,7 @@ object PartestUtil {
     val knownUnaryOptions = List(
       "--pos", "--neg", "--run", "--jvm", "--res", "--ant", "--scalap", "--specialized",
       "--instrumented", "--presentation", "--failed", "--update-check", "--no-exec",
-      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--help")
+      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--realeasy", "--version", "--help")
     val srcPathOption = "--srcpath"
     val compilerPathOption = "--compilerpath"
     val grepOption = "--grep"

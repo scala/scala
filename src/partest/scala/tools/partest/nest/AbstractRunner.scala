@@ -33,6 +33,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   val debug: Boolean                 = config.optDebug || propOrFalse("partest.debug")
   val verbose: Boolean               = config.optVerbose
   val terse: Boolean                 = config.optTerse
+  val realeasy: Boolean              = config.optDev
 
   protected val printSummary         = true
   protected val partestCmd           = "test/partest"

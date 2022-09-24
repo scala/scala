@@ -33,6 +33,7 @@ import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try, Using}
+import scala.util.Properties.isJavaAtLeast
 import scala.util.chaining._
 import scala.util.control.ControlThrowable
 
@@ -453,11 +454,17 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   // all sources in a round may contribute flags via // scalac: -flags
+  // under --realeasy, if a javaVersion isn't specified, require the minimum viable using -release 8
+  // to avoid accidentally committing a test that requires a later JVM.
   def flagsForCompilation(sources: List[File]): List[String] = {
-    val perFile = toolArgsFor(sources)("scalac")
-    if (parentFile.getParentFile.getName == "macro-annot") "-Ymacro-annotations" :: perFile
-    else perFile
+    var perFile = toolArgsFor(sources)("scalac")
+    if (parentFile.getParentFile.getName == "macro-annot")
+      perFile ::= "-Ymacro-annotations"
+    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)("javaVersion", split = false).isEmpty)
+      perFile ::= "-release:8"
+    perFile
   }
+  private val releaseFlag = raw"--?release(?::\d+)?".r
 
   // inspect sources for tool args
   def toolArgs(tool: String, split: Boolean = true): List[String] =
