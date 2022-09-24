@@ -1127,7 +1127,7 @@ trait Namers extends MethodSynthesis {
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
       tree.tpt.defineType {
-        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous) pt
+        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous && openMacros.isEmpty) pt
         else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
@@ -1319,7 +1319,6 @@ trait Namers extends MethodSynthesis {
       val tparamSyms = typer.reenterTypeParams(tparams)
       val tparamSkolems = tparams.map(_.symbol)
 
-
       /*
        * Creates a method type using tparamSyms and vparamsSymss as argument symbols and `respte` as result type.
        * All typeRefs to type skolems are replaced by references to the corresponding non-skolem type parameter,
@@ -1330,7 +1329,6 @@ trait Namers extends MethodSynthesis {
        */
       def deskolemizedPolySig(vparamSymss: List[List[Symbol]], restpe: Type) =
         GenPolyType(tparamSyms, methodTypeFor(meth, vparamSymss, restpe).substSym(tparamSkolems, tparamSyms))
-
 
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
         tpt defineType context.enclClass.owner.tpe_*
@@ -1350,7 +1348,6 @@ trait Namers extends MethodSynthesis {
           context.unit.transformed(tpt) = tptTyped
           tptTyped.tpe
         }
-
 
       // ignore missing types unless we can look to overridden method to recover the missing information
       val canOverride = methOwner.isClass && !meth.isConstructor
