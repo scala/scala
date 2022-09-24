@@ -1,0 +1,42 @@
+
+scala> def callerOfCaller = Thread.currentThread.getStackTrace.drop(2).head.getMethodName
+def callerOfCaller: String
+
+scala> @noinline def g = callerOfCaller
+def g: String
+
+scala> @noinline def h = g
+def h: String
+
+scala> assert(h == "g", h)
+
+scala> @inline def g = callerOfCaller
+def g: String
+
+scala> @noinline def h = g
+def h: String
+
+scala> assert(h == "h", h)
+
+scala> :quit
+
+scala> def callerOfCaller = Thread.currentThread.getStackTrace.drop(2).head.getMethodName
+def callerOfCaller: String
+
+scala> @noinline def g = callerOfCaller
+def g: String
+
+scala> @noinline def h = g
+def h: String
+
+scala> assert(h == "g", h)
+
+scala> @inline def g = callerOfCaller
+def g: String
+
+scala> @noinline def h = g
+def h: String
+
+scala> assert(h == "h", h)
+
+scala> :quit
