@@ -1,0 +1,32 @@
+final case class CaseValueClass(s: scala.Predef.String) extends scala.AnyVal with scala.Product with scala.Serializable {
+  val s: scala.Predef.String = { /* compiled code */ }
+  def baz: scala.Int = { /* compiled code */ }
+  def copy(s: scala.Predef.String): CaseValueClass = { /* compiled code */ }
+  override def productPrefix: java.lang.String = { /* compiled code */ }
+  def productArity: scala.Int = { /* compiled code */ }
+  def productElement(x$1: scala.Int): scala.Any = { /* compiled code */ }
+  def canEqual(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  override def productElementName(x$1: scala.Int): java.lang.String = { /* compiled code */ }
+  override def hashCode(): scala.Int = { /* compiled code */ }
+  override def equals(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  override def toString(): java.lang.String = { /* compiled code */ }
+  override def productIterator: scala.collection.Iterator[scala.Any] = { /* compiled code */ }
+}
+object CaseValueClass extends scala.runtime.AbstractFunction1[scala.Predef.String, CaseValueClass] with java.io.Serializable {
+  def this() = { /* compiled code */ }
+  final override def toString(): java.lang.String = { /* compiled code */ }
+  def apply(s: scala.Predef.String): CaseValueClass = { /* compiled code */ }
+  def unapply(x$0: CaseValueClass): scala.Option[scala.Predef.String] = { /* compiled code */ }
+  final def baz$extension($this: CaseValueClass): scala.Int = { /* compiled code */ }
+  final def copy$extension($this: CaseValueClass)(s: scala.Predef.String): CaseValueClass = { /* compiled code */ }
+  final def copy$default$1$extension($this: CaseValueClass): scala.Predef.String = { /* compiled code */ }
+  final def productPrefix$extension($this: CaseValueClass): java.lang.String = { /* compiled code */ }
+  final def productArity$extension($this: CaseValueClass): scala.Int = { /* compiled code */ }
+  final def productElement$extension($this: CaseValueClass)(x$1: scala.Int): scala.Any = { /* compiled code */ }
+  final def canEqual$extension($this: CaseValueClass)(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  final def productElementName$extension($this: CaseValueClass)(x$1: scala.Int): java.lang.String = { /* compiled code */ }
+  final def hashCode$extension($this: CaseValueClass)(): scala.Int = { /* compiled code */ }
+  final def equals$extension($this: CaseValueClass)(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  final def toString$extension($this: CaseValueClass)(): java.lang.String = { /* compiled code */ }
+  final def productIterator$extension($this: CaseValueClass): scala.collection.Iterator[scala.Any] = { /* compiled code */ }
+}

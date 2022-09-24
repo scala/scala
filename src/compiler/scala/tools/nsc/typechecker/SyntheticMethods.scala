@@ -24,7 +24,9 @@ import symtab.Flags._
  *    def productArity: Int
  *    def productElement(n: Int): Any
  *    def productPrefix: String
- *    def productIterator: Iterator[Any]   // required for binary compatibility of value classes
+ * 
+ *  Added only to value case classes (for binary compatibility):
+ *    def productIterator: Iterator[Any]
  *
  *  Selectively added to case classes/objects, unless a non-default
  *  implementation already exists:
@@ -43,10 +45,10 @@ trait SyntheticMethods extends ast.TreeDSL {
   import definitions._
   import CODE._
 
-  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement) ::: Product_productElementName.toOption.toList ::: List(Product_iterator, Product_canEqual)
+  private lazy val productSymbols    = Product_productElementName.toOption.toList ::: List(Product_productPrefix, Product_productArity, Product_productElement, Product_canEqual)
   private lazy val valueSymbols      = List(Any_hashCode, Any_equals)
   private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
-  private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
+  private lazy val caseValueSymbols  = Any_toString :: Product_iterator :: valueSymbols ::: productSymbols
   private lazy val caseObjectSymbols = Object_equals :: caseSymbols
   private def symbolsToSynthesize(clazz: Symbol): List[Symbol] = {
     if (clazz.isCase) {
@@ -264,7 +266,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         Product_productPrefix -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity -> (() => constantNullary(nme.productArity, arity)),
         Product_productElement -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
-        Product_iterator -> (() => productIteratorMethod),
         Product_canEqual -> (() => canEqualMethod)
       )
     }
@@ -335,7 +336,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def valueCaseClassMethods = productClassMethods ++ /*productNMethods ++*/ valueClassMethods ++ Seq(
-      Any_toString -> (() => forwardToRuntime(Object_toString))
+      Any_toString -> (() => forwardToRuntime(Object_toString)),
+      Product_iterator -> (() => productIteratorMethod)
     )
 
     def caseObjectMethods = productMethods ++ Seq(
