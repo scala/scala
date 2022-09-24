@@ -333,18 +333,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     compareContents(original = checked, revised = logged, originalName = checkname, revisedName = logFile.getName)
   }
 
-  val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
-  val gitDiffOptions = "--ignore-space-at-eol --no-index " + propOrEmpty("partest.git_diff_options")
-    // --color=always --word-diff
-
   def gitDiff(f1: File, f2: File): Option[String] = {
-    try gitRunner map { git =>
-      val cmd  = s"$git diff $gitDiffOptions $f1 $f2"
-      val diff = Process(cmd).lazyLines_!.drop(4).map(_ + "\n").mkString
-
-      "\n" + diff
-    }
-    catch { case t: Exception => None }
+    val gitDiffOptions = "--ignore-space-at-eol --no-index " + propOrEmpty("partest.git_diff_options")
+      // --color=always --word-diff
+    runGit(s"diff $gitDiffOptions $f1 $f2")(_.drop(4).map(_ + "\n").mkString).map("\n" + _)
   }
 
   /** Normalize the log output by applying test-specific filters
