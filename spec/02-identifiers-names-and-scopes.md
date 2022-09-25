@@ -14,16 +14,17 @@ collectively called _entities_. Names are introduced by local
 [package clauses](09-top-level-definitions.html#packagings)
 which are collectively called _bindings_.
 
-Bindings of different kinds have precedence defined on them:
+Bindings of each kind are assigned a precedence which determines
+whether one binding can shadow another:
 
 1. Definitions and declarations that are local, inherited, or made
    available by a package clause and also defined in the same compilation unit
    as the reference to them, have the highest precedence.
 1. Explicit imports have the next highest precedence.
 1. Wildcard imports have the next highest precedence.
-1. Definitions made available by a package clause, but not also defined in the
-   same compilation unit as the reference to them, as well as imports which
-   are supplied by the compiler but not explicitly written in source code,
+1. Bindings made available by a package clause, but not also defined in the
+   same compilation unit as the reference to them, as well as bindings
+   supplied by the compiler but not explicitly written in source code,
    have the lowest precedence.
 
 There are two different name spaces, one for [types](03-types.html#types)
@@ -72,8 +73,8 @@ In particular, imported names have higher precedence than names, defined in othe
 that might otherwise be visible because they are defined in
 either the current package or an enclosing package.
 
-Note that a package definition is taken as lowest precedence, since packages
-are open and can be defined across arbitrary compilation units.
+Note that a binding introduced by a packaging is taken as lowest precedence,
+since packages are open and can be defined across arbitrary compilation units.
 
 ```scala
 package util {
@@ -85,42 +86,37 @@ package util {
 }
 ```
 
-The compiler supplies imports in a preamble to every source file. This preamble
-conceptually has the following form, where braces indicate nested scopes:
+The compiler supplies bindings from well-known packages and objects, called "root contexts".
+The standard locations for these bindings are:
 
-```scala
-import java.lang._
-{
-  import scala._
-  {
-    import Predef._
-    { /* source */ }
-  }
-}
-```
+1. The object `scala.Predef`.
+1. The package `scala`.
+1. The package `java.lang`.
 
-These imports are taken as lowest precedence, so that they are always shadowed
+These bindings are taken as lowest precedence, so that they are always shadowed
 by user code, which may contain competing imports and definitions.
-They also increase the nesting depth as shown, so that later imports
-shadow earlier ones.
 
-As a convenience, multiple bindings of a type identifier to the same
-underlying type is permitted. This is possible when import clauses introduce
-a binding of a member type alias with the same binding precedence, typically
-through wildcard imports. This allows redundant type aliases to be imported
-without introducing an ambiguity.
+A binding is available from a root context if it would also be available
+using an ordinary import clause. In particular, ordinary access restrictions apply.
+
+A binding from an earlier root context shadows a binding of the same name from a later one.
+For example, `scala.Predef.String` shadows `java.lang.String`, for which it is a type alias.
+
+Multiple binding of a type identifier to the same underlying type is permitted.
+This is possible when import clauses introduce a binding of a member type alias
+with the same binding precedence, typically through wildcard imports.
+This allows redundant type aliases to be imported without introducing an ambiguity.
 
 ```scala
 object X { type T = annotation.tailrec }
 object Y { type T = annotation.tailrec }
 object Z {
-  import X._, Y._, annotation.{tailrec => T}  // OK, all T mean tailrec
-  @T def f: Int = { f ; 42 }                  // error, f is not tail recursive
+  import X._, Y._             // OK, both T mean tailrec
+  @T def f: Int = { f ; 42 }  // the annotation worked: error, f is not tail recursive
 }
 ```
 
-Similarly, imported aliases of names introduced by package statements are
-allowed, even though the names are strictly ambiguous:
+Similarly, imported aliases of names introduced by package statements are permitted:
 
 ```scala
 // c.scala
@@ -128,16 +124,9 @@ package p { class C }
 
 // xy.scala
 import p._
-package p { class X extends C }
-package q { class Y extends C }
+package p { class X extends C } // not ambiguous (compiles without the import)
+package q { class Y extends C } // requires the import
 ```
-
-The reference to `C` in the definition of `X` is strictly ambiguous
-because `C` is available by virtue of the package clause in
-a different file, and can't shadow the imported name. But because
-the references are the same, the definition is taken as though it
-did shadow the import.
-
 ###### Example
 
 Assume the following two definitions of objects named `X` in packages `p` and `q`

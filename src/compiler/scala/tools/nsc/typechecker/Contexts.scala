@@ -1249,25 +1249,6 @@ trait Contexts { self: Analyzer =>
         || unit.exists && s.sourceFile != unit.source.file)
       )
 
-
-    /** Does the import just import the defined symbol?
-     *
-     *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
-     *  `S` is both made available in `p` and imported, an ambiguity.
-     *  (The import is not used and is extraneous, but normally a definition
-     *  in `p` would shadow and result in maybe a warning, not an error.)
-     *
-     *  Don't attempt to interfere with correctness everywhere.
-     *  `object X { def f = ??? ; def g = { import X.f ; f } }`
-     *
-     *  This method doesn't use the ImportInfo, `imp1`.
-     */
-    private[Contexts] def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
-      val res = impSym == defSym
-      if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
-      res
-    }
-
     /** If the given import is permitted, fetch the symbol and filter for accessibility.
      */
     private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol =
@@ -1543,6 +1524,12 @@ trait Contexts { self: Analyzer =>
       advanceCursorToNextImport()
 
       val preferDef: Boolean = defSym.exists && (!impSym.exists || {
+        // Does the import just import the defined symbol?
+        def reconcileAmbiguousImportAndDef: Boolean = {
+          val res = impSym == defSym
+          if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
+          res
+        }
         // 4) root imported symbols have same (lowest) precedence as package-owned symbols in different compilation units.
         if (imp1.depth < symbolDepth && imp1.isRootImport && foreignDefined)
           true
@@ -1555,8 +1542,8 @@ trait Contexts { self: Analyzer =>
         // Defined symbols take precedence over erroneous imports.
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
           true
-        // Try to reconcile them before giving up, at least if the def is not visible
-        else if (foreignDefined && thisContext.reconcileAmbiguousImportAndDef(name, impSym, defSym))
+        // Try to reconcile them before giving up
+        else if (foreignDefined && reconcileAmbiguousImportAndDef)
           true
         // Otherwise they are irreconcilably ambiguous
         else
