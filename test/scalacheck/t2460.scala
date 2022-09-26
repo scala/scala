@@ -1,6 +1,5 @@
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Properties
-import org.scalacheck.{Test => SCTest}
 import org.scalacheck.Gen
 
 object SI2460Test extends Properties("Regex : Ticket 2460") {
@@ -24,4 +23,8 @@ object SI2460Test extends Properties("Regex : Ticket 2460") {
     ("numberOfGroup", numberOfGroup),
     ("nameOfGroup", nameOfGroup)
   )
+
+    for {
+    (label, prop) <- tests
+  } property(label) = prop
 }
