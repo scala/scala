@@ -39,7 +39,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.valuesIterator.exists(_.isHelping)

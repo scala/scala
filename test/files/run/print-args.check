@@ -1,0 +1,6 @@
+Compiler arguments written to: print-args-run.obj/print-args.txt
+newSource1.scala:3: error: type mismatch;
+ found   : String("42")
+ required: Int
+  def f: Int = "42"
+               ^
