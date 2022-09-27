@@ -120,7 +120,7 @@ trait Logic extends Debugging {
       def apply(ps: Prop*)           = create(ps)
       def create(ps: Iterable[Prop]) = ps match {
         case ps: Set[Prop] => new And(ps)
-        case _             => new And(ps.to(scala.collection.immutable.ListSet))
+        case _             => new And(ps.to(scala.collection.immutable.Set))
       }
     }
 
@@ -129,7 +129,7 @@ trait Logic extends Debugging {
       def apply(ps: Prop*)           = create(ps)
       def create(ps: Iterable[Prop]) = ps match {
         case ps: Set[Prop] => new Or(ps)
-        case _             => new Or(ps.to(scala.collection.immutable.ListSet))
+        case _             => new Or(ps.to(scala.collection.immutable.Set))
       }
     }
 

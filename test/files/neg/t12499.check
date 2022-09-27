@@ -1,0 +1,8 @@
+t12499.scala:455: warning: Cannot check match for unreachability.
+The analysis required more space than allowed.
+Please try with scalac -Ypatmat-exhaust-depth 60 or -Ypatmat-exhaust-depth off.
+  implicit val converter: Thing[Phantom.TypeA] => String = {
+                                                           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
