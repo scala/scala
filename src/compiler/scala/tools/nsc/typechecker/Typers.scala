@@ -2717,7 +2717,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // `def applyOrElse[A1 <: $argTp, B1 >: $matchResTp](x: A1, default: A1 => B1): B1 =
-      //  ${`$selector match { $cases; case default$ => default(x) }`
+      //   $selector match { $cases; case default$ => default(x) }`
       def applyOrElseMethodDef = {
         val methodSym = anonClass.newMethod(nme.applyOrElse, tree.pos, FINAL | OVERRIDE)
 
@@ -2797,7 +2797,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def newParam(param: Symbol): ValDef = {
           val vd              = ValDef(param, EmptyTree)
           val tt @ TypeTree() = vd.tpt: @unchecked
-          tt setOriginal (originals(param) setPos param.pos.focus)
+          tt.setOriginal(originals(param) setPos param.pos.focus)
           vd
         }
 
@@ -3010,7 +3010,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Type check a function literal.
      *
-     * Based on the expected type pt, potentially synthesize an instance of
+     *  Based on the expected type pt, potentially synthesize an instance of
      *   - PartialFunction,
      *   - a type with a Single Abstract Method.
      */
@@ -3018,28 +3018,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val vparams = fun.vparams
       val numVparams = vparams.length
       if (numVparams > definitions.MaxFunctionArity) MaxFunctionArityError(fun, s", but $numVparams given")
+      // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
+      else if (isPastTyper) doTypedFunction(fun, argsResProtosFromFun(pt, numVparams)._2)
       else {
         val (argProtos, resProto) = argsResProtosFromFun(pt, numVparams)
+        //.sizeHint(numVparams) but initial size is 16 and max fun arity is 22
+        val paramsMissingType = mutable.ArrayBuffer.empty[ValDef]
 
-        // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
-        if (isPastTyper) doTypedFunction(fun, resProto)
-        else {
-          val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
+        // first, try to define param types from expected function's arg types if needed
+        foreach2(vparams, argProtos) { (vparam, argpt) =>
+          // TODO: do we need to exclude vparam.symbol.isError? (I don't think so,
+          // because I don't see how we could recurse after the `setError(vparam)` call below
+          if (vparam.tpt.isEmpty) {
+            if (isFullyDefined(argpt)) vparam.tpt setType argpt
+            else paramsMissingType += vparam
 
-          // first, try to define param types from expected function's arg types if needed
-          foreach2(vparams, argProtos) { (vparam, argpt) =>
-            // TODO: do we need to exclude vparam.symbol.isError? (I don't think so,
-            // because I don't see how we could recurse after the `setError(vparam)` call below
-            if (vparam.tpt.isEmpty) {
-              if (isFullyDefined(argpt)) vparam.tpt setType argpt
-              else paramsMissingType += vparam
-
-              if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
-            }
+            if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
           }
+        }
 
+        def argOK(f: Function, pft: Type): Boolean = partialFunctionArgResTypeFromProto(pft)._1 <:< f.vparams.head.tpt.tpe
+        val ftree =
           if (paramsMissingType.nonEmpty && pt != ErrorType) {
-            // If we can resolve the missing parameter type by undoing eta-expansion and recursing, do that -- otherwise, report error and bail
+            // If we can resolve the missing parameter type by undoing eta-expansion and recursing, do that
+            // otherwise, report error and bail
             typedFunctionUndoingEtaExpansion(fun, mode, resProto) orElse {
               // we ran out of things to try, missing parameter types are an irrevocable error
               var issuedMissingParameterTypeError = false
@@ -3048,10 +3050,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
                 issuedMissingParameterTypeError = true
               }
-
               setError(fun)
             }
-          } else if (numVparams == 1 && pt.typeSymbol == PartialFunctionClass) { // dodge auto-tupling with the == 1
+          }
+          else doTypedFunction(fun, resProto)
+        ftree match {
+          // dodge auto-tupling with the == 1
+          case fun0: Function if numVparams == 1 && pt.typeSymbol == PartialFunctionClass && !ftree.isErroneous && argOK(fun0, pt) =>
+            // synthesizePartialFunction will recreate param
+            val fun = resetAttrs(fun0).asInstanceOf[Function]
             // translate `x => x match { <cases> }` : PartialFunction to
             // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
             val funBody = fun.body match {
@@ -3061,15 +3068,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   Match(EmptyTree, List(CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), funBody)))
                 }
             }
-            // go to outer context -- must discard the context that was created for the Function since we're discarding the function
-            // thus, its symbol, which serves as the current context.owner, is not the right owner
-            // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
+            // don't use local context from typedFunction(t)
             val outerTyper = newTyper(context.outer)
-            val p = vparams.head
-            if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
-
+            val p = fun.vparams.head
             outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, funBody, mode, pt)
-          } else doTypedFunction(fun, resProto)
+          case _ => ftree
         }
       }
     }

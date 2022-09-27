@@ -1,0 +1,26 @@
+t4940.scala:3: error: type mismatch;
+ found   : String("x")
+ required: Int
+  val f: PartialFunction[String, Int] = (x: Int) => x match { case "x" => 3 }   // error
+                                                                   ^
+t4940.scala:3: error: type mismatch;
+ found   : Int => Int
+ required: PartialFunction[String,Int]
+  val f: PartialFunction[String, Int] = (x: Int) => x match { case "x" => 3 }   // error
+                                                 ^
+t4940.scala:5: error: type mismatch;
+ found   : String("x")
+ required: X
+  val g: PartialFunction[String, Int] = (x: X) => x match { case "x" => 3 }     // error
+                                                                 ^
+t4940.scala:5: error: type mismatch;
+ found   : X => Int
+ required: PartialFunction[String,Int]
+  val g: PartialFunction[String, Int] = (x: X) => x match { case "x" => 3 }     // error
+                                               ^
+t4940.scala:7: error: type mismatch;
+ found   : Double => Int
+ required: PartialFunction[Int,Int]
+  val m: PartialFunction[Int, Int] = (x: Double) => x match { case 3.14 => 3 }  // error
+                                                 ^
+5 errors
