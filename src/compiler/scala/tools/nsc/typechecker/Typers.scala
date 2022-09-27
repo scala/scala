@@ -3202,12 +3202,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedEtaExpansion(tree: Tree, mode: Mode, pt: Type): Tree = {
       debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
 
-      if (tree.tpe.isDependentMethodType) DependentMethodTpeConversionToFunctionError(tree, tree.tpe) // TODO: support this
-      else {
-        val expansion = etaExpand(tree, context.owner)
-        if (context.undetparams.isEmpty) typed(expansion, mode, pt)
-        else instantiate(typed(expansion, mode), mode, pt)
-      }
+      val expansion = etaExpand(tree, context.owner)
+      if (context.undetparams.isEmpty) typed(expansion, mode, pt)
+      else instantiate(typed(expansion, mode), mode, pt)
     }
 
     def typedRefinement(templ: Template): Unit = {
