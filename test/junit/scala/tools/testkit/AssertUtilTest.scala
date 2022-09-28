@@ -111,6 +111,12 @@ class AssertUtilTest {
     assertEquals(0, sut.errors.head._2.getSuppressed.length)
   }
 
+  @Test def `probe for stack safety`: Unit = {
+    import scala.util.Try
+    assertStackSafe(probeStackSafety[Unit](), probeStackSafety[Unit]())
+    assertFails(_ => true)(assertStackSafe[Any](probeStackSafety[Unit](), Try(probeStackSafety[Unit]())))
+  }
+
   /** TODO
   @Test def `hexdump is supplementary-aware`: Unit = {
     assertEquals("00000000  f0 90 90 80                                       |𐐀.|", hexdump("\ud801\udc00").next())

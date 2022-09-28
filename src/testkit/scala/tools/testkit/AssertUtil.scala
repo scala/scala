@@ -304,6 +304,23 @@ object AssertUtil {
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
 
   def withoutATrace[A](body: => A) = NoTrace(body)
+
+  /** To be thrown by test code to check stack depth. */
+  case class Probe(depth: Int) extends ControlThrowable
+
+  /** To be called by test code to check stack depth from assertStackSafe. */
+  def probeStackSafety[A](): A = throw new Probe(Thread.currentThread.getStackTrace.length)
+
+  def assertStackSafe[A](run1: => A, run2: => A): Unit = {
+    var res1 = -1
+    var res2 = -1
+    def check(f: Int => Unit): Probe => Boolean = {
+      case Probe(depth) => f(depth); true
+    }
+    assertThrown[Probe](check(depth => res1 = depth))(run1)
+    assertThrown[Probe](check(depth => res2 = depth))(run2)
+    assertEquals(s"Expected equal stack depths, but got $res1 and $res2", res1, res2)
+  }
 }
 
 object TestDuration {

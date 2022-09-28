@@ -208,9 +208,9 @@ class IteratorTest {
   }
 
   @Test def dropDoesNotGrowStack(): Unit = {
-    def it = new Iterator[Throwable] { def hasNext = true ; def next() = new Throwable }
+    def it = new Iterator[Int] { def hasNext = true ; def next() = Thread.currentThread.getStackTrace.length }
 
-    assertEquals(it.drop(1).next().getStackTrace.length, it.drop(1).drop(1).next().getStackTrace.length)
+    assertEquals(it.drop(1).next(), it.drop(1).drop(1).next())
   }
 
   @Test def dropIsChainable(): Unit = {
