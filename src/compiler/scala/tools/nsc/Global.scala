@@ -1491,23 +1491,19 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         }
       }
 
-    /** Compile list of source files,
-     *  unless there is a problem already,
-     *  such as a plugin was passed a bad option.
+    /** Compile a list of source files, unless there is a problem already, e.g., a plugin was passed a bad option.
      */
     def compileSources(sources: List[SourceFile]): Unit = if (!reporter.hasErrors) {
       printArgs(sources)
-
       def checkDeprecations() = {
         warnDeprecatedAndConflictingSettings()
         reporting.summarizeErrors()
       }
-
-      val units = sources map scripted map (file => new CompilationUnit(file, warningFreshNameCreator))
-
-      units match {
+      sources match {
         case Nil => checkDeprecations()   // nothing to compile, report deprecated options
-        case _   => compileUnits(units)
+        case _   =>
+          val units = sources.map(src => new CompilationUnit(scripted(src), warningFreshNameCreator))
+          compileUnits(units)
       }
     }
 

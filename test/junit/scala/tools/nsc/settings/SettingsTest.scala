@@ -345,6 +345,15 @@ class SettingsTest {
     assertFalse(s.optInlinerEnabled)
     assertTrue(s.optBoxUnbox)
   }
+  @Test def `print args to reporter`: Unit = {
+    val s = settings
+    val args = "-Vprint-args" :: "-" :: Nil
+    val (ok, rest) = s.processArguments(args, processAll = true)
+    assertTrue(ok)
+    assertTrue(rest.isEmpty)
+    assertFalse(s.isInfo)
+    assertTrue(s.printArgs.isSetByUser)
+  }
 }
 object SettingsTest {
   import language.implicitConversions
