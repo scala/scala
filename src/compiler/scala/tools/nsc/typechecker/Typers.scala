@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.collection.mutable
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics}
@@ -6272,27 +6272,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       tpe
     }
 
-    def computeMacroDefType(ddef: DefDef, pt: Type): Type = {
+    // called from `methodSig`. Macro defs must have an explicit type.
+    // The supplied expected type is ignored.
+    def computeMacroDefType(ddef: DefDef, @unused pt: Type): Type = {
       assert(context.owner.isMacro, context.owner)
       assert(ddef.symbol.isMacro, ddef.symbol)
 
-      // macro defs are typechecked in `methodSig` (by calling this method) in order to establish their link to macro implementation asap
-      // if a macro def doesn't have explicitly specified return type, this method will be called again by `assignTypeToTree`
-      // here we guard against this case
       val rhs1 =
-        if (transformed contains ddef.rhs) {
+        if (transformed contains ddef.rhs)
           transformed(ddef.rhs)
-        } else {
+        else {
           val rhs1 = typedMacroBody(this, ddef)
           transformed(ddef.rhs) = rhs1
           rhs1
         }
-
-      val isMacroBodyOkay = !ddef.symbol.isErroneous && !(rhs1 exists (_.isErroneous)) && rhs1 != EmptyTree
+      val isMacroBodyOkay = !ddef.symbol.isErroneous && !rhs1.exists(_.isErroneous) && rhs1 != EmptyTree
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
       if (isMacroBodyOkay && shouldInheritMacroImplReturnType) {
-        val commonMessage = "macro defs must have explicitly specified return types"
         def reportFailure() = {
+          val commonMessage = "macro defs must have explicitly specified return types"
           ddef.symbol.setFlag(IS_ERROR)
           context.error(ddef.pos, commonMessage)
         }
