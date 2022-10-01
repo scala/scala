@@ -146,7 +146,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @deprecated("toTraversable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.0")
   final def toTraversable: Traversable[A] = toIterable
 
-  override def isTraversableAgain: Boolean = true
+  override def isIterableAgain: Boolean = true
 
   /**
     * @return This collection as a `C`.

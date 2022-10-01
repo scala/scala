@@ -560,12 +560,20 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
   def hasDefiniteSize: Boolean = true
 
+  /** Tests whether this $coll can be repeatedly itered.  Always
+   *  true for Iterables and false for Iterators unless overridden.
+   *
+   *  @return   `true` if it is repeatedly iterable, `false` otherwise.
+    */
+  def isIterableAgain: Boolean = false
+
   /** Tests whether this $coll can be repeatedly traversed.  Always
    *  true for Iterables and false for Iterators unless overridden.
    *
    *  @return   `true` if it is repeatedly traversable, `false` otherwise.
-   */
-  def isTraversableAgain: Boolean = false
+    */
+  @depreceted("Use isIterableAgain instead", "2.13.0")
+  def isTraversableAgain: Boolean = isIterableAgain
 
   /** Apply `f` to each element for its side effects
     *  Note: [U] parameter needed to help scalac's type inference.
