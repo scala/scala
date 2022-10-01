@@ -70,10 +70,10 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     prepend(elem1).prepend(elem2).pushAll(elems)
   }
 
-  /** Push all elements in the given traversable object onto the stack. The
-    *  last element in the traversable object will be on top of the new stack.
+  /** Push all elements in the given iterable object onto the stack. The
+    *  last element in the iterable object will be on top of the new stack.
     *
-    *  @param elems the traversable object.
+    *  @param elems the iterable object.
     *  @return the stack with the new elements on top.
     */
   def pushAll(elems: scala.collection.IterableOnce[A]): this.type =

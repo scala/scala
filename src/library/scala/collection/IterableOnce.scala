@@ -437,8 +437,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def flatMap[B](f: A => IterableOnce[B]): CC[B]
 
-  /** Converts this $coll of traversable collections into
-    *  a $coll formed by the elements of these traversable
+  /** Converts this $coll of iterable collections into
+    *  a $coll formed by the elements of these iterable
     *  collections.
     *
     *    The resulting collection's type will be guided by the
@@ -458,9 +458,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *    // ys == Set(1, 2, 3)
     *    }}}
     *
-    *  @tparam B the type of the elements of each traversable collection.
+    *  @tparam B the type of the elements of each iterable collection.
     *  @param asIterable an implicit conversion which asserts that the element
-    *          type of this $coll is a `GenTraversable`.
+    *          type of this $coll is an `Iterable`.
     *  @return a new $coll resulting from concatenating all element ${coll}s.
     */
   def flatten[B](implicit asIterable: A => IterableOnce[B]): CC[B]
@@ -818,7 +818,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Tests whether the $coll is empty.
     *
-    *  Note: Implementations in subclasses that are not repeatedly traversable must take
+    *  Note: Implementations in subclasses that are not repeatedly iterable must take
     *  care not to consume any elements when `isEmpty` is called.
     *
     *  @return    `true` if the $coll contains no elements, `false` otherwise.
