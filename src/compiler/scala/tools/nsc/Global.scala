@@ -1275,26 +1275,26 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       // doesn't select a unique phase, that might be surprising too.
       def checkPhaseSettings(including: Boolean, specs: Seq[String]*) = {
         def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
-        def isSpecial(s: String) = (s == "_" || isRange(s))
+        def isMulti(s: String) = s == "_" || s == "all" || isRange(s) || s.startsWith("~")
         val tester = new ss.PhasesSetting("fake","fake")
         for (p <- specs.flatten.to(Set)) {
           tester.value = List(p)
           val count =
             if (including) first.iterator.count(tester.containsPhase(_))
-            else phaseDescriptors.count(pd => tester.contains(pd.phaseName))
+            else phaseDescriptors.count(pd => tester.contains(pd.phaseName) || tester.contains(s"~${pd.phaseName}"))
           if (count == 0) runReporting.warning(NoPosition, s"'$p' specifies no phase", WarningCategory.Other, site = "")
-          if (count > 1 && !isSpecial(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
-          if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
+          if (count > 1 && !isMulti(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
+          if (!including && isMulti(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
           tester.clear()
         }
       }
       // phases that are excluded; for historical reasons, these settings only select by phase name
       val exclusions = List(ss.stopBefore, ss.stopAfter, ss.skip)
       val inclusions = ss.visibleSettings collect {
-        case s: ss.PhasesSetting if !(exclusions contains s) => s.value
+        case s: ss.PhasesSetting if !exclusions.contains(s) => s.value
       }
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
-      checkPhaseSettings(including = false, exclusions map (_.value): _*)
+      checkPhaseSettings(including = false, exclusions.map(_.value): _*)
 
       // Report the overhead of statistics measurements per every run
       if (settings.areStatisticsEnabled)
@@ -1536,7 +1536,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           informTime(globalPhase.description, phaseTimer.nanos)
 
         // progress update
-        if ((settings.Xprint containsPhase globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
+        if (settings.Xprint.containsPhase(globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) nodePrinters.printAll()
           else printAllUnits()
