@@ -719,7 +719,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
     *
-    *  @param suffix   the traversable to append.
+    *  @param suffix   the iterable to append.
     *  @tparam B     the element type of the returned collection.
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.

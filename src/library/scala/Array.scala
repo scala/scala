@@ -429,7 +429,7 @@ object Array {
    *
    *  @param  n   The number of elements in the array
    *  @param  f   The function computing element values
-   *  @return A traversable consisting of elements `f(0),f(1), ..., f(n - 1)`
+   *  @return An `Array` consisting of elements `f(0),f(1), ..., f(n - 1)`
    */
   def tabulate[T: ClassTag](n: Int)(f: Int => T): Array[T] = {
     if (n <= 0) {

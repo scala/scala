@@ -324,7 +324,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
     *
-    *  @param suffix   the traversable to append.
+    *  @param suffix   the iterable to append.
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */

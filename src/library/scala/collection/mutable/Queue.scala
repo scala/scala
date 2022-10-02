@@ -60,10 +60,10 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     */
   def enqueue(elem1: A, elem2: A, elems: A*): this.type = enqueue(elem1).enqueue(elem2).enqueueAll(elems)
 
-  /** Enqueues all elements in the given traversable object into the queue. The
-    *  last element in the traversable object will be on front of the new queue.
+  /** Enqueues all elements in the given iterable object into the queue. The
+    *  last element in the iterable object will be on front of the new queue.
     *
-    *  @param elems the traversable object.
+    *  @param elems the iterable object.
     *  @return this
     */
   def enqueueAll(elems: scala.collection.IterableOnce[A]): this.type = this ++= elems
