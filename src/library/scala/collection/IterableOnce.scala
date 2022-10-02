@@ -565,7 +565,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @return   `true` if it is repeatedly traversable, `false` otherwise.
    */
-  @deprecated("Could be replaced by isInstanceOf[Iterable]", "2.13.0")
+  @deprecated("Use .isInstanceOf[Iterable] instead", "2.13.0")
   def isTraversableAgain: Boolean = false
 
   /** Apply `f` to each element for its side effects
