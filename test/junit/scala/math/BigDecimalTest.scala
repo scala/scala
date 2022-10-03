@@ -273,12 +273,12 @@ class BigDecimalTest {
   }
 
   @Test
-  def testIsComparable(): Unit = {
+  def testIsComparable(): Unit =
     assertTrue(BigDecimal(0.1).isInstanceOf[java.lang.Comparable[_]])
-  }
 
   // trick sum into using foldLeft, viz, because the size is unknown
-  @Test def testBigDecimalSumInList(): Unit = {
+  @Test
+  def testBigDecimalSumInList(): Unit = {
     val bds = List(
       BigDecimal("1000000000000000000000000.1", MC.UNLIMITED),
       BigDecimal("9.0000000000000000000000009", MC.UNLIMITED))

@@ -1,0 +1,29 @@
+t11921b.scala:11: error: reference to x is ambiguous;
+it is both defined in object Test and available as value x in class C
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.x`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      println(x)  // error
+              ^
+t11921b.scala:15: error: reference to x is ambiguous;
+it is both defined in object Test and available as value x in class C
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.x`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+        println(x)  // error
+                ^
+t11921b.scala:26: error: reference to y is ambiguous;
+it is both defined in method c and available as value y in class D
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.y`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      println(y)  // error
+              ^
+t11921b.scala:38: error: reference to y is ambiguous;
+it is both defined in method c and available as value y in class D
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.y`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+        println(y)  // error
+                ^
+4 errors

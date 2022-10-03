@@ -927,7 +927,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         }
         else None
       def resultType =
-        makeTypeInTemplateContext(aSym.tpe, inTpl, aSym)
+        makeTypeInTemplateContext(aSym.tpe, this.inTpl, aSym)
       def isImplicit = aSym.isImplicit
     }
 

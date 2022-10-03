@@ -1,0 +1,8 @@
+t11921.scala:6: error: reference to coll is ambiguous;
+it is both defined in method lazyMap and available as method coll in trait Iterable
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.coll`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      def iterator = coll.iterator.map(f)    // coll is ambiguous
+                     ^
+1 error

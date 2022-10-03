@@ -7,7 +7,7 @@ chapter: 2
 # Identifiers, Names and Scopes
 
 Names in Scala identify types, values, methods, and classes which are
-collectively called _entities_. Names are introduced by local
+collectively called _entities_. Names are introduced by
 [definitions and declarations](04-basic-declarations-and-definitions.html#basic-declarations-and-definitions),
 [inheritance](05-classes-and-objects.html#class-members),
 [import clauses](04-basic-declarations-and-definitions.html#import-clauses), or
@@ -17,14 +17,16 @@ which are collectively called _bindings_.
 Bindings of each kind are assigned a precedence which determines
 whether one binding can shadow another:
 
-1. Definitions and declarations that are local, inherited, or made
-   available by a package clause and also defined in the same compilation unit
-   as the reference to them, have the highest precedence.
+1. Definitions and declarations in lexical scope that are not [top-level](09-top-level-definitions.html)
+   have the highest precedence.
+1. Definitions and declarations that are either inherited,
+   or made available by a package clause and also defined in the same compilation unit as the reference to them,
+   have the next highest precedence.
 1. Explicit imports have the next highest precedence.
 1. Wildcard imports have the next highest precedence.
-1. Bindings made available by a package clause, but not also defined in the
-   same compilation unit as the reference to them, as well as bindings
-   supplied by the compiler but not explicitly written in source code,
+1. Bindings made available by a package clause,
+   but not also defined in the same compilation unit as the reference to them,
+   as well as bindings supplied by the compiler but not explicitly written in source code,
    have the lowest precedence.
 
 There are two different name spaces, one for [types](03-types.html#types)

@@ -1,0 +1,6 @@
+t11921c.scala:7: error: type mismatch;
+ found   : A => B
+ required: B => B
+      def iterator = coll.iterator.map(f)    // coll is ambiguous
+                                       ^
+1 error
