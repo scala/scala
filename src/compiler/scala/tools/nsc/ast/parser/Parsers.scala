@@ -2098,7 +2098,7 @@ self =>
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else {
-          typ() match {
+          this.typ() match {
             case Ident(name: TypeName) if nme.isVariableName(name) =>
               atPos(start) { Bind(name, EmptyTree) }
             case t => t
@@ -2289,7 +2289,7 @@ self =>
     }
     /** The implementation of the context sensitive methods for parsing outside of patterns. */
     final val outPattern = new PatternContextSensitive {
-      def argType(): Tree = typ()
+      def argType(): Tree = this.typ()
       def functionArgType(): Tree = paramType(repeatedParameterOK = false, useStartAsPosition = true)
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */

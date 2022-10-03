@@ -18,7 +18,7 @@ class Plugin(val global: Global) extends NscPlugin {
       object expander extends DefMacroExpander(typer, expandee, mode, pt) {
         override def onSuccess(expanded: Tree) = {
           val message = s"expanded into ${expanded.toString}"
-          typer.typed(q"println($message)")
+          this.typer.typed(q"println($message)")
         }
       }
       Some(expander(expandee))
