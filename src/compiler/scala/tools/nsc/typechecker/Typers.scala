@@ -4919,8 +4919,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedApply(tree: Apply) = tree match {
-        case Apply(Block(stats, expr), args) =>
-          typed1(atPos(tree.pos)(Block(stats, Apply(expr, args) setPos tree.pos.makeTransparent)), mode, pt)
+        case Apply(blk @ Block(stats, expr), args) =>
+          val ap1 = treeCopy.Apply(tree, expr, args).clearType().setPos(tree.pos.makeTransparent)
+          val blk1 = treeCopy.Block(blk, stats, ap1).clearType()
+          typed1(blk1, mode, pt)
         case Apply(fun, args) =>
           normalTypedApply(tree, fun, args) match {
             case treeInfo.ArrayInstantiation(level, componentType, arg) =>
