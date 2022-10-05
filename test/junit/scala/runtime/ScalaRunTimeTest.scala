@@ -8,15 +8,30 @@ import org.junit.runners.JUnit4
 /** Tests for the runtime object ScalaRunTime */
 @RunWith(classOf[JUnit4])
 class ScalaRunTimeTest {
+  class Strung(n: Int) {
+    override def toString = "X" * n
+  }
+  def Strung(n: Int) = new Strung(n)
   @Test
   def testStringOf(): Unit = {
     import ScalaRunTime.{replStringOf, stringOf}
     import scala.collection._
 
+    def verboseStringOf(s: String): String = stringOf(s, maxLength = 0, verboseProduct = true)
+
     assertEquals("null", stringOf(null))
-    assertEquals( "\"\"", stringOf(""))
+    assertEquals("\"\"", stringOf(""))
+
+    assertEquals("X", stringOf(Strung(1)))
+    assertEquals("X"*2, stringOf(Strung(2)))
+    assertEquals("X"*3, stringOf(Strung(3)))
+    assertEquals("X"*4, stringOf(Strung(4)))
+    assertEquals("XX...", stringOf(Strung(10), 5))
+    assertEquals("...", stringOf(Strung(10), 2))
+    assertEquals(s"Li...", stringOf(List(Strung(10), Strung(20)), 5))
 
     assertEquals("abc", stringOf("abc"))
+    assertEquals("\"abc\"", stringOf("abc", maxLength = 0, verboseProduct = true))
     assertEquals("\" abc\"", stringOf(" abc"))
     assertEquals("\"abc \"", stringOf("abc "))
 
@@ -24,16 +39,20 @@ class ScalaRunTimeTest {
     assertEquals("""Array()""", stringOf(Array.empty[Int]))
     assertEquals("""Array(1, 2, 3)""", stringOf(Array(1, 2, 3)))
     assertEquals("""Array(a, "", " c", null)""", stringOf(Array("a", "", " c", null)))
+    assertEquals("""Array("a", "", " c", null)""", stringOf(Array("a", "", " c", null), maxLength = 0, verboseProduct = true))
     assertEquals("""Array(Array("", 1, Array(5)), Array(1))""",
         stringOf(Array(Array("", 1, Array(5)), Array(1))))
 
     val map = Map(1->"", 2->"a", 3->" a", 4->null)
     assertEquals(s"""Map(1 -> "", 2 -> a, 3 -> " a", 4 -> null)""", stringOf(map))
-    assertEquals(s"""Map(1 -> "", 2 -> a)""", stringOf(map, 2))
+    assertEquals(s"""Map(1 -> "", 2 -> "a", 3 -> " a", 4 -> null)""", stringOf(map, maxLength = 0, verboseProduct = true))
+    assertEquals(s"""Map(1 -> "", ...)""", stringOf(map, 20))
 
     val iterable = Iterable("a", "", " c", null)
     assertEquals(s"""List(a, "", " c", null)""", stringOf(iterable))
-    assertEquals(s"""List(a, "")""", stringOf(iterable, 2))
+    assertEquals(s"""List("a", "", " c", null)""", stringOf(iterable, maxLength = 0, verboseProduct = true))
+    assertEquals(s"""List(a, ...)""", stringOf(iterable, 15))
+    assertEquals(s"""List("a", "", ...)""", stringOf(iterable, maxLength = 20, verboseProduct = true))
 
     val tuple1 = Tuple1(0)
     assertEquals("(0,)", stringOf(tuple1))
@@ -54,12 +73,33 @@ class ScalaRunTimeTest {
       override def toString(): String = "this is the stringOf string"
     }
     assertEquals("this is the stringOf string", stringOf(x))
-    assertEquals("this is the stringOf string", stringOf(x, 2))
+    assertEquals("this is...", stringOf(x, 10))
+    assertEquals("...", stringOf(x, 2))
 
     val tpolecat = new Object {
       override def toString(): String = null
     }
     assertEquals(null, stringOf(tpolecat))
-    assertEquals("null toString", replStringOf(tpolecat, 100))
+    assertEquals("null // non-null reference has null-valued toString", replStringOf(tpolecat, maxLength = 100, verboseProduct = false))
+
+    val TQ = "\"" * 3
+    val abcdef =
+      s"""abc
+         |def""".stripMargin
+    def q(s: String) = "\"" + s + "\""
+    def escq(s: String) = "\\\"" + s + "\\\""
+    def tq(s: String) = TQ + s + TQ
+    // escape the quote then wrap in triple quotes and prepend with interpolator
+    assertEquals(
+      "s" + tq(escq(abcdef)),
+      verboseStringOf(q(abcdef))
+    )
+    // escape ALL the quotes
+    assertEquals(
+      "s" + tq(escq(escq(escq(escq(abcdef))))),
+      verboseStringOf(tq(q(abcdef)))
+    )
+    // ordinary single quote and no interpolator needed for \t
+    assertEquals(q("a\\tb"), verboseStringOf("a\tb"))
   }
 }

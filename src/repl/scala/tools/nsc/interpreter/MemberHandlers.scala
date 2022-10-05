@@ -125,17 +125,21 @@ trait MemberHandlers {
 
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
-    val maxStringElements = 1000  // no need to mkString billions of elements
     override def definesValue = true
 
     override def resultExtractionCode(req: Request): String = {
       val isInternal = isUserVarName(name) && req.lookupTypeOf(name) == "Unit"
       if (!mods.isPublic || isInternal) ""
       else {
-        // if this is a lazy val we avoid evaluating it here
         val resultString =
-          if (mods.isLazy) quotedString(" // unevaluated")
-          else quotedString(" = ") + " + " + any2stringOf(path, maxStringElements)
+          if (mods.isLazy) {
+            // if this is a lazy val we avoid evaluating it here
+            quotedString(" // unevaluated")
+          } else {
+            val limit = intp.reporter.maxPrintString
+            val augmentedS = """(if (s.indexOf('\n') >= 0) "\n" else "") + s + "\n""""
+            s"${quotedString(" = ")} + { val s = ${any2stringOf(path, limit, verboseProduct = false)} ; $augmentedS }"
+          }
 
         val varOrValOrLzy =
           if (mods.isMutable) "var"

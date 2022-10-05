@@ -1,3 +1,4 @@
+// scalac: -feature -Xlint -Werror -Wconf:cat=deprecation&msg="method getId in class Thread":s
 import scala.concurrent.{
   Future,
   Promise,
@@ -7,11 +8,11 @@ import scala.concurrent.{
   CanAwait,
   Await,
   Awaitable,
-  blocking
+  BlockContext,
+  blocking,
 }
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import scala.reflect.{classTag, ClassTag}
 import scala.tools.testkit.AssertUtil.{Fast, Slow, assertThrows, waitFor, waitForIt}
 import scala.util.{Try, Success, Failure}
 import scala.util.chaining._
@@ -747,7 +748,6 @@ class Blocking extends TestBase {
 
 class BlockContexts extends TestBase {
   import ExecutionContext.Implicits._
-  import scala.concurrent.{ Await, Awaitable, BlockContext }
 
   private def getBlockContext(body: => BlockContext): BlockContext = await(Future(body))
 
@@ -846,7 +846,7 @@ class Exceptions extends TestBase {
     Thread.sleep(20)
     e.shutdownNow()
 
-    val Failure(ee: ExecutionException) = Await.ready(f, 2.seconds).value.get
+    val Failure(ee: ExecutionException) = Await.ready(f, 2.seconds).value.get: @unchecked
     assert(ee.getCause.isInstanceOf[InterruptedException])
   }
 
@@ -855,7 +855,7 @@ class Exceptions extends TestBase {
     val p = Promise[String]()
     p.success("foo")
     val f = p.future.map(identity)
-    val Failure(t: RejectedExecutionException) = Await.ready(f, 2.seconds).value.get
+    val Failure(t: RejectedExecutionException) = Await.ready(f, 2.seconds).value.get: @unchecked
   }
 
   test("interruptHandling")(interruptHandling())
@@ -863,7 +863,6 @@ class Exceptions extends TestBase {
 }
 
 class GlobalExecutionContext extends TestBase {
-  import ExecutionContext.Implicits._
   
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
@@ -876,7 +875,6 @@ class GlobalExecutionContext extends TestBase {
 }
 
 class CustomExecutionContext extends TestBase {
-  import scala.concurrent.{ ExecutionContext, Awaitable }
 
   def defaultEC = ExecutionContext.global
 

@@ -268,7 +268,7 @@ object $eval {
   lazy val $print: _root_.java.lang.String =  {
     val _ = $line10.$read.INSTANCE.$iw
 
-""  + "val res3: List[Product with java.io.Serializable]" + " = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.res3, 1000)
+""  + "val res3: List[Product with java.io.Serializable]" + " = " + { val s = _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.res3, 0, false) ; (if (s.indexOf('\n') >= 0) "\n" else "") + s + "\n" }
 
   }
 }}
