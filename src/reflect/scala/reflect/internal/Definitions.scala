@@ -178,6 +178,7 @@ trait Definitions extends api.StandardDefinitions {
         }
         false
       }
+      override def toString = syms.toString
     }
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
@@ -695,16 +696,16 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
-    def isAbstractFunctionSymbol(sym: Symbol) = AbstractFunctionClass contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol)            = TupleClass.contains(unspecializedSymbol(sym))
+    def isFunctionSymbol(sym: Symbol)         = FunctionClass.contains(unspecializedSymbol(sym))
+    def isAbstractFunctionSymbol(sym: Symbol) = AbstractFunctionClass.contains(unspecializedSymbol(sym))
+    def isProductNSymbol(sym: Symbol)         = ProductClass.contains(unspecializedSymbol(sym))
 
-    lazy val TryClass = requiredClass[scala.util.Try[_]]
-    lazy val FailureClass = requiredClass[scala.util.Failure[_]]
-    lazy val SuccessClass = requiredClass[scala.util.Success[_]]
-    lazy val FutureClass = requiredClass[scala.concurrent.Future[_]]
-    lazy val PromiseClass = requiredClass[scala.concurrent.Promise[_]]
+    lazy val TryClass      = requiredClass[scala.util.Try[_]]
+    lazy val FailureClass  = requiredClass[scala.util.Failure[_]]
+    lazy val SuccessClass  = requiredClass[scala.util.Success[_]]
+    lazy val FutureClass   = requiredClass[scala.concurrent.Future[_]]
+    lazy val PromiseClass  = requiredClass[scala.concurrent.Promise[_]]
     lazy val NonFatalClass = requiredClass[scala.util.control.NonFatal.type]
 
     def unspecializedSymbol(sym: Symbol): Symbol = {

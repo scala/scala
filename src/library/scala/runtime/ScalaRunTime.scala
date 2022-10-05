@@ -17,7 +17,7 @@ import scala.collection.{AbstractIterator, AnyConstr, SortedOps, StrictOptimized
 import scala.collection.generic.IsIterable
 import scala.collection.immutable.{ArraySeq, NumericRange}
 import scala.collection.mutable.StringBuilder
-import scala.math.min
+//import scala.math.min    // preserve so test patch doesn't break
 import scala.reflect.{ClassTag, classTag}
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Method => JMethod}
@@ -152,8 +152,31 @@ object ScalaRunTime {
   // More background at ticket #2318.
   def ensureAccessible(m: JMethod): JMethod = scala.reflect.ensureAccessible(m)
 
-  def _toString(x: Product): String =
-    x.productIterator.mkString(x.productPrefix + "(", ",", ")")
+  /** Verbose formatting. */
+  def _toString0(x: Product): String =
+    if (x.productArity == 1 && !x.productElement(0).isInstanceOf[Boolean])
+      s"${x.productPrefix}(${stringOf(x.productElement(0))})"
+    else
+      _toString1(x, stringOf(_))
+
+  //x.productElementNames.zip(x.productIterator).map { case (n, v) => s"$n = $v" }.mkString(x.productPrefix + "(", ", ", ")")
+  private def _toString1(x: Product, fmt: Any => String): String = {
+    val sb = new java.lang.StringBuilder
+    val nm = x.productElementNames
+    val it = x.productIterator
+    sb.append(x.productPrefix).append("(")
+    var more = it.hasNext
+    while (more) {
+      sb.append(nm.next()).append(" = ").append(fmt(it.next()))
+      more = it.hasNext
+      if (more) sb.append(", ")
+    }
+    sb.append(")")
+    sb.toString
+  }
+
+  /** Classic case class toString. */
+  def _toString(x: Product): String = x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
   def _hashCode(x: Product): Int = scala.util.hashing.MurmurHash3.productHash(x)
 
@@ -171,20 +194,22 @@ object ScalaRunTime {
     }
   }
 
-  /** Given any Scala value, convert it to a String.
+  /** Produce a user-friendly string representation of an arbitrary Scala value.
    *
-   * The primary motivation for this method is to provide a means for
-   * correctly obtaining a String representation of a value, while
-   * avoiding the pitfalls of naively calling toString on said value.
-   * In particular, it addresses the fact that (a) toString cannot be
-   * called on null and (b) depending on the apparent type of an
-   * array, toString may or may not print it in a human-readable form.
+   *  Handles arrays, null, iterables. If a maxLength is given, then the result
+   *  string may be truncated, with an ellipsis showing truncation: `hello, w...`.
+   *  A dropped element may be indicated `List(a, b, ...)`.
    *
-   * @param   arg   the value to stringify
-   * @return        a string representation of arg.
+   *  Does not handle null result of toString. (See replStringOf.)
+   *
+   *  @param   arg              the value to stringify
+   *  @param   maxLength        limit the length of the result string
+   *  @param   verboseProduct   extra user-friendly
+   *  @return  a string representation of arg.
    */
-  def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
-  def stringOf(arg: Any, maxElements: Int): String = {
+  def stringOf(arg: Any): String = stringOf(arg, Int.MaxValue)
+  def stringOf(arg: Any, maxLength: Int): String = stringOf(arg, maxLength, verboseProduct = false)
+  def stringOf(arg: Any, maxLength: Int, verboseProduct: Boolean): String = {
     def packageOf(x: AnyRef) = x.getClass.getPackage match {
       case null   => ""
       case p      => p.getName
@@ -227,18 +252,115 @@ object ScalaRunTime {
       case _ => false
     }
 
+    // Special casing Unit arrays, the value class which uses a reference array type.
+    def arrayToString(x: AnyRef) =
+      if (x.getClass.getComponentType == classOf[BoxedUnit])
+        stringify((0 until array_length(x)).iterator, "Array", (_: Int) => "()")
+      else
+        stringify(x.asInstanceOf[Array[_]].iterator, "Array", inner)
+
+    // mkString up to maxLength.
+    // Format name(a, b, ...). If first element is huge, name(aaa...).
+    def stringify[A](it: Iterator[A], name: String, fmt: A => String): String = {
+      val limit = maxLength
+      val overhead = ", , ...)".length // separator plus trailing ellipsis for next element, if needed
+      val sb = new StringBuilder
+      sb.append(name).append("(")
+      var first = true
+      var done = !it.hasNext
+      while (!done) {
+        val s = fmt(it.next())
+        done = limit > 0 && sb.length + s.length + overhead > limit
+        if (first) {
+          if (done)
+            sb.append(s.take(limit - sb.length - 4)).append("...") // partial first element
+          else
+            sb.append(s)
+          first = false
+        }
+        else {
+          if (done)
+            sb.append(", ...")  // omit the element
+          else
+            sb.append(", ").append(s)
+        }
+        done = done || !it.hasNext
+      }
+      sb.append(")")
+      sb.toString
+    }
+
+    /** Format a string as a string literal with escapes and enclosing quotes.
+     *  Multiline with escapes gets `s` interpolator.
+     */
+    def stringToString(s: String): String = {
+      import scala.util.Properties.lineSeparator
+      var multiline = false
+      def escaped = {
+        val sub = new StringBuilder
+        var i, j = 0
+        val len = s.length()
+        def addEscapedLineSeparatorChar(n: Int) = {
+          var k = 0
+          while (k < n) {
+            val fill = lineSeparator.charAt(k) match {
+              case '\r' => raw"\r"
+              case '\n' => raw"\n"
+            }
+            sub.append(fill)
+            k += 1
+          }
+        }
+        while (i < len) {
+          val seg = s.charAt(i) match {
+            case '\b' => raw"\b"
+            case '\f' => raw"\f"
+            case '\t' => raw"\t"
+            case '\\' => raw"\\"
+            case '"'  => "\\\""
+            case '\''  => "'"
+            case c if c == lineSeparator.charAt(j) =>
+              j += 1
+              if (j >= lineSeparator.length()) {
+                sub.append(lineSeparator)
+                j = 0
+                multiline = true
+              }
+              ""
+            case '\r' => raw"\r"
+            case '\n' => raw"\n"
+            case c =>
+              if (j > 0) {
+                addEscapedLineSeparatorChar(j)
+                j = 0
+              }
+              sub.append(c)
+              ""
+          }
+          seg match {
+            case "" => ()
+            case _  =>
+              if (j > 0) {
+                addEscapedLineSeparatorChar(j)
+                j = 0
+              }
+              sub.append(seg)
+          }
+          i += 1
+        }
+        if (j > 0) addEscapedLineSeparatorChar(j)
+        val res = sub.toString
+        if (multiline) s"s${tq}${res}${tq}" else s""""$res""""
+      }
+      if (s.exists(c => escapable.unapplySeq(c).nonEmpty)) escaped
+      else if (s.contains(lineSeparator)) s"${tq}${s}${tq}"
+      else s""""$s""""
+    }
+
     // A variation on inner for maps so they print -> instead of bare tuples
     def mapInner(arg: Any): String = arg match {
       case (k, v)   => inner(k) + " -> " + inner(v)
       case _        => inner(arg)
-    }
-
-    // Special casing Unit arrays, the value class which uses a reference array type.
-    def arrayToString(x: AnyRef) = {
-      if (x.getClass.getComponentType == classOf[BoxedUnit])
-        (0 until min(array_length(x), maxElements)).map(_ => "()").mkString("Array(", ", ", ")")
-      else
-        x.asInstanceOf[Array[_]].iterator.take(maxElements).map(inner).mkString("Array(", ", ", ")")
     }
 
     // The recursively applied attempt to prettify Array printing.
@@ -248,30 +370,48 @@ object ScalaRunTime {
     def inner(arg: Any): String = arg match {
       case null                         => "null"
       case ""                           => "\"\""
-      case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
+      case s: String if verboseProduct  => stringToString(s)
+      case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) s""""$x"""" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: scala.collection.Map[_, _] => x.iterator.take(maxElements).map(mapInner).mkString(x.collectionClassName + "(", ", ", ")")
-      case x: Iterable[_]               => x.iterator.take(maxElements).map(inner).mkString(x.collectionClassName + "(", ", ", ")")
-      case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
-      case x: Product if isTuple(x)     => x.productIterator.map(inner).mkString("(", ",", ")")
+      case x: collection.Map[_, _]      => stringify(x.iterator, x.collectionClassName, mapInner)
+      case x: Iterable[_]               => stringify(x.iterator, x.collectionClassName, inner)
+      case x: Product1[_] if isTuple(x) => s"(${inner(x._1)},)" // that special trailing comma
+      case x: Product if isTuple(x)     => x.productIterator.map(inner).mkString("(", (if (verboseProduct) ", " else ","), ")")
+      case x: Product if verboseProduct && x.productArity > 0 =>
+        if (x.productArity == 1 && !x.productElement(0).isInstanceOf[Boolean])
+          s"${x.productPrefix}(${inner(x.productElement(0))})"
+        else
+          _toString1(x, inner(_))
       case x                            => x.toString
     }
 
     // The try/catch is defense against iterables which aren't actually designed
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
-    try inner(arg)
-    catch {
-      case _: UnsupportedOperationException | _: AssertionError => "" + arg
-    }
-  }
+    val res =
+      try inner(arg)
+      catch {
+        case _: UnsupportedOperationException | _: AssertionError => "" + arg
+      }
+    if (res != null && maxLength > 0 && res.length > maxLength) res.take(maxLength - 3) + "..." else res
+  } // end stringOf
+  private val escapable = raw"""[\x08\f\t\\"']""".r.unanchored
+  private final val tq = "\"\"\""
 
-  /** stringOf formatted for use in a repl result. */
-  def replStringOf(arg: Any, maxElements: Int): String =
-    stringOf(arg, maxElements) match {
-      case null => "null toString"
+
+  /** Legacy repl format with extra newlines. */
+  def replStringOf(arg: Any, maxLength: Int): String =
+    stringOf(arg, maxLength, verboseProduct = false) match {
+      case null                      => "null // non-null reference has null-valued toString"
       case s if s.indexOf('\n') >= 0 => "\n" + s + "\n"
-      case s => s + "\n"
+      case s                         => s + "\n"
+    }
+
+  /** stringOf formatted for use in a repl result, with special case for null. */
+  def replStringOf(arg: Any, maxLength: Int, verboseProduct: Boolean): String =
+    stringOf(arg, maxLength, verboseProduct) match {
+      case null                      => "null // non-null reference has null-valued toString"
+      case s                         => s
     }
 
   // Convert arrays to immutable.ArraySeq for use with Java varargs:

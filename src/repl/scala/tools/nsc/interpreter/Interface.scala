@@ -229,6 +229,9 @@ trait ScriptedRepl extends Repl {
 trait ReplReporter extends FilteringReporter with ReplStrings {
   def out: PrintWriter
 
+  /* String length limiter. */
+  def maxPrintString: Int
+
   /**
     * Print message (info/warning/error).
     * By default, messages beyond a certain length are truncated (see `withoutTruncating`),

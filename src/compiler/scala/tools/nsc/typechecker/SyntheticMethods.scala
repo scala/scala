@@ -57,13 +57,14 @@ trait SyntheticMethods extends ast.TreeDSL {
     else if (clazz.isDerivedValueClass) valueSymbols
     else Nil
   }
+
   private lazy val renamedCaseAccessors = perRunCaches.newMap[Symbol, mutable.Map[TermName, TermName]]()
+
   /** Does not force the info of `caseclazz` */
   final def caseAccessorName(caseclazz: Symbol, paramName: TermName) =
-    (renamedCaseAccessors get caseclazz).fold(paramName)(_(paramName))
-  final def clearRenamedCaseAccessors(caseclazz: Symbol): Unit = {
+    renamedCaseAccessors.get(caseclazz).fold(paramName)(_(paramName))
+  final def clearRenamedCaseAccessors(caseclazz: Symbol): Unit =
     renamedCaseAccessors -= caseclazz
-  }
 
   /** Add the synthetic methods to case classes.
    */
@@ -94,7 +95,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     val arity = accessors.size
 
     def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_")))(mkThis :: _)
+      forwardMethod(method, getMember(ScalaRunTimeModule, method.name.prepend("_")))(mkThis :: _)
 
     def callStaticsMethodName(name: TermName)(args: Tree*): Tree = {
       val method = RuntimeStaticsModule.info.member(name)
@@ -233,6 +234,8 @@ trait SyntheticMethods extends ast.TreeDSL {
      *   (that.isInstanceOf[this.C]) && {
      *    val x$1 = that.asInstanceOf[this.C]
      *    (this.underlying == that.underlying
+     *   }
+     * }
      */
     def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyTpe), BooleanTpe) { m =>
       equalsCore(m, List(clazz.derivedValueClassUnbox))
@@ -328,9 +331,11 @@ trait SyntheticMethods extends ast.TreeDSL {
       Any_equals -> (() => equalsDerivedValueClassMethod)
     )
 
+    def appropriateToString = forwardToRuntime(Object_toString)
+
     def caseClassMethods = productClassMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
-      Object_toString -> (() => forwardToRuntime(Object_toString)),
+      Object_toString -> (() => appropriateToString),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
 
