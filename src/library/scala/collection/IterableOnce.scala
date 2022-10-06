@@ -1187,7 +1187,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *          of all elements of this $coll follow each other without any
     *          separator string.
     */
-  @inline final def mkString: String = mkString("")
+  @inline final def mkString: String = mkString("", "", "")
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
     *  The written text begins with the string `start` and ends with the string `end`.
@@ -1215,7 +1215,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
     val jsb = b.underlying
-    if (start.length != 0) jsb.append(start)
+    if (!start.isEmpty) jsb.append(start)
     val it = iterator
     if (it.hasNext) {
       jsb.append(it.next())
@@ -1224,7 +1224,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
         jsb.append(it.next())
       }
     }
-    if (end.length != 0) jsb.append(end)
+    if (!end.isEmpty) jsb.append(end)
     b
   }
 
