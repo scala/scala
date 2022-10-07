@@ -13,12 +13,13 @@
 package scala
 package runtime
 
-import scala.collection.{AbstractIterator, AnyConstr, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View}
+import scala.collection.{AbstractIterable, AbstractIterator, AnyConstr, StrictOptimizedIterableOps, StringOps, StringView, View}
 import scala.collection.generic.IsIterable
 import scala.collection.immutable.{ArraySeq, NumericRange}
 import scala.collection.mutable.StringBuilder
-//import scala.math.min    // preserve so test patch doesn't break
+import scala.math.min
 import scala.reflect.{ClassTag, classTag}
+import scala.util.control.ControlThrowable
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Method => JMethod}
 
@@ -194,6 +195,24 @@ object ScalaRunTime {
     }
   }
 
+  // tried to render the string of a recursive structure
+  private val BadRecursion = new ControlThrowable {}
+
+  // if they override className to a specific name, they intend to use mkString-style toString
+  private lazy val commonCollectionNames = Set("Iterable", "Seq", "Set", "Map")
+
+  private type XMap = scala.collection.Map[_, _]
+
+  /** Max string length produced by `stringOf`, if not specified. */
+  val DefaultMaxLength = 1000  // Int.MaxValue
+
+  /** Max collection length processed by `stringOf`, if not specified. */
+  val DefaultMaxElements = 1000  // Int.MaxValue
+
+  def stringOf(arg: Any): String = stringOf(arg, maxLength = DefaultMaxLength, verboseProduct = false, maxElements = DefaultMaxElements)
+  def stringOf(arg: Any, maxLength: Int): String = stringOf(arg, maxLength, verboseProduct = false, maxElements = DefaultMaxElements)
+  def stringOf(arg: Any, maxLength: Int, verboseProduct: Boolean): String = stringOf(arg, maxLength, verboseProduct, maxElements = DefaultMaxElements)
+
   /** Produce a user-friendly string representation of an arbitrary Scala value.
    *
    *  Handles arrays, null, iterables. If a maxLength is given, then the result
@@ -205,17 +224,16 @@ object ScalaRunTime {
    *  @param   arg              the value to stringify
    *  @param   maxLength        limit the length of the result string
    *  @param   verboseProduct   extra user-friendly
+   *  @param   maxElements      limit the number of elements in a collection
    *  @return  a string representation of arg.
    */
-  def stringOf(arg: Any): String = stringOf(arg, Int.MaxValue)
-  def stringOf(arg: Any, maxLength: Int): String = stringOf(arg, maxLength, verboseProduct = false)
-  def stringOf(arg: Any, maxLength: Int, verboseProduct: Boolean): String = {
+  def stringOf(arg: Any, maxLength: Int, verboseProduct: Boolean, maxElements: Int): String = {
     def packageOf(x: AnyRef) = x.getClass.getPackage match {
       case null   => ""
       case p      => p.getName
     }
-    def isScalaClass(x: AnyRef)         = packageOf(x) startsWith "scala."
-    def isScalaCompilerClass(x: AnyRef) = packageOf(x) startsWith "scala.tools.nsc."
+    def isScalaClass(x: AnyRef)         = packageOf(x).startsWith("scala.")
+    def isScalaCompilerClass(x: AnyRef) = packageOf(x).startsWith("scala.tools.nsc.")
 
     // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
     def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
@@ -229,35 +247,15 @@ object ScalaRunTime {
       } catch {
         case cnfe: ClassNotFoundException => false
       }
-    def isXmlNode(potentialSubClass: Class[_])     = isSubClassOf(potentialSubClass, "scala.xml.Node")
-    def isXmlMetaData(potentialSubClass: Class[_]) = isSubClassOf(potentialSubClass, "scala.xml.MetaData")
-
-    // When doing our own iteration is dangerous
-    def useOwnToString(x: Any) = x match {
-      // Range/NumericRange have a custom toString to avoid walking a gazillion elements
-      case _: Range | _: NumericRange[_] => true
-      // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
-      case _: SortedOps[_, _]  => true
-      // StringBuilder(a, b, c) and similar not so attractive
-      case _: StringView | _: StringOps | _: StringBuilder => true
-      // Don't want to evaluate any elements in a view
-      case _: View[_] => true
-      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
-      // -> catch those by isXmlNode and isXmlMetaData.
-      // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
-      // collections which may have useful toString methods - ticket #3710
-      // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
-      // Otherwise, nothing could possibly go wrong
-      case _ => false
-    }
+    def isXmlImpl(potentialSubClass: Class[_]) =
+      isSubClassOf(potentialSubClass, "scala.xml.Node") || isSubClassOf(potentialSubClass, "scala.xml.MetaData")
 
     // Special casing Unit arrays, the value class which uses a reference array type.
     def arrayToString(x: AnyRef) =
       if (x.getClass.getComponentType == classOf[BoxedUnit])
-        stringify((0 until array_length(x)).iterator, "Array", (_: Int) => "()")
+        stringify((0 until min(array_length(x), maxElements)).iterator, "Array", (_: Int) => "()")
       else
-        stringify(x.asInstanceOf[Array[_]].iterator, "Array", inner)
+        stringify(x.asInstanceOf[Array[_]].iterator.take(maxElements), "Array", inner)
 
     // mkString up to maxLength.
     // Format name(a, b, ...). If first element is huge, name(aaa...).
@@ -363,6 +361,14 @@ object ScalaRunTime {
       case _        => inner(arg)
     }
 
+    def safeIterableToString(x: Iterable[_]): String = {
+      def safeMapper(y: Any): String =
+        if (x eq y.asInstanceOf[AnyRef]) throw BadRecursion
+        else inner(y)
+      try stringify(x.iterator.take(maxElements), x.collectionClassName, safeMapper)
+      catch { case _: BadRecursion.type => x.toString }
+    }
+
     // The recursively applied attempt to prettify Array printing.
     // Note that iterator is used if possible and foreach is used as a
     // last resort, because the parallel collections "foreach" in a
@@ -372,10 +378,26 @@ object ScalaRunTime {
       case ""                           => "\"\""
       case s: String if verboseProduct  => stringToString(s)
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) s""""$x"""" else x
-      case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: collection.Map[_, _]      => stringify(x.iterator, x.collectionClassName, mapInner)
-      case x: Iterable[_]               => stringify(x.iterator, x.collectionClassName, inner)
+      case
+           // Range/NumericRange have a custom toString to avoid walking a gazillion elements
+           _: Range | _: NumericRange[_]
+           // StringBuilder(a, b, c) and similar not so attractive
+         | _: StringView | _: StringOps | _: StringBuilder
+           // Don't want to evaluate any elements in a view
+         | _: View[_]                   => arg.toString
+      // Use toString if not eagerly constructed, to avoid traversing infinity or forcing lazy elements.
+      // Custom collections are deemed to have useful toString (scala/bug#3710): either they override className
+      // to leverage default toString (mkString) which is always mixed-in, or they override toString or possibly addString.
+      // xml.Node and xml.MetaData return themselves in their iterator, so use their xml toString instead.
+      // Among other unsavory types, AbstractFile is Iterable[AbstractFile] but not strict, so it will use toString to show name.
+      case x: AbstractIterable[_] if x.isTraversableAgain && (
+             !x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]] ||
+             !isScalaClass(x) && commonCollectionNames.contains(x.collectionClassName) ||
+             isScalaCompilerClass(x) ||
+             isXmlImpl(x.getClass))     => x.toString
+      case x: XMap                      => stringify(x.iterator.take(maxElements), x.collectionClassName, mapInner)
+      case x: Iterable[_]               => if (x.isTraversableAgain) safeIterableToString(x) else "<iterable>"
       case x: Product1[_] if isTuple(x) => s"(${inner(x._1)},)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator.map(inner).mkString("(", (if (verboseProduct) ", " else ","), ")")
       case x: Product if verboseProduct && x.productArity > 0 =>
@@ -391,13 +413,12 @@ object ScalaRunTime {
     val res =
       try inner(arg)
       catch {
-        case _: UnsupportedOperationException | _: AssertionError => "" + arg
+        case _: UnsupportedOperationException | _: AssertionError => arg.toString
       }
     if (res != null && maxLength > 0 && res.length > maxLength) res.take(maxLength - 3) + "..." else res
   } // end stringOf
   private val escapable = raw"""[\x08\f\t\\"']""".r.unanchored
   private final val tq = "\"\"\""
-
 
   /** Legacy repl format with extra newlines. */
   def replStringOf(arg: Any, maxLength: Int): String =

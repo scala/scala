@@ -1,15 +1,12 @@
 --- src/library/scala/runtime/ScalaRunTime.scala	2018-03-22 12:22:03.000000000 +0100
 +++ test/instrumented/library/scala/runtime/ScalaRunTime.scala	2018-04-05 22:52:10.000000000 +0200
-@@ -10,6 +10,8 @@
-  * additional information regarding copyright ownership.
-  */
-
+@@ -1,3 +1,5 @@
 +/* INSTRUMENTED VERSION */
 +
- package scala
- package runtime
-
-@@ -52,8 +54,11 @@
+ /*
+  * Scala (https://www.scala-lang.org)
+  *
+@@ -53,8 +55,11 @@
    def anyValClass[T <: AnyVal : ClassTag](value: T): jClass[T] =
      classTag[T].runtimeClass.asInstanceOf[jClass[T]]
 
@@ -21,7 +18,7 @@
      (xs: @unchecked) match {
        case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
        case x: Array[Int]     => x(idx).asInstanceOf[Any]
-@@ -68,8 +73,11 @@
+@@ -69,8 +74,11 @@
      }
    }
 

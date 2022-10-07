@@ -35,6 +35,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime._toString0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.stringOf"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.replStringOf"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.DefaultMaxElements"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ScalaRunTime.DefaultMaxLength"),
   )
 
   override val buildSettings = Seq(
