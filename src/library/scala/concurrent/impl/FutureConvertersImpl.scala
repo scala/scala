@@ -91,8 +91,8 @@ private[scala] object FutureConvertersImpl {
     override def toString(): String = super[CompletableFuture].toString
   }
 
-  final class P[T](val wrapped: CompletionStage[T]) extends DefaultPromise[T] with BiConsumer[T, Throwable] {
-    override def accept(v: T, e: Throwable): Unit = {
+  final class P[T](val wrapped: CompletionStage[T]) extends DefaultPromise[T] with BiFunction[T, Throwable, Unit] {
+    override def apply(v: T, e: Throwable): Unit = {
       if (e == null) success(v)
       else failure(e)
     }

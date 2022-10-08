@@ -12,10 +12,10 @@
 
 package scala.jdk.javaapi
 
-import java.util.concurrent.CompletionStage
-
+import java.util.concurrent.{CompletableFuture, CompletionStage}
 import scala.concurrent.impl.FutureConvertersImpl.{CF, P}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 /** This object contains methods that convert between Scala [[scala.concurrent.Future]] and Java [[java.util.concurrent.CompletionStage]].
   *
@@ -70,9 +70,13 @@ object FutureConverters {
       case cf: CF[T] => cf.wrapped
       // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
       case f: Future[T @unchecked] => f
+      case cf: CompletableFuture[T @unchecked] if cf.isDone && !cf.isCompletedExceptionally =>
+        val p = new P[T](cs)
+        p.tryComplete(Success(cf.join()))
+        p.future
       case _ =>
         val p = new P[T](cs)
-        cs whenComplete p
+        cs.handle(p)
         p.future
     }
   }
