@@ -1,7 +1,10 @@
 import scala.tools.partest.instrumented.Instrumentation._
 
 object Test {
+  @noinline def discard(x: Any) = ()
+
   def main(args: Array[String]): Unit = {
+    discard((): Any)  // ensure BoxedUnit is loaded; only under -opt is it not loaded before this method
     startProfiling()
 
     // to optimized
@@ -24,6 +27,6 @@ object Test {
     val k                = Array[Unit](())
 
     stopProfiling()
-    printStatistics()
+    assert(getStatistics.isEmpty)
   }
 }
