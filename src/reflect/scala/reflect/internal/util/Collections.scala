@@ -14,6 +14,7 @@ package scala
 package reflect.internal.util
 
 import scala.reflect.ClassTag
+import scala.collection.AbstractIterator
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
@@ -314,7 +315,7 @@ trait Collections {
   }
 
   final def mapFilter2[A, B, C](itA: Iterator[A], itB: Iterator[B])(f: (A, B) => Option[C]): Iterator[C] =
-    new Iterator[C] {
+    new AbstractIterator[C] {
       private[this] var head: Option[C] = None
       private[this] def advanceHead(): Unit =
         while (head.isEmpty && itA.hasNext && itB.hasNext) {

@@ -15,6 +15,7 @@ package backend.jvm
 package analysis
 
 import scala.annotation.switch
+import scala.collection.AbstractIterator
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree._
@@ -423,7 +424,7 @@ class BasicAliasingAnalyzer(methodNode: MethodNode, classInternalName: InternalN
 /**
  * An iterator over Int (required to prevent boxing the result of next).
  */
-abstract class IntIterator extends Iterator[Int] {
+abstract class IntIterator extends AbstractIterator[Int] {
   def hasNext: Boolean
   def next(): Int
 }

@@ -15,6 +15,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
+import scala.collection.AbstractIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
@@ -551,7 +552,7 @@ abstract class BoxUnbox {
    * For a set of box creation operations and a corresponding set of box consumer operations,
    * this iterator returns all copy operations (load, store, dup) that are in between.
    */
-  class CopyOpsIterator(initialCreations: Set[BoxCreation], finalCons: Set[BoxConsumer], prodCons: ProdConsAnalyzer) extends Iterator[AbstractInsnNode] {
+  class CopyOpsIterator(initialCreations: Set[BoxCreation], finalCons: Set[BoxConsumer], prodCons: ProdConsAnalyzer) extends AbstractIterator[AbstractInsnNode] {
     private val queue = mutable.Queue.empty[AbstractInsnNode] ++= initialCreations.iterator.flatMap(_.boxConsumers(prodCons, ultimate = false))
 
     // a single copy operation can consume multiple producers: val a = if (b) box(1) else box(2).

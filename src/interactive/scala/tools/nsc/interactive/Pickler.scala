@@ -14,6 +14,7 @@ package scala.tools.nsc.interactive
 
 import Lexer._
 import java.io.Writer
+import scala.collection.AbstractIterator
 
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The representation follows the following grammar:
@@ -277,7 +278,7 @@ object Pickler {
         p.pickle(wr, x)
       }
     }
-    def unpickle(rd: Lexer): Unpickled[Iterator[T]] = UnpickleSuccess(new Iterator[T] {
+    def unpickle(rd: Lexer): Unpickled[Iterator[T]] = UnpickleSuccess(new AbstractIterator[T] {
       var first = true
       def hasNext = {
         val t = rd.token

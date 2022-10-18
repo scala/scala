@@ -698,12 +698,12 @@ private final class BitmapIndexedMapNode[K, +V](
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
       val payload = getPayload(index)
-      if (key == payload._1) payload else throw new NoSuchElementException
+      if (key == payload._1) payload else Iterator.empty.next()
     } else if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
       getNode(index).getTuple(key, originalHash, hash, shift + BitPartitionSize)
     } else {
-      throw new NoSuchElementException
+      Iterator.empty.next()
     }
   }
 
@@ -1872,7 +1872,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   def size: Int = content.length
 
-  def apply(key: K, originalHash: Int, hash: Int, shift: Int): V = get(key, originalHash, hash, shift).getOrElse(throw new NoSuchElementException)
+  def apply(key: K, originalHash: Int, hash: Int, shift: Int): V = get(key, originalHash, hash, shift).getOrElse(Iterator.empty.next())
 
   def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V] =
     if (this.hash == hash) {
@@ -1882,7 +1882,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   override def getTuple(key: K, originalHash: Int, hash: Int, shift: Int): (K, V) = {
     val index = indexOf(key)
-    if (index >= 0) content(index) else throw new NoSuchElementException
+    if (index >= 0) content(index) else Iterator.empty.next()
   }
 
   def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1 = {
@@ -2095,11 +2095,10 @@ private final class HashCollisionMapNode[K, +V ](
 }
 
 private final class MapKeyIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[K] {
+  extends ChampBaseIterator[K, MapNode[K, V]](rootNode) {
 
   def next() = {
-    if (!hasNext)
-      throw new NoSuchElementException
+    if (!hasNext) Iterator.empty.next()
 
     val key = currentValueNode.getKey(currentValueCursor)
     currentValueCursor += 1
@@ -2110,11 +2109,10 @@ private final class MapKeyIterator[K, V](rootNode: MapNode[K, V])
 }
 
 private final class MapValueIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[V] {
+  extends ChampBaseIterator[V, MapNode[K, V]](rootNode) {
 
   def next() = {
-    if (!hasNext)
-      throw new NoSuchElementException
+    if (!hasNext) Iterator.empty.next()
 
     val value = currentValueNode.getValue(currentValueCursor)
     currentValueCursor += 1
@@ -2124,11 +2122,10 @@ private final class MapValueIterator[K, V](rootNode: MapNode[K, V])
 }
 
 private final class MapKeyValueTupleIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[(K, V)] {
+  extends ChampBaseIterator[(K, V), MapNode[K, V]](rootNode) {
 
   def next() = {
-    if (!hasNext)
-      throw new NoSuchElementException
+    if (!hasNext) Iterator.empty.next()
 
     val payload = currentValueNode.getPayload(currentValueCursor)
     currentValueCursor += 1
@@ -2139,11 +2136,10 @@ private final class MapKeyValueTupleIterator[K, V](rootNode: MapNode[K, V])
 }
 
 private final class MapKeyValueTupleReverseIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseReverseIterator[MapNode[K, V]](rootNode) with Iterator[(K, V)] {
+  extends ChampBaseReverseIterator[(K, V), MapNode[K, V]](rootNode) {
 
   def next() = {
-    if (!hasNext)
-      throw new NoSuchElementException
+    if (!hasNext) Iterator.empty.next()
 
     val payload = currentValueNode.getPayload(currentValueCursor)
     currentValueCursor -= 1
@@ -2153,13 +2149,12 @@ private final class MapKeyValueTupleReverseIterator[K, V](rootNode: MapNode[K, V
 }
 
 private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseReverseIterator[MapNode[K, V]](rootNode) with Iterator[Any] {
+  extends ChampBaseReverseIterator[Any, MapNode[K, V]](rootNode) {
   private[this] var hash = 0
   private[this] var value: V = _
   override def hashCode(): Int = MurmurHash3.tuple2Hash(hash, value.##, MurmurHash3.productSeed)
   def next(): MapKeyValueTupleHashIterator[K, V] = {
-    if (!hasNext)
-      throw new NoSuchElementException
+    if (!hasNext) Iterator.empty.next()
 
     hash = currentValueNode.getHash(currentValueCursor)
     value = currentValueNode.getValue(currentValueCursor)
@@ -2169,7 +2164,7 @@ private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
 }
 
 /** Used in HashMap[K, V]#removeAll(HashSet[K]) */
-private final class MapNodeRemoveAllSetNodeIterator[K](rootSetNode: SetNode[K]) extends ChampBaseIterator(rootSetNode) {
+private final class MapNodeRemoveAllSetNodeIterator[K](rootSetNode: SetNode[K]) extends ChampBaseIterator[K, SetNode[K]](rootSetNode) {
   /** Returns the result of immutably removing all keys in `rootSetNode` from `rootMapNode` */
   def removeAll[V](rootMapNode: BitmapIndexedMapNode[K, V]): BitmapIndexedMapNode[K, V] = {
     var curr = rootMapNode
@@ -2185,6 +2180,8 @@ private final class MapNodeRemoveAllSetNodeIterator[K](rootSetNode: SetNode[K]) 
     }
     curr
   }
+
+  override def next() = Iterator.empty.next()
 }
 
 /**
@@ -2370,7 +2367,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
     ensureUnaliased()
     xs match {
       case hm: HashMap[K, V] =>
-        new ChampBaseIterator[MapNode[K, V]](hm.rootNode) {
+        new ChampBaseIterator[(K, V), MapNode[K, V]](hm.rootNode) {
           while(hasNext) {
             val originalHash = currentValueNode.getHash(currentValueCursor)
             update(
@@ -2383,6 +2380,8 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
             )
             currentValueCursor += 1
           }
+
+          override def next() = Iterator.empty.next()
         }
       case hm: collection.mutable.HashMap[K, V] =>
         val iter = hm.nodeIterator

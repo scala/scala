@@ -2229,7 +2229,7 @@ private object VectorStatics {
 }
 
 
-private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLength: Int, private[this] val sliceCount: Int) extends Iterator[A] with java.lang.Cloneable {
+private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLength: Int, private[this] val sliceCount: Int) extends AbstractIterator[A] with java.lang.Cloneable {
 
   private[this] var a1: Arr1 = v.prefix1
   private[this] var a2: Arr2 = _

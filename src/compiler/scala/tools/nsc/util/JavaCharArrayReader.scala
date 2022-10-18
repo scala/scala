@@ -14,12 +14,13 @@ package scala
 package tools.nsc
 package util
 
+import scala.collection.AbstractIterator
 import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.Chars._
 import scala.util.chaining._
 
 class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, startcol: int, */
-                      decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
+                      decodeUni: Boolean, error: String => Unit) extends AbstractIterator[Char] with Cloneable {
 
   def this(buf: ArraySeq.ofChar, decodeUni: Boolean, error: String => Unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)

@@ -42,7 +42,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  class JIteratorWrapper[A](val underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
+  class JIteratorWrapper[A](val underlying: ju.Iterator[A]) extends AbstractIterator[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next
     override def equals(other: Any): Boolean = other match {
@@ -53,7 +53,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  class JEnumerationWrapper[A](val underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
+  class JEnumerationWrapper[A](val underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Serializable {
     def hasNext = underlying.hasMoreElements
     def next() = underlying.nextElement
     override def equals(other: Any): Boolean = other match {
