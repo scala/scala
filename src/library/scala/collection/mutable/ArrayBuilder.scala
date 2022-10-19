@@ -61,7 +61,8 @@ sealed abstract class ArrayBuilder[T]
     val k = xs.knownSize
     if (k > 0) {
       ensureSize(this.size + k)
-      IterableOnce.copyElemsToArray(xs, elems, this.size)
+      val actual = IterableOnce.copyElemsToArray(xs, elems, this.size)
+      if (actual != k) throw new IllegalStateException(s"Copied $actual of $k")
       size += k
     } else if (k < 0) super.addAll(xs)
     this
