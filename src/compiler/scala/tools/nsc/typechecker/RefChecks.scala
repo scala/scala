@@ -1270,22 +1270,23 @@ abstract class RefChecks extends Transform {
         false
     }
 
-    // Note: if a symbol has both @deprecated and @migration annotations and both
-    // warnings are enabled, only the first one checked here will be emitted.
-    // I assume that's a consequence of some code trying to avoid noise by suppressing
-    // warnings after the first, but I think it'd be better if we didn't have to
-    // arbitrarily choose one as more important than the other.
     private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
-      // Issue a warning if symbol is deprecated, unless the point of reference is enclosed by a deprecated member,
-      // or has a deprecated companion.
-      if (sym.isDeprecated &&
-          // synthetic calls to deprecated case class constructor
-          !(sym.isConstructor && sym.owner.isCaseClass && currentOwner.isSynthetic) &&
-          !currentOwner.ownersIterator.exists(s => s.isDeprecated || s.companionClass.isDeprecated))
+      // Issue a deprecation warning if:
+      //  - symbol is deprecated and the point of reference is not enclosed in a deprecated member
+      //    (or a member with a deprecated companion)
+      //  - symbol is not directly deprecated but is a top-level member of some deprecated packaging
+      // Note that we don't warn for package reference but for reference to member of deprecated packaging.
+      val deprecating =
+        if (sym.isDeprecated)
+          // exclude synthetic calls to deprecated case class constructor
+          !(sym.isConstructor && sym.owner.isCaseClass && currentOwner.isSynthetic)
+        else
+          sym.isTopLevel && !sym.hasPackageFlag && sym.ownersIterator.exists(_.packageObject.isDeprecated)
+      def reprieve = currentOwner.ownersIterator.exists(s => s.isDeprecated || s.companionClass.isDeprecated || s.packageObject.isDeprecated)
+      if (deprecating && !reprieve)
         runReporting.deprecationWarning(pos, sym, currentOwner)
 
-      // Similar to deprecation: check if the symbol is marked with @migration
-      // indicating it has changed semantics between versions.
+      // check if the symbol is marked with @migration indicating it has changed semantics between versions.
       if (sym.hasMigrationAnnotation && settings.Xmigration.value != NoScalaVersion) {
         val changed = try
           settings.Xmigration.value < ScalaVersion(sym.migrationVersion.get)
@@ -1903,10 +1904,8 @@ abstract class RefChecks extends Transform {
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
-            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
-              assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
+            if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR)
               enterReference(tree.pos, sym)
-            }
             tree
 
           case x @ Select(_, _) =>

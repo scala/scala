@@ -1,0 +1,6 @@
+t3115b.scala:17: warning: class C in package p is deprecated
+    def k = new C()    // deprecated
+                ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

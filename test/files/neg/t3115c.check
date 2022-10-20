@@ -1,0 +1,7 @@
+t3115c.scala:4: error: expected start of definition
+package object p {
+^
+t3115c.scala:8: error: expected start of definition
+package q {
+^
+2 errors
