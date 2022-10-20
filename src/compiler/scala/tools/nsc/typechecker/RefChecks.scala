@@ -1270,7 +1270,7 @@ abstract class RefChecks extends Transform {
         false
     }
 
-    private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
+    private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = if (sym != NoSymbol) {
       // Issue a deprecation warning if:
       //  - symbol is deprecated and the point of reference is not enclosed in a deprecated member
       //    (or a member with a deprecated companion)
