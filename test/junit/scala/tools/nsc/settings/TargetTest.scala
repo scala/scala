@@ -18,6 +18,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.settings.StandardScalaSettings._
 import scala.util.Properties.isJavaAtLeast
 import scala.util.Try
 
@@ -53,32 +54,14 @@ class TargetTest {
     checkFail("-target:1.9")      // it's not Java 1.9, you reprobates!
     checkFail("-target:jvm-1.9")
 
-    check("-target:jvm-10", "10")
-    check("-target:10", "10")
-
-    check("-target:jvm-11", "11")
-    check("-target:11", "11")
-
-    check("-target:jvm-12", "12")
-    check("-target:12", "12")
-
-    // (scene missing)
-
-    check("-target:jvm-16", "16")
-    check("-target:16", "16")
-
-    check("-target:jvm-17", "17")
-    check("-target:17", "17")
-
-    check("-target:jvm-18", "18")
-    check("-target:18", "18")
-
-    check("-target:jvm-19", "19")
-    check("-target:19", "19")
-
+    (MinTargetVersion to MaxTargetVersion).map(_.toString).foreach { v =>
+      check(s"-target:jvm-$v", v)
+      check(s"-target:$v", v)
+    }
+    checkFail(s"-target:jvm-${MaxTargetVersion+1}")
+    checkFail(s"-target:${MaxTargetVersion+1}")
     checkFail("-target:jvm-6")    // no longer
     checkFail("-target:jvm-7")    // no longer
-    checkFail("-target:jvm-20")   // not yet...
     checkFail("-target:jvm-3000") // not in our lifetime
     checkFail("-target:msil")     // really?
   }
