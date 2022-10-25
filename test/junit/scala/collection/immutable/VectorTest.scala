@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 
 import scala.annotation.unused
+import scala.collection.immutable.VectorInline.{WIDTH3, WIDTH4, WIDTH5}
 import scala.collection.mutable.{ListBuffer, StringBuilder}
 import scala.tools.testkit.AssertUtil.intercept
 
@@ -110,21 +111,43 @@ class VectorTest {
   def testBuilderAlignTo2(): Unit = {
     val Large = 1 << 20
     for (
-      size <- Seq(0, 1, 31, 1 << 5, 1 << 10, 1 << 15, 1 << 20, 1 << 25, 1 << 30, (1 << 31) - (1 << 26) - 1000);
+      size <- Seq(0, 1, 31, 1 << 5, 1 << 10, 1 << 15, 1 << 20, 9 << 20, 1 << 25, 9 << 25, 50 << 25, 1 << 30, (1 << 31) - (1 << 26) - 1000);
       i <- Seq(0, 1, 5, 123)
     ) {
 //      println((i, size))
       val v = if (size < Large) Vector.tabulate(size)(_.toString) else Vector.fillSparse(size)("v")
       val prefix = Vector.fill(i)("prefix")
-      val res = new VectorBuilder[AnyRef]
+      val vb = new VectorBuilder[AnyRef]
         .alignTo(i, v)
         .addAll(prefix)
         .addAll(v)
-        .result()
+      val res = vb.result()
       val vDesc = if (v.headOption.contains("v")) s"Vector(\"v\")*$size" else s"Vector(0,..,${size-1})"
       assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).size", size + i, res.size)
       assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).take($i)", prefix, res.take(i))
       assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc).drop($i)", v.take(Large), res.drop(i).take(Large))
+
+      if (size == 9 << 20) {
+        val v4     = Vector.fillSparse(WIDTH3 * 2)("v4")
+        val suffix = (v4 ++ v).take(size)
+        val res2   = vb.addAll(suffix).result()
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).size", 2 * size + i, res2.size)
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).take($i)", prefix, res2.take(i))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop($i).take($size)", v.take(Large), res2.drop(i).take(Large))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop(${i + size}).take($size)", suffix.take(Large), res2.drop(i + size).take(Large))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop(${i + 2 * size})", suffix.drop(size).take(Large), res2.drop(i + 2 * size).take(Large))
+      } else if (size == 9 << 25) {
+        val v4     = Vector.fillSparse(WIDTH4 * 2)("v4")
+        val suffix = (v4 ++ v).take(size)
+        val res2   = vb.addAll(suffix).result()
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).size", 2 * size + i, res2.size)
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).take($i)", prefix, res2.take(i))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop($i).take($size)", v.take(Large), res2.drop(i).take(Large))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop(${i + size}).take($size)", suffix.take(Large), res2.drop(i + size).take(Large))
+        assertEquals(s"(Vector(\"prefix\")*$i ++ $vDesc ++ v4 ++ $vDesc).drop(${i + 2 * size})", suffix.drop(size).take(Large), res2.drop(i + 2 * size).take(Large))
+      } else if (size == 50 << 25) {
+        assertThrows(classOf[IllegalArgumentException], () => vb.addAll(v))
+      }
     }
   }
 
@@ -137,6 +160,100 @@ class VectorTest {
         .result()
     assertEquals(copy.size, v.size)
     assertEquals(copy.take(500), v.take(500))
+  }
+
+  @Test
+  def testWierdAlignments1(): Unit = {
+    val v3 = Vector.tabulate(2042)(i => (i - 42).toString).drop(42).asInstanceOf[Vector3[AnyRef]]
+    for (i <- Seq(0, 1, 5, 41, 42, 43, 123, 949, 950, 982, 1024, 1999, 2000)) {
+      val res = new VectorBuilder[AnyRef]
+        .alignTo(i, v3) // pretend to add i elements before v3, but then decide not to... this is slow, but should not fail
+        .addAll(v3)
+        .result()
+        .asInstanceOf[Vector3[AnyRef]]
+      assertEquals(s"vectors equal", v3, res)
+    }
+  }
+
+  @Test
+  def testWierdAlignments2(): Unit = {
+    val v3 = Vector.tabulate(2042)(i => (i - 42).toString).drop(42).asInstanceOf[Vector3[AnyRef]]
+    val v2 = Vector.tabulate(765)(i => (i - 123).toString).drop(123).asInstanceOf[Vector2[AnyRef]]
+    for (i <- Seq(-1234, -42, -1, 0, 1, 5, 41, 42, 43, 123, 949, 950, 982, 1024, 1999, 2000)) {
+      val res = new VectorBuilder[AnyRef]
+        .alignTo(i, v3) // pretend to add v3 ...
+        .addOne("a")
+        .addAll(v2) // ... but then add completely unrelated v2 instead!
+        .result()
+      assertEquals(s"vectors equal", "a" +: v2, res)
+    }
+  }
+
+  @Test
+  def testWierdAlignments3(): Unit = for (n <- allSizes; m <- verySmallSizes) {
+    val vPretend =
+      if (smallSizes.contains(n))
+        Vector.tabulate(n + 1337)(i => (i - 1337).toString).drop(1337)
+      else
+        Vector.fillSparse(n + 1337)("v").drop(1337)
+    val vReal    = Vector.tabulate(m + 42)(i => (i - 42).toString).drop(42)
+    for (i <- Seq(-1234, -42, -1, 0, 1, 5, 41, 42, 43, 123, 949, 950, 982, 1024, 1999, 2000, 1234567)) {
+      val vb   = new VectorBuilder[AnyRef]
+        .alignTo(i, vPretend) // pretend to add vPretend ...
+        .addAll(vReal) // ... but then add completely unrelated vReal instead!
+      val res1 = vb.result()
+      assertEquals(s"vectors not equal, n=$n, m=$m, i=$i", vReal, res1)
+      val res2 = vb
+        .addOne("a")
+        .addAll(vReal) // reuse the builder
+        .result()
+      assertEquals(s"vectors not equal, n=$n, m=$m, i=$i", (vReal :+ "a") ++ vReal, res2)
+    }
+  }
+
+  @Test
+  def testWierdAlignments4(): Unit = {
+    var lengths = Set[Int]()
+    for (
+      n <- allSizes.init :+ (allSizes.last - WIDTH5 - WIDTH3 + 41); // we need WIDTH5 for prefix, add 1+WIDTH3 and get 42 in suffix free
+      m <- List(WIDTH4, WIDTH5, Int.MaxValue - WIDTH5)
+    ) {
+      val vPretend = Vector.fillSparse(42)("v0") ++ Vector.fillSparse(m - 42)("v1")
+      val vReal    = vPretend.take(n)
+      //    if (n==1073741824 && m==2046820352)
+      //      println(s"n=$n, m=$m")
+      val vb = new VectorBuilder[AnyRef]
+        .alignTo(0, vPretend) // pretend to add vPretend ...
+        .addAll(vReal) // ... but then add only a subsequence!
+      val res1 = vb.result()
+      assertEquals(s"vectors not equal, n=$n, m=$m", vReal.length, res1.length)
+      assertEquals(s"vectors not equal, n=$n, m=$m", vReal.take(WIDTH3), res1.take(WIDTH3))
+      assertEquals(s"vectors not equal, n=$n, m=$m", vReal.takeRight(WIDTH3), res1.takeRight(WIDTH3))
+      val res2 = vb
+        .addOne("a")
+        .addAll(vReal.take(WIDTH3)) // whole vector may take too long
+        .result()
+      val expected = (vReal :+ "a") ++ (vReal.take(WIDTH3))
+      assertEquals(s"vectors not equal, n=$n, m=$m", expected.length, res2.length)
+      assertEquals(s"vectors not equal, n=$n, m=$m", expected.take(WIDTH3), res2.take(WIDTH3))
+      assertEquals(s"vectors not equal, n=$n, m=$m", expected.takeRight(WIDTH3), res2.takeRight(WIDTH3))
+      lengths += res2.length
+    }
+    assertEquals(15, lengths.size)
+    assertEquals(Int.MaxValue - WIDTH5 + 42, lengths.max)
+  }
+
+  @Test
+  def testNegativeAlignment(): Unit = for (size <- allSizes; i <- allSizes) {
+    val v        = Vector.fillSparse(math.min(63 * WIDTH5, size))("v")
+    val expected = v.drop(i)
+    val vb       = new VectorBuilder[AnyRef]
+      .alignTo(-i, v)
+      .addAll(expected)
+    val res      = vb.result()
+    assertEquals("lengths not equal", expected.length, res.length)
+    assertEquals(s"vectors not equal", expected.take(WIDTH3), res.take(WIDTH3))
+    assertEquals(s"vectors not equal", expected.takeRight(WIDTH3), res.takeRight(WIDTH3))
   }
 
   @Test

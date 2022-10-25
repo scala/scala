@@ -1593,32 +1593,42 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
    * Removes `offset` leading `null`s in the prefix.
    * This is needed after calling `alignTo` and subsequent additions,
    * directly before the result is used for creating a new Vector.
+   * Note that the outermost array keeps its length to keep the
+   * Builder re-usable.
    *
    * example:
    *     a2 = Array(null, ..., null, Array(null, .., null, 0, 1, .., x), Array(x+1, .., x+32), ...)
    * becomes
-   *     a2 = Array(Array(0, 1, .., x), Array(x+1, .., x+32), ...)
+   *     a2 = Array(Array(0, 1, .., x), Array(x+1, .., x+32), ..., ?, ..., ?)
    */
   private[this] def leftAlignPrefix(): Unit = {
+    @inline def shrinkOffsetIfToLarge(width: Int): Unit = {
+      val newOffset = offset % width
+      lenRest -= offset - newOffset
+      offset = newOffset
+    }
     var a: Array[AnyRef] = null // the array we modify
     var aParent: Array[AnyRef] = null // a's parent, so aParent(0) == a
     if (depth >= 6) {
       a = a6.asInstanceOf[Array[AnyRef]]
       val i = offset >>> BITS5
-      if (i > 0) {
-        a = copyOfRange(a, i, LASTWIDTH)
-        a6 = a.asInstanceOf[Arr6]
-      }
+      if (i > 0) System.arraycopy(a, i, a, 0, LASTWIDTH - i)
+      shrinkOffsetIfToLarge(WIDTH5)
+      if ((lenRest >>> BITS5) == 0) depth = 5
       aParent = a
       a = a(0).asInstanceOf[Array[AnyRef]]
     }
     if (depth >= 5) {
       if (a == null) a = a5.asInstanceOf[Array[AnyRef]]
       val i = (offset >>> BITS4) & MASK
-      if (i > 0) {
-        a = copyOfRange(a, i, WIDTH)
-        if (depth == 5) a5 = a.asInstanceOf[Arr5]
-        else aParent(0) = a
+      if (depth == 5) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a5 = a.asInstanceOf[Arr5]
+        shrinkOffsetIfToLarge(WIDTH4)
+        if ((lenRest >>> BITS4) == 0) depth = 4
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
       }
       aParent = a
       a = a(0).asInstanceOf[Array[AnyRef]]
@@ -1626,10 +1636,14 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if (depth >= 4) {
       if (a == null) a = a4.asInstanceOf[Array[AnyRef]]
       val i = (offset >>> BITS3) & MASK
-      if (i > 0) {
-        a = copyOfRange(a, i, WIDTH)
-        if (depth == 4) a4 = a.asInstanceOf[Arr4]
-        else aParent(0) = a
+      if (depth == 4) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a4 = a.asInstanceOf[Arr4]
+        shrinkOffsetIfToLarge(WIDTH3)
+        if ((lenRest >>> BITS3) == 0) depth = 3
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
       }
       aParent = a
       a = a(0).asInstanceOf[Array[AnyRef]]
@@ -1637,10 +1651,14 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if (depth >= 3) {
       if (a == null) a = a3.asInstanceOf[Array[AnyRef]]
       val i = (offset >>> BITS2) & MASK
-      if (i > 0) {
-        a = copyOfRange(a, i, WIDTH)
-        if (depth == 3) a3 = a.asInstanceOf[Arr3]
-        else aParent(0) = a
+      if (depth == 3) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a3 = a.asInstanceOf[Arr3]
+        shrinkOffsetIfToLarge(WIDTH2)
+        if ((lenRest >>> BITS2) == 0) depth = 2
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
       }
       aParent = a
       a = a(0).asInstanceOf[Array[AnyRef]]
@@ -1648,10 +1666,14 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if (depth >= 2) {
       if (a == null) a = a2.asInstanceOf[Array[AnyRef]]
       val i = (offset >>> BITS) & MASK
-      if (i > 0) {
-        a = copyOfRange(a, i, WIDTH)
-        if (depth == 2) a2 = a.asInstanceOf[Arr2]
-        else aParent(0) = a
+      if (depth == 2) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a2 = a.asInstanceOf[Arr2]
+        shrinkOffsetIfToLarge(WIDTH)
+        if ((lenRest >>> BITS) == 0) depth = 1
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
       }
       aParent = a
       a = a(0).asInstanceOf[Array[AnyRef]]
@@ -1659,10 +1681,14 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if (depth >= 1) {
       if (a == null) a = a1.asInstanceOf[Array[AnyRef]]
       val i = offset & MASK
-      if (i > 0) {
-        a = copyOfRange(a, i, WIDTH)
-        if (depth == 1) a1 = a.asInstanceOf[Arr1]
-        else aParent(0) = a
+      if (depth == 1) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a1 = a.asInstanceOf[Arr1]
+        len1 -= offset
+        offset = 0
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
       }
     }
     prefixIsRightAligned = false
@@ -1761,15 +1787,13 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
           slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 5))
           return
         }
-        val copy1   = mmin((BITS * 6 + 1 - lenRest) >>> BITS5, sl)
-        val copy2   = sl - copy1
+        val copy1   = sl
+        // there is no copy2 because there can't be another a6 to copy to
         val destPos = lenRest >>> BITS5
+        if (destPos + copy1 > LASTWIDTH)
+          throw new IllegalArgumentException("exceeding 2^31 elements")
         System.arraycopy(slice, 0, a6, destPos, copy1)
         advanceN(WIDTH5 * copy1)
-        if (copy2 > 0) {
-          System.arraycopy(slice, copy1, a6, 0, copy2)
-          advanceN(WIDTH5 * copy2)
-        }
     }
   }
 
@@ -1867,8 +1891,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     if(realLen == 0) Vector.empty
     else if(len < 0) throw new IndexOutOfBoundsException(s"Vector cannot have negative size $len")
     else if(len <= WIDTH) {
-      if(realLen == WIDTH) new Vector1(a1)
-      else new Vector1(copyOf(a1, realLen))
+      new Vector1(copyIfDifferentSize(a1, realLen))
     } else if(len <= WIDTH2) {
       val i1 = (len-1) & MASK
       val i2 = (len-1) >>> BITS
