@@ -1,3 +1,0 @@
-Method call statistics:
-    1  scala/runtime/BoxedUnit.<clinit>()V
-    1  scala/runtime/BoxedUnit.<init>()V
