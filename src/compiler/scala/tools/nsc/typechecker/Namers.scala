@@ -1120,14 +1120,34 @@ trait Namers extends MethodSynthesis {
 
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.
+     *
+     *  Under `-Xsource:3`, use `pt`, the type of the overridden member.
+     *  But preserve the precise type of a whitebox macro.
+     *  For `def f = macro g`, here we see `def f = xp(g)` the expansion,
+     *  not the `isMacro` case: `openMacros` will be nonEmpty.
+     *  For `def m = f`, retrieve the typed RHS and check if it is an expansion;
+     *  in that case, check if the expandee `f` is whitebox and preserve
+     *  the precise type if it is. The user must provide an explicit type
+     *  to "opt out" of the inferred narrow type; in Scala 3, they would
+     *  inline the def to "opt in".
      */
     private def assignTypeToTree(tree: ValOrDefDef, defnTyper: Typer, pt: Type): Type = {
       val rhsTpe = tree match {
-        case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt)
+        case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt) // unreached, see methodSig
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
       tree.tpt.defineType {
-        if (currentRun.isScala3 && !pt.isWildcard && pt != NoType && !pt.isErroneous && openMacros.isEmpty) pt
+        val inferOverridden = currentRun.isScala3 &&
+          !pt.isWildcard && pt != NoType && !pt.isErroneous &&
+          openMacros.isEmpty && {
+            context.unit.transformed.get(tree.rhs) match {
+              case Some(t) if t.hasAttachment[MacroExpansionAttachment] =>
+                val xp = macroExpandee(t)
+                xp.symbol == null || isBlackbox(xp.symbol)
+              case _ => true
+            }
+          }
+        if (inferOverridden) pt
         else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
