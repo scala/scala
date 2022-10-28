@@ -14,12 +14,6 @@ package scala
 package reflect
 package runtime
 
-import scala.language.existentials
-
-import scala.ref.WeakReference
-import scala.collection.mutable.WeakHashMap
-import scala.collection.immutable.ArraySeq
-
 import java.io.IOException
 import java.lang.{ Class => jClass, Package => jPackage }
 import java.lang.annotation.{ Annotation => jAnnotation }
@@ -31,15 +25,19 @@ import java.lang.reflect.{
   ParameterizedType, WildcardType, AnnotatedElement }
 import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.annotation.nowarn
+import scala.collection.immutable.ArraySeq
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.language.existentials
+import scala.ref.WeakReference
+import scala.reflect.api.TypeCreator
 import scala.reflect.internal.{ JavaAccFlags, MissingRequirementError }
+import scala.runtime.{BoxesRunTime, ClassValueCompat, ScalaRunTime}
+import internal.Flags._
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
-import scala.collection.mutable.ListBuffer
-import internal.Flags._
+import internal.util.StringContextStripMarginOps
 import ReflectionUtils._
-import scala.annotation.nowarn
-import scala.reflect.api.TypeCreator
-import scala.runtime.{BoxesRunTime, ClassValueCompat, ScalaRunTime}
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 

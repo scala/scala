@@ -10,7 +10,8 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.transform.patmat
+package scala.tools.nsc
+package transform.patmat
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */

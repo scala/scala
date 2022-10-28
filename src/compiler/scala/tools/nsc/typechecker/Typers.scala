@@ -17,7 +17,7 @@ package typechecker
 import scala.annotation.{tailrec, unused}
 import scala.collection.mutable
 import scala.reflect.internal.{Chars, TypesStats}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics}
+import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
 import mutable.ListBuffer
@@ -884,26 +884,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def warnTree = original orElse tree
 
-        def warnEtaZero(): Boolean = {
-          if (!settings.warnEtaZero) return true
-          context.warning(tree.pos,
-            s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
-               |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
-            WarningCategory.LintEtaZero)
+        def warnEtaZero(): true = {
+          if (settings.warnEtaZero) {
+            context.warning(tree.pos,
+              s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
+                 |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
+              WarningCategory.LintEtaZero)
+          }
           true
         }
 
-        def warnEtaSam(): Boolean = {
-          if (!settings.warnEtaSam) return true
-          val sam = samOf(pt)
-          val samClazz = sam.owner
-          // TODO: we allow a Java class as a SAM type, whereas Java only allows the @FunctionalInterface on interfaces -- align?
-          if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
-            context.warning(tree.pos,
-              s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
-                 |even though $samClazz is not annotated with `@FunctionalInterface`;
-                 |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
-              WarningCategory.LintEtaSam)
+        def warnEtaSam(): true = {
+          if (settings.warnEtaSam || currentRun.isScala3) {
+            val sam = samOf(pt)
+            if (sam.exists) {
+              val samClazz = sam.owner
+              val isJavaClass = samClazz.isJava && !samClazz.isInterface
+              if (!samClazz.hasAnnotation(definitions.FunctionalInterfaceClass)) {
+                val ft = samToFunctionType(pt)
+                val sample = Function(meth.paramss.head.map(ValDef(_)), Apply(meth, meth.paramss.head.map(p => Ident(p.name)): _*))
+                val places = Apply(meth, meth.paramss.head.map(_ => Ident(nme.USCOREkw)): _*)
+                val advice = if (isJavaClass) "" else s"\n$samClazz should be annotated with `@FunctionalInterface` if eta-expansion is desired."
+                context.warning(tree.pos,
+                  sm"""Eta-expansion to expected type $pt, which is not a function type but is SAM-convertible to $ft.$advice
+                      |Avoid eta-expansion by writing the function literal `$sample` or `$places`.
+                      |This warning can be filtered with `-Wconf:cat=lint-eta-sam`.""",
+                  WarningCategory.LintEtaSam)
+              }
+            }
+          }
           true
         }
 

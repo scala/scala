@@ -19,6 +19,7 @@ import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
 import PartialFunction.cond
+import util.StringContextStripMarginOps
 
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>

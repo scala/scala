@@ -205,7 +205,7 @@ trait Warnings {
     val Serial                 = LintWarning("serial",                    "@SerialVersionUID on traits and non-serializable classes.")
     val ValPattern             = LintWarning("valpattern",                "Enable pattern checks in val definitions.")
     val EtaZero                = LintWarning("eta-zero",                  "Usage `f` of parameterless `def f()` resulted in eta-expansion, not empty application `f()`.")
-    val EtaSam                 = LintWarning("eta-sam",                   "The Java-defined target interface for eta-expansion was not annotated @FunctionalInterface.")
+    val EtaSam                 = LintWarning("eta-sam",                   "A method reference was eta-expanded but the expected SAM type was not annotated @FunctionalInterface.")
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
     val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")

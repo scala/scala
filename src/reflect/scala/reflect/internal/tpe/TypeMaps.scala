@@ -15,11 +15,12 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.{immutable, mutable}
-import Flags._
 import scala.annotation.{nowarn, tailrec}
-import Variance._
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
+import Flags._
+import Variance._
+import util.StringContextStripMarginOps
 
 private[internal] trait TypeMaps {
   self: SymbolTable =>

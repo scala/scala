@@ -15,9 +15,9 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.mutable
-import util.TriState
 import scala.annotation.tailrec
+import scala.collection.mutable
+import util.{StringContextStripMarginOps, TriState}
 
 trait TypeComparers {
   self: SymbolTable =>

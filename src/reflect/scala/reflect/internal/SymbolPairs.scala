@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import util.HashSet
+import util.{HashSet, StringContextStripMarginOps}
 import scala.annotation.tailrec
 
 /** An abstraction for considering symbol pairs.

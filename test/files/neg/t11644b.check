@@ -1,0 +1,22 @@
+t11644b.scala:18: error: type mismatch;
+ found   : Int
+ required: AcciSamZero
+  val t2AcciSam: AcciSamZero = m2 // error, nilary methods don't eta-expand to SAM types under -Xsource:3
+                               ^
+t11644b.scala:19: error: type mismatch;
+ found   : Int
+ required: SamZero
+  val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types under -Xsource:3
+                       ^
+t11644b.scala:17: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
+Write m2() to invoke method m2, or change the expected type.
+  val t2: () => Any  = m2         // eta-expanded with lint warning
+                       ^
+t11644b.scala:22: warning: Eta-expansion to expected type AcciSamOne, which is not a function type but is SAM-convertible to Int => Int.
+trait AcciSamOne should be annotated with `@FunctionalInterface` if eta-expansion is desired.
+Avoid eta-expansion by writing the function literal `((x: Int) => m3(x))` or `m3(_)`.
+This warning can be filtered with `-Wconf:cat=lint-eta-sam`.
+  val t3AcciSam: AcciSamOne = m3  // warn
+                              ^
+2 warnings
+2 errors
