@@ -896,7 +896,9 @@ trait Contexts { self: Analyzer =>
     private def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
         (sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)) ||
-        (base.isJavaDefined && base.isModuleClass && sub.isNonBottomSubClass(base.linkedClassOfClass))
+        (base.isJavaDefined && base.isModuleClass && (
+          sub.isNonBottomSubClass(base.linkedClassOfClass) ||
+            sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base.linkedClassOfClass)))
 
     /** Return the closest enclosing context that defines a subclass of `clazz`
      *  or a companion object thereof, or `NoContext` if no such context exists.
