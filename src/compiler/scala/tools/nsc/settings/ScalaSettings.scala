@@ -499,7 +499,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val showPhases         = BooleanSetting("-Vphases", "Print a synopsis of compiler phases.")
     .withAbbreviation("-Xshow-phases")
   val Yposdebug          = BooleanSetting("-Vpos", "Trace position validation.") withAbbreviation "-Ypos-debug"
-  val Xprint             = PhasesSetting("-Vprint", "Print out program after")
+  val Xprint             = PhasesSetting("-Vprint", "Print out program after (or ~phase for before and after)", "typer")
     .withAbbreviation("-Xprint")
   val Xprintpos          = BooleanSetting("-Vprint-pos", "Print tree positions, as offsets.")
     .withAbbreviation("-Xprint-pos")
