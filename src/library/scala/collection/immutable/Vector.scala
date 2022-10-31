@@ -206,6 +206,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   }
 
   protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    // k >= 0, k = prefix.knownSize
     val tinyAppendLimit = 4 + vectorSliceCount
     if (k < tinyAppendLimit /*|| k < (this.size >>> Log2ConcatFaster)*/) {
       var v: Vector[B] = this
@@ -217,14 +218,15 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val it = this.iterator
       while (it.hasNext) v = v :+ it.next()
       v
-    } else if (prefix.knownSize >= 0 && prefix.knownSize < this.size) {
-      new VectorBuilder[B].alignTo(prefix.knownSize, this).addAll(prefix).addAll(this).result()
+    } else if (k < this.size - AlignToFaster) {
+      new VectorBuilder[B].alignTo(k, this).addAll(prefix).addAll(this).result()
     } else super.prependedAll(prefix)
   }
 
   protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    // k >= 0, k = suffix.knownSize
     val tinyAppendLimit = 4 + vectorSliceCount
-    if(k > 0 && k < tinyAppendLimit) {
+    if (k < tinyAppendLimit) {
       var v: Vector[B] = this
       suffix match {
         case it: Iterable[_] => it.asInstanceOf[Iterable[B]].foreach(x => v = v.appended(x))
@@ -236,7 +238,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val ri = this.reverseIterator
       while (ri.hasNext) v = v.prepended(ri.next())
       v
-    } else if (this.size < suffix.knownSize && suffix.isInstanceOf[Vector[_]]) {
+    } else if (this.size < k - AlignToFaster && suffix.isInstanceOf[Vector[_]]) {
       val v = suffix.asInstanceOf[Vector[B]]
       new VectorBuilder[B].alignTo(this.size, v).addAll(this).addAll(v).result()
     } else new VectorBuilder[B].initFrom(this).addAll(suffix).result()
@@ -2000,6 +2002,7 @@ private[immutable] object VectorInline {
   final val WIDTH5 = 1 << BITS5
   final val LASTWIDTH = WIDTH << 1 // 1 extra bit in the last level to go up to Int.MaxValue (2^31-1) instead of 2^30:
   final val Log2ConcatFaster = 5
+  final val AlignToFaster = 64
 
   type Arr1 = Array[AnyRef]
   type Arr2 = Array[Array[AnyRef]]
