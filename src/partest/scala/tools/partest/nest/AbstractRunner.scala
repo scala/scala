@@ -18,6 +18,7 @@ import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections.distinctBy
+import scala.sys.process.Process
 import scala.util.{Try, Success, Failure}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -33,9 +34,10 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   val debug: Boolean                 = config.optDebug || propOrFalse("partest.debug")
   val verbose: Boolean               = config.optVerbose
   val terse: Boolean                 = config.optTerse
+  val realeasy: Boolean              = config.optDev
 
   protected val printSummary         = true
-  protected val partestCmd           = "test/partest"
+  protected val partestCmd           = "partest"
 
   private[this] var totalTests       = 0
   private[this] val passedTests      = mutable.ListBuffer[TestState]()
@@ -64,6 +66,12 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   }
 
   private[this] val realSysErr = System.err
+
+  val gitRunner = List("/usr/local/bin/git", "/usr/bin/git").map(f => new java.io.File(f)).find(_.canRead)
+  def runGit[R](cmd: String)(f: LazyList[String] => R): Option[R] =
+    Try {
+      gitRunner.map(git => f(Process(s"$git $cmd").lazyLines_!))
+    }.toOption.flatten
 
   def statusLine(state: TestState, durationMs: Long) = {
     import state._
@@ -163,15 +171,27 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           }
         }
 
-        val bslash = "\\"
-        def files_s = failed0.map(_.testFile).mkString(s" ${bslash}\n  ")
-        echo("# Failed test paths (this command will update checkfiles)")
-        echo(s"$partestCmd --update-check ${bslash}\n  $files_s\n")
+        if (failed0.size == 1) {
+          echo("# A test failed. To update the check file:")
+          echo(s"$partestCmd --update-check ${failed0.head.testIdent}")
+        }
+        else {
+          val bslash = "\\"
+          def files_s = failed0.map(_.testFile).mkString(s" ${bslash}\n  ")
+          echo("# Failed test paths (this command will update checkfiles)")
+          echo(s"$partestCmd --update-check ${bslash}\n  $files_s\n")
+        }
       }
 
       if (printSummary) {
         echo(message)
         levyJudgment()
+      }
+      if (realeasy) {
+        runGit("status --porcelain")(_.filter(_.endsWith(".check")).map(_.drop(3)).mkString("\n")).foreach { danger =>
+          echo(bold(red("# There are uncommitted check files!")))
+          echo(s"$danger\n")
+        }
       }
     }
   }
