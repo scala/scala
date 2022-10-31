@@ -1012,18 +1012,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isPackageClass || isModuleClass && isStatic
 
     /** A helper function for isEffectivelyFinal. */
-    private def isNotOverridden = (
+    private def isNotOverridden =
       owner.isClass && (
            owner.isEffectivelyFinal
-        || (owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && (overridingSymbol(c) == NoSymbol)))
+        || owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && overridingSymbol(c) == NoSymbol)
       )
-    )
 
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
-         ((this hasFlag FINAL | PACKAGE) && this != SingletonClass)
+         hasFlag(FINAL | PACKAGE) && this != SingletonClass
       || isModuleOrModuleClass
-      || isTerm && (isPrivate || isLocalToBlock || (hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED)))
+      || isTerm && (isPrivate || isLocalToBlock || hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED))
       // We track known subclasses of term-owned classes, use that to infer finality.
       // However, don't look at owner for refinement classes (it's basically arbitrary).
       || isClass && !isRefinementClass && originalOwner.isTerm && children.isEmpty
