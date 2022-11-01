@@ -56,7 +56,15 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  class IterableWrapper[A](val underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable
+  class IterableWrapper[A](val underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable {
+    import scala.runtime.Statics._
+    override def equals(other: Any): Boolean =
+      other match {
+        case other: IterableWrapper[_] => underlying.equals(other.underlying)
+        case _ => false
+      }
+    override def hashCode = finalizeHash(mix(mix(0xcafebabe, "IterableWrapper".hashCode), anyHash(underlying)), 1)
+  }
 
   @SerialVersionUID(3L)
   class JIterableWrapper[A](val underlying: jl.Iterable[A])
