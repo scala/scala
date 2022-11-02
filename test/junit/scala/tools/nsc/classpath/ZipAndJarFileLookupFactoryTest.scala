@@ -6,7 +6,6 @@ import org.junit.Test
 import java.net.{URI, URL}
 import java.nio.file._
 import java.nio.file.attribute.FileTime
-import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.AbstractFile
 import scala.tools.testkit.ForDeletion
 import scala.tools.testkit.Releasables._
@@ -82,10 +81,10 @@ class ZipAndJarFileLookupFactoryTest {
         ()
       }
     }
-    def manifestAt(location: URI): URL = ScalaClassLoader.fromURLs(List(location.toURL), null).getResource("META-INF/MANIFEST.MF");
+    def manifestAt(location: Path): URL = URI.create(s"jar:file:$location!/META-INF/MANIFEST.MF").toURL
 
     val j = createTestJar();
-    Using.resources(ForDeletion(j), new ManifestResources(manifestAt(j.toUri)), new CloseableRegistry) { (_, archive, closeableRegistry) =>
+    Using.resources(ForDeletion(j), new ManifestResources(manifestAt(j.toAbsolutePath)), new CloseableRegistry) { (_, archive, closeableRegistry) =>
       val settings = new Settings
       val cp = ZipAndJarClassPathFactory.create(archive, settings, closeableRegistry)
       assertTrue(cp.findClass("foo").isDefined)
