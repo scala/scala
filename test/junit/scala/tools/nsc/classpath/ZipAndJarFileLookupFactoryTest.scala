@@ -81,7 +81,7 @@ class ZipAndJarFileLookupFactoryTest {
         ()
       }
     }
-    def manifestAt(location: Path): URL = URI.create(s"jar:file:$location!/META-INF/MANIFEST.MF").toURL
+    def manifestAt(location: Path): URL = URI.create(s"jar:file:${location.toUri.getPath}!/META-INF/MANIFEST.MF").toURL
 
     val j = createTestJar();
     Using.resources(ForDeletion(j), new ManifestResources(manifestAt(j.toAbsolutePath)), new CloseableRegistry) { (_, archive, closeableRegistry) =>

@@ -49,7 +49,7 @@ class ZipArchiveTest {
     assertThrown[IOException](_.getMessage.contains(f.toString))(fza.iterator)
   }
 
-  private def manifestAt(location: Path): URL = URI.create(s"jar:file:$location!/META-INF/MANIFEST.MF").toURL
+  private def manifestAt(location: Path): URL = URI.create(s"jar:file:${location.toUri.getPath}!/META-INF/MANIFEST.MF").toURL
 
   // ZipArchive.fromManifestURL(URL)
   @Test def `manifest resources just works`(): Unit = {
