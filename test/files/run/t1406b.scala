@@ -8,16 +8,21 @@ case class C(n: Int) {
   def *(c: C): C = C(n * c.n)
   def +(c: C): C = C(n + c.n)
 }
-object Test extends App {
-  val c, d = C(42)
-  println(c + d)
-  println(c * d)
-  println(c ☀ d)
-  println(c * d + d)
-  println(c ☀ d + d)
-  println(c ☀= d + d)           // assignment op is low precedence
-  println(c 𐀀 d + d)            // the first one, letter should be low precedence
-  println(c 🌀d + d)            // the second one, cyclone should be high precedence
-  println(c 🌀= d + d)            // the second one, cyclone should be high precedence
-}
 
+object Test extends App {
+  val Sum = 84
+  val Product = 1764
+  val ProductSum = 1806
+  val SumProduct = 3528
+  val c, d = C(42)
+  def assertEquals(expected: Int, actual: C) = assert(expected == actual.n)
+  assertEquals(Sum, c + d)
+  assertEquals(Product, c * d)
+  assertEquals(Product, c ☀ d)
+  assertEquals(ProductSum, c * d + d)
+  assertEquals(ProductSum, c ☀ d + d)
+  assertEquals(SumProduct, c ☀= d + d)           // assignment op is low precedence
+  assertEquals(SumProduct, c 𐀀 d + d)            // the first one, letter should be low precedence
+  assertEquals(ProductSum, c 🌀d + d)            // the second one, cyclone should be high precedence
+  assertEquals(SumProduct, c 🌀= d + d)          // assignment op is low precedence
+}
