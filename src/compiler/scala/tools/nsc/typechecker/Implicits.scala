@@ -741,23 +741,14 @@ trait Implicits extends splain.SplainData {
                       as = as.tail
                     }
                   } else {
-                    while (ps.nonEmpty && as.nonEmpty) {
+                    while (!(ps.isEmpty || as.isEmpty)) {
                       if (!(as.head <:< ps.head.tpe))
                         return false
                       ps = ps.tail
                       as = as.tail
                     }
                   }
-                  ps.isEmpty && as.nonEmpty && {
-                    val lastArg = as.head
-                    as.tail.isEmpty && {
-                      lastArg match {
-                        case RefinedType(_, syms) if !syms.isEmpty =>
-                          syms.reverseIterator.exists(x => context.isAccessible(restpe.nonPrivateMember(x.name), restpe))
-                        case _ => true
-                      }
-                    } && loop(restpe, lastArg)
-                  }
+                  ps.isEmpty && !as.isEmpty && as.tail.isEmpty && loop(restpe, as.head)
                 }
               }
 
@@ -766,7 +757,14 @@ trait Implicits extends splain.SplainData {
         case NullaryMethodType(restpe)  => loop(restpe, pt)
         case PolyType(_, restpe)        => loop(restpe, pt)
         case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else methodToExpressionTp(tp) <:< pt // is !fast case needed??
-        case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
+        case _                          => (if (fast) isPlausiblySubType(tp, pt) else tp <:< pt) && {
+          pt match {
+            case RefinedType(_, syms) if !syms.isEmpty =>
+              syms.reverseIterator.exists(x => context.isAccessible(tp.nonPrivateMember(x.name), tp))
+            case _ =>
+              true
+          }
+        }
       }
       loop(tp0, pt0)
     }
