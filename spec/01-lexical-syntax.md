@@ -8,6 +8,11 @@ chapter: 1
 
 Scala source code consists of Unicode text.
 
+The nine [Bidirectional explicit formatting](https://www.unicode.org/reports/tr9/#Bidirectional_Character_Types)
+characters `\u202a - \u202e` and `\u2066 - \u2069` (inclusive) are forbidden 
+from appearing in source files. Note that they can be represented using 
+unicode escapes in string and character literals.
+
 The program text is tokenized as described in this chapter.
 See the last section for special support for XML literals,
 which are parsed in _XML mode_.

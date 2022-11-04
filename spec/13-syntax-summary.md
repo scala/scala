@@ -8,6 +8,11 @@ chapter: 13
 
 The following descriptions of Scala tokens uses literal characters `‘c’` when referring to the ASCII fragment `\u0000` – `\u007F`.
 
+The nine [Bidirectional explicit formatting](https://www.unicode.org/reports/tr9/#Bidirectional_Character_Types)
+characters `\u202a - \u202e` and `\u2066 - \u2069` (inclusive) are forbidden 
+from appearing in source files. Note that they can be represented using 
+unicode escapes in string and character literals.
+
 ## Lexical Syntax
 
 The lexical syntax of Scala is given by the following grammar in EBNF form:
