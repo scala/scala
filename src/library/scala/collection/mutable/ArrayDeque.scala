@@ -529,7 +529,8 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      val actual = IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      if (actual != s) throw new IllegalStateException(s"Copied $actual of $s")
       new ArrayDeque[B](array, start = 0, end = s)
     } else new ArrayDeque[B]() ++= coll
   }
