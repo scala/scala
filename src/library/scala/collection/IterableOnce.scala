@@ -19,6 +19,7 @@ import scala.collection.mutable.StringBuilder
 import scala.language.implicitConversions
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
+import scala.runtime.AbstractFunction2
 
 /**
   * A template trait for collections which can be traversed either once only
@@ -76,8 +77,8 @@ trait IterableOnce[+A] extends Any {
   }
 
   /** @return The number of elements in this $coll, if it can be cheaply computed,
-    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
-    */
+   *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
+   */
   def knownSize: Int = -1
 }
 
@@ -318,184 +319,184 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the
-    * operator going left to right, including the initial value.
-    *
-    *  $willNotTerminateInf
-    *  $orderDependent
-    *
-    *  @tparam B      the type of the elements in the resulting collection
-    *  @param z       the initial value
-    *  @param op      the binary operator applied to the intermediate result and the element
-    *  @return        collection with intermediate results
-    */
+   *  operator going left to right, including the initial value.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependent
+   *
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @return        collection with intermediate results
+   */
   def scanLeft[B](z: B)(op: (B, A) => B): CC[B]
 
   /** Selects all elements of this $coll which satisfy a predicate.
-    *
-    *  @param p     the predicate used to test elements.
-    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
-    *               predicate `p`. The order of the elements is preserved.
-    */
+   *
+   *  @param p     the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
+   *               predicate `p`. The order of the elements is preserved.
+   */
   def filter(p: A => Boolean): C
 
   /** Selects all elements of this $coll which do not satisfy a predicate.
-    *
-    *  @param pred  the predicate used to test elements.
-    *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
-    *               predicate `pred`. Their order may not be preserved.
-    */
+   *
+   *  @param pred  the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
+   *               predicate `pred`. Their order may not be preserved.
+   */
   def filterNot(pred: A => Boolean): C
 
   /** Selects the first ''n'' elements.
-    *  $orderDependent
-    *  @param  n    the number of elements to take from this $coll.
-    *  @return a $coll consisting only of the first `n` elements of this $coll,
-    *          or else the whole $coll, if it has less than `n` elements.
-    *          If `n` is negative, returns an empty $coll.
-    */
+   *  $orderDependent
+   *  @param  n    the number of elements to take from this $coll.
+   *  @return a $coll consisting only of the first `n` elements of this $coll,
+   *          or else the whole $coll, if it has less than `n` elements.
+   *          If `n` is negative, returns an empty $coll.
+   */
   def take(n: Int): C
 
   /** Takes longest prefix of elements that satisfy a predicate.
-    *  $orderDependent
-    *  @param   p  The predicate used to test elements.
-    *  @return  the longest prefix of this $coll whose elements all satisfy
-    *           the predicate `p`.
-    */
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest prefix of this $coll whose elements all satisfy
+   *           the predicate `p`.
+   */
   def takeWhile(p: A => Boolean): C
 
   /** Selects all elements except first ''n'' ones.
-    *  $orderDependent
-    *  @param  n    the number of elements to drop from this $coll.
-    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
-    *          empty $coll, if this $coll has less than `n` elements.
-    *          If `n` is negative, don't drop any elements.
-    */
+   *  $orderDependent
+   *  @param  n    the number of elements to drop from this $coll.
+   *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+   *          empty $coll, if this $coll has less than `n` elements.
+   *          If `n` is negative, don't drop any elements.
+   */
   def drop(n: Int): C
 
   /** Drops longest prefix of elements that satisfy a predicate.
-    *  $orderDependent
-    *  @param   p  The predicate used to test elements.
-    *  @return  the longest suffix of this $coll whose first element
-    *           does not satisfy the predicate `p`.
-    */
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest suffix of this $coll whose first element
+   *           does not satisfy the predicate `p`.
+   */
   def dropWhile(p: A => Boolean): C
 
   /** Selects an interval of elements.  The returned $coll is made up
-    *  of all elements `x` which satisfy the invariant:
-    *  {{{
-    *    from <= indexOf(x) < until
-    *  }}}
-    *  $orderDependent
-    *
-    *  @param from   the lowest index to include from this $coll.
-    *  @param until  the lowest index to EXCLUDE from this $coll.
-    *  @return  a $coll containing the elements greater than or equal to
-    *           index `from` extending up to (but not including) index `until`
-    *           of this $coll.
-    */
+   *  of all elements `x` which satisfy the invariant:
+   *  {{{
+   *    from <= indexOf(x) < until
+   *  }}}
+   *  $orderDependent
+   *
+   *  @param from   the lowest index to include from this $coll.
+   *  @param until  the lowest index to EXCLUDE from this $coll.
+   *  @return  a $coll containing the elements greater than or equal to
+   *           index `from` extending up to (but not including) index `until`
+   *           of this $coll.
+   */
   def slice(from: Int, until: Int): C
 
   /** Builds a new $coll by applying a function to all elements of this $coll.
-    *
-    *  @param f      the function to apply to each element.
-    *  @tparam B     the element type of the returned $coll.
-    *  @return       a new $coll resulting from applying the given function
-    *                `f` to each element of this $coll and collecting the results.
-    */
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned $coll.
+   *  @return       a new $coll resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results.
+   */
   def map[B](f: A => B): CC[B]
 
   /** Builds a new $coll by applying a function to all elements of this $coll
-    *  and using the elements of the resulting collections.
-    *
-    *    For example:
-    *
-    *    {{{
-    *      def getWords(lines: Seq[String]): Seq[String] = lines flatMap (line => line split "\\W+")
-    *    }}}
-    *
-    *    The type of the resulting collection is guided by the static type of $coll. This might
-    *    cause unexpected results sometimes. For example:
-    *
-    *    {{{
-    *      // lettersOf will return a Seq[Char] of likely repeated letters, instead of a Set
-    *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
-    *
-    *      // lettersOf will return a Set[Char], not a Seq
-    *      def lettersOf(words: Seq[String]) = words.toSet flatMap ((word: String) => word.toSeq)
-    *
-    *      // xs will be an Iterable[Int]
-    *      val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)
-    *
-    *      // ys will be a Map[Int, Int]
-    *      val ys = Map("a" -> List(1 -> 11,1 -> 111), "b" -> List(2 -> 22,2 -> 222)).flatMap(_._2)
-    *    }}}
-    *
-    *  @param f      the function to apply to each element.
-    *  @tparam B     the element type of the returned collection.
-    *  @return       a new $coll resulting from applying the given collection-valued function
-    *                `f` to each element of this $coll and concatenating the results.
-    */
+   *  and using the elements of the resulting collections.
+   *
+   *    For example:
+   *
+   *    {{{
+   *      def getWords(lines: Seq[String]): Seq[String] = lines flatMap (line => line split "\\W+")
+   *    }}}
+   *
+   *    The type of the resulting collection is guided by the static type of $coll. This might
+   *    cause unexpected results sometimes. For example:
+   *
+   *    {{{
+   *      // lettersOf will return a Seq[Char] of likely repeated letters, instead of a Set
+   *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
+   *
+   *      // lettersOf will return a Set[Char], not a Seq
+   *      def lettersOf(words: Seq[String]) = words.toSet flatMap ((word: String) => word.toSeq)
+   *
+   *      // xs will be an Iterable[Int]
+   *      val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)
+   *
+   *      // ys will be a Map[Int, Int]
+   *      val ys = Map("a" -> List(1 -> 11,1 -> 111), "b" -> List(2 -> 22,2 -> 222)).flatMap(_._2)
+   *    }}}
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a new $coll resulting from applying the given collection-valued function
+   *                `f` to each element of this $coll and concatenating the results.
+   */
   def flatMap[B](f: A => IterableOnce[B]): CC[B]
 
   /** Converts this $coll of iterable collections into
-    *  a $coll formed by the elements of these iterable
-    *  collections.
-    *
-    *    The resulting collection's type will be guided by the
-    *    type of $coll. For example:
-    *
-    *    {{{
-    *    val xs = List(
-    *               Set(1, 2, 3),
-    *               Set(1, 2, 3)
-    *             ).flatten
-    *    // xs == List(1, 2, 3, 1, 2, 3)
-    *
-    *    val ys = Set(
-    *               List(1, 2, 3),
-    *               List(3, 2, 1)
-    *             ).flatten
-    *    // ys == Set(1, 2, 3)
-    *    }}}
-    *
-    *  @tparam B the type of the elements of each iterable collection.
-    *  @param asIterable an implicit conversion which asserts that the element
-    *          type of this $coll is an `Iterable`.
-    *  @return a new $coll resulting from concatenating all element ${coll}s.
-    */
+   *  a $coll formed by the elements of these iterable
+   *  collections.
+   *
+   *    The resulting collection's type will be guided by the
+   *    type of $coll. For example:
+   *
+   *    {{{
+   *    val xs = List(
+   *               Set(1, 2, 3),
+   *               Set(1, 2, 3)
+   *             ).flatten
+   *    // xs == List(1, 2, 3, 1, 2, 3)
+   *
+   *    val ys = Set(
+   *               List(1, 2, 3),
+   *               List(3, 2, 1)
+   *             ).flatten
+   *    // ys == Set(1, 2, 3)
+   *    }}}
+   *
+   *  @tparam B the type of the elements of each iterable collection.
+   *  @param asIterable an implicit conversion which asserts that the element
+   *          type of this $coll is an `Iterable`.
+   *  @return a new $coll resulting from concatenating all element ${coll}s.
+   */
   def flatten[B](implicit asIterable: A => IterableOnce[B]): CC[B]
 
   /** Builds a new $coll by applying a partial function to all elements of this $coll
-    *  on which the function is defined.
-    *
-    *  @param pf     the partial function which filters and maps the $coll.
-    *  @tparam B     the element type of the returned $coll.
-    *  @return       a new $coll resulting from applying the given partial function
-    *                `pf` to each element on which it is defined and collecting the results.
-    *                The order of the elements is preserved.
-    */
+   *  on which the function is defined.
+   *
+   *  @param pf     the partial function which filters and maps the $coll.
+   *  @tparam B     the element type of the returned $coll.
+   *  @return       a new $coll resulting from applying the given partial function
+   *                `pf` to each element on which it is defined and collecting the results.
+   *                The order of the elements is preserved.
+   */
   def collect[B](pf: PartialFunction[A, B]): CC[B]
 
   /** Zips this $coll with its indices.
-    *
-    *  @return        A new $coll containing pairs consisting of all elements of this $coll paired with their index.
-    *                 Indices start at `0`.
-    *  @example
-    *    `List("a", "b", "c").zipWithIndex == List(("a", 0), ("b", 1), ("c", 2))`
-    */
+   *
+   *  @return        A new $coll containing pairs consisting of all elements of this $coll paired with their index.
+   *                 Indices start at `0`.
+   *  @example
+   *    `List("a", "b", "c").zipWithIndex == List(("a", 0), ("b", 1), ("c", 2))`
+   */
   def zipWithIndex: CC[(A @uncheckedVariance, Int)]
 
   /** Splits this $coll into a prefix/suffix pair according to a predicate.
-    *
-    *  Note: `c span p`  is equivalent to (but possibly more efficient than)
-    *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the
-    *  predicate `p` does not cause any side-effects.
-    *  $orderDependent
-    *
-    *  @param p the test predicate
-    *  @return  a pair consisting of the longest prefix of this $coll whose
-    *           elements all satisfy `p`, and the rest of this $coll.
-    */
+   *
+   *  Note: `c span p`  is equivalent to (but possibly more efficient than)
+   *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the
+   *  predicate `p` does not cause any side-effects.
+   *  $orderDependent
+   *
+   *  @param p the test predicate
+   *  @return  a pair consisting of the longest prefix of this $coll whose
+   *           elements all satisfy `p`, and the rest of this $coll.
+   */
   def span(p: A => Boolean): (C, C)
 
   /** Splits this $coll into a prefix/suffix pair at a given position.
@@ -531,32 +532,32 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /////////////////////////////////////////////////////////////// Concrete methods based on iterator
 
   /** Tests whether this $coll is known to have a finite size.
-    *  All strict collections are known to have finite size. For a non-strict
-    *  collection such as `Stream`, the predicate returns `'''true'''` if all
-    *  elements have been computed. It returns `'''false'''` if the stream is
-    *  not yet evaluated to the end. Non-empty Iterators usually return
-    *  `'''false'''` even if they were created from a collection with a known
-    *  finite size.
-    *
-    *  Note: many collection methods will not work on collections of infinite sizes.
-    *  The typical failure mode is an infinite loop. These methods always attempt a
-    *  traversal without checking first that `hasDefiniteSize` returns `'''true'''`.
-    *  However, checking `hasDefiniteSize` can provide an assurance that size is
-    *  well-defined and non-termination is not a concern.
-    *
-    *  @deprecated This method is deprecated in 2.13 because it does not provide any
-    *    actionable information. As noted above, even the collection library itself
-    *    does not use it. When there is no guarantee that a collection is finite, it
-    *    is generally best to attempt a computation anyway and document that it will
-    *    not terminate for infinite collections rather than backing out because this
-    *    would prevent performing the computation on collections that are in fact
-    *    finite even though `hasDefiniteSize` returns `false`.
-    *
-    *  @see method `knownSize` for a more useful alternative
-    *
-    *  @return  `'''true'''` if this collection is known to have finite size,
-    *           `'''false'''` otherwise.
-    */
+   *  All strict collections are known to have finite size. For a non-strict
+   *  collection such as `Stream`, the predicate returns `'''true'''` if all
+   *  elements have been computed. It returns `'''false'''` if the stream is
+   *  not yet evaluated to the end. Non-empty Iterators usually return
+   *  `'''false'''` even if they were created from a collection with a known
+   *  finite size.
+   *
+   *  Note: many collection methods will not work on collections of infinite sizes.
+   *  The typical failure mode is an infinite loop. These methods always attempt a
+   *  traversal without checking first that `hasDefiniteSize` returns `'''true'''`.
+   *  However, checking `hasDefiniteSize` can provide an assurance that size is
+   *  well-defined and non-termination is not a concern.
+   *
+   *  @deprecated This method is deprecated in 2.13 because it does not provide any
+   *    actionable information. As noted above, even the collection library itself
+   *    does not use it. When there is no guarantee that a collection is finite, it
+   *    is generally best to attempt a computation anyway and document that it will
+   *    not terminate for infinite collections rather than backing out because this
+   *    would prevent performing the computation on collections that are in fact
+   *    finite even though `hasDefiniteSize` returns `false`.
+   *
+   *  @see method `knownSize` for a more useful alternative
+   *
+   *  @return  `'''true'''` if this collection is known to have finite size,
+   *           `'''false'''` otherwise.
+   */
   @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
   def hasDefiniteSize: Boolean = true
 
@@ -568,21 +569,21 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def isTraversableAgain: Boolean = false
 
   /** Apply `f` to each element for its side effects
-    *  Note: [U] parameter needed to help scalac's type inference.
-    */
+   *  Note: [U] parameter needed to help scalac's type inference.
+   */
   def foreach[U](f: A => U): Unit = {
     val it = iterator
     while(it.hasNext) f(it.next())
   }
 
   /** Tests whether a predicate holds for all elements of this $coll.
-    *
-    *  $mayNotTerminateInf
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return        `true` if this $coll is empty or the given predicate `p`
-    *                 holds for all elements of this $coll, otherwise `false`.
-    */
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return        `true` if this $coll is empty or the given predicate `p`
+   *                 holds for all elements of this $coll, otherwise `false`.
+   */
   def forall(p: A => Boolean): Boolean = {
     var res = true
     val it = iterator
@@ -591,12 +592,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Tests whether a predicate holds for at least one element of this $coll.
-    *
-    *  $mayNotTerminateInf
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return        `true` if the given predicate `p` is satisfied by at least one element of this $coll, otherwise `false`
-    */
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return        `true` if the given predicate `p` is satisfied by at least one element of this $coll, otherwise `false`
+   */
   def exists(p: A => Boolean): Boolean = {
     var res = false
     val it = iterator
@@ -605,12 +606,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Counts the number of elements in the $coll which satisfy a predicate.
-    *
-    *  $willNotTerminateInf
-    * 
-    *  @param p     the predicate  used to test elements.
-    *  @return      the number of elements satisfying the predicate `p`.
-    */
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param p     the predicate  used to test elements.
+   *  @return      the number of elements satisfying the predicate `p`.
+   */
   def count(p: A => Boolean): Int = {
     var res = 0
     val it = iterator
@@ -619,14 +620,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Finds the first element of the $coll satisfying a predicate, if any.
-    *
-    *  $mayNotTerminateInf
-    *  $orderDependent
-    *
-    *  @param p       the predicate used to test elements.
-    *  @return        an option value containing the first element in the $coll
-    *                 that satisfies `p`, or `None` if none exists.
-    */
+   *
+   *  $mayNotTerminateInf
+   *  $orderDependent
+   *
+   *  @param p       the predicate used to test elements.
+   *  @return        an option value containing the first element in the $coll
+   *                 that satisfies `p`, or `None` if none exists.
+   */
   def find(p: A => Boolean): Option[A] = {
     val it = iterator
     while (it.hasNext) {
@@ -636,15 +637,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     None
   }
 
-  // TODO 2.14+ move to IndexedSeqOps
-  private[this] def foldl[B](seq: IndexedSeq[A], start: Int, z: B, op: (B, A) => B): B = {
+  // in future, move to IndexedSeqOps
+  private def foldl[X >: A, B](seq: IndexedSeq[X], start: Int, z: B, op: (B, X) => B): B = {
     @tailrec def loop(at: Int, end: Int, acc: B): B =
       if (at == end) acc
       else loop(at + 1, end, op(acc, seq(at)))
     loop(start, seq.length, z)
   }
 
-  private[this] def foldr[B >: A](seq: IndexedSeq[A], op: (A, B) => B): B = {
+  private def foldr[X >: A, B >: X](seq: IndexedSeq[X], op: (X, B) => B): B = {
     @tailrec def loop(at: Int, acc: B): B =
       if (at == 0) acc
       else loop(at - 1, op(seq(at - 1), acc))
@@ -652,22 +653,22 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Applies a binary operator to a start value and all elements of this $coll,
-    *  going left to right.
-    *
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param   z    the start value.
-    *  @param   op   the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going left to right with the start value `z` on the left:
-    *           `op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)` where `x,,1,,, ..., x,,n,,`
-   *            are the elements of this $coll.
-    *           Returns `z` if this $coll is empty.
-    */
+   *  going left to right.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param   z    the start value.
+   *  @param   op   the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
+   *           going left to right with the start value `z` on the left:
+   *           `op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)` where `x,,1,,, ..., x,,n,,`
+   *           are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
+   */
   def foldLeft[B](z: B)(op: (B, A) => B): B = this match {
-    case seq: IndexedSeq[A @unchecked] => foldl(seq, 0, z, op)
+    case seq: IndexedSeq[A @unchecked] => foldl[A, B](seq, 0, z, op)
     case _ =>
       var result = z
       val it = iterator
@@ -678,19 +679,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Applies a binary operator to all elements of this $coll and a start value,
-    *  going right to left.
-    *
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *  @param   z    the start value.
-    *  @param   op   the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going right to left with the start value `z` on the right:
-    *           `op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))` where `x,,1,,, ..., x,,n,,`
-    *           are the elements of this $coll.
-    *           Returns `z` if this $coll is empty.
-    */
+   *  going right to left.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *  @param   z    the start value.
+   *  @param   op   the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
+   *           going right to left with the start value `z` on the right:
+   *           `op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))` where `x,,1,,, ..., x,,n,,`
+   *           are the elements of this $coll.
+   *           Returns `z` if this $coll is empty.
+   */
   def foldRight[B](z: B)(op: (A, B) => B): B = reversed.foldLeft(z)((b, a) => op(a, b))
 
   @deprecated("Use foldLeft instead of /:", "2.13.0")
@@ -700,145 +701,164 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
 
   /** Folds the elements of this $coll using the specified associative binary operator.
-    * The default implementation in `IterableOnce` is equivalent to `foldLeft` but may be
-    * overridden for more efficient traversal orders.
-    *
-    *  $undefinedorder
-    *  $willNotTerminateInf
-    *
-    *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
-    *  @param z       a neutral element for the fold operation; may be added to the result
-    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
-    *                 0 for addition, or 1 for multiplication).
-    *  @param op      a binary operator that must be associative.
-    *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
-    */
+   *  The default implementation in `IterableOnce` is equivalent to `foldLeft` but may be
+   *  overridden for more efficient traversal orders.
+   *
+   *  $undefinedorder
+   *  $willNotTerminateInf
+   *
+   *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
+   *  @param z       a neutral element for the fold operation; may be added to the result
+   *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
+   *                 0 for addition, or 1 for multiplication).
+   *  @param op      a binary operator that must be associative.
+   *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
+   */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.
-    *
-    *  $undefinedorder
-    *
-    *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
-    *  @param op       A binary operator that must be associative.
-    *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
-    *  @throws UnsupportedOperationException if this $coll is empty.
-    */
+   *
+   *  $undefinedorder
+   *
+   *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
+   *  @param op       A binary operator that must be associative.
+   *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
+   *  @throws UnsupportedOperationException if this $coll is empty.
+   */
   def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
 
   /** Reduces the elements of this $coll, if any, using the specified
-    *  associative binary operator.
-    *
-    *  $undefinedorder
-    *
-    *  @tparam B     A type parameter for the binary operator, a supertype of `A`.
-    *  @param op      A binary operator that must be associative.
-    *  @return        An option value containing result of applying reduce operator `op` between all
-    *                 the elements if the collection is nonempty, and `None` otherwise.
-    */
+   *  associative binary operator.
+   *
+   *  $undefinedorder
+   *
+   *  @tparam B     A type parameter for the binary operator, a supertype of `A`.
+   *  @param op      A binary operator that must be associative.
+   *  @return        An option value containing result of applying reduce operator `op` between all
+   *                 the elements if the collection is nonempty, and `None` otherwise.
+   */
   def reduceOption[B >: A](op: (B, B) => B): Option[B] = reduceLeftOption(op)
 
   /** Applies a binary operator to all elements of this $coll,
-    *  going left to right.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going left to right:
-    *           `op( op( ... op(x,,1,,, x,,2,,) ..., x,,n-1,,), x,,n,,)` where `x,,1,,, ..., x,,n,,`
-    *           are the elements of this $coll.
-    *  @throws UnsupportedOperationException if this $coll is empty.   */
+   *  going left to right.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
+   *           going left to right:
+   *           `op( op( ... op(x,,1,,, x,,2,,) ..., x,,n-1,,), x,,n,,)` where `x,,1,,, ..., x,,n,,`
+   *           are the elements of this $coll.
+   *  @throws UnsupportedOperationException if this $coll is empty.
+   */
   def reduceLeft[B >: A](op: (B, A) => B): B = this match {
     case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldl(seq, 1, seq(0), op)
-    case _ =>
-      val it = iterator
-      if (it.isEmpty)
-        throw new UnsupportedOperationException("empty.reduceLeft")
-
-      var first = true
-      var acc: B = null.asInstanceOf[B]
-
-      while (it.hasNext) {
-        val x = it.next()
-        if (first) {
-          acc = x
-          first = false
-        }
-        else acc = op(acc, x)
-      }
+    case _ if knownSize == 0 => throw new UnsupportedOperationException("empty.reduceLeft")
+    case _ => reduceLeftIterator[B](throw new UnsupportedOperationException("empty.reduceLeft"))(op)
+  }
+  private final def reduceLeftIterator[B >: A](onEmpty: => B)(op: (B, A) => B): B = {
+    val it = iterator
+    if (it.hasNext) {
+      var acc: B = it.next()
+      while (it.hasNext)
+        acc = op(acc, it.next())
       acc
+    }
+    else onEmpty
   }
 
   /** Applies a binary operator to all elements of this $coll, going right to left.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive elements of this $coll,
-    *           going right to left:
-    *           `op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))` where `x,,1,,, ..., x,,n,,`
-    *           are the elements of this $coll.
-    *  @throws UnsupportedOperationException if this $coll is empty.
-    */
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
+   *           going right to left:
+   *           `op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))` where `x,,1,,, ..., x,,n,,`
+   *           are the elements of this $coll.
+   *  @throws UnsupportedOperationException if this $coll is empty.
+   */
   def reduceRight[B >: A](op: (A, B) => B): B = this match {
-    case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldr(seq, op)
+    case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldr[A, B](seq, op)
+    case _ if knownSize == 0 => throw new UnsupportedOperationException("empty.reduceRight")
     case _ =>
-      val it = iterator
-      if (it.isEmpty)
-        throw new UnsupportedOperationException("empty.reduceRight")
-
-      reversed.reduceLeft[B]((x, y) => op(y, x))
+      try reversed.reduceLeft[B]((x, y) => op(y, x))    // reduceLeftIterator
+      catch {
+        case e: UnsupportedOperationException if e.getMessage == "empty.reduceLeft" =>
+          throw new UnsupportedOperationException("empty.reduceRight")
+      }
   }
 
   /** Optionally applies a binary operator to all elements of this $coll, going left to right.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
-    *           `None` otherwise.
-    */
-  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = if (isEmpty) None else Some(reduceLeft(op))
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
+   *           `None` otherwise.
+   */
+  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] =
+    knownSize match {
+      case -1 => reduceLeftOptionIterator[B](op)
+      case  0 => None
+      case  _ => Some(reduceLeft(op))
+    }
+  private final def reduceLeftOptionIterator[B >: A](op: (B, A) => B): Option[B] = reduceOptionIterator[A, B](iterator)(op)
+  private final def reduceOptionIterator[X >: A, B >: X](it: Iterator[X])(op: (B, X) => B): Option[B] = {
+    if (it.hasNext) {
+      var acc: B = it.next()
+      while (it.hasNext)
+        acc = op(acc, it.next())
+      Some(acc)
+    }
+    else None
+  }
 
   /** Optionally applies a binary operator to all elements of this $coll, going
-    *  right to left.
-    *  $willNotTerminateInf
-    *  $orderDependentFold
-    *
-    *  @param  op    the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
-    *           `None` otherwise.
-    */
-  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = if (isEmpty) None else Some(reduceRight(op))
+   *  right to left.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
+   *           `None` otherwise.
+   */
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] =
+    knownSize match {
+      case -1 => reduceOptionIterator[A, B](reversed.iterator)((x, y) => op(y, x))
+      case  0 => None
+      case  _ => Some(reduceRight(op))
+    }
 
   /** Tests whether the $coll is empty.
-    *
-    *  Note: Implementations in subclasses that are not repeatedly iterable must take
-    *  care not to consume any elements when `isEmpty` is called.
-    *
-    *  @return    `true` if the $coll contains no elements, `false` otherwise.
-    */
+   *
+   *  Note: The default implementation creates and discards an iterator.
+   *
+   *  Note: Implementations in subclasses that are not repeatedly iterable must take
+   *  care not to consume any elements when `isEmpty` is called.
+   *
+   *  @return    `true` if the $coll contains no elements, `false` otherwise.
+   */
   def isEmpty: Boolean = !iterator.hasNext
 
   /** Tests whether the $coll is not empty.
-    *
-    *  @return    `true` if the $coll contains at least one element, `false` otherwise.
-    */
+   *
+   *  @return    `true` if the $coll contains at least one element, `false` otherwise.
+   */
   @deprecatedOverriding("nonEmpty is defined as !isEmpty; override isEmpty instead", "2.13.0")
   def nonEmpty: Boolean = !isEmpty
 
   /** The size of this $coll.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @return    the number of elements in this $coll.
-    */
-  def size: Int = {
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return    the number of elements in this $coll.
+   */
+  def size: Int =
     if (knownSize >= 0) knownSize
     else {
       val it = iterator
@@ -846,7 +866,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       while (it.hasNext) { len += 1; it.next() }
       len
     }
-  }
 
   @deprecated("Use `dest ++= coll` instead", "2.13.0")
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
@@ -868,37 +887,37 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0, Int.MaxValue)
 
   /** Copy elements to an array, returning the number of elements written.
-    *
-    *  Fills the given array `xs` starting at index `start` with values of this $coll.
-    *
-    *  Copying will stop once either all the elements of this $coll have been copied,
-    *  or the end of the array is reached.
-    *
-    *  @param  xs     the array to fill.
-    *  @param  start  the starting index of xs.
-    *  @tparam B      the type of the elements of the array.
-    *  @return        the number of elements written to the array
-    *
-    *  @note    Reuse: $consumesIterator
-    */
+   *
+   *  Fills the given array `xs` starting at index `start` with values of this $coll.
+   *
+   *  Copying will stop once either all the elements of this $coll have been copied,
+   *  or the end of the array is reached.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index of xs.
+   *  @tparam B      the type of the elements of the array.
+   *  @return        the number of elements written to the array
+   *
+   *  @note    Reuse: $consumesIterator
+   */
   @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
   def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray(xs, start, Int.MaxValue)
 
   /** Copy elements to an array, returning the number of elements written.
-    *
-    *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
-    *
-    *  Copying will stop once either all the elements of this $coll have been copied,
-    *  or the end of the array is reached, or `len` elements have been copied.
-    *
-    *  @param  xs     the array to fill.
-    *  @param  start  the starting index of xs.
-    *  @param  len    the maximal number of elements to copy.
-    *  @tparam B      the type of the elements of the array.
-    *  @return        the number of elements written to the array
-    *
-    *  @note    Reuse: $consumesIterator
-    */
+   *
+   *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
+   *
+   *  Copying will stop once either all the elements of this $coll have been copied,
+   *  or the end of the array is reached, or `len` elements have been copied.
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index of xs.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the array.
+   *  @return        the number of elements written to the array
+   *
+   *  @note    Reuse: $consumesIterator
+   */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
     var i = start
@@ -911,200 +930,203 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Sums up the elements of this collection.
-    *
-    *   $willNotTerminateInf
-    *
-    *   @param   num  an implicit parameter defining a set of numeric operations
-    *                 which includes the `+` operator to be used in forming the sum.
-    *   @tparam  B    the result type of the `+` operator.
-    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
-    */
-  def sum[B >: A](implicit num: Numeric[B]): B = if (isEmpty) num.zero else reduce(num.plus)
+   *
+   *   $willNotTerminateInf
+   *
+   *   @param   num  an implicit parameter defining a set of numeric operations
+   *                 which includes the `+` operator to be used in forming the sum.
+   *   @tparam  B    the result type of the `+` operator.
+   *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
+   */
+  def sum[B >: A](implicit num: Numeric[B]): B =
+    knownSize match {
+      case -1 => reduceLeftIterator[B](num.zero)(num.plus)
+      case  0 => num.zero
+      case  _ => reduce(num.plus)
+    }
 
   /** Multiplies up the elements of this collection.
-    *
-    *  $willNotTerminateInf
-    *
-    *   @param   num  an implicit parameter defining a set of numeric operations
-    *                 which includes the `*` operator to be used in forming the product.
-    *   @tparam  B   the result type of the `*` operator.
-    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
-    */
-  def product[B >: A](implicit num: Numeric[B]): B = if (isEmpty) num.one else reduce(num.times)
+   *
+   *  $willNotTerminateInf
+   *
+   *   @param   num  an implicit parameter defining a set of numeric operations
+   *                 which includes the `*` operator to be used in forming the product.
+   *   @tparam  B   the result type of the `*` operator.
+   *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
+   */
+  def product[B >: A](implicit num: Numeric[B]): B =
+    knownSize match {
+      case -1 => reduceLeftIterator[B](num.one)(num.times)
+      case  0 => num.one
+      case  _ => reduce(num.times)
+    }
 
   /** Finds the smallest element.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @throws   UnsupportedOperationException if this $coll is empty.
-    *  @return   the smallest element of this $coll with respect to the ordering `ord`.
-    *
-    */
-  def min[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.min")
-    reduceLeft(ord.min)
-  }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   B    The type over which the ordering is defined.
+   *  @throws   UnsupportedOperationException if this $coll is empty.
+   *  @return   the smallest element of this $coll with respect to the ordering `ord`.
+   *
+   */
+  def min[B >: A](implicit ord: Ordering[B]): A =
+    knownSize match {
+      case -1 => reduceLeftIterator[A](throw new UnsupportedOperationException("empty.min"))(ord.min)
+      case  0 => throw new UnsupportedOperationException("empty.min")
+      case  _ => reduceLeft(ord.min)
+    }
 
   /** Finds the smallest element.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @return   an option value containing the smallest element of this $coll
-    *            with respect to the ordering `ord`.
-    */
-  def minOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
-    if (isEmpty)
-      None
-    else
-      Some(min(ord))
-  }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   B    The type over which the ordering is defined.
+   *  @return   an option value containing the smallest element of this $coll
+   *            with respect to the ordering `ord`.
+   */
+  def minOption[B >: A](implicit ord: Ordering[B]): Option[A] =
+    knownSize match {
+      case -1 => reduceLeftOptionIterator[A](ord.min)
+      case  0 => None
+      case  _ => Some(reduceLeft(ord.min))
+    }
 
   /** Finds the largest element.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @throws   UnsupportedOperationException if this $coll is empty.
-    *  @return   the largest element of this $coll with respect to the ordering `ord`.
-    */
-  def max[B >: A](implicit ord: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.max")
-    reduceLeft(ord.max)
-  }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   B    The type over which the ordering is defined.
+   *  @throws   UnsupportedOperationException if this $coll is empty.
+   *  @return   the largest element of this $coll with respect to the ordering `ord`.
+   */
+  def max[B >: A](implicit ord: Ordering[B]): A =
+    knownSize match {
+      case -1 => reduceLeftIterator[A](throw new UnsupportedOperationException("empty.max"))(ord.max)
+      case  0 => throw new UnsupportedOperationException("empty.max")
+      case  _ => reduceLeft(ord.max)
+    }
 
   /** Finds the largest element.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    ord   An ordering to be used for comparing elements.
-    *  @tparam   B    The type over which the ordering is defined.
-    *  @return   an option value containing the largest element of this $coll with
-    *            respect to the ordering `ord`.
-    */
-  def maxOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
-    if (isEmpty)
-      None
-    else
-      Some(max(ord))
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    ord   An ordering to be used for comparing elements.
+   *  @tparam   B    The type over which the ordering is defined.
+   *  @return   an option value containing the largest element of this $coll with
+   *            respect to the ordering `ord`.
+   */
+  def maxOption[B >: A](implicit ord: Ordering[B]): Option[A] =
+    knownSize match {
+      case -1 => reduceLeftOptionIterator[A](ord.max)
+      case  0 => None
+      case  _ => Some(reduceLeft(ord.max))
+    }
+
+  /** Finds the first element which yields the largest value measured by function f.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @throws   UnsupportedOperationException if this $coll is empty.
+   *  @return   the first element of this $coll with the largest value measured by function f
+   *            with respect to the ordering `cmp`.
+   */
+  def maxBy[B](f: A => B)(implicit ord: Ordering[B]): A =
+    knownSize match {
+      case  0 => throw new UnsupportedOperationException("empty.maxBy")
+      case  _ => foldLeft(new Maximized[A, B]("maxBy")(f)(ord.gt))((m, a) => m(m, a)).result
+    }
+
+  private class Maximized[X, B](descriptor: String)(f: X => B)(implicit cmp: (B, B) => Boolean) extends AbstractFunction2[Maximized[X, B], X, Maximized[X, B]] {
+    var maxElem: X = null.asInstanceOf[X]
+    var maxF: B = null.asInstanceOf[B]
+    var nonEmpty = false
+    def toOption: Option[X] = if (nonEmpty) Some(maxElem) else None
+    def result: X = if (nonEmpty) maxElem else throw new UnsupportedOperationException(s"empty.$descriptor")
+    def apply(m: Maximized[X, B], a: X): Maximized[X, B] =
+      if (m.nonEmpty) {
+        val fa = f(a)
+        if (cmp(fa, maxF)) {
+          maxF = fa
+          maxElem = a
+        }
+        m
+      }
+      else {
+        m.nonEmpty = true
+        m.maxElem = a
+        m.maxF = f(a)
+        m
+      }
   }
 
   /** Finds the first element which yields the largest value measured by function f.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @throws   UnsupportedOperationException if this $coll is empty.
-    *  @return   the first element of this $coll with the largest value measured by function f
-    *            with respect to the ordering `cmp`.
-    */
-  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.maxBy")
-
-    class Maximizer extends runtime.AbstractFunction1[A, Unit] {
-      var maxF: B = null.asInstanceOf[B]
-      var maxElem: A = null.asInstanceOf[A]
-      var first = true
-      def apply(elem: A) = {
-        val fx = f(elem)
-        if (first && { first = false ; true } || cmp.gt(fx, maxF)) {
-          maxElem = elem
-          maxF = fx
-        }
-      }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @return   an option value containing the first element of this $coll with the
+   *            largest value measured by function f with respect to the ordering `cmp`.
+   */
+  def maxByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
+    knownSize match {
+      case  0 => None
+      case  _ => foldLeft(new Maximized[A, B]("maxBy")(f)(ord.gt))((m, a) => m(m, a)).toOption
     }
-    val maximizer = new Maximizer
-    foreach(maximizer)
-    maximizer.maxElem
-  }
-
-  /** Finds the first element which yields the largest value measured by function f.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @return   an option value containing the first element of this $coll with the
-    *            largest value measured by function f with respect to the ordering `cmp`.
-    */
-  def maxByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
-    if (isEmpty)
-      None
-    else
-      Some(maxBy(f)(cmp))
-  }
 
   /** Finds the first element which yields the smallest value measured by function f.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @throws   UnsupportedOperationException if this $coll is empty.
-    *  @return   the first element of this $coll with the smallest value measured by function f
-    *            with respect to the ordering `cmp`.
-    */
-  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
-    if (isEmpty)
-      throw new UnsupportedOperationException("empty.minBy")
-
-    class Minimizer extends runtime.AbstractFunction1[A, Unit] {
-      var minF: B = null.asInstanceOf[B]
-      var minElem: A = null.asInstanceOf[A]
-      var first = true
-      def apply(elem: A) = {
-        val fx = f(elem)
-        if (first && { first = false ; true } || cmp.lt(fx, minF)) {
-          minElem = elem
-          minF = fx
-        }
-      }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @throws   UnsupportedOperationException if this $coll is empty.
+   *  @return   the first element of this $coll with the smallest value measured by function f
+   *            with respect to the ordering `cmp`.
+   */
+  def minBy[B](f: A => B)(implicit ord: Ordering[B]): A =
+    knownSize match {
+      case  0 => throw new UnsupportedOperationException("empty.minBy")
+      case  _ => foldLeft(new Maximized[A, B]("minBy")(f)(ord.lt))((m, a) => m(m, a)).result
     }
-    val minimizer = new Minimizer
-    foreach(minimizer)
-    minimizer.minElem
-  }
 
   /** Finds the first element which yields the smallest value measured by function f.
-    *
-    *  $willNotTerminateInf
-    *
-    *  @param    cmp   An ordering to be used for comparing elements.
-    *  @tparam   B     The result type of the function f.
-    *  @param    f     The measuring function.
-    *  @return   an option value containing the first element of this $coll
-    *            with the smallest value measured by function f
-    *            with respect to the ordering `cmp`.
-    */
-  def minByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
-    if (isEmpty)
-      None
-    else
-      Some(minBy(f)(cmp))
-  }
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The result type of the function f.
+   *  @param    f     The measuring function.
+   *  @return   an option value containing the first element of this $coll
+   *            with the smallest value measured by function f
+   *            with respect to the ordering `cmp`.
+   */
+  def minByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
+    knownSize match {
+      case  0 => None
+      case  _ => foldLeft(new Maximized[A, B]("minBy")(f)(ord.lt))((m, a) => m(m, a)).toOption
+    }
 
   /** Finds the first element of the $coll for which the given partial
-    *  function is defined, and applies the partial function to it.
-    *
-    *  $mayNotTerminateInf
-    *  $orderDependent
-    *
-    *  @param pf   the partial function
-    *  @return     an option value containing pf applied to the first
-    *              value for which it is defined, or `None` if none exists.
-    *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
-    */
+   *  function is defined, and applies the partial function to it.
+   *
+   *  $mayNotTerminateInf
+   *  $orderDependent
+   *
+   *  @param pf   the partial function
+   *  @return     an option value containing pf applied to the first
+   *              value for which it is defined, or `None` if none exists.
+   *  @example    `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
+   */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
     // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
@@ -1145,74 +1167,73 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     a.hasNext == b.hasNext
   }
 
-  /** Displays all elements of this $coll in a string using start, end, and
-    *  separator strings.
-    *
-    * Delegates to addString, which can be overridden.
-    *
-    *  @param start the starting string.
-    *  @param sep   the separator string.
-    *  @param end   the ending string.
-    *  @return      a string representation of this $coll. The resulting string
-    *               begins with the string `start` and ends with the string
-    *               `end`. Inside, the string representations (w.r.t. the method
-    *               `toString`) of all elements of this $coll are separated by
-    *               the string `sep`.
-    *
-    *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
-    */
+  /** Displays all elements of this $coll in a string using start, end, and separator strings.
+   *
+   *  Delegates to addString, which can be overridden.
+   *
+   *  @param start the starting string.
+   *  @param sep   the separator string.
+   *  @param end   the ending string.
+   *  @return      a string representation of this $coll. The resulting string
+   *               begins with the string `start` and ends with the string
+   *               `end`. Inside, the string representations (w.r.t. the method
+   *               `toString`) of all elements of this $coll are separated by
+   *               the string `sep`.
+   *
+   *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
+   */
   final def mkString(start: String, sep: String, end: String): String =
-    if (isEmpty) start + end
+    if (knownSize == 0) start + end
     else addString(new StringBuilder(), start, sep, end).result()
 
   /** Displays all elements of this $coll in a string using a separator string.
-    *
-    * Delegates to addString, which can be overridden.
-    *
-    *  @param sep   the separator string.
-    *  @return      a string representation of this $coll. In the resulting string
-    *               the string representations (w.r.t. the method `toString`)
-    *               of all elements of this $coll are separated by the string `sep`.
-    *
-    *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
-    */
+   *
+   *  Delegates to addString, which can be overridden.
+   *
+   *  @param sep   the separator string.
+   *  @return      a string representation of this $coll. In the resulting string
+   *               the string representations (w.r.t. the method `toString`)
+   *               of all elements of this $coll are separated by the string `sep`.
+   *
+   *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
+   */
   @inline final def mkString(sep: String): String = mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
-    *
-    * Delegates to addString, which can be overridden.
-    *
-    *  @return a string representation of this $coll. In the resulting string
-    *          the string representations (w.r.t. the method `toString`)
-    *          of all elements of this $coll follow each other without any
-    *          separator string.
-    */
+   *
+   *  Delegates to addString, which can be overridden.
+   *
+   *  @return a string representation of this $coll. In the resulting string
+   *          the string representations (w.r.t. the method `toString`)
+   *          of all elements of this $coll follow each other without any
+   *          separator string.
+   */
   @inline final def mkString: String = mkString("")
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
-    *  The written text begins with the string `start` and ends with the string `end`.
-    *  Inside, the string representations (w.r.t. the method `toString`)
-    *  of all elements of this $coll are separated by the string `sep`.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> a.addString(b , "List(" , ", " , ")")
-    *      res5: StringBuilder = List(1, 2, 3, 4)
-    * }}}
-    *
-    *  @param  b    the string builder to which elements are appended.
-    *  @param start the starting string.
-    *  @param sep   the separator string.
-    *  @param end   the ending string.
-    *  @return      the string builder `b` to which elements were appended.
-    */
+   *  The written text begins with the string `start` and ends with the string `end`.
+   *  Inside, the string representations (w.r.t. the method `toString`)
+   *  of all elements of this $coll are separated by the string `sep`.
+   *
+   *  Example:
+   *
+   *  {{{
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> a.addString(b , "List(" , ", " , ")")
+   *      res5: StringBuilder = List(1, 2, 3, 4)
+   *  }}}
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @param start the starting string.
+   *  @param sep   the separator string.
+   *  @param end   the ending string.
+   *  @return      the string builder `b` to which elements were appended.
+   */
   def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
     val jsb = b.underlying
     if (start.length != 0) jsb.append(start)
@@ -1229,57 +1250,59 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Appends all elements of this $coll to a string builder using a separator string.
-    *  The written text consists of the string representations (w.r.t. the method `toString`)
-    *  of all elements of this $coll, separated by the string `sep`.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> a.addString(b, ", ")
-    *      res0: StringBuilder = 1, 2, 3, 4
-    * }}}
-    *
-    *  @param  b    the string builder to which elements are appended.
-    *  @param sep   the separator string.
-    *  @return      the string builder `b` to which elements were appended.
-    */
+   *  The written text consists of the string representations (w.r.t. the method `toString`)
+   *  of all elements of this $coll, separated by the string `sep`.
+   *
+   *  Example:
+   *
+   *  {{{
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> a.addString(b, ", ")
+   *      res0: StringBuilder = 1, 2, 3, 4
+   *  }}}
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @param sep   the separator string.
+   *  @return      the string builder `b` to which elements were appended.
+   */
   @inline final def addString(b: StringBuilder, sep: String): b.type = addString(b, "", sep, "")
 
   /** Appends all elements of this $coll to a string builder.
-    *  The written text consists of the string representations (w.r.t. the method
-    * `toString`) of all elements of this $coll without any separator string.
-    *
-    * Example:
-    *
-    * {{{
-    *      scala> val a = List(1,2,3,4)
-    *      a: List[Int] = List(1, 2, 3, 4)
-    *
-    *      scala> val b = new StringBuilder()
-    *      b: StringBuilder =
-    *
-    *      scala> val h = a.addString(b)
-    *      h: StringBuilder = 1234
-    * }}}
-
-    *  @param  b    the string builder to which elements are appended.
-    *  @return      the string builder `b` to which elements were appended.
-    */
+   *  The written text consists of the string representations (w.r.t. the method
+   * `toString`) of all elements of this $coll without any separator string.
+   *
+   *  Example:
+   *
+   *  {{{
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> val h = a.addString(b)
+   *      h: StringBuilder = 1234
+   *  }}}
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @return      the string builder `b` to which elements were appended.
+   */
   @inline final def addString(b: StringBuilder): b.type = addString(b, "")
 
   /** Given a collection factory `factory`, convert this collection to the appropriate
-    * representation for the current element type `A`. Example uses:
-    *
-    *      xs.to(List)
-    *      xs.to(ArrayBuffer)
-    *      xs.to(BitSet) // for xs: Iterable[Int]
-    */
+   *  representation for the current element type `A`. Example uses:
+   *
+   *  {{{
+   *      xs.to(List)
+   *      xs.to(ArrayBuffer)
+   *      xs.to(BitSet) // for xs: Iterable[Int]
+   *  }}}
+   */
   def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(this)
 
   @deprecated("Use .iterator instead of .toIterator", "2.13.0")
@@ -1294,9 +1317,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(this)
 
-  /**
-    * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
-    */
+  /** @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
+   */
   def toSeq: immutable.Seq[A] = immutable.Seq.from(this)
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
