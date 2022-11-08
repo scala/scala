@@ -90,7 +90,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
     */
   def from[A](source: IterableOnce[A]): CC[A]
 
-  /** An empty collection
+  /** An empty $coll
     * @tparam A      the type of the ${coll}'s elements
     */
   def empty[A]: CC[A]

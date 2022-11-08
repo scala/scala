@@ -841,16 +841,23 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   override def isEmpty: Boolean = lengthCompare(0) == 0
 
-  /** Are the elements of this collection the same (and in the same order)
-    * as those of `that`?
-    */
+  /** Checks whether corresponding elements of the given iterable collection
+   *  compare equal (with respect to `==`) to elements of this $coll.
+   *
+   *  @param that  the collection to compare
+   *  @tparam B    the type of the elements of collection `that`.
+   *  @return `true` if both collections contain equal elements in the same order, `false` otherwise.
+   */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val thisKnownSize = knownSize
-    val knownSizeDifference = thisKnownSize != -1 && {
+    if (thisKnownSize != -1) {
       val thatKnownSize = that.knownSize
-      thatKnownSize != -1 && thisKnownSize != thatKnownSize
+      if (thatKnownSize != -1) {
+        if (thisKnownSize != thatKnownSize) return false
+        if (thisKnownSize == 0) return true
+      }
     }
-    !knownSizeDifference && iterator.sameElements(that)
+    iterator.sameElements(that)
   }
 
   /** Tests whether every element of this $coll relates to the

@@ -415,9 +415,13 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
+    Compile / scalacOptions ++= Seq(
+      "-Xlint",
+      "-feature",
+    ),
     Compile / doc / scalacOptions ++= Seq(
-      "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
+      "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io",
+      "-Xlint:-doc-detached,_",
     ),
     Osgi.headers +=
       "Import-Package" -> (raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
@@ -566,7 +570,7 @@ lazy val scaladoc = configureAsSubproject(project)
     libraryDependencies ++= ScaladocSettings.webjarResources,
     Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
     Compile / scalacOptions ++= Seq(
-      "-Xlint",
+      "-Xlint:-doc-detached,_",
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s",
     ),

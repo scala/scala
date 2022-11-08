@@ -834,17 +834,14 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *  @param that  the collection to compare
    *  @tparam B    the type of the elements of collection `that`.
    *  @return `true` if both collections contain equal elements in the same order, `false` otherwise.
-   *
-   *    @inheritdoc
    */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val those = that.iterator
-    while (hasNext && those.hasNext)
-      if (next() != those.next())
-        return false
-    // At that point we know that *at least one* iterator has no next element
-    // If *both* of them have no elements then the collections are the same
-    hasNext == those.hasNext
+    while (hasNext) {
+      if (!those.hasNext) return false
+      if (next() != those.next()) return false
+    }
+    !those.hasNext
   }
 
   /** Creates two new iterators that both iterate over the same elements

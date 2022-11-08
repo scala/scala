@@ -1,9 +1,9 @@
 package scala.collection
 
-import org.junit.Assert._
+import org.junit.Assert.{assertThrows => _, _}
 import org.junit.Test
 
-import scala.tools.testkit.{AllocationTest, CompileTime}
+import scala.tools.testkit.{AllocationTest, AssertUtil, CompileTime}, AssertUtil.assertThrows
 
 class SeqTest extends AllocationTest {
 
@@ -113,5 +113,25 @@ class SeqTest extends AllocationTest {
       Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
     exactAllocates(expected(20), "collection seq size 20")(
       Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
+  }
+
+  /** A sequence of no consequence. */
+  class Inconsequential[+A](n: Int) extends AbstractSeq[A] {
+    def iterator: Iterator[A] = ???
+    def apply(i: Int): A = ???
+    def length: Int = knownSize
+    override def knownSize = n
+  }
+  object Inconsequential {
+    def apply(n: Int) = new Inconsequential(n)
+  }
+  type ??? = NotImplementedError
+
+  @Test def `sameElements by size`: Unit = {
+    assertFalse(Inconsequential(0).sameElements(Inconsequential(1)))
+    assertFalse(Inconsequential(1).sameElements(Inconsequential(2)))
+    assertTrue(Inconsequential(0).sameElements(Inconsequential(0)))
+    assertThrows[???](Inconsequential(1).sameElements(Inconsequential(1)))
+    assertThrows[???](Inconsequential(-1).sameElements(Inconsequential(-1)))
   }
 }

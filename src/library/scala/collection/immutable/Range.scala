@@ -19,42 +19,43 @@ import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, 
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
-  *  ''[start;end)'' with non-zero step value `step`.
-  *  It's a special case of an indexed sequence.
-  *  For example:
-  *
-  *  {{{
-  *     val r1 = 0 until 10
-  *     val r2 = r1.start until r1.end by r1.step + 1
-  *     println(r2.length) // = 5
-  *  }}}
-  *
-  *  Ranges that contain more than `Int.MaxValue` elements can be created, but
-  *  these overfull ranges have only limited capabilities. Any method that
-  *  could require a collection of over `Int.MaxValue` length to be created, or
-  *  could be asked to index beyond `Int.MaxValue` elements will throw an
-  *  exception. Overfull ranges can safely be reduced in size by changing
-  *  the step size (e.g. `by 3`) or taking/dropping elements. `contains`,
-  *  `equals`, and access to the ends of the range (`head`, `last`, `tail`,
-  *  `init`) are also permitted on overfull ranges.
-  *
-  *  @param start       the start of this range.
-  *  @param end         the end of the range.  For exclusive ranges, e.g.
-  *                     `Range(0,3)` or `(0 until 3)`, this is one
-  *                     step past the last one in the range.  For inclusive
-  *                     ranges, e.g. `Range.inclusive(0,3)` or `(0 to 3)`,
-  *                     it may be in the range if it is not skipped by the step size.
-  *                     To find the last element inside a non-empty range,
-  *                     use `last` instead.
-  *  @param step        the step for the range.
-  *
-  *  @define coll range
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  *  @define doesNotUseBuilders
-  *    '''Note:''' this method does not use builders to construct a new range,
-  *         and its complexity is O(1).
-  */
+ *  ''[start;end)'' with non-zero step value `step`.
+ *  It's a special case of an indexed sequence.
+ *  For example:
+ *
+ *  {{{
+ *     val r1 = 0 until 10
+ *     val r2 = r1.start until r1.end by r1.step + 1
+ *     println(r2.length) // = 5
+ *  }}}
+ *
+ *  Ranges that contain more than `Int.MaxValue` elements can be created, but
+ *  these overfull ranges have only limited capabilities. Any method that
+ *  could require a collection of over `Int.MaxValue` length to be created, or
+ *  could be asked to index beyond `Int.MaxValue` elements will throw an
+ *  exception. Overfull ranges can safely be reduced in size by changing
+ *  the step size (e.g. `by 3`) or taking/dropping elements. `contains`,
+ *  `equals`, and access to the ends of the range (`head`, `last`, `tail`,
+ *  `init`) are also permitted on overfull ranges.
+ *
+ *  @param start       the start of this range.
+ *  @param end         the end of the range.  For exclusive ranges, e.g.
+ *                     `Range(0,3)` or `(0 until 3)`, this is one
+ *                     step past the last one in the range.  For inclusive
+ *                     ranges, e.g. `Range.inclusive(0,3)` or `(0 to 3)`,
+ *                     it may be in the range if it is not skipped by the step size.
+ *                     To find the last element inside a non-empty range,
+ *                     use `last` instead.
+ *  @param step        the step for the range.
+ *
+ *  @define coll range
+ *  @define ccoll indexed sequence
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define doesNotUseBuilders
+ *    '''Note:''' this method does not use builders to construct a new range,
+ *         and its complexity is O(1).
+ */
 @SerialVersionUID(3L)
 sealed abstract class Range(
   val start: Int,
@@ -520,11 +521,7 @@ sealed abstract class Range(
     }
 }
 
-/**
-  * Companion object for ranges.
-  *  @define Coll `Range`
-  *  @define coll range
-  */
+/** Companion object for ranges. */
 object Range {
 
   /** Counts the number of range elements.
