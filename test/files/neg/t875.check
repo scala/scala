@@ -23,8 +23,4 @@ t875.scala:20: error: Sequence argument type annotation `: _*` cannot be used he
 such annotations are only allowed in arguments to *-parameters
   val zs = xs: _*                     // error not even close
              ^
-t875.scala:22: error: Sequence argument type annotation `: _*` cannot be used here:
-the single parameter has type Any which is not a repeated parameter type
-  val txt = s"${List(42): _*}"
-                        ^
-7 errors
+6 errors
