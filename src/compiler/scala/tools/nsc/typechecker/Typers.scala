@@ -1466,7 +1466,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (stat.symbol.isAuxiliaryConstructor)
               notAllowed("secondary constructor")
             else if (isValueClass && (name == nme.equals_ || name == nme.hashCode_) && !stat.symbol.isSynthetic)
-              notAllowed(s"redefinition of $name method. See SIP-15, criterion 4.")
+              notAllowed(s"redefinition of $name method. See SIP-15, criterion 5.")
             else if (stat.symbol != null && stat.symbol.isParamAccessor)
               notAllowed("additional parameter")
             checkEphemeralDeep.traverse(rhs)
