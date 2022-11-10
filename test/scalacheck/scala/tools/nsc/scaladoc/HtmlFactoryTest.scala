@@ -660,20 +660,16 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     val files = createTemplates("basic.scala")
     //println(files)
 
-    property("class") = files.get("com/example/p1/Clazz.html") match {
-      case Some(node: scala.xml.Node) => {
-        property("implicit conversion") =
-          node.toString contains "<span class=\"modifier\">implicit </span>"
-
-        property("gt4s") =
-          node.toString contains "title=\"gt4s: $colon$colon\""
-
-        property("gt4s of a deprecated method") =
-          node.toString contains "title=\"gt4s: $colon$colon$colon$colon. Deprecated: "
-        true
-      }
-      case _ => false
+    locally {
+      val node = files.get("com/example/p1/Clazz.html").get
+      property("implicit conversion") =
+        node.toString contains "<span class=\"modifier\">implicit </span>"
+      property("gt4s") =
+        node.toString contains "title=\"gt4s: $colon$colon\""
+      property("gt4s of a deprecated method") =
+        node.toString contains "title=\"gt4s: $colon$colon$colon$colon. Deprecated: "
     }
+
     property("package") = files.get("com/example/p1/index.html") != None
 
     property("package object") = files("com/example/p1/index.html") match {
