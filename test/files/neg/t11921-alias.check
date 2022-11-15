@@ -1,0 +1,15 @@
+t11921-alias.scala:16: error: reference to TT is ambiguous;
+it is both defined in object O and available as type TT in class C
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.TT`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      def n(x: TT) = x // ambiguous
+               ^
+t11921-alias.scala:36: error: reference to c is ambiguous;
+it is both defined in class B and available as value c in class A
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.c`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      def n = c // ambiguous
+              ^
+2 errors

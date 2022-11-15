@@ -1455,7 +1455,7 @@ trait Contexts { self: Analyzer =>
       }
 
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
-      def nextDefinition(): Unit = {
+      def nextDefinition(lastDef: Symbol, lastPre: Type): Unit = {
         var inPrefix = false
         defSym = NoSymbol
         while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
@@ -1466,10 +1466,14 @@ trait Contexts { self: Analyzer =>
           }
           if (!defSym.exists) cx = cx.outer // push further outward
         }
+        if ((defSym.isAliasType || lastDef.isAliasType) && pre.memberType(defSym) =:= lastPre.memberType(lastDef))
+          defSym = NoSymbol
+        if (defSym.isStable && lastDef.isStable && singleType(pre, defSym) =:= singleType(lastPre, lastDef))
+          defSym = NoSymbol
         foundInPrefix = inPrefix && defSym.exists
         foundInSuper  = foundInPrefix && defSym.owner != cx.owner
       }
-      nextDefinition()
+      nextDefinition(NoSymbol, NoPrefix)
 
       if (symbolDepth < 0)
         symbolDepth = cx.depth
@@ -1581,7 +1585,7 @@ trait Contexts { self: Analyzer =>
           while ((cx ne NoContext) && (cx.owner eq cx0.owner)) cx = cx.outer
         var done = false
         while (!done) {
-          nextDefinition()
+          nextDefinition(defSym0, pre0)
           done = (cx eq NoContext) || defSym.exists && foundCompetingSymbol()
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
