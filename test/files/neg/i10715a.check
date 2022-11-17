@@ -1,0 +1,38 @@
+i10715a.scala:16: error: type mismatch;
+ found   : Int
+ required: String
+    c.f: String // error
+      ^
+i10715a.scala:17: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [A]Int
+ required: String
+    c.g: String // error
+      ^
+i10715a.scala:18: error: value bad is not a member of Int
+    c.f.bad // error
+        ^
+i10715a.scala:19: error: value bad is not a member of Int
+    c.g.bad // error
+        ^
+i10715a.scala:21: error: type mismatch;
+ found   : String("")
+ required: Int
+    c.f("") // error
+        ^
+i10715a.scala:22: error: type mismatch;
+ found   : String("")
+ required: Int
+    c.g("") // error
+        ^
+i10715a.scala:23: error: overloaded method g with alternatives:
+  (x: Int)Parent <and>
+  Int
+ cannot be applied to (String)
+    c.g[Int]("") // error
+       ^
+i10715a.scala:24: error: type mismatch;
+ found   : Int
+ required: String => String
+    c.g[Int]: (String => String) // error
+       ^
+8 errors

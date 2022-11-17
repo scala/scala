@@ -1,0 +1,4 @@
+t3909b.scala:1: error: in object DO, multiple overloaded alternatives of method m1 define default arguments.
+object DO {
+       ^
+1 error

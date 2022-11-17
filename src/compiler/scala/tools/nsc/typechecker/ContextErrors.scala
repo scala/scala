@@ -107,11 +107,9 @@ trait ContextErrors extends splain.SplainErrors {
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
+    // OPT: avoid error string creation for errors that won't see the light of day
     def typeErrorMsg(context: Context, found: Type, req: Type) =
-      if (context.openImplicits.nonEmpty && !settings.Vimplicits.value)
-         // OPT: avoid error string creation for errors that won't see the light of day, but predicate
-        //       this on -Xsource:2.13 for bug compatibility with https://github.com/scala/scala/pull/7147#issuecomment-418233611
-        "type mismatch"
+      if (!context.openImplicits.isEmpty && !settings.Vimplicits.value) "type mismatch"
       else "type mismatch" + foundReqMsg(found, req)
   }
 

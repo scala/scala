@@ -1,5 +1,4 @@
-t3909.scala:1: error: in object DO, multiple overloaded alternatives of m1 define default arguments
-Error occurred in an application involving default arguments.
+t3909.scala:1: error: in object DO, multiple overloaded alternatives of method m1 define default arguments.
 object DO {
        ^
 1 error

@@ -590,7 +590,7 @@ trait Contexts { self: Analyzer =>
             inSilentMode {
               try {
                 set(disable = ImplicitsEnabled | EnrichmentEnabled) // restored by inSilentMode
-                tryOnce(false)
+                tryOnce(isLastTry = false)
                 reporter.hasErrors
               } catch {
                 case ex: CyclicReference => throw ex
@@ -602,7 +602,7 @@ trait Contexts { self: Analyzer =>
         // do last try if try with implicits enabled failed
         // (or if it was not attempted because they were disabled)
         if (doLastTry)
-          tryOnce(true)
+          tryOnce(isLastTry = true)
       }
     }
 

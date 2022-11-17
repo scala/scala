@@ -1383,12 +1383,14 @@ trait Infer extends Checkable {
      *  matches prototype `pt`, if it exists.
      *  If several alternatives match `pt`, take parameterless one.
      *  If no alternative matches `pt`, take the parameterless one anyway.
+     *  (There may be more than one parameterless alternative, in particular,
+     *  badly overloaded default args or case class elements. These are detected elsewhere.)
      */
     def inferExprAlternative(tree: Tree, pt: Type): Tree = {
       val c = context
       class InferTwice(pre: Type, alts: List[Symbol]) extends c.TryTwice {
         def tryOnce(isSecondTry: Boolean): Unit = {
-          val alts0 = alts filter (alt => isWeaklyCompatible(pre memberType alt, pt))
+          val alts0 = alts.filter(alt => isWeaklyCompatible(pre.memberType(alt), pt))
           val alts1 = if (alts0.isEmpty) alts else alts0
           val bests = bestAlternatives(alts1) { (sym1, sym2) =>
             val tp1 = memberTypeForSpecificity(pre, sym1, tree)
@@ -1399,22 +1401,35 @@ trait Infer extends Checkable {
               || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
             )
           }
-          // todo: missing test case for bests.isEmpty
+          def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
+          def paramlessOr(error: => Unit): Unit = {
+            val paramless =
+              if (isSecondTry)
+                alts.find { alt => val ps = alt.info.paramss; ps.isEmpty || ps.tail.isEmpty && ps.head.isEmpty }
+              else None
+            paramless match {
+              case Some(alt) => finish(alt)
+              case None => error
+            }
+          }
           bests match {
-            case best :: Nil                              => tree setSymbol best setType (pre memberType best)
+            case best :: Nil =>
+              finish(best)
             case best :: competing :: _ if alts0.nonEmpty =>
-              // scala/bug#6912 Don't give up and leave an OverloadedType on the tree.
-              //         Originally I wrote this as `if (secondTry) ... `, but `tryTwice` won't attempt the second try
-              //         unless an error is issued. We're not issuing an error, in the assumption that it would be
-              //         spurious in light of the erroneous expected type
-              if (pt.isErroneous) setError(tree)
-              else AmbiguousExprAlternativeError(tree, pre, best, competing, pt, isSecondTry)
-            case _                                        => if (bests.isEmpty || alts0.isEmpty) NoBestExprAlternativeError(tree, pt, isSecondTry)
+              // If erroneous expected type, don't issue spurious error and don't `tryTwice` again with implicits.
+              // scala/bug#6912 except it does not loop
+              paramlessOr {
+                if (pt.isErroneous) setError(tree)
+                else AmbiguousExprAlternativeError(tree, pre, best, competing, pt, isSecondTry)
+              }
+            case _ if bests.isEmpty || alts0.isEmpty =>
+              paramlessOr(NoBestExprAlternativeError(tree, pt, isSecondTry))
+            case _ =>
           }
         }
       }
       tree.tpe match {
-        case OverloadedType(pre, alts) => (new InferTwice(pre, alts)).apply() ; tree
+        case OverloadedType(pre, alts) => (new InferTwice(pre, alts)).apply(); tree
         case _                         => tree
       }
     }
@@ -1512,11 +1527,12 @@ trait Infer extends Checkable {
           val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
           // println(s"bestForExpectedType($argtpes, $pt): $alts -app-> ${alts filter isAltApplicable(pt)} -arity-> $applicable")
           val ranked      = bestAlternatives(applicable)(rankAlternatives)
+          def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
-            case best :: Nil            => tree setSymbol best setType (pre memberType best)           // success
-            case Nil if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
-            case Nil                    => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
+            case best :: nil            => finish(best)
+            case nil if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
+            case nil                    => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
           }
         }
 
