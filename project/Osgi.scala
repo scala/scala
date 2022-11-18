@@ -3,7 +3,7 @@ package scala.build
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
 import java.util.jar.Attributes
-import sbt._
+import sbt.{License => _, _}
 import sbt.Keys._
 import collection.JavaConverters._
 import VersionUtil.versionProperties
