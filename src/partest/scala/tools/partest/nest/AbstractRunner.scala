@@ -35,6 +35,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   val verbose: Boolean               = config.optVerbose
   val terse: Boolean                 = config.optTerse
   val realeasy: Boolean              = config.optDev
+  val testBranch: Boolean            = config.optBranch
 
   protected val printSummary         = true
   protected val partestCmd           = "partest"
@@ -207,7 +208,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     }
     else {
       val norm = Function.chain(Seq(testIdentToTestPath, checkFileToTestFile, testFileToTestDir, testDirToTestFile))
-      val (individualTests, invalid) = config.parsed.residualArgs map (p => norm(Path(p))) partition denotesTestPath
+      val (individualTests, invalid) = config.parsed.residualArgs.map(p => norm(Path(p))).partition(denotesTestPath)
       if (invalid.nonEmpty) {
         if (verbose)
           invalid foreach (p => echoWarning(s"Discarding invalid test path " + p))
@@ -232,9 +233,58 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         paths.sortBy(_.toString)
       }
 
+      // tests touched on this branch
+      val branchedTests: List[Path] = if (!testBranch) Nil else {
+        import scala.util.chaining._
+        //* issue/12494 8dfd7f015d [upstream/2.13.x: ahead 1] Allow companion access boundary
+        //git rev-parse --abbrev-ref HEAD
+        //git branch -vv --list issue/1234
+        //git diff --name-only upstream/2.13.x
+        val parseVerbose = raw"\* \S+ \S+ \[([^:]+): .*\] .*".r
+        def parseTracking(line: String) = line match {
+          case parseVerbose(tracking) => tracking.tap(ref => echo(s"Tracking $ref"))
+          case _ => "upstream/2.13.x".tap(default => echoWarning(s"Tracking default $default, failed to understand '$line'"))
+        }
+        def isTestFiles(path: String) = path.startsWith("test/files/")
+        val maybeFiles =
+          for {
+            current  <- runGit("rev-parse --abbrev-ref HEAD")(_.head).tap(_.foreach(b => echo(s"Testing on branch $b")))
+            tracking <- runGit(s"branch -vv --list $current")(lines => parseTracking(lines.head))
+            files    <- runGit(s"diff --name-only $tracking")(lines => lines.filter(isTestFiles).toList)
+          }
+          yield files
+        //test/files/neg/t12349.check
+        //test/files/neg/t12349/t12349a.java
+        //test/files/neg/t12349/t12349b.scala
+        //test/files/neg/t12349/t12349c.scala
+        //test/files/neg/t12494.check
+        //test/files/neg/t12494.scala
+        maybeFiles.getOrElse(Nil).flatMap { s =>
+          val path = Path(s)
+          val segs = path.segments
+          if (segs.length < 4 || !standardKinds.contains(segs(2))) Nil
+          else if (segs.length > 4) {
+            val prefix = Path(path.segments.take(4).mkString("/"))
+            List(pathSettings.testParent / prefix)
+          }
+          else {
+            // p.check -> p.scala or p
+            val norm =
+              if (!path.hasExtension("scala") && !path.isDirectory) {
+                val asDir = Path(path.path.stripSuffix(s".${path.extension}"))
+                if (asDir.exists) asDir
+                else asDir.addExtension("scala")
+              }
+              else path
+            List(pathSettings.testParent / norm)
+          }
+        }
+        .distinct
+      }
+
       val isRerun = config.optFailed
       val rerunTests = if (isRerun) testKinds.failedTests else Nil
-      def miscTests = individualTests ++ greppedTests ++ rerunTests
+      def miscTests = individualTests ++ greppedTests ++ branchedTests ++ rerunTests
 
       val givenKinds = standardKinds filter config.parsed.isSet
       val kinds = (
@@ -253,8 +303,9 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           if (rerunTests.isEmpty) "" else "previously failed tests",
           if (kindsTests.isEmpty) "" else s"${kinds.size} named test categories",
           if (greppedTests.isEmpty) "" else s"${greppedTests.size} tests matching '$grepExpr'",
-          if (individualTests.isEmpty) "" else "specified tests"
-        ) filterNot (_ == "") mkString ", "
+          if (branchedTests.isEmpty) "" else s"${branchedTests.size} tests modified on this branch",
+          if (individualTests.isEmpty) "" else "specified tests",
+        ).filterNot(_.isEmpty).mkString(", ")
       }
 
       val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical).sortBy(_.toString).toArray
