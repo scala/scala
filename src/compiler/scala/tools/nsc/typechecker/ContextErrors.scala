@@ -193,7 +193,7 @@ trait ContextErrors extends splain.SplainErrors {
           if (!inferred.isErroneous) s" (inferred $inferred)" else ""
         }"
       if (currentRun.isScala3) ErrorUtils.issueNormalTypeError(tree, msg)(cx)
-      else cx.warning(tree.pos, msg, WarningCategory.Other)
+      else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType)
     }
     val sym = tree.symbol
     // Defer warning field of class until typing getter (which is marked implicit)

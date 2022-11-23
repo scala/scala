@@ -362,6 +362,7 @@ object Reporting {
     object OtherDebug extends Other; add(OtherDebug)
     object OtherNullaryOverride extends Other; add(OtherNullaryOverride)
     object OtherNonCooperativeEquals extends Other; add(OtherNonCooperativeEquals)
+    object OtherImplicitType extends Other; add(OtherImplicitType)
 
     sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
