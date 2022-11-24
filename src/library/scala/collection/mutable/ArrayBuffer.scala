@@ -296,7 +296,8 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     if (k >= 0) {
       // Avoid reallocation of buffer if length is known
       val array = ensureSize(emptyArray, 0, k) // don't duplicate sizing logic, and check VM array size limit
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      val actual = IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      if (actual != k) throw new IllegalStateException(s"Copied $actual of $k")
       new ArrayBuffer[B](array, k)
     }
     else new ArrayBuffer[B] ++= coll

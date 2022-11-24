@@ -153,12 +153,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a symbol
      */
-    def enter[T <: Symbol](sym: T): T = {
+    def enter[T <: Symbol](sym: T): sym.type = {
       enterEntry(newScopeEntry(sym, this))
       sym
     }
 
-    final def enterBefore(sym: Symbol, next: ScopeEntry): Symbol = {
+    final def enterBefore(sym: Symbol, next: ScopeEntry): sym.type = {
       assert(this != EmptyScope, sym)
       require(sym.name.hashCode() == next.sym.name.hashCode(), (sym, next.sym))
       require(sym != next.sym, (sym, next.sym))
@@ -529,7 +529,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   def newScopeWith(elems: Symbol*): Scope = {
     val startTime = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val scope = newScope
-    elems foreach scope.enter
+    elems.foreach(scope.enter(_))
     if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     scope
   }

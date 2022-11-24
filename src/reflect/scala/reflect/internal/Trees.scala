@@ -1452,7 +1452,7 @@ trait Trees extends api.Trees {
     super.setType(NoType)
 
     override def canHaveAttrs = false
-    override def setPos(pos: Position) = { requireLegal(pos, NoPosition, "pos"); this }
+    override def setPos(pos: Position): this.type = { requireLegal(pos, NoPosition, "pos"); this }
     override def pos_=(pos: Position) = setPos(pos)
     override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
     override def tpe_=(t: Type) = setType(t)
