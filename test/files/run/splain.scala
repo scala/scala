@@ -39,7 +39,7 @@ object FoundReq extends App {
   def f(x: AnyVal, f: Runnable) = 1
   def f(x: Double, f: Runnable) = 2
 
-  f(3.0, () => println("doesn't work"))
+  f(3.0, () => println("work"))
 }
   """
 

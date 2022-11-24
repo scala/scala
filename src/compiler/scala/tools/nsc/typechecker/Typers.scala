@@ -2917,69 +2917,71 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *     function type is a built-in FunctionN or some SAM type
       *
       */
-    def inferSamType(fun: Tree, pt: Type, mode: Mode): Boolean = fun match {
-      case fun@Function(vparams, _) if !isFunctionType(pt) =>
-        // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
-        // seems like overloading complicates things?
-        val sam = samOfProto(pt)
+    def inferSamType(fun: Tree, pt: Type, mode: Mode): Boolean =
+      if (pt.isInstanceOf[OverloadedArgProto]) inferSamType(fun, pt.underlying, mode) // scala/bug#12560
+      else fun match {
+        case fun@Function(vparams, _) if !isFunctionType(pt) =>
+          // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
+          // seems like overloading complicates things?
+          val sam = samOfProto(pt)
 
-        if (!samMatchesFunctionBasedOnArity(sam, vparams)) false
-        else {
-          def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
-            val samMethType = pt memberInfo sam
-            fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
-          }
-
-          val samTp =
-            if (!sam.exists) NoType
-            else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
-            else try {
-              val ptFullyDefined = instantiateSamFromFunction(fun.tpe, pt, sam)
-              if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
-                debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
-                ptFullyDefined
-              } else {
-                debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
-                NoType
-              }
-            } catch {
-              case e@(_: NoInstance | _: TypeError) =>
-                debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
-                NoType
+          if (!samMatchesFunctionBasedOnArity(sam, vparams)) false
+          else {
+            def fullyDefinedMeetsExpectedFunTp(pt: Type): Boolean = isFullyDefined(pt) && {
+              val samMethType = pt memberInfo sam
+              fun.tpe <:< functionType(samMethType.paramTypes, samMethType.resultType)
             }
 
-          if (samTp eq NoType) false
-          else {
-            /* Make a synthetic class symbol to represent the synthetic class that
+            val samTp =
+              if (!sam.exists) NoType
+              else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
+              else try {
+                val ptFullyDefined = instantiateSamFromFunction(fun.tpe, pt, sam)
+                if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
+                  debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
+                  ptFullyDefined
+                } else {
+                  debuglog(s"Could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)")
+                  NoType
+                }
+              } catch {
+                case e@(_: NoInstance | _: TypeError) =>
+                  debuglog(s"Error during SAM synthesis: could not define type $pt using ${fun.tpe} <:< ${pt memberInfo sam} (for $sam)\n$e")
+                  NoType
+              }
+
+            if (samTp eq NoType) false
+            else {
+              /* Make a synthetic class symbol to represent the synthetic class that
              * will be spun up by LMF for this function. This is necessary because
              * it's possible that the SAM method might need bridges, and they have
              * to go somewhere. Erasure knows to compute bridges for these classes
              * just as if they were real templates extending the SAM type. */
-            val synthCls = fun.symbol.owner.newClassWithInfo(
-              name = tpnme.ANON_CLASS_NAME,
-              parents = ObjectTpe :: samTp :: Nil,
-              scope = newScope,
-              pos = sam.pos,
-              newFlags = SYNTHETIC | ARTIFACT
-            )
+              val synthCls = fun.symbol.owner.newClassWithInfo(
+                name = tpnme.ANON_CLASS_NAME,
+                parents = ObjectTpe :: samTp :: Nil,
+                scope = newScope,
+                pos = sam.pos,
+                newFlags = SYNTHETIC | ARTIFACT
+              )
 
-            synthCls.info.decls.enter {
-              val newFlags = (sam.flags & ~DEFERRED) | SYNTHETIC
-              sam.cloneSymbol(synthCls, newFlags).setInfo(samTp memberInfo sam)
-            }
+              synthCls.info.decls.enter {
+                val newFlags = (sam.flags & ~DEFERRED) | SYNTHETIC
+                sam.cloneSymbol(synthCls, newFlags).setInfo(samTp memberInfo sam)
+              }
 
-            fun.setType(samTp)
+              fun.setType(samTp)
 
-            /* Arguably I should do `fun.setSymbol(samCls)` rather than leaning
+              /* Arguably I should do `fun.setSymbol(samCls)` rather than leaning
              * on an attachment, but doing that confounds lambdalift's free var
              * analysis in a way which does not seem to be trivially reparable. */
-            fun.updateAttachment(SAMFunction(samTp, sam, synthCls))
+              fun.updateAttachment(SAMFunction(samTp, sam, synthCls))
 
-            true
+              true
+            }
           }
-        }
-      case _ => false
-    }
+        case _ => false
+      }
 
     /**
       * Deconstruct an expected function-ish type `pt` into `numVparams` argument prototypes and a result prototype.
