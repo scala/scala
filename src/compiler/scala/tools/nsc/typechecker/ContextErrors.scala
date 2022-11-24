@@ -834,11 +834,6 @@ trait ContextErrors extends splain.SplainErrors {
         setError(tree)
       }
 
-      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type): Tree = {
-        issueNormalTypeError(tree, "method with dependent type " + tp + " cannot be converted to function value")
-        setError(tree)
-      }
-
       // cases where we do not necessarily return trees
 
       //checkStarPatOK

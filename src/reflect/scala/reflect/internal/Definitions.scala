@@ -856,7 +856,7 @@ trait Definitions extends api.StandardDefinitions {
                        |  was: $restpe
                        |  now""")(methodToExpressionTp(restpe))
       case mt @ MethodType(_, restpe) if mt.isImplicit             => methodToExpressionTp(restpe)
-      case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      case mt @ MethodType(_, restpe) =>
         if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
         else functionType(mt.paramTypes, methodToExpressionTp(restpe))
       case NullaryMethodType(restpe)                               => methodToExpressionTp(restpe)

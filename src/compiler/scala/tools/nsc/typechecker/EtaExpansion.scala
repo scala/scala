@@ -24,7 +24,7 @@ import symtab.Flags._
 trait EtaExpansion { self: Analyzer =>
   import global._
 
-  /** Expand partial method application `p.f(es_1)...(es_n)`. Does not support dependent method types (yet).
+  /** Expand partial method application `p.f(es_1)...(es_n)`.
     *
     * We expand this to the following block, which evaluates
     * the target of the application and its supplied arguments if needed (they are not stable),

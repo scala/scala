@@ -1,0 +1,48 @@
+
+scala> object defs {
+  val a = "obj"
+  def aa: a.type = a
+  def s = this
+  def f(x: Int): a.type = a
+  def g(x: Int)(y: x.type) = 0
+  def h(x: a.type)(y: a.type) = 0
+}
+object defs
+
+scala> import defs._
+import defs._
+
+scala> val f1 = f _
+val f1: Int => defs.a.type = <function>
+
+scala> val f2: Int => a.type = f
+val f2: Int => defs.a.type = <function>
+
+scala> val f3: Int => Object = f
+val f3: Int => Object = <function>
+
+scala> val g1 = g(10) _
+val g1: Int(10) => Int = <function>
+
+scala> val g2: 10 => Int = g1
+val g2: 10 => Int = <function>
+
+scala> val g3: 11 => Int = g(11)
+val g3: 11 => Int = <function>
+
+scala> val g4: Int => Int = g(11) // mismatch
+                             ^
+       error: type mismatch;
+        found   : Int(11) => Int
+        required: Int => Int
+
+scala> val h1 = s.h(aa) _
+val h1: defs.a.type => Int = <function>
+
+scala> val h2: a.type => Int = h1
+val h2: defs.a.type => Int = <function>
+
+scala> val h3: a.type => Int = s.h(aa)
+val h3: defs.a.type => Int = <function>
+
+scala> :quit
