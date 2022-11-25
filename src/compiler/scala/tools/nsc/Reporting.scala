@@ -198,14 +198,23 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
       issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
 
+    /* Issue the `msg` as a deprecation of `origin`. */
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
 
+    /** Issue a deprecation of `origin` as annotated. The annotation may be found on `origin` or,
+     *  for top-level elements, an enclosing package.
+     */
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
-      val version = origin.deprecationVersion.getOrElse("")
+      def deprecatedPackage(sym: Symbol) =
+        if (sym.isTopLevel && !sym.hasPackageFlag) sym.ownersIterator.find(_.packageObject.isDeprecated).map(_.packageObject).getOrElse(sym)
+        else sym
+      val deprecated = if (origin.isDeprecated) origin else deprecatedPackage(origin)
+      val version = deprecated.deprecationVersion.getOrElse("")
       val since   = if (version.isEmpty) version else s" (since $version)"
-      val message = origin.deprecationMessage.map(": " + _).getOrElse("")
-      deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
+      val cause   = if (deprecated ne origin) s" in package ${deprecated.skipPackageObject.name}" else ""
+      val message = deprecated.deprecationMessage.map(": " + _).getOrElse("")
+      deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$cause$since$message", version)
     }
 
     private[this] var reportedFeature = Set[Symbol]()

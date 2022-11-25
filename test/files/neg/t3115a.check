@@ -1,7 +1,7 @@
 t3115a.scala:21: warning: method c in class C is deprecated (since 0.1): this is especially useless
     def k = new p.C().c  // deprecated * 2
                       ^
-t3115a.scala:21: warning: class C in package p is deprecated
+t3115a.scala:21: warning: class C in package p is deprecated in package p (since 0.9-RC1): we won't use this package any more
     def k = new p.C().c  // deprecated * 2
                   ^
 error: No warnings can be incurred under -Werror.

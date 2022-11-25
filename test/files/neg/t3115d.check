@@ -1,4 +1,4 @@
-test_2.scala:5: warning: class C in package p is deprecated
+test_2.scala:5: warning: class C in package p is deprecated in package p (since 2.0): this is the old lib
     def f = new p.C
                   ^
 error: No warnings can be incurred under -Werror.

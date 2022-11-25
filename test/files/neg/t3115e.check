@@ -1,0 +1,9 @@
+t3115e.scala:15: warning: method c in class C is deprecated (since 0.1): this is especially useless
+  def d = new p.q.C().c
+                      ^
+t3115e.scala:15: warning: class C in package q is deprecated in package p (since 0.9-RC1): we won't use this package any more
+  def d = new p.q.C().c
+                  ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
