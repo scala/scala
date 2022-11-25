@@ -107,7 +107,7 @@ trait UnCurry {
           if ((parents1 eq parents) && varargOverloads.isEmpty) tp
           else {
             val newDecls = decls.cloneScope
-            varargOverloads.foreach(newDecls.enter)
+            varargOverloads.foreach(newDecls.enter(_))
             ClassInfoType(parents1, newDecls, clazz)
           } // @MAT normalize in decls??
 

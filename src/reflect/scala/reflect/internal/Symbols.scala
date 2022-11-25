@@ -3873,7 +3873,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   private[scala] final def argsDependOnPrefix(sym: Symbol): Boolean = {
     val tt = sym.owner.thisType
 
-    @annotation.tailrec
+    @tailrec
     def loop(mt: Type): Boolean = {
       mt match {
         case MethodType(params, restpe) => params.exists(_.info.dealias.exists(_ == tt)) || loop(restpe)

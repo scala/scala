@@ -364,8 +364,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         if (newDecls.nonEmpty) {
           val allDecls = newScope
-          origDecls foreach allDecls.enter
-          newDecls  foreach allDecls.enter
+          origDecls.foreach(allDecls.enter(_))
+          newDecls .foreach(allDecls.enter(_))
           ClassInfoType(parents, allDecls, clazz)
         } else tp
 
