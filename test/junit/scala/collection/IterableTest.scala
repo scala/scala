@@ -1,7 +1,7 @@
 package scala.collection
 
 import org.junit.{Assert, Test}
-import Assert.{assertEquals, assertTrue}
+import Assert.{assertEquals, assertFalse, assertTrue}
 
 import scala.annotation.nowarn
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
@@ -275,8 +275,8 @@ class IterableTest {
       case i: Int => Left(i)
       case s: String => Right(s)
     }
-    assertEquals(left, Seq(1, 2, 3, 4 ,5))
-    assertEquals(right, Seq("1", "2", "3", "4" ,"5"))
+    assertEquals(Seq(1, 2, 3, 4 ,5), left)
+    assertEquals(Seq("1", "2", "3", "4" ,"5"), right)
   }
 
   @deprecated("Uses deprecated hasDefiniteSize, extends HashMap", since="2.13.0")
@@ -284,81 +284,190 @@ class IterableTest {
   def hasDefiniteSize(): Unit = {
     import scala.{collection => c}
     import scala.collection.{mutable => m, immutable => i}
-    assertEquals(true, Some(1).hasDefiniteSize)
-    assertEquals(true, None.hasDefiniteSize)
-    assertEquals(true, Option(1).hasDefiniteSize)
-    assertEquals(true, Array(1).hasDefiniteSize)
-    assertEquals(true, "a".hasDefiniteSize)
-    assertEquals(true, c.BitSet(1).hasDefiniteSize)
-    assertEquals(false, scala.io.Source.fromString("a").buffered.hasDefiniteSize)
-    assertEquals(true, c.IndexedSeq(1).hasDefiniteSize)
-    assertEquals(true, c.IndexedSeq(1).view.hasDefiniteSize)
-    assertEquals(true, c.Iterable(1).hasDefiniteSize)
-    assertEquals(false, c.Iterator(1).hasDefiniteSize)
-    assertEquals(true, c.LinearSeq(1).hasDefiniteSize)
-    assertEquals(true, c.Map(1 -> 1).hasDefiniteSize)
-    assertEquals(true, c.Map(1 -> 1).view.hasDefiniteSize)
-    assertEquals(true, c.Seq(1).hasDefiniteSize)
-    assertEquals(true, c.Seq(1).view.hasDefiniteSize)
-    assertEquals(true, c.Set(1).hasDefiniteSize)
-    assertEquals(true, c.SortedMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, c.SortedSet(1).hasDefiniteSize)
-    assertEquals(true, i.BitSet(1).hasDefiniteSize)
-    assertEquals(true, i.HashMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.HashSet(1).hasDefiniteSize)
-    assertEquals(true, i.IndexedSeq(1).hasDefiniteSize)
-    assertEquals(true, i.IntMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.Iterable(1).hasDefiniteSize)
-    assertEquals(true, i.LinearSeq(1).hasDefiniteSize)
-    assertEquals(true, i.List(1).hasDefiniteSize)
-    assertEquals(true, i.ListMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.ListSet(1).hasDefiniteSize)
-    assertEquals(true, i.LongMap(1L -> 1).hasDefiniteSize)
-    assertEquals(true, i.Map(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.Nil.hasDefiniteSize)
-    assertEquals(true, (1L to 1L).hasDefiniteSize)
-    assertEquals(true, i.Queue(1).hasDefiniteSize)
-    assertEquals(true, (1 to 1).hasDefiniteSize)
-    assertEquals(true, i.Seq(1).hasDefiniteSize)
-    assertEquals(true, i.Set(1).hasDefiniteSize)
-    assertEquals(true, i.SortedMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.SortedSet(1).hasDefiniteSize)
-    assertEquals(false, i.Stream(1).hasDefiniteSize)
-    assertEquals(true, i.TreeMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, i.TreeSet(1).hasDefiniteSize)
-    assertEquals(true, i.Vector(1).hasDefiniteSize)
-    assertEquals(false, i.Vector(1).iterator.hasDefiniteSize)
-    assertEquals(true, m.AnyRefMap(Nil -> 1).hasDefiniteSize)
-    assertEquals(true, m.ArrayBuffer(1).hasDefiniteSize)
-    assertEquals(true, m.ArrayBuffer(1).view.hasDefiniteSize)
-    assertEquals(true, m.BitSet(1).hasDefiniteSize)
-    assertEquals(true, m.Buffer(1).hasDefiniteSize)
-    assertEquals(true, m.HashMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.HashSet(1).hasDefiniteSize)
-    assertEquals(true, m.IndexedSeq(1).hasDefiniteSize)
-    assertEquals(true, m.Iterable(1).hasDefiniteSize)
-    assertEquals(true, m.LinkedHashMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.LinkedHashSet(1).hasDefiniteSize)
-    assertEquals(true, m.ListBuffer(1).hasDefiniteSize)
-    assertEquals(true, m.ListMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.LongMap(1L -> 1).hasDefiniteSize)
-    assertEquals(true, m.Map(1 -> 1).hasDefiniteSize)
+    assertTrue(Some(1).hasDefiniteSize)
+    assertTrue(None.hasDefiniteSize)
+    assertTrue(Option(1).hasDefiniteSize)
+    assertTrue(Array(1).hasDefiniteSize)
+    assertTrue("a".hasDefiniteSize)
+    assertTrue(c.BitSet(1).hasDefiniteSize)
+    assertFalse(scala.io.Source.fromString("a").buffered.hasDefiniteSize)
+    assertTrue(c.IndexedSeq(1).hasDefiniteSize)
+    assertTrue(c.IndexedSeq(1).view.hasDefiniteSize)
+    assertTrue(c.Iterable(1).hasDefiniteSize)
+    assertFalse(c.Iterator(1).hasDefiniteSize)
+    assertTrue(c.LinearSeq(1).hasDefiniteSize)
+    assertTrue(c.Map(1 -> 1).hasDefiniteSize)
+    assertTrue(c.Map(1 -> 1).view.hasDefiniteSize)
+    assertTrue(c.Seq(1).hasDefiniteSize)
+    assertTrue(c.Seq(1).view.hasDefiniteSize)
+    assertTrue(c.Set(1).hasDefiniteSize)
+    assertTrue(c.SortedMap(1 -> 1).hasDefiniteSize)
+    assertTrue(c.SortedSet(1).hasDefiniteSize)
+    assertTrue(i.BitSet(1).hasDefiniteSize)
+    assertTrue(i.HashMap(1 -> 1).hasDefiniteSize)
+    assertTrue(i.HashSet(1).hasDefiniteSize)
+    assertTrue(i.IndexedSeq(1).hasDefiniteSize)
+    assertTrue(i.IntMap(1 -> 1).hasDefiniteSize)
+    assertTrue(i.Iterable(1).hasDefiniteSize)
+    assertTrue(i.LinearSeq(1).hasDefiniteSize)
+    assertTrue(i.List(1).hasDefiniteSize)
+    assertTrue(i.ListMap(1 -> 1).hasDefiniteSize)
+    assertTrue(i.ListSet(1).hasDefiniteSize)
+    assertTrue(i.LongMap(1L -> 1).hasDefiniteSize)
+    assertTrue(i.Map(1 -> 1).hasDefiniteSize)
+    assertTrue(i.Nil.hasDefiniteSize)
+    assertTrue((1L to 1L).hasDefiniteSize)
+    assertTrue(i.Queue(1).hasDefiniteSize)
+    assertTrue((1 to 1).hasDefiniteSize)
+    assertTrue(i.Seq(1).hasDefiniteSize)
+    assertTrue(i.Set(1).hasDefiniteSize)
+    assertTrue(i.SortedMap(1 -> 1).hasDefiniteSize)
+    assertTrue(i.SortedSet(1).hasDefiniteSize)
+    assertFalse(i.Stream(1).hasDefiniteSize)
+    assertTrue(i.TreeMap(1 -> 1).hasDefiniteSize)
+    assertTrue(i.TreeSet(1).hasDefiniteSize)
+    assertTrue(i.Vector(1).hasDefiniteSize)
+    assertFalse(i.Vector(1).iterator.hasDefiniteSize)
+    assertTrue(m.AnyRefMap(Nil -> 1).hasDefiniteSize)
+    assertTrue(m.ArrayBuffer(1).hasDefiniteSize)
+    assertTrue(m.ArrayBuffer(1).view.hasDefiniteSize)
+    assertTrue(m.BitSet(1).hasDefiniteSize)
+    assertTrue(m.Buffer(1).hasDefiniteSize)
+    assertTrue(m.HashMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.HashSet(1).hasDefiniteSize)
+    assertTrue(m.IndexedSeq(1).hasDefiniteSize)
+    assertTrue(m.Iterable(1).hasDefiniteSize)
+    assertTrue(m.LinkedHashMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.LinkedHashSet(1).hasDefiniteSize)
+    assertTrue(m.ListBuffer(1).hasDefiniteSize)
+    assertTrue(m.ListMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.LongMap(1L -> 1).hasDefiniteSize)
+    assertTrue(m.Map(1 -> 1).hasDefiniteSize)
     assertTrue((new m.HashMap[Int, m.Set[Int]] with m.MultiMap[Int, Int]).hasDefiniteSize) // deprecated extension
-    assertEquals(true, m.OpenHashMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.PriorityQueue(1).hasDefiniteSize)
-    assertEquals(true, m.Queue(1).hasDefiniteSize)
-    assertEquals(true, m.Seq(1).hasDefiniteSize)
-    assertEquals(true, m.Set(1).hasDefiniteSize)
-    assertEquals(true, m.SortedMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.SortedSet(1).hasDefiniteSize)
-    assertEquals(true, m.Stack(1).hasDefiniteSize)
-    assertEquals(true, (new m.StringBuilder()).hasDefiniteSize)
-    assertEquals(true, m.TreeMap(1 -> 1).hasDefiniteSize)
-    assertEquals(true, m.TreeSet(1).hasDefiniteSize)
-    assertEquals(true, m.UnrolledBuffer(1).hasDefiniteSize)
-    assertEquals(true, m.WeakHashMap(1 -> 1).hasDefiniteSize)
-    assertEquals(false, scala.io.Source.fromString("hello").hasDefiniteSize)
-    assertEquals(true, (List(1), List(2)).zipped.hasDefiniteSize)
-    assertEquals(true, (List(1), List(2), List(3)).zipped.hasDefiniteSize)
+    assertTrue(m.OpenHashMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.PriorityQueue(1).hasDefiniteSize)
+    assertTrue(m.Queue(1).hasDefiniteSize)
+    assertTrue(m.Seq(1).hasDefiniteSize)
+    assertTrue(m.Set(1).hasDefiniteSize)
+    assertTrue(m.SortedMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.SortedSet(1).hasDefiniteSize)
+    assertTrue(m.Stack(1).hasDefiniteSize)
+    assertTrue((new m.StringBuilder()).hasDefiniteSize)
+    assertTrue(m.TreeMap(1 -> 1).hasDefiniteSize)
+    assertTrue(m.TreeSet(1).hasDefiniteSize)
+    assertTrue(m.UnrolledBuffer(1).hasDefiniteSize)
+    assertTrue(m.WeakHashMap(1 -> 1).hasDefiniteSize)
+    assertFalse(scala.io.Source.fromString("hello").hasDefiniteSize)
+    assertTrue((List(1), List(2)).zipped.hasDefiniteSize)
+    assertTrue((List(1), List(2), List(3)).zipped.hasDefiniteSize)
   }
+
+  class SingleUseIterable[A] private (xs: A*) extends IterableOnce[A] with IterableOnceOps[A, SingleUseIterable, SingleUseIterable[A]] with UseIterableOps[A, SingleUseIterable, SingleUseIterable[A]] {
+    private var iterated = false
+    override def iterator = {
+      assertFalse("Attempted to re-iterate!", iterated)
+      iterated = true
+      Iterator(xs: _*)
+    }
+  }
+  object SingleUseIterable {
+    def apply[A](xs: A*): SingleUseIterable[A] = new SingleUseIterable(xs: _*)
+  }
+  trait UseIterableOps[A, CC[_], C] {
+    def collect[B](pf: PartialFunction[A,B]): CC[B] = ???
+    def drop(n: Int): C = ???
+    def dropWhile(p: A => Boolean): C = ???
+    def filter(p: A => Boolean): C = ???
+    def filterNot(pred: A => Boolean): C = ???
+    def flatMap[B](f: A => scala.collection.IterableOnce[B]): CC[B] = ???
+    def flatten[B](implicit asIterable: A => scala.collection.IterableOnce[B]): CC[B] = ???
+    def map[B](f: A => B): CC[B] = ???
+    def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = ???
+    def slice(from: Int, until: Int): C = ???
+    def span(p: A => Boolean): (C, C) = ???
+    def take(n: Int): C = ???
+    def takeWhile(p: A => Boolean): C = ???
+    def tapEach[U](f: A => U): C = ???
+    def zipWithIndex: CC[(A, Int)] = ???
+  }
+  class ZeroUseIterable[A] private () extends IterableOnce[A] with IterableOnceOps[A, ZeroUseIterable, ZeroUseIterable[A]] with UseIterableOps[A, ZeroUseIterable, ZeroUseIterable[A]] {
+    override def iterator = fail("Attempted to iterate!")
+    override def knownSize = 0
+  }
+  object ZeroUseIterable {
+    def apply[A](): ZeroUseIterable[A] = new ZeroUseIterable()
+  }
+
+  // testing unknown size where iterator isEmpty/nonEmpty and iterator is traversed only once;
+  // testing knownSize == 0 and iterator is not queried.
+
+  @Test def `IterableOnceOps.sum consumes one iterator`: Unit = assertEquals(10, SingleUseIterable(1, 2, 3, 4).sum)
+  @Test def `IterableOnceOps.sum of empty iterator`: Unit = assertEquals(0, SingleUseIterable[Int]().sum)
+  @Test def `IterableOnceOps.sum consumes no iterator`: Unit = assertEquals(0, ZeroUseIterable[Int]().sum)
+  @Test def `IterableOnceOps.sum of one iterator`: Unit = assertEquals(42, SingleUseIterable[Int](42).sum)
+
+  @Test def `IterableOnceOps.product consumes one iterator`: Unit = assertEquals(24, SingleUseIterable(1, 2, 3, 4).product)
+  @Test def `IterableOnceOps.product of empty iterator`: Unit = assertEquals(1, SingleUseIterable[Int]().product)
+  @Test def `IterableOnceOps.product consumes no iterator`: Unit = assertEquals(1, ZeroUseIterable[Int]().product)
+  @Test def `IterableOnceOps.product of one iterator`: Unit = assertEquals(42, SingleUseIterable[Int](42).product)
+
+  @Test def `IterableOnceOps.min consumes one iterator`: Unit = assertEquals(27, SingleUseIterable(42, 27, 37).min)
+  @Test def `IterableOnceOps.min of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().min, _.contains("min"))
+  @Test def `IterableOnceOps.min consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().min, _.contains("min"))
+
+  @Test def `IterableOnceOps.minBy consumes one iterator`: Unit = assertEquals(27, SingleUseIterable(42, 27, 37).minBy(_ * 2))
+  @Test def `IterableOnceOps.minBy of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().minBy(_ * 2), _.contains("minBy"))
+  @Test def `IterableOnceOps.minBy consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().minBy(_ * 2), _.contains("minBy"))
+
+  @Test def `IterableOnceOps.minOption consumes one iterator`: Unit = assertEquals(Some(27), SingleUseIterable(42, 27, 37).minOption)
+  @Test def `IterableOnceOps.minOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().minOption)
+  @Test def `IterableOnceOps.minOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().minOption)
+
+  @Test def `IterableOnceOps.minByOption consumes one iterator`: Unit = assertEquals(Some(27), SingleUseIterable(42, 27, 37).minByOption(_ * 2))
+  @Test def `IterableOnceOps.minByOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().minByOption(_ * 2))
+  @Test def `IterableOnceOps.minByOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().minByOption(_ * 2))
+
+  @Test def `IterableOnceOps.max consumes one iterator`: Unit = assertEquals(42, SingleUseIterable(42, 27, 37).max)
+  @Test def `IterableOnceOps.max of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().max, _.contains("max"))
+  @Test def `IterableOnceOps.max consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().max, _.contains("max"))
+
+  @Test def `IterableOnceOps.maxBy consumes one iterator`: Unit = assertEquals(42, SingleUseIterable(42, 27, 37).maxBy(_ * 2))
+  @Test def `IterableOnceOps.maxBy of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().maxBy(_ * 2), _.contains("maxBy"))
+  @Test def `IterableOnceOps.maxBy consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().maxBy(_ * 2), _.contains("maxBy"))
+
+  @Test def `IterableOnceOps.maxOption consumes one iterator`: Unit = assertEquals(Some(42), SingleUseIterable(42, 27, 37).maxOption)
+  @Test def `IterableOnceOps.maxOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().maxOption)
+  @Test def `IterableOnceOps.maxOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().maxOption)
+
+  @Test def `IterableOnceOps.maxByOption consumes one iterator`: Unit = assertEquals(Some(42), SingleUseIterable(42, 27, 37).maxByOption(_ * 2))
+  @Test def `IterableOnceOps.maxByOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().maxByOption(_ * 2))
+  @Test def `IterableOnceOps.maxByOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().maxByOption(_ * 2))
+
+  @Test def `IterableOnceOps.reduceLeft consumes one iterator`: Unit = assertEquals(106, SingleUseIterable(42, 27, 37).reduceLeft(_ + _))
+  @Test def `IterableOnceOps.reduceLeft of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().reduceLeft(_ + _), _.contains("reduceLeft"))
+  @Test def `IterableOnceOps.reduceLeft consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().reduceLeft(_ + _), _.contains("reduceLeft"))
+
+  @Test def `IterableOnceOps.reduceLeftOption consumes one iterator`: Unit = assertEquals(Some(10), SingleUseIterable(1, 2, 3, 4).reduceLeftOption(_ + _))
+  @Test def `IterableOnceOps.reduceLeftOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().reduceLeftOption(_ + _))
+  @Test def `IterableOnceOps.reduceLeftOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().reduceLeftOption(_ + _))
+
+  @Test def `IterableOnceOps.reduceRight consumes one iterator`: Unit = assertEquals(106, SingleUseIterable(42, 27, 37).reduceRight(_ + _))
+  @Test def `IterableOnceOps.reduceRight of empty iterator`: Unit =
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().reduceRight(_ + _), _.contains("reduceRight"))
+  @Test def `IterableOnceOps.reduceRight consumes no iterator`: Unit =
+    assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().reduceRight(_ + _), _.contains("reduceRight"))
+
+  @Test def `IterableOnceOps.reduceRightOption consumes one iterator`: Unit = assertEquals(Some(10), SingleUseIterable(1, 2, 3, 4).reduceRightOption(_ + _))
+  @Test def `IterableOnceOps.reduceRightOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().reduceRightOption(_ + _))
+  @Test def `IterableOnceOps.reduceRightOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().reduceRightOption(_ + _))
 }
