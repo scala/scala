@@ -2791,19 +2791,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
-    /** String representation of location.
-     */
-    def ownsString: String = {
-      val owns = effectiveOwner
-      if (owns.isClass && !owns.isEmptyPrefix) "" + owns else ""
-    }
-
     /** String representation of location, plus a preposition.  Doesn't do much,
      *  for backward compatibility reasons.
      */
-    def locationString: String = ownsString match {
-      case ""   => ""
-      case s    => " in " + s
+    def locationString: String = {
+      val owner = effectiveOwner
+      if (owner.isClass && !owner.isEmptyPrefix) s" in $owner"
+      else ""
     }
     def fullLocationString: String = toString + locationString
     def signatureString: String    = if (hasRawInfo) infoString(rawInfo) else "<_>"

@@ -269,15 +269,17 @@ abstract class RefChecks extends Transform {
         }
       }
 
-      def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
-      def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
+      def infoString(sym: Symbol) = infoString0(sym, showLocation = sym.owner != clazz)
+      def infoStringWithLocation(sym: Symbol) = infoString0(sym, showLocation = true)
 
       def infoString0(member: Symbol, showLocation: Boolean) = {
         val location =
           if (!showLocation) ""
-          else member.ownsString match {
-            case ""   => ""
-            case s    => s" (defined in $s)"
+          else {
+            val owner = member.effectiveOwner
+            if (owner.isClass && !owner.isEmptyPrefix)
+              s" (defined in $owner)"
+            else ""
           }
         val macroStr = if (member.isTermMacro) "macro " else ""
 
