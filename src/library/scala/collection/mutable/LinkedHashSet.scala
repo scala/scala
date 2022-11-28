@@ -44,16 +44,16 @@ class LinkedHashSet[A]
 
   type Entry = LinkedHashSet.Entry[A]
 
-  @transient protected var firstEntry: Entry = null
+  protected var firstEntry: Entry = null
 
-  @transient protected var lastEntry: Entry = null
+  protected var lastEntry: Entry = null
 
   /* Uses the same implementation as mutable.HashSet. The hashtable holds the following invariant:
    * - For each i between 0 and table.length, the bucket at table(i) only contains keys whose hash-index is i.
    * - Every bucket is sorted in ascendant hash order
    * - The sum of the lengths of all buckets is equal to contentSize.
    */
-  @transient private[this] var table = new Array[Entry](tableSizeFor(LinkedHashSet.defaultinitialSize))
+  private[this] var table = new Array[Entry](tableSizeFor(LinkedHashSet.defaultinitialSize))
 
   private[this] var threshold: Int = newThreshold(table.length)
 
@@ -268,39 +268,6 @@ class LinkedHashSet[A]
         oldlen *= 2
       }
     }
-  }
-
-  private[this] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit): Unit = {
-    out.writeInt(contentSize)
-    var cur = firstEntry
-    while (cur ne null) {
-      writeEntry(cur)
-      cur = cur.later
-    }
-  }
-
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    out.defaultWriteObject()
-    serializeTo(out, { e => out.writeObject(e.key) })
-  }
-
-  private[this] def serializeFrom(in: java.io.ObjectInputStream, readEntry: => A): Unit = {
-    val _contentsize = in.readInt()
-    assert(_contentsize > 0)
-    clear()
-    table = new Array(tableSizeFor(_contentsize))
-    threshold = newThreshold(table.length)
-
-    var index = 0
-    while (index < size) {
-      addOne(readEntry)
-      index += 1
-    }
-  }
-
-  private def readObject(in: java.io.ObjectInputStream): Unit = {
-    in.defaultReadObject()
-    serializeFrom(in, in.readObject().asInstanceOf[A])
   }
 
   @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")

@@ -50,16 +50,16 @@ class LinkedHashMap[K, V]
 
   private[collection] def _firstEntry: Entry = firstEntry
 
-  @transient protected var firstEntry: Entry = null
+  protected var firstEntry: Entry = null
 
-  @transient protected var lastEntry: Entry = null
+  protected var lastEntry: Entry = null
 
   /* Uses the same implementation as mutable.HashMap. The hashtable holds the following invariant:
    * - For each i between 0 and table.length, the bucket at table(i) only contains keys whose hash-index is i.
    * - Every bucket is sorted in ascendant hash order
    * - The sum of the lengths of all buckets is equal to contentSize.
    */
-  @transient private[this] var table = new Array[Entry](tableSizeFor(LinkedHashMap.defaultinitialSize))
+  private[this] var table = new Array[Entry](tableSizeFor(LinkedHashMap.defaultinitialSize))
 
   private[this] var threshold: Int = newThreshold(table.length)
 
@@ -392,42 +392,6 @@ class LinkedHashMap[K, V]
         oldlen *= 2
       }
     }
-  }
-
-  private[this] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit): Unit = {
-    out.writeInt(contentSize)
-    var cur = firstEntry
-    while (cur ne null) {
-      writeEntry(cur)
-      cur = cur.later
-    }
-  }
-
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    out.defaultWriteObject()
-    serializeTo(out, { entry =>
-      out.writeObject(entry.key)
-      out.writeObject(entry.value)
-    })
-  }
-
-  private[this] def serializeFrom(in: java.io.ObjectInputStream, readEntry: => (K, V)): Unit = {
-    val _contentsize = in.readInt()
-    assert(_contentsize > 0)
-    clear()
-    table = new Array(tableSizeFor(_contentsize))
-    threshold = newThreshold(table.length)
-
-    var index = 0
-    while (index < size) {
-      addOne(readEntry)
-      index += 1
-    }
-  }
-
-  private def readObject(in: java.io.ObjectInputStream): Unit = {
-    in.defaultReadObject()
-    serializeFrom(in, (in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 
   @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
