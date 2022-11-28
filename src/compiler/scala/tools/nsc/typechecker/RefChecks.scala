@@ -582,7 +582,7 @@ abstract class RefChecks extends Transform {
         def checkNoAbstractMembers(): Unit = {
           val NoError = null.asInstanceOf[String]
           val EmptyDiagnostic = ""
-          def diagnose(member: Symbol, accessors: List[Symbol]): String = {
+          def diagnose(member: Symbol, accessors: List[Symbol], nonPrivateMembers: Scope, fastDiagnostics: Boolean): String = {
             val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
             // Give a specific error message for abstract vars based on why it fails:
@@ -595,21 +595,21 @@ abstract class RefChecks extends Transform {
               else if (member.isGetter && !isMultiple) "an abstract var requires a getter in addition to the setter"
               else "variables need to be initialized to be defined"
             }
-            else if (underlying.isMethod) {
+            else if (!fastDiagnostics && underlying.isMethod) {
               // Highlight any member that nearly matches: same name and arity,
               // but differs in one param or param list.
               val abstractParamLists = underlying.paramLists
-              val matchingArity      = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE).filter { m =>
+              val matchingArity      = nonPrivateMembers.reverseIterator.filter { m =>
                 !m.isDeferred &&
                 m.name == underlying.name &&
                 sameLength(m.paramLists, abstractParamLists) &&
                 sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
                 sameLength(m.tpe.typeParams, underlying.tpe.typeParams) &&
                 !(m.isJavaDefined && m.hasFlag(JAVA_DEFAULTMETHOD))
-              }
+              }.toList
               matchingArity match {
                 // So far so good: only one candidate method
-                case Scope(concrete) =>
+                case concrete :: Nil =>
                   val concreteParamLists = concrete.paramLists
                   val aplIter = abstractParamLists.iterator.flatten
                   val cplIter = concreteParamLists.iterator.flatten
@@ -652,17 +652,18 @@ abstract class RefChecks extends Transform {
             }
             else EmptyDiagnostic
           }
-          def emitErrors(missing: List[Symbol]): Unit = {
+          def emitErrors(missing: List[Symbol], nonPrivateMembers: Scope): Unit = {
+            val fastDiagnostics = missing.lengthCompare(100) > 0
             // Group missing members by the name of the underlying symbol, to consolidate getters and setters.
             val byName = missing.groupBy(_.name.getterName)
             // There may be 1 or more missing members declared in 1 or more parents.
             // If a single parent, the message names it. Otherwise, missing members are grouped by declaring class.
             val byOwner = missing.groupBy(_.owner).toList
             val announceOwner = byOwner.size > 1
-            def membersStrings(members: List[Symbol]) =
+            def membersStrings(members: List[Symbol]) = {
               members.sortBy(_.name).flatMap { m =>
                 val accessors = byName.getOrElse(m.name.getterName, Nil)
-                val diagnostic = diagnose(m, accessors)
+                val diagnostic = diagnose(m, accessors, nonPrivateMembers, fastDiagnostics)
                 if (diagnostic == NoError) Nil
                 else {
                   val s0a = infoString0(m, showLocation = false)
@@ -675,16 +676,18 @@ abstract class RefChecks extends Transform {
                   s"$s1 = ???$comment" :: Nil
                 }
               }
+            }
             var count = 0
-            val stubs =
+            def isMulti = count > 1
+            def helpfulListing =
               byOwner.sortBy(_._1.name.toString).flatMap {
                 case (owner, members) =>
                   val ms = membersStrings(members) :+ ""
                   count += ms.size - 1
                   if (announceOwner) s"// Members declared in ${owner.fullName}" :: ms else ms
               }.init.map(s => s"  $s\n").mkString
-            val isMulti = count > 1
-            val singleParent = if (byOwner.size == 1 && byOwner.head._1 != clazz) s" member${if (isMulti) "s" else ""} of ${byOwner.head._1}" else ""
+            val stubs = helpfulListing
+            def singleParent = if (byOwner.size == 1 && byOwner.head._1 != clazz) s" member${if (isMulti) "s" else ""} of ${byOwner.head._1}" else ""
             val line0 =
               if (isMulti) s"Missing implementations for ${count}${val p = singleParent ; if (p.isEmpty) " members" else p}."
               else s"Missing implementation${val p = singleParent ; if (p.isEmpty) p else s" for$p"}:"
@@ -699,10 +702,11 @@ abstract class RefChecks extends Transform {
             }
             (ps, qs)
           }
+          val nonPrivateMembers = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
           // Avoid extra allocations with reverseIterator. Filter for abstract members of interest, and bad abstract override.
           val (missing, abstractIncomplete): (List[Symbol], List[Symbol]) =
-            filtered(clazz.info.nonPrivateMembersAdmitting(VBRIDGE).reverseIterator)(m => m.isDeferred & !ignoreDeferred(m))(m => m.isAbstractOverride && m.isIncompleteIn(clazz))
-          if (missing.nonEmpty) emitErrors(missing)
+            filtered(nonPrivateMembers.reverseIterator)(m => m.isDeferred & !ignoreDeferred(m))(m => m.isAbstractOverride && m.isIncompleteIn(clazz))
+          if (missing.nonEmpty) emitErrors(missing, nonPrivateMembers)
           // Check the remainder for invalid absoverride.
           for (member <- abstractIncomplete) {
             val explanation = member.superSymbolIn(clazz) match {
