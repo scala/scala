@@ -125,11 +125,12 @@ object ArrayOps {
     private[this] val len = xs.length
     override def knownSize: Int = len - pos
     def hasNext: Boolean = pos < len
-    def next(): A = try {
+    def next(): A = {
+      if (pos >= xs.length) Iterator.empty.next()
       val r = xs(pos)
       pos += 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+    }
     override def drop(n: Int): Iterator[A] = {
       if (n > 0) {
         val newPos = pos + n
@@ -145,11 +146,12 @@ object ArrayOps {
   private final class ReverseIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
-    def next(): A = try {
+    def next(): A = {
+      if (pos < 0) Iterator.empty.next()
       val r = xs(pos)
       pos -= 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+    }
 
     override def drop(n: Int): Iterator[A] = {
       if (n > 0) pos = Math.max( -1, pos - n)
@@ -227,14 +229,14 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return  the first element of this array.
     *  @throws NoSuchElementException if the array is empty.
     */
-  def head: A = try xs.apply(0) catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("head of empty array") }
+  def head: A = if (nonEmpty) xs.apply(0) else throw new NoSuchElementException("head of empty array")
 
   /** Selects the last element.
     *
     * @return The last element of this array.
     * @throws NoSuchElementException If the array is empty.
     */
-  def last: A = try xs.apply(xs.length-1) catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("last of empty array") }
+  def last: A = if (nonEmpty) xs.apply(xs.length-1) else throw new NoSuchElementException("last of empty array")
 
   /** Optionally selects the first element.
     *
@@ -500,7 +502,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this array to an [[scala.util.Either]]
     *
-    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]]. */
   def partitionMap[A1: ClassTag, A2: ClassTag](f: A => Either[A1, A2]): (Array[A1], Array[A2]) = {
     val res1 = ArrayBuilder.make[A1]
