@@ -1043,7 +1043,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       case  _ => foldLeft(new Maximized[A, B]("maxBy")(f)(ord.gt))((m, a) => m(m, a)).result
     }
 
-  private class Maximized[X, B](descriptor: String)(f: X => B)(implicit cmp: (B, B) => Boolean) extends AbstractFunction2[Maximized[X, B], X, Maximized[X, B]] {
+  private class Maximized[X, B](descriptor: String)(f: X => B)(cmp: (B, B) => Boolean) extends AbstractFunction2[Maximized[X, B], X, Maximized[X, B]] {
     var maxElem: X = null.asInstanceOf[X]
     var maxF: B = null.asInstanceOf[B]
     var nonEmpty = false
