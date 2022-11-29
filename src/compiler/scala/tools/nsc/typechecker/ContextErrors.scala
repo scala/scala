@@ -21,6 +21,7 @@ import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.{ControlThrowable, NonFatal}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
 import scala.reflect.internal.util.NoSourceFile
@@ -151,7 +152,7 @@ trait ContextErrors extends splain.SplainErrors {
     MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
   /** The implicit not found message from the annotation, and whether it's a supplement message or not. */
-  def NoImplicitFoundAnnotation(tree: Tree, param: Symbol): (Boolean, String) = {
+  def NoImplicitFoundAnnotation(tree: Tree, param: Symbol): (Boolean, String) =
     param match {
       case ImplicitNotFoundMsg(msg) => (false, msg.formatParameterMessage(tree))
       case _ =>
@@ -165,7 +166,6 @@ trait ContextErrors extends splain.SplainErrors {
             true -> supplement
         }
     }
-  }
 
   def NoImplicitFoundError(tree: Tree, param: Symbol)(implicit context: Context): Unit = {
     val (isSupplement, annotationMsg) = NoImplicitFoundAnnotation(tree, param)
@@ -182,6 +182,24 @@ trait ContextErrors extends splain.SplainErrors {
     }
     val errMsg = splainPushOrReportNotFound(tree, param, annotationMsg)
     issueNormalTypeError(tree, if (errMsg.isEmpty) defaultErrMsg else errMsg)
+  }
+
+  private def InferredImplicitErrorImpl(tree: Tree, inferred: Type, cx: Context, isTyper: Boolean): Unit = {
+    def err(): Unit = {
+      val msg =
+        s"Implicit definition ${if (currentRun.isScala3) "must" else "should"} have explicit type${
+          if (!inferred.isErroneous) s" (inferred $inferred)" else ""
+        }"
+      if (currentRun.isScala3) ErrorUtils.issueNormalTypeError(tree, msg)(cx)
+      else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType)
+    }
+    val sym = tree.symbol
+    // Defer warning field of class until typing getter (which is marked implicit)
+    if (sym.isImplicit) {
+      if (!sym.isLocalToBlock) err()
+    }
+    else if (!isTyper && sym.isField && !sym.isLocalToBlock)
+      sym.updateAttachment(FieldTypeInferred)
   }
 
   trait TyperContextErrors {
@@ -1042,6 +1060,8 @@ trait ContextErrors extends splain.SplainErrors {
       def MacroAnnotationTopLevelModuleBadExpansion(ann: Tree) =
         issueNormalTypeError(ann, "top-level object can only expand into an eponymous object")
 
+      def InferredImplicitError(tree: Tree, inferred: Type, cx: Context): Unit =
+        InferredImplicitErrorImpl(tree, inferred, cx, isTyper = true)
     }
 
     /** This file will be the death of me. */
@@ -1070,7 +1090,7 @@ trait ContextErrors extends splain.SplainErrors {
 
     object InferErrorGen {
 
-      implicit val contextInferErrorGen = getContext
+      implicit val contextInferErrorGen: Context = getContext
 
       object PolyAlternativeErrorKind extends Enumeration {
         type ErrorType = Value
@@ -1275,7 +1295,7 @@ trait ContextErrors extends splain.SplainErrors {
 
     object NamerErrorGen {
 
-      implicit val contextNamerErrorGen = context
+      implicit val contextNamerErrorGen: Context = context
 
       object SymValidateErrors extends Enumeration {
         val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
@@ -1393,6 +1413,9 @@ trait ContextErrors extends splain.SplainErrors {
         issueNormalTypeError(tree, name.decode + " " + msg)
       }
     }
+
+    def InferredImplicitError(tree: Tree, inferred: Type, cx: Context): Unit =
+      InferredImplicitErrorImpl(tree, inferred, cx, isTyper = false)
   }
 
   trait ImplicitsContextErrors {

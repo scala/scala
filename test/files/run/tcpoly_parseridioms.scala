@@ -103,8 +103,8 @@ trait ParserIdioms extends Parsers with Idioms {
   // TODO: how can parserIdiom(curry2(_)) be omitted?
   def expr: Parser[Expr] = parserIdiomFun(curry2(Plus)) <| num <> num |>
 
-  implicit def curry2[s, t, u](fun: (s, t) => u)(a: s)(b: t) = fun(a, b)
-  implicit def curry3[r, s, t, u](fun: (r, s, t) => u)(a: r)(b: s)(c: t) = fun(a, b, c)
+  implicit def curry2[s, t, u](fun: (s, t) => u)(a: s)(b: t): u = fun(a, b)
+  implicit def curry3[r, s, t, u](fun: (r, s, t) => u)(a: r)(b: s)(c: t): u = fun(a, b, c)
 }
 
 object Test extends ParserIdioms with App {

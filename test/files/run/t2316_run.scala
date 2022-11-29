@@ -1,7 +1,7 @@
 case class T1(source: String)
 
 object T1 {
-  implicit def T1FromT2(implicit t2: T2) = new T1(t2.source)
+  implicit def T1FromT2(implicit t2: T2): T1 = new T1(t2.source)
 }
 
 case class T2(source: String)
@@ -10,7 +10,7 @@ object A {
   def requireT1(implicit t1: T1) = t1
 
   object B1 {
-    implicit val t2_b1 = new T2("from B1")
+    implicit val t2_b1: T2 = new T2("from B1")
     requireT1
   }
 

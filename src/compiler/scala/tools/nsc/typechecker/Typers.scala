@@ -2173,7 +2173,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     /** Analyze the super constructor call to record information used later to compute parameter aliases */
-    def analyzeSuperConsructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
+    def analyzeSuperConstructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
       val clazz = meth.owner
       debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       val pending = ListBuffer[AbsTypeError]()
@@ -2355,7 +2355,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 
-        val tparams1 = ddef.tparams mapConserve typedTypeDef
+        val tparams1 = ddef.tparams.mapConserve(typedTypeDef)
         val vparamss1 = ddef.vparamss.mapConserve(_.mapConserve(typedValDef))
 
         warnTypeParameterShadow(tparams1, meth)
@@ -2395,9 +2395,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
           // There are no supercalls for AnyVal or constructors from Java sources, which
-          // would blow up in analyzeSuperConsructor; there's nothing to be computed for them anyway.
+          // would blow up in analyzeSuperConstructor; there's nothing to be computed for them anyway.
           if (meth.isPrimaryConstructor)
-            analyzeSuperConsructor(meth, vparamss1, rhs1)
+            analyzeSuperConstructor(meth, vparamss1, rhs1)
           else
             checkSelfConstructorArgs(ddef, meth.owner)
         }
@@ -2424,13 +2424,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (meth.isStructuralRefinementMember)
             checkMethodStructuralCompatible(ddef)
 
-          if (meth.isImplicit && !meth.isSynthetic) meth.paramss match {
-            case List(param) :: _ if !param.isImplicit =>
-              checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
-            case _ =>
+          if (meth.isImplicit) {
+            if (!meth.isSynthetic) meth.paramss match {
+              case List(param) :: _ if !param.isImplicit =>
+                checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
+              case _ =>
+            }
+            if (meth.isGetter && !meth.isLocalToBlock && meth.accessed.hasAttachment[FieldTypeInferred.type]) {
+              meth.accessed.removeAttachment[FieldTypeInferred.type]
+              InferredImplicitError(ddef, meth.accessed.tpe.resultType, context)
+            }
           }
         }
-
         treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
       } finally {
         currentRun.profiler.afterTypedImplDef(meth)

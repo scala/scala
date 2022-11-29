@@ -2,7 +2,7 @@ import scala.language.implicitConversions
 
 object A {
   object B {
-    implicit def int2string(x: Int) = "["+x.toString+"]"
+    implicit def int2string(x: Int): String = "["+x.toString+"]"
   }
 }
 

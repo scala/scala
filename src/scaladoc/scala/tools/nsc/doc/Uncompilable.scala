@@ -29,7 +29,7 @@ trait Uncompilable {
   import global.definitions.{ AnyRefClass, AnyRefTpe }
   import global.rootMirror.RootClass
 
-  private implicit def translateName(name: Global#Name) =
+  private implicit def translateName(name: Global#Name): global.Name =
     if (name.isTypeName) newTypeName("" + name) else newTermName("" + name)
 
   val WaitNames = List("scala", "AnyRef", "wait")

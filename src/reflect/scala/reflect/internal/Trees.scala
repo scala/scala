@@ -1464,15 +1464,13 @@ trait Trees extends api.Trees {
     override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
     private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
 
-    private def requireLegal(value: Any, allowed: Any, what: String) = (
-      if (value != allowed) {
+    private def requireLegal(value: Any, allowed: Any, what: String): Unit =
+      if (value != allowed && this != pendingSuperCall) {
         log(s"can't set $what for $self to value other than $allowed")
         if (settings.isDebug && settings.isDeveloper)
-          (new Throwable).printStackTrace
+          new Throwable(s"can't set $what for $self to value other than $allowed").printStackTrace
       }
-    )
-    override def traverse(traverser: Traverser): Unit =
-      ()
+    override def traverse(traverser: Traverser): Unit = ()
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs {

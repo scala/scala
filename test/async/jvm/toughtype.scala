@@ -199,7 +199,7 @@ package scala.async.run.toughtype {
       }
 
       object FunDep {
-        implicit def `Something to do with List`[W, S, R](implicit funDep: FunDep[W, S, R]) =
+        implicit def `Something to do with List`[W, S, R](implicit funDep: FunDep[W, S, R]): FunDep[W,List[S],W] =
           new FunDep[W, List[S], W] {
             def method(w: W, l: List[S]) = async {
               val it = l.iterator

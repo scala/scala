@@ -10,11 +10,11 @@ class AbstractFileClassLoaderTest {
 
   import scala.reflect.io._
   import scala.io.Source
-  import scala.io.Codec.UTF8
+  import scala.io.Codec, Codec.UTF8
   import scala.reflect.io.Streamable
   import java.net.{ URLClassLoader, URL }
 
-  implicit def `we love utf8` = UTF8
+  implicit def `we love utf8`: Codec = UTF8
   implicit class `abs file ops`(f: AbstractFile) {
     def writeContent(s: String): Unit = Streamable.closing(f.bufferedOutput)(os => os write s.getBytes(UTF8.charSet))
   }

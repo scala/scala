@@ -7,7 +7,7 @@ object Test extends App {
   val lazee = reify {
     class C {
       lazy val x = 2
-      implicit lazy val y = 3
+      implicit lazy val y: Int = 3
     }
     val c = new C()
     import c._

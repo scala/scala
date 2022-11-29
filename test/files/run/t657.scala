@@ -4,7 +4,7 @@
 import scala.language.{ implicitConversions }
 abstract class BaseList {
   type Node <: BaseNodeImpl
-  implicit def convertNode(ni : BaseNodeImpl) = ni.asInstanceOf[Node];
+  implicit def convertNode(ni : BaseNodeImpl): Node = ni.asInstanceOf[Node];
   abstract class BaseNodeImpl
 }
 abstract class LinkedList extends BaseList {
@@ -33,7 +33,7 @@ trait Matcher extends PrecedenceParser {
   trait NodeImpl4 extends super.NodeImpl3
 
   type Matchable <: Node with MatchableImpl0
-  implicit def convertMatchable(m : MatchableImpl0) = m.asInstanceOf[Matchable]
+  implicit def convertMatchable(m : MatchableImpl0): Matchable = m.asInstanceOf[Matchable]
   trait MatchableImpl0 extends NodeImpl4 {
     override def chop : Node = {
       Console.println("passed"); super.chop;

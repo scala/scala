@@ -5,7 +5,7 @@ import scala.reflect.runtime.universe._
 object Test extends App {
   class A[T]
   class B[T]
-  implicit def foo[T: TypeTag](a: A[T])(implicit b: B[T]) = new { def baz = typeOf[T] }
+  implicit def foo[T: TypeTag](a: A[T])(implicit b: B[T]): AnyRef{def baz: reflect.runtime.universe.Type} = new { def baz = typeOf[T] }
   implicit def bar[T <: Int]: B[T] = new B[T]()
   println(new A[Int]().baz)
 }

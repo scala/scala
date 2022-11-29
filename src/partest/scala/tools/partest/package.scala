@@ -18,6 +18,7 @@ import java.util.concurrent.{Callable, ExecutorService}
 import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 import scala.tools.nsc.util.Exceptional
 
 package object partest {
@@ -122,8 +123,6 @@ package object partest {
 
   implicit def temporaryPath2File(x: Path): File = x.jfile
   implicit def stringPathToJavaFile(path: String): File = new File(path)
-
-  implicit lazy val implicitConversions = scala.language.implicitConversions
 
   def fileSeparator = java.io.File.separator
   def pathSeparator = java.io.File.pathSeparator

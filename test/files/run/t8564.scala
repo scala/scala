@@ -13,8 +13,8 @@ object Test extends App {
 
   def lookup(k: String)(implicit assoc: Assoc[k.type]): assoc.V = assoc.value
 
-  implicit def nameAssoc = mkAssoc("Name", "Mary")
-  implicit def ageAssoc = mkAssoc("Age", 23)
+  implicit def nameAssoc: Assoc["Name"] { type V = String } = mkAssoc("Name", "Mary")
+  implicit def ageAssoc: Assoc["Age"] { type V = Int } = mkAssoc("Age", 23)
 
   assert((lookup("Name"): String) == "Mary")
   assert((lookup("Age"): Int) == 23)

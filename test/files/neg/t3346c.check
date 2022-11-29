@@ -1,4 +1,4 @@
-t3346c.scala:60: error: value bar is not a member of Either[Int,String]
+t3346c.scala:65: error: value bar is not a member of Either[Int,String]
 did you mean map?
   eii.bar
       ^
