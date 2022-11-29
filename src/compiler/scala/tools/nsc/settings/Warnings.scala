@@ -187,6 +187,7 @@ trait Warnings {
     val AdaptedArgs            = LintWarning("adapted-args",              "An argument list was modified to match the receiver.")
     val NullaryUnit            = LintWarning("nullary-unit",              "`def f: Unit` looks like an accessor; add parens to look side-effecting.")
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.")
+    val NullaryOverride        = LintWarning("nullary-override",          "Non-nullary `def f()` overrides nullary `def f`.")
     val InferAny               = LintWarning("infer-any",                 "A type argument was inferred as Any.")
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "When running scaladoc, warn if a doc comment is discarded.")
@@ -221,6 +222,7 @@ trait Warnings {
   def warnAdaptedArgs            = lint contains AdaptedArgs
   def warnNullaryUnit            = lint contains NullaryUnit
   def warnInaccessible           = lint contains Inaccessible
+  def warnNullaryOverride        = lint contains NullaryOverride
   def warnInferAny               = lint contains InferAny
   def warnMissingInterpolator    = lint contains MissingInterpolator
   def warnDocDetached            = lint contains DocDetached

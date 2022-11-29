@@ -443,15 +443,20 @@ abstract class RefChecks extends Transform {
               // Only warn for the pair that has one leg in `clazz`.
               if (clazz == memberClass) checkOverrideDeprecated()
               def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
-              if (!member.hasAttachment[NullaryOverrideAdapted.type]
-                  && other.paramss.isEmpty && !member.paramss.isEmpty
-                  && !javaDetermined(member) && !member.overrides.exists(javaDetermined)
-              ) {
+              def doWarn = (
+                !member.hasAttachment[NullaryOverrideAdapted.type]
+                && other.paramss.isEmpty && !member.paramss.isEmpty
+                && !javaDetermined(member) && !member.overrides.exists(javaDetermined)
+              )
+              if (doWarn) {
                 val msg = "method with a single empty parameter list overrides method without any parameter list"
-                if (currentRun.isScala3)
-                  overrideErrorWithMemberInfo(msg)
-                else
-                  refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
+                if (currentRun.compiles(other))
+                  if (currentRun.isScala3)
+                    overrideErrorWithMemberInfo(msg)
+                  else
+                    refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
+                else if (settings.warnNullaryOverride)
+                  refchecksWarning(member.pos, msg, WarningCategory.LintNullaryOverride)
               }
             }
           }

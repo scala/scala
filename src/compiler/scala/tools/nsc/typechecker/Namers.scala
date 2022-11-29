@@ -1478,17 +1478,22 @@ trait Namers extends MethodSynthesis {
         // Note that matching MethodType of NullaryMethodType must be nilary not nelary.
         def overriddenNilary(sym: Symbol) = sym.info.isInstanceOf[MethodType]
         if (overridden != NoSymbol && vparamSymss.isEmpty && overridden.alternatives.exists(overriddenNilary)) {
-          def exempt() = meth.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))
+          def exempt = meth.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))
           val msg = "method without a parameter list overrides a method with a single empty one"
-          def error(): Unit = if (!exempt()) {
+          def error(): Unit = if (!exempt) {
             ErrorUtils.issueNormalTypeError(ddef, msg)
             ddef.tpt.defineType(ErrorType)
           }
-          def warn(): Unit = if (!exempt()) {
-            context.warning(ddef.pos, msg, WarningCategory.OtherNullaryOverride)
+          def warn(cat: WarningCategory): Unit = if (!exempt) {
+            context.warning(ddef.pos, msg, cat)
             meth.updateAttachment(NullaryOverrideAdapted)
           }
-          context.unit.toCheck += (if (currentRun.isScala3) error _ else warn _)
+          def later(body: => Unit): Unit = context.unit.toCheck.addOne(() => body)
+          if (currentRun.compiles(overridden))
+            if (currentRun.isScala3) later(error())
+            else later(warn(WarningCategory.OtherNullaryOverride))
+          else if (settings.warnNullaryOverride)
+            later(warn(WarningCategory.LintNullaryOverride))
           ListOfNil
         } else vparamSymss
       }

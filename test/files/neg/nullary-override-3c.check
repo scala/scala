@@ -1,0 +1,5 @@
+B_2.scala:7: error: method with a single empty parameter list overrides method without any parameter list
+def x: String (defined in trait T1)
+class Mix12b extends T1 with T2 { override def x() = "12b" }
+                                               ^
+1 error

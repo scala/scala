@@ -385,6 +385,7 @@ object Reporting {
     object LintAdaptedArgs extends Lint; add(LintAdaptedArgs)
     object LintNullaryUnit extends Lint; add(LintNullaryUnit)
     object LintInaccessible extends Lint; add(LintInaccessible)
+    object LintNullaryOverride extends Lint; add(LintNullaryOverride)
     object LintInferAny extends Lint; add(LintInferAny)
     object LintMissingInterpolator extends Lint; add(LintMissingInterpolator)
     object LintDocDetached extends Lint; add(LintDocDetached)
