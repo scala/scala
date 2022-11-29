@@ -213,6 +213,7 @@ trait Warnings {
     val MultiargInfix          = LintWarning("multiarg-infix",            "Infix operator was defined or used with multiarg operand.")
     val ImplicitRecursion      = LintWarning("implicit-recursion",        "Implicit resolves to an enclosing definition.")
     val UniversalMethods       = LintWarning("universal-methods",         "Require arg to is/asInstanceOf.")
+    val ArgDiscard             = LintWarning("arg-discard",               "-Wvalue-discard for adapted arguments.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -246,6 +247,7 @@ trait Warnings {
   def multiargInfix              = lint contains MultiargInfix
   def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit.value: @nowarn("cat=deprecation"))
   def lintUniversalMethods       = lint.contains(UniversalMethods)
+  def lintArgDiscard             = lint.contains(ArgDiscard)
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
