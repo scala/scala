@@ -843,7 +843,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @return    `true` if the $coll contains no elements, `false` otherwise.
    */
-  def isEmpty: Boolean = !iterator.hasNext
+  def isEmpty: Boolean =
+    knownSize match {
+      case -1 => !iterator.hasNext
+      case  0 => true
+      case  _ => false
+    }
 
   /** Tests whether the $coll is not empty.
    *
@@ -929,7 +934,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     i - start
   }
 
-  /** Sums up the elements of this collection.
+  /** Sums the elements of this collection.
+   *
+   *  The default implementation uses `reduce` for a known non-empty collection,
+   *  `foldLeft` otherwise.
+   *
+   *  If `foldLeft` is used, this implementation works around pollution of the math context
+   *  by ignoring the identity element.
    *
    *   $willNotTerminateInf
    *
@@ -940,12 +951,24 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def sum[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 => reduceLeftIterator[B](num.zero)(num.plus)
+      case -1 =>
+        val z = num.zero
+        if ((num eq Numeric.BigDecimalIsFractional) || (num eq Numeric.BigDecimalAsIfIntegral)) {
+          def nonPollutingPlus(x: B, y: B): B = if (x.asInstanceOf[AnyRef] eq z.asInstanceOf[AnyRef]) y else num.plus(x, y)
+          foldLeft(z)(nonPollutingPlus)
+        }
+        else foldLeft(z)(num.plus)
       case  0 => num.zero
       case  _ => reduce(num.plus)
     }
 
-  /** Multiplies up the elements of this collection.
+  /** Multiplies together the elements of this collection.
+   *
+   *  The default implementation uses `reduce` for a known non-empty collection,
+   *  `foldLeft` otherwise.
+   *
+   *  If `foldLeft` is used, this implementation works around pollution of the math context
+   *  by ignoring the identity element.
    *
    *  $willNotTerminateInf
    *
@@ -956,7 +979,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def product[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 => reduceLeftIterator[B](num.one)(num.times)
+      case -1 =>
+        val u = num.one
+        if ((num eq Numeric.BigDecimalIsFractional) || (num eq Numeric.BigDecimalAsIfIntegral)) {
+          def nonPollutingProd(x: B, y: B): B = if (x.asInstanceOf[AnyRef] eq u.asInstanceOf[AnyRef]) y else num.times(x, y)
+          foldLeft(u)(nonPollutingProd)
+        }
+        else foldLeft(u)(num.times)
       case  0 => num.one
       case  _ => reduce(num.times)
     }

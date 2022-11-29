@@ -470,4 +470,20 @@ class IterableTest {
   @Test def `IterableOnceOps.reduceRightOption consumes one iterator`: Unit = assertEquals(Some(10), SingleUseIterable(1, 2, 3, 4).reduceRightOption(_ + _))
   @Test def `IterableOnceOps.reduceRightOption of empty iterator`: Unit = assertEquals(None, SingleUseIterable[Int]().reduceRightOption(_ + _))
   @Test def `IterableOnceOps.reduceRightOption consumes no iterator`: Unit = assertEquals(None, ZeroUseIterable[Int]().reduceRightOption(_ + _))
+
+  @Test def `IterableOnceOps.isEmpty consumes no iterator`: Unit = assertTrue(ZeroUseIterable[Int]().isEmpty)
+
+  @Test def `sum uses my reduce if knownSize > 0`: Unit = {
+    val reductive = new AbstractIterable[Int] {
+      val values = List(1, 2, 3, 4, 32)
+      override def iterator = Iterator.empty
+      override def reduce[B >: Int](op: (B, B) => B): B = values.reduce(op)             // sum, produce
+      override def reduceLeft[B >: Int](op: (B, Int) => B): B = values.reduceLeft(op)   // min, max
+      override def knownSize = values.size
+    }
+    assertEquals(42,  reductive.sum)
+    assertEquals(768, reductive.product)
+    assertEquals(1,   reductive.min)
+    assertEquals(32,  reductive.max)
+  }
 }
