@@ -206,6 +206,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   }
 
   protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    // k >= 0, k = prefix.knownSize
     val tinyAppendLimit = 4 + vectorSliceCount
     if (k < tinyAppendLimit /*|| k < (this.size >>> Log2ConcatFaster)*/) {
       var v: Vector[B] = this
@@ -217,12 +218,15 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val it = this.iterator
       while (it.hasNext) v = v :+ it.next()
       v
+    } else if (k < this.size - AlignToFaster) {
+      new VectorBuilder[B].alignTo(k, this).addAll(prefix).addAll(this).result()
     } else super.prependedAll(prefix)
   }
 
   protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    // k >= 0, k = suffix.knownSize
     val tinyAppendLimit = 4 + vectorSliceCount
-    if(k > 0 && k < tinyAppendLimit) {
+    if (k < tinyAppendLimit) {
       var v: Vector[B] = this
       suffix match {
         case it: Iterable[_] => it.asInstanceOf[Iterable[B]].foreach(x => v = v.appended(x))
@@ -234,6 +238,9 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
       val ri = this.reverseIterator
       while (ri.hasNext) v = v.prepended(ri.next())
       v
+    } else if (this.size < k - AlignToFaster && suffix.isInstanceOf[Vector[_]]) {
+      val v = suffix.asInstanceOf[Vector[B]]
+      new VectorBuilder[B].alignTo(this.size, v).addAll(this).addAll(v).result()
     } else new VectorBuilder[B].initFrom(this).addAll(suffix).result()
   }
 
@@ -289,11 +296,11 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
 
   override final def foreach[U](f: A => U): Unit = {
     val c = vectorSliceCount
-      var i = 0
-      while(i < c) {
-        foreachRec(vectorSliceDim(c, i)-1, vectorSlice(i), f)
-        i += 1
-      }
+    var i = 0
+    while (i < c) {
+      foreachRec(vectorSliceDim(c, i) - 1, vectorSlice(i), f)
+      i += 1
+    }
   }
 
   // The following definitions are needed for binary compatibility with ParVector
@@ -1394,6 +1401,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
   private[this] var a2: Arr2 = _
   private[this] var a1: Arr1 = new Arr1(WIDTH)
   private[this] var len1, lenRest, offset = 0
+  private[this] var prefixIsRightAligned = false
   private[this] var depth = 1
 
   @inline private[this] final def setLen(i: Int): Unit = {
@@ -1417,6 +1425,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     len1 = 0
     lenRest = 0
     offset = 0
+    prefixIsRightAligned = false
     depth = 1
   }
 
@@ -1538,7 +1547,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
         depth = 6
         offset = WIDTH5 - v6.len12345
         setLen(v6.length0 + offset)
-        a6 = new Arr6(WIDTH)
+        a6 = new Arr6(LASTWIDTH)
         a6(0) = copyPrepend(copyPrepend(copyPrepend(copyPrepend(v6.prefix1, v6.prefix2), v6.prefix3), v6.prefix4), v6.prefix5)
         System.arraycopy(d6, 0, a6, 1, d6.length)
         a5 = copyOf(s5, WIDTH)
@@ -1557,6 +1566,134 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       lenRest -= WIDTH
     }
     this
+  }
+
+  //TODO Make public; this method is only private for binary compatibility
+  private[collection] def alignTo(before: Int, bigVector: Vector[A]): this.type = {
+    if (len1 != 0 || lenRest != 0)
+      throw new UnsupportedOperationException("A non-empty VectorBuilder cannot be aligned retrospectively. Please call .reset() or use a new VectorBuilder.")
+    val (prefixLength, maxPrefixLength) = bigVector match {
+      case Vector0 => (0, 1)
+      case v1: Vector1[_] => (0, 1)
+      case v2: Vector2[_] => (v2.len1, WIDTH)
+      case v3: Vector3[_] => (v3.len12, WIDTH2)
+      case v4: Vector4[_] => (v4.len123, WIDTH3)
+      case v5: Vector5[_] => (v5.len1234, WIDTH4)
+      case v6: Vector6[_] => (v6.len12345, WIDTH5)
+    }
+    if (maxPrefixLength == 1) return this // does not really make sense to align for <= 32 element-vector
+    val overallPrefixLength = (before + prefixLength) % maxPrefixLength
+    offset = (maxPrefixLength - overallPrefixLength) % maxPrefixLength
+    // pretend there are already `offset` elements added
+    advanceN(offset & ~MASK)
+    len1 = offset & MASK
+    prefixIsRightAligned = true
+    this
+  }
+
+  /**
+   * Removes `offset` leading `null`s in the prefix.
+   * This is needed after calling `alignTo` and subsequent additions,
+   * directly before the result is used for creating a new Vector.
+   * Note that the outermost array keeps its length to keep the
+   * Builder re-usable.
+   *
+   * example:
+   *     a2 = Array(null, ..., null, Array(null, .., null, 0, 1, .., x), Array(x+1, .., x+32), ...)
+   * becomes
+   *     a2 = Array(Array(0, 1, .., x), Array(x+1, .., x+32), ..., ?, ..., ?)
+   */
+  private[this] def leftAlignPrefix(): Unit = {
+    @inline def shrinkOffsetIfToLarge(width: Int): Unit = {
+      val newOffset = offset % width
+      lenRest -= offset - newOffset
+      offset = newOffset
+    }
+    var a: Array[AnyRef] = null // the array we modify
+    var aParent: Array[AnyRef] = null // a's parent, so aParent(0) == a
+    if (depth >= 6) {
+      a = a6.asInstanceOf[Array[AnyRef]]
+      val i = offset >>> BITS5
+      if (i > 0) System.arraycopy(a, i, a, 0, LASTWIDTH - i)
+      shrinkOffsetIfToLarge(WIDTH5)
+      if ((lenRest >>> BITS5) == 0) depth = 5
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 5) {
+      if (a == null) a = a5.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS4) & MASK
+      if (depth == 5) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a5 = a.asInstanceOf[Arr5]
+        shrinkOffsetIfToLarge(WIDTH4)
+        if ((lenRest >>> BITS4) == 0) depth = 4
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 4) {
+      if (a == null) a = a4.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS3) & MASK
+      if (depth == 4) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a4 = a.asInstanceOf[Arr4]
+        shrinkOffsetIfToLarge(WIDTH3)
+        if ((lenRest >>> BITS3) == 0) depth = 3
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 3) {
+      if (a == null) a = a3.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS2) & MASK
+      if (depth == 3) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a3 = a.asInstanceOf[Arr3]
+        shrinkOffsetIfToLarge(WIDTH2)
+        if ((lenRest >>> BITS2) == 0) depth = 2
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 2) {
+      if (a == null) a = a2.asInstanceOf[Array[AnyRef]]
+      val i = (offset >>> BITS) & MASK
+      if (depth == 2) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a2 = a.asInstanceOf[Arr2]
+        shrinkOffsetIfToLarge(WIDTH)
+        if ((lenRest >>> BITS) == 0) depth = 1
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
+      }
+      aParent = a
+      a = a(0).asInstanceOf[Array[AnyRef]]
+    }
+    if (depth >= 1) {
+      if (a == null) a = a1.asInstanceOf[Array[AnyRef]]
+      val i = offset & MASK
+      if (depth == 1) {
+        if (i > 0) System.arraycopy(a, i, a, 0, WIDTH - i)
+        a1 = a.asInstanceOf[Arr1]
+        len1 -= offset
+        offset = 0
+      } else {
+        if (i > 0) a = copyOfRange(a, i, WIDTH)
+        aParent(0) = a
+      }
+    }
+    prefixIsRightAligned = false
   }
 
   def addOne(elem: A): this.type = {
@@ -1582,6 +1719,86 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     }
   }
 
+  private[this] def addArrN(slice: Array[AnyRef], dim: Int): Unit = {
+//    assert(dim >= 2)
+//    assert(lenRest % WIDTH == 0)
+//    assert(len1 == 0 || len1 == WIDTH)
+    if (slice.isEmpty) return
+    if (len1 == WIDTH) advance()
+    val sl = slice.length
+    (dim: @switch) match {
+      case 2 =>
+        // lenRest is always a multiple of WIDTH
+        val copy1   = mmin(((WIDTH2 - lenRest) >>> BITS) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS) & MASK
+        System.arraycopy(slice, 0, a2, destPos, copy1)
+        advanceN(WIDTH * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a2, 0, copy2)
+          advanceN(WIDTH * copy2)
+        }
+      case 3 =>
+        if (lenRest % WIDTH2 != 0) {
+          // lenRest is not multiple of WIDTH2, so this slice does not align, need to try lower dimension
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 2))
+          return
+        }
+        val copy1   = mmin(((WIDTH3 - lenRest) >>> BITS2) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS2) & MASK
+        System.arraycopy(slice, 0, a3, destPos, copy1)
+        advanceN(WIDTH2 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a3, 0, copy2)
+          advanceN(WIDTH2 * copy2)
+        }
+      case 4 =>
+        if (lenRest % WIDTH3 != 0) {
+          // lenRest is not multiple of WIDTH3, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 3))
+          return
+        }
+        val copy1   = mmin(((WIDTH4 - lenRest) >>> BITS3) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS3) & MASK
+        System.arraycopy(slice, 0, a4, destPos, copy1)
+        advanceN(WIDTH3 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a4, 0, copy2)
+          advanceN(WIDTH3 * copy2)
+        }
+      case 5 =>
+        if (lenRest % WIDTH4 != 0) {
+          // lenRest is not multiple of WIDTH4, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 4))
+          return
+        }
+        val copy1   = mmin(((WIDTH5 - lenRest) >>> BITS4) & MASK, sl)
+        val copy2   = sl - copy1
+        val destPos = (lenRest >>> BITS4) & MASK
+        System.arraycopy(slice, 0, a5, destPos, copy1)
+        advanceN(WIDTH4 * copy1)
+        if (copy2 > 0) {
+          System.arraycopy(slice, copy1, a5, 0, copy2)
+          advanceN(WIDTH4 * copy2)
+        }
+      case 6 => // note width is now LASTWIDTH
+        if (lenRest % WIDTH5 != 0) {
+          // lenRest is not multiple of WIDTH5, so this slice does not align, need to try lower dimensions
+          slice.foreach(e => addArrN(e.asInstanceOf[Array[AnyRef]], 5))
+          return
+        }
+        val copy1   = sl
+        // there is no copy2 because there can't be another a6 to copy to
+        val destPos = lenRest >>> BITS5
+        if (destPos + copy1 > LASTWIDTH)
+          throw new IllegalArgumentException("exceeding 2^31 elements")
+        System.arraycopy(slice, 0, a6, destPos, copy1)
+        advanceN(WIDTH5 * copy1)
+    }
+  }
+
   private[this] def addVector(xs: Vector[A]): this.type = {
     val sliceCount = xs.vectorSliceCount
     var sliceIdx = 0
@@ -1589,6 +1806,8 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       val slice = xs.vectorSlice(sliceIdx)
       vectorSliceDim(sliceCount, sliceIdx) match {
         case 1 => addArr1(slice.asInstanceOf[Arr1])
+        case n if len1 == WIDTH || len1 == 0 =>
+          addArrN(slice.asInstanceOf[Array[AnyRef]], n)
         case n => foreachRec(n-2, slice, addArr1)
       }
       sliceIdx += 1
@@ -1598,7 +1817,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
 
   override def addAll(xs: IterableOnce[A]): this.type = xs match {
     case v: Vector[_] =>
-      if(len1 == 0 && lenRest == 0) initFrom(v)
+      if(len1 == 0 && lenRest == 0 && !prefixIsRightAligned) initFrom(v)
       else addVector(v.asInstanceOf[Vector[A]])
     case _ =>
       super.addAll(xs)
@@ -1612,19 +1831,30 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
     advance1(idx, xor)
   }
 
+  private[this] def advanceN(n: Int): Unit = if (n > 0) {
+    // assert(n % 32 == 0)
+    val idx = lenRest + n
+    val xor = idx ^ lenRest
+    lenRest = idx
+    len1 = 0
+    advance1(idx, xor)
+  }
+
   private[this] def advance1(idx: Int, xor: Int): Unit = {
-    if (xor < WIDTH2) { // level = 1
-      if (depth == 1) { a2 = new Array(WIDTH); a2(0) = a1; depth += 1 }
+    if (xor <= 0) {            // level = 6 or something very unexpected happened
+      throw new IllegalArgumentException(s"advance1($idx, $xor): a1=$a1, a2=$a2, a3=$a3, a4=$a4, a5=$a5, a6=$a6, depth=$depth")
+    } else if (xor < WIDTH2) { // level = 1
+      if (depth <= 1) { a2 = new Array(WIDTH); a2(0) = a1; depth = 2 }
       a1 = new Array(WIDTH)
       a2((idx >>> BITS) & MASK) = a1
     } else if (xor < WIDTH3) { // level = 2
-      if (depth == 2) { a3 = new Array(WIDTH); a3(0) = a2; depth += 1 }
+      if (depth <= 2) { a3 = new Array(WIDTH); a3(0) = a2; depth = 3 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a2((idx >>> BITS) & MASK) = a1
       a3((idx >>> BITS2) & MASK) = a2
     } else if (xor < WIDTH4) { // level = 3
-      if (depth == 3) { a4 = new Array(WIDTH); a4(0) = a3; depth += 1 }
+      if (depth <= 3) { a4 = new Array(WIDTH); a4(0) = a3; depth = 4 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1632,7 +1862,7 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
     } else if (xor < WIDTH5) { // level = 4
-      if (depth == 4) { a5 = new Array(WIDTH); a5(0) = a4; depth += 1 }
+      if (depth <= 4) { a5 = new Array(WIDTH); a5(0) = a4; depth = 5 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1641,8 +1871,8 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
       a5((idx >>> BITS4) & MASK) = a4
-    } else if (xor < WIDTH6) { // level = 5
-      if (depth == 5) { a6 = new Array(LASTWIDTH); a6(0) = a5; depth += 1 }
+    } else {                   // level = 5
+      if (depth <= 5) { a6 = new Array(LASTWIDTH); a6(0) = a5; depth = 6 }
       a1 = new Array(WIDTH)
       a2 = new Array(WIDTH)
       a3 = new Array(WIDTH)
@@ -1652,19 +1882,18 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
       a3((idx >>> BITS2) & MASK) = a2
       a4((idx >>> BITS3) & MASK) = a3
       a5((idx >>> BITS4) & MASK) = a4
-      a6((idx >>> BITS5) & MASK) = a5
-    } else {                      // level = 6
-      throw new IllegalArgumentException(s"advance1($idx, $xor): a1=$a1, a2=$a2, a3=$a3, a4=$a4, a5=$a5, a6=$a6, depth=$depth")
+      a6(idx >>> BITS5) = a5
     }
   }
 
   def result(): Vector[A] = {
+    if (prefixIsRightAligned) leftAlignPrefix()
     val len = len1 + lenRest
     val realLen = len - offset
     if(realLen == 0) Vector.empty
+    else if(len < 0) throw new IndexOutOfBoundsException(s"Vector cannot have negative size $len")
     else if(len <= WIDTH) {
-      if(realLen == WIDTH) new Vector1(a1)
-      else new Vector1(copyOf(a1, realLen))
+      new Vector1(copyIfDifferentSize(a1, realLen))
     } else if(len <= WIDTH2) {
       val i1 = (len-1) & MASK
       val i2 = (len-1) >>> BITS
@@ -1771,10 +2000,9 @@ private[immutable] object VectorInline {
   final val WIDTH4 = 1 << BITS4
   final val BITS5 = BITS * 5
   final val WIDTH5 = 1 << BITS5
-  final val BITS6 = BITS * 6
-  final val WIDTH6 = 1 << BITS6
   final val LASTWIDTH = WIDTH << 1 // 1 extra bit in the last level to go up to Int.MaxValue (2^31-1) instead of 2^30:
   final val Log2ConcatFaster = 5
+  final val AlignToFaster = 64
 
   type Arr1 = Array[AnyRef]
   type Arr2 = Array[Array[AnyRef]]
