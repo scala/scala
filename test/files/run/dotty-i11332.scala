@@ -7,6 +7,7 @@ class Foo {
   def over(i: Int): String  = "int"
   def unit(s: String): Unit = ()
   def obj(s: String): Object = s
+  def void(v: Void): String = "void"
 }
 
 object Test {
@@ -19,6 +20,7 @@ object Test {
     val mhOverI = l.findVirtual(classOf[Foo], "over", methodType(classOf[String], classOf[Int]))
     val mhUnit  = l.findVirtual(classOf[Foo], "unit", methodType(classOf[Unit], classOf[String]))
     val mhObj   = l.findVirtual(classOf[Foo], "obj", methodType(classOf[Any], classOf[String]))
+    val mhVoid  = l.findVirtual(classOf[Foo], "void", methodType(classOf[String], classOf[Void]))
 
     assert(-42 == (mhNeg.invokeExact(self, 42): Int))
     assert(-33 == (mhNeg.invokeExact(self, 33): Int))
@@ -43,6 +45,8 @@ object Test {
     assert("any2" == any2)
     def any3 = mhObj.invokeExact(self, "any3")
     assert("any3" == any3)
+
+    assert("void" == (mhVoid.invokeExact(self, null: Void): String))
 
     expectWrongMethod {
       l // explicit chain method call
