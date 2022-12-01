@@ -7,10 +7,9 @@ object Test {
   def main(args: Array[String]): Unit = {
     val l = MethodHandles.lookup()
     val mhCL = l.findStatic(classOf[ClassLoader], "getPlatformClassLoader", methodType(classOf[ClassLoader]))
-    // sanity check that the non-signature-polymorphic invocations work as expected
+    // `invoke` and `invokeExact` are both signature polymorphic
     assert(null != (mhCL.invoke(): ClassLoader))
     assert(null != (mhCL.invoke().asInstanceOf[ClassLoader]: ClassLoader))
-    // now go signature polymorphic
     assert(null != (mhCL.invokeExact(): ClassLoader))
     // I've commented out this part of the Dotty test because here in Scala 2,
     // we didn't implement specifying a signature polymorphic method's return type
