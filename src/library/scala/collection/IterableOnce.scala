@@ -936,11 +936,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Sums the elements of this collection.
    *
-   *  The default implementation uses `reduce` for a known non-empty collection,
-   *  `foldLeft` otherwise.
-   *
-   *  If `foldLeft` is used, this implementation works around pollution of the math context
-   *  by ignoring the identity element.
+   *  The default implementation uses `reduce` for a known non-empty collection, `foldLeft` otherwise.
    *
    *   $willNotTerminateInf
    *
@@ -951,24 +947,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def sum[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 =>
-        val z = num.zero
-        if ((num eq Numeric.BigDecimalIsFractional) || (num eq Numeric.BigDecimalAsIfIntegral)) {
-          def nonPollutingPlus(x: B, y: B): B = if (x.asInstanceOf[AnyRef] eq z.asInstanceOf[AnyRef]) y else num.plus(x, y)
-          foldLeft(z)(nonPollutingPlus)
-        }
-        else foldLeft(z)(num.plus)
+      case -1 => foldLeft(num.zero)(num.plus)
       case  0 => num.zero
       case  _ => reduce(num.plus)
     }
 
   /** Multiplies together the elements of this collection.
    *
-   *  The default implementation uses `reduce` for a known non-empty collection,
-   *  `foldLeft` otherwise.
-   *
-   *  If `foldLeft` is used, this implementation works around pollution of the math context
-   *  by ignoring the identity element.
+   *  The default implementation uses `reduce` for a known non-empty collection, `foldLeft` otherwise.
    *
    *  $willNotTerminateInf
    *
@@ -979,13 +965,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def product[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 =>
-        val u = num.one
-        if ((num eq Numeric.BigDecimalIsFractional) || (num eq Numeric.BigDecimalAsIfIntegral)) {
-          def nonPollutingProd(x: B, y: B): B = if (x.asInstanceOf[AnyRef] eq u.asInstanceOf[AnyRef]) y else num.times(x, y)
-          foldLeft(u)(nonPollutingProd)
-        }
-        else foldLeft(u)(num.times)
+      case -1 => foldLeft(num.one)(num.times)
       case  0 => num.one
       case  _ => reduce(num.times)
     }

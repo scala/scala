@@ -12,22 +12,24 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
+import org.junit.Assert.{assertEquals, assertNotEquals}
+import org.junit.Assert.{assertFalse, assertTrue}
 
-import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime.stringOf
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
-import scala.util.chaining._
+import scala.reflect.ClassTag
+import scala.runtime.BoxesRunTime
+import scala.runtime.ScalaRunTime.stringOf
 import scala.util.{Failure, Success, Try}
+import scala.util.chaining._
 import scala.util.control.{ControlThrowable, NonFatal}
+import java.lang.ref._
+import java.lang.reflect.{Array => _, _}
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
-import java.lang.ref._
-import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
-import scala.annotation.nowarn
 
 /** This module contains additional higher-level assert statements
  *  that are ultimately based on junit.Assert primitives.
@@ -61,6 +63,18 @@ object AssertUtil {
   private def dump(s: String) = hexdump(s).mkString("\n")
   def assertEqualStrings(expected: String)(actual: String) =
     assert(expected == actual, s"Expected:\n${dump(expected)}\nActual:\n${dump(actual)}")
+
+  // assertEquals but use BoxesRunTime.equals
+  // let junit format a message on failure
+  def assertEqualsAny(expected: Any, actual: Any): Unit =
+    if (!BoxesRunTime.equals(expected, actual)) assertEquals(expected, actual)
+  // as a bonus, message is by-name, though retains junit parameter order
+  def assertEqualsAny(message: => String, expected: Any, actual: Any): Unit =
+    if (!BoxesRunTime.equals(expected, actual)) assertEquals(message, expected, actual)
+  def assertNotEqualsAny(expected: Any, actual: Any): Unit =
+    if (BoxesRunTime.equals(expected, actual)) assertNotEquals(expected, actual)
+  def assertNotEqualsAny(message: => String, expected: Any, actual: Any): Unit =
+    if (BoxesRunTime.equals(expected, actual)) assertNotEquals(message, expected, actual)
 
   private final val timeout = 60 * 1000L                 // wait a minute
 
