@@ -843,7 +843,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @return    `true` if the $coll contains no elements, `false` otherwise.
    */
-  def isEmpty: Boolean = !iterator.hasNext
+  def isEmpty: Boolean =
+    knownSize match {
+      case -1 => !iterator.hasNext
+      case  0 => true
+      case  _ => false
+    }
 
   /** Tests whether the $coll is not empty.
    *
@@ -929,7 +934,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     i - start
   }
 
-  /** Sums up the elements of this collection.
+  /** Sums the elements of this collection.
+   *
+   *  The default implementation uses `reduce` for a known non-empty collection, `foldLeft` otherwise.
    *
    *   $willNotTerminateInf
    *
@@ -940,12 +947,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def sum[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 => reduceLeftIterator[B](num.zero)(num.plus)
+      case -1 => foldLeft(num.zero)(num.plus)
       case  0 => num.zero
       case  _ => reduce(num.plus)
     }
 
-  /** Multiplies up the elements of this collection.
+  /** Multiplies together the elements of this collection.
+   *
+   *  The default implementation uses `reduce` for a known non-empty collection, `foldLeft` otherwise.
    *
    *  $willNotTerminateInf
    *
@@ -956,7 +965,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def product[B >: A](implicit num: Numeric[B]): B =
     knownSize match {
-      case -1 => reduceLeftIterator[B](num.one)(num.times)
+      case -1 => foldLeft(num.one)(num.times)
       case  0 => num.one
       case  _ => reduce(num.times)
     }

@@ -41,6 +41,9 @@ object MimaFilters extends AutoPlugin {
 
     // private class used by methods
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.IterableOnceOps$Maximized"),
+
+    // private object used by methods
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Numeric$BigDecimalIsConflicted$"),
   )
 
   override val buildSettings = Seq(
