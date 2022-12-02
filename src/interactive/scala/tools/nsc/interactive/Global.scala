@@ -995,6 +995,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     respond(response) { scopeMemberFlatten(scopeMembers(pos)) }
   }
 
+  @nowarn("msg=inheritance from class LinkedHashMap")
   private class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
     override def default(key: Name) = Set()
 

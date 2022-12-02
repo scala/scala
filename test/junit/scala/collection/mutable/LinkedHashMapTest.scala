@@ -3,13 +3,15 @@ package scala.collection.mutable
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{ Assert, Test }
+import org.junit.{Assert, Test}
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 /* Test for scala/bug#9095 */
 @RunWith(classOf[JUnit4])
 class LinkedHashMapTest {
+  @nowarn("msg=inheritance from class LinkedHashMap")
   class TestClass extends mutable.LinkedHashMap[String, Int] {
     def lastItemRef = lastEntry
   }
