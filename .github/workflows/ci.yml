@@ -3,6 +3,7 @@ name: Scala Merge CI
 on:
   push:
     branches: ['2.*.x']
+  workflow_dispatch:
 
 defaults:
   run:
