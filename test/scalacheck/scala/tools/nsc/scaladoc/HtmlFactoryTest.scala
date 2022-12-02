@@ -538,7 +538,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     //println(files)
 
     // class
-    {
+    locally {
       val html = files.get("com/example/p1/Clazz.html")
         .map(page => { lazy val s = toHtml(page); () => s })
       property("class") = html.map(_()).isDefined
