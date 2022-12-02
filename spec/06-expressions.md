@@ -416,9 +416,10 @@ Otherwise, `´U´` is the expected type at the call site. If the expected type i
 
 ###### Note
 
-On the Java platform version 11 and later, signature polymorphic methods are native,
-members of `java.lang.invoke.MethodHandle` or `java.lang.invoke.VarHandle`, and have a single
-repeated parameter of type `java.lang.Object*`.
+On the Java platform version 11 and later, a method is signature polymorphic if it is native,
+a member of `java.lang.invoke.MethodHandle` or `java.lang.invoke.VarHandle`, and has a single
+repeated parameter of type `java.lang.Object*`. (These requirements also work for Java 8,
+which had fewer such methods.)
 
 
 ## Method Values
