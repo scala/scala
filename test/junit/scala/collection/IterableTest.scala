@@ -463,7 +463,7 @@ class IterableTest {
 
   @Test def `IterableOnceOps.reduceRight consumes one iterator`: Unit = assertEquals(106, SingleUseIterable(42, 27, 37).reduceRight(_ + _))
   @Test def `IterableOnceOps.reduceRight of empty iterator`: Unit =
-    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().reduceRight(_ + _), _.contains("reduceRight"))
+    assertThrows[UnsupportedOperationException](SingleUseIterable[Int]().reduceRight(_ + _), _.contains("reduceLeft"))
   @Test def `IterableOnceOps.reduceRight consumes no iterator`: Unit =
     assertThrows[UnsupportedOperationException](ZeroUseIterable[Int]().reduceRight(_ + _), _.contains("reduceRight"))
 

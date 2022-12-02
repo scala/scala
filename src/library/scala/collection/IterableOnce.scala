@@ -783,12 +783,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def reduceRight[B >: A](op: (A, B) => B): B = this match {
     case seq: IndexedSeq[A @unchecked] if seq.length > 0 => foldr[A, B](seq, op)
     case _ if knownSize == 0 => throw new UnsupportedOperationException("empty.reduceRight")
-    case _ =>
-      try reversed.reduceLeft[B]((x, y) => op(y, x))    // reduceLeftIterator
-      catch {
-        case e: UnsupportedOperationException if e.getMessage == "empty.reduceLeft" =>
-          throw new UnsupportedOperationException("empty.reduceRight")
-      }
+    case _ => reversed.reduceLeft[B]((x, y) => op(y, x)) // reduceLeftIterator
   }
 
   /** Optionally applies a binary operator to all elements of this $coll, going left to right.
