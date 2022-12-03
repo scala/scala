@@ -121,6 +121,27 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
           }
         }
         this
+      case lhs: collection.mutable.LinkedHashSet[A] =>
+        val iter = lhs.entryIterator
+        var current = rootNode
+        while (iter.hasNext) {
+          val next = iter.next()
+          val originalHash = lhs.unimproveHash(next.hash)
+          val improved = improve(originalHash)
+          current = current.updated(next.key, originalHash, improved, 0)
+
+          if (current ne rootNode) {
+            var shallowlyMutableNodeMap = Node.bitposFrom(Node.maskFrom(improved, 0))
+            while (iter.hasNext) {
+              val next = iter.next()
+              val originalHash = lhs.unimproveHash(next.hash)
+              val improved = improve(originalHash)
+              shallowlyMutableNodeMap = current.updateWithShallowMutations(next.key, originalHash, improved, 0, shallowlyMutableNodeMap)
+            }
+            return new HashSet(current)
+          }
+        }
+        this
       case _ =>
         val iter = that.iterator
         var current = rootNode

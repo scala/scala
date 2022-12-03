@@ -190,6 +190,27 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
         }
       }
       this
+    case lhm: mutable.LinkedHashMap[K @unchecked, V @unchecked] =>
+      val iter = lhm.entryIterator
+      var current = rootNode
+      while (iter.hasNext) {
+        val next = iter.next()
+        val originalHash = lhm.unimproveHash(next.hash)
+        val improved = improve(originalHash)
+        current = current.updated(next.key, next.value, originalHash, improved, 0, replaceValue = true)
+
+        if (current ne rootNode) {
+          var shallowlyMutableNodeMap = Node.bitposFrom(Node.maskFrom(improved, 0))
+
+          while (iter.hasNext) {
+            val next = iter.next()
+            val originalHash = lhm.unimproveHash(next.hash)
+            shallowlyMutableNodeMap = current.updateWithShallowMutations(next.key, next.value, originalHash, improve(originalHash), 0, shallowlyMutableNodeMap)
+          }
+          return new HashMap(current)
+        }
+      }
+      this
     case _ =>
       class accum extends AbstractFunction2[K, V1, Unit] with Function1[(K, V1), Unit] {
         var changed = false
@@ -389,6 +410,24 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
             while (iter.hasNext) {
               val next = iter.next()
               val originalHash = hashSet.unimproveHash(next.hash)
+              val improved = improve(originalHash)
+              curr = curr.removed(next.key, originalHash, improved, 0)
+              if (curr.size == 0) {
+                return HashMap.empty
+              }
+            }
+            newHashMapOrThis(curr)
+          }
+        case lhashSet: collection.mutable.LinkedHashSet[K] =>
+          if (lhashSet.isEmpty) {
+            this
+          } else {
+            val iter = lhashSet.entryIterator
+            var curr = rootNode
+
+            while (iter.hasNext) {
+              val next = iter.next()
+              val originalHash = lhashSet.unimproveHash(next.hash)
               val improved = improve(originalHash)
               curr = curr.removed(next.key, originalHash, improved, 0)
               if (curr.size == 0) {
@@ -2350,6 +2389,14 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
         while (iter.hasNext) {
           val next = iter.next()
           val originalHash = hm.unimproveHash(next.hash)
+          val hash = improve(originalHash)
+          update(rootNode, next.key, next.value, originalHash, hash, 0)
+        }
+      case lhm: collection.mutable.LinkedHashMap[K, V] =>
+        val iter = lhm.entryIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          val originalHash = lhm.unimproveHash(next.hash)
           val hash = improve(originalHash)
           update(rootNode, next.key, next.value, originalHash, hash, 0)
         }

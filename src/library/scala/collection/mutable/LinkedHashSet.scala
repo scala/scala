@@ -16,6 +16,7 @@ package mutable
 
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.generic.DefaultSerializable
+import scala.util.hashing.MurmurHash3
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
@@ -106,6 +107,17 @@ class LinkedHashSet[A]
       if (hasNext) { val res = cur.key; cur = cur.later; res }
       else Iterator.empty.next()
   }
+  private[collection] def entryIterator: Iterator[Entry] = new AbstractIterator[Entry] {
+    private[this] var cur = firstEntry
+
+    def hasNext = cur ne null
+
+    def next() =
+      if (hasNext) {
+        val res = cur; cur = cur.later; res
+      }
+      else Iterator.empty.next()
+  }
 
   override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
@@ -130,6 +142,8 @@ class LinkedHashSet[A]
   @`inline` private[this] def improveHash(originalHash: Int): Int = {
     originalHash ^ (originalHash >>> 16)
   }
+
+  @`inline` private[collection] def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
 
   /** Computes the improved hash of this key */
   @`inline` private[this] def computeHash(o: A): Int = improveHash(o.##)
@@ -268,6 +282,33 @@ class LinkedHashSet[A]
         oldlen *= 2
       }
     }
+  }
+
+  override def hashCode(): Int = {
+      abstract class LinkedHashSetIterator[B](val firstentry: Entry) extends AbstractIterator[B] {
+        var cur = firstentry
+        def extract(nd: Entry): B
+        def hasNext: Boolean = cur ne null
+        def next(): B =
+          if (hasNext) {
+            val r = extract(cur)
+            cur = cur.later
+            r
+          } else Iterator.empty.next()
+      }
+
+      val setHashIterator = if (isEmpty) this.iterator
+      else {
+        new LinkedHashSetIterator[Any](firstEntry) {
+          var hash: Int = 0
+          override def hashCode: Int = hash
+          override def extract(nd: Entry): Any = {
+            hash = unimproveHash(nd.hash)
+            this
+          }
+        }
+      }
+      MurmurHash3.orderedHash(setHashIterator, MurmurHash3.setSeed)
   }
 
   @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
