@@ -1468,7 +1468,8 @@ trait Contexts { self: Analyzer =>
         }
         if ((defSym.isAliasType || lastDef.isAliasType) && pre.memberType(defSym) =:= lastPre.memberType(lastDef))
           defSym = NoSymbol
-        if (defSym.isStable && lastDef.isStable && singleType(pre, defSym) =:= singleType(lastPre, lastDef))
+        if (defSym.isStable && lastDef.isStable &&
+          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef))
           defSym = NoSymbol
         foundInPrefix = inPrefix && defSym.exists
         foundInSuper  = foundInPrefix && defSym.owner != cx.owner

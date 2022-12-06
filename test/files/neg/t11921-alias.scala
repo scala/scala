@@ -37,3 +37,13 @@ object t4 {
     }
   }
 }
+
+object t5 {
+  trait TT
+  class K[T <: TT](val t: T)
+  class C {
+    def f(t: TT) = new K[t.type](t) {
+      def test = t
+    }
+  }
+}
