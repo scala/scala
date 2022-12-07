@@ -357,7 +357,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         else rhs
 
       private def mkCheckedAccessorRhs(retVal: Tree, pos: Position, bitmap: BitmapInfo): Tree = {
-        val msg = s"Uninitialized field: ${clazz.sourceFile}: ${pos.line}"
+        val msg = s"Uninitialized field: ${clazz.sourceFile.name}: ${pos.line}"
         val result =
           IF(mkTest(bitmap, equalToZero = false)).
             THEN(retVal).
