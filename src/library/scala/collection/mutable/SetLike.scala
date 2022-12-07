@@ -136,7 +136,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *             which `p` returns `true` are retained in the set; all others
    *             are removed.
    */
-  def retain(p: A => Boolean): Unit =
+  def filterInPlace(p: A => Boolean): Unit =
     for (elem <- this.toList) // scala/bug#7269 toList avoids ConcurrentModificationException
       if (!p(elem)) this -= elem
 

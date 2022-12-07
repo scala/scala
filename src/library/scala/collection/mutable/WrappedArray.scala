@@ -178,7 +178,7 @@ object WrappedArray {
   private[this] def refCBF[T <: AnyRef](implicit m: ClassTag[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
     new CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] {
       def apply(from: WrappedArray[_]): Builder[T, WrappedArray[T]] =
-        ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]
+        ArrayBuilder.make[T](m) mapResult WrappedArray.make[T]
 
       def apply: Builder[T, WrappedArray[T]] =
         new ArrayBuilder.ofRef[T]()(m) mapResult WrappedArray.make[T]

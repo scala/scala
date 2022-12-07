@@ -20,6 +20,7 @@ import generic._
 import scala.collection.parallel.immutable.ParHashSet
 import scala.annotation.tailrec
 import scala.runtime.AbstractFunction1
+import scala.collection.IterableOnce
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -1304,7 +1305,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       this
     }
 
-    override def ++=(xs: TraversableOnce[A]): HashSetBuilder.this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[A]): HashSetBuilder.this.type = xs match {
       case hs: HashSet[A] =>
         if (rootNode.isEmpty) {
           if (!hs.isEmpty)

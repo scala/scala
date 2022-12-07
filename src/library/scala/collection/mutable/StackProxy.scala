@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.collection.IterableOnce
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
  *
@@ -52,7 +53,7 @@ trait StackProxy[A] extends Stack[A] with Proxy {
     this
   }
 
-  override def pushAll(xs: TraversableOnce[A]): this.type = { self pushAll xs; this }
+  override def pushAll(xs: IterableOnceIterableOnce[A]): this.type = { self pushAll xs; this }
 
   override def push(elem1: A, elem2: A, elems: A*): this.type = {
     self.push(elem1).push(elem2).pushAll(elems)

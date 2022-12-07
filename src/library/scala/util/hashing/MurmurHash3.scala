@@ -16,6 +16,7 @@ package util.hashing
 import java.lang.Integer.{rotateLeft => rotl}
 
 import scala.runtime.AbstractFunction1
+import scala.IterableOnce
 
 private[hashing] class MurmurHash3 {
   /** Mix in a block of data into an intermediate hash value. */
@@ -97,7 +98,7 @@ private[hashing] class MurmurHash3 {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  final def unorderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
+  final def unorderedHash(xs: IterableOnceIterableOnce[Any], seed: Int): Int = {
     if  (xs.isEmpty) {
       var h = seed
       h = mix(h, 0)
@@ -129,7 +130,7 @@ private[hashing] class MurmurHash3 {
   }
   /** Compute a hash that depends on the order of its arguments.
    */
-  final def orderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
+  final def orderedHash(xs: IterableOnceIterableOnce[Any], seed: Int): Int = {
     if  (xs.isEmpty) finalizeHash(seed, 0)
     else {
       //avoid the LazyRef as we don't have an @eager object
@@ -241,11 +242,11 @@ object MurmurHash3 extends MurmurHash3 {
 
   def arrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, arraySeed)
   def bytesHash(data: Array[Byte]): Int            = arrayHash(data, arraySeed)
-  def orderedHash(xs: TraversableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
+  def orderedHash(xs: IterableOnceIterableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
   private [scala] def product2Hash(x: Any, y: Any): Int = product2Hash(x, y, productSeed)
   def productHash(x: Product): Int                 = productHash(x, productSeed)
   def stringHash(x: String): Int                   = stringHash(x, stringSeed)
-  def unorderedHash(xs: TraversableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
+  def unorderedHash(xs: IterableOnceIterableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
 
   private[scala] def wrappedArrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
   private[scala] def wrappedBytesHash(data: Array[Byte]): Int            = arrayHash(data, seqSeed)
@@ -271,8 +272,8 @@ object MurmurHash3 extends MurmurHash3 {
     def hash(data: Array[Byte]) = bytesHash(data)
   }
 
-  def orderedHashing = new Hashing[TraversableOnce[Any]] {
-    def hash(xs: TraversableOnce[Any]) = orderedHash(xs)
+  def orderedHashing = new Hashing[IterableOnceIterableOnce[Any]] {
+    def hash(xs: IterableOnceIterableOnce[Any]) = orderedHash(xs)
   }
 
   def productHashing = new Hashing[Product] {
@@ -283,8 +284,8 @@ object MurmurHash3 extends MurmurHash3 {
     def hash(x: String) = stringHash(x)
   }
 
-  def unorderedHashing = new Hashing[TraversableOnce[Any]] {
-    def hash(xs: TraversableOnce[Any]) = unorderedHash(xs)
+  def unorderedHashing = new Hashing[IterableOnceIterableOnce[Any]] {
+    def hash(xs: IterableOnceIterableOnce[Any]) = unorderedHash(xs)
   }
 
   /** All this trouble and foreach still appears faster.

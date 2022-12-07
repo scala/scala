@@ -17,6 +17,7 @@ package mutable
 import generic._
 import immutable.{List, Nil, ::}
 import java.io.{ObjectOutputStream, ObjectInputStream}
+import scala.collection.{ Iterable, IterableOnce }
 
 /** A `Buffer` implementation backed by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
@@ -55,7 +56,6 @@ final class ListBuffer[A]
 {
   override def companion: GenericCompanion[ListBuffer] = ListBuffer
 
-  import scala.collection.Traversable
   import scala.collection.immutable.ListSerializeEnd
 
   /** Expected invariants:
@@ -179,13 +179,13 @@ final class ListBuffer[A]
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = xs match {
     case x: AnyRef if x eq this      => this ++= (this take size)
     case _                           => super.++=(xs)
 
   }
 
-  override def ++=:(xs: TraversableOnce[A]): this.type =
+  override def ++=:(xs: IterableOnceIterableOnce[A]): this.type =
     if (xs.asInstanceOf[AnyRef] eq this) ++=: (this take size) else super.++=:(xs)
 
   /** Clears the buffer contents.
@@ -220,7 +220,7 @@ final class ListBuffer[A]
    *  @param  seq   the iterable object providing all elements to insert.
    *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversable[A]) {
+  def insertAll(n: Int, seq: Iterable[A]) {
     // We check the bounds early, so that we don't trigger copying.
     if (n < 0 || n > len) throw new IndexOutOfBoundsException(n.toString)
     ensureUnaliased()

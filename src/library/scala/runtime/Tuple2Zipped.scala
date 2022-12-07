@@ -15,8 +15,8 @@ package runtime
 
 
 import scala.collection.{ TraversableLike, IterableLike }
-import scala.collection.generic.{ CanBuildFrom => CBF }
 import scala.language.{ higherKinds, implicitConversions }
+import scala.{ Iterable, IterableOnce }
 
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only
@@ -30,7 +30,7 @@ trait ZippedTraversable2[+El1, +El2] extends Any {
   def foreach[U](f: (El1, El2) => U): Unit
 }
 object ZippedTraversable2 {
-  implicit def zippedTraversable2ToTraversable[El1, El2](zz: ZippedTraversable2[El1, El2]): Traversable[(El1, El2)] = {
+  implicit def zippedTraversable2ToTraversable[El1, El2](zz: ZippedTraversable2[El1, El2]): Iterable[(El1, El2)] = {
     new scala.collection.AbstractTraversable[(El1, El2)] {
       def foreach[U](f: ((El1, El2)) => U): Unit = zz foreach Function.untupled(f)
     }
@@ -41,8 +41,8 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
   private def coll1 = colls._1
   private def coll2 = colls._2
 
-  def map[B, To](f: (El1, El2) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(coll1.repr)
+  def map[B, To](f: (El1, El2) => B)(implicit cbf: BuildFrom[Repr1, B, To]): To = {
+    val b = cbf.newBuilder(coll1.repr)
     b.sizeHint(coll1)
     val elems2 = coll2.iterator
 
@@ -56,8 +56,8 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     b.result()
   }
 
-  def flatMap[B, To](f: (El1, El2) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
-    val b = cbf(coll1.repr)
+  def flatMap[B, To](f: (El1, El2) => IterableOnceIterableOnce[B])(implicit cbf: BuildFrom[Repr1, B, To]): To = {
+    val b = cbf.newBuilder(coll1.repr)
     val elems2 = coll2.iterator
 
     for (el1 <- coll1) {
@@ -70,9 +70,9 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
     b.result()
   }
 
-  def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CBF[Repr1, El1, To1], cbf2: CBF[Repr2, El2, To2]): (To1, To2) = {
-    val b1 = cbf1(coll1.repr)
-    val b2 = cbf2(coll2.repr)
+  def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: BuildFrom[Repr1, El1, To1], cbf2: BuildFrom[Repr2, El2, To2]): (To1, To2) = {
+    val b1 = cbf1.newBuilder(coll1.repr)
+    val b2 = cbf2.newBuilder(coll2.repr)
     val elems2 = coll2.iterator
 
     for (el1 <- coll1) {
@@ -121,12 +121,12 @@ final class Tuple2Zipped[El1, Repr1, El2, Repr2](val colls: (TraversableLike[El1
 
 object Tuple2Zipped {
   final class Ops[T1, T2](private val x: (T1, T2)) extends AnyVal {
-    def invert[El1, CC1[X] <: TraversableOnce[X], El2, CC2[X] <: TraversableOnce[X], That]
+    def invert[El1, CC1[X] <: IterableOnceIterableOnce[X], El2, CC2[X] <: IterableOnceIterableOnce[X], That]
       (implicit w1: T1 <:< CC1[El1],
                 w2: T2 <:< CC2[El2],
-                bf: scala.collection.generic.CanBuildFrom[CC1[_], (El1, El2), That]
+                bf: BuildFrom[CC1[_], (El1, El2), That]
       ): That = {
-        val buf = bf(x._1)
+        val buf = bf.newBuilder(x._1)
         val it1 = x._1.toIterator
         val it2 = x._2.toIterator
         while (it1.hasNext && it2.hasNext)

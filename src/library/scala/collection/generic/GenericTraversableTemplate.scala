@@ -18,6 +18,7 @@ import mutable.Builder
 import scala.annotation.migration
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
+import scala.collection.IterableOnce
 
 /** A template class for companion objects of ``regular`` collection classes
  *  that represent an unconstrained higher-kinded type.
@@ -71,7 +72,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    */
   def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 
-  private def sequential: TraversableOnce[A] = this.asInstanceOf[GenTraversableOnce[A]].seq
+  private def sequential: IterableOnceIterableOnce[A] = this.asInstanceOf[GenTraversableOnce[A]].seq
 
   /** Converts this $coll of pairs into two collections of the first and second
    *  half of each pair.

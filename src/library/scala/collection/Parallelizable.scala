@@ -14,6 +14,7 @@ package scala
 package collection
 
 import parallel.Combiner
+import scala.collection.IterableOnce
 
 /** This trait describes collections which can be turned into parallel collections
  *  by invoking the method `par`. Parallelizable collections may be parameterized with
@@ -24,7 +25,7 @@ import parallel.Combiner
  */
 trait Parallelizable[+A, +ParRepr <: Parallel] extends Any {
 
-  def seq: TraversableOnce[A]
+  def seq: IterableOnceIterableOnce[A]
 
   /** Returns a parallel implementation of this collection.
    *

@@ -18,6 +18,7 @@ import mutable.Builder
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import scala.collection.Iterable
 
 /** This trait represents collections classes which require class
  *  tags for their element types.
@@ -25,7 +26,7 @@ import scala.reflect.ClassTag
  *  @author Aleksandar Prokopec
  *  @since 2.8
  */
-trait GenericClassTagTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
+trait GenericClassTagTraversableTemplate[+A, +CC[X] <: Iterable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
   implicit protected[this] val tag: ClassTag[A]
   def classTagCompanion: GenericClassTagCompanion[CC]
   def genericClassTagBuilder[B](implicit tag: ClassTag[B]): Builder[B, CC[B]] = classTagCompanion.newBuilder[B]

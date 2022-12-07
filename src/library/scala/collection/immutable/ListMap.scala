@@ -185,7 +185,7 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
 
     @tailrec private[this] def removeInternal(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]]): ListMap[A, B1] =
       if (cur.isEmpty) acc.last
-      else if (k == cur.key) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
+      else if (k == cur.key) acc.foldLeft(cur.next) { case (t, h) => new t.Node(h.key, h.value) }
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListMap[A, B1] = ListMap.this

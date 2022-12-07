@@ -1604,7 +1604,7 @@ trait Types
       parents foreach loop
       if (decls.isEmpty && flattened.size == 1) {
         flattened.head
-      } else if (!flattened.sameElements(parents)) {
+      } else if (!flattened.iterator.sameElements(parents)) {
         refinedType(flattened.toList, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
       } else if (isHigherKinded) {
         etaExpand

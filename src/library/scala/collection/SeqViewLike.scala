@@ -221,7 +221,7 @@ trait SeqViewLike[+A,
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
-  override def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = {
+  override def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: BuildFrom[This, B, That]): That = {
     // Be careful to not evaluate the entire sequence!  Patch should work (slowly, perhaps) on infinite streams.
     val nonNegFrom = math.max(0,from)
     val nonNegRep = math.max(0,replaced)
@@ -231,24 +231,24 @@ trait SeqViewLike[+A,
 //    else super.patch[B, That](from, patch, replaced)(bf)
   }
 
-  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
+  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuildFrom[This, B, That]): That =
     patch(length, fill(len - length)(elem), 0)
 
-  override def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That =
+  override def reverseMap[B, That](f: A => B)(implicit bf: BuildFrom[This, B, That]): That =
     reverse map f
 
-  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That = {
+  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: BuildFrom[This, B, That]): That = {
     require(0 <= index && index < length) // !!! can't call length like this.
     patch(index, List(elem), 1)(bf)
   }
 
-  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
+  override def +:[B >: A, That](elem: B)(implicit bf: BuildFrom[This, B, That]): That =
     newPrepended(elem :: Nil).asInstanceOf[That]
 
-  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
+  override def :+[B >: A, That](elem: B)(implicit bf: BuildFrom[This, B, That]): That =
     ++(Iterator.single(elem))(bf)
 
-  override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[This, B, That]): That =
+  override def union[B >: A, That](that: GenSeq[B])(implicit bf: BuildFrom[This, B, That]): That =
     newForced(thisSeq union that).asInstanceOf[That]
 
   override def diff[B >: A](that: GenSeq[B]): This =

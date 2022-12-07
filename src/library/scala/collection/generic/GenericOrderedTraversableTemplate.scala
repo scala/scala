@@ -17,13 +17,14 @@ package generic
 import mutable.Builder
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
+import scala.collection.Iterable
 
 /** This trait represents collections classes which require
  *  ordered element types.
  *
  *  @author Aleksandar Prokopec
  */
-trait GenericOrderedTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
+trait GenericOrderedTraversableTemplate[+A, +CC[X] <: Iterable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
   implicit protected[this] val ord: Ordering[A]
   def orderedCompanion: GenericOrderedCompanion[CC]
   def genericOrderedBuilder[B](implicit ord: Ordering[B]): Builder[B, CC[B]] = orderedCompanion.newBuilder[B]

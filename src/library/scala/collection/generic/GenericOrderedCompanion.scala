@@ -16,6 +16,7 @@ package generic
 
 import mutable.Builder
 import scala.language.higherKinds
+import scala.collection.Iterable
 
 /** This class represents companions of classes which require the ordered trait
  *  for their element types.
@@ -23,7 +24,7 @@ import scala.language.higherKinds
  *  @author Aleksandar Prokopec
  *  @since 2.8
  */
-abstract class GenericOrderedCompanion[+CC[X] <: Traversable[X]] {
+abstract class GenericOrderedCompanion[+CC[X] <: Iterable[X]] {
   protected[this] type Coll = CC[_]
 
   def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]]

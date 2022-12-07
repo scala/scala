@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import scala.util.hashing.MurmurHash3
+import scala.collection.IterableOnce
 
 /**
  * A generic trait for immutable maps. Concrete classes have to provide
@@ -114,7 +115,7 @@ object Map extends ImmutableMapFactory[Map] {
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: Nothing](xs: GenTraversableOnce[(Any, V1)]): Map[Any, V1] = ++[(Any, V1), Map[Any, V1]](xs)(Map.canBuildFrom[Any, V1])
-    override def ++[B >: (Any, Nothing), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = {
+    override def ++[B >: (Any, Nothing), That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Map[Any, Nothing], B, That]): That = {
       if (isMapCBF(bf))
         that match {
           case hm: HashMap[a, b] if hm.size > 4 => hm.asInstanceOf[That]
@@ -174,7 +175,7 @@ object Map extends ImmutableMapFactory[Map] {
       else new Map2(key1, value1, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
-    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Map[K, V], B, That]): That = {
       if (isMapCBF(bf)) that match {
         case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
         case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
@@ -251,7 +252,7 @@ object Map extends ImmutableMapFactory[Map] {
       else new Map3(key1, value1, key2, value2, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
-    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Map[K, V], B, That]): That = {
       if (isMapCBF(bf)) that match {
         case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
         case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
@@ -352,7 +353,7 @@ object Map extends ImmutableMapFactory[Map] {
       else new Map4(key1, value1, key2, value2, key3, value3, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
-    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Map[K, V], B, That]): That = {
       if (isMapCBF(bf)) that match {
         case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
         case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
@@ -467,7 +468,7 @@ object Map extends ImmutableMapFactory[Map] {
       else (new HashMap).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
-    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Map[K, V], B, That]): That = {
       if (isMapCBF(bf)) that match {
         case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
         case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
@@ -636,7 +637,7 @@ object Map extends ImmutableMapFactory[Map] {
       this
     }
 
-    override def ++=(xs: TraversableOnce[(K, V)]): MapBuilderImpl.this.type = {
+    override def ++=(xs: IterableOnceIterableOnce[(K, V)]): MapBuilderImpl.this.type = {
       xs match {
         case _ if switchedToHashMapBuilder =>
           hashMapBuilder ++= xs

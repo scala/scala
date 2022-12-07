@@ -15,6 +15,7 @@ package collection
 package generic
 
 import scala.language.higherKinds
+import scala.collection.Iterable
 
 /** A template for companion objects of `Traversable` and subclasses thereof.
  *  This class provides a set of operations to create `$Coll` objects.
@@ -69,7 +70,7 @@ extends GenericCompanion[CC] {
    *  @param xss the collections that are to be concatenated.
    *  @return the concatenation of all the collections.
    */
-  def concat[A](xss: Traversable[A]*): CC[A] = {
+  def concat[A](xss: Iterable[A]*): CC[A] = {
     val b = newBuilder[A]
     // At present we're using IndexedSeq as a proxy for "has a cheap size method".
     if (xss forall (_.isInstanceOf[IndexedSeq[_]]))

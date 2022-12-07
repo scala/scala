@@ -258,8 +258,8 @@ self =>
     }
   }
 
-  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
-    val b = bf(repr)
+  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: BuildFrom[Repr, (A1, B), That]): That = {
+    val b = bf.newBuilder(repr)
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)
@@ -267,8 +267,8 @@ self =>
     b.result()
   }
 
-  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
-    val b = bf(repr)
+  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: BuildFrom[Repr, (A1, B), That]): That = {
+    val b = bf.newBuilder(repr)
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)
@@ -280,8 +280,8 @@ self =>
     b.result()
   }
 
-  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
-    val b = bf(repr)
+  def zipWithIndex[A1 >: A, That](implicit bf: BuildFrom[Repr, (A1, Int), That]): That = {
+    val b = bf.newBuilder(repr)
     val these = this.iterator
     var i = 0
     while (these.hasNext) {

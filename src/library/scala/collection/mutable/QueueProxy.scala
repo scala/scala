@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.collection.IterableOnce
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
@@ -54,7 +55,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: TraversableOnce[A]): this.type = {
+  override def ++=(it: IterableOnceIterableOnce[A]): this.type = {
     self ++= it
     this
   }

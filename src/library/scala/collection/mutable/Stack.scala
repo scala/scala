@@ -18,6 +18,7 @@ import generic._
 import scala.collection.immutable.{List, Nil}
 import scala.collection.Iterator
 import scala.annotation.migration
+import scala.collection.IterableOnce
 
 /** Factory object for the `mutable.Stack` class.
  *
@@ -121,7 +122,7 @@ extends AbstractSeq[A]
    *  @param xs the traversable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll(xs: TraversableOnce[A]): this.type = { xs foreach push ; this }
+  def pushAll(xs: IterableOnceIterableOnce[A]): this.type = { xs foreach push ; this }
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

@@ -69,6 +69,6 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
     case ts: TreeSet[A]  =>
       ts.removeAll(xs).asInstanceOf[Repr]
     case _ =>
-      (repr /: xs.seq) (_ - _)
+      xs.seq.foldLeft(repr) (_ - _)
   }
 }

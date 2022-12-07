@@ -88,7 +88,7 @@ self =>
    *  @return        a new immutable map with the bindings of this map and those from `xs`.
    */
   override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): immutable.Map[K, V1] =
-    ((repr: immutable.Map[K, V1]) /: xs.seq) (_ + _)
+    xs.seq.foldLeft((repr: immutable.Map[K, V1])) (_ + _)
 
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys
@@ -129,8 +129,8 @@ self =>
    *  @param f A function over keys and values
    *  @return  the updated map
    */
-  def transform[W, That](f: (K, V) => W)(implicit bf: CanBuildFrom[This, (K, W), That]): That = {
-    val b = bf(repr)
+  def transform[W, That](f: (K, V) => W)(implicit bf: BuildFrom[This, (K, W), That]): That = {
+    val b = bf.newBuilder(repr)
     for ((key, value) <- this) b += ((key, f(key, value)))
     b.result()
   }

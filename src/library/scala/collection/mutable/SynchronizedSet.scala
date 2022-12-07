@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import script._
+import scala.collection.IterableOnce
 
 /** This class should be used as a mixin. It synchronizes the `Set`
  *  functions of the class into which it is mixed in.
@@ -44,7 +45,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.+=(elem)
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = synchronized[this.type] {
     super.++=(xs)
   }
 
@@ -52,7 +53,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.-=(elem)
   }
 
-  override def --=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+  override def --=(xs: IterableOnceIterableOnce[A]): this.type = synchronized[this.type] {
     super.--=(xs)
   }
 
@@ -85,7 +86,7 @@ trait SynchronizedSet[A] extends Set[A] {
   }
 
   override def retain(p: A => Boolean) = synchronized {
-    super.retain(p)
+    super.filterInPlace(p)
   }
 
   override def toList: List[A] = synchronized {

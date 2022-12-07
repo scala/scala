@@ -81,9 +81,9 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
     if (length > 0) foldr(0, length - 1, this(length - 1), op) else super.reduceRight(op)
 
   override /*IterableLike*/
-  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = that match {
+  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: BuildFrom[Repr, (A1, B), That]): That = that match {
     case that: IndexedSeq[_] =>
-      val b = bf(repr)
+      val b = bf.newBuilder(repr)
       var i = 0
       val len = this.length min that.length
       b.sizeHint(len)
@@ -97,8 +97,8 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
   }
 
   override /*IterableLike*/
-  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
-    val b = bf(repr)
+  def zipWithIndex[A1 >: A, That](implicit bf: BuildFrom[Repr, (A1, Int), That]): That = {
+    val b = bf.newBuilder(repr)
     val len = length
     b.sizeHint(len)
     var i = 0
@@ -171,7 +171,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
         i == len
       }
     case _ =>
-      super.sameElements(that)
+      super.iterator.sameElements(that)
   }
 
   override /*IterableLike*/

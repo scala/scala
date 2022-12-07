@@ -311,7 +311,7 @@ self =>
    *    @inheritdoc
    */
   def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] =
-    ((repr: Map[K, V1]) /: xs.seq) (_ + _)
+    xs.seq.foldLeft((repr: Map[K, V1])) (_ + _)
 
   /** Returns a new map obtained by removing all key/value pairs for which the predicate
    *  `p` returns `true`.
