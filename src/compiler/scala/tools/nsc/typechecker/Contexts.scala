@@ -1466,10 +1466,27 @@ trait Contexts { self: Analyzer =>
           }
           if (!defSym.exists) cx = cx.outer // push further outward
         }
+        def forwardedClassParam = lastDef.isParamAccessor && {
+          val parentClass = lastDef.owner
+          val templateCtx = thisContext.nextEnclosing(c => c.tree.isInstanceOf[Template] && c.owner.isNonBottomSubClass(parentClass))
+          templateCtx.owner.superClass == parentClass && {
+            templateCtx.tree.asInstanceOf[Template].parents.headOption.collect {
+              case Apply(_, args) => args
+            } match {
+              case Some(args) =>
+                // named args? repeated args?
+                args.zip(parentClass.primaryConstructor.paramss.headOption.getOrElse(Nil)).exists {
+                  case (arg: Ident, param) => param.name == lastDef.name && arg.symbol == defSym
+                  case _ => false
+                }
+              case _ => false
+            }
+          }
+        }
         if ((defSym.isAliasType || lastDef.isAliasType) && pre.memberType(defSym) =:= lastPre.memberType(lastDef))
           defSym = NoSymbol
         if (defSym.isStable && lastDef.isStable &&
-          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef))
+          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef || forwardedClassParam))
           defSym = NoSymbol
         foundInPrefix = inPrefix && defSym.exists
         foundInSuper  = foundInPrefix && defSym.owner != cx.owner

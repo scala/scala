@@ -47,3 +47,22 @@ object t5 {
     }
   }
 }
+
+object t6 {
+  class C(val name: String)
+  object Test {
+    def m(name: String) = new C(name) {
+      println(name)
+    }
+  }
+}
+
+object t7 {
+  abstract class A(val name: String)
+  class C(name: String) extends A(name)
+  object Test {
+    def m(name: String) = new C(name) {
+      println(name)
+    }
+  }
+}

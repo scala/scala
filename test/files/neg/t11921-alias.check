@@ -12,4 +12,11 @@ If shadowing was intended, write `this.c`.
 Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
       def n = c // ambiguous
               ^
-2 errors
+t11921-alias.scala:65: error: reference to name is ambiguous;
+it is both defined in method m and available as value name in class A
+Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+If shadowing was intended, write `this.name`.
+Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+      println(name)
+              ^
+3 errors
