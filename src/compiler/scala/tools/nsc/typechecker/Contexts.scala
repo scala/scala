@@ -1362,8 +1362,28 @@ trait Contexts { self: Analyzer =>
       LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
     def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
       LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
-    def ambiguousDefinitions(owner: Symbol, other: Symbol, addendum: String) =
-      LookupAmbiguous(s"it is both defined in $owner and available as ${other.fullLocationString}$addendum")
+    def ambiguousDefinitions(sym: Symbol, other: Symbol, otherFoundInSuper: Boolean, otherEnclClass: Symbol) = {
+      if (otherFoundInSuper) {
+        val enclDesc = if (otherEnclClass.isAnonymousClass) "anonymous class" else otherEnclClass.toString
+        val parent = otherEnclClass.parentSymbols.find(_.isNonBottomSubClass(other.owner)).getOrElse(NoSymbol)
+        val inherit = if (parent.exists && parent != other.owner) s", inherited through parent $parent" else ""
+        val message =
+          s"""it is both defined in the enclosing ${sym.owner} and available in the enclosing $enclDesc as $other (defined in ${other.ownsString}$inherit)
+             |Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+             |To continue using the symbol from the superclass, write `this.${sym.name}`.""".stripMargin
+        if (currentRun.isScala3)
+          Some(LookupAmbiguous(message))
+        else {
+          // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
+          other.updateAttachment(LookupAmbiguityWarning(
+            s"""reference to ${sym.name} is ambiguous;
+               |$message
+               |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""".stripMargin))
+          None
+        }
+      } else
+        Some(LookupAmbiguous(s"it is both defined in ${sym.owner} and available as ${other.fullLocationString}"))
+    }
 
     def apply(thisContext: Context, name: Name)(qualifies: Symbol => Boolean): NameLookup = {
       lookupError  = null
@@ -1466,27 +1486,10 @@ trait Contexts { self: Analyzer =>
           }
           if (!defSym.exists) cx = cx.outer // push further outward
         }
-        def forwardedClassParam = lastDef.isParamAccessor && {
-          val parentClass = lastDef.owner
-          val templateCtx = thisContext.nextEnclosing(c => c.tree.isInstanceOf[Template] && c.owner.isNonBottomSubClass(parentClass))
-          templateCtx.owner.superClass == parentClass && {
-            templateCtx.tree.asInstanceOf[Template].parents.headOption.collect {
-              case Apply(_, args) => args
-            } match {
-              case Some(args) =>
-                // named args? repeated args?
-                args.zip(parentClass.primaryConstructor.paramss.headOption.getOrElse(Nil)).exists {
-                  case (arg: Ident, param) => param.name == lastDef.name && arg.symbol == defSym
-                  case _ => false
-                }
-              case _ => false
-            }
-          }
-        }
         if ((defSym.isAliasType || lastDef.isAliasType) && pre.memberType(defSym) =:= lastPre.memberType(lastDef))
           defSym = NoSymbol
         if (defSym.isStable && lastDef.isStable &&
-          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef || forwardedClassParam))
+          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef))
           defSym = NoSymbol
         foundInPrefix = inPrefix && defSym.exists
         foundInSuper  = foundInPrefix && defSym.owner != cx.owner
@@ -1524,7 +1527,7 @@ trait Contexts { self: Analyzer =>
        *  1b) Definitions and declarations that are either inherited, or made
        *      available by a package clause and also defined in the same compilation unit
        *      as the reference to them, have the next highest precedence.
-       *      (Same precedence as 1 under -Ylegacy-binding.)
+       *      (Only in -Xsource:3, same precedence as 1 with a warning in Scala 2.)
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
        *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
@@ -1588,7 +1591,7 @@ trait Contexts { self: Analyzer =>
       // If the defSym is at 4, and there is a def at 1b in scope due to packaging, then the reference is ambiguous.
       // Also if defSym is at 1b inherited, the reference can be rendered ambiguous by a def at 1a in scope.
       val possiblyAmbiguousDefinition =
-        foundInSuper && cx.owner.isClass && !settings.legacyBinding.value ||
+        foundInSuper && cx.owner.isClass ||
         foreignDefined && !defSym.hasPackageFlag
       if (possiblyAmbiguousDefinition && !thisContext.unit.isJava) {
         val defSym0 = defSym
@@ -1608,17 +1611,10 @@ trait Contexts { self: Analyzer =>
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
         if (defSym.exists && (defSym ne defSym0)) {
-          val addendum =
-            if (wasFoundInSuper)
-            s"""|
-                |Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-                |If shadowing was intended, write `this.${defSym0.name}`.
-                |Or use `-Ylegacy-binding` to enable the previous behavior everywhere.""".stripMargin
-            else ""
           val ambiguity =
-            if (preferDef) ambiguousDefinitions(owner = defSym.owner, defSym0, addendum)
-            else ambiguousDefnAndImport(owner = defSym.owner, imp1)
-          return ambiguity
+            if (preferDef) ambiguousDefinitions(defSym, defSym0, wasFoundInSuper, cx0.enclClass.owner)
+            else Some(ambiguousDefnAndImport(owner = defSym.owner, imp1))
+          if (ambiguity.nonEmpty) return ambiguity.get
         }
         defSym = defSym0
         pre    = pre0

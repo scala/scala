@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Ylegacy-binding
+// scalac: -Werror -Wconf:msg=legacy-binding:s
 
 object test1 {
 

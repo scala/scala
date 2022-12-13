@@ -1,3 +1,5 @@
+// scalac: -Werror
+
 object t1 {
   class C[T] { type TT = T }
   object O {

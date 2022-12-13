@@ -1,4 +1,4 @@
-
+// scalac: -Werror
 
 object test1 {
 
@@ -63,4 +63,17 @@ class C {
 }
 object D extends C {
   println(global)    // OK, since global is defined in package
+}
+
+object test5 {
+  class A { val x = 1 }
+  class B extends A
+  object Uhu {
+    val x = 2
+    class C extends B {
+      class Inner {
+        def t = x // ambiguous, message mentions parent B
+      }
+    }
+  }
 }

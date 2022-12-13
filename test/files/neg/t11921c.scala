@@ -1,5 +1,4 @@
-
-// scalac: -Ylegacy-binding
+// scalac: -Wconf:msg=legacy-binding:s
 
 class C {
   def lazyMap[A, B](coll: Iterable[A], f: A => B) =

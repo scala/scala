@@ -267,8 +267,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
-  val legacyBinding = BooleanSetting("-Ylegacy-binding", "Observe legacy name binding preference for inherited member competing with local definition.")
-
   // Allows a specialised jar to be written. For instance one that provides stable hashing of content, or customisation of the file storage
   val YjarFactory = StringSetting   ("-YjarFactory", "classname", "factory for jar files", classOf[DefaultJarFactory].getName)
   val YaddBackendThreads = IntSetting   ("-Ybackend-parallelism", "maximum worker threads for backend", 1, Some((1,16)), (x: String) => None )

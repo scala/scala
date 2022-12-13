@@ -1,8 +1,14 @@
-t11921.scala:6: error: reference to coll is ambiguous;
-it is both defined in method lazyMap and available as method coll in trait Iterable
-Since 2.13.11, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-If shadowing was intended, write `this.coll`.
-Or use `-Ylegacy-binding` to enable the previous behavior everywhere.
+t11921.scala:6: error: type mismatch;
+ found   : A => B
+ required: B => B
+      def iterator = coll.iterator.map(f)    // coll is ambiguous
+                                       ^
+t11921.scala:6: warning: reference to coll is ambiguous;
+it is both defined in the enclosing method lazyMap and available in the enclosing anonymous class as method coll (defined in trait Iterable)
+Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+To continue using the symbol from the superclass, write `this.coll`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       def iterator = coll.iterator.map(f)    // coll is ambiguous
                      ^
+1 warning
 1 error
