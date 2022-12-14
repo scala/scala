@@ -43,7 +43,7 @@ class LinkedHashSet[A]
   // stepper is not overridden to use XTableStepper because that stepper would not return the
   // elements in insertion order
 
-  type Entry = LinkedHashSet.Entry[A]
+  /*private*/ type Entry = LinkedHashSet.Entry[A]
 
   protected var firstEntry: Entry = null
 
@@ -100,23 +100,21 @@ class LinkedHashSet[A]
 
   override def remove(elem: A): Boolean = remove0(elem, computeHash(elem))
 
-  def iterator: Iterator[A] = new AbstractIterator[A] {
+  private[this] abstract class LinkedHashSetIterator[T] extends AbstractIterator[T] {
     private[this] var cur = firstEntry
-    def hasNext = cur ne null
-    def next() =
-      if (hasNext) { val res = cur.key; cur = cur.later; res }
+    def extract(nd: Entry): T
+    def hasNext: Boolean = cur ne null
+    def next(): T =
+      if (hasNext) { val r = extract(cur); cur = cur.later; r }
       else Iterator.empty.next()
   }
-  private[collection] def entryIterator: Iterator[Entry] = new AbstractIterator[Entry] {
-    private[this] var cur = firstEntry
 
-    def hasNext = cur ne null
+  def iterator: Iterator[A] = new LinkedHashSetIterator[A] {
+    override def extract(nd: Entry): A = nd.key
+  }
 
-    def next() =
-      if (hasNext) {
-        val res = cur; cur = cur.later; res
-      }
-      else Iterator.empty.next()
+  private[collection] def entryIterator: Iterator[Entry] = new LinkedHashSetIterator[Entry] {
+    override def extract(nd: Entry): Entry = nd
   }
 
   override def foreach[U](f: A => U): Unit = {
@@ -284,22 +282,11 @@ class LinkedHashSet[A]
     }
   }
 
-  override def hashCode(): Int = {
-      abstract class LinkedHashSetIterator[B](val firstentry: Entry) extends AbstractIterator[B] {
-        var cur = firstentry
-        def extract(nd: Entry): B
-        def hasNext: Boolean = cur ne null
-        def next(): B =
-          if (hasNext) {
-            val r = extract(cur)
-            cur = cur.later
-            r
-          } else Iterator.empty.next()
-      }
-
-      val setHashIterator = if (isEmpty) this.iterator
+  override def hashCode: Int = {
+    val setHashIterator =
+      if (isEmpty) this.iterator
       else {
-        new LinkedHashSetIterator[Any](firstEntry) {
+        new LinkedHashSetIterator[Any] {
           var hash: Int = 0
           override def hashCode: Int = hash
           override def extract(nd: Entry): Any = {
@@ -308,7 +295,7 @@ class LinkedHashSet[A]
           }
         }
       }
-      MurmurHash3.orderedHash(setHashIterator, MurmurHash3.setSeed)
+    MurmurHash3.unorderedHash(setHashIterator, MurmurHash3.setSeed)
   }
 
   @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")

@@ -109,12 +109,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         }
         this
       case lhm: mutable.LinkedHashMap[K, V] =>
-      val iter = lhm.entryIterator
-      while (iter.hasNext) {
-        val entry = iter.next()
-        put0(entry.key, entry.value,entry.hash,getOld = false)
-      }
-      this
+        val iter = lhm.entryIterator
+        while (iter.hasNext) {
+          val entry = iter.next()
+          put0(entry.key, entry.value, entry.hash, getOld = false)
+        }
+        this
       case thatMap: Map[K, V] =>
         thatMap.foreachEntry { (key: K, value: V) =>
           put0(key, value, improveHash(key.##), getOld = false)
