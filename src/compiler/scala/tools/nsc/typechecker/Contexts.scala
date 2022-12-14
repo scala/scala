@@ -1523,15 +1523,17 @@ trait Contexts { self: Analyzer =>
        *
        * Scala: Bindings of different kinds have a defined precedence order:
        *
-       *  1) Local definitions and declarations have the highest precedence.
+       *  1) Definitions and declarations in lexical scope that are not top-level have the highest precedence.
        *  1b) Definitions and declarations that are either inherited, or made
        *      available by a package clause and also defined in the same compilation unit
        *      as the reference to them, have the next highest precedence.
        *      (Only in -Xsource:3, same precedence as 1 with a warning in Scala 2.)
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
-       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
-       *     as the reference, have lowest precedence. Also "root" imports added implicitly.
+       *  4) Bindings made available by a package clause,
+       *     but not also defined in the same compilation unit as the reference to them,
+       *     as well as bindings supplied by the compiler but not explicitly written in source code,
+       *     have the lowest precedence.
        */
       def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
 
