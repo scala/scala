@@ -3,6 +3,8 @@ package scala.collection.immutable
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+import scala.annotation.nowarn
+
 class MapTest {
 
   @Test def builderCompare1(): Unit = {
@@ -140,5 +142,12 @@ class MapTest {
         }
       }
     }
+  }
+
+  @Test @nowarn("cat=deprecation")
+  def t12699(): Unit = {
+    val m1: HashMap[Int, Int] = HashMap(1 -> 1)
+    assertEquals(7, m1.+(elem1 = 2 -> 2, elem2 = 3 -> 3, elems = List( 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7): _*).size)
+    assertEquals(7, m1.+(2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7).size)
   }
 }
