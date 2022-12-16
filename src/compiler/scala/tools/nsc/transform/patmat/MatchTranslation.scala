@@ -75,7 +75,7 @@ trait MatchTranslation {
         case TypeBound(tpe) => tpe
         case tree           => tree.tpe
       }
-      def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
+      def glbWith(other: Type) = if (currentRun.isScala213) other else glb(tpe :: other :: Nil).normalize
 
       object SymbolAndTypeBound {
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
