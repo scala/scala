@@ -386,7 +386,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       sym.setInfo(new MaybeExpandeeCompleter(tree) {
         override def kind = s"maybeExpandeeCompleter for ${sym.accurateKindString} ${sym.rawname}#${sym.id}"
         override def maybeExpand(): Unit = {
-          val companion = if (tree.isInstanceOf[ClassDef]) patchedCompanionSymbolOf(sym, context) else NoSymbol
+          val companion = if (this.tree.isInstanceOf[ClassDef]) patchedCompanionSymbolOf(sym, context) else NoSymbol
 
           def maybeExpand(annotation: Tree, annottee: Tree, maybeExpandee: Tree): Option[List[Tree]] =
             if (context.macrosEnabled) { // TODO: when is this bit flipped -- can we pull this check out farther?
@@ -395,7 +395,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
               if (mann.isClass && mann.hasFlag(MACRO)) {
                 assert(!currentRun.compiles(mann), mann)
                 val annm = prepareAnnotationMacro(annotation, mann, sym, annottee, maybeExpandee)
-                expandAnnotationMacro(tree, annm)
+                expandAnnotationMacro(this.tree, annm)
                 // if we encounter an error, we just return None, so that other macro annotations can proceed
                 // this is unlike macroExpand1 when any error in an expandee blocks expansions
                 // there it's necessary in order not to exacerbate typer errors
@@ -424,7 +424,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
               enterSyms(expanded) // TODO: we can't reliably expand into imports, because they won't be accounted by definitions below us
             case None =>
               markNotExpandable(sym)
-              finishSymbolNotExpandee(tree)
+              finishSymbolNotExpandee(this.tree)
           }
 
           // take care of the companion if it's no longer needed

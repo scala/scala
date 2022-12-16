@@ -1,5 +1,5 @@
 t1477.scala:13: error: volatile type member cannot override type member with non-volatile upper bound:
 type V <: Middle.this.D (defined in trait C)
-    type V <: (D with U)
+    type V <: (this.D with U)
          ^
 1 error

@@ -772,8 +772,8 @@ trait Types
     def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
 
     class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
-      def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
-      def map[T](f: Type => T): List[T]  = collect(Type.this) map f
+      def foreach[U](f: Type => U): Unit = this.collect(Type.this).foreach(f)
+      def map[T](f: Type => T): List[T]  = this.collect(Type.this).map(f)
     }
 
     @inline final def orElse(alt: => Type): Type = if (this ne NoType) this else alt

@@ -152,4 +152,6 @@ trait StdAttachments {
 
   /** For `val i = 42`, marks field as inferred so accessor (getter) can warn if implicit. */
   case object FieldTypeInferred extends PlainAttachment
+
+  case class LookupAmbiguityWarning(msg: String) extends PlainAttachment
 }

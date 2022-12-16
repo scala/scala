@@ -5501,6 +5501,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case sym      => typed1(tree setSymbol sym, mode, pt)
             }
           case LookupSucceeded(qual, sym)   =>
+            sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w =>
+              runReporting.warning(tree.pos, w.msg, WarningCategory.Other, context.owner))
             (// this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)

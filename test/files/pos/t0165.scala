@@ -4,7 +4,7 @@ import scala.collection.mutable.LinkedHashMap
 trait Main {
   def asMany : ArrayResult = {
     object result extends LinkedHashMap[String,String] with ArrayResult {
-      def current = result
+      def current = this.result
     }
     result
   }

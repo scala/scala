@@ -10,7 +10,7 @@ object Test extends App {
   }
 
   trait Middle extends C {
-    type V <: (D with U)
+    type V <: (this.D with U)
   }
 
   class D extends Middle {
