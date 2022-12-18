@@ -126,8 +126,14 @@ object ScalaVersion {
   }
 }
 
-/**
- * Represents the data after the dash in major.minor.rev-build
+/** Represents the data after the dash in "major.minor.rev-build".
+ *
+ *  Builds are ordered from Development, Milestone, RC, to Final.
+ *
+ *  Development builds are ordered on their arbitrary string ID
+ *  (which may be a timestamp and git hash, such as "20230101-003230-4d2b33e").
+ *
+ *  Other builds are numbered (M0, M1, RC0, RC1).
  */
 abstract class ScalaBuild extends Ordered[ScalaBuild] {
   /**
@@ -136,53 +142,46 @@ abstract class ScalaBuild extends Ordered[ScalaBuild] {
    */
   def unparse: String
 }
-/**
- * A development, test, integration, snapshot or other "unofficial" build
+/** A development, test, integration, snapshot or other "unofficial" build.
  */
 case class Development(id: String) extends ScalaBuild {
   def unparse = s"-${id}"
 
   def compare(that: ScalaBuild) = that match {
-    // sorting two development builds based on id is reasonably valid for two versions created with the same schema
-    // otherwise it's not correct, but since it's impossible to put a total ordering on development build versions
-    // this is a pragmatic compromise
+    // sorting two development builds based on id is reasonably valid
+    // if the two version strings were created with the same schema.
     case Development(thatId) => id compare thatId
-    // assume a development build is newer than anything else, that's not really true, but good luck
-    // mapping development build versions to other build types
-    case _ => 1
+    // assume a development build is older than anything else.
+    case _ => -1
   }
 }
-/**
- * A final final
+/** A final final.
  */
 case object Final extends ScalaBuild {
   def unparse = ""
 
   def compare(that: ScalaBuild) = that match {
     case Final => 0
-    // a final is newer than anything other than a development build or another final
-    case Development(_) => -1
+    // a final is newer than anything else.
     case _ => 1
   }
 }
 
-/**
- * A candidate for final release
+/** A candidate for final release.
  */
 case class RC(n: Int) extends ScalaBuild {
   def unparse = s"-RC${n}"
 
   def compare(that: ScalaBuild) = that match {
+    case Final => -1
     // compare two rcs based on their RC numbers
     case RC(thatN) => n - thatN
-    // an rc is older than anything other than a milestone or another rc
-    case Milestone(_) => 1
-    case _ => -1
+    // an rc is newer than anything else
+    case _ => 1
   }
 }
 
-/**
- * An intermediate release
+/** An intermediate release.
  */
 case class Milestone(n: Int) extends ScalaBuild {
   def unparse = s"-M${n}"
@@ -190,8 +189,7 @@ case class Milestone(n: Int) extends ScalaBuild {
   def compare(that: ScalaBuild) = that match {
     // compare two milestones based on their milestone numbers
     case Milestone(thatN) => n - thatN
-    // a milestone is older than anything other than another milestone
+    case Development(_)   => 1
     case _ => -1
-
   }
 }

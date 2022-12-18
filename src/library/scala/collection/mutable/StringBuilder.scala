@@ -21,7 +21,7 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
   genericWrapArray => _,
   wrapCharArray => _,
   wrapString => _,
- //_
+  //_  : @unused  // note that Predef is unimported already by single masking import
 }
 
 /** A builder for mutable sequence of characters.  This class provides an API

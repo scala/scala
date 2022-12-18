@@ -1,0 +1,9 @@
+t11631.scala:13: warning: private method z in class C is never used
+  private def z = 37              // unused
+              ^
+t11631.scala:18: warning: local var w in method q is never used
+    var w = 27                    // unused
+        ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

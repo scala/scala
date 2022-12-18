@@ -20,7 +20,7 @@ import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction.{cond, condOpt}
 import scala.annotation.{nowarn, tailrec}
-import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WarningCategory}
 
 /** An interface to enable higher configurability of diagnostic messages
  *  regarding type errors.  This is barely a beginning as error messages are
@@ -500,10 +500,20 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val ignoreNames: Set[TermName] = Set(
       "readResolve", "readObject", "writeObject", "writeReplace"
     ).map(TermName(_))
+
+    // is this a getter-setter pair? cf g.setterIn(g.owner) == s
+    def sameReference(g: Symbol, s: Symbol) =
+      if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
+      else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
+
+    def sympos(s: Symbol): Int =
+      if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
+    def treepos(t: Tree): Int =
+      if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
   }
 
   class UnusedPrivates extends Traverser {
-    import UnusedPrivates.ignoreNames
+    import UnusedPrivates._
     def isEffectivelyPrivate(sym: Symbol): Boolean = false
     val defnTrees = ListBuffer[MemberDef]()
     val targets   = mutable.Set[Symbol]()
@@ -538,6 +548,11 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
     override def traverse(t: Tree): Unit = {
       val sym = t.symbol
+      if (sym != null && sym.pos.isDefined)
+        sym.getAnnotation(UnusedClass).foreach { annot =>
+          if (!runReporting.suppressionExists(annot.pos))
+            runReporting.addSuppression(Suppression(annot.pos, List(MessageFilter.Category(WarningCategory.Unused)), sym.pos.start, sym.pos.end, synthetic = true))
+        }
       t match {
         case m: MemberDef if qualifies(sym) && !t.isErrorTyped =>
           t match {
@@ -594,10 +609,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       }
       super.traverse(t)
     }
-    def isSuppressed(sym: Symbol): Boolean = sym.hasAnnotation(UnusedClass)
     def isUnusedType(m: Symbol): Boolean = (
       m.isType
-        && !isSuppressed(m)
         && !m.isTypeParameterOrSkolem // would be nice to improve this
         && (m.isPrivate || m.isLocalToBlock || isEffectivelyPrivate(m))
         && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
@@ -612,7 +625,6 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     }
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
-        && !isSuppressed(m)
         && (!m.isSynthetic || isSyntheticWarnable(m))
         && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock || isEffectivelyPrivate(m))
         && !targets(m)
@@ -631,26 +643,16 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
         ))
       )
-    def sympos(s: Symbol): Int =
-      if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
-    def treepos(t: Tree): Int =
-      if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
-
     def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
     def unusedTerms = {
       val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
-
-      // is this a getter-setter pair? and why is this a difficult question for traits?
-      def sameReference(g: Symbol, s: Symbol) =
-        if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
-        else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
 
       // filter out setters if already warning for getter.
       val clean = all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && sameReference(g.symbol, v.symbol)))
       clean.sortBy(treepos)
     }
     // local vars which are never set, except those already returned in unused
-    def unsetVars = varsWithoutSetters.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).toList.sortBy(sympos)
+    def unsetVars = varsWithoutSetters.filter(v => !setVars(v) && !isUnusedTerm(v)).toList.sortBy(sympos)
     def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
     def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
     def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
@@ -681,7 +683,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
     // `checkUnused` is invoked after type checking. we have to avoid using `typer.context.warning`, which uses
     // `context.owner` as the `site` of the warning, but that's the root symbol at this point.
-    def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit = runReporting.warning(pos, msg, category, site)
+    def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      runReporting.warning(pos, msg, category, site)
 
     def run(unusedPrivates: UnusedPrivates)(body: Tree): Unit = {
       unusedPrivates.traverse(body)
@@ -723,9 +726,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
-        for (v <- unusedPrivates.unsetVars) {
+        for (v <- unusedPrivates.unsetVars)
           emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
-        }
       }
       if (settings.warnUnusedPatVars) {
         for (v <- unusedPrivates.unusedPatVars)
@@ -773,7 +775,6 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       }
     }
   }
-
 
   trait TyperDiagnostics {
     self: Typer =>

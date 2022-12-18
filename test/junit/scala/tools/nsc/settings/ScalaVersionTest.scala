@@ -71,4 +71,14 @@ class ScalaVersionTest {
     assertEquals(ScalaVersion("2.13"), ScalaVersion("2.13") max ScalaVersion("2.13"))
     assertEquals(ScalaVersion("2.13"), ScalaVersion("2.13") min ScalaVersion("2.13"))
   }
+
+  @Test def `compare builds`: Unit = {
+    println(ScalaVersion("2.13.11-20230101-003230-4d2b33e"))
+    assertTrue(ScalaVersion("2.13") > ScalaVersion("2.12"))
+    assertTrue(ScalaVersion("2.13.11") > ScalaVersion("2.13.11-20230101-003230-4d2b33e"))
+    assertTrue(ScalaVersion("2.13.11-M0") > ScalaVersion("2.13.11-20230101-003230-4d2b33e"))
+    assertTrue(ScalaVersion("2.13.11-RC0") > ScalaVersion("2.13.11-20230101-003230-4d2b33e"))
+    assertTrue(ScalaVersion("2.13.11-RC0") > ScalaVersion("2.13.11-M5"))
+    assertTrue(ScalaVersion("2.13.11") > ScalaVersion("2.13.11-RC5"))
+  }
 }

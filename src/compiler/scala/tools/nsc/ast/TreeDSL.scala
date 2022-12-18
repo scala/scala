@@ -13,7 +13,6 @@
 package scala.tools.nsc
 package ast
 
-import scala.annotation.unused
 import scala.language.implicitConversions
 
 /** A DSL for generating scala code.  The goal is that the
@@ -79,13 +78,9 @@ trait TreeDSL {
       def INT_-   (other: Tree)     = fn(target, getMember(IntClass, nme.MINUS), other)
 
       // generic operations on ByteClass, IntClass, LongClass
-      @unused("avoid warning for multiple parameters")
       def GEN_|   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.OR), other)
-      @unused("avoid warning for multiple parameters")
       def GEN_&   (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.AND), other)
-      @unused("avoid warning for multiple parameters")
       def GEN_==  (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.EQ), other)
-      @unused("avoid warning for multiple parameters")
       def GEN_!=  (other: Tree, kind: ClassSymbol)  = fn(target, getMember(kind, nme.NE), other)
 
       /** Apply, Select, Match **/

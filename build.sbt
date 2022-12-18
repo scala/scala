@@ -489,6 +489,7 @@ lazy val compiler = configureAsSubproject(project)
     Compile / scalacOptions ++= Seq(
       "-Xlint",
       "-feature",
+      //"-Wconf:cat=unused-unused&site=scala.tools.nsc.reporters.Reporter.info.force:s",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(

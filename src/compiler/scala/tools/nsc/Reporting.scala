@@ -21,6 +21,7 @@ import scala.reflect.internal.util.StringOps.countElementsAsString
 import scala.reflect.internal.util.{NoSourceFile, Position, SourceFile}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
+import scala.tools.nsc.settings.ScalaVersion
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
@@ -80,15 +81,25 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       suppressions.getOrElse(pos.source, Nil).exists(_.annotPos.point == pos.point)
 
     def runFinished(hasErrors: Boolean): Unit = {
+      val warningNowarn = settings.warnUnusedNowarn
+      val warningUnused = settings.warnUnusedUnused && ScalaVersion.current >= ScalaVersion("2.13.11")
+      def maybeWarn(s: Suppression): Unit =
+        if (!s.used)
+          if (!s.synthetic) {
+            if (warningNowarn)
+              issueWarning(Message.Plain(s.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
+          }
+          else if (warningUnused && s.filters.exists { case MessageFilter.Category(WarningCategory.Unused) => true case _ => false })
+            issueWarning(Message.Plain(s.annotPos, "@unused annotation does not suppress any warnings", WarningCategory.UnusedUnused, ""))
       // report suspended messages (in case the run finished before typer)
       suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning))
       // report unused nowarns only if all all phases are done. scaladoc doesn't run all phases.
-      if (!hasErrors && settings.warnUnusedNowarn && !settings.isScaladoc)
+      if (!hasErrors && (warningNowarn || warningUnused) && !settings.isScaladoc)
         for {
           source <- suppressions.keysIterator.toList
           sups   <- suppressions.remove(source)
           sup    <- sups.reverse
-        } if (!sup.used && !sup.synthetic) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
+        } maybeWarn(sup)
     }
 
     def reportSuspendedMessages(unit: CompilationUnit): Unit = {
@@ -257,7 +268,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
 
-    // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.
+    // Used in the optimizer where we have no symbols, the site string is created from the class internal name and method name.
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
       issueIfNotSuppressed(Message.Plain(pos, msg, category, site))
 
@@ -380,6 +391,7 @@ object Reporting {
     object UnusedLocals extends Unused; add(UnusedLocals)
     object UnusedParams extends Unused; add(UnusedParams)
     object UnusedNowarn extends Unused; add(UnusedNowarn)
+    object UnusedUnused extends Unused; add(UnusedUnused)
 
     sealed trait Lint extends WarningCategory { override def summaryCategory: WarningCategory = Lint }
     object Lint extends Lint { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint] }; add(Lint)

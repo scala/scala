@@ -1,0 +1,9 @@
+t11631b.scala:5: warning: Unused import
+import annotation.*
+                  ^
+t11631b.scala:9: warning: private object X in object D is never used
+  private object X {
+                 ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
