@@ -1,34 +1,34 @@
 t11921b.scala:11: warning: reference to x is ambiguous;
 it is both defined in the enclosing object Test and available in the enclosing class D as value x (defined in class C)
-Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(x)  // error
               ^
 t11921b.scala:15: warning: reference to x is ambiguous;
 it is both defined in the enclosing object Test and available in the enclosing anonymous class as value x (defined in class C)
-Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         println(x)  // error
                 ^
 t11921b.scala:26: warning: reference to y is ambiguous;
 it is both defined in the enclosing method c and available in the enclosing anonymous class as value y (defined in class D)
-Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(y)  // error
               ^
 t11921b.scala:38: warning: reference to y is ambiguous;
 it is both defined in the enclosing method c and available in the enclosing class E as value y (defined in class D)
-Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         println(y)  // error
                 ^
 t11921b.scala:75: warning: reference to x is ambiguous;
 it is both defined in the enclosing object Uhu and available in the enclosing class C as value x (defined in class A, inherited through parent class B)
-Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         def t = x // ambiguous, message mentions parent B
