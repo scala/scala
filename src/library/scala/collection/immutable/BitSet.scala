@@ -244,36 +244,45 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
             anyChanges ||= currentWord != oldWord
             i -= 1
           }
-          if (i < 0) {
-            // all indices >= 0 have had result 0, so the bitset is empty
-            this.empty
-          } else {
-            val minimumNonZeroIndex: Int = i + 1
-            while (!anyChanges && i >= 0) {
-              val oldWord = word(i)
-              currentWord = oldWord & ~bs.word(i)
-              anyChanges ||= currentWord != oldWord
-              i -= 1
-            }
-            if (anyChanges) {
-              if (minimumNonZeroIndex == -1) {
-                this.empty
-              } else if (minimumNonZeroIndex == 0) {
-                new BitSet1(currentWord)
-              } else if (minimumNonZeroIndex == 1) {
-                new BitSet2(word(0) & ~bs.word(0), currentWord)
+          i match {
+            case -1 =>
+              if (anyChanges) {
+                if (currentWord == 0) {
+                  this.empty
+                } else {
+                  new BitSet1(currentWord)
+                }
               } else {
+                this
+              }
+            case 0 =>
+              val oldFirstWord = word(0)
+              val firstWord = oldFirstWord & ~bs.word(0)
+              anyChanges ||= firstWord != oldFirstWord
+              if (anyChanges) {
+                new BitSet2(firstWord, currentWord)
+              } else {
+                this
+              }
+            case _ =>
+              val minimumNonZeroIndex: Int = i + 1
+              while (!anyChanges && i >= 0) {
+                val oldWord = word(i)
+                currentWord = oldWord & ~bs.word(i)
+                anyChanges ||= currentWord != oldWord
+                i -= 1
+              }
+              if (anyChanges) {
                 val newArray = elems.take(minimumNonZeroIndex + 1)
                 newArray(i + 1) = currentWord
                 while (i >= 0) {
                   newArray(i) = word(i) & ~bs.word(i)
                   i -= 1
                 }
-                this.fromBitMaskNoCopy(newArray)
+                new BitSetN(newArray)
+              } else {
+                this
               }
-            } else {
-              this
-            }
           }
         } else {
           var i = bsnwords - 1
@@ -314,36 +323,45 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
         anyChanges ||= currentWord != oldWord
         i -= 1
       }
-      if (i < 0) {
-        // all indices >= 0 have had result 0, so the bitset is empty
-        if (currentWord == 0) this.empty else this.fromBitMaskNoCopy(Array(currentWord))
-      } else {
-        val minimumNonZeroIndex: Int = i + 1
-        while (!anyChanges && i >= 0) {
-          val oldWord = word(i)
-          currentWord = BitSetOps.computeWordForFilter(pred, isFlipped, oldWord, i)
-          anyChanges ||= currentWord != oldWord
-          i -= 1
-        }
-        if (anyChanges) {
-          if (minimumNonZeroIndex == -1) {
-            this.empty
-          } else if (minimumNonZeroIndex == 0) {
-            new BitSet1(currentWord)
-          } else if (minimumNonZeroIndex == 1) {
-            new BitSet2(BitSetOps.computeWordForFilter(pred, isFlipped, word(0), 0), currentWord)
+      i match {
+        case -1 =>
+          if (anyChanges) {
+            if (currentWord == 0) {
+              this.empty
+            } else {
+              new BitSet1(currentWord)
+            }
           } else {
+            this
+          }
+        case 0 =>
+          val oldFirstWord = word(0)
+          val firstWord = BitSetOps.computeWordForFilter(pred, isFlipped, oldFirstWord, 0)
+          anyChanges ||= firstWord != oldFirstWord
+          if (anyChanges) {
+            new BitSet2(firstWord, currentWord)
+          } else {
+            this
+          }
+        case _ =>
+          val minimumNonZeroIndex: Int = i + 1
+          while (!anyChanges && i >= 0) {
+            val oldWord = word(i)
+            currentWord = BitSetOps.computeWordForFilter(pred, isFlipped, oldWord, i)
+            anyChanges ||= currentWord != oldWord
+            i -= 1
+          }
+          if (anyChanges) {
             val newArray = elems.take(minimumNonZeroIndex + 1)
             newArray(i + 1) = currentWord
             while (i >= 0) {
               newArray(i) = BitSetOps.computeWordForFilter(pred, isFlipped, word(i), i)
               i -= 1
             }
-            this.fromBitMaskNoCopy(newArray)
+            new BitSetN(newArray)
+          } else {
+            this
           }
-        } else {
-          this
-        }
       }
     }
 

@@ -160,4 +160,17 @@ class SetTest {
     testCorrectness()
     testNoHashCodeInvocationsDuringSubsetOf()
   }
+
+  @Test def pr10238(): Unit = {
+    assertEquals(BitSet(0), BitSet(0, 128) diff BitSet(128))
+
+    val us = scala.collection.immutable.BitSet(39, 41, 44, 46, 256)
+    val vs = scala.collection.immutable.BitSet(39, 41, 44, 46, 64, 256)
+    val xs = scala.collection.immutable.BitSet.fromBitMask(us.toBitMask.take(3))
+    val ys = scala.collection.immutable.BitSet.fromBitMask(vs.toBitMask.take(3))
+    val diff = ys diff xs
+    val expected = scala.collection.immutable.BitSet(64)
+    assertEquals(diff, expected)
+  }
+
 }
