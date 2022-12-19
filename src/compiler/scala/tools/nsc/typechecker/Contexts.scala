@@ -1369,7 +1369,7 @@ trait Contexts { self: Analyzer =>
         val inherit = if (parent.exists && parent != other.owner) s", inherited through parent $parent" else ""
         val message =
           s"""it is both defined in the enclosing ${sym.owner} and available in the enclosing $enclDesc as $other (defined in ${other.ownsString}$inherit)
-             |Since 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+             |Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
              |To continue using the symbol from the superclass, write `this.${sym.name}`.""".stripMargin
         if (currentRun.isScala3)
           Some(LookupAmbiguous(message))
