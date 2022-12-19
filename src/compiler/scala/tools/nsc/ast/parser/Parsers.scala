@@ -1388,7 +1388,7 @@ self =>
      *  }}}
      */
     def stableId(): Tree =
-      path(thisOK = false, typeOK = false)
+      path(thisOK = true, typeOK = false)
 
     /** {{{
     *   QualId ::= Id {`.` Id}
@@ -2246,10 +2246,8 @@ self =>
        *
        * XXX: Hook for IDE
        */
-      def simplePattern(): Tree = (
-        // simple diagnostics for this entry point
-        simplePattern(() => syntaxErrorOrIncompleteAnd("illegal start of simple pattern", skipIt = true)(errorPatternTree))
-      )
+      def simplePattern(): Tree =
+        simplePattern(() => syntaxErrorOrIncompleteAnd("illegal start of simple pattern", skipIt = true)(errorPatternTree)) // simple diagnostics for this entry point
       def simplePattern(onError: () => Tree): Tree = {
         val start = in.offset
         in.token match {
