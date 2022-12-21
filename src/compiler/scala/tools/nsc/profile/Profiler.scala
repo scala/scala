@@ -129,6 +129,7 @@ private [profile] object RealProfiler {
   private val idGen = new AtomicInteger()
   lazy val allPlugins = ServiceLoader.load(classOf[ProfilerPlugin]).iterator.asScala.toList
 
+  @annotation.nowarn("cat=deprecation")
   private[profile] def snapThread(idleTimeNanos: Long): ProfileSnap = {
     val current = Thread.currentThread()
     val allocatedBytes = threadMx.getThreadAllocatedBytes(Thread.currentThread().getId)
@@ -403,6 +404,7 @@ class StreamProfileReporter(out:PrintWriter) extends ProfileReporter {
   override def reportForeground(profiler: RealProfiler, threadRange: ProfileRange): Unit = {
     reportCommon(EventType.MAIN, profiler, threadRange)
   }
+  @annotation.nowarn("cat=deprecation")
   private def reportCommon(tpe:EventType.value, profiler: RealProfiler, threadRange: ProfileRange): Unit = {
     out.println(s"$tpe,${threadRange.start.snapTimeNanos},${threadRange.end.snapTimeNanos},${profiler.id},${threadRange.phase.id},${threadRange.phase.name},${threadRange.purpose},${threadRange.taskCount},${threadRange.thread.getId},${threadRange.thread.getName},${threadRange.runNs},${threadRange.idleNs},${threadRange.cpuNs},${threadRange.userNs},${threadRange.allocatedBytes},${threadRange.end.heapBytes} ")
   }

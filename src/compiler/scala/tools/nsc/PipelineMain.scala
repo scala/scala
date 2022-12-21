@@ -325,6 +325,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     trace.append("""{"traceEvents": [""")
     val sb = new mutable.StringBuilder(trace)
 
+    @annotation.nowarn("cat=deprecation")
     def durationEvent(name: String, cat: String, t: Timer): String = {
       s"""{"name": "$name", "cat": "$cat", "ph": "X", "ts": ${(t.startMicros).toLong}, "dur": ${(t.durationMicros).toLong}, "pid": 0, "tid": ${t.thread.getId}}"""
     }
