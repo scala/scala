@@ -110,7 +110,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
     private def enumerateSealed(tp: Type, grouped: Boolean): List[List[Type]] = {
       val tpApprox = analyzer.approximateAbstracts(tp)
-      val pre      = tpApprox.prefix
+      val pre      = tp.prefix
       val sym      = tp.typeSymbol
 
       def subclassesToSubtypes(syms: List[Symbol]): List[Type] = syms.flatMap { sym =>
@@ -120,7 +120,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         //    sealed trait X[T]; class XInt extends X[Int]
         // XInt not valid when enumerating X[String]
         // however, must also approximate abstract types
-        val memberType  = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
+        val memberType  = nestedMemberType(sym, pre, tp.typeSymbol.owner)
         val subTp       = appliedType(memberType, WildcardType.fillList(sym.typeParams.length))
         val subTpApprox = analyzer.approximateAbstracts(subTp)
         if (subTpApprox <:< tpApprox) Some(checkableType(subTp)) else None
