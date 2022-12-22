@@ -44,6 +44,10 @@ object MimaFilters extends AutoPlugin {
 
     // private object used by methods
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Numeric$BigDecimalIsConflicted$"),
+
+    // PR 10235
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.LinkedHashMap$LinkedHashMapIterator"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.LinkedHashSet$LinkedHashSetIterator"),
   )
 
   override val buildSettings = Seq(

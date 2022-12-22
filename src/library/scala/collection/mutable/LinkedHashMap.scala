@@ -16,6 +16,7 @@ package mutable
 
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.generic.DefaultSerializable
+import scala.util.hashing.MurmurHash3
 
 
 /** This class implements mutable maps using a hashtable.
@@ -90,6 +91,10 @@ class LinkedHashMap[K, V]
     if (e == null) None
     else Some(e.value)
   }
+  override def sizeHint(size: Int): Unit = {
+    val target = tableSizeFor(((size + 1).toDouble / LinkedHashMap.defaultLoadFactor).toInt)
+    if (target > table.length) growTable(target)
+  }
 
   override def contains(key: K): Boolean = {
     if (getClass eq classOf[LinkedHashMap[_, _]])
@@ -108,6 +113,41 @@ class LinkedHashMap[K, V]
   override def remove(key: K): Option[V] = removeEntry0(key) match {
     case null => None
     case nd => Some(nd.value)
+  }
+
+  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
+    if (getClass != classOf[LinkedHashMap[_, _]]) {
+      // subclasses of LinkedHashMap might customise `get` ...
+      super.getOrElse(key, default)
+    } else {
+      // .. but in the common case, we can avoid the Option boxing.
+      val nd = findEntry(key)
+      if (nd eq null) default else nd.value
+    }
+  }
+
+  override def getOrElseUpdate(key: K, defaultValue: => V): V = {
+    if (getClass != classOf[LinkedHashMap[_, _]]) {
+      // subclasses of LinkedHashMap might customise `get` ...
+      super.getOrElseUpdate(key, defaultValue)
+    } else {
+      val hash = computeHash(key)
+      val idx = index(hash)
+      val nd = table(idx) match {
+        case null => null
+        case nd => nd.findEntry(key, hash)
+      }
+      if (nd != null) nd.value
+      else {
+        val table0 = table
+        val default = defaultValue
+        if (contentSize + 1 >= threshold) growTable(table.length * 2)
+        // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
+        val newIdx = if (table0 eq table) idx else index(hash)
+        put0(key, default, false, hash, newIdx)
+        default
+      }
+    }
   }
 
   private[this] def removeEntry0(elem: K): Entry = removeEntry0(elem, computeHash(elem))
@@ -150,6 +190,7 @@ class LinkedHashMap[K, V]
   @`inline` private[this] def improveHash(originalHash: Int): Int = {
     originalHash ^ (originalHash >>> 16)
   }
+  @`inline` private[collection] def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
 
   /** Computes the improved hash of this key */
   @`inline` private[this] def computeHash(o: K): Int = improveHash(o.##)
@@ -174,13 +215,20 @@ class LinkedHashMap[K, V]
     this
   }
 
-  def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
+  private[this] abstract class LinkedHashMapIterator[T] extends AbstractIterator[T] {
     private[this] var cur = firstEntry
-    def hasNext = cur ne null
-    def next() =
-      if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
+    def extract(nd: Entry): T
+    def hasNext: Boolean = cur ne null
+    def next(): T =
+      if (hasNext) { val r = extract(cur); cur = cur.later; r }
       else Iterator.empty.next()
   }
+
+  def iterator: Iterator[(K, V)] =
+    if (size == 0) Iterator.empty
+    else new LinkedHashMapIterator[(K, V)] {
+      def extract(nd: Entry): (K, V) = (nd.key, nd.value)
+    }
 
   protected class LinkedKeySet extends KeySet {
     override def iterableFactory: IterableFactory[collection.Set] = LinkedHashSet
@@ -188,74 +236,83 @@ class LinkedHashMap[K, V]
 
   override def keySet: collection.Set[K] = new LinkedKeySet
 
-  override def keysIterator: Iterator[K] = new AbstractIterator[K] {
-    private[this] var cur = firstEntry
-    def hasNext = cur ne null
-    def next() =
-      if (hasNext) { val res = cur.key; cur = cur.later; res }
-      else Iterator.empty.next()
-  }
+  override def keysIterator: Iterator[K] =
+    if (size == 0) Iterator.empty
+    else new LinkedHashMapIterator[K] {
+      def extract(nd: Entry): K = nd.key
+    }
+
+  private[collection] def entryIterator: Iterator[Entry] =
+    if (size == 0) Iterator.empty
+    else new LinkedHashMapIterator[Entry] {
+      def extract(nd: Entry): Entry = nd
+    }
+
 
   // Override updateWith for performance, so we can do the update while hashing
   // the input key only once and performing one lookup into the hash table
   override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
-    val hash = computeHash(key)
-    val indexedHash = index(hash)
+    if (getClass != classOf[LinkedHashMap[_, _]]) {
+      // subclasses of LinkedHashMap might customise `get` ...
+      super.updateWith(key)(remappingFunction)
+    } else {
+      val hash = computeHash(key)
+      val indexedHash = index(hash)
 
-    var foundEntry: Entry = null
-    var previousEntry: Entry = null
-    table(indexedHash) match {
-      case null =>
-      case nd =>
-        @tailrec
-        def findEntry(prev: Entry, nd: Entry, k: K, h: Int): Unit = {
-          if (h == nd.hash && k == nd.key) {
-            previousEntry = prev
-            foundEntry = nd
+      var foundEntry: Entry = null
+      var previousEntry: Entry = null
+      table(indexedHash) match {
+        case null =>
+        case nd =>
+          @tailrec
+          def findEntry(prev: Entry, nd: Entry, k: K, h: Int): Unit = {
+            if (h == nd.hash && k == nd.key) {
+              previousEntry = prev
+              foundEntry = nd
+            }
+            else if ((nd.next eq null) || (nd.hash > h)) ()
+            else findEntry(nd, nd.next, k, h)
           }
-          else if ((nd.next eq null) || (nd.hash > h)) ()
-          else findEntry(nd, nd.next, k, h)
-        }
 
-        findEntry(null, nd, key, hash)
+          findEntry(null, nd, key, hash)
+      }
+
+      val previousValue = foundEntry match {
+        case null => None
+        case nd => Some(nd.value)
+      }
+
+      val nextValue = remappingFunction(previousValue)
+
+      (previousValue, nextValue) match {
+        case (None, None) => // do nothing
+
+        case (Some(_), None) =>
+          if (previousEntry != null) previousEntry.next = foundEntry.next
+          else table(indexedHash) = foundEntry.next
+          deleteEntry(foundEntry)
+          contentSize -= 1
+
+        case (None, Some(value)) =>
+          val newIndexedHash =
+            if (contentSize + 1 >= threshold) {
+              growTable(table.length * 2)
+              index(hash)
+            } else indexedHash
+          put0(key, value, false, hash, newIndexedHash)
+
+        case (Some(_), Some(newValue)) => foundEntry.value = newValue
+      }
+      nextValue
     }
-
-    val previousValue = foundEntry match {
-      case null => None
-      case nd => Some(nd.value)
-    }
-
-    val nextValue = remappingFunction(previousValue)
-
-    (previousValue, nextValue) match {
-      case (None, None) => // do nothing
-
-      case (Some(_), None) =>
-        if (previousEntry != null) previousEntry.next = foundEntry.next
-        else table(indexedHash) = foundEntry.next
-        deleteEntry(foundEntry)
-        contentSize -= 1
-
-      case (None, Some(value)) =>
-        val newIndexedHash =
-          if (contentSize + 1 >= threshold) {
-            growTable(table.length * 2)
-            index(hash)
-          } else indexedHash
-        put0(key, value, false, hash, newIndexedHash)
-
-      case (Some(_), Some(newValue)) => foundEntry.value = newValue
-    }
-    nextValue
   }
 
-  override def valuesIterator: Iterator[V] = new AbstractIterator[V] {
-    private[this] var cur = firstEntry
-    def hasNext = cur ne null
-    def next() =
-      if (hasNext) { val res = cur.value; cur = cur.later; res }
-      else Iterator.empty.next()
-  }
+  override def valuesIterator: Iterator[V] =
+    if (size == 0) Iterator.empty
+    else new LinkedHashMapIterator[V] {
+      def extract(nd: Entry): V = nd.value
+    }
+
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
     var cur = firstEntry
@@ -394,6 +451,20 @@ class LinkedHashMap[K, V]
     }
   }
 
+  override def hashCode: Int = {
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      val tupleHashIterator = new LinkedHashMapIterator[Any] {
+        var hash: Int = 0
+        override def hashCode: Int = hash
+        override def extract(nd: Entry): Any = {
+          hash = MurmurHash3.tuple2Hash(unimproveHash(nd.hash), nd.value.##)
+          this
+        }
+      }
+      MurmurHash3.unorderedHash(tupleHashIterator, MurmurHash3.mapSeed)
+    }
+  }
   @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "LinkedHashMap"
 }

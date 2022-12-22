@@ -108,6 +108,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
           put0(next.key, next.value, next.hash, getOld = false)
         }
         this
+      case lhm: mutable.LinkedHashMap[K, V] =>
+        val iter = lhm.entryIterator
+        while (iter.hasNext) {
+          val entry = iter.next()
+          put0(entry.key, entry.value, entry.hash, getOld = false)
+        }
+        this
       case thatMap: Map[K, V] =>
         thatMap.foreachEntry { (key: K, value: V) =>
           put0(key, value, improveHash(key.##), getOld = false)
@@ -189,6 +196,14 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         this
       case hs: mutable.HashSet[K] =>
         val iter = hs.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          remove0(next.key, next.hash)
+          if (size == 0) return this
+        }
+        this
+      case lhs: mutable.LinkedHashSet[K] =>
+        val iter = lhs.entryIterator
         while (iter.hasNext) {
           val next = iter.next()
           remove0(next.key, next.hash)
