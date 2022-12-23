@@ -82,18 +82,15 @@ sealed class ListSet[A] extends AbstractSet[A]
 
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     xs match {
-      // we want to avoid to use of iterator as it causes allocations
-      // during reverseList
-      case ls: ListSet[A] =>
-        if (ls eq this) this
-        else {
-          val lsSize = ls.size
-          if (lsSize == 0) this
-          else if (isEmpty) ls
+      case _: this.type    => this
+      case _ if xs.isEmpty => this
+      // we want to avoid using iterator as it causes allocations during reverseList
+      case ls: ListSet[A]  =>
+          if (isEmpty) ls
           else {
-            @tailrec def skip(ls: ListSet[A], count: Int): ListSet[A] = {
+            // optimize add non-empty ListSet
+            @tailrec def skip(ls: ListSet[A], count: Int): ListSet[A] =
               if (count == 0) ls else skip(ls.next, count - 1)
-            }
 
             @tailrec def containsLimited(n: ListSet[A], e: A, end: ListSet[A]): Boolean =
               (n ne end) && (e == n.elem || containsLimited(n.next, e, end))
@@ -104,6 +101,7 @@ sealed class ListSet[A] extends AbstractSet[A]
             // We hope to get some structural sharing so find the tail of the
             // ListSet that are `eq` (or if there are not any then the ends of the lists),
             // and we optimise the add to only iterate until we reach the common end
+            val lsSize    = ls.size
             val thisSize  = this.size
             val remaining = Math.min(thisSize, lsSize)
             var thisTail  = skip(this, thisSize - remaining)
@@ -151,16 +149,13 @@ sealed class ListSet[A] extends AbstractSet[A]
                 case 4 => pending3
                 case _ => pending(pendingCount - 5)
               }
-              val r       = result
+              val r = result
               result = new r.Node(elem)
               pendingCount -= 1
             }
             result
           }
-        }
-      case _              =>
-        if (xs.isEmpty) this
-        else (repr /: xs) (_ + _)
+      case _               => xs.foldLeft(repr)(_ + _)
     }
 
   def iterator: Iterator[A] = {
