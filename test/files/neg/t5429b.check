@@ -1,0 +1,6 @@
+t5429b.scala:12: warning: overriding concrete non-lazy value with an object member will be disallowed under -Xsource:3
+  override object value     // fail
+                  ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -1,0 +1,10 @@
+t8663b.scala:8: error: value must be non-lazy when overriding concrete non-lazy value:
+val instance: Test (defined in trait A)
+  override object instance extends Test
+                  ^
+t8663b.scala:12: error: value must be non-lazy when overriding concrete non-lazy value:
+val instance: Test (defined in trait A)
+  with override object instance (defined in trait B)
+  println(new B {})
+              ^
+2 errors

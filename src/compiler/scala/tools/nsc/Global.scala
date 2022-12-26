@@ -157,11 +157,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // sub-components --------------------------------------------------
 
   /** Tree generation, usually based on existing symbols. */
-  override object gen extends {
+  override lazy val gen = new AstTreeGen with AttributedCastGen {
     val global: Global.this.type = Global.this
-  } with AstTreeGen {
-    def mkAttributedCast(tree: Tree, pt: Type): Tree =
-      typer.typed(mkCast(tree, pt))
+    def mkAttributedCast(tree: Tree, pt: Type): Tree = typer.typed(mkCast(tree, pt))
+  }
+  trait AttributedCastGen { _: AstTreeGen =>
+    def mkAttributedCast(tree: Tree, pt: Type): Tree
   }
 
   /** A spare instance of TreeBuilder left for backwards compatibility. */

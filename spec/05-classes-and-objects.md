@@ -1105,7 +1105,7 @@ conforming to the template ´t´.  It is roughly equivalent to the
 following definition of a lazy value:
 
 ```scala
-lazy val ´m´ = new ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´ { this: ´m.type´ => ´\mathit{stats}´ }
+final lazy val ´m´ = new ´sc´ with ´mt_1´ with ´\ldots´ with ´mt_n´ { this: ´m.type´ => ´\mathit{stats}´ }
 ```
 
 Note that the value defined by an object definition is instantiated

@@ -1,0 +1,5 @@
+t8663c.scala:8: error: value must be non-lazy when overriding concrete non-lazy value:
+val instance: B.this.Test (defined in trait A)
+  override object instance extends Test
+                  ^
+1 error

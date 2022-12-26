@@ -1,4 +1,4 @@
-lazy-override.scala:11: error: concrete non-lazy value cannot be overridden:
+lazy-override.scala:11: error: value must be non-lazy when overriding concrete non-lazy value:
 val x: Int (defined in class A)
     override lazy val x: Int = { print("/*B.x*/"); 3 }
                       ^

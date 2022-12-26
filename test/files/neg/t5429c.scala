@@ -1,4 +1,4 @@
-
+// scalac: -Xsource:3
 
 
 class A {
@@ -65,14 +65,12 @@ class E extends A {
   def value = 0       // fail
   def lazyvalue = 2   // fail
   def nullary = 5     // fail
-  def emptyArg = 10   // fail
   def oneArg = 15     // overload
 }
 class E0 extends A0 {
   override def value = 0      // fail
   override def lazyvalue = 2  // fail
   override def nullary = 5    // override
-  override def emptyArg = 10  // override
   override def oneArg = 15    // fail
 }
 
@@ -80,14 +78,12 @@ class F extends A {
   lazy val value = 0       // fail
   lazy val lazyvalue = 2   // fail
   lazy val nullary = 5     // fail
-  lazy val emptyArg = 10   // fail
   lazy val oneArg = 15     // overload
 }
 class F0 extends A0 {
   override lazy val value = 0      // fail (strict over lazy)
   override lazy val lazyvalue = 2  // override (lazy over lazy)
   override lazy val nullary = 5    // override
-  override lazy val emptyArg = 10  // override
   override lazy val oneArg = 15    // fail
 }
 

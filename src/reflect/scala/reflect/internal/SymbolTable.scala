@@ -22,7 +22,6 @@ import util._
 import java.util.concurrent.TimeUnit
 
 import scala.reflect.internal.settings.MutableSettings
-import scala.reflect.internal.{TreeGen => InternalTreeGen}
 import scala.reflect.io.AbstractFile
 
 abstract class SymbolTable extends macros.Universe
@@ -60,7 +59,7 @@ abstract class SymbolTable extends macros.Universe
                               with Reporting
 {
 
-  val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
+  lazy val gen = new reflect.internal.TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   trait ReflectStats extends BaseTypeSeqsStats
                         with TypesStats

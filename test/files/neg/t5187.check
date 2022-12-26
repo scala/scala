@@ -1,0 +1,5 @@
+t5187.scala:9: error: cannot override final member:
+object instance (defined in class A)
+  override lazy val instance: Test = new Test
+                    ^
+1 error

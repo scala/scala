@@ -427,11 +427,14 @@ abstract class RefChecks extends Transform {
                                           "(this rule is designed to prevent accidental overrides)")
             } else if (other.isStable && !member.isStable) { // (1.4)
               overrideErrorWithMemberInfo("stable, immutable value required to override:")
-            } else if (member.isValue && member.isLazy &&
+            } else if (member.isValue && (member.isLazy || member.isModule) &&
                        other.isValue && other.hasFlag(STABLE) && !(other.isDeferred || other.isLazy)) {
-              overrideErrorWithMemberInfo("concrete non-lazy value cannot be overridden:")
+              if (member.isModule && !currentRun.isScala3)
+                runReporting.deprecationWarning(member.pos, member, member.owner, "overriding concrete non-lazy value with an object member will be disallowed under -Xsource:3", "2.13.11")
+              else
+                overrideErrorWithMemberInfo("value must be non-lazy when overriding concrete non-lazy value:")
             } else if (other.isValue && other.isLazy &&
-                       member.isValue && !member.isLazy) {
+                       member.isValue && !member.isLazy && !member.isModule) {
               overrideErrorWithMemberInfo("value must be lazy when overriding concrete lazy value:")
             } else if (other.isDeferred && member.isTermMacro && member.extendedOverriddenSymbols.forall(_.isDeferred)) { // (1.9)
               overrideErrorWithMemberInfo("macro cannot override abstract method:")
