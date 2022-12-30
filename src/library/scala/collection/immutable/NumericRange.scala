@@ -143,7 +143,9 @@ sealed class NumericRange[T](
   // This method tries to compare the length of this with the given Int number.
   private def compareLength(n: Int): Int = {
     val diff = num.minus(end, start)
-    val thisLength = num.quot(diff, step)
+    val quotient = num.quot(diff, step)
+    val remainder = num.minus(diff, num.times(quotient, step))
+    val thisLength = if (!isInclusive && zero == remainder) quotient else num.plus(quotient, num.one)
     num.compare(num.fromInt(n), thisLength)
   }
 
