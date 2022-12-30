@@ -138,16 +138,27 @@ sealed class NumericRange[T](
   // based on the given value.
   private def newEmptyRange(value: T) = NumericRange(value, value, step)
 
+  // Calling length when a range contains more than Int.MaxValue causes IllegalArgumentException
+  // because the length of the range cannot be represented with Int numbers.
+  // This method tries to compare the length of this with the given Int number.
+  private def compareLength(n: Int): Int = {
+    val diff = num.minus(end, start)
+    val thisLength = num.quot(diff, step)
+    num.compare(num.fromInt(n), thisLength)
+  }
+
   override def take(n: Int): NumericRange[T] = {
     if (n <= 0 || isEmpty) newEmptyRange(start)
-    else if (n >= length) this
-    else new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
+    else if (compareLength(n) < 0)
+      new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
+    else this
   }
 
   override def drop(n: Int): NumericRange[T] = {
     if (n <= 0 || isEmpty) this
-    else if (n >= length) newEmptyRange(end)
-    else copy(locationAfterN(n), end, step)
+    else if (compareLength(n) < 0)
+      copy(locationAfterN(n), end, step)
+    else newEmptyRange(end)
   }
 
   override def splitAt(n: Int): (NumericRange[T], NumericRange[T]) = (take(n), drop(n))

@@ -157,4 +157,42 @@ class NumericRangeTest {
     assertEquals(Nil, check(testDecreaseCase.start to testIncreaseCase.last by testIncreaseCase.step))
     assertEquals(Nil, check(testDecreaseCase.inclusive))
   }
+
+  @Test
+  def numericRangeWithMoreThanMaxIntTake() = {
+    val start = BigInt(0)
+    val step = BigInt(1)
+    val end = BigInt(Int.MaxValue) * 5
+
+    // evaluation of length causes IllegalArgumentException because it cannot be represented as Int number
+    // Yet using `take` should be independent of evaluating length when it's not necessary.
+    assertThrows[IllegalArgumentException]((start until end by step).length)
+    val range = start until end by step
+
+    val take = 100
+    val smallChunkOfRange = range.take(take)
+    val expected = start until BigInt(100) by step
+    assertTrue(smallChunkOfRange equals expected)
+    assertTrue(smallChunkOfRange.length == take)
+  }
+
+  @Test
+  def numericRangeWithMoreThanMaxIntDrop() = {
+    val start = BigInt(0)
+    val step = BigInt(1)
+    val toAddToMaxInt = 50
+    val end = BigInt(Int.MaxValue) + toAddToMaxInt
+
+    val drop = Int.MaxValue
+
+    // evaluation of length causes IllegalArgumentException because it cannot be represented as Int number
+    // Yet using `drop` should be independent of evaluating length when it's not necessary.
+    assertThrows[IllegalArgumentException]((start until end by step).length)
+    val range = start until end by step
+
+    val smallChunkOfRange = range.drop(drop)
+    val expected = BigInt(Int.MaxValue) until end by step
+    assertTrue(smallChunkOfRange equals expected)
+    assertTrue(smallChunkOfRange.length == toAddToMaxInt)
+  }
 }
