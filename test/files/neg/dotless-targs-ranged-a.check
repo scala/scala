@@ -1,0 +1,16 @@
+dotless-targs-ranged-a.scala:4: error: type application is not allowed for infix operators
+  def fn2 = List apply[Int] 2
+                 ^
+dotless-targs-ranged-a.scala:9: error: type application is not allowed for infix operators
+  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+                ^
+dotless-targs-ranged-a.scala:9: error: type application is not allowed for infix operators
+  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+                                                    ^
+dotless-targs-ranged-a.scala:13: error: type application is not allowed for infix operators
+  def eval = 1 ->[Int] 2
+               ^
+dotless-targs-ranged-a.scala:14: error: type application is not allowed for infix operators
+  def evil = new A() op  [Int,   String     ]  42
+                     ^
+5 errors

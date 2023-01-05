@@ -986,10 +986,15 @@ self =>
 
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
       import opinfo._
+      if (targs.nonEmpty)
+        if (currentRun.isScala3)
+          syntaxError(offset, "type application is not allowed for infix operators")
+        else
+          deprecationWarning(offset, "type application will be disallowed for infix operators", "2.13.11")
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
       val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
-      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, opinfo.targs))
+      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, targs))
     }
 
     def reduceExprStack(base: List[OpInfo], top: Tree): Tree    = reduceStack(isExpr = true, base, top)
