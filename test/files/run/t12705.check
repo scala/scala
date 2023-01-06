@@ -1,0 +1,11 @@
+
+scala> case class Person(name: String)
+class Person
+
+scala> $intp.classLoader.getResource("Person.class")
+val res0: java.net.URL = memory:(memory)/Person.class
+
+scala> $intp.classLoader.loadClass("Person")
+val res1: Class[_] = class Person
+
+scala> :quit

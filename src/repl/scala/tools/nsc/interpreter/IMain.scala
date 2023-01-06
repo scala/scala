@@ -347,14 +347,22 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def translateEnclosingClass(n: String): Option[String] = symbolOfTerm(n).enclClass.toOption map flatPath
 
   /** If unable to find a resource foo.class, try taking foo as a symbol in scope
-    *  and use its java class name as a resource to load.
-    *
-    *  \$intp.classLoader classBytes "Bippy" or \$intp.classLoader getResource "Bippy.class" just work.
-    */
+   *  and use its java class name as a resource to load.
+   *
+   *  \$intp.classLoader classBytes "Bippy" or \$intp.classLoader getResource "Bippy.class" just work.
+   */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
       case null if _initializeComplete => translateSimpleResource(name).map(super.findAbstractFile).orNull
       case file => file
+    }
+    // if the name was mapped by findAbstractFile, supply null name to avoid name check in defineClass
+    override protected def findClass(name: String): Class[_] = {
+      val bytes = classBytes(name)
+      if (bytes.length == 0)
+        throw new ClassNotFoundException(name)
+      else
+        defineClass(/*name=*/null, bytes, 0, bytes.length, protectionDomain)
     }
   }
   private def makeClassLoader(): AbstractFileClassLoader =
