@@ -142,11 +142,15 @@ sealed class NumericRange[T](
   // because the length of the range cannot be represented with Int numbers.
   // This method tries to compare the length of this with the given Int number.
   private def compareLength(n: Int): Int = {
-    val diff = num.minus(end, start)
-    val quotient = num.quot(diff, step)
-    val remainder = num.minus(diff, num.times(quotient, step))
-    val thisLength = if (!isInclusive && zero == remainder) quotient else num.plus(quotient, num.one)
-    num.compare(num.fromInt(n), thisLength)
+    num match {
+      case _: Numeric.ByteIsIntegral | _: Numeric.ShortIsIntegral => n compare length
+      case _ =>
+        val diff = num.minus(end, start)
+        val quotient = num.quot(diff, step)
+        val remainder = num.minus(diff, num.times(quotient, step))
+        val thisLength = if (!isInclusive && zero == remainder) quotient else num.plus(quotient, num.one)
+        num.compare(num.fromInt(n), thisLength)
+    }
   }
 
   override def take(n: Int): NumericRange[T] = {

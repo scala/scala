@@ -195,4 +195,49 @@ class NumericRangeTest {
     assertTrue(smallChunkOfRange equals expected)
     assertTrue(smallChunkOfRange.length == toAddToMaxInt)
   }
+
+  @Test
+  def numericRangeSmallTypesDrop() = {
+    val byteStart: Byte = Byte.MinValue
+    val byteEnd: Byte = Byte.MaxValue
+    val drop = scala.util.Random.nextInt(Byte.MaxValue)
+
+    val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
+    val byteRangeChunk = byteRange.drop(drop)
+    assertTrue(byteRangeChunk.length == byteRange.length - drop)
+    assertTrue(byteRangeChunk.end == byteEnd)
+    assertTrue(byteRangeChunk.start == (byteStart + drop.toByte))
+
+    val shortStart: Short = Short.MinValue
+    val shortEnd: Short = Short.MaxValue
+
+    val shortRange = NumericRange(shortStart, shortEnd, (1: Short))
+    val shortRangeChunk = shortRange.drop(drop)
+    assertTrue(shortRangeChunk.length == shortRange.length - drop)
+    assertTrue(shortRangeChunk.end == shortEnd)
+    assertTrue(shortRangeChunk.start == (shortStart + drop.toShort))
+  }
+
+  @Test
+  def numericRangeSmallTypesTake() = {
+    val byteStart: Byte = Byte.MinValue
+    val byteEnd: Byte = Byte.MaxValue
+    val take = scala.util.Random.nextInt(Byte.MaxValue)
+
+    val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
+    val byteRangeChunk = byteRange.take(take)
+    assertTrue(byteRangeChunk.length == take)
+    assertTrue(byteRangeChunk.end == byteStart + take.toByte - 1)
+    assertTrue(byteRangeChunk.start == byteStart)
+
+    val shortStart: Short = Short.MinValue
+    val shortEnd: Short = Short.MaxValue
+
+    val shortRange = NumericRange(shortStart, shortEnd, (1: Short))
+    val shortRangeChunk = shortRange.take(take)
+    assertTrue(shortRangeChunk.length == take)
+    assertTrue(shortRangeChunk.end == shortStart + take.toShort - 1)
+    assertTrue(shortRangeChunk.start == shortStart)
+  }
+
 }
