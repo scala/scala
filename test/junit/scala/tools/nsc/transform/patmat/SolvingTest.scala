@@ -578,8 +578,8 @@ class SolvingTest {
 
   def pairWiseEncoding(ops: List[Sym]) = {
     And(ops.combinations(2).collect {
-      case a :: b :: Nil => Or(Not(a), Not(b))
-    }.toSet[TestSolver.TestSolver.Prop])
+      case a :: b :: Nil => Or(Not(a), Not(b)): Prop
+    }.to(mutable.LinkedHashSet))
   }
 
   @Test
@@ -593,5 +593,3 @@ class SolvingTest {
     assertEquals(expected.toSet, actual.toSet)
   }
 }
-
-

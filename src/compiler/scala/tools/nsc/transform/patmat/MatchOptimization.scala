@@ -56,7 +56,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
         val cond = test.prop
 
         def simplify(c: Prop): Set[Prop] = c match {
-          case And(ops)                   => ops flatMap simplify
+          case And(ops)                   => ops.flatMap(simplify).toSet
           case Or(ops)                    => Set(False) // TODO: make more precise
           case Not(Eq(Var(_), NullConst)) => Set.empty  // not worth remembering
           case True                       => Set.empty  // same
