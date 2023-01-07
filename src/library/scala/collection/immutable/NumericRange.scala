@@ -147,7 +147,7 @@ sealed class NumericRange[T](
 
   override def drop(n: Int): NumericRange[T] = {
     if (n <= 0 || isEmpty) this
-    else if (num.lt(locationAfterN(n), end))
+    else if (num.lt(locationAfterN(n - 1), end))
       copy(locationAfterN(n), end, step)
     else newEmptyRange(end)
   }
