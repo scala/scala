@@ -1250,7 +1250,7 @@ trait Contexts { self: Analyzer =>
 
       var importLookupFor213MigrationWarning = false
       def depthOk213 = {
-        settings.isScala213 && !thisContext.unit.isJava && !cx(ContextMode.InPackageClauseName) && defSym.exists && isPackageOwnedInDifferentUnit(defSym) && {
+        currentRun.isScala213 && !thisContext.unit.isJava && !cx(ContextMode.InPackageClauseName) && defSym.exists && isPackageOwnedInDifferentUnit(defSym) && {
           importLookupFor213MigrationWarning = true
           true
         }

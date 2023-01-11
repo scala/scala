@@ -1,0 +1,5 @@
+t9334.scala:7: error: overriding method aaa in class A of type => Int;
+ method aaa has weaker access privileges; it should not be private
+  private[this] def aaa: Int = 42
+                    ^
+one error found
