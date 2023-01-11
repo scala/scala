@@ -21,7 +21,7 @@ val res5: (Int, Int) = (1,2)
 scala> 1 -> 2
          ^
        error: value -> is not a member of Int
-       did you mean >>>?
+       did you mean >>?
 
 scala> 
 

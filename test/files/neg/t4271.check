@@ -1,11 +1,12 @@
 t4271.scala:9: error: value to is not a member of Int
+did you mean toInt?
   3 to 5
     ^
 t4271.scala:10: error: value ensuring is not a member of Int
   5 ensuring true
     ^
 t4271.scala:11: error: value -> is not a member of Int
-did you mean >>>?
+did you mean >>?
   3 -> 5
     ^
 t4271.scala:3: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)

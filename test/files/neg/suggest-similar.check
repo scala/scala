@@ -10,7 +10,7 @@ did you mean Weehawken?
   new example.Eeehawken
               ^
 suggest-similar.scala:16: error: value readline is not a member of object scala.io.StdIn
-did you mean readLine?
+did you mean readLine? or perhaps readByte, readInt, or readLong?
   import scala.io.StdIn.{readline, readInt}
          ^
 suggest-similar.scala:20: error: object stdin is not a member of package io
@@ -18,11 +18,68 @@ did you mean StdIn?
   import scala.io.stdin.{readLine => line}
                   ^
 suggest-similar.scala:37: error: value foo is not a member of object example.Hohokus
-did you mean foo1, foo2, foo3, or foo4?
+did you mean foo1, foo2, foo3, or foo4? or...?
   Hohokus.foo
           ^
 suggest-similar.scala:41: error: value bar is not a member of example.Hohokus
 did you mean bar2?
   new Hohokus().bar // don't suggest bar1
                 ^
-7 errors
+suggest-similar.scala:54: error: value acb is not a member of example.assignments.C
+did you mean abc?
+  def f = c.acb(42)
+            ^
+suggest-similar.scala:55: error: value ++- is not a member of example.assignments.C
+did you mean +++?
+  def g = c.++-(42)
+            ^
+suggest-similar.scala:56: error: value ++= is not a member of example.assignments.C
+did you mean +++?
+  def h = c.++=(42)
+            ^
+suggest-similar.scala:57: error: value ++= is not a member of example.assignments.C
+did you mean +++?
+  Expression does not convert to assignment because receiver is not assignable.
+  def i = c ++= 42
+            ^
+suggest-similar.scala:59: error: value y_= is not a member of example.assignments.C
+  def v = c y_= 1
+            ^
+suggest-similar.scala:60: error: value y is not a member of example.assignments.C
+  def v2 = c.y = 1
+             ^
+suggest-similar.scala:61: error: value x_== is not a member of example.assignments.C
+  def w = c x_== 1
+            ^
+suggest-similar.scala:62: error: value xx_= is not a member of example.assignments.C
+did you mean x_=?
+  def y = c.xx_=(1)
+            ^
+suggest-similar.scala:63: error: reassignment to val
+  def y2 = c.xx = 1
+                ^
+suggest-similar.scala:65: error: value zzz_= is not a member of example.assignments.C
+did you mean zz_=? or perhaps z_=?
+  def z2 = c.zzz_=(1)
+             ^
+suggest-similar.scala:66: error: value ++++ is not a member of example.assignments.C
+did you mean +++?
+  def z3 = c.++++(1)
+             ^
+suggest-similar.scala:67: error: value xxx is not a member of example.assignments.C
+did you mean xx? or perhaps x?
+  def legacy_duple = c.xxx  // did not suggest c.xx as too short
+                       ^
+suggest-similar.scala:76: error: value missN is not a member of example.MaxAlt
+did you mean miss0, miss1, miss2, or miss3? or...?
+  def test: Int = new MaxAlt().missN
+                               ^
+suggest-similar.scala:83: error: value missN is not a member of example.MissAlt
+did you mean miss0, miss1, or miss2?
+  def test: Int = new MissAlt().missN
+                                ^
+suggest-similar.scala:94: error: value missN is not a member of example.MoreAlt
+did you mean miss0, miss1, miss2, or miss3? or...?
+  def test: Int = new MoreAlt().missN
+                                ^
+22 errors
