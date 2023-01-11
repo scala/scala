@@ -689,11 +689,10 @@ trait ContextErrors extends splain.SplainErrors {
       def NotEnoughArgsError(tree: Tree, fun: Tree, missing: List[Symbol]) = {
         val notEnoughArgumentsMsg = {
           val suffix = if (missing.isEmpty) "" else {
-            val keep = missing take 3 map (_.name)
+            val keep = missing.take(3).map(_.name)
             val ess  = if (missing.tail.isEmpty) "" else "s"
-            f".%nUnspecified value parameter$ess ${
-              keep.mkString("", ", ", if ((missing drop 3).nonEmpty) "..." else ".")
-            }"
+            val dots = if (missing.drop(3).nonEmpty) "..." else "."
+            keep.mkString(s".\nUnspecified value parameter$ess ", ", ", dots)
           }
           s"not enough arguments for ${ treeSymTypeMsg(fun) }$suffix"
         }
