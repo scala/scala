@@ -1,3 +1,7 @@
+-- Error: TestExperimentalDefsPre_fail.scala:1:18
+1 |import downstream.ExperimentalDefsPre.*
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
 -- Error: TestExperimentalDefsPre_fail.scala:4:10
 4 |  def test = new SubExperimentalNotExperimental
   |          ^
@@ -14,4 +18,4 @@
 6 |  class SubSubExperimental extends SubExperimentalNotExperimental
   |        ^
   |extension of experimental class SubExperimentalNotExperimental must have @experimental annotation
-4 errors found
+5 errors found
