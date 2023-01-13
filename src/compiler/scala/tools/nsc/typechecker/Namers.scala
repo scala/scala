@@ -1487,7 +1487,7 @@ trait Namers extends MethodSynthesis {
             context.warning(ddef.pos, msg, WarningCategory.OtherNullaryOverride)
             meth.updateAttachment(NullaryOverrideAdapted)
           }
-          context.unit.toCheck += (if (currentRun.isScala3) error _ else warn _)
+          context.unit.addPostUnitCheck(() => if (currentRun.isScala3) error() else warn())
           ListOfNil
         } else vparamSymss
       }

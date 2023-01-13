@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.collection.mutable.ListBuffer
+
 /** Defines the sub-components for the namer, packageobjects, and typer phases.
  */
 trait Analyzer extends AnyRef
@@ -98,15 +100,19 @@ trait Analyzer extends AnyRef
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
+      private val toCheckAfterTyper = new ListBuffer[CompilationUnit.ToCheckAfterTyper]
       override def run(): Unit = {
         val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.typerNanos) else null
         global.echoPhaseSummary(this)
         val units = currentRun.units
+
         while (units.hasNext) {
           applyPhase(units.next())
           undoLog.clear()
         }
         finishComputeParamAlias()
+        for (work <- toCheckAfterTyper) work()
+        toCheckAfterTyper.clear()
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
         if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.typerNanos, start)
@@ -117,7 +123,10 @@ trait Analyzer extends AnyRef
           unit.body = typer.typed(unit.body)
           // interactive typed may finish by throwing a `TyperResult`
           if (!settings.Youtline.value) {
-            for (workItem <- unit.toCheck) workItem()
+            unit.toCheck foreach {
+              case now: CompilationUnit.ToCheckAfterUnit => now()
+              case later: CompilationUnit.ToCheckAfterTyper => toCheckAfterTyper += later
+            }
             if (!settings.isScaladoc && settings.warnUnusedImport)
               warnUnusedImports(unit)
             if (!settings.isScaladoc && settings.warnUnused.isSetByUser)
