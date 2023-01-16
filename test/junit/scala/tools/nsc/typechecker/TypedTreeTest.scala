@@ -4,9 +4,39 @@ import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
 
 import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 class TypedTreeTest extends BytecodeTesting {
   override def compilerArgs = "-Ystop-after:typer"
+
+  @Test def t12703(): Unit = {
+    import compiler._
+    val a =
+      """object Foo {
+        |  sealed trait A
+        |  sealed trait B
+        |  final case class C(x: Int) extends A with B
+        |}
+        |""".stripMargin
+    val b =
+      """object T {
+        |  import Foo._
+        |  def f(a: A) = a match {
+        |    case b: B => 0
+        |    case _ => 1
+        |  }
+        |}
+        |""".stripMargin
+
+    def check(a: String, b: String) = {
+      val r = newRun()
+      r.compileSources(makeSourceFile(a, "A.scala") :: makeSourceFile(b, "B.scala") :: Nil)
+      checkReport()
+    }
+
+    check(a, b)
+    check(b, a)
+  }
 
   @Test
   def keepBlockUndetparams(): Unit = {

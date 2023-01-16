@@ -127,7 +127,9 @@ trait CompilationUnits { global: Global =>
     val transformed = new mutable.AnyRefMap[Tree, Tree]
 
     /** things to check at end of compilation unit */
-    val toCheck = new ListBuffer[() => Unit]
+    val toCheck = new ListBuffer[CompilationUnit.ToCheck]
+    private[nsc] def addPostUnitCheck(check: CompilationUnit.ToCheckAfterUnit): Unit = toCheck += check
+    private[nsc] def addPostTyperCheck(check: CompilationUnit.ToCheckAfterTyper): Unit = toCheck += check
 
     /** The features that were already checked for this unit */
     var checkedFeatures = Set[Symbol]()
@@ -148,5 +150,11 @@ trait CompilationUnits { global: Global =>
     val isJava: Boolean = source.isJava
 
     override def toString() = source.toString()
+  }
+
+  object CompilationUnit {
+    sealed trait ToCheck
+    trait ToCheckAfterUnit extends ToCheck { def apply(): Unit }
+    trait ToCheckAfterTyper extends ToCheck { def apply(): Unit }
   }
 }

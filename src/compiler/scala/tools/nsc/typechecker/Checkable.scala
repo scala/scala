@@ -371,7 +371,7 @@ trait Checkable {
               val Xsym = X.typeSymbol
               val Psym = P.typeSymbol
               if (isSealedOrFinal(Xsym) && isSealedOrFinal(Psym) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym)))
-                context.unit.toCheck += (() => recheckFruitless())
+                context.unit.addPostTyperCheck(() => recheckFruitless())
             }
         }
       }

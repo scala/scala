@@ -465,7 +465,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ =>
           QualifyingClassError(tree, qual)
           // Delay `setError` in namer, scala/bug#10748
-          if (immediate) setError(tree) else unit.toCheck += (() => setError(tree))
+          if (immediate) setError(tree) else unit.addPostUnitCheck(() => setError(tree))
           NoSymbol
       }
 
@@ -750,7 +750,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (immediate) {
           action()
         } else {
-          unit.toCheck += (() => action(): Unit)
+          unit.addPostUnitCheck(() => action())
           true
         }
       }
@@ -3228,7 +3228,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       namer.enterSyms(stats)
 
       // need to delay rest of typedRefinement to avoid cyclic reference errors
-      unit.toCheck += { () =>
+      unit.addPostUnitCheck(() => {
         val stats1 = typedStats(stats, NoSymbol)
         // this code kicks in only after typer, so `stats` will never be filled in time
         // as a result, most of compound type trees with non-empty stats will fail to reify
@@ -3238,7 +3238,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         templ updateAttachment att.copy(stats = stats1)
         for (stat <- stats1 if stat.isDef && stat.symbol.isOverridingSymbol)
           stat.symbol setFlag OVERRIDE
-      }
+      })
     }
 
     def typedImport(imp : Import): Import = transformed.remove(imp) match {
