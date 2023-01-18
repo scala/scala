@@ -1,0 +1,4 @@
+t12715b.scala:17: error: parent trait D has a super call to method B.f, which binds to the value C.f. Super calls can only target methods.
+    new A(10.0f) with C with D {}
+        ^
+1 error
