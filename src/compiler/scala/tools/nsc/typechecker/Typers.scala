@@ -3735,7 +3735,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt).tap(checkRecursive)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
-                  tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))
+                  tryTupleApply orElse {
+                    removeNames(Typer.this)(allArgs, params) // report bad names
+                    duplErrorTree(NotEnoughArgsError(tree, fun, missing))
+                  }
                 }
               }
             }
