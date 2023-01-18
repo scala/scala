@@ -2,6 +2,8 @@
 import scala.tools.partest.DirectTest
 
 import java.nio.file.Files.{createDirectories, createTempDirectory}
+import scala.tools.testkit.ReleasablePath._
+import scala.util.Using
 
 // an unfortunately-named resource dir on the classpath
 //
@@ -10,9 +12,10 @@ object Test extends DirectTest {
   def code = "package acme { class C }"
 
   def show() = assert {
-    val tmp = createTempDirectory("t11385")
-    val pkg = createDirectories(tmp.resolve("acme").resolve("C").resolve("sub"))
-    compile("-classpath", tmp.toString)
+    Using.resource(createTempDirectory("t11385")) { tmp =>
+      val pkg = createDirectories(tmp.resolve("acme").resolve("C").resolve("sub"))
+      compile("-classpath", tmp.toString)
+    }
   }
 }
 
