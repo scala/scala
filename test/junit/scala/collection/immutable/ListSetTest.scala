@@ -1,6 +1,8 @@
 package scala.collection.immutable
 
-import org.junit.Assert._
+import scala.tools.testkit.AssertUtil.{assertSameElements, fail}
+
+import org.junit.Assert.{assertEquals, assertSame, fail => _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -79,6 +81,17 @@ class ListSetTest {
 
     bar = foo ++ ListSet(1, 2, 3, 4, 5, 6)
     assertEquals(List(1, 2, 3, 4, 5, 6), bar.iterator.toList)
+    assertSameElements(List(1, 2, 3, 4, 5, 6), bar.iterator)
+
+    assertSame(foo, foo ++ foo)
+    assertSame(foo, foo ++ ListSet.empty)
+    assertSame(foo, foo ++ Nil)
+  }
+
+  @Test def `t12316 ++ is correctly ordered`: Unit = {
+    // was: ListSet(1, 2, 3, 42, 43, 44, 29, 28, 27, 12, 11, 10)
+    assertEquals(ListSet(1,2,3,42,43,44,10,11,12,27,28,29), ListSet(1,2,3,42,43,44) ++ ListSet(10,11,12,42,43,44,27,28,29))
+    assertSameElements(List(1,2,3,42,43,44,10,11,12,27,28,29), ListSet(1,2,3,42,43,44) ++ ListSet(10,11,12,42,43,44,27,28,29))
   }
 
   @Test
