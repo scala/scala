@@ -77,6 +77,7 @@ abstract class PerRunInitTest {
 
   def clearCaches() = underTest.global.perRunCaches.clearAll()
 
+  @annotation.nowarn("cat=deprecation")
   def doGc() = {
     System.gc()
     System.runFinalization()
