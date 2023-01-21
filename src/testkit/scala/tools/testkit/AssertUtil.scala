@@ -159,18 +159,34 @@ object AssertUtil {
 
   def assertFails[U](checkMessage: String => Boolean)(body: => U): Unit = assertThrows[AssertionError](body, checkMessage)
 
-  /** JUnit-style assertion for `IterableLike.sameElements`.
-   */
-  def assertSameElements[A, B >: A](expected: Iterable[A], actual: Iterable[B], message: String = ""): Unit =
-    if (!expected.iterator.sameElements(actual))
-      fail(
-        f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
-      )
+  private def orEmpty(b: Boolean)(text: => String): String = if (b) text else ""
 
-  /** Convenient for testing iterators.
+  /** JUnit-style assertion for `Seq#sameElements`.
+   *  The `actual` is iterated twice if failure is reported.
    */
-  def assertSameElements[A, B >: A](expected: Iterable[A], actual: IterableOnce[B]): Unit =
-    assertSameElements(expected, actual.iterator.to(List), "")
+  def assertSameElements[A, B >: A](expected: Seq[A], actual: Iterable[B], message: String = ""): Unit =
+    if (!expected.sameElements(actual))
+      fail(f"${orEmpty(message.nonEmpty)(s"$message ")}expected:<${stringOf(expected)}> but was:<${stringOf(actual)}>")
+
+  /** Convenience for testing iterators and non-Seqs.
+   *  The `actual` is collected to a `List` for reporting errors.
+   */
+  def assertSameElements[A, B >: A](expected: Seq[A], actual: IterableOnce[B]): Unit =
+    assertSameElements(expected, actual.iterator.to(Iterable), message = "")
+
+  /** Convenience for testing iterators and non-Seqs.
+   *  The `expected` is collected to a `List` for reporting errors.
+   */
+  def assertSameElements[A, B >: A](expected: IterableOnce[A], actual: IterableOnce[B]): Unit =
+    assertSameElements(expected.iterator.to(Seq), actual)
+
+  /** Convenience for testing arrays. Avoids warning about implicit conversion to Seq.
+   */
+  def assertSameElements[A, B >: A](expected: Array[A], actual: Array[B]): Unit =
+    assertSameElements(expected, actual, message = "")
+
+  def assertSameElements[A, B >: A](expected: Array[A], actual: Array[B], message: String): Unit =
+    assertSameElements(expected.toIndexedSeq, actual.toIndexedSeq, message)
 
   /** Value is not strongly reachable from roots after body is evaluated.
    */
