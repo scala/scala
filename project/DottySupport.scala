@@ -41,7 +41,7 @@ object DottySupport {
     // Add the scala3-library sources to the sourcepath and disable fatal warnings
     Compile / scalacOptions := {
       val old = (Compile / scalacOptions).value
-      val withoutFatalWarnings = old.filter(opt => opt != "-Werror" && !opt.startsWith("-Wconf"))
+      val withoutFatalWarnings = old.filterNot(opt => opt == "-Werror" || opt.startsWith("-Wconf"))
 
       val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = withoutFatalWarnings.span(_ != "-sourcepath")
 
