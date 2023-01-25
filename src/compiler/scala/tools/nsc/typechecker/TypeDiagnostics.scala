@@ -562,6 +562,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
         case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
           ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+        case Literal(_) =>
+          t.attachments.get[OriginalTreeAttachment].foreach(ota => traverse(ota.original))
         case _                                        =>
       }
 

@@ -1,0 +1,6 @@
+t12590.scala:4: warning: local val a in method unusedLocal is never used
+    val a = 27
+        ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
