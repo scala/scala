@@ -195,7 +195,7 @@ import scala.language.implicitConversions"""
         args.map(arg =>
           "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, resultFn(arg))) :+ ""
       )
-    )
+    ).toList
   }
 
   sealed abstract class AnyValRep(val name: String, val repr: Option[String], val javaEquiv: String) {
