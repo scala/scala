@@ -1,5 +1,7 @@
 package scala.build
 
+import scala.language.postfixOps
+
 /** Code generation of the AnyVal types and their companions. */
 trait GenerateAnyValReps {
   self: GenerateAnyVals =>
@@ -164,8 +166,8 @@ import scala.language.implicitConversions"""
       val xs1 = List(mkCoercions, mkUnaryOps, mkStringOps, mkShiftOps) map (xs => if (xs.isEmpty) xs else xs :+ "")
       val xs2 = List(
         mkBinOpsGroup(comparisonOps, numeric, _ => Z),
-        mkBinOpsGroup(bitwiseOps, cardinal, this opType _),
-        mkBinOpsGroup(otherOps, numeric, this opType _)
+        mkBinOpsGroup(bitwiseOps, cardinal, this opType),
+        mkBinOpsGroup(otherOps, numeric, this opType)
       )
       xs1 ++ xs2
     }
@@ -195,7 +197,7 @@ import scala.language.implicitConversions"""
         args.map(arg =>
           "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, resultFn(arg))) :+ ""
       )
-    ).toList
+    )
   }
 
   sealed abstract class AnyValRep(val name: String, val repr: Option[String], val javaEquiv: String) {
