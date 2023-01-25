@@ -5,7 +5,7 @@ import sbt.Keys._
 import java.io.File
 
 import sbt.librarymanagement.{
-  ivy, DependencyResolution, ScalaModuleInfo, UpdateConfiguration, UnresolvedWarningConfiguration
+  DependencyResolution, ScalaModuleInfo, UpdateConfiguration, UnresolvedWarningConfiguration
 }
 
 /**
@@ -28,7 +28,7 @@ object TastySupport {
 object DottySupport {
   val dottyVersion = "3.2.0"
   val compileWithDotty: Boolean =
-    Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
+    Option(System.getProperty("scala.build.compileWithDotty")).exists(_.toBoolean)
   lazy val commonSettings = Seq(
     Compile / scalacOptions ++= Seq(
       "-language:implicitConversions" // Avoid a million warnings
