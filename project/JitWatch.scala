@@ -58,7 +58,7 @@ object JitWatchFilePlugin extends AutoPlugin {
 
       // Download and add transitive sources from the classpath
       val classiferArtifacts: Seq[(ModuleID, Artifact, File)] = updateClassifiers.value.configurations.flatMap(_.details.flatMap(_.modules.flatMap(report => report.artifacts.map(x => (report.module, x._1, x._2)))))
-      val sourceClassiferArtifacts = classiferArtifacts.filter(tuple => tuple._2.classifier == Some("sources") && dependencyModuleIds.contains(tuple._1))
+      val sourceClassiferArtifacts = classiferArtifacts.filter(tuple => tuple._2.classifier.contains("sources") && dependencyModuleIds.contains(tuple._1))
 
       val externalSources = sourceClassiferArtifacts.map(_._3)
       val internalAndExternalSources = sourceDirectories.value ++ (javaHomeSrc +: (transitiveSourceDirectories ++ transitiveSourceDirectories2).distinct) ++ externalSources

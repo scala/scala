@@ -1,10 +1,10 @@
 package scala.build
 
-import java.io.{ByteArrayOutputStream, PrintStream, StringWriter}
+import java.io.{ByteArrayOutputStream, PrintStream}
 
 import sbt._
 import Keys._
-import sbt.internal.util.{ConsoleAppender, StringEvent }
+import sbt.internal.util.ConsoleAppender
 import scala.collection.mutable
 
 /** Save MiMa logs so they don't get lost in lots of debug output */

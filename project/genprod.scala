@@ -217,7 +217,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
  *  object Main extends App {%s}
  *  }}}"""
 
-  def toStr() = "\"" + ("<function%d>" format i) + "\""
+  def toStr = "\"" + ("<function%d>" format i) + "\""
   def apply() = {
 <file name={fileName}>{header}
 {companionObject}
@@ -392,7 +392,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
    *
    *  @param n number of the projection to be returned
    *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
-   *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= ${i}).
+   *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= $i).
    */
 """
 
