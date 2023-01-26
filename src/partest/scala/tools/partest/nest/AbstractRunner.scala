@@ -188,12 +188,12 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         echo(message)
         levyJudgment()
       }
-      if (realeasy) {
-        runGit("status --porcelain")(_.filter(_.endsWith(".check")).map(_.drop(3)).mkString("\n")).foreach { danger =>
+      if (realeasy)
+        for (lines <- runGit("status --porcelain")(_.filter(_.endsWith(".check")).map(_.drop(3))) if lines.nonEmpty) {
           echo(bold(red("# There are uncommitted check files!")))
-          echo(s"$danger\n")
+          for (file <- lines)
+            echo(s"$file\n")
         }
-      }
     }
   }
 
