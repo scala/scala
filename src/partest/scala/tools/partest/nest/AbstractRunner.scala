@@ -245,12 +245,24 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           case parseVerbose(tracking) => tracking.tap(ref => echo(s"Tracking $ref"))
           case _ => "upstream/2.13.x".tap(default => echoWarning(s"Tracking default $default, failed to understand '$line'"))
         }
+        case class MADFile(path: String, status: Int)
+        // D       test/files/neg/t12590.scala
+        def madden(line: String): MADFile =
+          line.split("\\s+") match {
+            case Array(mad, p) =>
+              val score = mad match { case "M" => 0 case "A" => 1 case "D" => -1 }
+              MADFile(p, score)
+            case _ =>
+              echoWarning(s"diff --name-status, failed to understand '$line'")
+              MADFile("NOPATH", -1)
+          }
+        def isPresent(mad: MADFile) = mad.status >= 0
         def isTestFiles(path: String) = path.startsWith("test/files/")
         val maybeFiles =
           for {
             current  <- runGit("rev-parse --abbrev-ref HEAD")(_.head).tap(_.foreach(b => echo(s"Testing on branch $b")))
             tracking <- runGit(s"branch -vv --list $current")(lines => parseTracking(lines.head))
-            files    <- runGit(s"diff --name-only $tracking")(lines => lines.filter(isTestFiles).toList)
+            files    <- runGit(s"diff --name-status $tracking")(lines => lines.map(madden).filter(isPresent).map(_.path).filter(isTestFiles).toList)
           }
           yield files
         //test/files/neg/t12349.check
