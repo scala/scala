@@ -38,7 +38,7 @@ package scala
  * User-defined value classes which avoid object allocation...
  *
  *   - must have a single `val` parameter that is the underlying runtime representation.
- *   - can define `def`s, but no `val`s, `var`s, or nested `traits`s, `class`es or `object`s.
+ *   - can define `def`s, but no `val`s, `var`s, or nested `trait`s, `class`es or `object`s.
  *   - typically extend no other trait apart from `AnyVal`.
  *   - cannot be used in type tests or pattern matching.
  *   - may not override `equals` or `hashCode` methods.
