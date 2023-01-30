@@ -1,0 +1,7 @@
+t6159.scala:10: warning: match may not be exhaustive.
+It would fail on the following input: (_ : A.this.X2)
+  def f(x: X) = x match {
+                ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -129,8 +129,11 @@ trait TreeAndTypeAnalysis extends Debugging {
       def filterAndSortChildren(children: Set[Symbol]) = {
         // symbols which are both sealed and abstract need not be covered themselves,
         // because all of their children must be and they cannot otherwise be created.
-        children.toList.filter(x => !(x.isSealed || x.isPrivate) || !x.isAbstractClass || isPrimitiveValueClass(x))
-          .sortBy(_.sealedSortName)
+        val children1 = children.toList.filterNot(child => child.isSealed && child.isAbstractClass).sortBy(_.sealedSortName)
+        children1.filterNot { child =>
+          // remove private abstract children that are superclasses of other children, for example in t6159 drop X2
+          child.isPrivate && child.isAbstractClass && children1.exists(sym => (sym ne child) && sym.isSubClass(child))
+        }
       }
 
       @tailrec def groupChildren(wl: List[Symbol], acc: List[List[Symbol]]): List[List[Symbol]] = wl match {
