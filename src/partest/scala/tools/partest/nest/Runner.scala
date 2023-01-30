@@ -16,26 +16,26 @@ package nest
 import java.io.{Console => _, _}
 import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
-import java.nio.file.{Files, StandardOpenOption}
+import java.nio.file.{Files, Path, StandardOpenOption}
 
 import scala.annotation.nowarn
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
-import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader, ScalaClassLoader.URLClassLoader
 import scala.sys.process.{Process, ProcessLogger}
 import scala.tools.nsc.Properties.{isWin, propOrEmpty}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
-import ClassPath.join
-import TestState.{Crash, Fail, Pass, Skip, Updated}
-import FileManager.{compareContents, joinPaths, withTempFile}
-import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try, Using}
 import scala.util.Properties.isJavaAtLeast
 import scala.util.chaining._
 import scala.util.control.ControlThrowable
+import scala.util.matching.Regex
+import ClassPath.join
+import FileManager.{compareContents, joinPaths, withTempFile}
+import TestState.{Crash, Fail, Pass, Skip, Updated}
 
 /** pos/t1234.scala or pos/t1234 if dir */
 case class TestInfo(testFile: File) {
@@ -352,37 +352,33 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  any Windows backslashes with the one true file separator char.
    */
   def normalizeLog(): Unit = {
-    import scala.util.matching.Regex
-
     // Apply judiciously; there are line comments in the "stub implementations" error output.
-    val slashes    = """[/\\]+""".r
+    val slashes = """[/\\]+""".r
     def squashSlashes(s: String) = slashes.replaceAllIn(s, "/")
 
     // this string identifies a path and is also snipped from log output.
-    val elided     = parentFile.getAbsolutePath
+    val elided = parentFile.getAbsolutePath
 
     // something to mark the elision in the log file (disabled)
-    val ellipsis   = "" //".../"    // using * looks like a comment
+    val ellipsis = "" //".../"    // using * looks like a comment
 
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
     val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
     def canonicalize(s: String): String =
       pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m group 1)))
 
-    def masters    = {
+    def masters = {
       val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
-      files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filter(s => !(s startsWith "#"))
+      files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filterNot(_.startsWith("#"))
     }
-    val filters    = toolArgs("filter", split = false) ++ masters
-    val elisions   = ListBuffer[String]()
-    //def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
-    def lineFilter(s: String): Boolean  = (
-      filters map (_.r) forall { r =>
-        val res = (r findFirstIn s).isEmpty
-        if (!res) elisions += s
-        res
+    val filters = toolArgs("filter", split = false) ++ masters
+    lazy val elisions = ListBuffer[String]()
+    def lineFilter(s: String): Boolean =
+      filters.map(_.r).forall { r =>
+        val unfiltered = r.findFirstIn(s).isEmpty
+        if (!unfiltered && suiteRunner.verbose) elisions += s
+        unfiltered
       }
-    )
 
     logFile.mapInPlace(canonicalize)(lineFilter)
     if (suiteRunner.verbose && elisions.nonEmpty) {
@@ -462,24 +458,26 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def toolArgs(tool: String, split: Boolean = true): List[String] =
     toolArgsFor(sources(testFile))(tool, split)
 
+  // cache the headers we read for toolArgs
+  private val fileHeaders = new mutable.HashMap[Path, List[String]]
+
   // inspect given files for tool args of the form `tool: args`
   // if args string ends in close comment, drop the `*` `/`
   // if split, parse the args string as command line.
+  // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
   def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
-    def argsFor(f: File): List[String] = {
-      import scala.jdk.OptionConverters._
-      import scala.sys.process.{Parser => CommandLineParser}, CommandLineParser.tokenize
-      val max  = 10
+    def argsFor(f: File): List[String] = fromHeader(fileHeaders.getOrElseUpdate(f.toPath, readHeaderFrom(f)))
+    def fromHeader(header: List[String]) = {
+      import scala.sys.process.Parser.tokenize
       val tag  = s"$tool:"
       val endc = "*" + "/"    // be forgiving of /* scalac: ... */
       def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
       def argsplitter(s: String) = if (split) tokenize(s) else List(s.trim())
-      val args = Using.resource(Files.lines(f.toPath, codec.charSet))(
-        _.limit(max).filter(_.contains(tag)).map(stripped).findAny.toScala
-      )
-      args.map(argsplitter).getOrElse(Nil)
+      header.filter(_.contains(tag)).map(stripped).flatMap(argsplitter)
     }
+    def readHeaderFrom(f: File): List[String] =
+      Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
     files.flatMap(argsFor)
   }
 
