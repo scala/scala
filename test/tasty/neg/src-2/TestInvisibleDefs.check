@@ -8,6 +8,7 @@ TestInvisibleDefs_fail.scala:11: error: value getStatus is not a member of tasty
     mybean.getStatus() // error
            ^
 TestInvisibleDefs_fail.scala:12: error: value setStatus is not a member of tastytest.InvisibleDefs.MyBean
+did you mean status?
     mybean.setStatus("closed") // error
            ^
 4 errors
