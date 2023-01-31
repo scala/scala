@@ -371,7 +371,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
       files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filterNot(_.startsWith("#"))
     }
-    val filters = toolArgs(ToolName.filter, split = false) ++ masters
+    val filters = toolArgs(ToolName.filter) ++ masters
     lazy val elisions = ListBuffer[String]()
     def lineFilter(s: String): Boolean =
       filters.map(_.r).forall { r =>
@@ -448,31 +448,32 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     var perFile = toolArgsFor(sources)(ToolName.scalac)
     if (parentFile.getParentFile.getName == "macro-annot")
       perFile ::= "-Ymacro-annotations"
-    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)(ToolName.javaVersion, split = false).isEmpty)
+    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)(ToolName.javaVersion).isEmpty)
       perFile ::= "-release:8"
     perFile
   }
   private val releaseFlag = raw"--?release(?::\d+)?".r
 
   // inspect sources for tool args
-  def toolArgs(tool: ToolName, split: Boolean = true): List[String] = toolArgsFor(sources(testFile))(tool, split)
+  def toolArgs(tool: ToolName): List[String] = toolArgsFor(sources(testFile))(tool)
 
-  // cache the arg lines and split args per tool for each file
-  private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, (List[String], List[String])]]
+  // for each file, cache the args for each tool
+  private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, List[String]]]
 
   // inspect given files for tool args of the form `tool: args`
   // if args string ends in close comment, drop the `*` `/`
-  // if split, parse the args string as command line.
+  // if filter, return entire line as if quoted, else parse the args string as command line.
   // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
-  def toolArgsFor(files: List[File])(tool: ToolName, split: Boolean = true): List[String] = {
-    def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).get(tool) match {
-      case Some((lines, args)) => if (split) args else lines
-      case _ => Nil
-    }
-    def readToolArgs(f: File): Map[ToolName, (List[String], List[String])] = {
+  def toolArgsFor(files: List[File])(tool: ToolName): List[String] = {
+    def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).apply(tool)
+    def readToolArgs(f: File): Map[ToolName, List[String]] = {
       val header = readHeaderFrom(f)
-      ToolName.values.toList.map(name => (name, fromHeader(name, header))).filterNot(_._2._1.isEmpty).toMap
+      ToolName.values.toList
+        .map(name => name -> fromHeader(name, header))
+        .filterNot(_._2.isEmpty)
+        .toMap[ToolName, List[String]]
+        .withDefaultValue(List.empty[String])
     }
     def fromHeader(name: ToolName, header: List[String]) = {
       import scala.sys.process.Parser.tokenize
@@ -480,7 +481,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       val endc = "*" + "/"    // be forgiving of /* scalac: ... */
       def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
       val lines = header.filter(_.contains(tag)).map(line => stripped(line).trim())
-      (lines, lines.flatMap(tokenize))
+      if (name == ToolName.filter) lines else lines.flatMap(tokenize)
     }
     def readHeaderFrom(f: File): List[String] =
       Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
