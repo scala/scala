@@ -78,7 +78,7 @@ object VersionUtil {
             // Workaround lack of git worktree support in JGit https://bugs.eclipse.org/bugs/show_bug.cgi?id=477475
             val sha = List("git", "rev-parse", "HEAD").!!.trim
             val commitDateIso = List("git", "log", "-1", "--format=%cI", "HEAD").!!.trim
-            val date = Date.from(ISO_DATE_TIME.parse(commitDateIso, Instant.from(_)))
+            val date = Date.from(ISO_DATE_TIME.parse(commitDateIso, Instant.from _))
             (date, sha.substring(0, 7))
           } catch {
             case ex: Exception =>
@@ -127,7 +127,7 @@ object VersionUtil {
     val (base, suffix) = {
       val (b, s) = (baseVersion.value, baseVersionSuffix.value)
       if(s == "SPLIT") {
-        val split = """([\w+\.]+)(-[\w+\.-]+)??""".r
+        val split = """([\w+.]+)(-[\w+.-]+)??""".r
         val split(b2, sOrNull) = b
         (b2, Option(sOrNull).map(_.drop(1)).getOrElse(""))
       } else (b, s)
