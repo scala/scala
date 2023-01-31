@@ -14,8 +14,4 @@
 6 |  class SubSubExperimental extends SubExperimentalNotExperimental
   |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
--- Error: TestExperimentalDefsPre_fail.scala:6:8
-6 |  class SubSubExperimental extends SubExperimentalNotExperimental
-  |        ^
-  |extension of experimental class SubExperimentalNotExperimental must have @experimental annotation
-5 errors found
+4 errors found
