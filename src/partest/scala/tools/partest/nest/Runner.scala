@@ -113,7 +113,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       joinPaths(outDir :: testClassPath),
       "-J-Duser.language=en",
       "-J-Duser.country=US"
-    ) ++ (toolArgsFor(files)("javac")
+    ) ++ (toolArgsFor(files)(ToolName.javac)
     ) ++ (files.map(_.getAbsolutePath)
     )
 
@@ -371,7 +371,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
       files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filterNot(_.startsWith("#"))
     }
-    val filters = toolArgs("filter", split = false) ++ masters
+    val filters = toolArgs(ToolName.filter, split = false) ++ masters
     lazy val elisions = ListBuffer[String]()
     def lineFilter(s: String): Boolean =
       filters.map(_.r).forall { r =>
@@ -445,18 +445,17 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   // under --realeasy, if a javaVersion isn't specified, require the minimum viable using -release 8
   // to avoid accidentally committing a test that requires a later JVM.
   def flagsForCompilation(sources: List[File]): List[String] = {
-    var perFile = toolArgsFor(sources)("scalac")
+    var perFile = toolArgsFor(sources)(ToolName.scalac)
     if (parentFile.getParentFile.getName == "macro-annot")
       perFile ::= "-Ymacro-annotations"
-    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)("javaVersion", split = false).isEmpty)
+    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)(ToolName.javaVersion, split = false).isEmpty)
       perFile ::= "-release:8"
     perFile
   }
   private val releaseFlag = raw"--?release(?::\d+)?".r
 
   // inspect sources for tool args
-  def toolArgs(tool: String, split: Boolean = true): List[String] =
-    toolArgsFor(sources(testFile))(tool, split)
+  def toolArgs(tool: ToolName, split: Boolean = true): List[String] = toolArgsFor(sources(testFile))(tool, split)
 
   // cache the headers we read for toolArgs
   private val fileHeaders = new mutable.HashMap[Path, List[String]]
@@ -466,7 +465,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   // if split, parse the args string as command line.
   // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
-  def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
+  def toolArgsFor(files: List[File])(tool: ToolName, split: Boolean = true): List[String] = {
     def argsFor(f: File): List[String] = fromHeader(fileHeaders.getOrElseUpdate(f.toPath, readHeaderFrom(f)))
     def fromHeader(header: List[String]) = {
       import scala.sys.process.Parser.tokenize
@@ -513,7 +512,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     val Range = """(\d+)(?:(\+)|(?: *\- *(\d+)))?""".r
     lazy val currentJavaVersion = javaSpecVersion.stripPrefix("1.").toInt
     val allFiles = sources(file)
-    val skipStates = toolArgsFor(allFiles)("javaVersion", split = false).flatMap({
+    val skipStates = toolArgsFor(allFiles)(ToolName.javaVersion, split = false).flatMap({
       case v @ Range(from, plus, to) =>
         val ok =
           if (plus == null)
@@ -655,7 +654,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   private def runRunTest(): TestState = {
-    val javaopts = toolArgs("java")
+    val javaopts = toolArgs(ToolName.java)
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile, javaopts)
     def noexec() = genSkip("no-exec: tests compiled but not run")
@@ -765,4 +764,17 @@ final class TestTranscript {
   def add(action: String): this.type = { buf += action ; this }
   def append(text: String): Unit = { val s = buf.last ; buf.dropRightInPlace(1) ; buf += (s + text) }
   def toList = buf.toList
+}
+
+// Tool names in test file header: scalac, javac, java, javaVersion, filter, hide.
+sealed trait ToolName
+object ToolName {
+  case object scalac extends ToolName
+  case object javac extends ToolName
+  case object java extends ToolName
+  case object javaVersion extends ToolName
+  case object filter extends ToolName
+  case object hide extends ToolName
+  private val values = Array(scalac, javac, java, javaVersion, filter, hide)
+  def named(s: String): ToolName = values.find(_.toString.equalsIgnoreCase(s)).getOrElse(throw new IllegalArgumentException(s))
 }
