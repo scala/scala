@@ -457,8 +457,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   // inspect sources for tool args
   def toolArgs(tool: ToolName, split: Boolean = true): List[String] = toolArgsFor(sources(testFile))(tool, split)
 
-  // cache the headers we read for toolArgs
-  private val fileHeaders = new mutable.HashMap[Path, List[String]]
+  // cache the arg lines and split args per tool for each file
+  private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, (List[String], List[String])]]
 
   // inspect given files for tool args of the form `tool: args`
   // if args string ends in close comment, drop the `*` `/`
@@ -466,14 +466,21 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
   def toolArgsFor(files: List[File])(tool: ToolName, split: Boolean = true): List[String] = {
-    def argsFor(f: File): List[String] = fromHeader(fileHeaders.getOrElseUpdate(f.toPath, readHeaderFrom(f)))
-    def fromHeader(header: List[String]) = {
+    def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).get(tool) match {
+      case Some((lines, args)) => if (split) args else lines
+      case _ => Nil
+    }
+    def readToolArgs(f: File): Map[ToolName, (List[String], List[String])] = {
+      val header = readHeaderFrom(f)
+      ToolName.values.toList.map(name => (name, fromHeader(name, header))).filterNot(_._2._1.isEmpty).toMap
+    }
+    def fromHeader(name: ToolName, header: List[String]) = {
       import scala.sys.process.Parser.tokenize
-      val tag  = s"$tool:"
+      val tag  = s"$name:"
       val endc = "*" + "/"    // be forgiving of /* scalac: ... */
       def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
-      def argsplitter(s: String) = if (split) tokenize(s) else List(s.trim())
-      header.filter(_.contains(tag)).map(stripped).flatMap(argsplitter)
+      val lines = header.filter(_.contains(tag)).map(line => stripped(line).trim())
+      (lines, lines.flatMap(tokenize))
     }
     def readHeaderFrom(f: File): List[String] =
       Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
@@ -509,10 +516,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def compilationRounds(file: File): List[CompileRound] = {
     import scala.util.Properties.javaSpecVersion
-    val Range = """(\d+)(?:(\+)|(?: *\- *(\d+)))?""".r
+    val Range = """(\d+)(?:(\+)|(?:-(\d+)))?""".r
     lazy val currentJavaVersion = javaSpecVersion.stripPrefix("1.").toInt
     val allFiles = sources(file)
-    val skipStates = toolArgsFor(allFiles)(ToolName.javaVersion, split = false).flatMap({
+    val skipStates = toolArgsFor(allFiles)(ToolName.javaVersion).flatMap {
       case v @ Range(from, plus, to) =>
         val ok =
           if (plus == null)
@@ -524,7 +531,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
         else Some(genSkip(s"skipped on Java $javaSpecVersion, only running on $v"))
       case v =>
         Some(genFail(s"invalid javaVersion range in test comment: $v"))
-    })
+    }
     skipStates.headOption match {
       case Some(state) => List(SkipRound(List(file), state))
       case _ => groupedFiles(allFiles).flatMap(mixedCompileGroup)
@@ -775,6 +782,6 @@ object ToolName {
   case object javaVersion extends ToolName
   case object filter extends ToolName
   case object hide extends ToolName
-  private val values = Array(scalac, javac, java, javaVersion, filter, hide)
+  val values = Array(scalac, javac, java, javaVersion, filter, hide)
   def named(s: String): ToolName = values.find(_.toString.equalsIgnoreCase(s)).getOrElse(throw new IllegalArgumentException(s))
 }
