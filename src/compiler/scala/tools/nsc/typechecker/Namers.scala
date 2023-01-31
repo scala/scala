@@ -1388,10 +1388,11 @@ trait Namers extends MethodSynthesis {
         deskolemizedPolySig(vparamSymss, resTpGiven)
 
       // Must be lazy about the schema to avoid cycles in neg/t5093.scala
-      val overridden =
+      def computeOverridden(immediate: Boolean) =
         if (!canOverride) NoSymbol
-        else safeNextOverriddenSymbolLazySchema(meth, methodSigApproxUnknownArgs _)
+        else safeNextOverriddenSymbolLazySchema(meth, methodSigApproxUnknownArgs _, immediate)
 
+      val overridden = computeOverridden(immediate = false)
       /*
        * If `meth` doesn't have an explicit return type, extract the return type from the method
        * overridden by `meth` (if there's an unique one). This type is later used as the expected
@@ -1473,10 +1474,15 @@ trait Namers extends MethodSynthesis {
 
       // Add a () parameter section if this overrides some method with () parameters
       val vparamSymssOrEmptyParamsFromOverride = {
-        // must check `.info.isInstanceOf[MethodType]`, not `.isMethod`!
-        // Note that matching MethodType of NullaryMethodType must be nilary not nelary.
+        // must check `.info.isInstanceOf[MethodType]`, not `.isMethod`, to exclude NullaryMethodType.
+        // Note that the matching MethodType of a NullaryMethodType must be nilary not nelary.
         def overriddenNilary(sym: Symbol) = sym.info.isInstanceOf[MethodType]
-        if (overridden != NoSymbol && vparamSymss.isEmpty && overridden.alternatives.exists(overriddenNilary)) {
+        // always check the first override for paren purposes
+        def overridesNilary: Boolean = {
+          val toCheck = if (currentRun.isScala3) computeOverridden(immediate = true) else overridden
+          toCheck != NoSymbol && toCheck.alternatives.exists(overriddenNilary)
+        }
+        if (vparamSymss.isEmpty && overridesNilary) {
           def exempt() = meth.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))
           val msg = "method without a parameter list overrides a method with a single empty one"
           def error(): Unit = if (!exempt()) {
@@ -1777,20 +1783,34 @@ trait Namers extends MethodSynthesis {
 
     // Pretend we're an erroneous symbol, for now, so that we match while finding the overridden symbol,
     // but are not considered during implicit search.
-    private def safeNextOverriddenSymbol(sym: Symbol, schema: Type = ErrorType): Symbol = {
+    // `immediate` for immediate override only, not narrowest override
+    private def safeNextOverriddenSymbol(sym: Symbol, schema: Type = ErrorType, immediate: Boolean = false): Symbol = {
       val savedInfo = sym.rawInfo
       val savedFlags = sym.rawflags
       try {
         sym setInfo schema
-        sym.nextOverriddenSymbol
+        // pick the overridden symbol with narrowest type; dotty uses intersection
+        if (!immediate && currentRun.isScala3) {
+          def typeOf(s: Symbol): Type = {
+            val t = if (s.isMethod) s.asMethod.returnType else s.tpe
+            t.asSeenFrom(sym.owner.thisType, s.owner)
+          }
+          sym.allOverriddenSymbols match {
+            case Nil => NoSymbol
+            case overridden :: candidates =>
+              candidates.foldLeft(overridden)((acc, o) => if (typeOf(o) <:< typeOf(acc)) o else acc)
+          }
+        }
+        else
+          sym.nextOverriddenSymbol
       } finally {
         sym setInfo savedInfo // setInfo resets the LOCKED flag, so restore saved flags as well
         sym.rawflags = savedFlags
       }
     }
 
-    private def safeNextOverriddenSymbolLazySchema(sym: Symbol, schema: () => Type): Symbol =
-      safeNextOverriddenSymbol(sym, new LazyType { override def complete(sym: Symbol): Unit = sym setInfo schema() })
+    private def safeNextOverriddenSymbolLazySchema(sym: Symbol, schema: () => Type, immediate: Boolean): Symbol =
+      safeNextOverriddenSymbol(sym, new LazyType { override def complete(sym: Symbol): Unit = sym setInfo schema() }, immediate)
 
 
     //@M! an abstract type definition (abstract type member/type parameter)
