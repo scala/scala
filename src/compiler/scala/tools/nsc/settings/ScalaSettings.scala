@@ -371,7 +371,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def optAllowSkipCoreModuleInit = optEnabled(optChoices.allowSkipCoreModuleInit)
   def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
   def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
-  def optInlinerEnabled          = optInlineFrom.nonEmpty && !optNone
+  def optInlinerEnabled          = !optInlineFrom.isEmpty && !optNone
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations

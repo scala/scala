@@ -66,7 +66,7 @@ trait StandardScalaSettings { _: MutableSettings =>
     ChoiceSetting("-target", "target", "Target platform for object files.", AllTargetVersions, "8")
       .withPreSetHook(normalizeTarget)
       .withPostSetHook { setting =>
-        if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false)) errorFn("-release cannot be less than -target")
+        if (releaseValue.exists(_.toInt < setting.value.toInt)) errorFn("-release cannot be less than -target")
       }
       .withAbbreviation("--target")
       // .withAbbreviation("--Xtarget")

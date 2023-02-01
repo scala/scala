@@ -141,8 +141,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       else
         StringOps.splitWhere(s, _ == ':', doDropIndex = true).flatMap {
           // p:arg:a,b,c is taken as arg with selections a,b,c for a multichoice setting
-          case (p, args) if args.contains(":") && lookupSetting(p).map(_.isInstanceOf[MultiChoiceSetting[_]]).getOrElse(false) => tryToSetIfExists(p, List(args), (s: Setting) => s.tryToSetColon(_))
-          case (p, args) => tryToSetIfExists(p, args.split(",").toList, (s: Setting) => s.tryToSetColon(_))
+          case (p, args) if args.contains(":") && lookupSetting(p).exists(_.isInstanceOf[MultiChoiceSetting[_]]) => tryToSetIfExists(p, List(args), (s: Setting) => s.tryToSetColon)
+          case (p, args) => tryToSetIfExists(p, args.split(",").toList, (s: Setting) => s.tryToSetColon)
         }
 
     // if arg is of form -Xfoo or -Xfoo bar (name = "-Xfoo")
@@ -925,7 +925,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def value = if (v contains "_") List("_") else super.value // i.e., v
     private def numericValues = _numbs
     private def stringValues  = _names
-    private def phaseIdTest(i: Int): Boolean = numericValues exists (_ match {
+    private def phaseIdTest(i: Int): Boolean = numericValues exists ({
       case (min, max) => min <= i && i <= max
     })
 
