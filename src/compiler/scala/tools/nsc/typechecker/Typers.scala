@@ -879,7 +879,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _               => tree.symbol
           }
 
-
         val arity = mt.params.length
 
         def warnTree = original orElse tree
@@ -1180,7 +1179,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         } else lastTry()
       }
 
-
       def vanillaAdapt(tree: Tree) = {
         def applyPossible = {
           def applyMeth = member(adaptToName(tree, nme.apply).tpe, nme.apply)
@@ -1207,6 +1205,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _                                               => applyPossible
           }
         }
+        def isPopulatedStableIdentifierPattern(tree: Tree) = {
+          inferStableIdPattern(tree, pt)
+          isPopulated(tree.tpe, approximateAbstracts(pt))
+        }
         if (tree.isType) // (6)
           adaptType()
         else if (mode.typingExprNotFun &&
@@ -1229,11 +1231,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
         else if (tree.tpe <:< pt)
           tree
-        else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
-          tree
         else {
           val constFolded = constfold(tree, pt, context.owner)
-          if (constFolded.tpe <:< pt) adapt(constFolded, mode, pt, original) // set stage for (0)
+          if (mode.inPatternMode && isPopulatedStableIdentifierPattern(constFolded)) constFolded
+          else if (constFolded.tpe <:< pt) adapt(constFolded, mode, pt, original) // set stage for (0)
           else adaptExprNotFunMode() // (10) -- (15)
         }
       }

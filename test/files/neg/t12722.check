@@ -1,0 +1,7 @@
+t12722.scala:7: error: pattern type is incompatible with expected type;
+ found   : Int(2147483647)
+ required: Short
+Note: if you intended to match against the class, try `case _: Int`
+      case 2147483647 => true
+           ^
+1 error

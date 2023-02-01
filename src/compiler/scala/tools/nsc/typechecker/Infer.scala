@@ -1315,8 +1315,11 @@ trait Infer extends Checkable {
       else intersect(pt, pattp)
     }
 
-    def inferModulePattern(pat: Tree, pt: Type) =
-      if ((pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)) {
+    def inferStableIdPattern(pat: Tree, pt: Type) = {
+      val check =
+        if (currentRun.isScala3) treeInfo.isStableIdentifier(pat, allowVolatile = true) && !pat.tpe.weak_<:<(pt)
+        else (pat.symbol ne null) && pat.symbol.isModule && !(pat.tpe <:< pt)
+      if (check) {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
@@ -1326,6 +1329,7 @@ trait Infer extends Checkable {
         else
           PatternTypeIncompatibleWithPtError2(pat, pt1, pt)
       }
+    }
 
     /** Collects type parameters referred to in a type.
      */

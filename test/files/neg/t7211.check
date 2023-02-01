@@ -1,0 +1,7 @@
+t7211.scala:11: error: pattern type is incompatible with expected type;
+ found   : C
+ required: D
+Note: if you intended to match against the class, try `case _: C`
+    case `c` => true
+         ^
+1 error

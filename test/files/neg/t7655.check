@@ -1,0 +1,11 @@
+t7655.scala:12: error: pattern type is incompatible with expected type;
+ found   : Test.Other.type
+ required: Test.Foo
+    case Other => true // warns
+         ^
+t7655.scala:17: error: pattern type is incompatible with expected type;
+ found   : Test.Other.type
+ required: Test.Foo
+    case OtherAlias => true // no warning.
+         ^
+2 errors
