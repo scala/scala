@@ -24,17 +24,30 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
  //_
 }
 
-/** A builder for mutable sequence of characters.  This class provides an API
-  * mostly compatible with `java.lang.StringBuilder`, except where there are
-  * conflicts with the Scala collections API (such as the `reverse` method.)
-  *
-  * $multipleResults
-  *
-  * @define Coll `mutable.IndexedSeq`
-  * @define coll string builder
-  * @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]
-  * section on `StringBuilders` for more information.
-  */
+/** A builder of `String` which is also a mutable sequence of characters.
+ *
+ *  This class provides an API mostly compatible with `java.lang.StringBuilder`,
+ *  except where there are conflicts with the Scala collections API, such as the `reverse` method:
+ *  [[reverse]] produces a new `StringBuilder`, and [[reverseInPlace]] mutates this builder.
+ *
+ *  Mutating operations return either `this.type`, i.e., the current builder, or `Unit`.
+ *
+ *  Other methods extract data or information from the builder without mutating it.
+ *
+ *  The distinction is also reflected in naming conventions used by collections,
+ *  such as `append`, which mutates, and `appended`, which does not, or `reverse`,
+ *  which does not mutate, and `reverseInPlace`, which does.
+ *
+ *  The `String` result may be obtained using either `result()` or `toString`.
+ *
+ *  $multipleResults
+ *
+ *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]
+ *  section on `StringBuilders` for more information.
+ *
+ *  @define Coll `mutable.IndexedSeq`
+ *  @define coll string builder
+ */
 @SerialVersionUID(3L)
 final class StringBuilder(val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
   with ReusableBuilder[Char, String]
