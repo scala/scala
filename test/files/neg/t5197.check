@@ -1,0 +1,7 @@
+t5197.scala:12: error: type mismatch;
+ found   : List[String]
+ required: Int
+ Note: implicit object O2 is not applicable here because it comes after the application point and it lacks an explicit result type. An object can be written as a lazy val with an explicit type.
+  val y: Int = List("b")
+                   ^
+1 error
