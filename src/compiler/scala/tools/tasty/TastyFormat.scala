@@ -325,6 +325,7 @@ object TastyFormat {
   // final val ??? = 178
   // final val ??? = 179
   final val METHODtype = 180
+  final val APPLYsigpoly = 181
 
   final val MATCHtype = 190
   final val MATCHtpt = 191
@@ -491,6 +492,7 @@ object TastyFormat {
     case BOUNDED => "BOUNDED"
     case APPLY => "APPLY"
     case TYPEAPPLY => "TYPEAPPLY"
+    case APPLYsigpoly => "APPLYsigpoly"
     case NEW => "NEW"
     case THROW => "THROW"
     case TYPED => "TYPED"

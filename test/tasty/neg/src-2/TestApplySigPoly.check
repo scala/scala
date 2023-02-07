@@ -1,0 +1,4 @@
+TestApplySigPoly_fail.scala:6: error: Unsupported Scala 3 signature polymorphic application in an annotation of method annotatedMethod; note that complex trees are not yet supported for Annotations; found in method annotatedMethod in object tastytest.ApplySigPoly.
+  def test = TestApplySigPolyPre.forceAnnots[ApplySigPoly.type, ApplySigPoly.boxAnnot]
+                                            ^
+1 error

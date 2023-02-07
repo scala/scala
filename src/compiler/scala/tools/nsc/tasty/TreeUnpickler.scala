@@ -1148,6 +1148,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 tpd.Apply(fn, until(end)(readTerm()(argsCtx)))
               }
             case TYPEAPPLY => tpd.TypeApply(readTerm(), until(end)(readTpt()))
+            case APPLYsigpoly =>
+              // this is skipped if it appears in parents, so only affects forced annotation trees
+              signaturePolymorphicIsUnsupported
             case TYPED => tpd.Typed(readTerm(), readTpt())
             case IF =>
               if (nextByte === INLINE) unsupportedTermTreeError("inline conditional expression")
@@ -1240,6 +1243,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       * A HOLE should never appear in TASTy for a top level class, only in quotes.
       */
     private def abortMacroHole[T]: T = abortWith(msg = "Scala 3 macro hole in pickled TASTy")
+
+    private def signaturePolymorphicIsUnsupported[T](implicit ctx: Context): T =
+      unsupportedTermTreeError("signature polymorphic application")
 
     private def metaprogrammingIsUnsupported[T](implicit ctx: Context): T =
       unsupportedError("Scala 3 metaprogramming features")
