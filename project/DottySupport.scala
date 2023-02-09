@@ -68,10 +68,8 @@ object DottySupport {
     Compile / sourceGenerators += Def.task {
       object DottyLibrarySourceFilter extends FileFilter {
         def accept(file: File): Boolean = {
-          val name = file.name
-          val path = file.getCanonicalPath
-          file.isFile &&
-          (path.endsWith(".scala") || path.endsWith(".java"))
+          val name = file.getName
+          file.isFile && (name.endsWith(".scala") || name.endsWith(".java"))
         }
       }
 
