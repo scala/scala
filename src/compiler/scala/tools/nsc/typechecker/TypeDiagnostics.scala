@@ -41,7 +41,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  @author Paul Phillips
  */
 trait TypeDiagnostics extends splain.SplainDiagnostics {
-  self: Analyzer with StdAttachments =>
+  _: Analyzer with StdAttachments =>
 
   import global._
   import definitions._
@@ -739,8 +739,11 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.PairsCursor(classOf(m))
-          opc.iterator.exists(pair => pair.low == m)
+          val opc = new overridingPairs.PairsCursor(classOf(m)) {
+            override protected def bases: List[Symbol] = self.baseClasses
+            override protected def exclude(sym: Symbol) = super.exclude(sym) || sym.name != m.name || sym.paramLists.isEmpty || sym.paramLists.head.isEmpty
+          }
+          opc.iterator.exists(pair => pair.low == m || pair.high == m)
         }
         import PartialFunction._
         def isConvention(p: Symbol): Boolean = (
@@ -781,7 +784,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
 
   trait TyperDiagnostics {
-    self: Typer =>
+    _: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)
