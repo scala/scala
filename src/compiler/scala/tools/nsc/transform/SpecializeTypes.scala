@@ -1423,7 +1423,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def enterSyntheticSym(tree: Tree): Symbol = tree.symbol
     }
 
-    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
+    override protected def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
       new SpecializeBodyDuplicator(context)
 
     override def newNamer(context: Context): Namer =

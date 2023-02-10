@@ -114,7 +114,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     */
   @`inline` final def top: A = head
 
-  protected override def klone(): Stack[A] = {
+  override protected def klone(): Stack[A] = {
     val bf = newSpecificBuilder
     bf ++= this
     bf.result()
