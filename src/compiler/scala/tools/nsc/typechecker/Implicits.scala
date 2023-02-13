@@ -1265,7 +1265,7 @@ trait Implicits extends splain.SplainData {
 
           if (invalidImplicits.nonEmpty)
             setAddendum(pos, () =>
-              s"\n Note: implicit ${invalidImplicits.head} is not applicable here because it comes after the application point and it lacks an explicit result type"
+              s"\n Note: implicit ${invalidImplicits.head} is not applicable here because it comes after the application point and it lacks an explicit result type.${if (invalidImplicits.head.isModule) " An object can be written as a lazy val with an explicit type." else ""}"
             )
         }
 
