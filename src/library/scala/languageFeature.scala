@@ -35,6 +35,7 @@ object languageFeature {
   @deprecated("scala.language.higherKinds no longer needs to be imported explicitly", "2.13.1")
   @meta.languageFeature("higher-kinded type", enableRequired = false)
   sealed trait higherKinds
+  @deprecated("scala.language.higherKinds no longer needs to be imported explicitly", "2.13.1")
   object higherKinds extends higherKinds
 
   @meta.languageFeature("#, which cannot be expressed by wildcards,", enableRequired = false)

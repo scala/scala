@@ -1285,7 +1285,7 @@ abstract class RefChecks extends Transform {
       if (sym.isDeprecated &&
           // synthetic calls to deprecated case class constructor
           !(sym.isConstructor && sym.owner.isCaseClass && currentOwner.isSynthetic) &&
-          !currentOwner.ownersIterator.exists(s => s.isDeprecated || s.companionClass.isDeprecated))
+          !currentOwner.ownersIterator.exists(_.isDeprecated))
         runReporting.deprecationWarning(pos, sym, currentOwner)
 
       // Similar to deprecation: check if the symbol is marked with @migration
