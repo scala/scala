@@ -874,7 +874,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       // refuses to re-attempt typechecking, and presumes that someone
                       // else was responsible for issuing the related type error!
                       fun.setSymbol(NoSymbol)
-                  case _ =>
                 }
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
@@ -1094,9 +1093,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value", WarningCategory.WFlagValueDiscard)
           }
-          @inline def warnNumericWiden(): Unit =
+          @inline def warnNumericWiden(target: Symbol): Unit = {
             // not `context.deprecationWarning` because they are not buffered in silent mode
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
+            object warnIntDiv extends Traverser {
+              def isInt(t: Tree) = ScalaIntegralValueClasses(t.tpe.typeSymbol)
+              override def traverse(tree: Tree): Unit = tree match {
+                case Apply(Select(q, nme.DIV), _) if isInt(q) =>
+                  context.warning(tree.pos, s"integral division is implicitly converted (widened) to floating point. Add an explicit `.to${target.name}`.", WarningCategory.LintIntDivToFloat)
+                case Apply(Select(a1, _), List(a2)) if isInt(tree) && isInt(a1) && isInt(a2) =>
+                  traverse(a1)
+                  traverse(a2)
+                case Select(q, _) if isInt(tree) && isInt(q) =>
+                  traverse(q)
+                case _ =>
+              }
+            }
+            if (!isPastTyper && settings.lintIntDivToFloat && (target == FloatClass || target == DoubleClass))
+              warnIntDiv(tree)
+          }
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
           val anyTyped = tree.tpe <:< AnyTpe
@@ -1105,7 +1120,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeRef(_, UnitClass, _) if anyTyped => // (12)
               warnValueDiscard() ; tpdPos(gen.mkUnitBlock(tree))
             case TypeRef(_, numValueCls, _) if anyTyped && isNumericValueClass(numValueCls) && isNumericSubType(tree.tpe, pt) => // (10) (11)
-              warnNumericWiden() ; tpdPos(Select(tree, s"to${numValueCls.name}"))
+              warnNumericWiden(numValueCls) ; tpdPos(Select(tree, s"to${numValueCls.name}"))
             case dealiased if dealiased.annotations.nonEmpty && canAdaptAnnotations(tree, this, mode, pt) => // (13)
               tpd(adaptAnnotations(tree, this, mode, pt))
             case _ =>

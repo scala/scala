@@ -180,6 +180,13 @@ trait Definitions extends api.StandardDefinitions {
     }
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
+    lazy val ScalaIntegralValueClasses: Set[Symbol] = Set(
+      CharClass,
+      ByteClass,
+      ShortClass,
+      IntClass,
+      LongClass)
+
     def underlyingOfValueClass(clazz: Symbol): Type =
       clazz.derivedValueClassUnbox.tpe.resultType
 

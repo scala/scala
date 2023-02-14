@@ -381,6 +381,7 @@ object Reporting {
     object LintEtaZero extends Lint; add(LintEtaZero)
     object LintEtaSam extends Lint; add(LintEtaSam)
     object LintDeprecation extends Lint; add(LintDeprecation)
+    object LintIntDivToFloat extends Lint; add(LintIntDivToFloat)
     object LintBynameImplicit extends Lint; add(LintBynameImplicit)
     object LintRecurseWithDefault extends Lint; add(LintRecurseWithDefault)
     object LintUnitSpecialization extends Lint; add(LintUnitSpecialization)

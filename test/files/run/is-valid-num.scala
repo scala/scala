@@ -1,5 +1,5 @@
 /*
- * filter: inliner warnings; re-run with
+ * filter: re-run with -deprecation
  */
 object Test {
   def x = BigInt("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
