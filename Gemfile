@@ -1,7 +1,10 @@
 # To build the spec on Travis CI
 source "https://rubygems.org"
 
-gem "jekyll", "3.6.3"
+gem "jekyll", "3.9.3"
 gem "rouge"
-# gem 's3_website'
-gem "redcarpet", "3.5.1"
+gem "redcarpet", "3.6.0"
+
+# we use redcarpet not kramdown, but current jekyll complains
+# if this isn't present?!
+gem 'kramdown-parser-gfm'
