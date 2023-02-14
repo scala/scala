@@ -14,6 +14,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
 /** This trait ...
@@ -67,7 +68,11 @@ trait EtaExpansion { self: Analyzer =>
               val res = typer.typed(Function(List(), tree))
               new ChangeOwnerTraverser(typer.context.owner, res.symbol) traverse tree // scala/bug#6274
               res
-            } else tree
+            } else {
+              if (settings.lintEtaImpure)
+                typer.context.warning(tree.pos, "impure expression as part of an eta-expansion. The expression is evaluated eagerly, before the function is created, not when the function is evaluated.", WarningCategory.LintEtaImpure)
+              tree
+            }
             ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), rhs)
           }
           atPos(tree.pos.focus) {

@@ -182,6 +182,7 @@ trait Warnings {
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits,nowarn.")
+    val EtaImpure              = LintWarning("eta-impure",                "The qualifier in an eta-expansion `qual.foo _` is impure (evaluated eagerly, not part of the function).")
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
@@ -206,6 +207,7 @@ trait Warnings {
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
+  def lintEtaImpure              = lint contains EtaImpure
   def lintDeprecation            = lint contains Deprecation
 
   // Lint warnings that are currently -Y, but deprecated in that usage

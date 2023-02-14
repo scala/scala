@@ -380,6 +380,7 @@ object Reporting {
     object LintSerial extends Lint; add(LintSerial)
     object LintEtaZero extends Lint; add(LintEtaZero)
     object LintEtaSam extends Lint; add(LintEtaSam)
+    object LintEtaImpure extends Lint; add(LintEtaImpure)
     object LintDeprecation extends Lint; add(LintDeprecation)
     object LintBynameImplicit extends Lint; add(LintBynameImplicit)
     object LintRecurseWithDefault extends Lint; add(LintRecurseWithDefault)

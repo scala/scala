@@ -1,0 +1,12 @@
+lint-eta-impure.scala:10: warning: impure expression as part of an eta-expansion. The expression is evaluated eagerly, before the function is created, not when the function is evaluated.
+  def t1 = (new C).g _           // warn
+            ^
+lint-eta-impure.scala:11: warning: impure expression as part of an eta-expansion. The expression is evaluated eagerly, before the function is created, not when the function is evaluated.
+  def t2: Int => Int = (new C).g // warn
+                        ^
+lint-eta-impure.scala:15: warning: impure expression as part of an eta-expansion. The expression is evaluated eagerly, before the function is created, not when the function is evaluated.
+  def t6(c: C) = c.h(c.f) _      // warn
+                       ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
