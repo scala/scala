@@ -56,7 +56,27 @@ trait Contexts { self: Analyzer =>
     LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
   def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
     LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
-
+  def ambiguousWithEnclosing(sym: Symbol, other: Symbol, otherEnclClass: Symbol) =
+    if (!currentRun.isScala213) None else {
+      val enclDesc = if (otherEnclClass.isAnonymousClass) "anonymous class" else otherEnclClass.toString
+      val parent = otherEnclClass.parentSymbols.find(_.isNonBottomSubClass(other.owner)).getOrElse(NoSymbol)
+      val inherit = if (parent.exists && parent != other.owner) s", inherited through parent $parent" else ""
+      val message =
+        s"""it is both defined in the enclosing ${sym.owner} and available in the enclosing $enclDesc as $other (defined in ${other.ownsString}$inherit)
+           |Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+           |To continue using the symbol from the superclass, write `this.${sym.name}`.""".stripMargin
+      if (currentRun.isScala3)
+        Some(LookupAmbiguous(message))
+      else {
+        // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
+        other.updateAttachment(
+          LookupAmbiguityWarning(
+          s"""reference to ${sym.name} is ambiguous;
+             |$message
+             |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""".stripMargin))
+        None
+      }
+    }
   private lazy val startContext = NoContext.make(
     Template(List(), noSelfType, List()) setSymbol global.NoSymbol setType global.NoType,
     rootMirror.RootClass,
@@ -1228,16 +1248,48 @@ trait Contexts { self: Analyzer =>
         return finishDefSym(constructorSym, cx.enclClass.prefix)
       }
 
+      var foundInSuper: Boolean = false
+      var outerDefSym: Symbol = NoSymbol
+
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
       while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
         pre    = cx.enclClass.prefix
         defSym = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope) match {
-          case NoSymbol                  => searchPrefix
-          case found                     => found
+          case NoSymbol =>
+            val prefixSym = searchPrefix
+            if (currentRun.isScala213 && prefixSym.exists && prefixSym.owner != cx.owner)
+              foundInSuper = true
+            prefixSym
+          case found =>
+            found
         }
         if (!defSym.exists)
           cx = cx.outer // push further outward
       }
+
+      val defPre = pre
+      val defCx = cx
+
+      while (foundInSuper && (cx ne NoContext) && (cx.scope ne null)) {
+        pre = cx.enclClass.prefix
+        val next = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope).orElse(searchPrefix)
+        if (next.exists && next.owner == cx.owner && thisContext.unit.exists && next.sourceFile == thisContext.unit.source.file) {
+          outerDefSym = next
+          cx = NoContext
+        } else
+          cx = cx.outer
+      }
+      if (outerDefSym.exists) {
+        if ((defSym.isAliasType || outerDefSym.isAliasType) && defPre.memberType(defSym) =:= pre.memberType(outerDefSym))
+          outerDefSym = NoSymbol
+        if (defSym.isStable && outerDefSym.isStable &&
+          (pre.memberType(outerDefSym).termSymbol == defSym || defPre.memberType(defSym).termSymbol == outerDefSym))
+          outerDefSym = NoSymbol
+      }
+
+      pre = defPre
+      cx = defCx
+
       if (symbolDepth < 0)
         symbolDepth = cx.depth
 
@@ -1305,8 +1357,12 @@ trait Contexts { self: Analyzer =>
       }
 
       // At this point only one or the other of defSym and impSym might be set.
-      if (defSym.exists) finishDefSym(defSym, pre)
-      else if (impSym.exists) {
+      if (defSym.exists) {
+        val ambiguity =
+          if (outerDefSym.exists) ambiguousWithEnclosing(outerDefSym, defSym, cx.enclClass.owner)
+          else None
+        ambiguity.getOrElse(finishDefSym(defSym, pre))
+      } else if (impSym.exists) {
         // If we find a competitor imp2 which imports the same name, possible outcomes are:
         //
         //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
