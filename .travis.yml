@@ -49,6 +49,8 @@ jobs:
         # bionic for newer ruby ("bundler requires Ruby version >= 2.6.0")
         dist: bionic
         language: ruby
+        # ruby 3.x is default, need to upgrade jekyll. using 2.7 for now.
+        rvm: 2.7
         install:
           - ruby -v
           - gem install bundler
