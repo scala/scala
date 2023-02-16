@@ -1,4 +1,4 @@
-warn-unused-explicits.scala:9: warning: parameter value x in method warn is never used
+warn-unused-explicits.scala:9: warning: parameter x in method warn is never used
   def warn(x: Int) = answer
            ^
 error: No warnings can be incurred under -Werror.

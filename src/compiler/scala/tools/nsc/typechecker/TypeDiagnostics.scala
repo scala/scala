@@ -706,15 +706,18 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
+          def long = if (settings.uniqid.value) s" (${sym.nameString})" else ""
+          def getterNameString(sym: Symbol): String = sym.getterName.decoded + long
           val what =
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.getterName.decoded}" }
-            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.getterName.decoded}"
-            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.name.decoded}"
-            else if (sym.isMethod) s"method ${sym.name.decoded}"
-            else if (sym.isModule) s"object ${sym.name.decoded}"
+            else if (sym.isSetter) { cond = valAdvice ; s"var ${getterNameString(sym)}" }
+            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.nameString}"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.nameString}"
+            else if (sym.isMethod) s"method ${sym.nameString}"
+            else if (sym.isModule) s"object ${sym.nameString}"
             else "term"
+          // consider using sym.owner.fullLocationString
           emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
@@ -726,7 +729,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
+          emitUnusedWarning(v.pos, s"local var ${v.nameString} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {
@@ -756,8 +759,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           )
         for (s <- unusedPrivates.unusedParams if warnable(s)) {
           val what =
-            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.name} of type ${s.tpe}"
-            else s"parameter ${s/*.name*/}"
+            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.nameString} of type ${s.tpe}"
+            else s"parameter ${s.nameString}"
           val where =
             if (s.owner.isAnonymousFunction) "anonymous function" else s.owner
           emitUnusedWarning(s.pos, s"$what in $where is never used", WarningCategory.UnusedParams, s)
