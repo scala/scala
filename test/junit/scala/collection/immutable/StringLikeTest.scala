@@ -75,4 +75,12 @@ class StringLikeTest {
     AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toDouble)
     AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toFloat)
   }
+
+  @Test
+  def `the times they are achangin`(): Unit = {
+    assertEquals("xx", "x"*2)
+    assertEquals("x", "x"*1)
+    assertEquals("", "x"*0)
+    assertEquals("", "x" * -1)
+  }
 }
