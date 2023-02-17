@@ -134,7 +134,7 @@ jobs:
         - ruby -v
         - gem install bundler
         - bundler --version
-        - bundle install
+        - bundle install --path vendor/bundle
         # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
         - sudo apt-get update
         - sudo apt-get install -y build-essential xorg xfonts-75dpi libpng16-16 libssl1.1
