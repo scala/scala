@@ -735,22 +735,23 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   /** Sorts this $coll according to a comparison function.
-    *  $willNotTerminateInf
-    *  $willForceEvaluation
-    *
-    *  The sort is stable. That is, elements that are equal (as determined by
-    *  `lt`) appear in the same order in the sorted sequence as in the original.
-    *
-    *  @param  lt  the comparison function which tests whether
-    *              its first argument precedes its second argument in
-    *              the desired ordering.
-    *  @return     a $coll consisting of the elements of this $coll
-    *              sorted according to the comparison function `lt`.
-    *  @example {{{
-    *    List("Steve", "Tom", "John", "Bob").sortWith(_.compareTo(_) < 0) =
-    *    List("Bob", "John", "Steve", "Tom")
-    *  }}}
-    */
+   *  $willNotTerminateInf
+   *  $willForceEvaluation
+   *
+   *  The sort is stable. That is, elements that are equal
+   *  (`lt` returns false for both directions of comparison)
+   *  appear in the same order in the sorted sequence as in the original.
+   *
+   *  @param  lt  a predicate that is true if
+   *              its first argument strictly precedes its second argument in
+   *              the desired ordering.
+   *  @return     a $coll consisting of the elements of this $coll
+   *              sorted according to the comparison function `lt`.
+   *  @example {{{
+   *    List("Steve", "Bobby", "Tom", "John", "Bob").sortWith((x, y) => x.take(3).compareTo(y.take(3)) < 0) =
+   *    List("Bobby", "Bob", "John", "Steve", "Tom")
+   *  }}}
+   */
   def sortWith(lt: (A, A) => Boolean): C = sorted(Ordering.fromLessThan(lt))
 
   /** Sorts this $coll according to the Ordering which results from transforming
