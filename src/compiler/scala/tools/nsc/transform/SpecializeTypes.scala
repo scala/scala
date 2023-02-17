@@ -506,8 +506,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else if (!args.isEmpty)
         enteringTyper {
           foreach2(sym.typeParams, args) { (tp, arg) =>
-            if (tp.isSpecialized)
+            if (tp.isSpecialized) {
               specializedTypeVarsBuffer(arg, result)
+            } else if (sym == ValueOfClass) { // scala/bug#11489, we only update it for ValueOf 
+              arg.typeSymbol.annotations.foreach {
+                case lzai: LazyAnnotationInfo if lzai.symbol == SpecializedClass =>
+                  specializedTypeVarsBuffer(arg, result)
+                case _                                                           =>
+              }
+            }
           }
         }
     case PolyType(tparams, resTpe)   => specializedTypeVarsBuffer(resTpe, result);  tparams.foreach(sym => specializedTypeVarsBuffer(sym.info, result))
