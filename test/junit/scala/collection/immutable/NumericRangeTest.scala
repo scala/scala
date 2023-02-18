@@ -157,4 +157,220 @@ class NumericRangeTest {
     assertEquals(Nil, check(testDecreaseCase.start to testIncreaseCase.last by testIncreaseCase.step))
     assertEquals(Nil, check(testDecreaseCase.inclusive))
   }
+
+  @Test
+  def numericRangeWithMoreThanMaxIntTake() = {
+    val start = BigInt(0)
+    val step = BigInt(1)
+    val end = BigInt(Int.MaxValue) * 5
+
+    // evaluation of length causes IllegalArgumentException because it cannot be represented as Int number
+    // Yet using `take` should be independent of evaluating length when it's not necessary.
+    assertThrows[IllegalArgumentException]((start until end by step).length)
+    val range = start until end by step
+
+    val take = 100
+    val smallChunkOfRange = range.take(take)
+    val expected = start until BigInt(100) by step
+    assertTrue(smallChunkOfRange equals expected)
+    assertTrue(smallChunkOfRange.length == take)
+  }
+
+  @Test
+  def numericRangeWithMoreThanMaxIntDrop() = {
+    val start = BigInt(0)
+    val step = BigInt(1)
+    val toAddToMaxInt = 50
+    val end = BigInt(Int.MaxValue) + toAddToMaxInt
+
+    val drop = Int.MaxValue
+
+    // evaluation of length causes IllegalArgumentException because it cannot be represented as Int number
+    // Yet using `drop` should be independent of evaluating length when it's not necessary.
+    assertThrows[IllegalArgumentException]((start until end by step).length)
+    val range = start until end by step
+
+    val smallChunkOfRange = range.drop(drop)
+    val expected = BigInt(Int.MaxValue) until end by step
+    assertTrue(smallChunkOfRange equals expected)
+    assertTrue(smallChunkOfRange.length == toAddToMaxInt)
+  }
+
+  @Test
+  def numericRangeSmallTypesDrop() = {
+    val byteStart: Byte = Byte.MinValue
+    val byteEnd: Byte = Byte.MaxValue
+    val drop = scala.util.Random.nextInt(Byte.MaxValue)
+
+    val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
+    val byteRangeChunk = byteRange.drop(drop)
+    assertTrue(byteRangeChunk.length == byteRange.length - drop)
+    assertTrue(byteRangeChunk.end == byteEnd)
+    assertTrue(byteRangeChunk.start == (byteStart + drop.toByte))
+
+    val shortStart: Short = Short.MinValue
+    val shortEnd: Short = Short.MaxValue
+
+    val shortRange = NumericRange(shortStart, shortEnd, (1: Short))
+    val shortRangeChunk = shortRange.drop(drop)
+    assertTrue(shortRangeChunk.length == shortRange.length - drop)
+    assertTrue(shortRangeChunk.end == shortEnd)
+    assertTrue(shortRangeChunk.start == (shortStart + drop.toShort))
+  }
+
+  @Test
+  def numericRangeSmallTypesTake() = {
+    val byteStart: Byte = Byte.MinValue
+    val byteEnd: Byte = Byte.MaxValue
+    val take = scala.util.Random.nextInt(Byte.MaxValue)
+
+    val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
+    val byteRangeChunk = byteRange.take(take)
+    assertTrue(byteRangeChunk.length == take)
+    assertTrue(byteRangeChunk.end == byteStart + take.toByte - 1)
+    assertTrue(byteRangeChunk.start == byteStart)
+
+    val shortStart: Short = Short.MinValue
+    val shortEnd: Short = Short.MaxValue
+
+    val shortRange = NumericRange(shortStart, shortEnd, (1: Short))
+    val shortRangeChunk = shortRange.take(take)
+    assertTrue(shortRangeChunk.length == take)
+    assertTrue(shortRangeChunk.end == shortStart + take.toShort - 1)
+    assertTrue(shortRangeChunk.start == shortStart)
+  }
+
+  @Test
+  def takeAndDropForCustomTypes() = {
+    import NumericRangeTest._
+
+    // smaller than Int
+    val start = NumericWrapper(Byte.MinValue)
+    val step = NumericWrapper(1: Byte)
+    val end = NumericWrapper(Byte.MaxValue)
+    val range = NumericRange.inclusive(start, end, step)
+
+    val amount = scala.util.Random.nextInt(Byte.MaxValue * 2)
+
+    val taken = range.take(amount)
+    val dropped = range.drop(amount)
+
+    assertTrue(taken.start == range.start && taken.length == amount)
+    assertTrue(dropped.end == range.end && dropped.length == range.length - amount)
+
+    // Int
+    val startInt = NumericWrapper(Int.MinValue)
+    val endInt = NumericWrapper(Int.MaxValue)
+    val stepInt = NumericWrapper(1)
+
+    val intRange = NumericRange.inclusive(startInt, endInt, stepInt)
+
+    val amountForInts = scala.util.Random.nextInt(Int.MaxValue)
+
+    val takenInts = intRange.take(amountForInts)
+    val droppedInts = intRange.drop(amountForInts)
+
+    assertTrue(takenInts.start == intRange.start && takenInts.length == amountForInts)
+    assertTrue(droppedInts.end == intRange.end && droppedInts.start.value == intRange.start.value + (amountForInts * intRange.step.value))
+
+    // Larger than int
+
+    val startLong = NumericWrapper(Long.MinValue)
+    val stepLong = NumericWrapper(1L)
+    val endLong = NumericWrapper(Long.MaxValue)
+
+    val longRange = NumericRange.inclusive(startLong, endLong, stepLong)
+
+    val amountForLongs = scala.util.Random.nextInt(Int.MaxValue)
+
+    val takenLongs = longRange.take(amountForLongs)
+    val droppedLongs = longRange.drop(amountForLongs)
+
+    assertTrue(takenLongs.start == longRange.start && takenLongs.length == amountForLongs)
+    assertTrue(droppedLongs.end == longRange.end && droppedLongs.start.value == longRange.start.value + (amountForLongs * longRange.step.value))
+  }
+
+  @Test
+  def wideIntNumericRangeTakeAndDrop() = {
+    val start = Int.MinValue
+    val end = Int.MaxValue
+    val step = 1
+
+    val amount = util.Random.nextInt(Int.MaxValue)
+
+    val range = NumericRange(start, end, step)
+
+    assertThrows[IllegalArgumentException](range.length)
+    assertTrue(range.take(amount).length == amount)
+    val dropped = range.drop(amount)
+    assertTrue(dropped.end == range.end && dropped.step == range.step && dropped.start == (amount * step) + range.start)
+  }
+
+  @Test
+  def wideNegativeNumericRangeUntilZeroShouldNotOverflow() = {
+    val start = Int.MinValue
+    val end = 0
+    val step = 1
+
+    val amount = util.Random.nextInt(Int.MaxValue)
+
+    val range = NumericRange.inclusive(start, end, step)
+
+    assertThrows[IllegalArgumentException](range.length)
+
+    val taken = range.take(amount)
+    assertTrue(taken.length == amount)
+    assertTrue(taken.start == range.start && taken.step == range.step)
+
+
+    val dropped = range.drop(amount)
+    assertTrue(dropped.end == range.end && dropped.step == range.step && dropped.start == (amount * step) + range.start)
+  }
+
+}
+
+object NumericRangeTest {
+
+  private case class NumericWrapper[T](value: T)
+  private object NumericWrapper {
+    implicit def isIntegral[T](implicit tNum: Integral[T]): Integral[NumericWrapper[T]] = new Integral[NumericWrapper[T]] {
+      override def quot(x: NumericWrapper[T], y: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.quot(x.value, y.value))
+
+      override def rem(x: NumericWrapper[T], y: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.rem(x.value, y.value))
+
+      override def plus(x: NumericWrapper[T], y: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.plus(x.value, y.value))
+
+      override def minus(x: NumericWrapper[T], y: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.minus(x.value, y.value))
+
+      override def times(x: NumericWrapper[T], y: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.times(x.value, y.value))
+
+      override def negate(x: NumericWrapper[T]): NumericWrapper[T] =
+        NumericWrapper(tNum.negate(x.value))
+
+      override def fromInt(x: Int): NumericWrapper[T] =
+        NumericWrapper(tNum.fromInt(x))
+
+      override def parseString(str: String): Option[NumericWrapper[T]] =
+        tNum.parseString(str).map(NumericWrapper.apply)
+
+      override def toInt(x: NumericWrapper[T]): Int =
+        tNum.toInt(x.value)
+
+      override def toLong(x: NumericWrapper[T]): Long =
+        tNum.toLong(x.value)
+
+      override def toFloat(x: NumericWrapper[T]): Float =
+        tNum.toFloat(x.value)
+
+      override def toDouble(x: NumericWrapper[T]): Double =
+        tNum.toDouble(x.value)
+
+      override def compare(x: NumericWrapper[T], y: NumericWrapper[T]): Int = tNum.compare(x.value, y.value)
+    }
+  }
 }
