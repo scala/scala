@@ -130,7 +130,25 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     val file = Paths.get(arg.stripPrefix("@"))
     if (!Files.exists(file))
       throw new java.io.FileNotFoundException(s"argument file $file could not be found")
-    Files.readAllLines(file).asScala.filter(!_.startsWith("#")).map(stripComment).toList
+    val lines = Files.readAllLines(file).asScala.filter(!_.startsWith("#")).map(stripComment).toList
+    // detect arguments on each line where an argument may be
+    // surrounded by single-quotes, double-quotes or no quotes
+    val p = java.util.regex.Pattern.compile("'([^']*)'|\"([^\"]*)\"|(\\S+)")
+    val values = new scala.collection.mutable.ArrayBuffer[String]
+    for (line <- lines) {
+      val m = p.matcher(line)
+      while (m.find())
+        values += (
+          if (m.group(1) != null) m.group(1) // single-quotes
+          else if (m.group(2) != null) m.group(2) // double-quotes
+          else m.group(3)) // no quotes
+    }
+    val arguments = values.toList
+    // // too early to use settings.verbose.value
+    // println("Expanded arguments from file "
+    //  + file.getName(file.getNameCount()-1)
+    //  + arguments.mkString(": ", ", ", ""))
+    arguments
   }
 
   // override this if you don't want arguments processed here
@@ -142,7 +160,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       case x if x startsWith "@"  => expandArg(x)
       case x                      => List(x)
     }
-
     settings.processArguments(expandedArguments, processAll = true)
   }
 }
