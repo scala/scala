@@ -1267,31 +1267,38 @@ trait Contexts { self: Analyzer =>
           cx = cx.outer // push further outward
       }
 
-      val defPre = pre
-      val defCx = cx
-
-      while (foundInSuper && (cx ne NoContext) && (cx.scope ne null)) {
-        pre = cx.enclClass.prefix
-        val next = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope).orElse(searchPrefix)
-        if (next.exists && next.owner == cx.owner && thisContext.unit.exists && next.sourceFile == thisContext.unit.source.file) {
-          outerDefSym = next
-          cx = NoContext
-        } else
-          cx = cx.outer
-      }
-      if (outerDefSym.exists) {
-        if ((defSym.isAliasType || outerDefSym.isAliasType) && defPre.memberType(defSym) =:= pre.memberType(outerDefSym))
-          outerDefSym = NoSymbol
-        if (defSym.isStable && outerDefSym.isStable &&
-          (pre.memberType(outerDefSym).termSymbol == defSym || defPre.memberType(defSym).termSymbol == outerDefSym))
-          outerDefSym = NoSymbol
-      }
-
-      pre = defPre
-      cx = defCx
-
       if (symbolDepth < 0)
         symbolDepth = cx.depth
+
+      def checkAmbiguousWithEnclosing(): Unit = if (foundInSuper && !thisContext.unit.isJava) {
+        val defPre = pre
+        val defCx = cx
+
+        while ((cx ne NoContext) && (cx.owner == defCx.owner || cx.depth >= symbolDepth)) cx = cx.outer
+
+        while ((cx ne NoContext) && (cx.scope ne null)) {
+          pre = cx.enclClass.prefix
+          val next = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope).orElse(searchPrefix)
+          if (next.exists && next.owner == cx.owner && thisContext.unit.exists && next.sourceFile == thisContext.unit.source.file) {
+            outerDefSym = next
+            cx = NoContext
+          } else
+            cx = cx.outer
+        }
+        if (outerDefSym.exists) {
+          if (outerDefSym == defSym)
+            outerDefSym = NoSymbol
+          else if ((defSym.isAliasType || outerDefSym.isAliasType) && defPre.memberType(defSym) =:= pre.memberType(outerDefSym))
+            outerDefSym = NoSymbol
+          else if (defSym.isStable && outerDefSym.isStable &&
+            (pre.memberType(outerDefSym).termSymbol == defSym || defPre.memberType(defSym).termSymbol == outerDefSym))
+            outerDefSym = NoSymbol
+        }
+
+        pre = defPre
+        cx = defCx
+      }
+      checkAmbiguousWithEnclosing()
 
       var impSym: Symbol = NoSymbol
       val importCursor = new ImportCursor(thisContext, name)
