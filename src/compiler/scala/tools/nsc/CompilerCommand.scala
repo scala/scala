@@ -126,11 +126,12 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def expandArg(arg: String): List[String] = {
     import java.nio.file.{Files, Paths}
     import scala.jdk.CollectionConverters._
-    def stripComment(s: String) = s.takeWhile(_ != '#').trim()  // arg can be "" but not " "
+    def stripComment(s: String) = s.takeWhile(_ != '#').trim()
     val file = Paths.get(arg.stripPrefix("@"))
     if (!Files.exists(file))
       throw new java.io.FileNotFoundException(s"argument file $file could not be found")
-    Files.readAllLines(file).asScala.filter(!_.startsWith("#")).map(stripComment).toList
+    val lines = Files.readAllLines(file).asScala.map(stripComment).filterNot(_.isEmpty).toList
+    lines.flatMap(settings.splitParams)
   }
 
   // override this if you don't want arguments processed here
