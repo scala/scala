@@ -18,6 +18,7 @@ import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
 import scala.reflect.ClassTag
+import java.lang.{StringBuilder => JStringBuilder}
 
 /** A companion object for the `StringLike` containing some constants.
  *  @since 2.8
@@ -69,10 +70,15 @@ self =>
 
   /** Return the current string concatenated `n` times.
    */
-  def * (n: Int): String = {
-    val buf = new StringBuilder
-    for (i <- 0 until n) buf append toString
-    buf.toString
+  def *(n: Int): String = {
+    val s0 = toString
+    var ci = 0 max n
+    val sb = new JStringBuilder(s0.length * ci)
+    while (ci > 0) {
+      sb.append(s0)
+      ci -= 1
+    }
+    sb.toString
   }
 
   override def compare(other: String) = toString compareTo other
