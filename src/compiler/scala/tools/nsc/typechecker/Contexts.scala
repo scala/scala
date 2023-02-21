@@ -1374,17 +1374,17 @@ trait Contexts { self: Analyzer =>
           val parent = currentClass.parentSymbols.find(_.isNonBottomSubClass(inherited1.owner)).getOrElse(NoSymbol)
           val inherit = if (parent.exists && parent != inherited1.owner) s", inherited through parent $parent" else ""
           val message =
-            s"""it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
-               |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
-               |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`.""".stripMargin
+            sm"""|it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
+                 |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+                 |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`."""
           if (currentRun.isScala3)
             Some(LookupAmbiguous(message))
           else {
             // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
             inherited.updateAttachment(LookupAmbiguityWarning(
-              s"""reference to ${outer1.name} is ambiguous;
-                 |$message
-                 |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""".stripMargin))
+              sm"""|reference to ${outer1.name} is ambiguous;
+                   |$message
+                   |Or use `-Wconf:msg=legacy-binding:s` to silence this warning."""))
             None
           }
         }

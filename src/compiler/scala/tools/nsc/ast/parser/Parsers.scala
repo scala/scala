@@ -777,8 +777,15 @@ self =>
 
     /** Convert tree to formal parameter list. */
     def convertToParams(tree: Tree): List[ValDef] = tree match {
-      case Parens(ts) => ts map convertToParam
-      case _          => List(convertToParam(tree))
+      case Parens(ts) => ts.map(convertToParam)
+      case Typed(Ident(_), _) =>
+        val msg = "parentheses are required around the parameter of a lambda"
+        val wrn = sm"""|$msg
+                       |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
+        if (currentRun.isScala3)
+          deprecationWarning(tree.pos.point, wrn, "2.13.11")
+        List(convertToParam(tree))
+      case _ => List(convertToParam(tree))
     }
 
     /** Convert tree to formal parameter. */
