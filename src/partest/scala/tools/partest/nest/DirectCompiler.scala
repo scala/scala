@@ -122,7 +122,7 @@ class DirectCompiler(val runner: Runner) {
       if (command.files.nonEmpty) reportError(command.files.mkString("flags file may only contain compiler options, found: ", space, ""))
     }
 
-    suiteRunner.verbose(s"% compiling ${ sources.map(_.testIdent).mkString(space) }${ if (suiteRunner.debug) " -d " + outDir else ""}")
+    suiteRunner.verbose(sources.map(_.testIdent).mkString("% compiling ", space, if (suiteRunner.debug) s" -d $outDir" else ""))
 
     def execCompile() =
       if (command.shouldStopWithInfo) {

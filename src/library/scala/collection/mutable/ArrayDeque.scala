@@ -434,7 +434,7 @@ class ArrayDeque[A] protected (
 
   override def isEmpty = start == end
 
-  protected override def klone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
+  override protected def klone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
 
   override def iterableFactory: SeqFactory[ArrayDeque] = ArrayDeque
 

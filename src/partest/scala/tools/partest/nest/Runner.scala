@@ -424,18 +424,15 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  2. Runs script function, providing log file and output directory as arguments.
    *     2b. or, just run the script without context and return a new context
    */
-  def runInContext(body: => TestState): TestState = {
-    body
-  }
+  def runInContext(body: => TestState): TestState = body
 
   /** Grouped files in group order, and lex order within each group. */
-  def groupedFiles(sources: List[File]): List[List[File]] = (
+  def groupedFiles(sources: List[File]): List[List[File]] =
     if (sources.sizeIs > 1) {
-      val grouped = sources groupBy (_.group)
-      grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
+      val grouped = sources.groupBy(_.group)
+      grouped.keys.toList.sorted.map(grouped(_).sortBy(_.getName))
     }
     else List(sources)
-  )
 
   /** Source files for the given test file. */
   def sources(file: File): List[File] = if (file.isDirectory) file.listFiles.toList.filter(_.isJavaOrScala) else List(file)
@@ -489,31 +486,31 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     files.flatMap(argsFor)
   }
 
-  abstract class CompileRound {
-    def fs: List[File]
-    def result: TestState
+  sealed abstract class CompileRound {
+    def files: List[File]
     def description: String
+    protected def computeResult: TestState
 
-    def fsString = fs map (_.toString stripPrefix parentFile.toString + "/") mkString " "
-    def isOk = result.isOk
-    def mkScalacString(): String = s"""scalac $fsString"""
-    override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
+    final lazy val result: TestState = { pushTranscript(description); computeResult }
+
+    final protected def fsString = files.map(_.toString.stripPrefix(s"$parentFile/")).mkString(" ")
+    final override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
   }
-  case class OnlyJava(fs: List[File]) extends CompileRound {
+  final case class OnlyJava(files: List[File]) extends CompileRound {
     def description = s"""javac $fsString"""
-    lazy val result = { pushTranscript(description) ; javac(fs) }
+    override protected def computeResult = javac(files)
   }
-  case class OnlyScala(fs: List[File]) extends CompileRound {
-    def description = mkScalacString()
-    lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
+  final case class OnlyScala(files: List[File]) extends CompileRound {
+    def description = s"""scalac $fsString"""
+    override protected def computeResult = attemptCompile(files)
   }
-  case class ScalaAndJava(fs: List[File]) extends CompileRound {
-    def description = mkScalacString()
-    lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
+  final case class ScalaAndJava(files: List[File]) extends CompileRound {
+    def description = s"""scalac $fsString"""
+    override protected def computeResult = attemptCompile(files)
   }
-  case class SkipRound(fs: List[File], state: TestState) extends CompileRound {
+  final case class SkipRound(files: List[File], state: TestState) extends CompileRound {
     def description: String = state.status
-    lazy val result = { pushTranscript(description); state }
+    override protected def computeResult = state
   }
 
   def compilationRounds(file: File): List[CompileRound] = {
@@ -541,7 +538,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
-    val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
+    val (scalaFiles, javaFiles) = allFiles.partition(_.isScala)
     val round1                  = if (scalaFiles.isEmpty) None else Some(ScalaAndJava(allFiles))
     val round2                  = if (javaFiles.isEmpty) None else Some(OnlyJava(javaFiles))
 

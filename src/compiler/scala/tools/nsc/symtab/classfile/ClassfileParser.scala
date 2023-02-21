@@ -826,6 +826,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.DeprecatedATTR =>
           in.skip(attrLen)
+          sym.addAnnotation(JavaDeprecatedAttr)
           if (sym == clazz)
             staticModule.addAnnotation(JavaDeprecatedAttr)
 

@@ -1,2 +1,28 @@
-Note: deprecation/Use_2.java uses or overrides a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
+Test_1.scala:7: warning: variable i in class Defs is deprecated
+    val u = d.i + 1
+              ^
+Test_1.scala:8: warning: variable i in class Defs is deprecated
+    d.i = 2
+      ^
+Test_1.scala:9: warning: method bar in class Defs is deprecated
+    val v = d.bar()
+              ^
+Test_1.scala:10: warning: class Inner in class Defs is deprecated
+    val i = new d.Inner
+                  ^
+deprecation/Use_2.java:7: warning: [deprecation] Test.Inner in Test has been deprecated
+        Test.Inner a = u.new Inner();
+            ^
+deprecation/Use_2.java:7: warning: [deprecation] Test.Inner in Test has been deprecated
+        Test.Inner a = u.new Inner();
+                             ^
+deprecation/Use_2.java:8: warning: [deprecation] f() in Test.Inner has been deprecated
+        int i = a.f();
+                 ^
+deprecation/Use_2.java:9: warning: [deprecation] g() in Test.Inner has been deprecated
+        int j = a.g();
+                 ^
+deprecation/Use_2.java:10: warning: [deprecation] g_$eq(int) in Test.Inner has been deprecated
+        a.g_$eq(5);
+         ^
+5 warnings
