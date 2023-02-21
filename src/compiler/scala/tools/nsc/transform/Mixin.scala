@@ -357,6 +357,8 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
             case alias1 =>
               registerRequiredDirectInterface(alias1, clazz, parent =>
                 s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $parent is directly extended by $clazz.")
+              if (alias1.isValue && !alias1.isMethod || alias1.isAccessor)
+                reporter.error(clazz.pos, s"parent $mixinClass has a super call to method ${mixinMember.alias.fullNameString}, which binds to the value ${alias1.fullNameString}. Super calls can only target methods.")
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
