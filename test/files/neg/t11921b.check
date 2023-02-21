@@ -38,8 +38,15 @@ it is both defined in the enclosing object Uhu and available in the enclosing cl
 Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
 To continue using the symbol from the superclass, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
-        def t = x // ambiguous, message mentions parent B
+        def t = x // error, message mentions parent B
                 ^
+t11921b.scala:132: warning: reference to a is ambiguous;
+it is both defined in the enclosing class C and available in the enclosing trait J as method a (defined in trait I)
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+To continue using the symbol from the superclass, write `this.a`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+      val t = a // error
+              ^
 error: No warnings can be incurred under -Xfatal-warnings.
-6 warnings found
+7 warnings found
 one error found

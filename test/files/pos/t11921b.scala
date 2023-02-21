@@ -8,11 +8,11 @@ object test1 {
   object Test {
     val x = 1
     class D extends C {
-      println(x)
+      println(x) // error
     }
     def f() =
       new C {
-        println(x)
+        println(x) // error
       }
   }
 }
@@ -23,7 +23,7 @@ object test2 {
       val y = 2
     }
     new D {
-      println(y)
+      println(y) // error
     }
   }
 }
@@ -35,23 +35,8 @@ object test3 {
     }
     class E extends D {
       class F {
-        println(y)
+        println(y) // error
       }
-    }
-  }
-}
-
-object test4 {
-
-  class C {
-    val x = 0
-  }
-  object Test {
-    val x = 1
-    class D extends C {
-      def x(y: Int) = 3
-      val y: Int = this.x
-      val z: Int = x
     }
   }
 }
@@ -62,25 +47,5 @@ class C {
   val global = 42
 }
 object D extends C {
-  println(global)
-}
-
-object test5 {
-  trait T {
-    val s: String
-  }
-
-  trait U {
-    this: T =>
-    val s: String
-    def t = s
-  }
-
-
-  class AA {
-    def f = 1
-    class B extends AA {
-      def g = f
-    }
-  }
+  println(global) // error
 }

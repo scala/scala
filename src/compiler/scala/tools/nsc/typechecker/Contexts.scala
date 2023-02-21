@@ -56,22 +56,24 @@ trait Contexts { self: Analyzer =>
     LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
   def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
     LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
-  def ambiguousWithEnclosing(sym: Symbol, other: Symbol, otherEnclClass: Symbol) =
+  def ambiguousWithEnclosing(sym: Symbol, other: Symbol, symEnclClass: Symbol) =
     if (!currentRun.isScala213) None else {
-      val enclDesc = if (otherEnclClass.isAnonymousClass) "anonymous class" else otherEnclClass.toString
-      val parent = otherEnclClass.parentSymbols.find(_.isNonBottomSubClass(other.owner)).getOrElse(NoSymbol)
-      val inherit = if (parent.exists && parent != other.owner) s", inherited through parent $parent" else ""
+      val sym1 = sym.alternatives.head
+      val other1 = other.alternatives.head
+      val enclDesc = if (symEnclClass.isAnonymousClass) "anonymous class" else symEnclClass.toString
+      val parent = symEnclClass.parentSymbols.find(_.isNonBottomSubClass(other1.owner)).getOrElse(NoSymbol)
+      val inherit = if (parent.exists && parent != other1.owner) s", inherited through parent $parent" else ""
       val message =
-        s"""it is both defined in the enclosing ${sym.owner} and available in the enclosing $enclDesc as $other (defined in ${other.ownsString}$inherit)
+        s"""it is both defined in the enclosing ${sym1.owner} and available in the enclosing $enclDesc as $other1 (defined in ${other1.ownsString}$inherit)
            |Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-           |To continue using the symbol from the superclass, write `this.${sym.name}`.""".stripMargin
+           |To continue using the symbol from the superclass, write `this.${sym1.name}`.""".stripMargin
       if (currentRun.isScala3)
         Some(LookupAmbiguous(message))
       else {
         // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
         other.updateAttachment(
           LookupAmbiguityWarning(
-          s"""reference to ${sym.name} is ambiguous;
+          s"""reference to ${sym1.name} is ambiguous;
              |$message
              |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""".stripMargin))
         None
@@ -1257,7 +1259,7 @@ trait Contexts { self: Analyzer =>
         defSym = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope) match {
           case NoSymbol =>
             val prefixSym = searchPrefix
-            if (currentRun.isScala213 && prefixSym.exists && prefixSym.owner != cx.owner)
+            if (currentRun.isScala213 && prefixSym.exists && prefixSym.alternatives.forall(_.owner != cx.owner))
               foundInSuper = true
             prefixSym
           case found =>
@@ -1278,8 +1280,8 @@ trait Contexts { self: Analyzer =>
 
         while ((cx ne NoContext) && (cx.scope ne null)) {
           pre = cx.enclClass.prefix
-          val next = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope).orElse(searchPrefix)
-          if (next.exists && next.owner == cx.owner && thisContext.unit.exists && next.sourceFile == thisContext.unit.source.file) {
+          val next = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope).orElse(searchPrefix).filter(_.owner == cx.owner)
+          if (next.exists && thisContext.unit.exists && next.sourceFile == thisContext.unit.source.file) {
             outerDefSym = next
             cx = NoContext
           } else
