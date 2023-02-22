@@ -1364,19 +1364,21 @@ trait Contexts { self: Analyzer =>
       LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
     def ambiguousDefinitions(sym: Symbol, other: Symbol, otherFoundInSuper: Boolean, otherEnclClass: Symbol) = {
       if (otherFoundInSuper) {
+        val sym1 = sym.alternatives.head
+        val other1 = other.alternatives.head
         val enclDesc = if (otherEnclClass.isAnonymousClass) "anonymous class" else otherEnclClass.toString
-        val parent = otherEnclClass.parentSymbols.find(_.isNonBottomSubClass(other.owner)).getOrElse(NoSymbol)
-        val inherit = if (parent.exists && parent != other.owner) s", inherited through parent $parent" else ""
+        val parent = otherEnclClass.parentSymbols.find(_.isNonBottomSubClass(other1.owner)).getOrElse(NoSymbol)
+        val inherit = if (parent.exists && parent != other1.owner) s", inherited through parent $parent" else ""
         val message =
-          s"""it is both defined in the enclosing ${sym.owner} and available in the enclosing $enclDesc as $other (defined in ${other.ownsString}$inherit)
+          s"""it is both defined in the enclosing ${sym1.owner} and available in the enclosing $enclDesc as $other1 (defined in ${other1.ownsString}$inherit)
              |Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-             |To continue using the symbol from the superclass, write `this.${sym.name}`.""".stripMargin
+             |To continue using the symbol from the superclass, write `this.${sym1.name}`.""".stripMargin
         if (currentRun.isScala3)
           Some(LookupAmbiguous(message))
         else {
           // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
           other.updateAttachment(LookupAmbiguityWarning(
-            s"""reference to ${sym.name} is ambiguous;
+            s"""reference to ${sym1.name} is ambiguous;
                |$message
                |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""".stripMargin))
           None
@@ -1492,7 +1494,7 @@ trait Contexts { self: Analyzer =>
           (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef))
           defSym = NoSymbol
         foundInPrefix = inPrefix && defSym.exists
-        foundInSuper  = foundInPrefix && defSym.owner != cx.owner
+        foundInSuper  = foundInPrefix && defSym.alternatives.forall(_.owner != cx.owner)
       }
       nextDefinition(NoSymbol, NoPrefix)
 
