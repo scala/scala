@@ -1,4 +1,3 @@
-
 // scalac: -Werror -Wconf:msg=legacy-binding:s
 
 object test1 {
@@ -42,26 +41,11 @@ object test3 {
   }
 }
 
-object test4 {
-
-  class C {
-    val x = 0
-  }
-  object Test {
-    val x = 1
-    class D extends C {
-      def x(y: Int) = 3
-      val y: Int = this.x // OK
-      val z: Int = x      // OK
-    }
-  }
-}
-
 object global
 
 class C {
   val global = 42
 }
 object D extends C {
-  println(global)    // OK, since global is defined in package
+  println(global)    // OK, since global is defined in package (https://github.com/scala/scala/pull/10220/files#r1109773904)
 }

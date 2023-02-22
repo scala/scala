@@ -62,7 +62,7 @@ class C {
   val global = 42
 }
 object D extends C {
-  println(global)    // OK, since global is defined in package
+  println(global)    // OK, since global is defined in package (https://github.com/scala/scala/pull/10220/files#r1109773904)
 }
 
 object test5 {
@@ -74,6 +74,41 @@ object test5 {
       class Inner {
         def t = x // ambiguous, message mentions parent B
       }
+    }
+  }
+}
+
+object test6 {
+  trait I {
+    val a = 1
+    def a(x: Int) = ""
+  }
+  class C {
+    val a = ""
+    trait J extends I {
+      val t = a // error
+    }
+  }
+}
+
+
+object test7 {
+  trait T {
+    // overloaded a
+    val a = ""
+    def a(x: Int) = ""
+  }
+
+  trait I {
+    val a = 1
+  }
+
+  class C extends T {
+    trait J {
+      self: I =>
+      // no warning here. when checking for an outer `a`, we find an OverloadedSymbol with the two definitions in `T`.
+      // The owner of the overloaded symbol is `C`, but the alternatives have owner `T`.
+      val t = a
     }
   }
 }
