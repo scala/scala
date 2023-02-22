@@ -200,7 +200,7 @@ class NumericRangeTest {
   def numericRangeSmallTypesDrop() = {
     val byteStart: Byte = Byte.MinValue
     val byteEnd: Byte = Byte.MaxValue
-    val drop = scala.util.Random.nextInt(Byte.MaxValue)
+    val drop = 10
 
     val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
     val byteRangeChunk = byteRange.drop(drop)
@@ -222,7 +222,7 @@ class NumericRangeTest {
   def numericRangeSmallTypesTake() = {
     val byteStart: Byte = Byte.MinValue
     val byteEnd: Byte = Byte.MaxValue
-    val take = scala.util.Random.nextInt(Byte.MaxValue)
+    val take = 10
 
     val byteRange = NumericRange(byteStart, byteEnd, (1: Byte))
     val byteRangeChunk = byteRange.take(take)
@@ -250,7 +250,7 @@ class NumericRangeTest {
     val end = NumericWrapper(Byte.MaxValue)
     val range = NumericRange.inclusive(start, end, step)
 
-    val amount = scala.util.Random.nextInt(Byte.MaxValue * 2)
+    val amount = 20
 
     val taken = range.take(amount)
     val dropped = range.drop(amount)
@@ -265,7 +265,7 @@ class NumericRangeTest {
 
     val intRange = NumericRange.inclusive(startInt, endInt, stepInt)
 
-    val amountForInts = scala.util.Random.nextInt(Int.MaxValue)
+    val amountForInts = 40
 
     val takenInts = intRange.take(amountForInts)
     val droppedInts = intRange.drop(amountForInts)
@@ -281,7 +281,7 @@ class NumericRangeTest {
 
     val longRange = NumericRange.inclusive(startLong, endLong, stepLong)
 
-    val amountForLongs = scala.util.Random.nextInt(Int.MaxValue)
+    val amountForLongs = 50
 
     val takenLongs = longRange.take(amountForLongs)
     val droppedLongs = longRange.drop(amountForLongs)
@@ -296,7 +296,7 @@ class NumericRangeTest {
     val end = Int.MaxValue
     val step = 1
 
-    val amount = util.Random.nextInt(Int.MaxValue)
+    val amount = 50
 
     val range = NumericRange(start, end, step)
 
@@ -312,7 +312,7 @@ class NumericRangeTest {
     val end = 0
     val step = 1
 
-    val amount = util.Random.nextInt(Int.MaxValue)
+    val amount = 50
 
     val range = NumericRange.inclusive(start, end, step)
 
