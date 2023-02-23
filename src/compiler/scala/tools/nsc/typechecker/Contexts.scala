@@ -1601,6 +1601,7 @@ trait Contexts { self: Analyzer =>
         val defSym0 = defSym
         val pre0    = pre
         val cx0     = cx
+        val depth0  = symbolDepth
         val wasFoundInSuper = foundInSuper
         val foundCompetingSymbol: () => Boolean =
           if (foreignDefined) () => !foreignDefined
@@ -1623,6 +1624,7 @@ trait Contexts { self: Analyzer =>
         defSym = defSym0
         pre    = pre0
         cx     = cx0
+        symbolDepth = depth0
       }
 
       if (preferDef) impSym = NoSymbol else defSym = NoSymbol
