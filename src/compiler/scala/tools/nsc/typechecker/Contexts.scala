@@ -1275,6 +1275,7 @@ trait Contexts { self: Analyzer =>
       def checkAmbiguousWithEnclosing(): Unit = if (foundInSuper && !thisContext.unit.isJava) {
         val defPre = pre
         val defCx = cx
+        val defDepth = symbolDepth
 
         while ((cx ne NoContext) && (cx.owner == defCx.owner || cx.depth >= symbolDepth)) cx = cx.outer
 
@@ -1299,6 +1300,7 @@ trait Contexts { self: Analyzer =>
 
         pre = defPre
         cx = defCx
+        symbolDepth = defDepth
       }
       checkAmbiguousWithEnclosing()
 
