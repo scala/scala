@@ -34,5 +34,11 @@ jobs:
           java-version: ${{matrix.java}}
           cache: sbt
 
+      - name: Build
+        run: |
+          sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+
       - name: Test
-        run: sbt "partest run/repl-paste-parse.scala"
+        run: |
+          STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+          sbt -Dstarr.version=$STARR setupValidateTest info "partest run/repl-paste-parse.scala"
