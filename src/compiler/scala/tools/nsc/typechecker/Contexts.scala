@@ -1246,9 +1246,11 @@ trait Contexts { self: Analyzer =>
 
     /** If the given import is permitted, fetch the symbol and filter for accessibility.
      */
-    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol =
+    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol = {
       if (isExcludedRootImport(imp)) NoSymbol
-      else sym.filter(isAccessible(_, imp.qual.tpe, superAccess = false))
+      else sym.filter(s => s.exists && isAccessible(s, imp.qual.tpe, superAccess = false))
+      // `exists` above completes SymbolLoaders, which sets the symbol's access flags (scala/bug#12736)
+    }
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
@@ -1508,6 +1510,9 @@ trait Contexts { self: Analyzer =>
       val importCursor = new ImportCursor(thisContext, name)
       import importCursor.{imp1, imp2}
 
+      // The symbol resolved by the given import for `name`, paired with the selector that was used.
+      // If `requireExplicit`, then only "named" or "specific" selectors are considered.
+      // In addition, the symbol must be accessible (in the current context) and satisfy the `qualifies` predicate.
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean): (ImportSelector, Symbol) = {
         val pair @ (sel, sym) = imp.importedSelectedSymbol(name, requireExplicit)
         if (sym == NoSymbol) pair

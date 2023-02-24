@@ -1095,21 +1095,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
 
     def exists: Boolean = !isTopLevel || {
-      val isSourceLoader = rawInfo match {
-        case sl: SymLoader => sl.fromSource
-        case _             => false
-      }
-      def warnIfSourceLoader(): Unit = {
+      def warnIfSourceLoader(): false = {
+        val isSourceLoader = rawInfo match {
+          case sl: SymLoader => sl.fromSource
+          case _             => false
+        }
+        // Predef is completed early due to its autoimport; we used to get here when type checking its
+        // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
+        // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
+        // get here anymore.
         if (isSourceLoader)
-          // Predef is completed early due to its autoimport; we used to get here when type checking its
-          // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
-          // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
-          // get here anymore.
           devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.")
+        false
       }
-
-      rawInfo load this
-      rawInfo != NoType || { warnIfSourceLoader(); false }
+      rawInfo.load(this)
+      rawInfo != NoType || warnIfSourceLoader()
     }
 
     final def isInitialized: Boolean =
