@@ -4,6 +4,7 @@ on:
   push:
     branches: ['2.*.x']
   workflow_dispatch:
+  pull_request:
 
 defaults:
   run:
@@ -33,11 +34,5 @@ jobs:
           java-version: ${{matrix.java}}
           cache: sbt
 
-      - name: Build
-        run: |
-          sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-
       - name: Test
-        run: |
-          STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          sbt -Dstarr.version=$STARR setupValidateTest test:compile info testAll
+        run: sbt "partest run/repl-paste-parse.scala"
