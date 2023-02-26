@@ -402,7 +402,7 @@ object NumericRange {
       val startside = num.sign(start)
       val endside = num.sign(end)
       num.toInt{
-        if (num.gteq(num.times(startside, endside), zero)) {
+        if (num.gt(num.times(startside, endside), zero)) {
           // We're sure we can subtract these numbers.
           // Note that we do not use .rem because of different conventions for Long and BigInt
           val diff = num.minus(end, start)
@@ -440,6 +440,12 @@ object NumericRange {
               // There is a last piece
               val enddiff = num.minus(end,waypointB)
               val endq    = check(num.quot(enddiff, step))
+              if (num.sign(endq) != num.sign(num.minus(endq, one))) {
+                // types smaller or equal to Int are already handled (including custom wrappers),
+                // in this case, we need an extra step of checking for Long.MinValue
+                // abs value of Long.MinValue would be Long.MinValue, so we'd need to add one to it, and then use the abs value of the expression
+                check(num.abs(num.plus(endq, one)))
+              }
               val last    = if (endq == zero) waypointB else num.plus(waypointB, num.times(endq, step))
               // Now we have to tally up all the pieces
               //   1 for the initial value

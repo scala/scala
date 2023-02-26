@@ -27,14 +27,11 @@ class NumericRangeProperties extends Properties("immutable.NumericRange") {
     }
   }
 
-  // This is commented intentionally, because of a bug in NumericRange.count,
-  // which makes the length unstable for property based testing:
-  // e.g., NumericRange(1L, -9223372036854775808L, -1L).length == 1
-//  property("same length when take and drop with a specific amount (Long)") = forAll { (r: NumericRange[Long], amount: Int) =>
-//    Try(r.length).isSuccess ==> {
-//      r.take(amount).length + r.drop(amount).length == r.length
-//    }
-//  }
+  property("same length when take and drop with a specific amount (Long)") = forAll { (r: NumericRange[Long], amount: Int) =>
+    Try(r.length).isSuccess ==> {
+      r.take(amount).length + r.drop(amount).length == r.length
+    }
+  }
 
   property("same length when take and drop with a specific amount (BigInt)") = forAll { (r: NumericRange[BigInt], amount: Int) =>
     Try(r.length).isSuccess ==> {
