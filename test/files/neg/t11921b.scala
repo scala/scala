@@ -112,3 +112,27 @@ object test7 {
     }
   }
 }
+
+object test9 {
+  val lo: Int = 1
+  class P {
+    implicit val lo: Int = 1
+  }
+  class C extends P {
+    def t(implicit i: Int) = 10
+    def u = t // ok, reference to `lo` by implicit search
+    def v = t(lo) // should warn, but doesn't. can't tell if reference to `lo` was explicit or not.
+  }
+}
+
+object test10 {
+  implicit val lo: Int = 1
+  class P {
+    val lo: Int = 1
+  }
+  class C extends P {
+    def t(implicit i: Int) = 10
+    def u = t // doesn't compile in Scala 2 (maybe there's a ticket for that)
+    def v = t(lo) // error
+  }
+}

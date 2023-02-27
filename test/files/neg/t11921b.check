@@ -1,3 +1,6 @@
+t11921b.scala:135: error: could not find implicit value for parameter i: Int
+    def u = t // doesn't compile in Scala 2 (maybe there's a ticket for that)
+            ^
 t11921b.scala:11: warning: reference to x is ambiguous;
 it is both defined in the enclosing object Test and available in the enclosing class D as value x (defined in class C)
 Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
@@ -40,6 +43,12 @@ To continue using the symbol from the superclass, write `this.a`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       val t = a // error
               ^
-error: No warnings can be incurred under -Werror.
-6 warnings
+t11921b.scala:136: warning: reference to lo is ambiguous;
+it is both defined in the enclosing object test10 and available in the enclosing class C as value lo (defined in class P)
+Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
+To continue using the symbol from the superclass, write `this.lo`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+    def v = t(lo) // error
+              ^
+7 warnings
 1 error
