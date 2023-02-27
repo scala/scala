@@ -317,9 +317,8 @@ private sealed abstract class VectorImpl[+A](_prefix1: Arr1) extends Vector[A](_
   override final def slice(from: Int, until: Int): Vector[A] = {
     val lo = mmax(from, 0)
     val hi = mmin(until, length)
-    val newlen = hi - lo
-    if(newlen == length) this
-    else if(hi <= lo) Vector0
+    if (hi <= lo) Vector0
+    else if (hi - lo == length) this
     else slice0(lo, hi)
   }
 }

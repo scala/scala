@@ -163,7 +163,7 @@ class VectorTest {
   }
 
   @Test
-  def testWierdAlignments1(): Unit = {
+  def testWeirdAlignments1(): Unit = {
     val v3 = Vector.tabulate(2042)(i => (i - 42).toString).drop(42).asInstanceOf[Vector3[AnyRef]]
     for (i <- Seq(0, 1, 5, 41, 42, 43, 123, 949, 950, 982, 1024, 1999, 2000)) {
       val res = new VectorBuilder[AnyRef]
@@ -176,7 +176,7 @@ class VectorTest {
   }
 
   @Test
-  def testWierdAlignments2(): Unit = {
+  def testWeirdAlignments2(): Unit = {
     val v3 = Vector.tabulate(2042)(i => (i - 42).toString).drop(42).asInstanceOf[Vector3[AnyRef]]
     val v2 = Vector.tabulate(765)(i => (i - 123).toString).drop(123).asInstanceOf[Vector2[AnyRef]]
     for (i <- Seq(-1234, -42, -1, 0, 1, 5, 41, 42, 43, 123, 949, 950, 982, 1024, 1999, 2000)) {
@@ -190,7 +190,7 @@ class VectorTest {
   }
 
   @Test
-  def testWierdAlignments3(): Unit = for (n <- allSizes; m <- verySmallSizes) {
+  def testWeirdAlignments3(): Unit = for (n <- allSizes; m <- verySmallSizes) {
     val vPretend =
       if (smallSizes.contains(n))
         Vector.tabulate(n + 1337)(i => (i - 1337).toString).drop(1337)
@@ -212,7 +212,7 @@ class VectorTest {
   }
 
   @Test
-  def testWierdAlignments4(): Unit = {
+  def testWeirdAlignments4(): Unit = {
     var lengths = Set[Int]()
     for (
       n <- allSizes.init :+ (allSizes.last - WIDTH5 - WIDTH3 + 41); // we need WIDTH5 for prefix, add 1+WIDTH3 and get 42 in suffix free
@@ -579,9 +579,10 @@ class VectorTest {
     }
   }
 
-  @Test
-  def testSlice3(): Unit = {
-    assertEquals(Vector(1).slice(1, -2147483648), Vector())
+  @Test def `test slice to MinValue`: Unit = {
+    assertTrue(Vector(42).slice(1, Int.MinValue).isEmpty)
+    assertTrue("slice almost max to min should be empty", Vector(42).slice(Int.MaxValue-1, Int.MinValue).isEmpty)
+    assertTrue("slice max to min should be empty", Vector(42).slice(Int.MaxValue, Int.MinValue).isEmpty)
   }
 
   @Test
