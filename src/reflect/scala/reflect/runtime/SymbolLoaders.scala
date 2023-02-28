@@ -75,7 +75,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     override def complete(sym: Symbol): Unit = {
       assert(sym.isPackageClass, "Must be package")
       // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
-      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
+      // creates a module symbol and invokes `companionModule` while the `infos` field is
       // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
       slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
         sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)

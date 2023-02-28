@@ -389,15 +389,13 @@ abstract class SymbolTable extends macros.Universe
 
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
   def openPackageModule(pkgClass: Symbol, force: Boolean = false): Unit = {
-
-    val pkgModule = pkgClass.packageObject
+    val pkgModule  = pkgClass.packageObject
     def fromSource = pkgModule.rawInfo match {
       case ltp: SymLoader => ltp.fromSource
       case _ => false
     }
-    if (pkgModule.isModule && !fromSource) {
+    if (pkgModule.isModule && !fromSource)
       openPackageModule(pkgModule, pkgClass)
-    }
   }
 
   object perRunCaches {
