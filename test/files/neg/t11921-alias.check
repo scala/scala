@@ -1,28 +1,28 @@
 t11921-alias.scala:18: warning: reference to TT is ambiguous;
-it is both defined in the enclosing object O and available in the enclosing class D as type TT (defined in class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.TT`.
+it is both defined in the enclosing object O and inherited in the enclosing class D as type TT (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.TT`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       def n(x: TT) = x // ambiguous
                ^
 t11921-alias.scala:38: warning: reference to c is ambiguous;
-it is both defined in the enclosing class B and available in the enclosing anonymous class as value c (defined in class A)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.c`.
+it is both defined in the enclosing class B and inherited in the enclosing anonymous class as value c (defined in class A)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.c`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       def n = c // ambiguous
               ^
 t11921-alias.scala:57: warning: reference to name is ambiguous;
-it is both defined in the enclosing method m and available in the enclosing anonymous class as value name (defined in class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.name`.
+it is both defined in the enclosing method m and inherited in the enclosing anonymous class as value name (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(name)
               ^
 t11921-alias.scala:67: warning: reference to name is ambiguous;
-it is both defined in the enclosing method m and available in the enclosing anonymous class as value name (defined in class A, inherited through parent class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.name`.
+it is both defined in the enclosing method m and inherited in the enclosing anonymous class as value name (defined in class A, inherited through parent class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(name)
               ^

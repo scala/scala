@@ -64,9 +64,9 @@ trait Contexts { self: Analyzer =>
       val parent = currentClass.parentSymbols.find(_.isNonBottomSubClass(inherited1.owner)).getOrElse(NoSymbol)
       val inherit = if (parent.exists && parent != inherited1.owner) s", inherited through parent $parent" else ""
       val message =
-        s"""it is both defined in the enclosing ${outer1.owner} and available in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
-           |Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-           |To continue using the symbol from the superclass, write `this.${outer1.name}`.""".stripMargin
+        s"""it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
+           |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+           |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`.""".stripMargin
       if (currentRun.isScala3)
         Some(LookupAmbiguous(message))
       else {

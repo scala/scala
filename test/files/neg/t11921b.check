@@ -2,58 +2,58 @@ t11921b.scala:156: error: could not find implicit value for parameter i: Int
     def u = t // doesn't compile in Scala 2 (maybe there's a ticket for that)
             ^
 t11921b.scala:11: warning: reference to x is ambiguous;
-it is both defined in the enclosing object Test and available in the enclosing class D as value x (defined in class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.x`.
+it is both defined in the enclosing object Test and inherited in the enclosing class D as value x (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(x)  // error
               ^
 t11921b.scala:15: warning: reference to x is ambiguous;
-it is both defined in the enclosing object Test and available in the enclosing anonymous class as value x (defined in class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.x`.
+it is both defined in the enclosing object Test and inherited in the enclosing anonymous class as value x (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         println(x)  // error
                 ^
 t11921b.scala:26: warning: reference to y is ambiguous;
-it is both defined in the enclosing method c and available in the enclosing anonymous class as value y (defined in class D)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.y`.
+it is both defined in the enclosing method c and inherited in the enclosing anonymous class as value y (defined in class D)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       println(y)  // error
               ^
 t11921b.scala:38: warning: reference to y is ambiguous;
-it is both defined in the enclosing method c and available in the enclosing class E as value y (defined in class D)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.y`.
+it is both defined in the enclosing method c and inherited in the enclosing class E as value y (defined in class D)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         println(y)  // error
                 ^
 t11921b.scala:65: warning: reference to global is ambiguous;
-it is both defined in the enclosing package <empty> and available in the enclosing object D as value global (defined in class C)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.global`.
+it is both defined in the enclosing package <empty> and inherited in the enclosing object D as value global (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.global`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
   println(global)    // error
           ^
 t11921b.scala:75: warning: reference to x is ambiguous;
-it is both defined in the enclosing object Uhu and available in the enclosing class C as value x (defined in class A, inherited through parent class B)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.x`.
+it is both defined in the enclosing object Uhu and inherited in the enclosing class C as value x (defined in class A, inherited through parent class B)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         def t = x // error, message mentions parent B
                 ^
 t11921b.scala:132: warning: reference to a is ambiguous;
-it is both defined in the enclosing class C and available in the enclosing trait J as method a (defined in trait I)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.a`.
+it is both defined in the enclosing class C and inherited in the enclosing trait J as method a (defined in trait I)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.a`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
       val t = a // error
               ^
 t11921b.scala:157: warning: reference to lo is ambiguous;
-it is both defined in the enclosing object test10 and available in the enclosing class C as value lo (defined in class P)
-Since Scala 3, symbols inherited from a superclass no longer shadow symbols defined in an outer scope.
-To continue using the symbol from the superclass, write `this.lo`.
+it is both defined in the enclosing object test10 and inherited in the enclosing class C as value lo (defined in class P)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.lo`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
     def v = t(lo) // error
               ^
