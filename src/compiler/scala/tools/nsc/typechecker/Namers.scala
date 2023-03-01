@@ -1413,13 +1413,25 @@ trait Namers extends MethodSynthesis {
               case mt => (Nil, mt)
             }
 
-          @tailrec @inline def applyFully(tp: Type, paramss: List[List[Symbol]]): Type =
-            if (paramss.isEmpty) tp match {
-              case NullaryMethodType(rtpe) => rtpe
-              case MethodType(Nil, rtpe)   => rtpe
-              case tp                      => tp
-            }
-            else applyFully(tp.resultType(paramss.head.map(_.tpe)), paramss.tail)
+           @tailrec @inline def applyFully(tp: Type, paramss: List[List[Symbol]]): Type =
+             paramss match {
+               case ps :: rest =>
+                 val resTp =
+                   tp match {
+                     case MethodType(qs, SingleType(NoPrefix, sym)) if qs.contains(sym) =>
+                       val i = qs.indexWhere(_ == sym)
+                       singleType(NoPrefix, ps(i))
+                     case _ =>
+                       tp.resultType(ps.map(_.tpe))
+                   }
+                 applyFully(resTp, rest)
+               case _ =>
+                 tp match {
+                   case NullaryMethodType(rtpe) => rtpe
+                   case MethodType(Nil, rtpe)   => rtpe
+                   case tp                      => tp
+                 }
+             }
 
           if (inferResTp) {
             // scala/bug#7668 Substitute parameters from the parent method with those of the overriding method.
@@ -1430,8 +1442,10 @@ trait Namers extends MethodSynthesis {
             // this also prevents cycles in implicit search, see comment in scala/bug#10471
             meth setInfo deskolemizedPolySig(vparamSymss, overriddenResTp)
             overriddenResTp
-          } else resTpGiven
+          }
+          else resTpGiven
         }
+      //end resTpFromOverride
 
       // issue an error for missing parameter types
       // (computing resTpFromOverride may have required inferring some, meanwhile)

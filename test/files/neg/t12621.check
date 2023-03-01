@@ -1,0 +1,6 @@
+t12621.scala:9: error: type mismatch;
+ found   : StringBuilder
+ required: xb.type
+  override def f(xb: StringBuilder) = new StringBuilder
+                                      ^
+1 error

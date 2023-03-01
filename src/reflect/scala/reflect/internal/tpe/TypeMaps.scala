@@ -27,14 +27,11 @@ private[internal] trait TypeMaps {
   import definitions._
 
   /** Normalize any type aliases within this type (@see Type#normalize).
-    *  Note that this depends very much on the call to "normalize", not "dealias",
-    *  so it is no longer carries the too-stealthy name "deAlias".
-    */
+   */
   object normalizeAliases extends TypeMap {
     def apply(tp: Type): Type = (tp match {
-      case TypeRef(_, sym, _) if sym.isAliasType && tp.isHigherKinded => logResult(s"Normalized type alias function $tp")(tp.normalize)
-      case TypeRef(_, sym, _) if sym.isAliasType                      => tp.normalize
-      case tp                                                         => tp
+      case TypeRef(_, sym, _) if sym.isAliasType => logResultIf(s"Normalized type alias function $tp", (_: Type) => tp.isHigherKinded)(tp.normalize)
+      case tp                                    => tp
     }).mapOver(this)
   }
 
@@ -98,10 +95,8 @@ private[internal] trait TypeMaps {
     def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
-  // todo. move these into scala.reflect.api
-
   /** A prototype for mapping a function over all possible types
-    */
+   */
   abstract class TypeMap extends (Type => Type) {
     def apply(tp: Type): Type
 
@@ -314,7 +309,7 @@ private[internal] trait TypeMaps {
     */
 
   /** Used by existentialAbstraction.
-    */
+   */
   class ExistentialExtrapolation(tparams: List[Symbol]) extends VariancedTypeMap {
     private[this] val occurCount = mutable.HashMap[Symbol, Int]()
     private[this] val anyContains = new ContainsAnyKeyCollector(occurCount)
@@ -327,7 +322,8 @@ private[internal] trait TypeMaps {
       }
     }
     def extrapolate(tpe: Type): Type = {
-      tparams foreach (t => occurCount(t) = 0)
+      for (tparam <- tparams)
+        occurCount(tparam) = 0
       countOccs(tpe)
       for (tparam <- tparams)
         countOccs(tparam.info)
@@ -336,12 +332,12 @@ private[internal] trait TypeMaps {
     }
 
     /** If these conditions all hold:
-      *   1) we are in covariant (or contravariant) position
-      *   2) this type occurs exactly once in the existential scope
-      *   3) the widened upper (or lower) bound of this type contains no references to tparams
-      *  Then we replace this lone occurrence of the type with the widened upper (or lower) bound.
-      *  All other types pass through unchanged.
-      */
+     *   1) we are in covariant (or contravariant) position
+     *   2) this type occurs exactly once in the existential scope
+     *   3) the widened upper (or lower) bound of this type contains no references to tparams
+     *  Then we replace this lone occurrence of the type with the widened upper (or lower) bound.
+     *  All other types pass through unchanged.
+     */
     def apply(tp: Type): Type = {
       val tp1 = mapOver(tp)
       if (variance.isInvariant) tp1
@@ -352,7 +348,7 @@ private[internal] trait TypeMaps {
             val word = if (variance.isPositive) "upper" else "lower"
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
-          if (!repl.typeSymbol.isBottomClass && ! anyContains.collect(repl))
+          if (!repl.typeSymbol.isBottomClass && !anyContains.collect(repl))
             debuglogResult(msg)(repl)
           else
             tp1
@@ -918,7 +914,7 @@ private[internal] trait TypeMaps {
   }
 
   /** Note: This map is needed even for non-dependent method types, despite what the name might imply.
-    */
+   */
   class InstantiateDependentMap(params: List[Symbol], actuals0: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
     private[this] var _actuals: Array[Type] = _
     private[this] var _existentials: Array[Symbol] = _
@@ -946,37 +942,38 @@ private[internal] trait TypeMaps {
 
     private object StableArgTp {
       // type of actual arg corresponding to param -- if the type is stable
-      def unapply(param: Symbol): Option[Type] = (params indexOf param) match {
+      def unapply(param: Symbol): Option[Type] = params.indexOf(param) match {
         case -1  => None
         case pid =>
           val tp = actuals(pid)
-          if (tp.isStable && (tp.typeSymbol != NothingClass)) Some(tp)
+          if (tp.isStable && tp.typeSymbol != NothingClass) Some(tp)
           else None
       }
     }
 
     /** Return the type symbol for referencing a parameter that's instantiated to an unstable actual argument.
      *
-     * To soundly abstract over an unstable value (x: T) while retaining the most type information,
-     * use `x.type forSome { type x.type <: T with Singleton}`
-     * `typeOf[T].narrowExistentially(symbolOf[x])`.
+     *  To soundly abstract over an unstable value (x: T) while retaining the most type information,
+     *  use `x.type forSome { type x.type <: T with Singleton}`
+     *  `typeOf[T].narrowExistentially(symbolOf[x])`.
      *
-     * See also: captureThis in AsSeenFromMap.
+     *  See also: captureThis in AsSeenFromMap.
      */
-    private def existentialFor(pid: Int) = {
-      if (existentials(pid) eq null) {
-        val param = params(pid)
-        existentials(pid) = (
-          param.owner.newExistential(param.name.toTypeName append nme.SINGLETON_SUFFIX, param.pos, param.flags)
-            setInfo singletonBounds(actuals(pid))
-          )
+    private def existentialFor(pid: Int) =
+      existentials(pid) match {
+        case null =>
+          val param = params(pid)
+          val exst =
+            param.owner.newExistential(param.name.toTypeName.append(nme.SINGLETON_SUFFIX), param.pos, param.flags)
+              .setInfo(singletonBounds(actuals(pid)))
+          existentials(pid) = exst
+          exst
+        case exst => exst
       }
-      existentials(pid)
-    }
 
     private object UnstableArgTp {
       // existential quantifier and type of corresponding actual arg with unstable type
-      def unapply(param: Symbol): Option[(Symbol, Type)] = (params indexOf param) match {
+      def unapply(param: Symbol): Option[(Symbol, Type)] = params.indexOf(param) match {
         case -1  => None
         case pid =>
           val sym = existentialFor(pid)

@@ -2744,21 +2744,19 @@ trait Types
   }
 
   object TypeRef extends TypeRefExtractor {
-    def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
-      if (args ne Nil) {
+    def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique {
+      if (args ne Nil)
         if (sym.isAliasType)              new AliasArgsTypeRef(pre, sym, args)
         else if (sym.isAbstractType)      new AbstractArgsTypeRef(pre, sym, args)
         else                              new ClassArgsTypeRef(pre, sym, args)
-      }
-      else {
+      else
         if (sym.isAliasType)              new AliasNoArgsTypeRef(pre, sym)
         else if (sym.isAbstractType)      new AbstractNoArgsTypeRef(pre, sym)
         else if (sym.isRefinementClass)   new RefinementTypeRef(pre, sym)
         else if (sym.isPackageClass)      new PackageTypeRef(pre, sym)
         else if (sym.isModuleClass)       new ModuleTypeRef(pre, sym)
         else                              new ClassNoArgsTypeRef(pre, sym)
-      }
-    })
+    }
   }
 
   protected def defineNormalized(tr: TypeRef): Unit = {
@@ -2933,8 +2931,10 @@ trait Types
 
   object MethodType extends MethodTypeExtractor
 
-  // TODO: rename so it's more appropriate for the type that is for a method without argument lists
-  // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
+  /** A method with zero parameter lists.
+   *
+   *  As a clarifying convention, a method type with an empty parameter list is called "Nilary" where `paramss.head eq Nil`.
+   */
   case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
