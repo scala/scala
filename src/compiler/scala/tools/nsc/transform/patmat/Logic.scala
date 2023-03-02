@@ -15,6 +15,7 @@ package tools.nsc.transform.patmat
 
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
+import scala.collection.IterableOps
 import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.HashSet
 
@@ -113,24 +114,22 @@ trait Logic extends Debugging {
       def implications: List[(Sym, List[Sym], List[Sym])]
     }
 
+    // The error message of t7020 assumes the ops are ordered implicitly
+    // However, ListSet is slow (concatenate cost?), so use
+    // scala.collection.mutable.LinkedHashSet (which grantees "the order in which elements were inserted into the set")
+
     // would be nice to statically check whether a prop is equational or pure,
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
-    final case class And(ops: Set[Prop]) extends Prop
+    final case class And(ops: mutable.LinkedHashSet[Prop]) extends Prop
     object And {
       def apply(ps: Prop*)           = create(ps)
-      def create(ps: Iterable[Prop]) = ps match {
-        case ps: Set[Prop] => new And(ps)
-        case _             => new And(ps.to(scala.collection.immutable.ListSet))
-      }
+      def create(ps: Iterable[Prop]) = new And(ps.to(mutable.LinkedHashSet))
     }
 
-    final case class Or(ops: Set[Prop]) extends Prop
+    final case class Or(ops: mutable.LinkedHashSet[Prop]) extends Prop
     object Or {
       def apply(ps: Prop*)           = create(ps)
-      def create(ps: Iterable[Prop]) = ps match {
-        case ps: Set[Prop] => new Or(ps)
-        case _             => new Or(ps.to(scala.collection.immutable.ListSet))
-      }
+      def create(ps: Iterable[Prop]) = new Or(ps.to(mutable.LinkedHashSet))
     }
 
     final case class Not(a: Prop) extends Prop
@@ -197,7 +196,7 @@ trait Logic extends Debugging {
      */
     def simplify(f: Prop): Prop = {
 
-      def hasImpureAtom(ops0: collection.Iterable[Prop]): Boolean = {
+      def hasImpureAtom(ops0: Iterable[Prop]): Boolean = {
         // HOT method, imperative rewrite of:
         // ops.combinations(2).exists {
         //   case Seq(a, Not(b)) if a == b => true
@@ -247,7 +246,7 @@ trait Logic extends Debugging {
         }
       }
 
-      def mapConserve[A <: AnyRef](s: Set[A])(f: A => A): Set[A] = {
+      def mapConserve[CC[X] <: IterableOps[X, CC, CC[X]], A <: AnyRef](s: CC[A])(f: A => A): CC[A] = {
         var changed = false
         val s1 = s.map {a =>
           val a1 = f(a)
@@ -284,7 +283,7 @@ trait Logic extends Debugging {
              | (_: AtMostOne)   => p
       }
 
-      def simplifyAnd(ps: Set[Prop]): Prop = {
+      def simplifyAnd(ps: Iterable[Prop]): Prop = {
         // recurse for nested And (pulls all Ands up)
         // build up Set in order to remove duplicates
         val props = mutable.LinkedHashSet.empty[Prop]
@@ -300,7 +299,7 @@ trait Logic extends Debugging {
         else /\(props)
       }
 
-      def simplifyOr(ps: Set[Prop]): Prop = {
+      def simplifyOr(ps: Iterable[Prop]): Prop = {
         // recurse for nested Or (pulls all Ors up)
         // build up Set in order to remove duplicates
         val props = mutable.LinkedHashSet.empty[Prop]

@@ -166,7 +166,7 @@ trait Solving extends Logic {
           }
         }
 
-        def and(bv: Set[Lit]): Lit = {
+        def and(bv: collection.Set[Lit]): Lit = {
           if (bv.isEmpty) {
             // this case can actually happen because `removeVarEq` could add no constraints
             constTrue
@@ -178,14 +178,14 @@ trait Solving extends Logic {
             // op1 /\ op2 /\ ... /\ opx <==>
             // (o -> op1) /\ (o -> op2) ... (o -> opx) /\ (!op1 \/ !op2 \/... \/ !opx \/ o)
             // (!o \/ op1) /\ (!o \/ op2) ... (!o \/ opx) /\ (!op1 \/ !op2 \/... \/ !opx \/ o)
-            val new_bv = bv - constTrue // ignore `True`
+            val new_bv = bv.toSet - constTrue // ignore `True`
             val o = newLiteral() // auxiliary Tseitin variable
             new_bv.foreach(op => addClauseProcessed(clause(op, -o)))
             o
           }
         }
 
-        def or(bv: Set[Lit]): Lit = {
+        def or(bv: collection.Set[Lit]): Lit = {
           if (bv.isEmpty) {
             constFalse
           } else if (bv.size == 1) {
@@ -196,7 +196,7 @@ trait Solving extends Logic {
             // op1 \/ op2 \/ ... \/ opx <==>
             // (op1 -> o) /\ (op2 -> o) ... (opx -> o) /\ (op1 \/ op2 \/... \/ opx \/ !o)
             // (!op1 \/ o) /\ (!op2 \/ o) ... (!opx \/ o) /\ (op1 \/ op2 \/... \/ opx \/ !o)
-            val new_bv = bv - constFalse // ignore `False`
+            val new_bv = bv.toSet - constFalse // ignore `False`
             val o = newLiteral() // auxiliary Tseitin variable
             addClauseProcessed(new_bv + (-o))
             o
