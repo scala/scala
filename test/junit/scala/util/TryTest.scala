@@ -64,6 +64,7 @@ class TryTest {
     assertEquals(Failure(e), Failure[Int](e).map(_ => throw e2))
   }
 
+  @deprecated("ThreadDeath is deprecated on JDK 20", "")
   @Test def `map when there is a fatal exception`(): Unit = {
     val e3 = new ThreadDeath
     assertThrows[ThreadDeath] {
@@ -82,6 +83,7 @@ class TryTest {
     val e2 = new Exception
     assertEquals(Failure(e), Failure[Int](e).flatMap[Int](_ => throw e2))
   }
+  @deprecated("ThreadDeath is deprecated on JDK 20", "")
   @Test def `flatMap when there is a fatal exception`(): Unit = {
     val e3 = new ThreadDeath
     assertThrows[ThreadDeath] {

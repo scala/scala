@@ -135,6 +135,12 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   compileOrder := CompileOrder.JavaThenScala,
   projectFolder := thisProject.value.id, // overridden in configureAsSubproject
   Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
+  Compile / javacOptions ++= (
+    if (scala.util.Properties.isJavaAtLeast("20"))
+      Seq("-Xlint:-options")  // allow `-source 1.8` and `-target 1.8`
+    else
+      Seq()),
+  Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
   Compile / unmanagedJars := Seq.empty,  // no JARs in version control!
   Compile / sourceDirectory := baseDirectory.value,
   Compile / unmanagedSourceDirectories := List(baseDirectory.value),

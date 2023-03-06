@@ -9,7 +9,7 @@ import scala.concurrent.{
   Awaitable,
   blocking
 }
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.concurrent.duration._
 import scala.reflect.{classTag, ClassTag}
 import scala.tools.testkit.AssertUtil.{Fast, Slow, assertThrows, waitFor, waitForIt}
@@ -864,7 +864,8 @@ class Exceptions extends TestBase {
 
 class GlobalExecutionContext extends TestBase {
   import ExecutionContext.Implicits._
-  
+
+  @nowarn("cat=deprecation")  // Thread.getID is deprecated since JDK 19
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId

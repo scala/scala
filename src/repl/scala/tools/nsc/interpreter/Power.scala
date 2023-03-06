@@ -13,7 +13,7 @@
 package scala.tools.nsc.interpreter
 
 import java.io.InputStream
-import java.net.URL
+import java.net.{URI, URL}
 
 import scala.collection.mutable
 import scala.io.Codec
@@ -248,9 +248,9 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   class RichReplString(s: String) {
     // make an url out of the string
     def u: URL = (
-      if (s contains ":") new URL(s)
+      if (s contains ":") new URI(s).toURL
       else if (new java.io.File(s).exists) new java.io.File(s).toURI.toURL
-      else new URL("http://" + s)
+      else new URI("http://" + s).toURL
     )
   }
   class RichInputStream(in: InputStream)(implicit codec: Codec) {
