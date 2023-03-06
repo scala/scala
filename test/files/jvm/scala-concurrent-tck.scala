@@ -1,3 +1,5 @@
+// scalac: -deprecation
+
 import scala.concurrent.{
   Future,
   Promise,
@@ -12,8 +14,9 @@ import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.reflect.{ classTag, ClassTag }
 import scala.tools.partest.TestUtil.intercept
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
+@nowarn("cat=deprecation")
 trait TestBase {
   trait Done { def apply(proof: => Boolean): Unit }
   def once(body: Done => Unit) {
@@ -28,7 +31,7 @@ trait TestBase {
   }
 }
 
-
+@nowarn("cat=deprecation")
 trait FutureCallbacks extends TestBase {
   import ExecutionContext.Implicits._
 
@@ -123,6 +126,7 @@ trait FutureCallbacks extends TestBase {
 }
 
 
+@nowarn("cat=deprecation")
 trait FutureCombinators extends TestBase {
   import ExecutionContext.Implicits._
 
@@ -519,6 +523,7 @@ def testTransformFailure(): Unit = once {
 }
 
 
+@nowarn("cat=deprecation")
 trait FutureProjections extends TestBase {
   import ExecutionContext.Implicits._
 
@@ -700,6 +705,7 @@ trait BlockContexts extends TestBase {
   testPopCustom()
 }
 
+@nowarn("cat=deprecation")
 trait Promises extends TestBase {
   import ExecutionContext.Implicits._
 
@@ -739,6 +745,7 @@ trait Exceptions extends TestBase {
 trait GlobalExecutionContext extends TestBase {
   import ExecutionContext.Implicits._
   
+  @nowarn("cat=deprecation")  // Thread.getID is deprecated since JDK 19
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId
@@ -749,6 +756,7 @@ trait GlobalExecutionContext extends TestBase {
   testNameOfGlobalECThreads()
 }
 
+@nowarn("cat=deprecation")  // Thread.getID is deprecated since JDK 19
 trait CustomExecutionContext extends TestBase {
   import scala.concurrent.{ ExecutionContext, Awaitable }
 

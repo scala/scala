@@ -152,13 +152,5 @@ trait AllocationTest {
 case class AllocationExecution(executionCount: Int = 1000, warmupCount: Int = 1000)
 
 case class AllocationInfo[T](result: T, allocations: Array[Long]) {
-  def min: Long = {
-    var min = allocations(0)
-    var i = 1
-    while (i < allocations.length) {
-      min = Math.min(min, allocations(i))
-      i += i
-    }
-    min
-  }
+  def min = allocations.min
 }

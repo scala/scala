@@ -5,8 +5,7 @@ import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
 
-
-
+@annotation.nowarn("cat=deprecation")
 class FutureTests extends MinimalScalaTest {
 
   /* some utils */

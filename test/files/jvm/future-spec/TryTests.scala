@@ -5,6 +5,7 @@
 
 import scala.util.{Try,Success,Failure}
 
+@annotation.nowarn("cat=deprecation")
 class TryTests extends MinimalScalaTest {
   class MyException extends Exception
   val e = new Exception("this is an exception")
