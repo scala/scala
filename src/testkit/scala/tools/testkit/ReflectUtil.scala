@@ -42,6 +42,14 @@ object ReflectUtil {
           f.setAccessible(true)
       }
 
+  def getFinalFieldAccessible[T: ClassTag](n: String): Field =
+    classTag[T]
+      .runtimeClass.getDeclaredField(n)
+      .tap { f =>
+        if ((f.getModifiers & Modifier.PUBLIC) == 0)
+          f.setAccessible(true)
+      }
+
   // finds method with exact name or name$suffix but not name$default$suffix
   def getMethodAccessible[A: ClassTag](name: String): Method =
     implicitly[ClassTag[A]]
