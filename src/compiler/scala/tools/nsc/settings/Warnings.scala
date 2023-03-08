@@ -183,6 +183,7 @@ trait Warnings {
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits,nowarn.")
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
+    val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -207,6 +208,7 @@ trait Warnings {
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
   def lintDeprecation            = lint contains Deprecation
+  def lintIntDivToFloat          = lint contains IntDivToFloat
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")

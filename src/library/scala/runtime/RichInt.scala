@@ -31,6 +31,7 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   /** Returns `'''true'''` if this number has no decimal component.
     * Always `'''true'''` for `RichInt`.
     */
+  @deprecated("isWhole on an integer type is always true", "2.12.15")
   def isWhole() = true
 
   override def isValidInt   = true

@@ -845,10 +845,10 @@ abstract class TreeInfo {
   object Applied {
     def apply(tree: Tree): Applied = new Applied(tree)
 
-    def unapply(applied: Applied): Option[(Tree, List[Tree], List[List[Tree]])] =
+    def unapply(applied: Applied): Some[(Tree, List[Tree], List[List[Tree]])] =
       Some((applied.core, applied.targs, applied.argss))
 
-    def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])] =
+    def unapply(tree: Tree): Some[(Tree, List[Tree], List[List[Tree]])] =
       unapply(dissectApplied(tree))
   }
 
