@@ -1612,7 +1612,7 @@ trait Contexts { self: Analyzer =>
         val wasFoundInSuper = foundInSuper
         val foundCompetingSymbol: () => Boolean =
           if (foreignDefined) () => !foreignDefined
-          else () => !defSym.isTopLevel && !defSym.owner.isPackageObjectOrClass && !foundInSuper && !foreignDefined
+          else () => !defSym.owner.isPackageObjectOrClass && !foundInSuper && !foreignDefined
         while ((cx ne NoContext) && cx.depth >= symbolDepth) cx = cx.outer
         if (wasFoundInSuper)
           while ((cx ne NoContext) && (cx.owner eq cx0.owner)) cx = cx.outer

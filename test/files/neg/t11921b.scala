@@ -62,7 +62,7 @@ class C {
   val global = 42
 }
 object D extends C {
-  println(global)    // OK, since global is defined in package (https://github.com/scala/scala/pull/10220/files#r1109773904)
+  println(global)    // error
 }
 
 object test5 {
@@ -134,5 +134,12 @@ object test10 {
     def t(implicit i: Int) = 10
     def u = t // doesn't compile in Scala 2 (maybe there's a ticket for that)
     def v = t(lo) // error
+  }
+}
+
+package scala {
+  trait P { trait Option[+A] }
+  class C extends P {
+    def t = new Option[String] {} // OK, competing scala.Option is not defined in the same compilation unit
   }
 }

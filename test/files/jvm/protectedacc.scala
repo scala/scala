@@ -47,7 +47,7 @@ package p {
     abstract class PolyA[a] {
       protected def m(x: a): Unit;
 
-      class B {
+      class BB {
 
         trait Node {
           def s: String = "";
@@ -134,7 +134,7 @@ package p {
 
     abstract class X[T] extends PolyA[T] {
 
-      trait Inner extends B {
+      trait Inner extends BB {
         def self: T;
         def self2: Node;
         def getB: Inner;
