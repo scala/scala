@@ -107,7 +107,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-#partest !java18
+#partest !java18+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $PrivateJavaClass
 isPrivate = false
 isProtected = false
@@ -133,7 +133,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-#partest !java18
+#partest !java18+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $ProtectedJavaClass
 isPrivate = false
 isProtected = false
@@ -159,7 +159,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-#partest !java18
+#partest !java18+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $PublicJavaClass
 isPrivate = false
 isProtected = false

@@ -45,7 +45,7 @@ class FloatBoxingTest extends SideEffectTest with AllocationTest {
     assertEquals(57, nonAllocating(value.byteValue()))
   }
   @Test def str(): Unit = {
-    val cost = allocationInfo(java.lang.Double.toString(value))
+    val cost = allocationInfo(java.lang.Float.toString(value))
     assertEquals("12345.0", exactAllocates(cost.min)(value.toString()))
   }
   @Test def hash1(): Unit = {

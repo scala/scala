@@ -15,7 +15,7 @@ package scala.tools.nsc.classpath
 import scala.tools.nsc.util.ClassRepresentation
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import FileUtils._
-import java.net.URL
+import java.net.{URI, URL}
 
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.util.ClassPath
@@ -35,7 +35,7 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
   def isPackage(f: AbstractFile): Boolean = f.isPackage
 
   // mimic the behavior of the old nsc.util.DirectoryClassPath
-  def asURLs: Seq[URL] = Seq(new URL("file://_VIRTUAL_/" + dir.name))
+  def asURLs: Seq[URL] = Seq(new URI("file://_VIRTUAL_/" + dir.name).toURL)
   def asClassPathStrings: Seq[String] = Seq(dir.path)
   override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
 

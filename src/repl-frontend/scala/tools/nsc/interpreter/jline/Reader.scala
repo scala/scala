@@ -21,7 +21,7 @@ import org.jline.reader.impl.{CompletionMatcherImpl, DefaultParser, LineReaderIm
 import org.jline.terminal.Terminal
 
 import java.io.{ByteArrayInputStream, File}
-import java.net.{MalformedURLException, URL}
+import java.net.{MalformedURLException, URI, URL}
 import java.util.{List => JList}
 import scala.io.Source
 import scala.reflect.internal.Chars
@@ -80,7 +80,7 @@ object Reader {
       sys.props
          .get("jline.inputrc")
          .flatMap { path =>
-           try Some(new URL(path))
+           try Some(new URI(path).toURL)
            catch {
              case _: MalformedURLException =>
                Some(new File(path).toURI.toURL)

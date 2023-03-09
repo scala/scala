@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-import java.net.URL
+import java.net.URI
 
 import scala.tools.nsc.ScalaDocReporter
 import scala.tools.nsc.doc.Universe
@@ -26,14 +26,14 @@ object Test extends ScaladocModelTest {
 
   override def model: Option[Universe] = newDocFactory.makeUniverse(Left(List(resourceFile)))
 
-  def scaladocSettings = "-doc-source-url file:€{FILE_PATH}||€{FILE_EXT}||€{FILE_PATH_EXT}||€{FILE_LINE}"
+  def scaladocSettings = "-doc-source-url file:€{FILE_PATH}@@€{FILE_EXT}@@€{FILE_PATH_EXT}@@€{FILE_LINE}"
 
   def testModel(rootPackage: Package) = {
     import access._
 
     val clazz = rootPackage._class("WithSource")
 
-    val expect = s"file:test/scaladoc/resources/doc-source-url||.java||test/scaladoc/resources/doc-source-url.java||13"
-    assert(clazz.sourceUrl.contains(new URL(expect)), s"got ${clazz.sourceUrl}")
+    val expect = s"file:test/scaladoc/resources/doc-source-url@@.java@@test/scaladoc/resources/doc-source-url.java@@13"
+    assert(clazz.sourceUrl.contains(new URI(expect).toURL), s"got ${clazz.sourceUrl}")
   }
 }

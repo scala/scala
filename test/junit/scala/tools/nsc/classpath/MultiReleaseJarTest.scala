@@ -64,7 +64,8 @@ class MultiReleaseJarTest extends BytecodeTesting {
     }
     try {
       Assert.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "8"))
-      Assert.assertFalse(lookup("java.lang.invoke.LambdaMetafactory", "7"))
+      if (!Properties.isJavaAtLeast("20"))
+        Assert.assertFalse(lookup("java.lang.invoke.LambdaMetafactory", "7"))
       Assert.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "9"))
     } finally {
       cleanup.close()
