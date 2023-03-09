@@ -107,12 +107,14 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
+#partest !java20+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $PrivateJavaClass
 isPrivate = false
 isProtected = false
 isPublic = false
 privateWithin = package foo
 ============
+#partest
 sym = class $PrivateJavaClass, signature = JavaClass_1.this.$PrivateJavaClass.type, owner = class JavaClass_1
 isPrivate = true
 isProtected = false
@@ -131,12 +133,14 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
+#partest !java20+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $ProtectedJavaClass
 isPrivate = false
 isProtected = false
 isPublic = false
 privateWithin = package foo
 ============
+#partest
 sym = class $ProtectedJavaClass, signature = JavaClass_1.this.$ProtectedJavaClass.type, owner = class JavaClass_1
 isPrivate = false
 isProtected = false
@@ -155,12 +159,14 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
+#partest !java20+
 sym = value this$0, signature = foo.JavaClass_1, owner = class $PublicJavaClass
 isPrivate = false
 isProtected = false
 isPublic = false
 privateWithin = package foo
 ============
+#partest
 sym = class $PublicJavaClass, signature = JavaClass_1.this.$PublicJavaClass.type, owner = class JavaClass_1
 isPrivate = false
 isProtected = false

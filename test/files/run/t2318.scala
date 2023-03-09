@@ -22,14 +22,15 @@ object Test {
   }
 
   def t1() = {
-    val p = Runtime.getRuntime().exec("ls");
+    val p = Runtime.getRuntime().exec(Array("ls"));
     type Destroyable = { def destroy() : Unit }
     def doDestroy( obj : Destroyable ) : Unit = obj.destroy();
     doDestroy( p );
   }
   @deprecated
   def t2() = {
-    System.setSecurityManager(Mgr)
+    if (!scala.util.Properties.isJavaAtLeast("18"))
+      System.setSecurityManager(Mgr)
 
     val b = new Bar { def bar = println("bar") }
     b.bar

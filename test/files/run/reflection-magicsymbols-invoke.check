@@ -51,6 +51,9 @@ method notify: ()Unit
 method notifyAll: ()Unit
 method synchronized: [T0](x$1: T0)T0
 method toString: ()String
+#partest java20+
+method wait0: (x$1: Long)Unit
+#partest
 method wait: ()Unit
 method wait: (x$1: Long)Unit
 method wait: (x$1: Long, x$2: Int)Unit

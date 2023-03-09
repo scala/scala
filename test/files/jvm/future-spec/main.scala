@@ -1,5 +1,4 @@
-
-
+// scalac: -deprecation
 
 import scala.collection._
 import scala.concurrent._

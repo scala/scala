@@ -1,6 +1,3 @@
-
-
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration.Inf
@@ -8,7 +5,7 @@ import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
 
-
+@annotation.nowarn("cat=deprecation")
 class PromiseTests extends MinimalScalaTest {
   import ExecutionContext.Implicits._
 

@@ -18,6 +18,12 @@ Macros_Test_2.scala:7: error: macro defs must have explicitly specified return t
 Macros_Test_2.scala:15: error: exception during macro expansion:
 java.lang.NullPointerException
 	at Impls$.foo3(Impls_1.scala:8)
+#partest java20+
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:578)
+	at scala.reflect.macros.runtime.JavaReflectionRuntimes$JavaReflectionResolvers.$anonfun$resolveJavaReflectionRuntime$6(JavaReflectionRuntimes.scala:51)
+	at scala.tools.nsc.typechecker.Macros.macroExpandWithRuntime(Macros.scala:849)
+#partest
 
   foo3
   ^
