@@ -46,15 +46,18 @@
 **/.cache
 /.idea
 /.settings
+metals.sbt
 
 # Standard symbolic link to build/quick/bin
 /qbin
 
 # sbt's target directories
-/target/
-/project/target/
-/project/project/target/
-/project/project/project/target/
+target/
 /build-sbt/
 local.sbt
 jitwatch.out
+
+# metals
+.metals/
+.bloop/
+.bsp/
