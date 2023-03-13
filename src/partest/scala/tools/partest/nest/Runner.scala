@@ -365,7 +365,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
     val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
     def canonicalize: String => String = {
-      val hiders = toolArgs("hide", split = false).map(_.r)
+      val hiders = toolArgs(ToolName.hide).map(_.r)
       (s: String) => {
         val pathless = pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m.group(1))))
         if (hiders.isEmpty) pathless
