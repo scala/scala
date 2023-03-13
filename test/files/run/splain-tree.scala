@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -Vimplicits -Vimplicits-verbose-tree"
+  override def extraSettings: String = "-usejavacp -Vimplicits"
 
   def code: String = ""
 
@@ -39,9 +39,12 @@ object Tree
 
   def show(): Unit = {
     val global = newCompiler()
+    val globalVerbose = newCompiler("-Vimplicits-verbose-tree")
 
-    def run(code: String): Unit =
+    def run(code: String): Unit = {
+      compileString(globalVerbose)(code.trim)
       compileString(global)(code.trim)
+    }
 
     run(verboseTree)
   }
