@@ -286,7 +286,7 @@ trait Infer extends Checkable {
         ErrorUtils.issueTypeError(error)(context)
         ErrorType
       }
-      def accessible = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super])) match {
+      def accessible = sym.filter(context.isAccessible(_, pre, site.isInstanceOf[Super])) match {
         case NoSymbol if sym.isJavaDefined && context.unit.isJava => sym  // don't try to second guess Java; see #4402
         case sym1                                                 => sym1
       }
