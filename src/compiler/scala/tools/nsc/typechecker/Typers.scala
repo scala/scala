@@ -734,24 +734,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false): Boolean =
       isPastTyper || {
-        val nestedOwners =
-          featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
-        val featureName = nestedOwners.map(s => s"${s.name}.").mkString + featureTrait.name
-        def action(): Boolean = {
-          def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
-          def hasOption = settings.language.contains(featureName)
-          hasOption || hasImport || {
-            val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
-              featureTrait.getAnnotation(LanguageFeatureAnnot): @unchecked
-            context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
-            false
-          }
+        val featureName = {
+          val nestedOwners = featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
+          nestedOwners.map(s => s"${s.name}.").mkString + featureTrait.name
         }
-        if (immediate) {
-          action()
-        } else {
-          unit.addPostUnitCheck(() => action())
-          true
+        settings.language.contains(featureName) || {
+          def action(): Boolean = {
+            if (!immediate)
+              debuglog(s"deferred check of feature $featureTrait")
+            def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
+            hasImport || {
+              val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
+                featureTrait.getAnnotation(LanguageFeatureAnnot): @unchecked
+              context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
+              false
+            }
+          }
+          if (immediate) action()
+          else { unit.addPostUnitCheck(() => action()); true }
         }
       }
 
