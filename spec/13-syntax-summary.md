@@ -144,7 +144,7 @@ grammar:
                       |  ‘:’ Annotation {Annotation}
                       |  ‘:’ ‘_’ ‘*’
 
-  Expr              ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
+  Expr              ::=  (Bindings | [‘implicit’] (id | ‘_’)) ‘=>’ Expr
                       |  Expr1
   Expr1             ::=  ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] ‘else’ Expr]
                       |  ‘while’ ‘(’ Expr ‘)’ {nl} Expr
@@ -188,7 +188,7 @@ grammar:
                       |  Expr1
                       |
   ResultExpr        ::=  Expr1
-                      |  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
+                      |  (Bindings | [‘implicit’] (id | ‘_’) [‘:’ CompoundType]) ‘=>’ Block
 
   Enumerators       ::=  Generator {semi Generator}
   Generator         ::=  [‘case’] Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}

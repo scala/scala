@@ -477,7 +477,7 @@ self =>
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
 
-    /** The implicit parameters introduced by `_` in the current expression.
+    /** The parameters introduced by `_` "placeholder syntax" in the current expression.
      *  Parameters appear in reverse order.
      */
     var placeholderParams: List[ValDef] = Nil
@@ -529,8 +529,8 @@ self =>
 
     @tailrec
     final def isWildcard(t: Tree): Boolean = t match {
-      case Ident(name1) => !placeholderParams.isEmpty && name1 == placeholderParams.head.name
-      case Typed(t1, _) => isWildcard(t1)
+      case Ident(name1)     => !placeholderParams.isEmpty && name1 == placeholderParams.head.name
+      case Typed(t1, _)     => isWildcard(t1)
       case Annotated(t1, _) => isWildcard(t1)
       case _ => false
     }
@@ -784,7 +784,7 @@ self =>
     /** Convert tree to formal parameter. */
     def convertToParam(tree: Tree): ValDef = atPos(tree.pos) {
       def removeAsPlaceholder(name: Name): Unit = {
-        placeholderParams = placeholderParams filter (_.name != name)
+        placeholderParams = placeholderParams.filter(_.name != name)
       }
       def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
       def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
@@ -1711,54 +1711,52 @@ self =>
       case IMPLICIT =>
         implicitClosure(in.skipToken(), location)
       case _ =>
-        def parseOther = {
+        def parseOther: Tree = {
           var t = postfixExpr()
-          if (in.token == EQUALS) {
-            t match {
-              case Ident(_) | Select(_, _) | Apply(_, _) =>
-                t = atPos(t.pos.start, in.skipToken()) { gen.mkAssign(t, expr()) }
-              case _ =>
-            }
-          } else if (in.token == COLON) {
-            t = stripParens(t)
-            val colonPos = in.skipToken()
-            if (in.token == USCORE) {
-              //todo: need to handle case where USCORE is a wildcard in a type
-              val uscorePos = in.skipToken()
-              if (isIdent && in.name == nme.STAR) {
-                in.nextToken()
-                t = atPos(t.pos.start, colonPos) {
-                  Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
-                }
-              } else {
-                syntaxErrorOrIncomplete("`*` expected", skipIt = true)
+          in.token match {
+            case EQUALS =>
+              t match {
+                case Ident(_) | Select(_, _) | Apply(_, _) =>
+                  t = atPos(t.pos.start, in.skipToken()) { gen.mkAssign(t, expr()) }
+                case _ =>
               }
-            } else if (isAnnotation) {
-              t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
-            } else {
-              t = atPos(t.pos.start, colonPos) {
-                val tpt = typeOrInfixType(location)
-                if (isWildcard(t))
-                  (placeholderParams: @unchecked) match {
-                    case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                      placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+            case COLON =>
+              t = stripParens(t)
+              val colonPos = in.skipToken()
+              if (in.token == USCORE) {
+                //todo: need to handle case where USCORE is a wildcard in a type
+                val uscorePos = in.skipToken()
+                if (isIdent && in.name == nme.STAR) {
+                  in.nextToken()
+                  t = atPos(t.pos.start, colonPos) {
+                    Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                   }
-                // this does not correspond to syntax, but is necessary to
-                // accept closures. We might restrict closures to be between {...} only.
-                Typed(t, tpt)
+                }
+                else syntaxErrorOrIncomplete("`*` expected", skipIt = true)
               }
-            }
-          } else if (in.token == MATCH) {
-            t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+              else if (isAnnotation)
+                t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
+              else
+                t = atPos(t.pos.start, colonPos) {
+                  val tpt = typeOrInfixType(location)
+                  // for placeholder syntax `(_: Int) + 1`; function literal `(_: Int) => 42` uses `t` below
+                  if (isWildcard(t))
+                    (placeholderParams: @unchecked) match {
+                      case (vd @ ValDef(mods, name, _, _)) :: rest =>
+                        placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                    }
+                  // this does not correspond to syntax, but is necessary to accept closures. See below & convertToParam.
+                  Typed(t, tpt)
+                }
+            case MATCH =>
+              t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+            case _ =>
           }
           // disambiguate between self types "x: Int =>" and orphan function literals "(x: Int) => ???"
           // "(this: Int) =>" is parsed as an erroneous function literal but emits special guidance on
           // what's probably intended.
           def lhsIsTypedParamList() = t match {
-            case Parens(List(Typed(This(_), _))) => {
-              reporter.error(t.pos, "self-type annotation may not be in parentheses")
-              false
-            }
+            case Parens(List(Typed(This(_), _))) => reporter.error(t.pos, "self-type annotation may not be in parentheses"); false
             case Parens(xs)                      => xs.forall(isTypedParam)
             case _                               => false
           }
@@ -1779,15 +1777,15 @@ self =>
      *  Expr ::= implicit Id `=>` Expr
      *  }}}
      */
-
     def implicitClosure(start: Offset, location: Location): Tree = {
       val param0 = convertToParam {
         atPos(in.offset) {
-          Ident(ident()) match {
-            case expr if in.token == COLON  =>
-              in.nextToken() ; Typed(expr, typeOrInfixType(location))
-            case expr => expr
+          val p = stripParens(postfixExpr())  //if (in.token == USCORE) freshPlaceholder() else Ident(ident())
+          if (in.token == COLON) {
+            in.nextToken()
+            Typed(p, typeOrInfixType(location))
           }
+          else p
         }
       }
       val param = copyValDef(param0)(mods = param0.mods | Flags.IMPLICIT)
@@ -3507,7 +3505,7 @@ self =>
         else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
             val start = in.skipToken()
-            if (isIdent) stats += implicitClosure(start, InBlock)
+            if (isIdent || in.token == USCORE) stats += implicitClosure(start, InBlock)
             else stats ++= localDef(Flags.IMPLICIT)
           } else {
             stats ++= localDef(0)

@@ -1182,8 +1182,8 @@ for  `try { try { ´b´ } catch ´e_1´ } finally ´e_2´`.
 ## Anonymous Functions
 
 ```ebnf
-Expr            ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
-ResultExpr      ::=  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
+Expr            ::=  (Bindings | [‘implicit’] (id | ‘_’)) ‘=>’ Expr
+ResultExpr      ::=  (Bindings | [‘implicit’] (id | ‘_’) [‘:’ CompoundType]) ‘=>’ Block
 Bindings        ::=  ‘(’ Binding {‘,’ Binding} ‘)’
 Binding         ::=  (id | ‘_’) [‘:’ Type]
 ```
