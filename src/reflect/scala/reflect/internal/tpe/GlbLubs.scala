@@ -198,29 +198,34 @@ private[internal] trait GlbLubs {
 
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
   private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
-    def loop(ts: List[Type]): List[Type] = ts match {
-      case t :: ts1 =>
-        val ts2 = loop(ts1.filterNot(po(_, t)))
-        if (ts2.exists(po(t, _))) ts2 else t :: ts2
-      case Nil => Nil
+    @tailrec
+    def loop(remaining: List[Type], hs: List[Type]): List[Type] = remaining match {
+      case h :: rest =>
+        loop(rest.filterNot(po(_, h)), h :: hs)
+      case _ =>
+        def sieve(res: List[Type], todo: List[Type]): List[Type] = todo match {
+          case h :: tail =>
+            val res1 = if (res.exists(po(h, _))) res else h :: res
+            sieve(res1, tail)
+          case _ => res
+        }
+        sieve(Nil, hs)
     }
 
     // The order here matters because type variables and
     // wildcards can act both as subtypes and supertypes.
-    val (ts2, ts1) = partitionConserve(ts) { tp =>
-      isWildCardOrNonGroundTypeVarCollector.collect(tp).isDefined
-    }
+    val (wilds, ts1) = partitionConserve(ts)(isWildCardOrNonGroundTypeVarCollector.collect(_).isDefined)
 
-    loop(ts1 ::: ts2)
+    loop(ts1 ::: wilds, Nil)
   }
 
   /** Eliminate from list of types all elements which are a supertype
-    *  of some other element of the list. */
+   *  of some other element of the list. */
   private def elimSuper(ts: List[Type]): List[Type] =
     maxTypes(ts)((t1, t2) => t2 <:< t1)
 
   /** Eliminate from list of types all elements which are a subtype
-    *  of some other element of the list. */
+   *  of some other element of the list. */
   @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
     val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
     if (ts1.lengthCompare(1) <= 0) ts1 else {
