@@ -15,7 +15,7 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.mutable
+import scala.collection.mutable, mutable.ListBuffer
 import scala.annotation.tailrec
 import Variance._
 
@@ -101,20 +101,20 @@ private[internal] trait GlbLubs {
 
     def headOf(ix: Int) = baseTypeSeqs(ix).rawElem(ices(ix))
 
-    val pretypes: mutable.ListBuffer[Type] = mutable.ListBuffer.empty[Type]
+    val pretypes: ListBuffer[Type] = ListBuffer.empty[Type]
 
     var isFinished = false
-    while (! isFinished && ices(0) < baseTypeSeqs(0).length){
+    while (!isFinished && ices(0) < baseTypeSeqs(0).length) {
       lubListDepth = lubListDepth.incr
       // Step 1: run through the List with these variables:
       // 1) Is there any empty list? Are they equal or are we taking the smallest?
       // isFinished: tsBts.exists(typeListIsEmpty)
       // Is the frontier made up of types with the same symbol?
-      var isUniformFrontier =  true
+      var isUniformFrontier = true
       var sym = headOf(0).typeSymbol
       // var tsYs = tsBts
       var ix = 0
-      while (! isFinished && ix < baseTypeSeqs.length){
+      while (!isFinished && ix < baseTypeSeqs.length) {
         if (ices(ix) == baseTypeSeqs(ix).length)
           isFinished = true
         else {
@@ -130,7 +130,7 @@ private[internal] trait GlbLubs {
       // the invariant holds, i.e., the one that conveys most information regarding subtyping. Before
       // merging, strip targs that refer to bound tparams (when we're computing the lub of type
       // constructors.) Also filter out all types that are a subtype of some other type.
-      if (! isFinished){
+      if (!isFinished) {
         // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
         // Invariant: all symbols "under" (closer to the first row) the frontier
         // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
@@ -145,7 +145,7 @@ private[internal] trait GlbLubs {
         }
 
         if (isUniformFrontier) {
-          val ts1   = elimSub(ts0, depth) map elimHigherOrderTypeParam
+          val ts1 = elimSub(ts0, depth).map(elimHigherOrderTypeParam)
           mergePrefixAndArgs(ts1, Covariant, depth) match {
             case NoType =>
             case tp => pretypes += tp
@@ -165,11 +165,12 @@ private[internal] trait GlbLubs {
             jx += 1
           }
           if (printLubs) {
-            val str = baseTypeSeqs.zipWithIndex.map({ case (tps, idx) =>
-              tps.toList.drop(ices(idx)).map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
-            }).mkString("")
-
-            println("Frontier(\n" + str + ")")
+            println {
+              baseTypeSeqs.zipWithIndex.map { case (tps, idx) =>
+                tps.toList.drop(ices(idx)).map("        " + _).mkString("   (" + idx + ")\n", "\n", "\n")
+              }
+              .mkString("Frontier(\n", "", ")")
+            }
             printLubMatrixAux(lubListDepth)
           }
         }
@@ -198,41 +199,57 @@ private[internal] trait GlbLubs {
 
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
   private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
+    def stacked(ts: List[Type]): List[Type] = ts match {
+      case t :: ts1 =>
+        val ts2 = stacked(ts1.filterNot(po(_, t)))
+        if (ts2.exists(po(t, _))) ts2 else t :: ts2
+      case Nil => Nil
+    }
+
+    // loop thru tails, filtering for survivors of po test with the current element, which is saved for later culling
     @tailrec
-    def loop(remaining: List[Type], hs: List[Type]): List[Type] = remaining match {
+    def loop(survivors: List[Type], toCull: List[Type]): List[Type] = survivors match {
       case h :: rest =>
-        loop(rest.filterNot(po(_, h)), h :: hs)
+        loop(rest.filterNot(po(_, h)), h :: toCull)
       case _ =>
-        def sieve(res: List[Type], todo: List[Type]): List[Type] = todo match {
+        // unwind the stack of saved elements, accumulating a result containing elements surviving po (in swapped order)
+        def sieve(res: List[Type], remaining: List[Type]): List[Type] = remaining match {
           case h :: tail =>
             val res1 = if (res.exists(po(h, _))) res else h :: res
             sieve(res1, tail)
           case _ => res
         }
-        sieve(Nil, hs)
+        toCull match {
+          case _ :: Nil => toCull
+          case _ => sieve(Nil, toCull)
+        }
     }
 
-    // The order here matters because type variables and
-    // wildcards can act both as subtypes and supertypes.
-    val (wilds, ts1) = partitionConserve(ts)(isWildCardOrNonGroundTypeVarCollector.collect(_).isDefined)
-
-    loop(ts1 ::: wilds, Nil)
+    // The order here matters because type variables and wildcards can act both as subtypes and supertypes.
+    val sorted = {
+      val (wilds, ts1) = partitionConserve(ts)(isWildCardOrNonGroundTypeVarCollector.collect(_).isDefined)
+      ts1 ::: wilds
+    }
+    if (sorted.lengthCompare(5) > 0) loop(sorted, Nil)
+    else stacked(sorted)
   }
 
   /** Eliminate from list of types all elements which are a supertype
    *  of some other element of the list. */
   private def elimSuper(ts: List[Type]): List[Type] =
-    maxTypes(ts)((t1, t2) => t2 <:< t1)
+    if (ts.lengthCompare(1) <= 0) ts
+    else maxTypes(ts)((t1, t2) => t2 <:< t1)
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
-  @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
-    val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
-    if (ts1.lengthCompare(1) <= 0) ts1 else {
-      val ts2 = ts1.mapConserve(t => elimAnonymousClass(t.dealiasWiden))
-      if (ts1 eq ts2) ts1 else elimSub(ts2, depth)
+  @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] =
+    if (ts.lengthCompare(1) <= 0) ts else {
+      val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
+      if (ts1.lengthCompare(1) <= 0) ts1 else {
+        val ts2 = ts1.mapConserve(t => elimAnonymousClass(t.dealiasWiden))
+        if (ts1 eq ts2) ts1 else elimSub(ts2, depth)
+      }
     }
-  }
 
   /** Does this set of types have the same weak lub as
    *  it does regular lub? This is exposed so lub callers
@@ -496,7 +513,7 @@ private[internal] trait GlbLubs {
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
         val glbOwner = commonOwner(ts)
         val ts1 = {
-          val res = mutable.ListBuffer.empty[Type]
+          val res = ListBuffer.empty[Type]
           def loop(ty: Type): Unit = ty match {
             case RefinedType(ps, _) => ps.foreach(loop)
             case _ => res += ty
@@ -513,7 +530,7 @@ private[internal] trait GlbLubs {
             def glbsym(proto: Symbol): Symbol = {
               val prototp = glbThisType.memberInfo(proto)
               val symtypes: List[Type] = {
-                val res = mutable.ListBuffer.empty[Type]
+                val res = ListBuffer.empty[Type]
                 ts foreach { t =>
                   t.nonPrivateMember(proto.name).alternatives foreach { alt =>
                     val mi = glbThisType.memberInfo(alt)
