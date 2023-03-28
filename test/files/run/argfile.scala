@@ -23,7 +23,8 @@ object Test extends DirectTest {
   }
   def code =
     sm"""
-    |@annotation.nowarn
+    |import annotation.*
+    |@nowarn
     |final class C {
     |  def f: Int = "42".toInt
     |}

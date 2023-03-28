@@ -1492,7 +1492,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     private def printArgs(sources: List[SourceFile]): Unit =
       settings.printArgs.valueSetByUser foreach { value =>
-        val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString())).mkString("", "\n", "\n")
+        def quote(s: String) = if (s.charAt(0) != '"' && s.contains(' ')) "\"" + s + "\"" else s
+        val allArgs = settings.recreateArgs ::: sources.map(_.file.absolute.toString())
+        val argsFile = allArgs.map(quote).mkString("", "\n", "\n")
         value match {
           case "-" =>
             reporter.echo(argsFile)
