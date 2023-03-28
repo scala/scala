@@ -741,9 +741,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         settings.language.contains(featureName) || {
           def action(): Boolean = {
             if (!immediate)
-              debuglog(s"deferred check of feature $featureTrait")
-            def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
-            hasImport || {
+            debuglog(s"deferred check of feature $featureTrait")
+          def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
+           hasImport || {
               val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
                 featureTrait.getAnnotation(LanguageFeatureAnnot): @unchecked
               context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
@@ -3225,20 +3225,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedRefinement(templ: Template): Unit = {
       val stats = templ.body
-      namer.enterSyms(stats)
+      if (!stats.isEmpty) {
+        namer.enterSyms(stats)
 
-      // need to delay rest of typedRefinement to avoid cyclic reference errors
-      unit.addPostUnitCheck(() => {
-        val stats1 = typedStats(stats, NoSymbol)
-        // this code kicks in only after typer, so `stats` will never be filled in time
-        // as a result, most of compound type trees with non-empty stats will fail to reify
-        // todo. investigate whether something can be done about this
-        val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
-        templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
-        templ updateAttachment att.copy(stats = stats1)
-        for (stat <- stats1 if stat.isDef && stat.symbol.isOverridingSymbol)
-          stat.symbol setFlag OVERRIDE
-      })
+        // need to delay rest of typedRefinement to avoid cyclic reference errors
+        debuglog(s"deferred typed refinement")
+        unit.addPostUnitCheck { () =>
+          val stats1 = typedStats(stats, NoSymbol)
+          // this code kicks in only after typer, so `stats` will never be filled in time
+          // as a result, most of compound type trees with non-empty stats will fail to reify
+          // todo. investigate whether something can be done about this
+          val att = templ.attachments.get[CompoundTypeTreeOriginalAttachment].getOrElse(CompoundTypeTreeOriginalAttachment(Nil, Nil))
+          templ.removeAttachment[CompoundTypeTreeOriginalAttachment]
+          templ updateAttachment att.copy(stats = stats1)
+          for (stat <- stats1 if stat.isDef && stat.symbol.isOverridingSymbol)
+            stat.symbol setFlag OVERRIDE
+        }
+      }
     }
 
     def typedImport(imp : Import): Import = transformed.remove(imp) match {
