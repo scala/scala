@@ -21,7 +21,6 @@ import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.util.ClassPath
-import scala.util.Properties.isJavaAtLeast
 import PartialFunction.condOpt
 
 // Loosely based on the draft specification at:
@@ -258,10 +257,9 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
 
     // Assemble the elements!
     def basis = List[Iterable[ClassPath]](
-      if (!settings.javabootclasspath.isSetByUser && isJavaAtLeast(9))
-        jrt                                         // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
-      else
-        classesInPath(javaBootClassPath),           // 1. The Java bootstrap class path.
+      jrt                                           // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
+        .filter(_ => !settings.javabootclasspath.isSetByUser), // respect explicit `-javabootclasspath rt.jar`
+      classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
       classesInPath(scalaBootClassPath),            // 4. The Scala boot class path.
