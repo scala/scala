@@ -4711,15 +4711,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ => EmptyTree
           }
 
-        if (treeInfo.mayBeVarGetter(varsym)) {
-          val res = setterRewrite
-          if (!res.isEmpty) return res
-        }
+        val rewritten =
+          if (treeInfo.mayBeVarGetter(varsym)) setterRewrite
+          else EmptyTree
 
-//      if (varsym.isVariable ||
-//        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
-//        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
-        if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
+        if (!rewritten.isEmpty) rewritten
+        else if (varsym.isVariable || varsym.isValue && phase.assignsFields) {
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(context, rhs1)) setType UnitTpe
         }
