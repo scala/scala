@@ -18,4 +18,10 @@ final class UnusedTest {
     "": Unit                   // nowarn
     s.subtractOne("")          // nowarn
   }
+
+  def f(implicit x: Int): Boolean = x % 2 == 1
+
+  implicit def i: Int = 42
+
+  def u: Unit = f: Unit       // nowarn
 }
