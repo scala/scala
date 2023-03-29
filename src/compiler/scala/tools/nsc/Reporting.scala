@@ -204,7 +204,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
       val version = origin.deprecationVersion.getOrElse("")
       val since   = if (version.isEmpty) version else s" (since $version)"
-      val message = origin.deprecationMessage.map(": " + _).getOrElse("")
+      val message = origin.deprecationMessage.filter(!_.isEmpty).map(": " + _).getOrElse("")
       deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
     }
 
