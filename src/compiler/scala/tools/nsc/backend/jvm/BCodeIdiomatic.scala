@@ -236,9 +236,11 @@ abstract class BCodeIdiomatic {
         asm.Type.getMethodDescriptor(StringRef.toASMType, argTypes:_*),
         new asm.Handle(
           asm.Opcodes.H_INVOKESTATIC,
-          "java/lang/invoke/StringConcatFactory",
+          jliStringConcatFactoryRef.internalName,
           "makeConcatWithConstants",
-          "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;",
+          List(jliMethodHandlesLookupRef, StringRef, jliMethodTypeRef, StringRef, ArrayBType(ObjectRef))
+            .map(_.descriptor)
+            .mkString("(", "", s")${jliCallSiteRef.descriptor}"),
           false
         ),
         (recipe +: constants):_*
