@@ -21,7 +21,6 @@ import scala.util.matching.Regex.Match
 import java.util.Formattable
 
 abstract class FormatInterpolator {
-
   import FormatInterpolator._
   import SpecifierGroups.{Value => SpecGroup, _}
 
@@ -33,6 +32,8 @@ abstract class FormatInterpolator {
   import treeInfo.Applied
 
   private def bail(msg: String) = global.abort(msg)
+
+  def concatenate(parts: List[Tree], args: List[Tree]): Tree
 
   def interpolateF: Tree = c.macroApplication match {
     //case q"$_(..$parts).f(..$args)" =>
@@ -81,6 +82,9 @@ abstract class FormatInterpolator {
     val actuals = ListBuffer.empty[Tree]
     val convert = ListBuffer.empty[Conversion]
 
+    // whether this format does more than concatenate strings
+    var formatting = false
+
     def argType(argi: Int, types: Type*): Type = {
       val tpe = argTypes(argi)
       types.find(t => argConformsTo(argi, tpe, t))
@@ -112,7 +116,7 @@ abstract class FormatInterpolator {
       }
 
     // Append the nth part to the string builder, possibly prepending an omitted %s first.
-    // Sanity-check the % fields in this part.
+    // Check the % fields in this part.
     def loop(remaining: List[Tree], n: Int): Unit = {
       remaining match {
         case part0 :: more =>
@@ -139,6 +143,8 @@ abstract class FormatInterpolator {
           else if (!matches.hasNext) insertStringConversion()
           else {
             val cv = Conversion(matches.next(), part0.pos, argc)
+            if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.flags.nonEmpty)
+              formatting = true
             if (cv.isLiteral) insertStringConversion()
             else if (cv.isIndexed) {
               if (cv.index.getOrElse(-1) == n) accept(cv)
@@ -155,6 +161,7 @@ abstract class FormatInterpolator {
             val cv = Conversion(matches.next(), part0.pos, argc)
             if (n == 0 && cv.hasFlag('<')) cv.badFlag('<', "No last arg")
             else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
+            formatting = true
           }
           loop(more, n = n + 1)
         case Nil =>
@@ -165,6 +172,7 @@ abstract class FormatInterpolator {
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
     val format = amended.mkString
     if (actuals.isEmpty && !format.contains("%")) Literal(Constant(format))
+    else if (!formatting) concatenate(amended.map(p => Literal(Constant(p.stripPrefix("%s"))).setType(StringTpe)).toList, actuals.toList)
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(

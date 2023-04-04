@@ -247,6 +247,7 @@ object Test extends App {
       f"${5}%s%<d"      -> "55",
       f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
 
+      f"${"hello"}%-10s" -> "hello     ",
       f"z" -> "z"
     )
 
