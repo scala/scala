@@ -15,6 +15,8 @@ package reflect
 
 import nsc.Reporting.WarningCategory
 
+import scala.PartialFunction.cond
+
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
 
@@ -70,7 +72,20 @@ trait FastStringInterpolator extends FormatInterpolator {
           case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
         }
 
-      concatenate(treated, args)
+      if (args.forall(cond(_) { case Literal(c @ Constant(_)) => c.isSuitableLiteralType })) {
+        val it1 = treated.iterator
+        val it2 = args.iterator
+        val res = new StringBuilder
+        def add(t: Tree) = res.append(t.asInstanceOf[Literal].value.value)
+        add(it1.next())
+        while (it2.hasNext) {
+          add(it2.next())
+          add(it1.next())
+        }
+        val k = Constant(res.toString)
+        Literal(k).setType(ConstantType(k))
+      }
+      else concatenate(treated, args)
 
     // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
     case t@Apply(Select(someStringContext, _interpol), args) =>
