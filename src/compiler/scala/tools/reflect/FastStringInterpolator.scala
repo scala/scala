@@ -15,8 +15,6 @@ package reflect
 
 import nsc.Reporting.WarningCategory
 
-import scala.PartialFunction.cond
-
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
 
@@ -72,7 +70,7 @@ trait FastStringInterpolator extends FormatInterpolator {
           case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
         }
 
-      if (args.forall(cond(_) { case Literal(c @ Constant(_)) => c.isSuitableLiteralType })) {
+      if (args.forall(treeInfo.isLiteralString)) {
         val it1 = treated.iterator
         val it2 = args.iterator
         val res = new StringBuilder

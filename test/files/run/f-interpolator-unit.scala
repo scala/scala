@@ -31,7 +31,7 @@ object Test extends App {
   import StringContextTestUtils.StringContextOps
 
   final val tester = "hello"
-  final val number = 42
+  final val number = "42"  // strings only, alas
 
   def assertEquals(s0: String, s1: String) = assert(s0 == s1, s"$s0 == $s1")
 
@@ -251,7 +251,7 @@ object Test extends App {
       f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
 
       f"${"hello"}%-10s" -> "hello     ",
-      (f"$tester%-10s$number%03d": "hello     042") -> "hello     042",
+      (f"$tester%-10s$number%3s": "hello      42") -> "hello      42",
       f"z" -> "z"
     )
 
