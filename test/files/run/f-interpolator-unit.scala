@@ -30,6 +30,9 @@ object Test extends App {
   import StringContext._
   import StringContextTestUtils.StringContextOps
 
+  final val tester = "hello"
+  final val number = 42
+
   def assertEquals(s0: String, s1: String) = assert(s0 == s1, s"$s0 == $s1")
 
   def noEscape() = {
@@ -248,6 +251,7 @@ object Test extends App {
       f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
 
       f"${"hello"}%-10s" -> "hello     ",
+      (f"$tester%-10s$number%03d": "hello     042") -> "hello     042",
       f"z" -> "z"
     )
 

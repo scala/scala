@@ -98,6 +98,7 @@ abstract class FormatInterpolator {
             else all.head + all.tail.map { case req(what) => what case _ => "?" }.mkString(", ", ", ", "")
           }
           c.error(args(argi).pos, msg)
+          reported = true
           actuals += args(argi)
           types.head
         }
@@ -169,10 +170,16 @@ abstract class FormatInterpolator {
     }
     loop(parts, n = 0)
 
+    def constantly(s: String) = {
+      val k = Constant(s)
+      Literal(k).setType(ConstantType(k))
+    }
+
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
     val format = amended.mkString
-    if (actuals.isEmpty && !format.contains("%")) Literal(Constant(format))
-    else if (!formatting) concatenate(amended.map(p => Literal(Constant(p.stripPrefix("%s"))).setType(StringTpe)).toList, actuals.toList)
+    if (actuals.isEmpty && !formatting) constantly(format)
+    else if (!reported && actuals.forall(cond(_) { case Literal(c @ Constant(_)) => c.isSuitableLiteralType })) constantly(format.format(actuals.map(_.asInstanceOf[Literal].value.value).toIndexedSeq: _*))
+    else if (!formatting) concatenate(amended.map(p => constantly(p.stripPrefix("%s"))).toList, actuals.toList)
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(
