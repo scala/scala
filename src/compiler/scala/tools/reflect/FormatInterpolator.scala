@@ -404,19 +404,24 @@ object FormatInterpolator {
         }
         val suggest = {
           val r = "([0-7]{1,3}).*".r
-          (s0 drop e.index + 1) match {
-            case r(n) => altOf { n.foldLeft(0){ case (a, o) => (8 * a) + (o - '0') } }
+          s0.drop(e.index + 1) match {
+            case r(n) => altOf(n.foldLeft(0) { case (a, o) => (8 * a) + (o - '0') })
             case _    => ""
           }
         }
-        val txt =
-          if ("" == suggest) ""
-          else s"use $suggest instead"
-        txt
+        if (suggest.isEmpty) ""
+        else s"use $suggest instead"
       }
+      def control(ctl: Char, i: Int, name: String) =
+        c.error(errPoint, s"\\$ctl is not supported, but for $name use \\u${f"$i%04x"};\n${e.getMessage}")
       if (e.index == s0.length - 1) c.error(errPoint, """Trailing '\' escapes nothing.""")
-      else if (octalOf(s0(e.index + 1)) >= 0) c.error(errPoint, s"octal escape literals are unsupported: $alt")
-      else c.error(errPoint, e.getMessage)
+      else s0(e.index + 1) match {
+        case 'a' => control('a', 0x7, "alert or BEL")
+        case 'v' => control('v', 0xB, "vertical tab")
+        case 'e' => control('e', 0x1B, "escape")
+        case i if octalOf(i) >= 0 => c.error(errPoint, s"octal escape literals are unsupported: $alt")
+        case _   => c.error(errPoint, e.getMessage)
+      }
       s0
   }
 }
