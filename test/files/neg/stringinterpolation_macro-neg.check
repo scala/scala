@@ -109,6 +109,9 @@ stringinterpolation_macro-neg.scala:43: error: '(' not allowed for a, A
 stringinterpolation_macro-neg.scala:44: error: Only '-' allowed for date/time conversions
   f"$t%#+ 0,(tT"
        ^
+stringinterpolation_macro-neg.scala:45: error: Duplicate flag ','
+  f"$d%,,d"
+        ^
 stringinterpolation_macro-neg.scala:48: error: precision not allowed
   f"$c%.2c"
        ^
@@ -169,4 +172,4 @@ stringinterpolation_macro-neg.scala:65: warning: Index is not this arg
   f"$s%s $s%1$$s"
             ^
 3 warnings
-45 errors
+46 errors

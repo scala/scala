@@ -118,7 +118,7 @@ abstract class FormatInterpolator {
 
     // Append the nth part to the string builder, possibly prepending an omitted %s first.
     // Check the % fields in this part.
-    def loop(remaining: List[Tree], n: Int): Unit = {
+    def loop(remaining: List[Tree], n: Int): Unit =
       remaining match {
         case part0 :: more =>
           val part1 = part0 match {
@@ -167,7 +167,6 @@ abstract class FormatInterpolator {
           loop(more, n = n + 1)
         case Nil =>
       }
-    }
     loop(parts, n = 0)
 
     def constantly(s: String) = {
@@ -240,12 +239,13 @@ abstract class FormatInterpolator {
         val badFlags = flags.filterNot { case '-' | '<' => true case _ => false }
         badFlags.isEmpty or badFlag(badFlags(0), s"Only '-' allowed for $msg")
       }
-      def goodFlags = {
+      def goodFlags = flags.isEmpty || {
+        for (dupe <- flags.diff(flags.distinct).distinct) errorAt(Flags, flags.lastIndexOf(dupe))(s"Duplicate flag '$dupe'")
         val badFlags = flags.filterNot(okFlags.contains(_))
         for (f <- badFlags) badFlag(f, s"Illegal flag '$f'")
         badFlags.isEmpty
       }
-      def goodIndex = {
+      def goodIndex = !isIndexed || {
         if (index.nonEmpty && hasFlag('<')) warningAt(Index)("Argument index ignored if '<' flag is present")
         val okRange = index.map(i => i > 0 && i <= argc).getOrElse(true)
         okRange || hasFlag('<') or errorAt(Index)("Argument index out of range")
