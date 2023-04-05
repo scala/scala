@@ -42,6 +42,7 @@ object Test extends App {
   f"$d%+ (x"
   f"$f%,(a"
   f"$t%#+ 0,(tT"
+  f"$d%,,d"
 
   // 4) bad precisions
   f"$c%.2c"
@@ -65,6 +66,10 @@ object Test extends App {
 
   // 6) bad arg types
   f"$s%#s"
+  f"$f%f %<d"
+  f"%1$$d $f%f"
+  f"${null}%s %<#s"
+  // add tests from https://github.com/scala/scala/pull/4316/files
 
   // 7) misunderstood conversions
   f"$t%tG"
