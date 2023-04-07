@@ -16,7 +16,7 @@ package nest
 import java.io.{Console => _, _}
 import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
-import java.nio.file.{Files, Path, StandardOpenOption}
+import java.nio.file.{Files, Path, StandardOpenOption}, StandardOpenOption.{APPEND, CREATE}
 
 import scala.annotation.nowarn
 import scala.collection.mutable, mutable.ListBuffer
@@ -31,7 +31,7 @@ import scala.tools.nsc.util.stackTraceString
 import scala.util.{Failure, Success, Try, Using}
 import scala.util.Properties.isJavaAtLeast
 import scala.util.chaining._
-import scala.util.control.ControlThrowable
+import scala.util.control.{ControlThrowable, NonFatal}
 import scala.util.matching.Regex
 import ClassPath.join
 import FileManager.{compareContents, joinPaths, withTempFile}
@@ -232,26 +232,25 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       def run(): Unit = {
         StreamCapture.withExtraProperties(propertyOptions(fork = false).toMap) {
           try {
-            val out = Files.newOutputStream(log.toPath, StandardOpenOption.APPEND)
+            val out = Files.newOutputStream(log.toPath, CREATE, APPEND)
             try {
               val loader = new URLClassLoader(classesDir.toURI.toURL :: Nil, getClass.getClassLoader)
               StreamCapture.capturingOutErr(out) {
                 val cls = loader.loadClass("Test")
                 val main = cls.getDeclaredMethod("main", classOf[Array[String]])
-                try {
-                  main.invoke(null, Array[String]("jvm"))
-                } catch {
-                  case ite: InvocationTargetException => throw ite.getCause
-                }
+                try main.invoke(null, Array[String]("jvm"))
+                catch { case ite: InvocationTargetException => throw ite.getCause }
               }
-            }  finally {
-              out.close()
             }
+            finally out.close()
           } catch {
             case t: ControlThrowable => throw t
-            case t: Throwable =>
+            case NonFatal(t) =>
               // We'll let the checkfile diffing report this failure
-              Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), StandardOpenOption.APPEND)
+              Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), CREATE, APPEND)
+            case t: Throwable =>
+              Files.write(log.toPath, t.getMessage.getBytes(Charset.defaultCharset()), CREATE, APPEND)
+              throw t
           }
         }
       }
@@ -416,12 +415,6 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     }
   }
 
-  /** 1. Creates log file and output directory.
-   *  2. Runs script function, providing log file and output directory as arguments.
-   *     2b. or, just run the script without context and return a new context
-   */
-  def runInContext(body: => TestState): TestState = body
-
   /** Grouped files in group order, and lex order within each group. */
   def groupedFiles(sources: List[File]): List[List[File]] =
     if (sources.sizeIs > 1) {
@@ -552,25 +545,30 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def runPosTest(): TestState =
     if (checkFile.exists) genFail("unexpected check file for pos test (use -Werror with neg test to verify warnings)")
-    else runTestCommon()
+    else runTestCommon()()
 
-  def runNegTest(): TestState = runInContext {
+  def runNegTest(): TestState = {
     // pass if it checks and didn't crash the compiler
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
-    def checked(r: CompileRound) = r.result match {
+    def checked(r: TestState) = r match {
       case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
       case _ => diffIsOk
     }
 
-    compilationRounds(testFile).find(r => !r.result.isOk || r.result.isSkipped).map(checked).getOrElse(genFail("expected compilation failure"))
+    runTestCommon(checked, expectCompile = false)()
   }
 
   // run compilation until failure, evaluate `andAlso` on success
-  def runTestCommon(andAlso: => TestState = genPass()): TestState = runInContext {
-    // DirectCompiler already says compilation failed
-    val res = compilationRounds(testFile).find(r => !r.result.isOk || r.result.isSkipped).map(_.result).getOrElse(genPass())
-    res andAlso andAlso
+  def runTestCommon(inspector: TestState => TestState = identity, expectCompile: Boolean = true)(andAlso: => TestState = genPass()): TestState = {
+    val rnds = compilationRounds(testFile)
+    if (rnds.isEmpty) genFail("nothing to compile")
+    else
+      rnds.find(r => !r.result.isOk || r.result.isSkipped).map(r => inspector(r.result)) match {
+        case Some(res) => res.andAlso(andAlso)
+        case None if !expectCompile => genFail("expected compilation failure")
+        case None => andAlso
+      }
   }
 
   def extraClasspath = kind match {
@@ -669,10 +667,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile, javaopts)
     def noexec() = genSkip("no-exec: tests compiled but not run")
-    runTestCommon(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
+    runTestCommon()(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }
 
-  def runScalapTest(): TestState = runTestCommon {
+  def runScalapTest(): TestState = runTestCommon() {
     import scala.tools.scalap, scalap.scalax.rules.scalasig.ByteCode, scalap.Main.decompileScala
     val isPackageObject = testFile.getName.startsWith("package")
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")
