@@ -837,7 +837,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       // refuses to re-attempt typechecking, and presumes that someone
                       // else was responsible for issuing the related type error!
                       fun.setSymbol(NoSymbol)
-                  case _ =>
                 }
                 debuglog(s"fallback on implicits: $tree/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
