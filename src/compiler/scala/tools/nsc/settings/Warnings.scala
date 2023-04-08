@@ -214,6 +214,7 @@ trait Warnings {
     val ImplicitRecursion      = LintWarning("implicit-recursion",        "Implicit resolves to an enclosing definition.")
     val UniversalMethods       = LintWarning("universal-methods",         "Require arg to is/asInstanceOf.")
     val ArgDiscard             = LintWarning("arg-discard",               "-Wvalue-discard for adapted arguments.")
+    val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -248,6 +249,7 @@ trait Warnings {
   def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit.value: @nowarn("cat=deprecation"))
   def lintUniversalMethods       = lint.contains(UniversalMethods)
   def lintArgDiscard             = lint.contains(ArgDiscard)
+  def lintIntDivToFloat          = lint.contains(IntDivToFloat)
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
