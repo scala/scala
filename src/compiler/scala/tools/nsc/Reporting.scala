@@ -341,7 +341,10 @@ object Reporting {
     private val insertDash = "(?=[A-Z][a-z])".r
 
     val all: mutable.Map[String, WarningCategory] = mutable.Map.empty
-    private def add(c: WarningCategory): Unit = all += ((c.name, c))
+    private def add(c: WarningCategory): Unit = {
+      require(!all.contains(c.name), s"lint '${c.name}' added twice")
+      all addOne (c.name, c)
+    }
 
     object Deprecation extends WarningCategory; add(Deprecation)
 
@@ -409,6 +412,8 @@ object Reporting {
     object LintMultiargInfix extends Lint; add(LintMultiargInfix)
     object LintPerformance extends Lint; add(LintPerformance)
     object LintIntDivToFloat extends Lint; add(LintIntDivToFloat)
+    object LintUniversalMethods extends Lint; add(LintUniversalMethods)
+    object LintNumericMethods extends Lint; add(LintNumericMethods)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)
