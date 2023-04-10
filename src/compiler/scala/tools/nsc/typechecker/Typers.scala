@@ -5303,12 +5303,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // xml member to StringContext, which in turn has an unapply[Seq] method)
 
               def checkDubiousAdaptation(sel: Tree): Unit = if (!isPastTyper && settings.lintNumericMethods) {
-                def richlyFloat = Set("isNaN", "isInfinity", "isInfinite", "isFinite", "isPosInfinity", "isNegInfinity", "round", "ceil", "floor")
-                val dubious = ScalaIntegralValueClasses(qualTp.typeSymbol) && richlyFloat(name.decoded) && (
-                  sel.symbol.owner.eq(BoxedFloatClass)
-                ||
-                  sel.symbol.owner.eq(rootMirror.getClassIfDefined("scala.runtime.RichFloat"))
-                )
+                val dubious = ScalaIntegralValueClasses(qualTp.typeSymbol) && (
+                  sel.symbol.owner.eq(BoxedFloatClass) || sel.symbol.owner.eq(RichFloatClass))
                 if (dubious)
                   context.warning(tree.pos, s"dubious usage of ${sel.symbol} with integer value", WarningCategory.LintNumericMethods)
               }
