@@ -837,7 +837,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       // refuses to re-attempt typechecking, and presumes that someone
                       // else was responsible for issuing the related type error!
                       fun.setSymbol(NoSymbol)
-                  case _ =>
                 }
                 debuglog(s"fallback on implicits: $tree/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
@@ -1124,17 +1123,31 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def warnValueDiscard(): Unit =
             if (!isPastTyper && settings.warnValueDiscard.value && !treeInfo.isThisTypeResult(tree) && !treeInfo.hasExplicitUnit(tree))
               context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
-          @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit =
-            if (!isPastTyper) {
-              val isInharmonic = (
-                (tpSym == IntClass && ptSym == FloatClass)
-                  || (tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass))
-              )
-              if (isInharmonic)
-                // not `context.deprecationWarning` because they are not buffered in silent mode
-                context.warning(tree.pos, s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead.", WarningCategory.Deprecation)
-              else if (settings.warnNumericWiden.value) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
+          @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit = if (!isPastTyper) {
+            val targetIsWide = ptSym == FloatClass || ptSym == DoubleClass
+            val isInharmonic = {
+              def intWidened = tpSym == IntClass && ptSym == FloatClass
+              def longWidened = tpSym == LongClass && targetIsWide
+              intWidened || longWidened
             }
+            if (isInharmonic)
+              // not `context.deprecationWarning` because they are not buffered in silent mode
+              context.warning(tree.pos, s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead.", WarningCategory.Deprecation)
+            else {
+              object warnIntDiv extends Traverser {
+                def isInt(t: Tree) = ScalaIntegralValueClasses(t.tpe.typeSymbol)
+                override def traverse(tree: Tree): Unit = tree match {
+                  case Apply(Select(q, nme.DIV), _) if isInt(q) =>
+                    context.warning(tree.pos, s"integral division is implicitly converted (widened) to floating point. Add an explicit `.to${ptSym.name}`.", WarningCategory.LintIntDivToFloat)
+                  case Apply(Select(a1, _), List(a2)) if isInt(tree) && isInt(a1) && isInt(a2) => traverse(a1); traverse(a2)
+                  case Select(q, _) if isInt(tree) && isInt(q) => traverse(q)
+                  case _ =>
+                }
+              }
+              if (targetIsWide && settings.lintIntDivToFloat) warnIntDiv(tree)
+              if (settings.warnNumericWiden.value) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
+            }
+          }
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
           val anyTyped = tree.tpe <:< AnyTpe

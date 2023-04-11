@@ -530,6 +530,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClasses
     definitions.ScalaValueClassesSet
     definitions.ScalaNumericValueClassesSet
+    definitions.ScalaIntegralValueClasses
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType
