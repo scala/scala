@@ -296,7 +296,8 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
       val isRerun = config.optFailed
       val rerunTests = if (isRerun) testKinds.failedTests else Nil
-      def miscTests = individualTests ++ greppedTests ++ branchedTests ++ rerunTests
+      val specialTests = if (realeasy) List(Path("test/files/run/t6240-universe-code-gen.scala")) else Nil
+      def miscTests = List(individualTests, greppedTests, branchedTests, rerunTests, specialTests).flatten
 
       val givenKinds = standardKinds filter config.parsed.isSet
       val kinds = (
@@ -312,16 +313,21 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
       def testContributors = {
         List(
-          if (rerunTests.isEmpty) "" else "previously failed tests",
-          if (kindsTests.isEmpty) "" else s"${kinds.size} named test categories",
-          if (greppedTests.isEmpty) "" else s"${greppedTests.size} tests matching '$grepExpr'",
-          if (branchedTests.isEmpty) "" else s"${branchedTests.size} tests modified on this branch",
-          if (individualTests.isEmpty) "" else "specified tests",
-        ).filterNot(_.isEmpty).mkString(", ")
+          (rerunTests, "previously failed tests"),
+          (kindsTests, s"${kinds.size} named test categories"),
+          (greppedTests, s"${greppedTests.size} tests matching '$grepExpr'"),
+          (branchedTests, s"${branchedTests.size} tests modified on this branch"),
+          (individualTests, "specified tests"),
+          (specialTests, "other tests you might have forgotten"),
+        ).filterNot(_._1.isEmpty).map(_._2) match {
+          case Nil => "the well of despair. I see you're not in a testing mood."
+          case one :: Nil => one
+          case all => all.init.mkString("", ", ", s", and ${all.last}")
+        }
       }
 
-      val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical).sortBy(_.toString).toArray
-      val grouped = (allTests groupBy kindOf).toArray sortBy (x => standardKinds indexOf x._1)
+      val allTests: Array[Path] = distinctBy(miscTests ::: kindsTests)(_.toCanonical).sortBy(_.toString).toArray
+      val grouped = allTests.groupBy(kindOf).toArray.sortBy(x => standardKinds.indexOf(x._1))
 
       onlyIndividualTests = individualTests.nonEmpty && rerunTests.isEmpty && kindsTests.isEmpty && greppedTests.isEmpty
       totalTests = allTests.size

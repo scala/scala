@@ -531,7 +531,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
             else from.toInt <= currentJavaVersion && currentJavaVersion <= to.toInt
           else
             currentJavaVersion >= from.toInt
-        if (ok) None
+        if (ok && suiteRunner.realeasy && from.toInt > 8) Some(genSkip(s"skipped on Java $javaSpecVersion, compiling against JDK8 but must run on $v"))
+        else if (ok) None
         else Some(genSkip(s"skipped on Java $javaSpecVersion, only running on $v"))
       case v =>
         Some(genFail(s"invalid javaVersion range in test comment: $v"))
