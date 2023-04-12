@@ -104,6 +104,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val lazyHolders      = symbolsMap(ScalaValueClasses, x => getClassIfDefined("scala.runtime.Lazy" + x))
     lazy val LazyRefClass     = getClassIfDefined("scala.runtime.LazyRef")
     lazy val LazyUnitClass    = getClassIfDefined("scala.runtime.LazyUnit")
+    lazy val RichFloatClass   = getClassIfDefined("scala.runtime.RichFloat")
 
     lazy val allRefClasses: Set[Symbol] = {
       refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)

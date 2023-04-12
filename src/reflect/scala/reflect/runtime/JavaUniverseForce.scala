@@ -506,6 +506,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.lazyHolders
     definitions.LazyRefClass
     definitions.LazyUnitClass
+    definitions.RichFloatClass
     definitions.allRefClasses
     definitions.UnitClass
     definitions.ByteClass

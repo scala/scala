@@ -1265,7 +1265,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
           if (hasUndets && settings.lintUniversalMethods && (isCastSymbol(tree.symbol) || isTypeTestSymbol(tree.symbol)) && context.undetparams.exists(_.owner == tree.symbol))
-            context.warning(tree.pos, s"missing type argument to ${tree.symbol}", WarningCategory.LintAdaptedArgs)
+            context.warning(tree.pos, s"missing type argument to ${tree.symbol}", WarningCategory.LintUniversalMethods)
           val resTpDeconst = // keep constant types when they are safe to fold. erasure eliminates constant types modulo some exceptions, so keep those.
             if (isBeforeErasure && tree.symbol.isAccessor && tree.symbol.hasFlag(STABLE) && treeInfo.isExprSafeToInline(tree)) restpe
             else restpe.deconst
@@ -5292,6 +5292,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def asDynamicCall = mkInvoke(context, tree, qual, name) map { t =>
             wrapErrors(t, _.typed1(t, mode, pt))
           }
+          def checkDubiousUnitSelection(result: Tree): Unit =
+            if (!isPastTyper && isUniversalMember(result.symbol))
+              context.warning(tree.pos, s"dubious usage of ${result.symbol} with unit value", WarningCategory.LintUniversalMethods)
 
           val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.tpe.typeSymbol, name)
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
@@ -5299,9 +5302,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
             // xml member to StringContext, which in turn has an unapply[Seq] method)
 
+              def checkDubiousAdaptation(sel: Tree): Unit = if (!isPastTyper && settings.lintNumericMethods) {
+                val dubious = ScalaIntegralValueClasses(qualTp.typeSymbol) && (
+                  sel.symbol.owner.eq(BoxedFloatClass) || sel.symbol.owner.eq(RichFloatClass))
+                if (dubious)
+                  context.warning(tree.pos, s"dubious usage of ${sel.symbol} with integer value", WarningCategory.LintNumericMethods)
+              }
               val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
               if ((qual1 ne qual) && !qual1.isErrorTyped)
                 return typed(treeCopy.Select(tree, qual1, name), mode, pt)
+                  .tap(checkDubiousAdaptation)
           }
 
           // This special-case complements the logic in `adaptMember` in erasure, it handles selections
@@ -5419,6 +5429,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   name
                 )
               case _ =>
+                if (settings.lintUniversalMethods && qualTp.widen.eq(UnitTpe)) checkDubiousUnitSelection(result)
                 result
             }
           }

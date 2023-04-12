@@ -4,11 +4,13 @@ import org.junit.Assert.{ assertArrayEquals, assertFalse, assertTrue }
 import org.junit.Test
 
 import scala.runtime.BoxedUnit
+import scala.util.chaining._
 
 class ArrayTest {
   @Test
   def testArrayCopyOfUnit(): Unit = {
-    val expected = new Array[BoxedUnit](32).asInstanceOf[Array[AnyRef]]; java.util.Arrays.fill(expected, ().asInstanceOf[AnyRef])
+    val expected = new Array[BoxedUnit](32).asInstanceOf[Array[AnyRef]]
+                     .tap(array => java.util.Arrays.fill(array, (): Any))
     assertArrayEquals(expected, Array.copyOf(Array[Unit](), 32).asInstanceOf[Array[AnyRef]])
     assertArrayEquals(expected, Array.copyAs[Unit](Array[Nothing](), 32).asInstanceOf[Array[AnyRef]])
     assertArrayEquals(expected, Array.copyAs[Unit](Array[Unit](), 32).asInstanceOf[Array[AnyRef]])
