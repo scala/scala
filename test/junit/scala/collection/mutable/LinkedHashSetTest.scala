@@ -24,4 +24,18 @@ class LinkedHashSetTest {
     lhs.clear()
     Assert.assertNull(lhs.lastItemRef)
   }
+
+  @Test
+  def testfromfactorymethod(): Unit = {
+    val data = List(1,2,3,4,5,6,7,8)
+    val lhs = new mutable.LinkedHashSet[Int]
+    data.foreach(x => lhs.addOne(x))
+
+    val fromlhs1 = LinkedHashSet.from(data)
+    Assert.assertEquals(fromlhs1, lhs)
+
+    val fromlhs2 = LinkedHashSet.from(lhs)
+    Assert.assertEquals(fromlhs2, lhs)
+    Assert.assertFalse(fromlhs2 eq lhs)
+  }
 }

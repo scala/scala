@@ -169,4 +169,18 @@ class LinkedHashMapTest {
     assertEquals(hashMapCount4, mutable.LinkedHashMap(countingKey1 -> "a"))
 
   }
+
+  @Test
+  def testfromfactorymethod(): Unit = {
+    val data = List((1, 'a'), (2,'b'),(3,'c'), (4,'d'),(5,'e'),(6,'f'))
+    val lhm = new mutable.LinkedHashMap[Int, Char]
+    data.foreach(x => lhm.addOne(x))
+
+    val fromlhm1 = LinkedHashMap.from(data)
+    assertEquals(fromlhm1, lhm)
+
+    val fromlhm2 = LinkedHashMap.from(lhm)
+    assertEquals(fromlhm2, lhm)
+    assertFalse(fromlhm2 eq lhm)
+  }
 }

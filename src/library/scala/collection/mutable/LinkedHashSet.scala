@@ -82,6 +82,11 @@ class LinkedHashSet[A]
 
   def contains(elem: A): Boolean = findEntry(elem) ne null
 
+  override def sizeHint(size: Int): Unit = {
+    val target = tableSizeFor(((size + 1).toDouble / LinkedHashSet.defaultLoadFactor).toInt)
+    if (target > table.length) growTable(target)
+  }
+
   override def add(elem: A): Boolean = {
     if (contentSize + 1 >= threshold) growTable(table.length * 2)
     val hash = computeHash(elem)
@@ -311,11 +316,12 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
 
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]
 
-  def from[E](it: collection.IterableOnce[E]) =
-    it match {
-      case lhs: LinkedHashSet[E] => lhs
-      case _ => Growable.from(empty[E], it)
-    }
+  def from[E](it: collection.IterableOnce[E]) = {
+    val newlhs = empty[E]
+    newlhs.sizeHint(it.knownSize)
+    newlhs.addAll(it)
+    newlhs
+  }
 
   def newBuilder[A] = new GrowableBuilder(empty[A])
 
