@@ -13,7 +13,7 @@
 package scala.tools.nsc.symtab.classfile
 
 import java.io.{DataInputStream, InputStream}
-import java.nio.{BufferUnderflowException, ByteBuffer}
+import java.nio.{Buffer, BufferUnderflowException, ByteBuffer}
 
 final class ReusableDataReader() extends DataReader {
   private[this] var data = new Array[Byte](32768)
@@ -41,6 +41,18 @@ final class ReusableDataReader() extends DataReader {
   def buf: Array[Byte] = data
 
   private def nextPositivePowerOfTwo(target: Int): Int = 1 << -Integer.numberOfLeadingZeros(target - 1)
+
+  @inline
+  private def position[A <: Buffer](buffer: A, i: Int): A = {
+    buffer.position(i)
+    buffer
+  }
+
+  @inline
+  private def limit[A <: Buffer](buffer: A, i: Int): A = {
+    buffer.limit(i)
+    buffer
+  }
 
   def reset(file: scala.reflect.io.AbstractFile): this.type = {
     this.size = 0
@@ -122,12 +134,13 @@ final class ReusableDataReader() extends DataReader {
   }
 
   def skip(n: Int): Unit = {
-    bb.position(bb.position() + n)
+
+    position(bb, bb.position() + n)
   }
   def bp: Int = bb.position()
   def bp_=(i: Int): Unit = {
     try {
-      bb.position(i)
+      position(bb, i)
     } catch {
       case ex: IllegalArgumentException =>
         throw ex
@@ -139,19 +152,19 @@ final class ReusableDataReader() extends DataReader {
   }
   def getBytes(mybp: Int, bytes: Array[Byte]): Unit = {
     val saved = bb.position()
-    bb.position(mybp)
+    position(bb, mybp)
     try reader.readFully(bytes)
-    finally bb.position(saved)
+    finally position(bb, saved)
   }
   def getUTF(mybp: Int, len: Int): String = {
     val saved = bb.position()
     val savedLimit = bb.limit()
-    bb.position(mybp)
-    bb.limit(mybp + len)
+    position(bb, mybp)
+    limit(bb, mybp + len)
     try reader.readUTF()
     finally {
-      bb.limit(savedLimit)
-      bb.position(saved)
+      limit(bb, savedLimit)
+      position(bb, saved)
     }
   }
 }

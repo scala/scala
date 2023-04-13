@@ -45,6 +45,11 @@ object Cbuf {
       sb.getChars(0, n, res, 0)
       res
     }
+    // JDK 15 added this to CharSequence, which java.lang.StringBuilder
+    // implements. This means we need to take care to invoke only our version
+    // so that we don't emit bytecode which will try to link against
+    // java.nio.StringBuilder#isEmpty which would fail at runtime when running
+    // on a JRE < 15.
     def isEmpty = sb.length() == 0
     def last = sb.charAt(sb.length() - 1)
   }
@@ -957,7 +962,7 @@ trait Scanners extends ScannersCommon {
       syntaxError(s"unclosed string literal$note")
     }
 
-    private def replaceUnicodeEscapesInTriple(): Unit = 
+    private def replaceUnicodeEscapesInTriple(): Unit =
       if(strVal != null) {
         try {
           val replaced = StringContext.processUnicode(strVal)
@@ -1345,7 +1350,12 @@ trait Scanners extends ScannersCommon {
 
     // disallow trailing numeric separator char
     def checkNoTrailingSeparator(): Unit =
-      if (!cbuf.isEmpty && isNumberSeparator(cbuf.last))
+      // JDK 15 added this to CharSequence, which java.lang.StringBuilder
+      // implements. This means we need to take care to invoke only our
+      // version so that we don't emit bytecode which will try to link against
+      // java.nio.StringBuilder#isEmpty which would fail at runtime when
+      // running on a JRE < 15.
+      if (!(new Cbuf.StringBuilderOps(cbuf).isEmpty) && isNumberSeparator(cbuf.last))
         syntaxError(numberOffset + cbuf.length - 1, "illegal separator")
 
     /** Read a number into strVal.

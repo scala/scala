@@ -14,7 +14,7 @@ package scala.tools.nsc
 package io
 
 import java.io.{FileInputStream, IOException}
-import java.nio.{ByteBuffer, CharBuffer}
+import java.nio.{Buffer, ByteBuffer, CharBuffer}
 import java.nio.channels.{Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
 import scala.annotation.tailrec
@@ -23,7 +23,7 @@ import scala.reflect.internal.Reporter
 /** This class implements methods to read and decode source files. */
 class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
 
-  import SourceReader.{decode, flush}
+  import SourceReader.{decode, flush, clear, flip}
 
   //########################################################################
   // Private Fields
@@ -72,13 +72,13 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   /** Reads the specified byte channel. */
   protected def read(input: ReadableByteChannel): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset()
-    val bytes: ByteBuffer       = this.bytes; bytes.clear()
-    var chars: CharBuffer       = this.chars; chars.clear()
+    val bytes: ByteBuffer       = this.bytes; clear(bytes)
+    var chars: CharBuffer       = this.chars; clear(chars)
     var endOfInput              = false
 
     while (!endOfInput ) {
       endOfInput = input.read(bytes) < 0
-      bytes.flip()
+      flip(bytes)
       chars = decode(decoder, bytes, chars, endOfInput)
     }
     terminate(flush(decoder, chars))
@@ -87,7 +87,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   /** Reads the specified byte buffer. */
   protected def read(bytes: ByteBuffer): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset()
-    val chars: CharBuffer = this.chars; chars.clear()
+    val chars: CharBuffer = this.chars; clear(chars)
     terminate(flush(decoder, decode(decoder, bytes, chars, endOfInput = true)))
   }
 
@@ -141,8 +141,7 @@ object SourceReader {
   def flush(decoder: CharsetDecoder, chars: CharBuffer): CharBuffer = {
     val result: CoderResult = decoder.flush(chars)
     if (result.isUnderflow()) {
-      chars.flip()
-      chars
+      flip(chars)
     } else {
       if (result.isError()) throw new IOException(result.toString())
       assert(result.isOverflow())
@@ -155,9 +154,26 @@ object SourceReader {
    * content but with an increased capacity.
    */
   private def increaseCapacity(buffer: CharBuffer): CharBuffer = {
-    buffer.flip()
+    flip(buffer)
     val capacity = 2 * buffer.capacity()
     CharBuffer.allocate(capacity).put(buffer)
   }
 
+  // Overloads for these methods were added in recent JDKs on the concrete
+  // classes, e.g. ByteBuffer, which return the subtype, e.g. ByteBuffer,
+  // rather than the interface type Buffer. If we invoke them directly and
+  // compile with a recent JDK the emitted bytecode will link to the new
+  // overloads and fail at runtime on older JREs, e.g. 8.
+
+  @inline
+  private def clear[A <: Buffer](buffer: A): A = {
+    buffer.clear()
+    buffer
+  }
+
+  @inline
+  private def flip[A <: Buffer](buffer: A): A = {
+    buffer.flip()
+    buffer
+  }
 }
