@@ -753,7 +753,7 @@ abstract class RefChecks extends Transform {
         if (abstractErrors.nonEmpty)
           reporter.error(clazz.pos, abstractErrorMessage)
       }
-      else if (clazz.isTrait && !(clazz isSubClass AnyValClass)) {
+      else if (clazz.isTrait && !clazz.isSubClass(AnyValClass)) {
         // For non-AnyVal classes, prevent abstract methods in interfaces that override
         // final members in Object; see #4431
         for (decl <- clazz.info.decls) {

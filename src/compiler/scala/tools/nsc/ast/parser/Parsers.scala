@@ -3128,7 +3128,9 @@ self =>
       val name = identForType()
       if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
         deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
-      atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
+      def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      atPos(start, orStart(nameOffset)) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf, ParamOwner.Class)
@@ -3144,7 +3146,7 @@ self =>
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
           val template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          val result = gen.mkClassDef(mods, name, tparams, template)
+          val result = gen.mkClassDef(mods, name, tparams, template).updateAttachment(namePos)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)
