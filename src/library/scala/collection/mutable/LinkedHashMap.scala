@@ -478,11 +478,12 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
   def empty[K, V] = new LinkedHashMap[K, V]
 
-  def from[K, V](it: collection.IterableOnce[(K, V)]) =
-    it match {
-      case lhm: LinkedHashMap[K, V] => lhm
-      case _ => Growable.from(empty[K, V], it)
-    }
+  def from[K, V](it: collection.IterableOnce[(K, V)]) = {
+    val newlhm = empty[K, V]
+    newlhm.sizeHint(it.knownSize)
+    newlhm.addAll(it)
+    newlhm
+  }
 
   def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
