@@ -57,6 +57,7 @@ class TypedTreeTest extends BytecodeTesting {
 
   @Test
   def constantFoldedOriginalTreeAttachment(): Unit = {
+    import compiler.global._
     val code =
       """object O {
         |  final val x = 42
@@ -68,7 +69,9 @@ class TypedTreeTest extends BytecodeTesting {
     val run = compiler.newRun()
     run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
     val tree = run.units.next().body
-    val List(t) = tree.filter(_.attachments.all.nonEmpty).toList
+    val attached = tree.filter(_.hasAttachment[analyzer.OriginalTreeAttachment]).toList
+    assertEquals(1, attached.length)
+    val List(t) = attached
     assertEquals("42:Set(OriginalTreeAttachment(O.x))", s"$t:${t.attachments.all}")
   }
 

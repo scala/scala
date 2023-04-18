@@ -2929,7 +2929,7 @@ self =>
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      *  }}}
      */
-    def funDefOrDcl(start : Int, mods: Modifiers): Tree = {
+    def funDefOrDcl(start: Int, mods: Modifiers): Tree = {
       in.nextToken()
       if (in.token == THIS) {
         def missingEquals() = deprecationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
@@ -2955,7 +2955,9 @@ self =>
     }
 
     def funDefRest(start: Offset, nameOffset: Offset, mods: Modifiers, name: Name): Tree = {
-      val result = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+      def orStart(p: Offset) = if (name.toTermName == nme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      val result = atPos(start, orStart(nameOffset)) {
         var newmods = mods
         // contextBoundBuf is for context bounded type parameters of the form
         // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
@@ -3005,7 +3007,7 @@ self =>
             case _ => // ok
           }
         }
-        DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
+        DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs).updateAttachment(namePos)
       }
       signalParseProgress(result.pos)
       result
@@ -3166,9 +3168,11 @@ self =>
       checkKeywordDefinition()
       val name = ident()
       val tstart = in.offset
-      atPos(start, if (name == nme.ERROR) start else nameOffset) {
+      def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      atPos(start, orStart(nameOffset)) {
         val template = templateOpt(mods, if (isPackageObject) nme.PACKAGEkw else name, NoMods, Nil, tstart)
-        ModuleDef(mods, name.toTermName, template)
+        ModuleDef(mods, name.toTermName, template).updateAttachment(namePos)
       }
     }
 

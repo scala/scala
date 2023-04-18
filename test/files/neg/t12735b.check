@@ -1,0 +1,8 @@
+[WARNING] [RangePosition(t12735b.scala, 112, 112, 113)]: private method m in class UnusedMethod is never used
+[WARNING] [RangePosition(t12735b.scala, 216, 216, 218)]: private object X in object UnusedObject is never used
+[WARNING] [RangePosition(t12735b.scala, 228, 228, 254)]: side-effecting nullary methods are discouraged: suggest defining as `def stuff to create a range()` instead
+[WARNING] [RangePosition(t12735b.scala, 128, 132, 135)]: match may not be exhaustive.
+It would fail on the following input: List(_)
+[ERROR] [NoPosition]: No warnings can be incurred under -Werror.
+4 warnings
+1 error

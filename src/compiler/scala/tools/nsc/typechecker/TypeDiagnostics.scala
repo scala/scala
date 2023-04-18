@@ -696,14 +696,13 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         def wcat(sym: Symbol) = if (sym.isPrivate) WarningCategory.UnusedPrivates else WarningCategory.UnusedLocals
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
-          val pos = (
-            if (defn.pos.isDefined) defn.pos
-            else if (sym.pos.isDefined) sym.pos
-            else sym match {
-              case sym: TermSymbol => sym.referenced.pos
-              case _               => NoPosition
+          val pos =
+            sym match {
+              case sym if sym.pos.isDefined                        => sym.pos
+              case sym: TermSymbol if sym.referenced.pos.isDefined => sym.referenced.pos
+              case _ if defn.pos.isDefined                         => defn.pos
+              case _                                               => NoPosition
             }
-          )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
           def long = if (settings.uniqid.value) s" (${sym.nameString})" else ""
