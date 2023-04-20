@@ -1,4 +1,4 @@
-// javaVersion: 19+
+// javaVersion: 8 - 18
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}

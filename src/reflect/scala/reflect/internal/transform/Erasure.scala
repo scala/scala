@@ -69,7 +69,7 @@ trait Erasure {
    *  e.g. with "tagged types" like Array[Int] with T.
    */
   protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
-    case GenericArray(level, core) if !(core <:< AnyRefTpe) => level
+    case GenericArray(level, core) if !(core <:< AnyRefTpe || core.upperBound == ObjectTpeJava) => level
     case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")((ps map unboundedGenericArrayLevel).max)
     case _                                                  => 0
   }

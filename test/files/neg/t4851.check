@@ -1,17 +1,17 @@
 S.scala:3: warning: Adaptation of argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous.
-        signature: J(x: Any): J
+        signature: J(x: Object): J
   given arguments: <none>
  after adaptation: new J((): Unit)
   val x1 = new J
            ^
 S.scala:4: warning: Adaptation of argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous.
-        signature: J(x: Any): J
+        signature: J(x: Object): J
   given arguments: <none>
  after adaptation: new J((): Unit)
   val x2 = new J()
            ^
 S.scala:5: warning: Adapting argument list by creating a 5-tuple: this may not be what you want.
-        signature: J(x: Any): J
+        signature: J(x: Object): J
   given arguments: 1, 2, 3, 4, 5
  after adaptation: new J((1, 2, 3, 4, 5): (Int, Int, Int, Int, Int))
   val x3 = new J(1, 2, 3, 4, 5)

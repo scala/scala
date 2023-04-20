@@ -1,4 +1,5 @@
-// scalac: -language:experimental.macros -Xfatal-warnings -deprecation
+// scalac: -language:experimental.macros -Werror -Xlint
+// filter: java.base|JavaReflectionRuntimes|macroExpandWithRuntime|Predef
 object Macros {
   def foo1 = macro Impls.foo1
   def foo2 = macro Impls.foo2

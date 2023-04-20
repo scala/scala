@@ -4,7 +4,7 @@ it has 2 unimplemented members.
  *  For convenience, these are usable as stub implementations.
  */
   def raw(x$1: M_1[_ <: String]): Unit = ???
-  def raw(x$1: Any): Unit = ???
+  def raw(x$1: Object): Unit = ???
 
 class Sub extends Raw_2 { }
       ^

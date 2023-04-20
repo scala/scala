@@ -658,14 +658,14 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
                     case variance @ ('+' | '-' | '*') =>
                       index += 1
                       val bounds = variance match {
-                        case '+' => TypeBounds.upper(objToAny(sig2type(tparams, skiptvs)))
+                        case '+' => TypeBounds.upper(sig2type(tparams, skiptvs))
                         case '-' =>
                           val tp = sig2type(tparams, skiptvs)
-                          // sig2type seems to return AnyClass regardless of the situation:
-                          // we don't want Any as a LOWER bound.
-                          if (tp.typeSymbol == AnyClass) TypeBounds.empty
-                          else TypeBounds.lower(tp)
-                        case '*' => TypeBounds.empty
+                          // Interpret `sig2type` returning `Any` as "no bounds";
+                          // morally equivalent to TypeBounds.empty, but we're representing Java code, so use ObjectTpeJava for AnyTpe.
+                          if (tp.typeSymbol == AnyClass) TypeBounds.upper(definitions.ObjectTpeJava)
+                          else TypeBounds(tp, definitions.ObjectTpeJava)
+                        case '*' => TypeBounds.upper(definitions.ObjectTpeJava)
                       }
                       val newtparam = sym.newExistential(newTypeName("?"+i), sym.pos) setInfo bounds
                       existentials += newtparam
@@ -694,7 +694,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
           val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
           assert(!classSym.isOverloaded, classSym.alternatives)
-          var tpe = processClassType(processInner(classSym.tpe_*))
+          var tpe = processClassType(processInner(if (classSym eq ObjectClass) ObjectTpeJava else classSym.tpe_*))
           while (sig.charAt(index) == '.') {
             accept('.')
             val name = newTypeName(subName(c => c == ';' || c == '<' || c == '.'))
@@ -711,10 +711,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           // make unbounded Array[T] where T is a type variable into Array[T with Object]
           // (this is necessary because such arrays have a representation which is incompatible
           // with arrays of primitive types.
-          // NOTE that the comparison to Object only works for abstract types bounded by classes that are strict subclasses of Object
-          // if the bound is exactly Object, it will have been converted to Any, and the comparison will fail
           // see also RestrictJavaArraysMap (when compiling java sources directly)
-          if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< ObjectTpe)) {
+          if (elemtp.typeSymbol.isAbstractType && elemtp.upperBound =:= ObjectTpe) {
             elemtp = intersectionType(List(elemtp, ObjectTpe))
           }
 
@@ -724,7 +722,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           assert(sym ne null, sig)
           val paramtypes = new ListBuffer[Type]()
           while (sig.charAt(index) != ')') {
-            paramtypes += objToAny(sig2type(tparams, skiptvs))
+            paramtypes += sig2type(tparams, skiptvs)
           }
           index += 1
           val restype = if (sym != null && sym.isClassConstructor) {
@@ -732,7 +730,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             clazz.tpe_*
           } else
             sig2type(tparams, skiptvs)
-          JavaMethodType(sym.newSyntheticValueParams(paramtypes.toList), restype)
+          MethodType(sym.newSyntheticValueParams(paramtypes.toList), restype)
         case 'T' =>
           val n = newTypeName(subName(';'.==))
           index += 1
@@ -746,7 +744,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       while (sig.charAt(index) == ':') {
         index += 1
         if (sig.charAt(index) != ':') // guard against empty class bound
-          ts += objToAny(sig2type(tparams, skiptvs))
+          ts += sig2type(tparams, skiptvs)
       }
       TypeBounds.upper(intersectionType(ts.toList, sym))
     }
@@ -782,7 +780,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         classTParams = tparams
         val parents = new ListBuffer[Type]()
         while (index < end) {
-          parents += sig2type(tparams, skiptvs = false)  // here the variance doesn't matter
+          val parent = sig2type(tparams, skiptvs = false)
+          parents += (if (parent == ObjectTpeJava) ObjectTpe else parent)  // here the variance doesn't matter
         }
         ClassInfoType(parents.toList, instanceScope, sym)
       }
@@ -1269,9 +1268,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           if (parent == null) AnyClass.tpe_*
           else if (jflags.isAnnotation) { u2; AnnotationClass.tpe }
           else getClassSymbol(parent.value).tpe_*
+        val superType1 = if (superType == ObjectTpeJava) ObjectTpe else superType
         var ifacesTypes = ifaces.filterNot(_ eq null).map(x => getClassSymbol(x.value).tpe_*)
         if (jflags.isAnnotation) ifacesTypes ::= ClassfileAnnotationClass.tpe
-        ClassInfoType(superType :: ifacesTypes, instanceScope, clazz)
+        ClassInfoType(superType1 :: ifacesTypes, instanceScope, clazz)
       }
       sym.setInfo(info)
     }

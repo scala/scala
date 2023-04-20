@@ -51,7 +51,6 @@ method notify: ()Unit
 method notifyAll: ()Unit
 method synchronized: [T0](x$1: T0)T0
 method toString: ()String
-method wait0: (x$1: Long)Unit
 method wait: ()Unit
 method wait: (x$1: Long)Unit
 method wait: (x$1: Long, x$2: Int)Unit
@@ -65,8 +64,8 @@ testing Object.finalize: ()
 testing Object.getClass: class java.lang.String
 testing Object.hashCode: 50
 testing Object.ne: false
-testing Object.notify: class java.lang.IllegalMonitorStateException: current thread is not owner
-testing Object.notifyAll: class java.lang.IllegalMonitorStateException: current thread is not owner
+testing Object.notify: class java.lang.IllegalMonitorStateException: null
+testing Object.notifyAll: class java.lang.IllegalMonitorStateException: null
 testing Object.synchronized: 2
 testing Object.toString: 2
 TODO: also test AnyRef.wait overloads

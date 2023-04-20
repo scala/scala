@@ -6,7 +6,7 @@ askTypeCompletion at Completions.scala(11,16)
 retrieved 22 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def hashCode(): Int
 def map(x: Int => Int)(implicit a: DummyImplicit): test.O.type
 def toString(): String

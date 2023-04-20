@@ -458,7 +458,7 @@ private[internal] trait TypeMaps {
   object wildcardExtrapolation extends TypeMap(trackVariance = true) {
     def apply(tp: Type): Type =
       tp match {
-        case BoundedWildcardType(TypeBounds(lo, AnyTpe)) if variance.isContravariant => lo
+        case BoundedWildcardType(TypeBounds(lo, AnyTpe | ObjectTpeJava)) if variance.isContravariant => lo
         case BoundedWildcardType(TypeBounds(NothingTpe, hi)) if variance.isCovariant => hi
         case tp => mapOver(tp)
       }
@@ -1092,7 +1092,7 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `contains` method. */
-  class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
+  class ContainsCollector(private[this] var sym: Symbol) extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (!result) {
         tp match {
@@ -1123,6 +1123,11 @@ private[internal] trait TypeMaps {
           result = true
       }
       arg
+    }
+
+    def reset(nsym: Symbol): Unit = {
+      result = false
+      sym = nsym
     }
   }
 

@@ -12,7 +12,7 @@ def ensuring(cond: Boolean): One.type
 def ensuring(cond: Boolean,msg: => Any): One.type
 def ensuring(cond: One.type => Boolean): One.type
 def ensuring(cond: One.type => Boolean,msg: => Any): One.type
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String

@@ -12,7 +12,7 @@ def ensuring(cond: Boolean): Snippet.x.type
 def ensuring(cond: Boolean,msg: => Any): Snippet.x.type
 def ensuring(cond: Snippet.x.type => Boolean): Snippet.x.type
 def ensuring(cond: Snippet.x.type => Boolean,msg: => Any): Snippet.x.type
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String

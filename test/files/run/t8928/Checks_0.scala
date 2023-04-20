@@ -46,7 +46,7 @@ class Checks[U <: Universe with Singleton](val universe: U, ordered: Boolean) {
         assertMatch("float", float)   { case Literal(Constant(6.7f))      =>  }
         assertMatch("double", double) { case Literal(Constant(8.9d))      =>  }
         assertMatch("string", string) { case Literal(Constant("ten"))     =>  }
-        assertMatch("class", clasz)   { case Literal(Constant(ObjectTpe)) =>  }
+        assertMatch("class", clasz)   { case Literal(Constant(tpe: Type)) if tpe =:= ObjectTpe =>  }
 
 
         assert(nested.tree.tpe =:= typeOf[Nested_0])

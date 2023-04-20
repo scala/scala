@@ -11,7 +11,7 @@ t8035-deprecated.scala:6: warning: Adaptation of argument list by inserting () i
   new A
   ^
 t8035-deprecated.scala:10: warning: Adaptation of argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous.
-        signature: Format.format(x$1: Any): String
+        signature: Format.format(x$1: Object): String
   given arguments: <none>
  after adaptation: Format.format((): Unit)
   sdf.format()
