@@ -5,6 +5,7 @@ import org.junit.Test
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
+import scala.tools.nsc.transform.patmat.Logic.LogicLinkedHashSet
 import scala.tools.nsc.{Global, Settings}
 
 object TestSolver extends Logic with Solving {
@@ -579,7 +580,7 @@ class SolvingTest {
   def pairWiseEncoding(ops: List[Sym]) = {
     And(ops.combinations(2).collect {
       case a :: b :: Nil => Or(Not(a), Not(b)): Prop
-    }.to(mutable.LinkedHashSet))
+    }.to(LogicLinkedHashSet))
   }
 
   @Test
