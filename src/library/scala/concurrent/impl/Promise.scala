@@ -28,9 +28,15 @@ private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with sc
   import scala.concurrent.Future
   import scala.concurrent.impl.Promise.DefaultPromise
 
+  private[this] final def wrapFailure(t: Throwable): Throwable = {
+    if (NonFatal(t)) t
+    else if (t.isInstanceOf[InterruptedException]) new ExecutionException("Boxed InterruptedException", t)
+    else throw t
+  }
+
   override def transform[S](f: Try[T] => Try[S])(implicit executor: ExecutionContext): Future[S] = {
     val p = new DefaultPromise[S]()
-    onComplete { result => p.complete(try f(result) catch { case NonFatal(t) => Failure(t) }) }
+    onComplete { result => p.complete(try f(result) catch { case t: Throwable => Failure(wrapFailure(t)) }) }
     p.future
   }
 
@@ -42,7 +48,7 @@ private[concurrent] trait Promise[T] extends scala.concurrent.Promise[T] with sc
         case fut if fut eq this => p complete v.asInstanceOf[Try[S]]
         case dp: DefaultPromise[_] => dp.asInstanceOf[DefaultPromise[S]].linkRootOf(p)
         case fut => p completeWith fut
-      } catch { case NonFatal(t) => p failure t }
+      } catch { case t: Throwable => p.failure(wrapFailure(t)) }
     }
     p.future
   }

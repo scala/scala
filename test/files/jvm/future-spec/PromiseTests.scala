@@ -146,7 +146,7 @@ class PromiseTests extends MinimalScalaTest {
         Await.result((future filter (_ => true)), defaultTimeout) mustBe (result)
         intercept[NoSuchElementException] {
           Await.result((future filter (_ => false)), defaultTimeout)
-        }
+        }.getMessage mustBe ("Future.filter predicate is not satisfied")
       }
     }
 

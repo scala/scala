@@ -198,14 +198,18 @@ class FutureTests extends MinimalScalaTest {
   }
 
   "The default ExecutionContext" should {
+    import ExecutionContext.Implicits._
     "report uncaught exceptions" in {
       val p = Promise[Throwable]()
-      val logThrowable: Throwable => Unit = p.trySuccess(_)
-      val ec: ExecutionContext = ExecutionContext.fromExecutor(null, logThrowable)
+      val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(null, p.trySuccess(_))
+      val t = new Exception()
+      try {
+        ec.execute(() => throw t)
+        Await.result(p.future, 4.seconds) mustBe t
+      } finally {
+        ec.shutdown()
+      }
 
-      val t = new InterruptedException()
-      val f = Future(throw t)(ec)
-      Await.result(p.future, 4.seconds) mustBe t
     }
   }
 
