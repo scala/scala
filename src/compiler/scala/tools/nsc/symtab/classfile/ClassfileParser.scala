@@ -853,10 +853,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           in.skip(attrLen)
 
         case tpnme.RuntimeAnnotationATTR =>
-            val numAnnots = u2()
+          val numAnnots = u2()
           val annots = new ListBuffer[AnnotationInfo]
-          for (n <- 0 until numAnnots; annot <- parseAnnotation(u2()))
-            annots += annot
+          numAnnots times {
+            parseAnnotation(u2()).foreach(annots.addOne)
+          }
           /* `sym.withAnnotations(annots)`, like `sym.addAnnotation(annot)`, prepends,
            * so if we parsed in classfile order we would wind up with the annotations
            * in reverse order in `sym.annotations`. Instead we just read them out the
@@ -904,6 +905,17 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             debuglog(s"$sym in ${sym.owner} is a java8+ default method.")
           }
           in.skip(attrLen)
+
+        case tpnme.PermittedSubclassesATTR =>
+          sym.setFlag(SEALED)
+          val numberOfClasses = u2()
+          numberOfClasses times {
+            val k = pool.getClassSymbol(u2())
+            completer match {
+              case ctc: ClassTypeCompleter => ctc.permittedSubclasses ::= k   // sym.addChild(k)
+              case _ =>
+            }
+          }
 
         case _ =>
           in.skip(attrLen)
@@ -1357,6 +1369,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var exceptions: List[NameOrString] = Nil
   }
   private final class ClassTypeCompleter(name: Name, jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
+    var permittedSubclasses: List[symbolTable.Symbol] = Nil
     override def complete(sym: symbolTable.Symbol): Unit = {
       val info = if (sig != null) sigToType(sym, sig) else {
         val superTpe = if (parent == null) definitions.AnyClass.tpe_* else getClassSymbol(parent.value).tpe_*
@@ -1365,6 +1378,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         ClassInfoType(superTpe1 :: ifacesTypes, instanceScope, clazz)
       }
       sym.setInfo(info)
+      for (k <- permittedSubclasses)
+        if (k.parentSymbols.contains(sym))
+          sym.addChild(k)
     }
   }
 
@@ -1494,7 +1510,13 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     if (flags.isStatic) staticScope else instanceScope
 }
 object ClassfileParser {
-  private implicit class GoodTimes(val n: Int) extends AnyVal {
-    def times(body: => Unit) = (1 to n).foreach(_ => body)
+  private implicit class GoodTimes(private val n: Int) extends AnyVal {
+    def times(body: => Unit): Unit = {
+      var i = n
+      while (i > 0) {
+        body
+        i -= 1
+      }
+    }
   }
 }

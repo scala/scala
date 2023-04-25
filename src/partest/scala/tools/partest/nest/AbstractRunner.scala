@@ -291,7 +291,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
             List(pathSettings.testParent / norm)
           }
         }
-        .distinct
+        .distinct.filter(denotesTestPath)
       }
 
       val isRerun = config.optFailed

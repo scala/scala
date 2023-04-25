@@ -51,7 +51,7 @@ abstract class CommonTokens {
   // J: PUBLIC = 42
   final val PROTECTED = 43
   final val PRIVATE = 44
-  // S: SEALED = 45
+  final val SEALED = 45     // J: contextual keyword
   final val ABSTRACT = 46
   // J: DEFAULT = 47
   // J: STATIC = 48

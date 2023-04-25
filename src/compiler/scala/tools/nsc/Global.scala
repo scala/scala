@@ -1727,10 +1727,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   } // class Run
 
   def printAllUnits(): Unit = {
-    print("[[syntax trees at end of %25s]]".format(phase))
-    exitingPhase(phase)(currentRun.units foreach { unit =>
-      nodePrinters showUnit unit
-    })
+    print(f"[[syntax trees at end of $phase%25s]]")
+    exitingPhase(phase)(currentRun.units.foreach(nodePrinters.showUnit(_)))
   }
 
   /** We resolve the class/object ambiguity by passing a type/term name.
