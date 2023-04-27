@@ -1,3 +1,4 @@
+// javaVersion: 8
 public enum Baz_1 {
     A {
     	public void baz1() {}
