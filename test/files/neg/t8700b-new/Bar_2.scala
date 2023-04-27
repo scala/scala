@@ -1,3 +1,4 @@
+// javaVersion: 17+
 // scalac: -Werror
 object Bar {
   def bar1(foo: Foo_1) = foo match {
