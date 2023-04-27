@@ -24,11 +24,12 @@ import scala.reflect.ClassTag
 
 import scala.concurrent.ExecutionContext.parasitic
 
-/** A `Future` represents a value which may or may not *currently* be available,
+/** A `Future` represents a value which may or may not be currently available,
  *  but will be available at some point, or an exception if that value could not be made available.
  *
- *  Asynchronous computations that yield futures are created with the `Future.apply` call and are computed using a supplied `ExecutionContext`,
- * which can be backed by a Thread pool.
+ *  Asynchronous computations are created by calling `Future.apply`, which yields instances of `Future`.
+ *  Computations are executed using an `ExecutionContext`, which is usually supplied implicitly,
+ *  and which is commonly backed by a thread pool.
  *
  *  {{{
  *  import ExecutionContext.Implicits.global
@@ -40,6 +41,15 @@ import scala.concurrent.ExecutionContext.parasitic
  *    msg => println(msg)
  *  }
  *  }}}
+ *
+ *  Note that the `global` context is convenient but restricted:
+ *  "fatal" exceptions are reported only by printing a stack trace,
+ *  and the underlying thread pool may be shared by a mix of jobs.
+ *  For any nontrivial application, see the caveats explained at [[ExecutionContext]]
+ *  and also the overview linked below, which explains
+ *  [[https://docs.scala-lang.org/overviews/core/futures.html#exceptions exception handling]]
+ *  in depth.
+ *
  *
  *  @see [[https://docs.scala-lang.org/overviews/core/futures.html Futures and Promises]]
  *
@@ -55,8 +65,7 @@ import scala.concurrent.ExecutionContext.parasitic
  *  - `InterruptedException` - not contained within futures
  *  - all `scala.util.control.ControlThrowable` except `NonLocalReturnControl` - not contained within futures
  *
- *  Instead, the future is completed with a ExecutionException with one of the exceptions above
- *  as the cause.
+ *  Instead, the future is completed with an ExecutionException that has one of the exceptions above as its cause.
  *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
  *  it is completed with a value from that throwable instead.
  *
