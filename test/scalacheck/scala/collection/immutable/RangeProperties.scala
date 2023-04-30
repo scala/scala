@@ -8,7 +8,7 @@ class RangeProperties extends Properties("immutable.Range") {
   import RangeProperties._
 
   property("indexOf") = forAll { (r: Range, i: Int) =>
-    r.indexOf(i) == r.toVector.indexOf(i)
+    r.indexOf(i) == vectorOf(r).indexOf(i)
   }
 
   property("indexOf with start") = forAll { (r: Range, start: Int, i: Int) =>
@@ -47,8 +47,8 @@ class RangeProperties extends Properties("immutable.Range") {
     !r.isEmpty ==> !r.sameElements(r.tail)
   }
 
-  property("sameElements neg empty/non-empty") = forAll { (r1: Range, r2: Range) =>
-    (r1.isEmpty != r2.isEmpty) ==> !r1.sameElements(r2)
+  property("sameElements neg empty/non-empty") = forAll { (r1: ArbitrarilyEmptyRange, r2: ArbitrarilyEmptyRange) =>
+    (r1.r.isEmpty != r2.r.isEmpty) ==> !r1.r.sameElements(r2.r)
   }
 
   property("sameElements with different clusivity") = forAll { (r: Range) =>
@@ -58,19 +58,33 @@ class RangeProperties extends Properties("immutable.Range") {
       else r.sameElements(r.start to (r.end - oneFurther) by r.step)
     }
   }
-
 }
 
 object RangeProperties {
   final val MinInt = -128
   final val MaxInt = 127
 
-  implicit val arbitraryRange: Arbitrary[Range] = Arbitrary(for {
-    start <- Gen.choose(MinInt, MaxInt)
-    step  <- Gen.choose(MinInt, MaxInt) filter (_ != 0)
-    end   <- Gen.choose(MinInt, MaxInt)
-    incl  <- Gen.oneOf(true, false)
-    r      = (if (incl) start to end else start until end) by step
-  } yield r)
+  case class ArbitrarilyEmptyRange(r: Range)
 
+  implicit val arbitrarilyEmptyRange: Arbitrary[ArbitrarilyEmptyRange] =
+    Arbitrary(for {
+      start <- Gen.choose(MinInt, MaxInt)
+      step  <- Gen.choose(MinInt, MaxInt) filter (_ != 0)
+      end   <- Gen.choose(MinInt, MaxInt)
+      incl  <- Gen.oneOf(true, false)
+      r      = (if (incl) start to end else start until end) by step
+    } yield ArbitrarilyEmptyRange(r))
+
+  implicit val arbitraryRange: Arbitrary[Range] =
+    Arbitrary(for {
+      start <- Gen.choose(MinInt, MaxInt)
+      step  <- Gen.choose(MinInt, MaxInt).filter(_ != 0)
+      end   <- Gen.choose(MinInt, MaxInt)
+      incl  <- Gen.oneOf(true, false)
+      r0     = if (incl) start to end else start until end
+      s0     = if ((start < end) == (step > 0)) step else -step
+      r      = r0 by s0
+    } yield r)
+
+  def vectorOf(r: Range): Vector[Int] = Vector.range(r.start, r.end, r.step)
 }

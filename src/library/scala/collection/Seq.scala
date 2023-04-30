@@ -243,9 +243,25 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return `true` if the sequence `that` is contained in this $coll at
     *         index `offset`, otherwise `false`.
     */
-  def startsWith[B >: A](that: IterableOnce[B], offset: Int = 0): Boolean = {
-    val i = iterator drop offset
+  def startsWith[B >: A](that: IterableOnce[B], offset: Int = 0): Boolean = offset >= 0 && {
+    val l = knownSize
     val j = that.iterator
+    val i =
+      if (l >= 0) {
+        if (offset >= l) return offset == l && !j.hasNext
+        iterator.drop(offset)
+      }
+      else {
+        var n = offset
+        val it = iterator
+        while (n > 0 && it.hasNext) {
+          n -= 1
+          it.next(): Unit
+        }
+        if (n > 0) return false
+        if (n == 0 && !it.hasNext) return !j.hasNext
+        it
+      }
     while (j.hasNext && i.hasNext)
       if (i.next() != j.next())
         return false
@@ -424,32 +440,58 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @return  the first index `>= from` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
    */
-  // TODO Should be implemented in a way that preserves laziness
-  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
-    if (that.isEmpty && from == 0) 0
+  // Ought to be implemented in a way that preserves laziness
+  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int = {
+    val from0 = math.max(from, 0)
+    if (that.isEmpty && from0 == 0) 0
     else {
       val l = knownSize
       val tl = that.knownSize
       if (l >= 0 && tl >= 0) {
-        val clippedFrom = math.max(0, from)
-        if (from > l) -1
-        else if (tl < 1) clippedFrom
+        if (from0 >= l)
+          if (from0 == l && that.isEmpty) from0
+          else -1
+        else if (tl < 1) from0
         else if (l < tl) -1
-        else SeqOps.kmpSearch(toGenericSeq, clippedFrom, l, that, 0, tl, forward = true)
+        else SeqOps.kmpSearch(toGenericSeq, from0, l, that, 0, tl, forward = true)
       }
       else {
-        var i = from
-        var s: scala.collection.Seq[A] = toGenericSeq.drop(i)
-        while (!s.isEmpty) {
-          if (s startsWith that)
-            return i
-
-          i += 1
-          s = s.tail
+        val (skipped, suffix) =
+          if (l >= 0) {
+            val toSkip = math.min(l, from0)
+            (toSkip, toGenericSeq.drop(toSkip))
+          }
+          else {
+            var s: Seq[A] = toGenericSeq
+            var i = from0
+            while (i > 0 && !s.isEmpty) {
+              i -= 1
+              s = s.tail
+            }
+            (from0 - i, s)
+          }
+        var s: Seq[A] = suffix
+        if (skipped < from0) {
+          -1
         }
-        -1
+        else if (skipped == l) {
+          if (that.isEmpty) from0
+          else -1
+        }
+        else {
+          var i = from0
+          var isEmpty = s.isEmpty
+          while (!isEmpty && !s.startsWith(that)) {
+            i += 1
+            s = s.tail
+            isEmpty = s.isEmpty
+          }
+          if (!isEmpty || that.isEmpty) i
+          else -1
+        }
       }
     }
+  }
 
   /** Finds first index where this $coll contains a given sequence as a slice.
     *  $mayNotTerminateInf

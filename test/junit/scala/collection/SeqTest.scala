@@ -40,8 +40,30 @@ class SeqTest extends AllocationTest {
     assertEquals(0, Vector(0, 1).indexOfSlice(List(0, 1)))
     assertEquals(0, Vector(0, 1).indexOfSlice(Vector(0, 1)))
     assertEquals(1, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(Vector(1, 2)))
+    assertEquals(1, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(List(1, 2)))
     assertEquals(4, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(Vector(1, 2), from = 2))
+    assertEquals(4, Vector(0, 1, 2, 0, 1, 2).indexOfSlice(List(1, 2), from = 2))
+    assertEquals(-1, Vector(0, 1).indexOfSlice(Vector(1, 2)))
+    assertEquals(-1, Vector(0, 1).indexOfSlice(List(1, 2)))
+
+    assertEquals(0, Vector(0, 1).indexOfSlice(Vector.empty[Int]))
+    assertEquals(0, Vector(0, 1).indexOfSlice(Vector.empty[Int], from = -2))
+    assertEquals(2, Vector(0, 1).indexOfSlice(Vector.empty[Int], from = 2))
+    assertEquals(2, Vector(0, 1, 2).indexOfSlice(Vector.empty[Int], from = 2))
+    assertEquals(0, Vector(0, 1).indexOfSlice(Nil))
+    assertEquals(0, Vector(0, 1).indexOfSlice(Nil, from = -2))
+    assertEquals(2, Vector(0, 1).indexOfSlice(Nil, from = 2))
+    assertEquals(2, Vector(0, 1, 2).indexOfSlice(Nil, from = 2))
+
+    assertEquals(0, List(0, 1).indexOfSlice(List(0, 1)))
+    assertEquals(1, List(0, 1, 2, 0, 1, 2).indexOfSlice(List(1, 2)))
+    assertEquals(4, List(0, 1, 2, 0, 1, 2).indexOfSlice(List(1, 2), from = 2))
     assertEquals(-1, List(0, 1).indexOfSlice(List(1, 2)))
+
+    assertEquals(0, Seq(0, 1).indexOfSlice(Nil))
+    assertEquals(0, Seq(0, 1).indexOfSlice(Nil, from = -2))
+    assertEquals(2, Seq(0, 1).indexOfSlice(Nil, from = 2))
+    assertEquals(2, Seq(0, 1, 2).indexOfSlice(Nil, from = 2))
   }
 
   @Test
@@ -113,5 +135,25 @@ class SeqTest extends AllocationTest {
       Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
     exactAllocates(expected(20), "collection seq size 20")(
       Seq("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
+  }
+
+  @Test def `startsWith implies supplied from index is in range`: Unit = {
+    val xs = (1 to 10).toList
+    val ys = (1 to 05).toList
+    val zs = (1 to 10).to(Vector)
+    assertTrue(xs.startsWith(ys))
+    assertTrue(xs.startsWith(ys, offset = 0))
+    assertFalse(xs.startsWith(ys, offset = -10))
+    assertFalse(xs.startsWith(ys, offset = 100))
+    assertFalse(xs.startsWith(Nil, offset = 100))
+    assertTrue(xs.startsWith(Nil, offset = 9))
+    assertTrue(xs.startsWith(Nil, offset = 10))
+    assertFalse(xs.startsWith(Nil, offset = 11))
+
+    assertTrue(zs.startsWith(ys))
+    assertTrue(zs.startsWith(ys, offset = 0))
+    assertFalse(zs.startsWith(ys, offset = -10))
+    assertFalse(zs.startsWith(ys, offset = 100))
+    assertFalse(zs.startsWith(Nil, offset = 100))
   }
 }

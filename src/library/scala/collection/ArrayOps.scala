@@ -1496,7 +1496,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   // can't use a default arg because we already have another overload with a default arg
   /** Tests whether this array starts with the given array. */
-  @`inline` def startsWith[B >: A](that: Array[B]): Boolean = startsWith(that, 0)
+  @inline def startsWith[B >: A](that: Array[B]): Boolean = xs.eq(that) || startsWith(that, 0)
 
   /** Tests whether this array contains the given array at a given index.
     *
@@ -1505,17 +1505,15 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     * @return `true` if the array `that` is contained in this array at
     *         index `offset`, otherwise `false`.
     */
-  def startsWith[B >: A](that: Array[B], offset: Int): Boolean = {
-    val safeOffset = offset.max(0)
-    val thatl = that.length
-    if(thatl > xs.length-safeOffset) thatl == 0
+  def startsWith[B >: A](that: Array[B], offset: Int): Boolean = offset >= 0 && {
+    val l = xs.length
+    val tl = that.length
+    if (offset >= l) offset == l && tl == 0
     else {
       var i = 0
-      while(i < thatl) {
-        if(xs(i+safeOffset) != that(i)) return false
+      while (i < tl && xs(i + offset) == that(i))
         i += 1
-      }
-      true
+      i == tl
     }
   }
 

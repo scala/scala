@@ -77,18 +77,35 @@ class ArrayOpsTest {
     assertArrayEquals(Array(0), zero)
   }
 
-  @Test
-  def startsWith(): Unit = {
+  @Test def startsWith: Unit = {
     val l0 = Nil
     val l1 = 1 :: Nil
     val a0 = Array[Int]()
     val a1 = Array[Int](1)
-    assertEquals(l0.startsWith(l0, 0), a0.startsWith(a0, 0))
-    assertEquals(l0.startsWith(l0, 1), a0.startsWith(a0, 1))
+    val a2 = Array[Int](1, 2)
+    assertTrue(l0.startsWith(l0, 0) && a0.startsWith(a0, 0))
+    assertFalse("empties don't start with themselves at offset 1", l0.startsWith(l0, 1) || a0.startsWith(a0, 1))
+
     assertEquals(l0.startsWith(l1, 0), a0.startsWith(a1, 0))
     assertEquals(l0.startsWith(l1, 1), a0.startsWith(a1, 1))
     assertEquals(l0.startsWith(l1, -1), a0.startsWith(a1, -1))
     assertEquals(l0.startsWith(l1, Int.MinValue), a0.startsWith(a1, Int.MinValue))
+
+    assertTrue(a1.startsWith(a1))
+    assertTrue(a2.startsWith(a1))
+  }
+
+  @Test def `startsWith implies supplied from index is in range`: Unit = {
+    val xs = (1 to 10).toArray
+    val ys = (1 to 05).toList
+    assertTrue(xs.startsWith(ys))
+    assertTrue(xs.startsWith(ys, offset = 0))
+    assertFalse(xs.startsWith(ys, offset = -10))
+    assertFalse(xs.startsWith(ys, offset = 100))
+    assertFalse(xs.startsWith(Nil, offset = 100))
+    assertTrue(xs.startsWith(Nil, offset = 9))
+    assertTrue(xs.startsWith(Nil, offset = 10))
+    assertFalse(xs.startsWith(Nil, offset = 11))
   }
 
   @Test
