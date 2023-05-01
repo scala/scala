@@ -1,4 +1,7 @@
-s.scala:11: error: not found: type ZZ
-class Z extends ZZ // fail compile: remove when source flags are restored
+s.scala:5: error: illegal inheritance from sealed class H
+class S extends H {
                 ^
-1 error
+s.scala:8: error: illegal inheritance from sealed trait I
+trait T extends I {
+                ^
+2 errors
