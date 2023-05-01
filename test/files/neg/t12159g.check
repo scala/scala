@@ -1,0 +1,7 @@
+t.scala:4: warning: match may not be exhaustive.
+It would fail on the following inputs: Oz(), Z()
+  def n(a: X) = a match { case _: Y => 42 }
+                ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
