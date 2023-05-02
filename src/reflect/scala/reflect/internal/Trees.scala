@@ -1620,13 +1620,29 @@ trait Trees extends api.Trees {
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends InternalTraverser {
-    final def change(sym: Symbol) = {
+    protected val changedSymbols = mutable.Set.empty[Symbol]
+    protected val treeTypes = mutable.Set.empty[Type]
+
+    def change(sym: Symbol) = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
-        if (sym.isModule) sym.moduleClass.owner = newowner
+        changedSymbols += sym
+        if (sym.isModule) {
+          sym.moduleClass.owner = newowner
+          changedSymbols += sym.moduleClass
+        }
       }
     }
+
+    override def apply[T <: Tree](tree: T): T = {
+      traverse(tree)
+      if (changedSymbols.nonEmpty)
+        new InvalidateTypeCaches(changedSymbols).invalidate(treeTypes)
+      tree
+    }
+
     override def traverse(tree: Tree): Unit = {
+      if (tree.tpe != null) treeTypes += tree.tpe
       tree match {
         case _: Return =>
           if (tree.symbol == oldowner) {
@@ -1758,7 +1774,10 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = SubstSymMap(from, to)
-    private[this] var mutatedSymbols: List[Symbol] = Nil
+
+    protected val changedSymbols = mutable.Set.empty[Symbol]
+    protected val treeTypes = mutable.Set.empty[Type]
+
     override def transform(tree: Tree): Tree = {
       @tailrec
       def subst(from: List[Symbol], to: List[Symbol]): Unit = {
@@ -1767,6 +1786,7 @@ trait Trees extends api.Trees {
           else subst(from.tail, to.tail)
       }
       tree modifyType symSubst
+      if (tree.tpe != null) treeTypes += tree.tpe
 
       if (tree.hasSymbolField) {
         subst(from, to)
@@ -1779,7 +1799,7 @@ trait Trees extends api.Trees {
                   |TreeSymSubstituter: updated info of symbol ${sym}
                   |  Old: ${showRaw(sym.info, printTypes = true, printIds = true)}
                   |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
-                mutatedSymbols ::= sym
+                changedSymbols += sym
                 sym updateInfo newInfo
               }
             }
@@ -1804,7 +1824,8 @@ trait Trees extends api.Trees {
     }
     def apply[T <: Tree](tree: T): T = {
       val tree1 = transform(tree)
-      invalidateTreeTpeCaches(tree1, mutatedSymbols)
+      if (changedSymbols.nonEmpty)
+        new InvalidateTypeCaches(changedSymbols).invalidate(treeTypes)
       tree1.asInstanceOf[T]
     }
     override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)

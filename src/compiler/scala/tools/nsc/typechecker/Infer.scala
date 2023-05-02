@@ -1305,7 +1305,7 @@ trait Infer extends Checkable {
           }
         }
         tvars foreach instantiateTypeVar
-        invalidateTreeTpeCaches(tree0, tvars.map(_.origin.typeSymbol))
+        invalidateTreeTpeCaches(tree0, tvars.map(_.origin.typeSymbol).toSet)
       }
       /* If the scrutinee has free type parameters but the pattern does not,
        * we have to flip the arguments so the expected type is treated as more
