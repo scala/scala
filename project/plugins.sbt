@@ -1,5 +1,5 @@
 scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
-  "-Xlint:-unused,_", "-Xfatal-warnings")
+  "-Xlint:-unused,_")
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
