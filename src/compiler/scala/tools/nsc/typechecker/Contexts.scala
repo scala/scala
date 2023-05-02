@@ -1377,16 +1377,17 @@ trait Contexts { self: Analyzer =>
             sm"""|it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
                  |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
                  |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`."""
-          if (currentRun.isScala3)
-            Some(LookupAmbiguous(message))
-          else {
+          // For now (2.13.11), warn under Xsource:3. We'll consider warning by default (and erring in Xsource:3) in 2.13.12
+          if (currentRun.isScala3) {
             // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
             inherited.updateAttachment(LookupAmbiguityWarning(
               sm"""|reference to ${outer1.name} is ambiguous;
                    |$message
                    |Or use `-Wconf:msg=legacy-binding:s` to silence this warning."""))
+            // Some(LookupAmbiguous(message)) // to make it an error in 2.13.12
             None
-          }
+          } else
+            None
         }
       } else
         Some(LookupAmbiguous(s"it is both defined in ${outer.owner} and available as ${inherited.fullLocationString}"))
