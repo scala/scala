@@ -14,8 +14,7 @@ package scala.tools.nsc
 package util
 
 import io.{AbstractFile, Directory, File, Jar}
-import java.net.MalformedURLException
-import java.net.{URI, URL}
+import java.net.{MalformedURLException, URI, URISyntaxException, URL}
 import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
@@ -185,7 +184,7 @@ object ClassPath {
 
   def specToURL(spec: String): Option[URL] =
     try Some(new URI(spec).toURL)
-    catch { case _: MalformedURLException => None }
+    catch { case _: MalformedURLException | _: URISyntaxException => None }
 
   def manifests: List[java.net.URL] = {
     import scala.jdk.CollectionConverters._
