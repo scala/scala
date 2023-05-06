@@ -756,6 +756,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                 } else qualSym
               }
 
+              lineNumber(app)
               generatedType = genCallMethod(sym, invokeStyle, app.pos, receiverClass)
 
               // Check if the Apply tree has an InlineAnnotatedAttachment, added by the typer

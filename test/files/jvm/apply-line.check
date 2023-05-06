@@ -1,0 +1,4 @@
+Test$.void(apply-line.scala:4)
+Test$.test(apply-line.scala:10)
+Test$.main(apply-line.scala:14)
+Test.main(apply-line.scala)
