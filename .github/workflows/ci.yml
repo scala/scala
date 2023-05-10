@@ -20,7 +20,8 @@ jobs:
         java-distribution: [temurin]
         java: [8, 11, 17, 20]
         include:
-          - java-distribution: oracle
+          - os: ubuntu-latest
+            java-distribution: oracle
             java: 21-ea
     runs-on: ${{matrix.os}}
     steps:
