@@ -21,8 +21,8 @@ jobs:
         java: [8, 11, 17, 20]
         include:
           - os: ubuntu-latest
-          - java-distribution: oracle
-          - java: 21-ea
+            java-distribution: oracle
+            java: 21-ea
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
