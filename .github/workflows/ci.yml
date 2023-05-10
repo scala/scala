@@ -23,6 +23,9 @@ jobs:
           - os: ubuntu-latest
             java-distribution: oracle
             java: 21-ea
+          - os: windows-latest
+            java-distribution: oracle
+            java: 21-ea
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
