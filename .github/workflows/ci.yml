@@ -16,7 +16,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        java-distribution: [temurin]
         java: [8, 11, 17, 20]
+        # 21-ea will presumably be available from Temurin eventually, but for now:
+        include:
+          - os: ubuntu-latest
+            java-distribution: zulu
+            java: 21-ea
+          - os: windows-latest
+            java-distribution: zulu
+            java: 21-ea
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
@@ -26,15 +35,15 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: ${{matrix.java-distribution}}
           java-version: ${{matrix.java}}
           cache: sbt
 
       - name: Build
         run: |
-          sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          sbt -Dsbt.scala.version=2.12.18-M2 setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
 
       - name: Test
         run: |
           STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          sbt -Dstarr.version=$STARR setupValidateTest test:compile info testAll
+          sbt -Dsbt.scala.version=2.12.18-M2 -Dstarr.version=$STARR setupValidateTest test:compile info testAll
