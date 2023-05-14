@@ -1,0 +1,9 @@
+t12785.scala:6: warning: comparing values of types Predef.type and Array[B] using `eq` will always yield false
+  def startsWith[B >: A](that: Array[B]): Boolean = eq(that)
+                                                      ^
+t12785.scala:10: warning: comparing values of types scala.package.type and Array[B] using `eq` will always yield false
+    eq(that)
+      ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

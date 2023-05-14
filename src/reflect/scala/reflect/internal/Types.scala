@@ -1102,13 +1102,13 @@ trait Types
 // Spec: "The base types of a singleton type `$p$.type` are the base types of the type of $p$."
 //    override def baseTypeSeq: BaseTypeSeq = underlying.baseTypeSeq
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
-    override def safeToString: String = {
-      // Avoiding printing Predef.type and scala.package.type as "type",
-      // since in all other cases we omit those prefixes.
-      val sym = termSymbol.skipPackageObject
-      if (sym.isOmittablePrefix) sym.fullName + ".type"
-      else prefixString + "type"
-    }
+    // Avoid printing Predef.type and scala.package.type as "type",
+    // since in all other cases we omit those prefixes. Do not skipPackageObject.
+    override def safeToString: String =
+      termSymbol match {
+        case s if s.isOmittablePrefix => s"${if (s.isPackageObjectOrClass || s.isJavaDefined) s.fullNameString else s.nameString}.type"
+        case _ => s"${prefixString}type"
+      }
   }
 
   /** An object representing an erroneous type */
@@ -2135,7 +2135,9 @@ trait Types
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
-    override def safeToString = prefixString + "type"
+    override def safeToString =
+      if (sym.isOmittablePrefix) s"${if (sym.isPackageObjectOrClass || sym.isJavaDefined) sym.fullNameString else sym.nameString}.type"
+      else s"${prefixString}type"
     override def prefixString = if (sym.isOmittablePrefix) "" else prefix.prefixString + sym.nameString + "."
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
