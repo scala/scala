@@ -18,7 +18,18 @@ import ju.Optional
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 // Left for compatibility
 import Compat._
+import scala.collection.JavaConverters._
 import scala.reflect.io.AbstractFile
+import xsbti.{
+  Action,
+  DiagnosticCode => XDiagnosticCode,
+  DiagnosticRelatedInformation => XDiagnosticRelatedInformation,
+  Problem => XProblem,
+  Position => XPosition,
+  Severity => XSeverity,
+  TextEdit,
+  WorkspaceEdit
+}
 
 /**
  * This implements reporter/ concrete Problem data structure for
@@ -92,6 +103,10 @@ private object DelegatingReporter {
     val jl = new ju.ArrayList[A](l.size)
     l.foreach(jl.add(_))
     jl
+  }
+
+  private[xsbt] def jl2l[A](jl: ju.List[A]): List[A] = {
+    jl.asScala.toList
   }
 
   private[xsbt] def convert(dirtyPos: Position): xsbti.Position = {
@@ -209,10 +224,17 @@ private final class DelegatingReporter(
         rendered0 = None,
         diagnosticCode0 = None,
         diagnosticRelatedInformation0 = Nil,
-        actions0 = Nil
+        actions0 = getActions(pos, pos1, msg)
       ))
     }
   }
+
+  private def getActions(pos: Position, pos1: xsbti.Position, msg: String): List[Action] =
+    if (pos.isRange) Nil
+    else if (msg.startsWith("procedure syntax is deprecated:")) {
+      val edit = workspaceEdit(List(textEdit(pos1, ": Unit = {")))
+      action("procedure syntax", None, edit) :: Nil
+    } else Nil
 
   import xsbti.Severity.{ Info, Warn, Error }
   private[this] def convert(sev: Severity): xsbti.Severity = sev match {
@@ -223,14 +245,6 @@ private final class DelegatingReporter(
   }
 
   // Define our own problem because the bridge should not depend on sbt util-logging.
-  import xsbti.{
-    Action => XAction,
-    DiagnosticCode => XDiagnosticCode,
-    DiagnosticRelatedInformation => XDiagnosticRelatedInformation,
-    Problem => XProblem,
-    Position => XPosition,
-    Severity => XSeverity
-  }
   private final class CompileProblem(
       pos: XPosition,
       msg: String,
@@ -238,7 +252,7 @@ private final class DelegatingReporter(
       rendered0: Option[String],
       diagnosticCode0: Option[XDiagnosticCode],
       diagnosticRelatedInformation0: List[XDiagnosticRelatedInformation],
-      actions0: List[XAction]
+      actions0: List[Action]
   ) extends XProblem {
     override val category = ""
     override val position = pos
@@ -249,7 +263,73 @@ private final class DelegatingReporter(
     override def diagnosticCode: Optional[XDiagnosticCode] = o2jo(diagnosticCode0)
     override def diagnosticRelatedInformation(): ju.List[XDiagnosticRelatedInformation] =
       l2jl(diagnosticRelatedInformation0)
-    override def actions(): ju.List[XAction] = l2jl(actions0)
+    override def actions(): ju.List[Action] = l2jl(actions0)
+  }
+
+  private def action(
+      title: String,
+      description: Option[String],
+      edit: WorkspaceEdit
+  ): Action =
+    new ConcreteAction(title, description, edit)
+
+  private def workspaceEdit(changes: List[TextEdit]): WorkspaceEdit =
+    new ConcreteWorkspaceEdit(changes)
+
+  private def textEdit(position: XPosition, newText: String): TextEdit =
+    new ConcreteTextEdit(position, newText)
+
+  private final class ConcreteAction(
+      title0: String,
+      description0: Option[String],
+      edit0: WorkspaceEdit
+  ) extends Action {
+    val title: String = title0
+    val edit: WorkspaceEdit = edit0
+    override def description(): Optional[String] =
+      o2jo(description0)
+    override def toString(): String =
+      s"Action($title0, $description0, $edit0)"
+    private def toTuple(a: Action) =
+      (
+        a.title,
+        a.description,
+        a.edit
+      )
+    override def hashCode: Int = toTuple(this).##
+    override def equals(o: Any): Boolean = o match {
+      case o: Action => toTuple(this) == toTuple(o)
+      case _         => false
+    }
+  }
+
+  private final class ConcreteWorkspaceEdit(changes0: List[TextEdit]) extends WorkspaceEdit {
+    override def changes(): ju.List[TextEdit] = l2jl(changes0)
+    override def toString(): String =
+      s"WorkspaceEdit($changes0)"
+    private def toTuple(w: WorkspaceEdit) = jl2l(w.changes)
+    override def hashCode: Int = toTuple(this).##
+    override def equals(o: Any): Boolean = o match {
+      case o: WorkspaceEdit => toTuple(this) == toTuple(o)
+      case _                => false
+    }
+  }
+
+  private final class ConcreteTextEdit(position0: XPosition, newText0: String) extends TextEdit {
+    val position: XPosition = position0
+    val newText: String = newText0
+    override def toString(): String =
+      s"TextEdit($position, $newText)"
+    private def toTuple(edit: TextEdit) =
+      (
+        edit.position,
+        edit.newText
+      )
+    override def hashCode: Int = toTuple(this).##
+    override def equals(o: Any): Boolean = o match {
+      case o: TextEdit => toTuple(this) == toTuple(o)
+      case _           => false
+    }
   }
 }
 
