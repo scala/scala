@@ -5563,6 +5563,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+              if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(sym))
+                context.warning(tree.pos, s"${sym.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
               val tree1 = if (qual == EmptyTree) tree else {
                 val pos = tree.pos
                 Select(atPos(pos.focusStart)(qual), name).setPos(pos)

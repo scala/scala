@@ -1,0 +1,15 @@
+i17266.scala:13: warning: synchronized not selected from this instance
+    synchronized { // error
+    ^
+i17266.scala:26: warning: wait not selected from this instance
+    wait() // error
+    ^
+i17266.scala:32: warning: notify not selected from this instance
+  def `maybe notify`(): Unit = notify()
+                               ^
+i17266.scala:33: warning: notifyAll not selected from this instance
+  def `maybe notifyAll`(): Unit = notifyAll()
+                                  ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error
