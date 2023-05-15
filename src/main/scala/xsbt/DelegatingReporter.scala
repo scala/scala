@@ -12,13 +12,22 @@
 package xsbt
 
 import java.io.File
-import java.util.Optional
+import java.{ util => ju }
+import ju.Optional
 
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 // Left for compatibility
 import Compat._
 import scala.reflect.io.AbstractFile
 
+/**
+ * This implements reporter/ concrete Problem data structure for
+ * the compiler bridge, in other words for each Scala versions
+ * that Zinc is capable of compiling.
+ *
+ * There's also sbt.util.InterfaceUtil, which is also used in
+ * Zinc in the Scala version Zinc uses.
+ */
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
     new DelegatingReporter(settings.fatalWarnings.value, settings.nowarn.value, delegate)
@@ -77,6 +86,12 @@ private object DelegatingReporter {
       case Some(v) => Optional.ofNullable(v)
       case None    => Optional.empty[A]()
     }
+  }
+
+  private[xsbt] def l2jl[A](l: List[A]): ju.List[A] = {
+    val jl = new ju.ArrayList[A](l.size)
+    l.foreach(jl.add(_))
+    jl
   }
 
   private[xsbt] def convert(dirtyPos: Position): xsbti.Position = {
@@ -166,6 +181,8 @@ private final class DelegatingReporter(
     noWarn: Boolean,
     private[this] var delegate: xsbti.Reporter
 ) extends scala.tools.nsc.reporters.Reporter {
+  import DelegatingReporter._
+
   def dropDelegate(): Unit = { delegate = ReporterSink }
   def error(msg: String): Unit = error(FakePos("scalac"), msg)
   def printSummary(): Unit = delegate.printSummary()
@@ -184,7 +201,16 @@ private final class DelegatingReporter(
     val skip = rawSeverity == WARNING && noWarn
     if (!skip) {
       val severity = if (warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
-      delegate.log(new CompileProblem(DelegatingReporter.convert(pos), msg, convert(severity)))
+      val pos1 = DelegatingReporter.convert(pos)
+      delegate.log(new CompileProblem(
+        pos = pos1,
+        msg = msg,
+        sev = convert(severity),
+        rendered0 = None,
+        diagnosticCode0 = None,
+        diagnosticRelatedInformation0 = Nil,
+        actions0 = Nil
+      ))
     }
   }
 
@@ -197,17 +223,33 @@ private final class DelegatingReporter(
   }
 
   // Define our own problem because the bridge should not depend on sbt util-logging.
-  import xsbti.{ Problem => XProblem, Position => XPosition, Severity => XSeverity }
+  import xsbti.{
+    Action => XAction,
+    DiagnosticCode => XDiagnosticCode,
+    DiagnosticRelatedInformation => XDiagnosticRelatedInformation,
+    Problem => XProblem,
+    Position => XPosition,
+    Severity => XSeverity
+  }
   private final class CompileProblem(
       pos: XPosition,
       msg: String,
-      sev: XSeverity
+      sev: XSeverity,
+      rendered0: Option[String],
+      diagnosticCode0: Option[XDiagnosticCode],
+      diagnosticRelatedInformation0: List[XDiagnosticRelatedInformation],
+      actions0: List[XAction]
   ) extends XProblem {
     override val category = ""
     override val position = pos
     override val message = msg
     override val severity = sev
+    override def rendered = o2jo(rendered0)
     override def toString = s"[$severity] $pos: $message"
+    override def diagnosticCode: Optional[XDiagnosticCode] = o2jo(diagnosticCode0)
+    override def diagnosticRelatedInformation(): ju.List[XDiagnosticRelatedInformation] =
+      l2jl(diagnosticRelatedInformation0)
+    override def actions(): ju.List[XAction] = l2jl(actions0)
   }
 }
 
