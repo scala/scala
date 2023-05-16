@@ -825,7 +825,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             val paramNameAccess = new Array[Int](paramCount)
             var i = 0
             while (i < paramCount) {
-              paramNames(i) = pool.getExternalName(u2)
+              paramNames(i) = u2() match {
+                case 0 => null  // may occur on JDK 21+, as per scala/bug#12783
+                case index => pool.getExternalName(index)
+              }
               paramNameAccess(i) = u2
               i += 1
             }
@@ -1248,6 +1251,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
+  // on JDK 21+, `names` may include nulls, as per scala/bug#12783
   private class ParamNames(val names: Array[NameOrString], val access: Array[Int]) {
     assert(names.length == access.length)
     def length = names.length
@@ -1351,8 +1355,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             case (i, param) =>
               val isSynthetic = (paramNames.access(i) & ACC_SYNTHETIC) != 0
               if (!isSynthetic) {
-                param.name = paramNames.names(i).name.toTermName.encode
                 param.resetFlag(SYNTHETIC)
+                val nameOrString = paramNames.names(i)
+                if (nameOrString != null)
+                  param.name = nameOrString.name.toTermName.encode
               }
           }
           // there's not anything we can do, but it's slightly worrisome
