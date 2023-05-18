@@ -17,7 +17,7 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.1")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
