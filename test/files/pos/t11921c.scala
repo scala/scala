@@ -1,3 +1,4 @@
+// scalac: -Xsource:3
 
 // test/scaladoc/resources/t5784.scala
 

@@ -29,6 +29,13 @@ Such references are ambiguous in Scala 3. To continue using the inherited symbol
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
         println(y)  // error
                 ^
+t11921b.scala:65: warning: reference to global is ambiguous;
+it is both defined in the enclosing package <empty> and inherited in the enclosing object D as value global (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.global`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+  println(global)    // error
+          ^
 t11921b.scala:75: warning: reference to x is ambiguous;
 it is both defined in the enclosing object Uhu and inherited in the enclosing class C as value x (defined in class A, inherited through parent class B)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
@@ -50,5 +57,5 @@ Such references are ambiguous in Scala 3. To continue using the inherited symbol
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
     def v = t(lo) // error
               ^
-7 warnings
+8 warnings
 1 error

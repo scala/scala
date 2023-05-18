@@ -17,11 +17,14 @@ which are collectively called _bindings_.
 Bindings of each kind are assigned a precedence which determines
 whether one binding can shadow another:
 
-1. Definitions and declarations in lexical scope that are not [top-level](09-top-level-definitions.html)
-   have the highest precedence.
-1. Definitions and declarations that are either inherited,
-   or made available by a package clause and also defined in the same compilation unit as the reference to them,
-   have the next highest precedence.
+<!-- Not in the spec since Scala 2 only warns (scala/scala#10339)
+1. Definitions and declarations that are local, or made available by a package clause and also
+   defined in the same compilation unit as the reference to them, have the highest precedence.
+1. Definitions and declarations that are inherited have the next highest precedence.
+-->
+1. Definitions and declarations that are local, inherited, or made
+   available by a package clause and also defined in the same compilation unit
+   as the reference to them, have the highest precedence.
 1. Explicit imports have the next highest precedence.
 1. Wildcard imports have the next highest precedence.
 1. Bindings made available by a package clause,

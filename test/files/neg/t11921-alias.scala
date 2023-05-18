@@ -1,4 +1,4 @@
-// scalac: -Werror
+// scalac: -Werror -Xsource:3
 
 object t1 {
   class C[T] { type TT = T }
