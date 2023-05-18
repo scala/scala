@@ -29,7 +29,7 @@ public class StreamConvertersJavaTest {
     public List<Integer> li = CollectionConverters.asScala(Arrays.asList(1, 2)).toList();
     public List<Float> lf = CollectionConverters.asScala(Arrays.asList(1f, 2f)).toList();
 
-    public <K, V> Map<K, V> mkm(K k1, V v1, K k2, V v2) {
+    public static <K, V> Map<K, V> mkm(K k1, V v1, K k2, V v2) {
         java.util.Map<K, V> m = new java.util.HashMap<K, V>();
         m.put(k1, v1);
         m.put(k2, v2);
