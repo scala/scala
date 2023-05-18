@@ -15,7 +15,7 @@ trait TClassParent extends B { def apply(x: Int): String }
 
 object Test extends App {
   final val AnonFunClass = "$anonfun$"
-  final val LMFClass = "$$Lambda$" // LambdaMetaFactory names classes like this
+  final val LMFClass = "$$Lambda" // LambdaMetaFactory names classes like this
 
   private def LMF(f: Any): Unit = {
     val className = f.getClass.toString
