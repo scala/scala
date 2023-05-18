@@ -2,6 +2,7 @@ package scala.tools.tastytest
 
 import org.junit.{Test => test, BeforeClass => setup, AfterClass => teardown}
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scala.util.{Try, Failure, Properties}
 
@@ -91,6 +92,8 @@ object TastyTestJUnit {
 
   @setup
   def init(): Unit = {
+    // TODO remove once Scala 3 has a fix for scala/bug#12783
+    assumeFalse(scala.util.Properties.isJavaAtLeast("21"))
     _dottyClassLoader = Dotc.initClassloader().get
   }
 
