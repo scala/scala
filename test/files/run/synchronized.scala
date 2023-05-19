@@ -1,8 +1,4 @@
-// scalac: -opt:inline:**
-//
-/*
- * filter: optimizer warnings;
- */
+// scalac: -opt:inline:** -Wopt:none
 import java.lang.Thread.holdsLock
 import scala.collection.mutable.StringBuilder
 
