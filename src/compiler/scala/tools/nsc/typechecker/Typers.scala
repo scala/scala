@@ -17,7 +17,14 @@ package typechecker
 import scala.annotation.{tailrec, unused}
 import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
+import scala.reflect.internal.util.{
+  CodeAction,
+  FreshNameCreator,
+  ListOfNil,
+  Statistics,
+  StringContextStripMarginOps,
+  TextEdit,
+}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
 import symtab.Flags._
@@ -85,7 +92,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case s : SilentTypeError      => f(s.reportableErrors)
     }
   }
-  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[(Position, String, WarningCategory, Symbol)]) extends SilentResult[Nothing] {
+  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[ContextWarning]) extends SilentResult[Nothing] {
     override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
@@ -97,7 +104,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
   object SilentTypeError {
     def apply(errors: AbsTypeError*): SilentTypeError = apply(errors.toList, Nil)
-    def apply(errors: List[AbsTypeError], warnings: List[(Position, String, WarningCategory, Symbol)]): SilentTypeError = new SilentTypeError(errors, warnings)
+    def apply(errors: List[AbsTypeError], warnings: List[ContextWarning]): SilentTypeError = new SilentTypeError(errors, warnings)
     // todo: this extracts only one error, should be a separate extractor.
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
@@ -964,9 +971,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
           if (!isPastTyper && !matchNullaryLoosely) {
-            context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
-                                                           s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
-                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.13.3")
+            val description =
+              s"""Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},
+                 |or remove the empty argument list from its definition (Java-defined methods are exempt).
+                 |In Scala 3, an unapplied method like this will be eta-expanded into a function.""".stripMargin
+            val actions = if (tree.pos.isRange)
+                List(CodeAction("auto-application of empty-paren methods", Some(description),
+                  List(TextEdit(tree.pos.focusEnd, "()"))))
+              else Nil
+            context.deprecationWarning(tree.pos, NoSymbol, description, "2.13.3", actions)
           }
           true
         }
@@ -4991,7 +5004,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (settings.areStatisticsEnabled) statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String, WarningCategory, Symbol)]): Tree = {
+        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[ContextWarning]): Tree = {
           if (settings.areStatisticsEnabled) statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, convert to existentials and try again.
@@ -5059,7 +5072,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
             else err
           typeErrors.foreach(err => context.issue(adjust(err)))
-          warnings.foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
+          warnings.foreach { case ContextWarning(p, m, c, s, as) => context.warning(p, m, c, s, as) }
           setError(treeCopy.Apply(tree, fun, args))
         }
 
@@ -5081,7 +5094,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def reportError(error: SilentTypeError): Tree = {
           error.reportableErrors.foreach(context.issue)
-          error.warnings.foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
+          error.warnings.foreach { case ContextWarning(p, m, c, s, as) => context.warning(p, m, c, s, as) }
           args.foreach(typed(_, mode, ErrorType))
           setError(tree)
         }

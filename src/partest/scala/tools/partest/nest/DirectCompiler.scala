@@ -14,9 +14,8 @@ package scala.tools.partest
 package nest
 
 import java.io.{BufferedReader, FileWriter, PrintWriter}
-
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{NoPosition, Position, ScalaClassLoader}
+import scala.reflect.internal.util.{CodeAction, NoPosition, Position, ScalaClassLoader}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
@@ -30,7 +29,7 @@ object ExtConsoleReporter {
   }
 }
 class PlainReporter(settings: Settings, reader: BufferedReader, writer: PrintWriter, echo: PrintWriter) extends ConsoleReporter(settings, reader, writer, echo) {
-  override def doReport(pos: Position, msg: String, severity: Severity): Unit = writer.println(s"[$severity] [$pos]: $msg")
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = writer.println(s"[$severity] [$pos]: $msg")
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {

@@ -1,9 +1,10 @@
 package scala.tools.nsc
 package symtab
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 import scala.reflect.internal.{NoPhase, Phase, Reporter, SomePhase}
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.{CodeAction, Statistics}
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
@@ -85,13 +86,14 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   // Members declared in scala.reflect.internal.Reporting
   def reporter = new Reporter {
+    @nowarn("msg=overriding method info0")
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 
   // minimal Run to get Reporting wired
   def currentRun = new RunReporting {}
   class PerRunReporting extends PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = reporter.warning(pos, msg)
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction]): Unit = reporter.warning(pos, msg)
   }
   protected def PerRunReporting = new PerRunReporting
 

@@ -22,7 +22,7 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
-import scala.reflect.internal.util.{ListOfNil, Position}
+import scala.reflect.internal.util.{CodeAction, ListOfNil, Position}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
 
@@ -38,7 +38,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def freshName(prefix: String): Name = freshTermName(prefix)
     def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
-    def deprecationWarning(off: Int, msg: String, since: String) = runReporting.deprecationWarning(off, msg, since, site = "", origin = "")
+    def deprecationWarning(off: Int, msg: String, since: String, actions: List[CodeAction]) = runReporting.deprecationWarning(off, msg, since, site = "", origin = "", actions)
     implicit def i2p(offset : Int) : Position = Position.offset(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = runReporting.warning(pos, msg, WarningCategory.JavaSource, site = "")
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)
