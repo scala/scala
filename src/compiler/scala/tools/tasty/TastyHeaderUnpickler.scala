@@ -53,12 +53,7 @@ class TastyHeaderUnpickler(reader: TastyReader) {
         compilerExperimental = ExperimentalVersion
       )
 
-      // TODO: remove this exception once we have a 3.3.0
-      val dottyRCexception = validVersion ||
-        (fileMajor == 28 && fileMinor == 3 && fileExperimental == 1
-          && MajorVersion == 28 && MinorVersion == 3 && ExperimentalVersion == 0)
-
-      check(dottyRCexception, {
+      check(validVersion, {
         val signature = signatureString(fileMajor, fileMinor, fileExperimental)
         val toolingVersion = new String(bytes, toolingStart.index, toolingLength)
         val producedByAddendum = s"\nThe TASTy file was produced by $toolingVersion.$toolingAddendum"
