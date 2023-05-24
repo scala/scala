@@ -12,7 +12,7 @@ import sbt.librarymanagement.{
   * Settings to support validation of TastyUnpickler against the release of dotty with the matching TASTy version
   */
 object TastySupport {
-  val supportedTASTyRelease = "3.3.0-RC6" // TASTy version 28.4-1
+  val supportedTASTyRelease = "3.3.0" // TASTy version 28.4-1
   val scala3Compiler = "org.scala-lang" % "scala3-compiler_3" % supportedTASTyRelease
   val scala3Library = "org.scala-lang" % "scala3-library_3" % supportedTASTyRelease
 
@@ -26,7 +26,7 @@ object TastySupport {
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "3.3.0-RC6"
+  val dottyVersion = "3.3.0"
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).exists(_.toBoolean)
   lazy val commonSettings = Seq(
