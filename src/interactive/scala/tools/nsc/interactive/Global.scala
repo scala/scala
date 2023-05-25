@@ -1190,7 +1190,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
             symbol.name.isTermName == name.isTermName || // Keep names of the same type
             name.isTypeName && isStable // Completing a type: keep stable terms (paths)
         }
-        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && nameTypeOk)
+        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name)) && nameTypeOk
 
       }
     }
