@@ -336,7 +336,6 @@ case class CompletionCandidate(
   isDeprecated: Boolean = false,
   isUniversal: Boolean = false,
   declString: () => String = () => "",
-  alias: Option[String] = None
 )
 object CompletionCandidate {
   sealed trait Arity
