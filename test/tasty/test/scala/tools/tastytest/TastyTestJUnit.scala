@@ -92,8 +92,6 @@ object TastyTestJUnit {
 
   @setup
   def init(): Unit = {
-    // TODO remove once Scala 3 has a fix for scala/bug#12783
-    assumeFalse(scala.util.Properties.isJavaAtLeast("21"))
     _dottyClassLoader = Dotc.initClassloader().get
   }
 
