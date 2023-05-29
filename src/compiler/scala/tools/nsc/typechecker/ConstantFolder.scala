@@ -90,29 +90,41 @@ abstract class ConstantFolder {
     else if (foldable) orig setType FoldableConstantType(folded)
     else orig setType LiteralType(folded)
 
-  private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
-    case (nme.UNARY_!, BooleanTag) => Constant(!x.booleanValue)
-
-    case (nme.UNARY_~, IntTag    ) => Constant(~x.intValue)
-    case (nme.UNARY_~, LongTag   ) => Constant(~x.longValue)
-
-    case (nme.UNARY_+, IntTag    ) => Constant(+x.intValue)
-    case (nme.UNARY_+, LongTag   ) => Constant(+x.longValue)
-    case (nme.UNARY_+, FloatTag  ) => Constant(+x.floatValue)
-    case (nme.UNARY_+, DoubleTag ) => Constant(+x.doubleValue)
-
-    case (nme.UNARY_-, IntTag    ) => Constant(-x.intValue)
-    case (nme.UNARY_-, LongTag   ) => Constant(-x.longValue)
-    case (nme.UNARY_-, FloatTag  ) => Constant(-x.floatValue)
-    case (nme.UNARY_-, DoubleTag ) => Constant(-x.doubleValue)
-
-    case (nme.toChar  , _) if x.isNumeric => Constant(x.charValue)
-    case (nme.toInt   , _) if x.isNumeric => Constant(x.intValue)
-    case (nme.toLong  , _) if x.isNumeric => Constant(x.longValue)
-    case (nme.toFloat , _) if x.isNumeric => Constant(x.floatValue)
-    case (nme.toDouble, _) if x.isNumeric => Constant(x.doubleValue)
-
-    case _ => null
+  private def foldUnop(op: Name, x: Constant): Constant = {
+    val N = nme
+    import N._
+    val value: Any = op match {
+      case UNARY_! => if (x.tag == BooleanTag) !x.booleanValue else null
+      case UNARY_~ => x.tag match {
+        case IntTag  => ~x.intValue
+        case LongTag => ~x.longValue
+        case _ => null
+      }
+      case UNARY_+ => x.tag match {
+        case IntTag    => +x.intValue
+        case LongTag   => +x.longValue
+        case FloatTag  => +x.floatValue
+        case DoubleTag => +x.doubleValue
+        case _ => null
+      }
+      case UNARY_- => x.tag match {
+        case IntTag    => -x.intValue
+        case LongTag   => -x.longValue
+        case FloatTag  => -x.floatValue
+        case DoubleTag => -x.doubleValue
+        case _ => null
+      }
+      case _ if x.isNumeric => op match {
+        case `toChar`   => x.charValue
+        case `toInt`    => x.intValue
+        case `toLong`   => x.longValue
+        case `toFloat`  => x.floatValue
+        case `toDouble` => x.doubleValue
+        case _ => null
+      }
+      case _ => null
+    }
+    if (value != null) Constant(value) else null
   }
 
   /** These are local helpers to keep foldBinop from overly taxing the
