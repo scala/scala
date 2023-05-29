@@ -27,6 +27,8 @@ abstract class ConstantFolder {
   val global: Global
   import global._
 
+  val foldableUnaryOps: Set[Name] = nme.isEncodedUnary ++ List(nme.toChar, nme.toInt, nme.toLong, nme.toFloat, nme.toDouble)
+
   // We can fold side effect free terms and their types
   object FoldableTerm {
     @inline private def effectless(sym: Symbol): Boolean = sym != null && !sym.isLazy && (sym.isVal || sym.isGetter && sym.accessed.isVal)
@@ -103,6 +105,12 @@ abstract class ConstantFolder {
     case (nme.UNARY_-, LongTag   ) => Constant(-x.longValue)
     case (nme.UNARY_-, FloatTag  ) => Constant(-x.floatValue)
     case (nme.UNARY_-, DoubleTag ) => Constant(-x.doubleValue)
+
+    case (nme.toChar  , _) if x.isNumeric => Constant(x.charValue)
+    case (nme.toInt   , _) if x.isNumeric => Constant(x.intValue)
+    case (nme.toLong  , _) if x.isNumeric => Constant(x.longValue)
+    case (nme.toFloat , _) if x.isNumeric => Constant(x.floatValue)
+    case (nme.toDouble, _) if x.isNumeric => Constant(x.doubleValue)
 
     case _ => null
   }
