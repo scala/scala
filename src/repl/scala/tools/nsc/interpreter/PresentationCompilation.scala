@@ -216,12 +216,7 @@ trait PresentationCompilation { self: IMain =>
         val ccs = for {
           member <- matching
           if seen.add(member.sym)
-          candidate <- if (member.sym.isAliasType) {
-            val dealiased = member.sym.info.dealias.typeSymbol
-              seen.add(dealiased)
-              List(member.sym, dealiased)
-          } else List(member.sym)
-          sym <- if (candidate.isClass && isNew) candidate.info.decl(nme.CONSTRUCTOR).alternatives else candidate.alternatives
+          sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
           CompletionCandidate(
@@ -237,7 +232,9 @@ trait PresentationCompilation { self: IMain =>
                 val methodOtherDesc = if (!desc.exists(_ != "")) "" else " " + desc.filter(_ != "").mkString(" ")
                 sugared.defStringSeenAs(tp) + methodOtherDesc
               }
-            })
+            },
+            alias = member.aliasInfo.fold[Option[String]](None)(s => Some(s.sym.nameString))
+            )
         }
         ccs
       }
