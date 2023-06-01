@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.12.17"),
+    mimaReferenceVersion := Some("2.12.18"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](

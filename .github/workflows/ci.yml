@@ -41,9 +41,9 @@ jobs:
 
       - name: Build
         run: |
-          sbt -Dsbt.scala.version=2.12.18-M2 setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          sbt -Dsbt.scala.version=2.12.18 setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
 
       - name: Test
         run: |
           STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          sbt -Dsbt.scala.version=2.12.18-M2 -Dstarr.version=$STARR setupValidateTest test:compile info testAll
+          sbt -Dsbt.scala.version=2.12.18 -Dstarr.version=$STARR setupValidateTest test:compile info testAll
