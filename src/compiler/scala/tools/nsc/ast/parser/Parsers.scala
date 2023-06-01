@@ -2956,7 +2956,7 @@ self =>
 
     def funDefRest(start: Offset, nameOffset: Offset, mods: Modifiers, name: Name): Tree = {
       def orStart(p: Offset) = if (name.toTermName == nme.ERROR) start else p
-      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
       val result = atPos(start, orStart(nameOffset)) {
         var newmods = mods
         // contextBoundBuf is for context bounded type parameters of the form
@@ -3131,7 +3131,7 @@ self =>
       if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
         deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
       def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
-      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
       atPos(start, orStart(nameOffset)) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
@@ -3169,7 +3169,7 @@ self =>
       val name = ident()
       val tstart = in.offset
       def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
-      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset), orStart(in.offset)))
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
       atPos(start, orStart(nameOffset)) {
         val template = templateOpt(mods, if (isPackageObject) nme.PACKAGEkw else name, NoMods, Nil, tstart)
         ModuleDef(mods, name.toTermName, template).updateAttachment(namePos)
