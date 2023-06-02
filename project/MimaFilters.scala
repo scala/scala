@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.10"),
+    mimaReferenceVersion := Some("2.13.11"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -39,15 +39,6 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
-    // private class used by methods
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.IterableOnceOps$Maximized"),
-
-    // private object used by methods
-    ProblemFilters.exclude[MissingClassProblem]("scala.math.Numeric$BigDecimalIsConflicted$"),
-
-    // PR 10235
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.LinkedHashMap$LinkedHashMapIterator"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.LinkedHashSet$LinkedHashSetIterator"),
   )
 
   override val buildSettings = Seq(
