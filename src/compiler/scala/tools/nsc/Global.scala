@@ -1476,13 +1476,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       val global: Global.this.type = Global.this
       lazy val trackers = currentRun.units.toList map (x => SymbolTracker(x))
       def snapshot() = {
-        inform("\n[[symbol layout at end of " + phase + "]]")
+        println(s"\n[[symbol layout at end of $phase]]")
         exitingPhase(phase) {
           trackers foreach { t =>
             t.snapshot()
-            inform(t.show("Heading from " + phase.prev.name + " to " + phase.name))
+            println(t.show(s"Heading from ${phase.prev.name} to ${phase.name}"))
           }
         }
+        println()
       }
     }
 
