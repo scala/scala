@@ -593,19 +593,17 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       getScope(jflags) enter sym
 
       // sealed java enums
-      if (jflags.isEnum) {
-        val enumClass = sym.owner.linkedClassOfClass
-        enumClass match {
+      if (jflags.isEnum)
+        sym.owner.linkedClassOfClass match {
           case NoSymbol =>
             devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
-          case linked =>
-            if (!linked.isSealed)
-              // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also JavaParsers.
-              // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
-              linked setFlag (SEALED | ABSTRACT)
-            linked addChild sym
+          case enumClass =>
+            // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also JavaParsers.
+            // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
+            // Java enums may be already sealed by virtue of permittedSubclasses, if an element had a body.
+            enumClass.setFlag(SEALED | ABSTRACT)
+            enumClass.addChild(sym)
         }
-      }
     }
   }
 
@@ -1382,9 +1380,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         ClassInfoType(superTpe1 :: ifacesTypes, instanceScope, clazz)
       }
       sym.setInfo(info)
-      for (k <- permittedSubclasses)
-        if (k.parentSymbols.contains(sym))
-          sym.addChild(k)
+      // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
+      if (!sym.hasJavaEnumFlag)
+        for (k <- permittedSubclasses)
+          if (k.parentSymbols.contains(sym))
+            sym.addChild(k)
     }
   }
 
