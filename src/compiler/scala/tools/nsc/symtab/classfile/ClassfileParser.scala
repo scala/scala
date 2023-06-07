@@ -598,10 +598,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           case NoSymbol =>
             devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
           case enumClass =>
-            // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also JavaParsers.
-            // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
-            // Java enums may be already sealed by virtue of permittedSubclasses, if an element had a body.
-            enumClass.setFlag(SEALED | ABSTRACT)
             enumClass.addChild(sym)
         }
     }

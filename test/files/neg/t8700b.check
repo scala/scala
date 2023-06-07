@@ -1,11 +1,11 @@
 Bar_2.scala:4: warning: match may not be exhaustive.
 It would fail on the following input: B
-  def bar1(foo: Foo_1) = foo match {
-                         ^
+  def bar1(foo: Foo) = foo match {
+                       ^
 Bar_2.scala:8: warning: match may not be exhaustive.
-It would fail on the following inputs: (_ : Baz_1$1), (_ : Baz_1$2), B
-  def bar2(foo: Baz_1) = foo match {
-                         ^
+It would fail on the following input: B
+  def bar2(foo: Baz) = foo match {
+                       ^
 error: No warnings can be incurred under -Werror.
 2 warnings
 1 error
