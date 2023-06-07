@@ -1,5 +1,14 @@
-scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
-  "-Xlint:-unused,_", "-Xfatal-warnings")
+lazy val baseOptions = Seq(
+  "-unchecked", "-feature", "-deprecation", "-Xlint:-unused,_"
+)
+
+scalacOptions ++= {
+  if (Option(System.getProperty("scala.build.compileWithDotty")).exists(_.toBoolean)) {
+    baseOptions
+  } else {
+    baseOptions :+ "-Xfatal-warnings"
+  }
+}
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
