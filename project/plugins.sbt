@@ -1,5 +1,10 @@
-scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
-  "-Xlint:-unused,_", "-Xfatal-warnings")
+scalacOptions ++= Seq(
+  "-unchecked",
+  "-feature",
+  "-deprecation",
+  "-Xlint:-unused,_",
+  "-Werror",
+  "-Wconf:msg=IntegrationTest .* is deprecated:s,msg=itSettings .* is deprecated:s")
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
