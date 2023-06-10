@@ -902,7 +902,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
     def isDeprecated           = hasAnnotation(DeprecatedAttr) || (isJava && hasAnnotation(JavaDeprecatedAttr))
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
-    def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecationVersion     = getAnnotation(DeprecatedAttr).flatMap(_.stringArg(1)) match {
+                                   case v @ Some(_) => v
+                                   case _ => getAnnotation(JavaDeprecatedAttr).flatMap(_.stringArg(0))
+                                 }
     def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (ann => ann.symbolArg(0).orElse(ann.stringArg(0).map(newTermName)).orElse(Some(nme.NO_NAME)))
     def deprecatedParamVersion = getAnnotation(DeprecatedNameAttr) flatMap (_ stringArg 1)
     def hasDeprecatedInheritanceAnnotation
@@ -1913,8 +1916,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def filterAnnotations(p: AnnotationInfo => Boolean): this.type =
       setAnnotations(annotations filter p)
 
-    def addAnnotation(annot: AnnotationInfo): this.type =
-      setAnnotations(annot :: annotations)
+    def addAnnotation(annot: AnnotationInfo): this.type = setAnnotations(annotations.appended(annot))
 
     // Convenience for the overwhelmingly common cases, and avoid varags and listbuilders
     final def addAnnotation(sym: Symbol): this.type = {

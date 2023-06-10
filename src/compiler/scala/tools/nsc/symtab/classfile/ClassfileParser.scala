@@ -20,18 +20,17 @@ import java.lang.Integer.toHexString
 import java.net.URLClassLoader
 import java.util.UUID
 
-import scala.collection.{immutable, mutable}
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
+import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.tools.nsc.Reporting.WarningCategory
 import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
+import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.tasty.{TastyUniverse, TastyUnpickler}
+import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
 import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
@@ -820,8 +819,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.DeprecatedATTR =>
           in.skip(attrLen)
-          sym.addAnnotation(JavaDeprecatedAttr)
-          if (sym == clazz)
+          if (!sym.hasAnnotation(JavaDeprecatedAttr))
+            sym.addAnnotation(JavaDeprecatedAttr)
+          if (sym == clazz && !staticModule.hasAnnotation(JavaDeprecatedAttr))
             staticModule.addAnnotation(JavaDeprecatedAttr)
 
         case tpnme.ConstantValueATTR =>
@@ -851,16 +851,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.RuntimeAnnotationATTR =>
           val numAnnots = u2()
-          val annots = new ListBuffer[AnnotationInfo]
           numAnnots times {
-            parseAnnotation(u2()).foreach(annots.addOne)
+            parseAnnotation(u2()).foreach(addUniqueAnnotation(sym, _))
           }
-          /* `sym.withAnnotations(annots)`, like `sym.addAnnotation(annot)`, prepends,
-           * so if we parsed in classfile order we would wind up with the annotations
-           * in reverse order in `sym.annotations`. Instead we just read them out the
-           * other way around, for now. TODO: sym.addAnnotation add to the end?
-           */
-          sym.setAnnotations(sym.annotations ::: annots.toList)
 
         // TODO 1: parse runtime visible annotations on parameters
         // case tpnme.RuntimeParamAnnotationATTR
@@ -1510,6 +1503,25 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   protected def getScope(flags: JavaAccFlags): Scope =
     if (flags.isStatic) staticScope else instanceScope
+
+  // Append annotation. For Java deprecation, prefer an annotation with values (since, etc).
+  private def addUniqueAnnotation(symbol: Symbol, annot: AnnotationInfo): symbol.type =
+    if (annot.atp.typeSymbol == JavaDeprecatedAttr) {
+      def ensureDepr(sym: Symbol): sym.type = {
+        if (sym.hasAnnotation(JavaDeprecatedAttr))
+          if (List(0, 1).exists(annot.constantAtIndex(_).isDefined))
+            sym.setAnnotations {
+              def drop(cur: AnnotationInfo): Boolean = cur.atp.typeSymbol == JavaDeprecatedAttr
+              sym.annotations.foldRight(annot :: Nil)((a, all) => if (drop(a)) all else a :: all)
+            }
+          else sym
+        else sym.addAnnotation(annot)
+      }
+      if (symbol == clazz)
+        ensureDepr(staticModule)
+      ensureDepr(symbol)
+    }
+    else symbol.addAnnotation(annot)
 }
 object ClassfileParser {
   private implicit class GoodTimes(private val n: Int) extends AnyVal {
