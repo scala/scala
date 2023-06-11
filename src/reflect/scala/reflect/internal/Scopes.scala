@@ -267,6 +267,14 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
+    private var terminalSyms: List[Symbol] = List()
+
+    /** Adds a symbol whose once-op has been called. */
+    def addTerminalSym(symbol: Symbol): Unit =
+      terminalSyms = symbol :: terminalSyms
+    def hasTerminalSym(symbol: Symbol): Boolean =
+      terminalSyms.contains(symbol)
+
     /** Lookup a module or a class, filtering out matching names in scope
      *  which do not match that requirement.
      */

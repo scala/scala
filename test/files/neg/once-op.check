@@ -1,0 +1,6 @@
+once-op.scala:8: warning: making multiple calls to an affine reference value it is unsafe
+  println(it.take(2))
+             ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

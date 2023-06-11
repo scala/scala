@@ -13,6 +13,8 @@
 package scala.collection
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
+import scala.annotation.affine
+import scala.annotation.affineOptOut
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
@@ -71,6 +73,7 @@ import scala.runtime.Statics
   *  iterators as well.
   * @define coll iterator
   */
+@affine
 trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
 
   /** Check if there is a next element available.
@@ -78,6 +81,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     * @return `true` if there is a next element, `false` otherwise
     * @note   Reuse: $preservesIterator
     */
+  @affineOptOut
   def hasNext: Boolean
 
   @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
@@ -91,6 +95,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *         make additional calls on the iterator.
     */
   @throws[NoSuchElementException]
+  @affineOptOut
   def next(): A
 
   @inline final def iterator = this
@@ -462,6 +467,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   @inline final def length: Int = size
 
+  @affineOptOut
   @deprecatedOverriding("isEmpty is defined as !hasNext; override hasNext instead", "2.13.0")
   override def isEmpty: Boolean = !hasNext
 

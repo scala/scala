@@ -39,6 +39,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.affine"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.affineOptOut"),
   )
 
   override val buildSettings = Seq(
