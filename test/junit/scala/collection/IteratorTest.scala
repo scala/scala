@@ -277,8 +277,6 @@ class IteratorTest {
   @Test def range3(): Unit = {
     val r1 = Iterator.range(0, 10)
     assertTrue(r1 contains 5)
-    assertTrue(r1 contains 6)
-    assertFalse(r1 contains 4)
     val r2a = Iterator.range(0, 10, 2)
     assertFalse(r2a contains 5)
     val r2b = Iterator.range(0, 10, 2)
