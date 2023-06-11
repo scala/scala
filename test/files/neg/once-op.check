@@ -1,0 +1,6 @@
+once-op.scala:8: warning: multiple calls to a once-op is unsafe for the same instance value it and the once-op group 'default'
+  println(it.take(2))
+             ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

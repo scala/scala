@@ -933,6 +933,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
     def compileTimeOnlyMessage  = getAnnotation(CompileTimeOnlyAttr) flatMap (_ stringArg 0)
+    def isOnceOp                = hasAnnotation(OnceopClass)
+    def onceopGroup             = getAnnotation(OnceopClass).flatMap(_.stringArg(0))
 
     def isExperimental = hasAnnotation(ExperimentalAnnotationClass)
 

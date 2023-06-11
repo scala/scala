@@ -411,6 +411,7 @@ object Reporting {
     object LintIntDivToFloat extends Lint; add(LintIntDivToFloat)
     object LintUniversalMethods extends Lint; add(LintUniversalMethods)
     object LintNumericMethods extends Lint; add(LintNumericMethods)
+    object LintOnceOp extends Lint; add(LintOnceOp)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)

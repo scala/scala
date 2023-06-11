@@ -13,6 +13,7 @@
 package scala.collection
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
+import scala.annotation.onceop
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
@@ -80,6 +81,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   def hasNext: Boolean
 
+  @onceop
   @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
   @`inline` override final def hasDefiniteSize = isEmpty
 
@@ -93,7 +95,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @throws[NoSuchElementException]
   def next(): A
 
-  @inline final def iterator = this
+  @onceop @inline final def iterator = this
 
   /** Wraps the value of `next()` in an option.
     *
@@ -109,6 +111,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *               is equal (as determined by `==`) to `elem`, `false` otherwise.
     *  @note        Reuse: $consumesIterator
     */
+  @onceop
   def contains(elem: Any): Boolean = exists(_ == elem)    // Note--this seems faster than manual inlining!
 
   /** Creates a buffered iterator from this iterator.
@@ -117,6 +120,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *  @return  a buffered iterator producing the same values as this iterator.
     *  @note    Reuse: $consumesAndProducesIterator
     */
+  @onceop
   def buffered: BufferedIterator[A] = new AbstractIterator[A] with BufferedIterator[A] {
     private[this] var hd: A = _
     private[this] var hdDefined: Boolean = false
@@ -291,6 +295,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
+  @onceop
   def padTo[B >: A](len: Int, elem: B): Iterator[B] = new AbstractIterator[B] {
     private[this] var i = 0
 
@@ -321,6 +326,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *           is the same as in the original iterator.
    *  @note    Reuse: $consumesOneAndProducesTwoIterators
    */
+  @onceop
   def partition(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val (a, b) = duplicate
     (a filter p, b filterNot p)
@@ -341,6 +347,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *
    *  @note Reuse: $consumesAndProducesIterator
    */
+  @onceop
   def grouped[B >: A](size: Int): GroupedIterator[B] =
     new GroupedIterator[B](self, size, size)
 
@@ -377,9 +384,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *
    *  @note Reuse: $consumesAndProducesIterator
    */
+  @onceop
   def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
     new GroupedIterator[B](self, size, step)
 
+  @onceop
   def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
     // We use an intermediate iterator that iterates through the first element `z`
     // and then that will be modified to iterate through the collection
@@ -411,9 +420,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def hasNext: Boolean = current.hasNext
   }
 
+  @onceop
   @deprecated("Call scanRight on an Iterable instead.", "2.13.0")
   def scanRight[B](z: B)(op: (A, B) => B): Iterator[B] = ArrayBuffer.from(this).scanRight(z)(op).iterator
 
+  @onceop
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
     val dropped = drop(from)
@@ -433,6 +444,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *          or -1 if such an element does not exist until the end of the iterator is reached.
     *  @note   Reuse: $consumesIterator
     */
+  @onceop
   def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Returns the index of the first occurrence of the specified object in this iterable object
@@ -446,6 +458,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *          reached.
     *  @note   Reuse: $consumesIterator
     */
+  @onceop
   def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
     while (i < from && hasNext) {
@@ -465,8 +478,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @deprecatedOverriding("isEmpty is defined as !hasNext; override hasNext instead", "2.13.0")
   override def isEmpty: Boolean = !hasNext
 
+  @onceop
   def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
 
+  @onceop
   def filterNot(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = true)
 
   private[collection] def filterImpl(p: A => Boolean, isFlipped: Boolean): Iterator[A] = new AbstractIterator[A] {
@@ -503,8 +518,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *  @return  an iterator which produces those values of this iterator which satisfy the predicate `p`.
     *  @note    Reuse: $consumesAndProducesIterator
     */
+  @onceop
   def withFilter(p: A => Boolean): Iterator[A] = filter(p)
 
+  @onceop
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] with (A => B) {
     // Manually buffer to avoid extra layer of wrapping with buffered
     private[this] var hd: B = _
@@ -619,15 +636,20 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
   }
 
+  @onceop
   def flatten[B](implicit ev: A => IterableOnce[B]): Iterator[B] =
     flatMap[B](ev)
 
+  @onceop
   def concat[B >: A](xs: => IterableOnce[B]): Iterator[B] = new Iterator.ConcatIterator[B](self).concat(xs)
 
+  @onceop
   @`inline` final def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
+  @onceop
   def take(n: Int): Iterator[A] = sliceIterator(0, n max 0)
 
+  @onceop
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     private[this] var hd: A = _
     private[this] var hdDefined: Boolean = false
@@ -642,8 +664,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() = if (hasNext) { hdDefined = false; hd } else Iterator.empty.next()
   }
 
+  @onceop
   def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
 
+  @onceop
   def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
     private[this] var status = -1
@@ -680,6 +704,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *
     * @note    Reuse: $consumesOneAndProducesTwoIterators
     */
+  @onceop
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     /*
      * Giving a name to following iterator (as opposed to trailing) because
@@ -779,6 +804,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     (leading, trailing)
   }
 
+  @onceop
   def slice(from: Int, until: Int): Iterator[A] = sliceIterator(from, until max 0)
 
   /** Creates an optionally bounded slice, unbounded if `until` is negative. */
@@ -793,6 +819,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     else new Iterator.SliceIterator(this, lo, rest)
   }
 
+  @onceop
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
     val thatIterator = that.iterator
     override def knownSize = self.knownSize min thatIterator.knownSize
@@ -800,6 +827,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() = (self.next(), thatIterator.next())
   }
 
+  @onceop
   def zipAll[A1 >: A, B](that: IterableOnce[B], thisElem: A1, thatElem: B): Iterator[(A1, B)] = new AbstractIterator[(A1, B)] {
     val thatIterator = that.iterator
     override def knownSize = {
@@ -817,6 +845,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
   }
 
+  @onceop
   def zipWithIndex: Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
     var idx = 0
     override def knownSize = self.knownSize
@@ -837,6 +866,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *
    *    @inheritdoc
    */
+  @onceop
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val those = that.iterator
     while (hasNext && those.hasNext)
@@ -860,6 +890,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *          iterated by one iterator but not yet by the other.
     *  @note   Reuse: $consumesOneAndProducesTwoIterators
     */
+  @onceop
   def duplicate: (Iterator[A], Iterator[A]) = {
     val gap = new scala.collection.mutable.Queue[A]
     var ahead: Iterator[A] = null
@@ -904,6 +935,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     *  @param replaced   The number of values in the original iterator that are replaced by the patch.
     *  @note           Reuse: $consumesTwoAndProducesOneIterator
     */
+  @onceop
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] =
     new AbstractIterator[B] {
       private[this] var origElems = self

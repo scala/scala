@@ -5337,6 +5337,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   .tap(checkDubiousAdaptation)
           }
 
+          def checkOnceOp(result: Tree): Unit =
+            if (!isPastTyper && (qual.symbol ne NoSymbol) && sym.isOnceOp) {
+              val qualSym = qual.symbol
+              val group = sym.onceopGroup.getOrElse("default")
+              def msg = s"multiple calls to a once-op is unsafe for the same instance ${qualSym} and the once-op group '$group'"
+              if ((qualSym ne null) && qualSym.isStable) {
+                if (context.scope.hasTerminalSym(qualSym, group)) context.warning(tree.pos, msg, WarningCategory.LintOnceOp)
+                else context.scope.addTerminalSym(qualSym, group)
+              }
+            }
+
           // This special-case complements the logic in `adaptMember` in erasure, it handles selections
           // from `Super`. In `adaptMember`, if the erased type of a qualifier doesn't conform to the
           // owner of the selected member, a cast is inserted, e.g., (foo: Option[String]).get.trim).
@@ -5453,6 +5464,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 )
               case _ =>
                 if (settings.lintUniversalMethods && qualTp.widen.eq(UnitTpe)) checkDubiousUnitSelection(result)
+                checkOnceOp(result)
                 result
             }
           }
