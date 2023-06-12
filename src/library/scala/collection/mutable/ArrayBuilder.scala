@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
+import scala.collection.IterableOnce
 
 /** A builder class for arrays.
  *
@@ -99,7 +100,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
+    override def ++=(xs: IterableOnceIterableOnce[T]): this.type = (xs.asInstanceOf[AnyRef]) match {
       case xs: WrappedArray.ofRef[_] =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -165,7 +166,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Byte]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Byte]): this.type = xs match {
       case xs: WrappedArray.ofByte =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -231,7 +232,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Short]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Short]): this.type = xs match {
       case xs: WrappedArray.ofShort =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -297,7 +298,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Char]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Char]): this.type = xs match {
       case xs: WrappedArray.ofChar =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -363,7 +364,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Int]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Int]): this.type = xs match {
       case xs: WrappedArray.ofInt =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -429,7 +430,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Long]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Long]): this.type = xs match {
       case xs: WrappedArray.ofLong =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -495,7 +496,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Float]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Float]): this.type = xs match {
       case xs: WrappedArray.ofFloat =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -561,7 +562,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Double]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Double]): this.type = xs match {
       case xs: WrappedArray.ofDouble =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -627,7 +628,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Boolean]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[Boolean]): this.type = xs match {
       case xs: WrappedArray.ofBoolean =>
         ensureSize(this.size + xs.length)
         Array.copy(xs.array, 0, elems, this.size, xs.length)
@@ -666,7 +667,7 @@ object ArrayBuilder {
       this
     }
 
-    override def ++=(xs: TraversableOnce[Unit]): this.type = {
+    override def ++=(xs: IterableOnceIterableOnce[Unit]): this.type = {
       size += xs.size
       this
     }

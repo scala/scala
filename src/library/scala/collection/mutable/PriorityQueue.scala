@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import generic._
+import scala.collection.IterableOnce
 
 /** This class implements priority queues using a heap.
  *  To prioritize elements of type A there must be an implicit
@@ -132,7 +133,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     this
   }
 
-  override def ++=(xs: TraversableOnce[A]): this.type = {
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = {
     val from = resarr.p_size0
     for (x <- xs) unsafeAdd(x)
     heapify(from)
@@ -401,7 +402,7 @@ sealed abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends P
     *
     *  @param  it        an iterator
     */
-  override def ++=(it: TraversableOnce[A]): this.type = {
+  override def ++=(it: IterableOnceIterableOnce[A]): this.type = {
     self ++= it
     this
   }
@@ -480,7 +481,7 @@ sealed class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends Pri
     *
     *  @param  xs        a traversable object
     */
-  override def ++=(xs: TraversableOnce[A]): this.type = {
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = {
     synchronized {
       super.++=(xs)
     }

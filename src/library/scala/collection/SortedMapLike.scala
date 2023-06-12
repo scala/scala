@@ -99,7 +99,7 @@ self =>
    *  @param xs     the traversable object.
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: xs.seq) (_ + _)
+    (xs.seq.foldLeft(repr: SortedMap[A, B1])) (_ + _)
 
   /**
    * Creates an iterator over all the key/value pairs

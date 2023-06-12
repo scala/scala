@@ -30,9 +30,9 @@ trait MapProxy[A, B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]] {
 
   override def repr = this
   override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = MapProxy.this.self.empty }
-  override def updated [B1 >: B](key: A, value: B1) = newProxy(self.updated(key, value))
+  override def updated [B1 >: B](key: A, value: B1) = newProxy(self.clone() += ((key, value)))
 
-  override def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = newProxy(self + kv)
+  override def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = newProxy(self.clone() += kv)
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = newProxy(self.+(elem1, elem2, elems: _*))
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]) = newProxy(self ++ xs.seq)
   override def -(key: A) = newProxy(self - key)

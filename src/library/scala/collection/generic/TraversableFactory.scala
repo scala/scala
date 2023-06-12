@@ -15,6 +15,7 @@ package collection
 package generic
 
 import scala.language.higherKinds
+import scala.collection.Iterable
 
 /** A template for companion objects of `Traversable` and subclasses thereof.
  *  This class provides a set of operations to create `$Coll` objects.
@@ -38,6 +39,6 @@ import scala.language.higherKinds
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-trait TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
+trait TraversableFactory[CC[X] <: Iterable[X] with GenericTraversableTemplate[X, CC]]
   extends GenTraversableFactory[CC] with GenericSeqCompanion[CC]
 

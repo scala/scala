@@ -15,11 +15,12 @@ package collection
 
 import generic._
 import mutable.Builder
+import scala.collection.Iterable
 
 /** A base trait for iterable collections.
  *  $iterableInfo
  */
-trait Iterable[+A] extends Traversable[A]
+trait Iterable[+A] extends Iterable[A]
                       with GenIterable[A]
                       with GenericTraversableTemplate[A, Iterable]
                       with IterableLike[A, Iterable[A]] {

@@ -16,19 +16,20 @@ package collection
 import generic._
 import mutable.Builder
 import scala.util.control.Breaks
+import scala.collection.{ Iterable, IterableOnce, immutable }
 
 /** A trait for traversable collections.
  *  All operations are guaranteed to be performed in a single-threaded manner.
  *
  *  $traversableInfo
  */
-trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
+trait Iterable[+A] extends TraversableLike[A, Iterable[A]]
                          with GenTraversable[A]
-                         with TraversableOnce[A]
-                         with GenericTraversableTemplate[A, Traversable] {
-  override def companion: GenericCompanion[Traversable] = Traversable
+                         with IterableOnceIterableOnce[A]
+                         with GenericTraversableTemplate[A, Iterable] {
+  override def companion: GenericCompanion[Iterable] = Iterable
 
-  override def seq: Traversable[A] = this
+  override def seq: Iterable[A] = this
 
   /* The following methods are inherited from TraversableLike
    *
@@ -93,16 +94,16 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
 /** $factoryInfo
  *  The current default implementation of a $Coll is a `List`.
  */
-object Traversable extends TraversableFactory[Traversable] { self =>
+object Iterable extends TraversableFactory[Iterable] { self =>
 
   /** Provides break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
-  def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
+  def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 }
 
 /** Explicit instantiation of the `Traversable` trait to reduce class file size in subclasses. */
-abstract class AbstractTraversable[+A] extends Traversable[A]
+abstract class AbstractTraversable[+A] extends Iterable[A]

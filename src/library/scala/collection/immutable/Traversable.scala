@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import mutable.Builder
+import scala.collection.immutable.Iterable
 
 /** A trait for traversable collections that are guaranteed immutable.
  *  $traversableInfo
@@ -32,13 +33,13 @@ import mutable.Builder
  *    guaranteed to ''ever'' see the written object at all, and should therefore not be used, regardless
  *    of this issue. The easiest workaround is to exchange values between threads through a volatile var.
  */
-trait Traversable[+A] extends scala.collection.Traversable[A]
+trait Iterable[+A] extends scala.collection.Iterable[A]
 //                         with GenTraversable[A]
-                         with GenericTraversableTemplate[A, Traversable]
-                         with TraversableLike[A, Traversable[A]]
+                         with GenericTraversableTemplate[A, Iterable]
+                         with TraversableLike[A, Iterable[A]]
                          with Immutable {
-  override def companion: GenericCompanion[Traversable] = Traversable
-  override def seq: Traversable[A] = this
+  override def companion: GenericCompanion[Iterable] = Iterable
+  override def seq: Iterable[A] = this
 }
 
 /** $factoryInfo
@@ -46,7 +47,7 @@ trait Traversable[+A] extends scala.collection.Traversable[A]
  *  @define coll immutable traversable collection
  *  @define Coll `immutable.Traversable`
  */
-object Traversable extends TraversableFactory[Traversable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Traversable[A]] = new mutable.ListBuffer
+object Iterable extends TraversableFactory[Iterable] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+  def newBuilder[A]: Builder[A, Iterable[A]] = new mutable.ListBuffer
 }

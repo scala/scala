@@ -17,6 +17,7 @@ package immutable
 import generic._
 import mutable.Builder
 import parallel.immutable.ParIterable
+import scala.collection.immutable.Iterable
 
 /** A base trait for iterable collections that are guaranteed immutable.
  *  $iterableInfo
@@ -24,7 +25,7 @@ import parallel.immutable.ParIterable
  *  @define Coll `immutable.Iterable`
  *  @define coll immutable iterable collection
  */
-trait Iterable[+A] extends Traversable[A]
+trait Iterable[+A] extends Iterable[A]
 //                      with GenIterable[A]
                       with scala.collection.Iterable[A]
                       with GenericTraversableTemplate[A, Iterable]

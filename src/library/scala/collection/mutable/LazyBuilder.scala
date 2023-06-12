@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.collection.IterableOnce
 /** A builder that constructs its result lazily. Iterators or iterables to
  *  be added to this builder with `++=` are not evaluated until `result` is called.
  *
@@ -26,9 +27,9 @@ package mutable
  */
 abstract class LazyBuilder[Elem, +To] extends ReusableBuilder[Elem, To] {
   /** The different segments of elements to be added to the builder, represented as iterators */
-  protected var parts = new ListBuffer[TraversableOnce[Elem]]
+  protected var parts = new ListBuffer[IterableOnceIterableOnce[Elem]]
   def +=(x: Elem): this.type = { parts += List(x); this }
-  override def ++=(xs: TraversableOnce[Elem]): this.type = { parts += xs ; this }
+  override def ++=(xs: IterableOnceIterableOnce[Elem]): this.type = { parts += xs ; this }
   def result(): To
   def clear() { parts.clear() }
 }

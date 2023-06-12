@@ -17,6 +17,7 @@ import scala.reflect.ClassTag
 import scala.collection.generic.CanBuildFrom
 import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import scala.language.higherKinds
+import scala.collection.IterableOnce
 
 /** A template trait for all traversable-once objects which may be
  *  traversed in parallel.
@@ -90,7 +91,7 @@ trait GenTraversableOnce[+A] extends Any {
     */
   def hasDefiniteSize: Boolean
 
-  def seq: TraversableOnce[A]
+  def seq: IterableOnceIterableOnce[A]
 
   /** The size of this $coll.
    *

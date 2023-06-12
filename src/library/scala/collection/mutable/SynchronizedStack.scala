@@ -15,6 +15,7 @@ package collection
 package mutable
 
 
+import scala.collection.IterableOnce
 /** This is a synchronized version of the `Stack[T]` class. It
  *  implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
@@ -57,7 +58,7 @@ class SynchronizedStack[A] extends Stack[A] {
    *
    *  @param  xs        a traversable object
    */
-  override def pushAll(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
+  override def pushAll(xs: IterableOnceIterableOnce[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

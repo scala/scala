@@ -19,7 +19,6 @@ import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.CanCombineFrom
-import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.ParFactory
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.SeqSplitter
@@ -579,7 +578,7 @@ self =>
 
   private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
-  override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
+  override def map[S, That](f: T => S)(implicit bf: BuildFrom[ParArray[T], S, That]) = if (buildsArray(bf.newBuilder(repr))) {
     // reserve an array
     val targarrseq = new ArraySeq[S](length)
     val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
@@ -591,8 +590,8 @@ self =>
     (new ParArray[S](targarrseq)).asInstanceOf[That]
   } else super.map(f)(bf)
 
-  override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
-    if (tasksupport.parallelismLevel > 1 && buildsArray(cbf(repr))) {
+  override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: BuildFrom[ParArray[T], U, That]): That =
+    if (tasksupport.parallelismLevel > 1 && buildsArray(cbf.newBuilder(repr))) {
       // reserve an array
       val targarrseq = new ArraySeq[U](length + 1)
       val targetarr = targarrseq.array.asInstanceOf[Array[Any]]

@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import generic._
+import scala.collection.IterableOnce
 
 /** The base trait of all builders.
  *  A builder lets one construct a collection incrementally, by adding
@@ -136,7 +137,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
       val self = Builder.this
       def +=(x: Elem): this.type = { self += x; this }
       def clear() = self.clear()
-      override def ++=(xs: TraversableOnce[Elem]): this.type = { self ++= xs; this }
+      override def ++=(xs: IterableOnceIterableOnce[Elem]): this.type = { self ++= xs; this }
       override def sizeHint(size: Int) = self.sizeHint(size)
       override def sizeHintBounded(size: Int, boundColl: TraversableLike[_, _]) = self.sizeHintBounded(size, boundColl)
       def result: NewTo = f(self.result())

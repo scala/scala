@@ -21,6 +21,7 @@ import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.immutable.ParHashMap
 import scala.runtime.{AbstractFunction1, AbstractFunction2}
 import scala.util.hashing.MurmurHash3
+import scala.collection.IterableOnce
 
 /** This class implements immutable maps using a hash trie.
  *
@@ -159,7 +160,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   }
   override def values: scala.collection.Iterable[B] = new HashMapValues
 
-  override final def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[HashMap[A, B], (A, W), That]): That =
+  override final def transform[W, That](f: (A, B) => W)(implicit bf: BuildFrom[HashMap[A, B], (A, W), That]): That =
     if ((bf eq Map.canBuildFrom) || (bf eq HashMap.canBuildFrom)) castToThat(transformImpl(f))
     else super.transform(f)(bf)
 
@@ -177,7 +178,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
 
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] = ++[(A, B1), Map[A, B1]](xs)(HashMap.canBuildFrom[A, B1])
 
-  override def ++[C >: (A, B), That](that: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  override def ++[C >: (A, B), That](that: GenTraversableOnce[C])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     if (isCompatibleCBF(bf)) {
       //here we know that That =:= HashMap[_, _], or compatible with it
       if (this eq that.asInstanceOf[AnyRef]) castToThat(that)
@@ -196,16 +197,16 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
     } else super.++(that)(bf)
   }
 
-  override def ++:[C >: (A, B), That](that: TraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  override def ++:[C >: (A, B), That](that: IterableOnceIterableOnce[C])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     if (isCompatibleCBF(bf)) addSimple(that)
     else super.++:(that)
   }
 
-  override def ++:[C >: (A, B), That](that: scala.Traversable[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  override def ++:[C >: (A, B), That](that: scala.Iterable[C])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     if (isCompatibleCBF(bf)) addSimple(that)
     else super.++:(that)
   }
-  private def addSimple[C >: (A, B), That](that: TraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  private def addSimple[C >: (A, B), That](that: IterableOnceIterableOnce[C])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     //here we know that That =:= HashMap[_, _], or compatible with it
     if (this eq that.asInstanceOf[AnyRef]) castToThat(that)
     else if (that.isEmpty) castToThat(this)
@@ -245,10 +246,10 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
 
   // These methods exist to encapsulate the `.asInstanceOf[That]` in a slightly safer way -- only suitable values can
   // be cast and the type of the `CanBuildFrom` guides type inference.
-  private[this] def castToThat[C, That](m: HashMap[A, B])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  private[this] def castToThat[C, That](m: HashMap[A, B])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     m.asInstanceOf[That]
   }
-  private[this] def castToThat[C, That](m: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  private[this] def castToThat[C, That](m: GenTraversableOnce[C])(implicit bf: BuildFrom[HashMap[A, B], C, That]): That = {
     m.asInstanceOf[That]
   }
 }
@@ -1178,7 +1179,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       this
     }
 
-    override def ++=(xs: TraversableOnce[(A, B)]): this.type = xs match {
+    override def ++=(xs: IterableOnceIterableOnce[(A, B)]): this.type = xs match {
       case hm: HashMap[A, B] =>
         if (rootNode eq EmptyHashMap) {
           if (!hm.isEmpty)

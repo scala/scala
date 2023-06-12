@@ -14,9 +14,9 @@ package scala
 package util
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable.{ List, Stream }
 import scala.language.{implicitConversions, higherKinds}
+import scala.IterableOnce
 
 /**
  *  @author Stephane Micheloud
@@ -108,7 +108,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *
    *  @return         the shuffled collection
    */
-  def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+  def shuffle[T, CC[X] <: IterableOnceIterableOnce[X]](xs: CC[T])(implicit bf: BuildFrom[CC[T], T, CC[T]]): CC[T] = {
     val buf = new ArrayBuffer[T] ++= xs
 
     def swap(i1: Int, i2: Int) {
@@ -122,7 +122,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       swap(n - 1, k)
     }
 
-    (bf(xs) ++= buf).result()
+    (bf.newBuilder(xs) ++= buf).result()
   }
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,

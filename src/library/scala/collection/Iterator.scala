@@ -17,6 +17,7 @@ import mutable.ArrayBuffer
 import scala.annotation.{tailrec, migration}
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import immutable.Stream
+import scala.collection.{ Iterable, IterableOnce }
 
 /** The `Iterator` object provides various functions for creating specialized iterators.
  *
@@ -30,7 +31,7 @@ object Iterator {
    *  operates on `Iterator`s so they can be treated uniformly along with the collections.
    *  See `scala.util.Random.shuffle` for an example.
    */
-  implicit def IteratorCanBuildFrom[A] = new TraversableOnce.BufferedCanBuildFrom[A, Iterator] {
+  implicit def IteratorCanBuildFrom[A] = new IterableOnce.BufferedCanBuildFrom[A, Iterator] {
     def bufferToColl[B](coll: ArrayBuffer[B]) = coll.iterator
     def traversableToColl[B](t: GenTraversable[B]) = t.toIterator
   }
@@ -356,7 +357,7 @@ object Iterator {
  *  on, as well as the one passed as parameter. Using the old iterators is
  *  undefined and subject to change.
  */
-trait Iterator[+A] extends TraversableOnce[A] {
+trait Iterator[+A] extends IterableOnceIterableOnce[A] {
   self =>
 
   import Iterator.empty
@@ -1411,7 +1412,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     !hasNext && !that.hasNext
   }
 
-  def toTraversable: Traversable[A] = toStream
+  def toTraversable: Iterable[A] = toStream
   def toIterator: Iterator[A] = self
   def toStream: Stream[A] =
     if (self.hasNext) Stream.cons(self.next(), self.toStream)

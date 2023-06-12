@@ -16,6 +16,7 @@ package mutable
 
 import generic._
 import parallel.mutable.ParArray
+import scala.collection.{ Iterable, IterableOnce }
 
 /** An implementation of the `Buffer` class using an array to
  *  represent the assembled sequence internally. Append, update and random
@@ -59,7 +60,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 
   override def companion: GenericCompanion[ArrayBuffer] = ArrayBuffer
 
-  import scala.collection.Traversable
 
   def this() = this(16)
 
@@ -94,7 +94,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
-  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = xs match {
     case v: scala.collection.IndexedSeqLike[_, _] =>
       val n = v.length
       ensureSize(size0 + n)
@@ -126,7 +126,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
-  override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
+  override def ++=:(xs: IterableOnceIterableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Inserts new elements at the index `n`. Opposed to method
    *  `update`, this method will not replace an element with a new
@@ -136,7 +136,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param seq   the traversable object providing all elements to insert.
    *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
-  def insertAll(n: Int, seq: Traversable[A]) {
+  def insertAll(n: Int, seq: Iterable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
     val len = seq.size
     val newSize = size0 + len

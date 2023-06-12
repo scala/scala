@@ -23,7 +23,7 @@ extends SeqView[A, Coll]
    with SeqViewLike[A, Coll, This]
 { self =>
 
-  override def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
+  override def force[B >: A, That](implicit bf: BuildFrom[Coll, B, That]) = {
     self.iterator.toStream.asInstanceOf[That]
   }
 

@@ -15,6 +15,7 @@ package collection
 package generic
 
 import scala.annotation.tailrec
+import scala.collection.IterableOnce
 
 /** This trait forms part of collections that can be augmented
  *  using a `+=` operator and that can be cleared of all elements using
@@ -50,7 +51,7 @@ trait Growable[-A] extends Clearable {
    *  @param xs   the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def ++=(xs: TraversableOnce[A]): this.type = {
+  def ++=(xs: IterableOnceIterableOnce[A]): this.type = {
     @tailrec def loop(xs: scala.collection.LinearSeq[A]) {
       if (xs.nonEmpty) {
         this += xs.head

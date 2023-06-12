@@ -143,7 +143,7 @@ object Array extends FallbackArrayBuilding {
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].
    */
-  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T]()(t)
+  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
 
   private def slowcopy(src : AnyRef,
                        srcPos : Int,

@@ -411,7 +411,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *    @return       a new $coll which contains all elements of this $coll
    *                  followed by all elements of `that`.
    */
-  def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = this ++ that
+  def union[B >: A, That](that: GenSeq[B])(implicit bf: BuildFrom[Repr, B, That]): That = this ++ that
 
   /** Computes the multiset difference between this $coll and another sequence.
    *

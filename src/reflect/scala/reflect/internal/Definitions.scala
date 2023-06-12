@@ -478,7 +478,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
     lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
     lazy val JavaCharSequenceClass  = requiredClass[java.lang.CharSequence]
-    lazy val TraversableClass       = requiredClass[scala.collection.Traversable[_]]
+    lazy val TraversableClass       = requiredClass[scala.collection.Iterable[_]]
 
     lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
          def List_apply       = getMemberMethod(ListModule, nme.apply)

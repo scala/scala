@@ -16,6 +16,7 @@ package generic
 
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import scala.collection.Iterable
 
 /** A template for companion objects of `ClassTagTraversable` and
  *  subclasses thereof.
@@ -27,7 +28,7 @@ import scala.reflect.ClassTag
  *    @author Aleksandar Prokopec
  *    @since 2.8
  */
-abstract class ClassTagTraversableFactory[CC[X] <: Traversable[X] with GenericClassTagTraversableTemplate[X, CC]]
+abstract class ClassTagTraversableFactory[CC[X] <: Iterable[X] with GenericClassTagTraversableTemplate[X, CC]]
               extends GenericClassTagCompanion[CC] {
 
   class GenericCanBuildFrom[A](implicit tag: ClassTag[A]) extends CanBuildFrom[CC[_], A, CC[A]] {

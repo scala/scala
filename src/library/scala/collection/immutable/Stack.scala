@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import mutable.{ ArrayBuffer, Builder }
+import scala.collection.IterableOnce
 
 /** $factoryInfo
  *  @define Coll `immutable.Stack`
@@ -92,8 +93,8 @@ class Stack[+A] protected (protected val elems: List[A])
    *  @param   xs      the iterator object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll[B >: A](xs: TraversableOnce[B]): Stack[B] =
-    ((this: Stack[B]) /: xs.toIterator)(_ push _)
+  def pushAll[B >: A](xs: IterableOnceIterableOnce[B]): Stack[B] =
+    (xs.toIterator.foldLeft(this: Stack[B]))(_ push _)
 
   /** Returns the top element of the stack. An error is signaled if
    *  there is no element on the stack.

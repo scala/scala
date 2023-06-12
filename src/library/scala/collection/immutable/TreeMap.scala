@@ -22,6 +22,7 @@ import mutable.Builder
 import scala.annotation.tailrec
 import scala.runtime.{AbstractFunction1, AbstractFunction2}
 import scala.util.hashing.MurmurHash3
+import scala.collection.IterableOnce
 
 /** $factoryInfo
  *  @define Coll immutable.TreeMap
@@ -61,7 +62,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
       }
     }
 
-    override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
+    override def ++=(xs: IterableOnceIterableOnce[(A, B)]): this.type = {
       xs match {
         // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
         // for the moment we have to force immutability before the union
@@ -414,7 +415,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
 
 
-  override def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[TreeMap[A, B], (A, W), That]): That = {
+  override def transform[W, That](f: (A, B) => W)(implicit bf: BuildFrom[TreeMap[A, B], (A, W), That]): That = {
     if (sameCBF(bf))
       newMapOrSelf(RB.transform[A, B, W](tree, f)).asInstanceOf[That]
     else super.transform(f)

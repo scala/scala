@@ -19,8 +19,8 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
-import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
+import scala.IterableOnce
 
 
 /** A `Future` represents a value which may or may not *currently* be available,
@@ -666,8 +666,8 @@ object Future {
    * @param in        the `TraversableOnce` of Futures which will be sequenced
    * @return          the `Future` of the `TraversableOnce` of results
    */
-  def sequence[A, M[X] <: TraversableOnce[X]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
-    in.foldLeft(successful(cbf(in))) {
+  def sequence[A, M[X] <: IterableOnceIterableOnce[X]](in: M[Future[A]])(implicit cbf: BuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] = {
+    in.foldLeft(successful(cbf.newBuilder(in))) {
       (fr, fa) => fr.zipWith(fa)(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
   }
@@ -679,7 +679,7 @@ object Future {
    * @param futures   the `TraversableOnce` of Futures in which to find the first completed
    * @return          the `Future` holding the result of the future that is first to be completed
    */
-  def firstCompletedOf[T](futures: TraversableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
+  def firstCompletedOf[T](futures: IterableOnceIterableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
     val p = Promise[T]()
     val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
       override def apply(v1: Try[T]): Unit = getAndSet(null) match {
@@ -700,7 +700,7 @@ object Future {
    * @return          the `Future` holding the optional result of the search
    */
   @deprecated("use the overloaded version of this method that takes a scala.collection.immutable.Iterable instead", "2.12.0")
-  def find[T](@deprecatedName('futurestravonce) futures: TraversableOnce[Future[T]])(@deprecatedName('predicate) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
+  def find[T](@deprecatedName('futurestravonce) futures: IterableOnceIterableOnce[Future[T]])(@deprecatedName('predicate) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
     val futuresBuffer = futures.toBuffer
     if (futuresBuffer.isEmpty) successful[Option[T]](None)
     else {
@@ -787,7 +787,7 @@ object Future {
    * @return         the `Future` holding the result of the fold
    */
   @deprecated("use Future.foldLeft instead", "2.12.0")
-  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+  def fold[T, R](futures: IterableOnceIterableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) successful(zero)
     else sequence(futures).map(_.foldLeft(zero)(op))
   }
@@ -806,7 +806,7 @@ object Future {
    * @return         the `Future` holding the result of the reduce
    */
   @deprecated("use Future.reduceLeft instead", "2.12.0")
-  def reduce[T, R >: T](futures: TraversableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+  def reduce[T, R >: T](futures: IterableOnceIterableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))
     else sequence(futures).map(_ reduceLeft op)
   }
@@ -845,8 +845,8 @@ object Future {
    * @param fn        the function to apply to the `TraversableOnce` of Futures to produce the results
    * @return          the `Future` of the `TraversableOnce` of results
    */
-  def traverse[A, B, M[X] <: TraversableOnce[X]](in: M[A])(fn: A => Future[B])(implicit cbf: CanBuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
-    in.foldLeft(successful(cbf(in))) {
+  def traverse[A, B, M[X] <: IterableOnceIterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit cbf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
+    in.foldLeft(successful(cbf.newBuilder(in))) {
       (fr, a) => fr.zipWith(fn(a))(_ += _)
     }.map(_.result())(InternalCallbackExecutor)
 

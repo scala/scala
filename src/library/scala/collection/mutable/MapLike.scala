@@ -118,7 +118,7 @@ trait MapLike[K, V, +This <: MapLike[K, V, This] with Map[K, V]]
    *  @return       A fresh immutable map with the binding from `key` to
    *                `value` added to this map.
    */
-  override def updated[V1 >: V](key: K, value: V1): Map[K, V1] = this + ((key, value))
+  override def updated[V1 >: V](key: K, value: V1): Map[K, V1] = this.clone() += ((key, value))
 
   /** Creates a new map containing a new key/value mapping and all the key/value mappings
    *  of this map.

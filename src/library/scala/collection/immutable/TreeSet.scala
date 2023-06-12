@@ -20,6 +20,7 @@ import generic._
 import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
 import scala.runtime.AbstractFunction1
+import scala.collection.IterableOnce
 
 /** $factoryInfo
  *  @define Coll `immutable.TreeSet`
@@ -44,7 +45,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
       this
     }
 
-    override def ++=(xs: TraversableOnce[A]): this.type = {
+    override def ++=(xs: IterableOnceIterableOnce[A]): this.type = {
       xs match {
           // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
           // for the moment we have to force immutability before the union
@@ -278,12 +279,12 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     newSetOrSelf(RB.union(tree, ts.tree))
   }
 
-  private[scala] def addAllImpl[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[TreeSet[A], B, That]): That = {
+  private[scala] def addAllImpl[B >: A, That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[TreeSet[A], B, That]): That = {
     that match {
       case ts: TreeSet[A] if sameCBF(bf) =>
         newSetOrSelf(RB.union(tree, ts.tree)).asInstanceOf[That]
       case _ =>
-        val b = bf(repr)
+        val b = bf.newBuilder(repr)
         b ++= thisCollection
         b ++= that.seq
         b.result

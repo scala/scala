@@ -14,6 +14,7 @@ package scala
 package collection
 package generic
 
+import scala.collection.IterableOnce
 /** This trait forms part of collections that can be reduced
  *  using a `-=` operator.
  *
@@ -49,5 +50,5 @@ trait Shrinkable[-A] {
    *  @param xs   the iterator producing the elements to remove.
    *  @return the $coll itself
    */
-  def --=(xs: TraversableOnce[A]): this.type = { xs foreach -= ; this }
+  def --=(xs: IterableOnceIterableOnce[A]): this.type = { xs foreach -= ; this }
 }
