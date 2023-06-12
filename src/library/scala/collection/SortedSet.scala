@@ -101,10 +101,10 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 
   def rangeTo(to: A): C = {
     val i = rangeFrom(to).iterator
-    if (i.isEmpty) return coll
+    if (!i.hasNext) return coll
     val next = i.next()
     if (ordering.compare(next, to) == 0)
-      if (i.isEmpty) coll
+      if (!i.hasNext) coll
       else rangeUntil(i.next())
     else
       rangeUntil(next)
