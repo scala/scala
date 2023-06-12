@@ -667,6 +667,6 @@ private class RangeIterator(
         _hasNext = longPos >= lastElement
       }
     }
-      this
+    this
   }
 }
