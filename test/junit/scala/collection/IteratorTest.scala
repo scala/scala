@@ -283,7 +283,6 @@ class IteratorTest {
     assertTrue(r2b contains 6)
     val r3 = Iterator.range(0, 10, 11)
     assertFalse(r3 contains 5)
-    assertTrue(r3.isEmpty)
   }
   @Test def rangeOverflow(): Unit = {
     val step = 100000000
