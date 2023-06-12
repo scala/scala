@@ -5338,11 +5338,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
 
           def checkOnceOp(result: Tree): Unit =
-            if (!isPastTyper && (qual.symbol ne NoSymbol) && sym.isOnceOp) {
+            if (!isPastTyper && (qual.symbol ne null) && (qual.symbol ne NoSymbol) && (qual.symbol.isStable)) {
               val qualSym = qual.symbol
-              val group = sym.onceopGroup.getOrElse("default")
-              def msg = s"multiple calls to a once-op is unsafe for the same instance ${qualSym} and the once-op group '$group'"
-              if ((qualSym ne null) && qualSym.isStable) {
+              def msg = s"call to an affine reference ${qualSym} is unsafe after a once-op has been called"
+              val group = sym.onceopGroup.getOrElse("all")
+              if (context.scope.hasTerminalSym(qualSym, "all")) context.warning(tree.pos, msg, WarningCategory.LintOnceOp)
+              else if (sym.isOnceOp) {
                 if (context.scope.hasTerminalSym(qualSym, group)) context.warning(tree.pos, msg, WarningCategory.LintOnceOp)
                 else context.scope.addTerminalSym(qualSym, group)
               }

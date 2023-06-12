@@ -18,17 +18,17 @@ import scala.annotation.meta._
   * only once on a value:
   *
   * {{{
-  *   @onceop(group = "") def delete(): Unit = {}
-  *   @onceop(group = "") def deleteDir(): Unit = {}
+  *   @onceop(group = "all") def delete(): Unit = {}
+  *   @onceop(group = "all") def deleteDir(): Unit = {}
   *
   *   def bar = { delete(); deleteDir() } // show once-op warning
   * }}}
   *
   * Note that once-op invocations are grouped by the receiver
-  * and the once-op group of the method, which defaults to `"default"`.
+  * and the once-op group of the method, which defaults to `"all"`.
   * This means that in the above example, the call to `deleteDir()`
   * is considered to violated the once-op because both `delete`
-  * and `deleteDir` methods are on the default group.
+  * and `deleteDir` methods are on the `"all"` group.
   */
 @getter @setter @beanGetter @beanSetter
-final class onceop(group: String = "default") extends StaticAnnotation
+final class onceop(group: String = "all") extends StaticAnnotation
