@@ -5339,13 +5339,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           // Once-use types are called linear/affine types.
           def checkOnceUse(result: Tree): Unit =
-            if (!isPastTyper && (qual.symbol ne NoSymbol) && !sym.isAffineOptOut && sym.owner.isAffine) {
+            if (!isPastTyper && (qual.symbol ne null) && (qual.symbol ne NoSymbol) && (qual.symbol.isStable) && sym.owner.isAffine) {
               val qualSym = qual.symbol
-              def msg = s"making multiple calls to an affine reference ${qualSym} is unsafe"
-              if ((qualSym ne null) && qualSym.isStable) {
-                if (context.scope.hasTerminalSym(qualSym)) context.warning(tree.pos, msg, WarningCategory.LintAffine)
-                else context.scope.addTerminalSym(qualSym)
-              }
+              def msg = s"call to an affine reference ${qualSym} is unsafe after a once-op has been called"
+              if (context.scope.hasTerminalSym(qualSym)) context.warning(tree.pos, msg, WarningCategory.LintAffine)
+              else if (!sym.isAffineOptOut) context.scope.addTerminalSym(qualSym)
             }
 
           // This special-case complements the logic in `adaptMember` in erasure, it handles selections
