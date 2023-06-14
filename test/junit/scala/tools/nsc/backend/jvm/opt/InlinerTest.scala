@@ -1813,4 +1813,19 @@ class InlinerTest extends BytecodeTesting {
     }
     assertEquals(List("A", "$anonfun$f$1"), args.head)
   }
+
+  @Test def t10404(): Unit = {
+    val c1 =
+      """trait T { def f = 1 }
+        |trait U extends T { def f: Int }
+        |trait V extends U
+        |""".stripMargin
+    val c2 =
+      """class K {
+        |  @inline final def u(c: V) = c.f
+        |  def r = u(new V { })
+        |}
+        |""".stripMargin
+    compileClassesSeparately(List(c1, c2), compilerArgs)
+  }
 }
