@@ -100,8 +100,8 @@ private[process] trait ProcessBuilderImpl {
   }
 
   private[scala] abstract class AbstractBuilder extends ProcessBuilder with Sink with Source {
-    protected def toSource = this
-    protected def toSink = this
+    protected def toSource: AbstractBuilder = this
+    protected def toSink: AbstractBuilder = this
 
     private[this] val defaultStreamCapacity = 4096
 
@@ -209,11 +209,11 @@ private[process] trait ProcessBuilderImpl {
   }
 
   private[process] class URLImpl(url: URL) extends URLBuilder with Source {
-    protected def toSource = new URLInput(url)
+    protected def toSource: URLInput = new URLInput(url)
   }
   private[process] class FileImpl(base: File) extends FileBuilder with Sink with Source {
-    protected def toSource = new FileInput(base)
-    protected def toSink   = new FileOutput(base, false)
+    protected def toSource: FileInput = new FileInput(base)
+    protected def toSink: FileOutput = new FileOutput(base, false)
 
     def #<<(f: File): ProcessBuilder           = #<<(new FileInput(f))
     def #<<(u: URL): ProcessBuilder            = #<<(new URLInput(u))
@@ -248,27 +248,27 @@ private[process] trait ProcessBuilderImpl {
     toError: Boolean
   ) extends SequentialBuilder(first, second, if (toError) "#|!" else "#|") {
 
-    override def createProcess(io: ProcessIO) = new PipedProcesses(first, second, io, toError)
+    override def createProcess(io: ProcessIO): PipedProcesses = new PipedProcesses(first, second, io, toError)
   }
 
   private[process] class AndBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
   ) extends SequentialBuilder(first, second, "#&&") {
-    override def createProcess(io: ProcessIO) = new AndProcess(first, second, io)
+    override def createProcess(io: ProcessIO): AndProcess = new AndProcess(first, second, io)
   }
 
   private[process] class OrBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
   ) extends SequentialBuilder(first, second, "#||") {
-    override def createProcess(io: ProcessIO) = new OrProcess(first, second, io)
+    override def createProcess(io: ProcessIO): OrProcess = new OrProcess(first, second, io)
   }
 
   private[process] class SequenceBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
   ) extends SequentialBuilder(first, second, "###") {
-    override def createProcess(io: ProcessIO) = new ProcessSequence(first, second, io)
+    override def createProcess(io: ProcessIO): ProcessSequence = new ProcessSequence(first, second, io)
   }
 }
