@@ -10,9 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.tasty.bridge
+package scala.tools.nsc.tasty
+package bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
+import TastyModes._
 
 import scala.tools.tasty.TastyName
 import scala.reflect.internal.Flags
@@ -49,6 +50,22 @@ trait TreeOps { self: TastyUniverse =>
   }
 
   object tpd {
+
+    // not inline due to outer pointer; optimizer warns on uninlined calls into tpd
+    object outline {
+      final def Constant(value: Any): Constant = tpd.Constant(value)
+      final def Ident(name: TastyName)(tpe: Type): Tree = tpd.Ident(name)(tpe)
+      final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree = tpd.Select(qual, name)
+      final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
+        tpd.Select(owner)(qual, name)
+      final def This(qual: TastyName.TypeName)(tpe: Type): Tree = tpd.This(qual)(tpe)
+      final def New(tpt: Tree): Tree = tpd.New(tpt)
+      final def SingletonTypeTree(ref: Tree): Tree = tpd.SingletonTypeTree(ref)
+      final def ByNameTypeTree(arg: Tree): Tree = tpd.ByNameTypeTree(arg)
+      final def NamedArg(name: TastyName, value: Tree): Tree = tpd.NamedArg(name, value)
+      final def TypeTree(tp: Type): Tree = tpd.TypeTree(tp)
+      final def Apply(fun: Tree, args: List[Tree]): Tree = tpd.Apply(fun, args)
+    }
 
     @inline final def Constant(value: Any): Constant =
       u.Constant(value)

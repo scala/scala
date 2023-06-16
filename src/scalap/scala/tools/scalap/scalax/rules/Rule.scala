@@ -42,7 +42,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
   def filter(f: A => Boolean) = flatMap { a => out => if(f(a)) Success(out, a) else Failure }
 
   def mapResult[Out2, B, Y](f: Result[Out, A, X] => Result[Out2, B, Y]) = rule {
-    in: In => f(apply(in))
+    (in: In) => f(apply(in))
   }
 
   def orElse[In2 <: In, Out2 >: Out, A2 >: A, X2 >: X](other: => Rule[In2, Out2, A2, X2]): Rule[In2, Out2, A2, X2] = new Choice[In2, Out2, A2, X2] {
@@ -164,7 +164,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   /** ^-^(f) is equivalent to ^^ { b2 => b1 => f(b1, b2) }
    */
-  def ^-^ [B1, B2 >: A, C](f: (B1, B2) => C) = map { b2: B2 => b1: B1 => f(b1, b2) }
+  def ^-^ [B1, B2 >: A, C](f: (B1, B2) => C) = map { (b2: B2) => (b1: B1) => f(b1, b2) }
 
  /** ^~>~^(f) is equivalent to ^^ { case b2 ~ b3 => b1 => f(b1, b2, b3) }
   */

@@ -142,18 +142,18 @@ class LinkedHashSet[A]
 
   private[this] def newThreshold(size: Int) = (size.toDouble * LinkedHashSet.defaultLoadFactor).toInt
 
-  @`inline` private[this] def improveHash(originalHash: Int): Int = {
+  @inline private[this] def improveHash(originalHash: Int): Int = {
     originalHash ^ (originalHash >>> 16)
   }
 
-  @`inline` private[collection] def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
+  @inline private[collection] final def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
 
   /** Computes the improved hash of this key */
-  @`inline` private[this] def computeHash(o: A): Int = improveHash(o.##)
+  @inline private[this] def computeHash(o: A): Int = improveHash(o.##)
 
-  @`inline` private[this] def index(hash: Int) = hash & (table.length - 1)
+  @inline private[this] def index(hash: Int) = hash & (table.length - 1)
 
-  @`inline` private[this] def findEntry(key: A): Entry = {
+  @inline private[this] def findEntry(key: A): Entry = {
     val hash = computeHash(key)
     table(index(hash)) match {
       case null => null

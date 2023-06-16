@@ -876,7 +876,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       sClass
     }
 
-    val decls1 = clazz.info.decls.toList flatMap { m: Symbol =>
+    val decls1 = clazz.info.decls.toList flatMap { (m: Symbol) =>
       if (m.isAnonymousClass) List(m) else {
         normalizeMember(m.owner, m, outerEnv) flatMap { normalizedMember =>
           val ms = specializeMember(m.owner, normalizedMember, outerEnv, clazz.info.typeParams)
@@ -1800,7 +1800,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case SpecialOverload(original, env) =>
               debuglog("completing specialized " + symbol.fullName + " calling " + original)
               debuglog("special overload " + original + " -> " + env)
-              val t = DefDef(symbol, { vparamss: List[List[Symbol]] =>
+              val t = DefDef(symbol, { (vparamss: List[List[Symbol]]) =>
                 val fun = Apply(Select(This(symbol.owner), original),
                                 makeArguments(original, vparamss.head))
 

@@ -85,8 +85,10 @@ trait ParsersCommon extends ScannersCommon {
 
     /** Creates an actual Parens node (only used during parsing.)
      */
-    @inline final def makeParens(body: => List[Tree]): Parens =
-      Parens(inParens(if (in.token == RPAREN) Nil else body))
+    @inline final def makeParens(body: => List[Tree]): Parens = {
+      val body0 = inParens(if (in.token == RPAREN) Nil else body)
+      Parens(body0)
+    }
 
     /** {{{ { `sep` part } }}}. */
     def tokenSeparated[T](separator: Token, part: => T): List[T] = {
@@ -544,7 +546,7 @@ self =>
     val assumedClosingParens = mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
     private var inFunReturnType = false
-    @inline private def fromWithinReturnType[T](body: => T): T = {
+    private def fromWithinReturnType[T](body: => T): T = {
       val saved = inFunReturnType
       inFunReturnType = true
       try body
@@ -1877,7 +1879,7 @@ self =>
     def prefixExpr(): Tree =
       if (isUnaryOp) {
         val start = in.offset
-        atPos(start) {
+        val result =
           if (lookingAhead(isExprIntro)) {
             val namePos = in.offset
             val uname = nme.toUnaryName(rawIdent().toTermName)
@@ -1888,7 +1890,7 @@ self =>
               Select(stripParens(simpleExpr()), uname)
           }
           else simpleExpr()
-        }
+        atPos(start)(result)
       } else simpleExpr()
 
     def xmlLiteral(): Tree
@@ -3237,9 +3239,8 @@ self =>
         migrationWarning(in.offset, "type parameters should not follow newline", since = "2.13.7")
       def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
       val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
-      atPos(start, orStart(nameOffset)) {
-        savingClassContextBounds {
-          val contextBoundBuf = new ListBuffer[Tree]
+      def finish = savingClassContextBounds {
+          val contextBoundBuf = ListBuffer.empty[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf, ParamOwner.Class)
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
@@ -3260,7 +3261,7 @@ self =>
             ensureNonOverlapping(template, tparams)
           result
         }
-      }
+      atPos(start, orStart(nameOffset))(finish)
     }
 
     /** {{{

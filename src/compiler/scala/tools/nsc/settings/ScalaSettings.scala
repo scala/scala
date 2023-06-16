@@ -688,7 +688,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def conflictWarning: Option[String] = {
     @nowarn("cat=deprecation")
     def sourceFeatures: Option[String] =
-      Option.when(XsourceFeatures.value.nonEmpty && !isScala3)(s"${XsourceFeatures.name} requires -Xsource:3")
+      Option.when(XsourceFeatures.value.nonEmpty && !isScala3)(s"${XsourceFeatures.name} requires -Xsource:3 when enabling ${XsourceFeatures.value.mkString(" ,")}")
 
     List(sourceFeatures).flatten match {
       case Nil => None

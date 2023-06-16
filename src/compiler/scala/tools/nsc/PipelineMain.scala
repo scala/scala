@@ -201,7 +201,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
     strategy match {
       case OutlineTypePipeline =>
-        projects.foreach { p: Task =>
+        projects.foreach { (p: Task) =>
           val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
           val f = for {
             _ <- depsReady

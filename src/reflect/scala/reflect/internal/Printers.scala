@@ -727,7 +727,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     override def printTParam(td: TypeDef): Unit = printTParam(td, primaryCtorParam = false)
 
     protected def printArgss(argss: List[List[Tree]]) =
-      argss foreach {x: List[Tree] => if (!(x.isEmpty && argss.size == 1)) printRow(x, "(", ", ", ")")}
+      argss.foreach(ps => if (!(ps.isEmpty && argss.size == 1)) printRow(ps, "(", ", ", ")"))
 
     override def printAnnotations(tree: MemberDef) = {
       val annots = tree.mods.annotations

@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation._
 import scala.language.implicitConversions
 import scala.tools.testkit.AssertUtil._
 
@@ -80,12 +81,21 @@ class StringContextTest {
 
   @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
 
-  // verifying that the standard interpolators can be supplanted
+  /* verifying that the standard interpolators can be usurped in Scala 2
   @Test def antiHijack_?() = {
     object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any*) = "!!!!" } }
     import AllYourStringsAreBelongToMe._
     //assertEquals("????", s"????")
     assertEquals("!!!!", s"????") // OK to hijack core interpolator ids
+  }
+  */
+  // verifying that the standard interpolators cannot be usurped under -Xsource:3-cross
+  @nowarn("msg=Unused import")
+  @Test def `no custom s interpolator any more`: Unit = {
+    object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any*) = "!!!!" } }
+    import AllYourStringsAreBelongToMe._
+    assertEquals("????", s"????")
+    //assertEquals("!!!!", s"????") // NOK to hijack core interpolator ids
   }
 
   @Test def fIf() = {
@@ -106,7 +116,7 @@ class StringContextTest {
     assertEquals(expected, res)
   }
 
-  @annotation.nowarn("msg=Boolean format is null test for non-Boolean")
+  @nowarn("msg=Boolean format is null test for non-Boolean")
   @Test def `non booleans as boolean`(): Unit = {
     assertEquals("false", f"${null}%b")
     assertEquals("FALSE", f"${null}%B")

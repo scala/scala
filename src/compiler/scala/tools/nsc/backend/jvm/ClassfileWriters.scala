@@ -82,7 +82,7 @@ abstract class ClassfileWriters {
           if (distinctOutputs.size == 1) new SingleClassWriter(FileWriter(global, distinctOutputs.head, jarManifestMainClass))
           else {
             val sourceToOutput: Map[AbstractFile, AbstractFile] = global.currentRun.units.map(unit => (unit.source.file, frontendAccess.compilerSettings.outputDirectory(unit.source.file))).toMap
-            new MultiClassWriter(sourceToOutput, distinctOutputs.iterator.map { output: AbstractFile => output -> FileWriter(global, output, jarManifestMainClass) }.toMap)
+            new MultiClassWriter(sourceToOutput, distinctOutputs.iterator.map { (output: AbstractFile) => output -> FileWriter(global, output, jarManifestMainClass) }.toMap)
           }
       }
 

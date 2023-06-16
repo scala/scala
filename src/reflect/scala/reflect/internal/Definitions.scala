@@ -677,10 +677,11 @@ trait Definitions extends api.StandardDefinitions {
     // A unit test checks these are kept in synch with the library.
     val MaxTupleAritySpecialized, MaxProductAritySpecialized, MaxFunctionAritySpecialized = 2
 
-    lazy val ProductClass          = new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
-    lazy val TupleClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)
-    lazy val FunctionClass         = new VarArityClass("Function", MaxFunctionArity)
-    lazy val AbstractFunctionClass = new VarArityClass("runtime.AbstractFunction", MaxFunctionArity)
+    lazy val ProductClass: VarArityClass =
+      new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
+    lazy val TupleClass: VarArityClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)
+    lazy val FunctionClass: VarArityClass         = new VarArityClass("Function", MaxFunctionArity)
+    lazy val AbstractFunctionClass: VarArityClass = new VarArityClass("runtime.AbstractFunction", MaxFunctionArity)
 
     /** Creators for TupleN, ProductN, FunctionN. */
     def tupleType(elems: List[Type])                            = TupleClass.specificType(elems)

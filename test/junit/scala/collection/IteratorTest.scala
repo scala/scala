@@ -372,8 +372,8 @@ class IteratorTest {
     assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexOf(16))
   }
   @Test def indexWhere(): Unit = {
-    assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 4 })
-    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 16 })
+    assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexWhere { (x: Int) => x >= 4 })
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere { (x: Int) => x >= 16 })
   }
   @Test def indexOfFrom(): Unit = {
     assertEquals(1, List(1, 2, 3, 4, 5).iterator.indexOf(2, 0))

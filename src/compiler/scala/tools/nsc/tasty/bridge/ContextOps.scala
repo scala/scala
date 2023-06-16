@@ -77,6 +77,8 @@ trait ContextOps { self: TastyUniverse =>
     ???
   }
 
+  def assertOutline(assertion: Boolean, msg: => Any): Unit = u.assert(assertion, msg)
+
   @inline final def assert(assertion: Boolean, msg: => Any): Unit =
     u.assert(assertion, msg)
 

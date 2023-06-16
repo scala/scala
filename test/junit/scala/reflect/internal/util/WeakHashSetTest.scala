@@ -38,8 +38,8 @@ class WeakHashSetTest {
   @Test
   def checkPlusEqualsCollisions(): Unit = {
     val hs = new WeakHashSet[Collider]()
-    val elements = List("hello", "goodbye") map Collider
-    elements foreach (hs += _)
+    val elements = List("hello", "goodbye").map(Collider(_))
+    elements.foreach(hs += _)
     assertEquals(2, hs.size)
     assertTrue(hs contains Collider("hello"))
     assertTrue(hs contains Collider("goodbye"))

@@ -108,7 +108,7 @@ trait ModelFactoryImplicitSupport {
         .map(_.hideImplicitConversions.toSet)
         .getOrElse(Set.empty)
 
-      conversions = conversions filterNot { conv: ImplicitConversionImpl =>
+      conversions = conversions filterNot { (conv: ImplicitConversionImpl) =>
         hiddenConversions.contains(conv.conversionShortName) ||
         hiddenConversions.contains(conv.conversionQualifiedName)
       }

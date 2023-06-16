@@ -199,7 +199,9 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   private[this] lazy val _jliMethodHandlesRef       : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodHandles]))
 
   def                     jliMethodHandlesLookupRef : ClassBType = _jliMethodHandlesLookupRef.get
-  private[this] lazy val _jliMethodHandlesLookupRef : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup")))) // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
+  // didn't find a reliable non-stringly-typed way that works for inner classes in the backend
+  private[this] lazy val _jliMethodHandlesLookupRef : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(_jliMethodHandlesLookupSymbol))
+  private[this] def _jliMethodHandlesLookupSymbol = exitingPickler(getRequiredClass("java.lang.invoke.MethodHandles.Lookup"))
 
   def                     jliMethodTypeRef          : ClassBType = _jliMethodTypeRef.get
   private[this] lazy val _jliMethodTypeRef          : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.MethodType]))

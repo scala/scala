@@ -110,7 +110,9 @@ class AggregateClassPathTest {
   def testGettingPackages(): Unit = {
     case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
       override def packages(inPackage: PackageName): Seq[PackageEntry] =
-        packagesInPackage.find(_.inPackage == inPackage.dottedString).map(_.names).getOrElse(Nil) map PackageEntryImpl
+        packagesInPackage.find(_.inPackage == inPackage.dottedString)
+          .map(_.names).getOrElse(Nil)
+          .map(PackageEntryImpl(_))
     }
 
     val partialClassPaths = Seq(ClassPathWithPackages(EntryNamesInPackage(pkg1)("pkg1.a", "pkg1.d", "pkg1.f")),

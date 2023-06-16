@@ -832,15 +832,15 @@ object Reporting {
       if (s == "any") {
         Right(Any)
       } else if (s.startsWith("msg=")) {
-        regex(s.substring(4)).map(MessagePattern)
+        regex(s.substring(4)).map(MessagePattern(_))
       } else if (s.startsWith("cat=")) {
         val cs = s.substring(4)
-        val c = WarningCategory.all.get(cs).map(Category)
+        val c = WarningCategory.all.get(cs).map(Category(_))
         c.toRight(s"Unknown category: `$cs`")
       } else if (s.startsWith("site=")) {
-        regex(s.substring(5)).map(SitePattern)
+        regex(s.substring(5)).map(SitePattern(_))
       } else if (s.startsWith("origin=")) {
-        regex(s.substring(7)).map(DeprecatedOrigin)
+        regex(s.substring(7)).map(DeprecatedOrigin(_))
       } else if (s.startsWith("since")) {
         def fail = Left(s"invalid since filter: `$s`; required shape: `since<1.2.3`, `since=3.2`, `since>2`")
         if (s.length < 6) fail
@@ -867,7 +867,7 @@ object Reporting {
         if (!rootDir.endsWith("/") && !arg.startsWith("/")) pat += '/'
         pat ++= arg
         if (!arg.endsWith("$")) pat += '$'
-        regex(pat.toString).map(SourcePattern)
+        regex(pat.toString).map(SourcePattern(_))
       } else {
         Left(s"unknown filter: $s")
       }

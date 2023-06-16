@@ -296,31 +296,31 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     def readConstant(tag: Int)(implicit ctx: Context): Constant = (tag: @switch) match {
       case UNITconst =>
-        tpd.Constant(())
+        tpd.outline.Constant(())
       case TRUEconst =>
-        tpd.Constant(true)
+        tpd.outline.Constant(true)
       case FALSEconst =>
-        tpd.Constant(false)
+        tpd.outline.Constant(false)
       case BYTEconst =>
-        tpd.Constant(readInt().toByte)
+        tpd.outline.Constant(readInt().toByte)
       case SHORTconst =>
-        tpd.Constant(readInt().toShort)
+        tpd.outline.Constant(readInt().toShort)
       case CHARconst =>
-        tpd.Constant(readNat().toChar)
+        tpd.outline.Constant(readNat().toChar)
       case INTconst =>
-        tpd.Constant(readInt())
+        tpd.outline.Constant(readInt())
       case LONGconst =>
-        tpd.Constant(readLongInt())
+        tpd.outline.Constant(readLongInt())
       case FLOATconst =>
-        tpd.Constant(java.lang.Float.intBitsToFloat(readInt()))
+        tpd.outline.Constant(java.lang.Float.intBitsToFloat(readInt()))
       case DOUBLEconst =>
-        tpd.Constant(java.lang.Double.longBitsToDouble(readLongInt()))
+        tpd.outline.Constant(java.lang.Double.longBitsToDouble(readLongInt()))
       case STRINGconst =>
-        tpd.Constant(readTastyName().asSimpleName.raw)
+        tpd.outline.Constant(readTastyName().asSimpleName.raw)
       case NULLconst =>
-        tpd.Constant(null)
+        tpd.outline.Constant(null)
       case CLASSconst =>
-        tpd.Constant(readType())
+        tpd.outline.Constant(readType())
     }
 
     /** Read a type */
@@ -877,7 +877,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             ctx.completeEnumSingleton(sym, tpe)
             defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation)
           }
-          else if (ctx.isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.Constant(sym))
+          else if (ctx.isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.outline.Constant(sym))
           else if (!ctx.isJava && sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
           else if (sym.isMethod) defn.ExprType(tpe)
           else tpe
@@ -1120,7 +1120,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         completeSelect(name)
 
       def completeSelect(name: TastyName)(implicit ctx: Context): Tree =
-        tpd.Select(readTerm(), name)
+        tpd.outline.Select(readTerm(), name)
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
         assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
@@ -1129,19 +1129,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm => forkAt(readAddr()).readTerm()
-        case IDENT => tpd.Ident(readTastyName())(readType())
-        case IDENTtpt => tpd.Ident(readTastyName().toTypeName)(readType())
+        case IDENT => tpd.outline.Ident(readTastyName())(readType())
+        case IDENTtpt => tpd.outline.Ident(readTastyName().toTypeName)(readType())
         case SELECT =>
           if (inParentCtor) completeSelectionParent(readTastyName())
           else completeSelect(readTastyName())
         case SELECTtpt => completeSelectType(readTastyName().toTypeName)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
-          tpd.This(qual)(tref)
-        case NEW => tpd.New(readTpt())
-        case SINGLETONtpt => tpd.SingletonTypeTree(readTerm())
-        case BYNAMEtpt => tpd.ByNameTypeTree(readTpt())
-        case NAMEDARG => tpd.NamedArg(readTastyName(), readTerm())
+          tpd.outline.This(qual)(tref)
+        case NEW => tpd.outline.New(readTpt())
+        case SINGLETONtpt => tpd.outline.SingletonTypeTree(readTerm())
+        case BYNAMEtpt => tpd.outline.ByNameTypeTree(readTpt())
+        case NAMEDARG => tpd.outline.NamedArg(readTastyName(), readTerm())
         case THROW => unsupportedTermTreeError("throw clause")
         case _     => readPathTerm()
       }
@@ -1243,7 +1243,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case HOLE          => abortMacroHole
             case _             => readPathTerm()
           }
-        assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
+        assertOutline(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
       }
 
@@ -1264,7 +1264,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           if (isTypeTreeTag(tag)) readTerm()(ctx.retractMode(OuterTerm))
           else {
             val tp = readType()
-            if (isTypeType(tp)) tpd.TypeTree(tp) else untpd.EmptyTree
+            if (isTypeType(tp)) tpd.outline.TypeTree(tp) else untpd.EmptyTree
           }
       }
       tpt

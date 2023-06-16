@@ -936,19 +936,26 @@ object BackendUtils {
 
     def raiseError(msg: String, sig: String, e: Option[Throwable] = None): Unit
 
+    private final val Aborted: Throwable = new NoStackTrace { }
+
+    @inline final def safely(sig: String)(f: => Unit): Unit = try f catch {
+      case Aborted =>
+      case NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
+    }
+
     def visitClassSignature(sig: String): Unit = if (sig != null) {
       val p = new Parser(sig, nestedOnly)
-      p.safely { p.classSignature() }
+      safely(sig) { p.classSignature() }
     }
 
     def visitMethodSignature(sig: String): Unit = if (sig != null) {
       val p = new Parser(sig, nestedOnly)
-      p.safely { p.methodSignature() }
+      safely(sig) { p.methodSignature() }
     }
 
     def visitFieldSignature(sig: String): Unit = if (sig != null) {
       val p = new Parser(sig, nestedOnly)
-      p.safely { p.fieldSignature() }
+      safely(sig) { p.fieldSignature() }
     }
 
     private final class Parser(sig: String, nestedOnly: Boolean) {
@@ -956,13 +963,7 @@ object BackendUtils {
       private var index = 0
       private val end = sig.length
 
-      private val Aborted: Throwable = new NoStackTrace { }
       private def abort(): Nothing = throw Aborted
-
-      @inline def safely(f: => Unit): Unit = try f catch {
-        case Aborted =>
-        case NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
-      }
 
       private def current = {
         if (index >= end) {
@@ -1093,7 +1094,7 @@ object BackendUtils {
         }
       }
 
-      def fieldSignature(): Unit = if (sig != null) safely {
+      def fieldSignature(): Unit = if (sig != null) safely(sig) {
         referenceTypeSignature()
       }
     }

@@ -83,7 +83,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // we prevent this, see `nonAnon` in LambdaLift.
       // phase travel necessary: after flatten, the name includes the name of outer classes.
       // if some outer name contains $lambda, a non-lambda class is considered lambda.
-      assert(exitingPickler(!classSym.isDelambdafyFunction), classSym.name)
+      val ok = exitingPickler(!classSym.isDelambdafyFunction)
+      assert(ok, classSym.name)
     }
     r
   }

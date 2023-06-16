@@ -28,7 +28,7 @@ trait ScaladocGlobalTrait extends Global {
     super.newJavaUnitParser(unit)
   }
 
-  override lazy val syntaxAnalyzer = new ScaladocSyntaxAnalyzer[outer.type](outer) {
+  override lazy val syntaxAnalyzer: ScaladocSyntaxAnalyzer[outer.type] = new ScaladocSyntaxAnalyzer[outer.type](outer) {
     val runsAfter = List[String]()
     val runsRightAfter = None
     override val initial = true

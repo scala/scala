@@ -12,7 +12,7 @@ class PositionsTest {
 
   object symbolTable extends SymbolTableForUnitTesting {
     override def useOffsetPositions: Boolean = false
-    override val reporter = new StoreReporter(settings)
+    override val reporter: StoreReporter = new StoreReporter(settings)
   }
   import symbolTable._
 

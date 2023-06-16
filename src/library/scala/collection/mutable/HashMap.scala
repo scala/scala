@@ -60,10 +60,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   override def size: Int = contentSize
 
   /** Performs the inverse operation of improveHash. In this case, it happens to be identical to improveHash*/
-  @`inline` private[collection] def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
+  @inline private[collection] final def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
 
   /** Computes the improved hash of an original (`any.##`) hash. */
-  @`inline` private[this] def improveHash(originalHash: Int): Int = {
+  @inline private[this] def improveHash(originalHash: Int): Int = {
     // Improve the hash by xoring the high 16 bits into the low 16 bits just in case entropy is skewed towards the
     // high-value bits. We only use the lowest bits to determine the hash bucket. This is the same improvement
     // algorithm as in java.util.HashMap.
@@ -75,13 +75,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   }
 
   /** Computes the improved hash of this key */
-  @`inline` private[this] def computeHash(o: K): Int = improveHash(o.##)
+  @inline private[this] def computeHash(o: K): Int = improveHash(o.##)
 
-  @`inline` private[this] def index(hash: Int) = hash & (table.length - 1)
+  @inline private[this] def index(hash: Int) = hash & (table.length - 1)
 
   override def contains(key: K): Boolean = findNode(key) ne null
 
-  @`inline` private[this] def findNode(key: K): Node[K, V] = {
+  @inline private[this] def findNode(key: K): Node[K, V] = {
     val hash = computeHash(key)
     table(index(hash)) match {
       case null => null

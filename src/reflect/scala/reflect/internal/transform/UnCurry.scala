@@ -101,7 +101,8 @@ trait UnCurry {
           // is anyway faster and safer
           for (decl <- decls if decl.annotations.exists(_.symbol == VarargsClass)) {
             if (mexists(decl.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))) {
-              varargOverloads += varargForwarderSym(clazz, decl, exitingPhase(phase)(decl.info))
+              val declInfo = exitingPhase(phase)(decl.info)
+              varargOverloads += varargForwarderSym(clazz, decl, declInfo)
             }
           }
           if ((parents1 eq parents) && varargOverloads.isEmpty) tp

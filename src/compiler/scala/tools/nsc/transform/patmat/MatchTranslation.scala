@@ -259,7 +259,7 @@ trait MatchTranslation {
           val exSym = freshSym(pos, ThrowableTpe, "ex")
           val suppression =
             if (settings.XnoPatmatAnalysis.value) Suppression.FullSuppression
-            else Suppression.NoSuppression.copy(suppressExhaustive = true) // try/catches needn't be exhaustive
+            else Suppression.NoSuppression.suppressingExhaustive // try/catches needn't be exhaustive
 
           val combo = combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(_ => Throw(REF(exSym))), suppression)
           List(atPos(casesPos) {

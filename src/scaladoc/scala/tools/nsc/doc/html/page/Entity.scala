@@ -97,7 +97,7 @@ trait EntityPage extends HtmlPage {
                         Li(`class`= s"current-entities indented$indentation", elems =
                           (mbr match {
                             case dtpl: DocTemplateEntity =>
-                              dtpl.companion.fold(Span(`class`= "separator"): Elem) { c: DocTemplateEntity =>
+                              dtpl.companion.fold(Span(`class`= "separator"): Elem) { (c: DocTemplateEntity) =>
                                 A(`class`= "object", href=relativeLinkTo(c), title= memberToShortCommentTitleTag(c))
                               }
                             case _                       => Span(`class`= "separator")

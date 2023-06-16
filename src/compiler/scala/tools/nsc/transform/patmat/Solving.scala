@@ -553,7 +553,7 @@ trait Solving extends Logic {
               neg.clear()
               for (clause <- clauses) {
                 if (clause != null) {
-                  clause.foreach { lit: Lit =>
+                  clause.foreach { (lit: Lit) =>
                     if (lit.positive) pos.set(lit.variable) else neg.set(lit.variable)
                   }
                 }

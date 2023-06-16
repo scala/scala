@@ -335,10 +335,10 @@ class HashSetTest {
       subsetTest(HashSet.empty[Int], ListSet.empty[Int], identity, 100)
 
       // test the HashSet/HashSet case for Collision keys
-      subsetTest(HashSet.empty[Collision], HashSet.empty[Collision], Collision, 100)
+      subsetTest(HashSet.empty[Collision], HashSet.empty[Collision], Collision(_), 100)
 
       // test the HashSet/other set case for Collision keys
-      subsetTest(HashSet.empty[Collision], ListSet.empty[Collision], Collision, 100)
+      subsetTest(HashSet.empty[Collision], ListSet.empty[Collision], Collision(_), 100)
     }
 
     /**
@@ -355,8 +355,8 @@ class HashSetTest {
         }
       }
 
-      val a = HashSet.empty ++ (0 until 100).map(HashCodeCounter)
-      val b = HashSet.empty ++ (0 until 50).map(HashCodeCounter)
+      val a = HashSet.empty ++ (0 until 100).map(HashCodeCounter(_))
+      val b = HashSet.empty ++ (0 until 50).map(HashCodeCounter(_))
       val count0 = count
       val result = b.subsetOf(a)
       assertTrue("key.hashCode must not be called during subsetOf of two HashSets", count == count0)

@@ -447,6 +447,24 @@ abstract class ScalaPrimitives {
     primitives(s) = code
   }
 
+  def addPrimitives(cls: Symbol, method: Name, code: Int): Unit =
+    cls.info.member(method).alternatives match {
+      case alts if alts.isEmpty => inform(s"Unknown primitive method $cls.$method")
+      case alts =>
+        for (alt <- alts) {
+          val code1 = code match {
+            case ADD =>
+              val info = exitingTyper(alt.info)
+              info.paramTypes match {
+                case tp :: _ if tp =:= StringTpe => CONCAT
+                case _                           => code
+              }
+            case code => code
+          }
+          addPrimitive(alt, code1)
+        }
+    }
+  /*
   def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val alts = (cls.info member method).alternatives
     if (alts.isEmpty)
@@ -461,6 +479,7 @@ abstract class ScalaPrimitives {
       )
     )
   }
+  */
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D)
 

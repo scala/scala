@@ -251,7 +251,7 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
      * TODO: we should refactor this as a separate -bootstrap option to have a clean implementation, no? */
     def sourcePath          = if (!settings.isScaladoc) cmdLineOrElse("sourcepath", Defaults.scalaSourcePath) else ""
 
-    def userClassPath = settings.classpath.value  // default is specified by settings and can be overridden there
+    def userClassPath: String = settings.classpath.value  // default is specified by settings and can be overridden there
 
     import classPathFactory._
 

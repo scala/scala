@@ -1299,7 +1299,7 @@ trait Scanners extends ScannersCommon {
       if (token == CHARLIT && !negated) charVal.toLong else intConvert
     }
 
-    @`inline` def intVal: Long = intVal(negated = false)
+    @inline final def intVal: Long = intVal(negated = false)
 
     private val zeroFloat = raw"[0.]+(?:[eE][+-]?[0-9]+)?[fFdD]?".r
 
@@ -1321,7 +1321,7 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @`inline` def floatVal: Float = floatVal(negated = false)
+    @inline final def floatVal: Float = floatVal(negated = false)
 
     /** Convert current strVal, base to double value.
      */
@@ -1341,15 +1341,15 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @`inline` def doubleVal: Double = doubleVal(negated = false)
+    @inline final def doubleVal: Double = doubleVal(negated = false)
 
-    @`inline` def checkNoLetter(): Unit = if (isIdentifierPart(ch) && ch >= ' ') syntaxError("invalid literal number")
+    @inline final def checkNoLetter(): Unit = if (isIdentifierPart(ch) && ch >= ' ') syntaxError("invalid literal number")
 
-    @`inline` private def isNumberSeparator(c: Char): Boolean = c == '_'
+    @inline final private def isNumberSeparator(c: Char): Boolean = c == '_'
 
-    @`inline` private def removeNumberSeparators(s: String): String = if (s.indexOf('_') > 0) s.replace("_", "") else s
+    @inline final private def removeNumberSeparators(s: String): String = if (s.indexOf('_') > 0) s.replace("_", "") else s
 
-    @`inline` private def numberOffset = offset + (if (base == 10) 0 else 2)
+    @inline final private def numberOffset = offset + (if (base == 10) 0 else 2)
 
     // disallow trailing numeric separator char
     def checkNoTrailingSeparator(): Unit =

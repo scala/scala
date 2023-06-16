@@ -54,7 +54,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     val universe = new Universe { thisUniverse =>
       thisFactory.universe = thisUniverse
       val settings = thisFactory.settings
-      val rootPackage = modelCreation.createRootPackage
+      val rootPackage: PackageImpl = modelCreation.createRootPackage
     }
     _modelFinished = true
     // complete the links between model entities, everything that couldn't have been done before
@@ -132,7 +132,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     lazy val comment = thisFactory.comment(commentCarryingSymbol(sym), linkTarget, inTpl)
 
     def group = comment flatMap (_.group) getOrElse defaultGroup
-    override def inTemplate = inTpl
+    override def inTemplate: DocTemplateImpl = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates =
         if (inTpl == null)
@@ -489,7 +489,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
-    override def inTemplate = inTpl
+    override def inTemplate: PackageImpl = inTpl
     override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
     override def reprSymbol = sym.info.members.find (_.isPackageObject) getOrElse sym
 
@@ -690,7 +690,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(new RootPackageImpl(bSym) {
           override lazy val comment = createRootPackageComment
           override val name = "root"
-          override def inTemplate = this
+          override def inTemplate: RootPackageImpl = this
           override def toRoot = this :: Nil
           override def qualifiedName = "_root_"
           override def isRootPackage = true

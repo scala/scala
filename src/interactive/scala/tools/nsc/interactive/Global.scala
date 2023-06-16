@@ -16,16 +16,14 @@ package interactive
 import java.io.{FileReader, FileWriter}
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{elidable, nowarn, tailrec}
-import scala.collection.mutable
-import scala.collection.mutable.{HashSet, LinkedHashMap}
+import scala.annotation._
+import scala.collection.mutable, mutable.{HashSet, LinkedHashMap}
 import scala.jdk.javaapi.CollectionConverters
 import scala.language.implicitConversions
 import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
-import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.tools.nsc.symtab._
+import scala.tools.nsc.symtab._, Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.tools.nsc.typechecker.{Analyzer, Typers}
 import scala.util.control.Breaks._
 import scala.util.control.ControlThrowable
@@ -536,12 +534,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *
    *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
    */
-  @elidable(elidable.WARNING)
-  override def assertCorrectThread(): Unit = {
+  override def assertCorrectThread(): Unit =
     assert(initializing || anyThread || onCompilerThread,
-        "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
-        " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
-  }
+      s"Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: $globalPhase]")
 
   /** Create a new presentation compiler runner.
    */

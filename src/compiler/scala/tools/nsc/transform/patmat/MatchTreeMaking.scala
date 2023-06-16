@@ -24,7 +24,9 @@ import scala.tools.nsc.Reporting.WarningCategory
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import global._, definitions._, CODE._
 
-  final case class Suppression private (suppressExhaustive: Boolean, suppressUnreachable: Boolean)
+  final case class Suppression private[MatchTreeMaking] (suppressExhaustive: Boolean, suppressUnreachable: Boolean) {
+    def suppressingExhaustive: Suppression = copy(suppressExhaustive = true)
+  }
   object Suppression {
     val NoSuppression = new Suppression(suppressExhaustive=false, suppressUnreachable=false)
     val FullSuppression = new Suppression(suppressExhaustive=true, suppressUnreachable=true)

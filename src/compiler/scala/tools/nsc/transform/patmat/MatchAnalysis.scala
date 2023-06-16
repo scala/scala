@@ -407,7 +407,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       val fullRewrite      = (irrefutableExtractor orElse rewriteListPattern)
       val refutableRewrite = irrefutableExtractor
 
-      @inline def onUnknown(handler: TreeMaker => Prop) = new TreeMakerToProp {
+      @inline final def onUnknown(handler: TreeMaker => Prop) = new TreeMakerToProp {
         def handleUnknown(tm: TreeMaker) = handler(tm)
       }
 
@@ -866,23 +866,25 @@ trait MatchAnalysis extends MatchApproximation {
                 }
 
                 cls match {
-                  case ConsClass                                =>
+                  case ConsClass =>
                     args().map {
                       case List(NoExample, l: ListExample) =>
                         // special case for neg/t7020.scala:
                         // if we find a counter example `??::*` we report `*::*` instead
                         // since the `??` originates from uniqueEqualTo containing several instanced of the same type
                         List(WildcardExample, l)
-                      case args                            => args
-                    }.map(ListExample)
-                  case _ if isTupleSymbol(cls)                  => args(brevity = true).map(TupleExample)
+                      case args => args
+                    }.map(ListExample(_))
+                  case _ if isTupleSymbol(cls) =>
+                    args(brevity = true).map(TupleExample(_))
                   case _ if cls.isSealed && (cls.isAbstractClass || cls.hasJavaEnumFlag) =>
                     // don't report sealed abstract classes, since
                     // 1) they can't be instantiated
                     // 2) we are already reporting any missing subclass (since we know the full domain)
                     // (see patmatexhaust.scala)
                     None
-                  case _                                        => args().map(ConstructorExample(cls, _))
+                  case _ =>
+                    args().map(ConstructorExample(cls, _))
                 }
 
               // a definite assignment to a type

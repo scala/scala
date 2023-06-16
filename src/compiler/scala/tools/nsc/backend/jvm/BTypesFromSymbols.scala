@@ -33,7 +33,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import codeGen.CodeGenImpl._
   import postProcessor.{bTypesFromClassfile, byteCodeRepository}
 
-  val coreBTypes = new CoreBTypesFromSymbols[G] {
+  val coreBTypes: CoreBTypesFromSymbols[G] { val bTypes: BTypesFromSymbols.this.type} = new CoreBTypesFromSymbols[G] {
     val bTypes: BTypesFromSymbols.this.type = BTypesFromSymbols.this
   }
   import coreBTypes._
@@ -352,7 +352,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
      * We collect them here.
      */
-    lazy val nestedClassSymbols = {
+    lazy val nestedClassSymbols = nestedClassSymbolsComputed
+    def nestedClassSymbolsComputed = {
       val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
 
       // The lambdalift phase lifts all nested classes to the enclosing class, so if we collect
@@ -493,7 +494,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         exitingPickler(innerClassSym.rawowner.linkedClassOfClass) match {
           case NoSymbol =>
             // For top-level modules without a companion class, see doc of mirrorClassClassBType.
-            mirrorClassClassBType(exitingPickler(innerClassSym.rawowner))
+            val rawowner = exitingPickler(innerClassSym.rawowner)
+            mirrorClassClassBType(rawowner)
 
           case companionClass =>
             classBTypeFromSymbol(companionClass)
@@ -515,7 +517,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       else Some(s"${innerClassSym.rawname}${innerClassSym.moduleSuffix}") // moduleSuffix for module classes
     }
 
-    Some(NestedInfo(enclosingClass, outerName, innerName, isStaticNestedClass, enteringTyper(innerClassSym.isPrivate)))
+    val isPrivate = enteringTyper(innerClassSym.isPrivate)
+    Some(NestedInfo(enclosingClass, outerName, innerName, isStaticNestedClass, isPrivate))
   }
 
   /**

@@ -42,7 +42,7 @@ class IndexScript(universe: doc.Universe) extends Page {
            *  class/trait instance. Otherwise one of the member objects will be
            *  overwritten.
            */
-          val pairs = merged(key).flatMap { t: DocTemplateEntity =>
+          val pairs = merged(key).flatMap { (t: DocTemplateEntity) =>
             val kind = kindToString(t)
             Seq(
               kind -> relativeLinkTo(t),

@@ -329,7 +329,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
 }
 
 case class DirectoryClassPath(dir: File) extends JFileDirectoryLookup[ClassFileEntryImpl] with NoSourcePaths {
-  override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
+  override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className).map(ClassFileEntryImpl(_))
 
   def findClassFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)
@@ -354,7 +354,7 @@ case class DirectorySourcePath(dir: File) extends JFileDirectoryLookup[SourceFil
   protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
   protected def isMatchingFile(f: File, siblingExists: String => Boolean): Boolean = endsScalaOrJava(f.getName)
 
-  override def findClass(className: String): Option[ClassRepresentation] = findSourceFile(className) map SourceFileEntryImpl
+  override def findClass(className: String): Option[ClassRepresentation] = findSourceFile(className).map(SourceFileEntryImpl(_))
 
   private def findSourceFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)

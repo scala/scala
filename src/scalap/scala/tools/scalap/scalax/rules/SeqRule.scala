@@ -24,20 +24,20 @@ import scala.collection.immutable.ArraySeq
 class InRule[In, +Out, +A, +X](rule: Rule[In, Out, A, X]) {
 
   def mapRule[Out2, B, Y](f: Result[Out, A, X] => In => Result[Out2, B, Y]): Rule[In, Out2, B, Y] = rule.factory.rule {
-    in: In => f(rule(in))(in)
+    (in: In) => f(rule(in))(in)
   }
 
   /** Creates a rule that succeeds only if the original rule would fail on the given context. */
   def unary_! : Rule[In, In, Unit, Nothing] = mapRule {
-    case Success(_, _) => in: In => Failure
-    case _ => in: In => Success(in, ())
+    case Success(_, _) => (in: In) => Failure
+    case _ => (in: In) => Success(in, ())
   }
 
   /** Creates a rule that succeeds if the original rule succeeds, but returns the original input. */
   def & : Rule[In, In, A, X] = mapRule {
-    case Success(_, a) => in: In => Success(in, a)
-    case Failure => in: In => Failure
-    case Error(x) => in: In => Error(x)
+    case Success(_, a) => (in: In) => Success(in, a)
+    case Failure => (in: In) => Failure
+    case Error(x) => (in: In) => Error(x)
   }
 }
 
@@ -45,9 +45,9 @@ class SeqRule[S, +A, +X](rule: Rule[S, S, A, X]) {
   import rule.factory._
 
   def ? = rule mapRule {
-    case Success(out, a) => in: S => Success(out, Some(a))
-    case Failure => in: S => Success(in, None)
-    case Error(x) => in: S => Error(x)
+    case Success(out, a) => (in: S) => Success(out, Some(a))
+    case Failure => (in: S) => Success(in, None)
+    case Error(x) => (in: S) => Error(x)
   }
 
   /** Creates a rule that always succeeds with a Boolean value.

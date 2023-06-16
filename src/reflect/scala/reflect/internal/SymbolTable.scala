@@ -16,7 +16,7 @@ package internal
 
 import java.net.URLClassLoader
 
-import scala.annotation.{elidable, nowarn, tailrec}
+import scala.annotation.nowarn
 import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
@@ -202,8 +202,7 @@ abstract class SymbolTable extends macros.Universe
 
   /** Check that the executing thread is the compiler thread. No-op here,
    *  overridden in interactive.Global. */
-  @elidable(elidable.WARNING)
-  def assertCorrectThread(): Unit = {}
+  def assertCorrectThread(): Unit = ()
 
   /** A last effort if symbol in a select <owner>.<name> is not found.
    *  This is overridden by the reflection compiler to make up a package
@@ -328,7 +327,6 @@ abstract class SymbolTable extends macros.Universe
     }
 
   final def isValidForBaseClasses(period: Period): Boolean = {
-    @tailrec
     def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
       it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)

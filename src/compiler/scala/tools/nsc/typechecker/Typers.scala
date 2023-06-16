@@ -3348,7 +3348,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def includesTargetPos(tree: Tree) =
-        tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
+        tree.pos.isRange && context.unit.exists && tree.pos.includes(context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = stat match {
         case s if context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(s) => OnlyDeclarationsError(s)

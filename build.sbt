@@ -196,14 +196,15 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (Compile / doc / target).value,
   run / fork := true,
   run / connectInput := true,
-  Compile / scalacOptions ++= Seq("-feature", "-Xlint",
+  Compile / scalacOptions ++= Seq("-Xlint", "-feature", "-Xsource:3-cross",
     //"-Vprint",
     //"-Xmaxerrs", "5", "-Xmaxwarns", "5", // uncomment for ease of development while breaking things
     // work around https://github.com/scala/bug/issues/11534
     "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
     // optimizer warnings at INFO since `-Werror` may be turned on.
     // optimizer runs in CI and release builds, though not in local development.
-    "-Wconf:cat=optimizer:is",
+    //"-Wconf:cat=optimizer:is",
+    "-Wopt",
     // we use @nowarn for methods that are deprecated in JDK > 8, but CI/release is under JDK 8
     "-Wconf:cat=unused-nowarn:s",
     "-Wunnamed-boolean-literal-strict",
@@ -450,6 +451,10 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
+    Compile / scalacOptions ++= Seq("-Xsource-features:-case-companion-function"),
+    Compile / scalacOptions ++= Seq("-Wconf:cat=scala3-migration&msg=elidable&site=scala.Predef:s"),
+    //Compile / scalacOptions ++= Seq("-Wconf:msg=Synthetic case companion&src=src/library/scala/jdk/FunctionWrappers.scala:s"),
+    //Compile / scalacOptions ++= Seq("-Wconf:cat=scala3-migration&msg=constructor modifiers&site=scala.concurrent.duration.Deadline:s"), // for bootstrap until restarr
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -502,6 +507,7 @@ lazy val reflect = configureAsSubproject(project)
     Osgi.bundleName := "Scala Reflect",
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Wconf:cat=scala3-migration&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
@@ -576,6 +582,7 @@ lazy val compiler = configureAsSubproject(project)
     Compile / scalacOptions ++= Seq(
       //"-Wunused", //"-Wnonunit-statement",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Wconf:cat=scala3-migration&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
@@ -614,7 +621,10 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    Compile / scalacOptions ++= Seq("-Wconf:cat=deprecation&msg=early initializers:s"),
+    Compile / scalacOptions ++= Seq(
+      "-Wconf:cat=deprecation&msg=early initializers:s",
+      "-Wconf:cat=scala3-migration&msg=early initializers:s", // compiler heavily relies upon early initializers
+    )
   )
   .dependsOn(compiler)
 
@@ -622,7 +632,10 @@ lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions ++= Seq("-Wconf:cat=deprecation&msg=early initializers:s"))
+  .settings(Compile / scalacOptions ++= Seq(
+    "-Wconf:cat=deprecation&msg=early initializers:s",
+    "-Wconf:cat=scala3-migration&msg=early initializers:s",
+  ))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-frontend"))
@@ -651,6 +664,7 @@ lazy val scaladoc = configureAsSubproject(project)
     Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=deprecation&msg=early initializers:s",
+      "-Wconf:cat=scala3-migration&msg=early initializers:s",
     ),
   )
   .dependsOn(compiler)
@@ -666,6 +680,7 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
     libraryDependencies += compilerInterfaceDep % Provided,
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Wconf:cat=scala3-migration&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
     generateServiceProviderResources("xsbti.compile.ConsoleInterface1"  -> "scala.tools.xsbt.ConsoleBridge"),
@@ -721,6 +736,14 @@ lazy val scalap = configureAsSubproject(project)
       xs filter { x => !excluded(x.getName) }
     },
     Compile / headerResources := Nil,
+    Compile / scalacOptions ++= Seq(
+      "-Xsource:2.13",
+      "-Xsource-features:-case-apply-copy-access,-case-companion-function,-case-copy-by-name",
+      "-Xsource-features:-implicit-resolution,-infer-override,-any2stringadd,-unicode-escapes-raw",
+      "-Xsource-features:-string-context-scope,-leading-infix,-package-prefix-implicits,-double-definitions",
+      //"-Wconf:cat=scala3-migration&msg=inferred type:s",
+      //"-Wconf:cat=scala3-migration&msg=case companion:s",
+    ),
   )
   .dependsOn(compiler)
 
@@ -735,6 +758,7 @@ lazy val partest = configureAsSubproject(project)
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Wconf:cat=scala3-migration&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / javacOptions ++= Seq("-XDenableSunApiLintControl", "-Xlint") ++
       (if (fatalWarnings.value) Seq("-Werror") else Seq()),
@@ -807,8 +831,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
-    //scalacOptions ++= Seq("-feature", "-opt:inline:scala/**", "-Wopt"),
-    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
+    scalacOptions ++= Seq("-feature", "-opt:inline:scala/**", "-Wopt"),
     // Skips JMH source generators during IDE import to avoid needing to compile scala-library during the import
     // should not be needed once sbt-jmh 0.4.3 is out (https://github.com/sbt/sbt-jmh/pull/207)
     Jmh / bspEnabled := false
@@ -855,6 +878,8 @@ lazy val junit = project.in(file("test") / "junit")
       "-Wconf:msg=match may not be exhaustive:s", // if we missed a case, all that happens is the test fails
       "-Wconf:cat=lint-nullary-unit&site=.*Test:s", // normal unit test style
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
+      "-Wconf:cat=deprecation&msg=early initializers:s",
+      "-Wconf:cat=scala3-migration&msg=early initializers:s",
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep, compilerInterfaceDep),
@@ -902,6 +927,7 @@ lazy val tasty = project.in(file("test") / "tasty")
     },
     Compile / scalacOptions ++= Seq(
       "-Wconf:cat=lint-nullary-unit&site=.*Test:s", // normal unit test style
+      raw"-Wconf:cat=optimizer&site=scala\.tools\.nsc\.tasty\.bridge\.TreeOps\.tpd\..*:s", // inline -> outline
     ),
   )
 

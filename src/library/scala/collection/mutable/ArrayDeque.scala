@@ -20,22 +20,22 @@ import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.reflect.ClassTag
 
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer.
-  *
-  *  Append, prepend, removeHead, removeLast and random-access (indexed-lookup and indexed-replacement)
-  *  take amortized constant time. In general, removals and insertions at i-th index are O(min(i, n-i))
-  *  and thus insertions and removals from end/beginning are fast.
-  *
-  *  @note Subclasses ''must'' override the `ofArray` protected method to return a more specific type.
-  *
-  *  @tparam A  the type of this ArrayDeque's elements.
-  *
-  *  @define Coll `mutable.ArrayDeque`
-  *  @define coll array deque
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  */
+ *
+ *  Append, prepend, removeHead, removeLast and random-access (indexed-lookup and indexed-replacement)
+ *  take amortized constant time. In general, removals and insertions at i-th index are O(min(i, n-i))
+ *  and thus insertions and removals from end/beginning are fast.
+ *
+ *  @note Subclasses ''must'' override the `ofArray` protected method to return a more specific type.
+ *
+ *  @tparam A  the type of this ArrayDeque's elements.
+ *
+ *  @define Coll `mutable.ArrayDeque`
+ *  @define coll array deque
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 class ArrayDeque[A] protected (
     protected var array: Array[AnyRef],
     private[ArrayDeque] var start: Int,
@@ -87,13 +87,13 @@ class ArrayDeque[A] protected (
     prependAssumingCapacity(elem)
   }
 
-  @inline private[ArrayDeque] def appendAssumingCapacity(elem: A): this.type = {
+  @inline private[ArrayDeque] final def appendAssumingCapacity(elem: A): this.type = {
     array(end) = elem.asInstanceOf[AnyRef]
     end = end_+(1)
     this
   }
 
-  @inline private[ArrayDeque] def prependAssumingCapacity(elem: A): this.type = {
+  @inline private[ArrayDeque] final def prependAssumingCapacity(elem: A): this.type = {
     start = start_-(1)
     array(start) = elem.asInstanceOf[AnyRef]
     this
@@ -331,7 +331,7 @@ class ArrayDeque[A] protected (
   def removeLast(resizeInternalRepr: Boolean = false): A =
     if (isEmpty) throw new NoSuchElementException(s"empty collection") else removeLastAssumingNonEmpty(resizeInternalRepr)
 
-  @`inline` private[this] def removeLastAssumingNonEmpty(resizeInternalRepr: Boolean = false): A = {
+  @inline private[this] def removeLastAssumingNonEmpty(resizeInternalRepr: Boolean = false): A = {
     end = end_-(1)
     val elem = array(end)
     array(end) = null
@@ -430,7 +430,7 @@ class ArrayDeque[A] protected (
     res.result()
   }
 
-  @inline def ensureSize(hint: Int) = if (hint > length && mustGrow(hint)) resize(hint)
+  @inline final def ensureSize(hint: Int) = if (hint > length && mustGrow(hint)) resize(hint)
 
   def length = end_-(start)
 
@@ -481,35 +481,29 @@ class ArrayDeque[A] protected (
   def trimToSize(): Unit = resize(length)
 
   // Utils for common modular arithmetic:
-  @inline protected def start_+(idx: Int) = (start + idx) & (array.length - 1)
+  @inline protected final def start_+(idx: Int) = (start + idx) & (array.length - 1)
   @inline private[this] def start_-(idx: Int) = (start - idx) & (array.length - 1)
   @inline private[this] def end_+(idx: Int) = (end + idx) & (array.length - 1)
   @inline private[this] def end_-(idx: Int) = (end - idx) & (array.length - 1)
 
   // Note: here be overflow dragons! This is used for int overflow
   // assumptions in resize(). Use caution changing.
-  @inline private[this] def mustGrow(len: Int) = {
-    len >= array.length
-  }
+  @inline private[this] def mustGrow(len: Int) = len >= array.length
 
   // Assumes that 0 <= len < array.length!
-  @inline private[this] def shouldShrink(len: Int) = {
-    // To avoid allocation churn, only shrink when array is large
-    // and less than 2/5 filled.
-    array.length > ArrayDeque.StableSize && array.length - len - (len >> 1) > len
-  }
+  // To avoid allocation churn, only shrink when array is large
+  // and less than 2/5 filled.
+  @inline private[this] def shouldShrink(len: Int) = array.length > ArrayDeque.StableSize && array.length - len - (len >> 1) > len
 
   // Assumes that 0 <= len < array.length!
-  @inline private[this] def canShrink(len: Int) = {
-    array.length > ArrayDeque.DefaultInitialSize && array.length - len > len
-  }
+  @inline private[this] def canShrink(len: Int) = array.length > ArrayDeque.DefaultInitialSize && array.length - len > len
 
   @inline private[this] def _get(idx: Int): A = array(start_+(idx)).asInstanceOf[A]
 
   @inline private[this] def _set(idx: Int, elem: A) = array(start_+(idx)) = elem.asInstanceOf[AnyRef]
 
   // Assumes that 0 <= len.
-  private[this] def resize(len: Int) = if (mustGrow(len) || canShrink(len)) {
+  private[this] final def resize(len: Int) = if (mustGrow(len) || canShrink(len)) {
     val n = length
     val array2 = copySliceToArray(srcStart = 0, dest = ArrayDeque.alloc(len), destStart = 0, maxItems = n)
     reset(array = array2, start = 0, end = n)

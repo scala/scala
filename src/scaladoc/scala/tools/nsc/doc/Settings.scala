@@ -277,7 +277,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
 
   lazy val hiddenImplicits: Set[String] = {
     if (docImplicitsHide.value.isEmpty) hardcoded.commonConversionTargets
-    else docImplicitsHide.value.toSet flatMap { name: String =>
+    else docImplicitsHide.value.toSet flatMap { (name: String) =>
       if(name == ".") hardcoded.commonConversionTargets
       else Set(name)
     }

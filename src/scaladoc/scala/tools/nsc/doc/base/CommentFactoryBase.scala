@@ -466,7 +466,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     /** listStyle ::= '-' spc | '1.' spc | 'I.' spc | 'i.' spc | 'A.' spc | 'a.' spc
       * Characters used to build lists and their constructors */
     protected val listStyles = Map[String, Seq[Block] => Block]( // TODO Should this be defined at some list companion?
-      "- "  -> UnorderedList,
+      "- "  -> ( UnorderedList(_) ),
       "1. " -> ( OrderedList(_,"decimal") ),
       "I. " -> ( OrderedList(_,"upperRoman") ),
       "i. " -> ( OrderedList(_,"lowerRoman") ),

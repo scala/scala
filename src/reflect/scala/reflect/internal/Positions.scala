@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import util._
+import util.{Position => UPos, NoPosition => UNoPos, _}
 
 /** Handling range positions
  *  atPos, the main method in this trait, will add positions to a tree,
@@ -34,8 +34,9 @@ import util._
  *   Otherwise, the singleton consisting of the node itself.
  */
 trait Positions extends api.Positions { self: SymbolTable =>
-  type Position = scala.reflect.internal.util.Position
-  val NoPosition = scala.reflect.internal.util.NoPosition
+  type Position = UPos
+  private val Position: UPos.type = UPos
+  val NoPosition: UNoPos.type = UNoPos
   implicit val PositionTag: ClassTag[Position] = ClassTag[Position](classOf[Position])
 
   def useOffsetPositions: Boolean = true
