@@ -12,29 +12,33 @@
 
 package scala.concurrent.duration
 
-/**
- * This class stores a deadline, as obtained via `Deadline.now` or the
- * duration DSL:
+import annotation.nowarn
+
+/** A deadline, as a duration of time remaining, calculated from the present.
  *
- * {{{
- * import scala.concurrent.duration._
- * 3.seconds.fromNow
- * }}}
+ *  Deadlines are obtained via `Deadline.now` or the duration DSL:
  *
- * Its main purpose is to manage repeated attempts to achieve something (like
- * awaiting a condition) by offering the methods `hasTimeLeft` and `timeLeft`.  All
- * durations are measured according to `System.nanoTime`; this
- * does not take into account changes to the system clock (such as leap
- * seconds).
+ *  {{{
+ *  import scala.concurrent.duration._
+ *  3.seconds.fromNow
+ *  }}}
+ *
+ *  The purpose of a deadline is to support managed repeated attempts,
+ *  such as when awaiting a condition, by offering the methods `hasTimeLeft` and `timeLeft`.
+ *
+ *  All durations are measured according to `System.nanoTime`;
+ *  this does not take into account changes to the system clock, such as leap seconds.
  */
 case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
   /**
    * Return a deadline advanced (i.e., moved into the future) by the given duration.
    */
+  @nowarn("cat=deprecation")
   def +(other: FiniteDuration): Deadline = copy(time = time + other)
   /**
    * Return a deadline moved backwards (i.e., towards the past) by the given duration.
    */
+  @nowarn("cat=deprecation")
   def -(other: FiniteDuration): Deadline = copy(time = time - other)
   /**
    * Calculate time difference between this and the other deadline, where the result is directed (i.e., may be negative).
@@ -65,6 +69,10 @@ case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
    * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
    */
   def compare(other: Deadline): Int = time compare other.time
+
+  // expose public copy for backward compatibility under -Xsource:3
+  @deprecated("use now or FiniteDuration#fromNow", since="2.13.13")
+  def copy(time: FiniteDuration = this.time): Deadline = Deadline(time)
 }
 
 object Deadline {
@@ -73,6 +81,7 @@ object Deadline {
    * advancing it to obtain a future deadline, or for sampling the current time exactly once and
    * then comparing it to multiple deadlines (using subtraction).
    */
+  @nowarn("cat=deprecation")
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
 
   /**
@@ -82,4 +91,7 @@ object Deadline {
     def compare(a: Deadline, b: Deadline): Int = a compare b
   }
 
+  // expose public apply for backward compatibility under -Xsource:3
+  @deprecated("use now or FiniteDuration#fromNow", since="2.13.13")
+  def apply(time: FiniteDuration): Deadline = new Deadline(time)
 }

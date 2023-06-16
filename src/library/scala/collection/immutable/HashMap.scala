@@ -2381,7 +2381,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
             currentValueCursor += 1
           }
 
-          override def next() = Iterator.empty.next()
+          override def next(): (K, V) = Iterator.empty.next()
         }
       case hm: collection.mutable.HashMap[K, V] =>
         val iter = hm.nodeIterator

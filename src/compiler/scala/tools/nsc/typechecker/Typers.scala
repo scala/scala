@@ -3303,7 +3303,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def includesTargetPos(tree: Tree) =
-        tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
+        tree.pos.isRange && context.unit.exists && tree.pos.includes(context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = stat match {
         case s if context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(s) => OnlyDeclarationsError(s)
@@ -3418,8 +3418,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
             case Some(tree) if shouldAdd(sym) =>
               // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
-              if (!sym.initialize.hasFlag(IS_ERROR))
-                newStats += typedStat(tree) // might add even more synthetics to the scope
+              if (!sym.initialize.hasFlag(IS_ERROR)) {
+                val newStat = typedStat(tree)
+                if (currentRun.isScala3 && !sym.owner.isCaseClass)
+                  tree match {
+                    case DefDef(mods, nme.apply, _, _, _, _) if mods.hasFlag(PRIVATE) || mods.privateWithin != tpnme.EMPTY =>
+                      runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", WarningCategory.Scala3Migration, sym)
+                    case _ =>
+                  }
+                newStats += newStat // might add even more synthetics to the scope
+              }
               context.unit.synthetics -= sym
             case _ => ()
           }

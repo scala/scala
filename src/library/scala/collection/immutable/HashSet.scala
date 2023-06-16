@@ -2097,7 +2097,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
             )
             currentValueCursor += 1
           }
-          override def next() = Iterator.empty.next()
+          override def next(): A = Iterator.empty.next()
         }
       case other =>
         val it = other.iterator

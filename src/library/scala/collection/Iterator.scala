@@ -969,8 +969,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 object Iterator extends IterableFactory[Iterator] {
 
   private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
-    def hasNext = false
-    def next() = throw new NoSuchElementException("next on empty iterator")
+    override def hasNext: Boolean = false
+    override def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
     override def knownSize: Int = 0
     override protected def sliceIterator(from: Int, until: Int): AbstractIterator[Nothing] = this
   }
