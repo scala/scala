@@ -5453,7 +5453,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 )
               case _ =>
                 if (settings.lintUniversalMethods && qualTp.widen.eq(UnitTpe)) checkDubiousUnitSelection(result)
-                result
+                if (isConstantType(qualTp) && constfold.foldableUnaryOps(name)) constfold(result, context.owner)
+                else result
             }
           }
         }
