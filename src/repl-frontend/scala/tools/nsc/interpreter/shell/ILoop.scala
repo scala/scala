@@ -808,40 +808,45 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         text
       }
     }
-    val code: String = args match {
-      case name :: Nil if !name.startsWith("<")       => pasteFile(name)
-      case Nil                                        => pasteWith("", None)
-      case here :: Nil                                => pasteWith(here.slice(1, 2), None)
-      case here :: eof :: Nil if here.startsWith("<") => pasteWith(here.slice(1, 2), Some(eof))
-      case _ => usage() ; ???
-    }
-    def interpretCode() =
+    def interpretCode(code: String) =
       if (intp.withLabel(label)(intp.interpret(code)) == Incomplete)
         paste.incomplete("The pasted code is incomplete!\n", label, code)
-    def compileCode() = paste.compilePaste(label = label, code = code)
-    def compileJava(): Unit = {
-      def pickLabel(): Unit = {
+    def compileCode(code: String) = paste.compilePaste(label = label, code = code)
+    def compileJava(code: String): Unit = {
+      def pickLabel() = {
         val gstable = global
         val jparser = gstable.newJavaUnitParser(gstable.newCompilationUnit(code = code))
-        val result  = jparser.parse().collect {
+        val result = jparser.parse().collect {
           case gstable.ClassDef(mods, className, _, _) if mods.isPublic => className
         }
-        result.headOption.foreach(n => label = s"${n.decoded}")
+        result.headOption
       }
-      pickLabel()
-      val out = createTempDirectory()
-      JavacTool(out, intp.classLoader).compile(label, code) match {
-        case Some(errormsg) => echo(s"Compilation failed! $errormsg")
-        case None => intp.addUrlsToClassPath(out.toUri().toURL())
+      pickLabel() match {
+        case Some(className) =>
+          label = s"${className.decoded}"
+          val out = createTempDirectory()
+          JavacTool(out, intp.classLoader).compile(label, code) match {
+            case Some(errormsg) => echo(s"Compilation failed! $errormsg")
+            case None => intp.addUrlsToClassPath(out.toUri().toURL())
+          }
+        case _ =>
+          echo(s"No class detected in source!")
       }
     }
-
-    if (code.nonEmpty)
-      intp.reporter.indenting(0) {
-        if (java) compileJava()
-        else if (raw || paste.isPackaged(code)) compileCode()
-        else interpretCode()
-      }
+    def dispatch(code: String): Unit =
+      if (code.nonEmpty)
+        intp.reporter.indenting(0) {
+          if (java) compileJava(code)
+          else if (raw || paste.isPackaged(code)) compileCode(code)
+          else interpretCode(code)
+        }
+    args match {
+      case name :: Nil if !name.startsWith("<")       => dispatch(pasteFile(name))
+      case Nil                                        => dispatch(pasteWith("", None))
+      case here :: Nil                                => dispatch(pasteWith(here.slice(1, 2), None))
+      case here :: eof :: Nil if here.startsWith("<") => dispatch(pasteWith(here.slice(1, 2), Some(eof)))
+      case _ => usage()
+    }
     result
   }
 

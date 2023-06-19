@@ -15,7 +15,7 @@ package shell
 
 import java.io.CharArrayWriter
 import java.net.URI
-import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Path
 import java.util.Locale
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -37,13 +37,12 @@ class JavacTool private (tool: JavaCompiler, dir: AbstractFile, loader: ClassLoa
   }
   val listener = new JavaReporter
   val locale = Locale.getDefault
-  val charset = Charset.forName("UTF-8")
-  val fileManager = new JavaToolFileManager(dir, loader)(tool.getStandardFileManager(listener, locale, charset))
+  val fileManager = new JavaToolFileManager(dir, loader)(tool.getStandardFileManager(listener, locale, UTF_8))
 
   def compile(label: String, code: String): Option[String] = {
     val options = (
       "-encoding" ::
-      "UTF-8" ::
+      UTF_8.name() ::
       Nil
     ).asJava
     val classes: java.lang.Iterable[String] = null
