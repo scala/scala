@@ -135,9 +135,11 @@ class EqualsTest {
 
     val iterator = Iterator.empty[String]
     assertEquals(iterator.asJava, iterator.asJava)
+    assertEquals(iterator.asJavaEnumeration, iterator.asJavaEnumeration)
 
     val iterable = Iterable.empty[String]
     assertEquals(iterable.asJava, iterable.asJava)
+    assertEquals(iterable.asJavaCollection, iterable.asJavaCollection)
 
     val buffer = mutable.Buffer.empty[String]
     assertEquals(buffer.asJava, buffer.asJava)
@@ -153,6 +155,7 @@ class EqualsTest {
 
     val mutableMap = mutable.Map.empty[String, String]
     assertEquals(mutableMap.asJava, mutableMap.asJava)
+    assertEquals(mutableMap.asJavaDictionary, mutableMap.asJavaDictionary)
 
     val map = Map.empty[String, String]
     assertEquals(map.asJava, map.asJava)

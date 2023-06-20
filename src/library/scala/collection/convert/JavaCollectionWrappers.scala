@@ -552,6 +552,13 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     } catch {
       case ex: ClassCastException => null.asInstanceOf[V]
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case that: DictionaryWrapper[_, _] => this.underlying == that.underlying
+      case _ => false
+    }
+
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
