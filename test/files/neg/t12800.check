@@ -1,0 +1,7 @@
+matcher_1.scala:8: warning: match may not be exhaustive.
+It would fail on the following input: ORANGE
+    jb match {
+    ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
