@@ -15,12 +15,14 @@ package tools
 package nsc
 
 import java.util.regex.PatternSyntaxException
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.StringOps.countElementsAsString
 import scala.reflect.internal.util.{NoSourceFile, Position, SourceFile}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
+import scala.tools.nsc.settings.NoScalaVersion
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
@@ -38,6 +40,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     val rootDirPrefix: String =
       if (settings.rootdir.value.isEmpty) ""
       else Regex.quote(new java.io.File(settings.rootdir.value).getCanonicalPath.replace("\\", "/"))
+    @nowarn("cat=deprecation")
+    def isScala3 = settings.isScala3.value
+    def isScala3Migration = settings.Xmigration.value != NoScalaVersion
     lazy val wconf = WConf.parse(settings.Wconf.value, rootDirPrefix) match {
       case Left(msgs) =>
         val multiHelp =
@@ -48,7 +53,13 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           else ""
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
-      case Right(c) => c
+      case Right(conf) =>
+        if (isScala3 && !conf.filters.exists(_._1.exists { case MessageFilter.Category(WarningCategory.Migration) => true case _ => false })) {
+          val migrationAction = if (isScala3Migration) Action.Warning else Action.Error
+          val migrationCategory = MessageFilter.Category(WarningCategory.Migration) :: Nil
+          WConf(conf.filters :+ (migrationCategory, migrationAction))
+        }
+        else conf
     }
 
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
@@ -353,11 +364,13 @@ object Reporting {
 
     object JavaSource extends WarningCategory; add(JavaSource)
 
+    object Migration extends WarningCategory; add(Migration)
+
     sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
     object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)
     object OtherShadowing extends Other; add(OtherShadowing)
     object OtherPureStatement extends Other; add(OtherPureStatement)
-    object OtherMigration extends Other; add(OtherMigration)
+    object OtherMigration extends Other; add(OtherMigration) // API annotation
     object OtherMatchAnalysis extends Other; add(OtherMatchAnalysis)
     object OtherDebug extends Other; add(OtherDebug)
     object OtherNullaryOverride extends Other; add(OtherNullaryOverride)

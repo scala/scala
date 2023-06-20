@@ -13,18 +13,16 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.annotation.{switch, tailrec}
+import scala.collection.mutable, mutable.{ArrayBuffer, ListBuffer}
+import scala.reflect.internal.Chars._
+import scala.reflect.internal.util._
+import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.util.{CharArrayReader, CharArrayReaderData}
-import scala.reflect.internal.util._
-import scala.reflect.internal.Chars._
 import Tokens._
-import scala.annotation.{switch, tailrec}
-import scala.collection.mutable
-import mutable.{ArrayBuffer, ListBuffer}
-import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import java.lang.StringBuilder
-
-import scala.tools.nsc.Reporting.WarningCategory
 
 object Cbuf {
   final val TargetCapacity = 256
@@ -958,27 +956,31 @@ trait Scanners extends ScannersCommon {
     }
 
     private def replaceUnicodeEscapesInTriple(): Unit = 
-      if(strVal != null) {
+      if (strVal != null)
         try {
-          val replaced = StringContext.processUnicode(strVal)
-          if(replaced != strVal) {
-            val diffPosition = replaced.zip(strVal).zipWithIndex.collectFirst{ case ((r, o), i) if r != o => i}.getOrElse(replaced.length - 1)
-            deprecationWarning(offset + 3 + diffPosition, "Unicode escapes in triple quoted strings are deprecated, use the literal character instead", since="2.13.2")
+          val processed = StringContext.processUnicode(strVal)
+          if (processed != strVal) {
+            val diffPosition = processed.zip(strVal).zipWithIndex.collectFirst{ case ((r, o), i) if r != o => i}.getOrElse(processed.length - 1)
+            val pos = offset + 3 + diffPosition
+            def msg(what: String) = s"Unicode escapes in triple quoted strings are $what; use the literal character instead"
+            if (!currentRun.isScala3) {
+              deprecationWarning(pos, msg("deprecated"), since="2.13.2")
+              strVal = processed
+            }
+            else warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Migration)
           }
-          strVal = replaced
         } catch {
-          case ue: StringContext.InvalidUnicodeEscapeException => {
-            syntaxError(offset + 3 + ue.index, ue.getMessage())
-          }
+          case ue: StringContext.InvalidUnicodeEscapeException =>
+            if (!currentRun.isScala3)
+              syntaxError(offset + 3 + ue.index, ue.getMessage())
         }
-      }
 
     @tailrec private def getRawStringLit(): Unit = {
       if (ch == '\"') {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
-          if (!currentRun.isScala3) replaceUnicodeEscapesInTriple()
+          replaceUnicodeEscapesInTriple()
           token = STRINGLIT
         } else
           getRawStringLit()

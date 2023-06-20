@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+// scalac: -Werror -Xlint
 //
 abstract class Foo {
   def bar {}

@@ -1,5 +1,5 @@
 
-// scalac: -Xsource:3
+// scalac: -Xsource:3 -Xmigration
 
 class A {
   def f: Option[String] = Some("hello, world")

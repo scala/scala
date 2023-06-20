@@ -16,6 +16,8 @@ package typechecker
 import scala.annotation.tailrec
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 /*
  *  @author  Martin Odersky
@@ -154,6 +156,10 @@ trait Unapplies extends ast.TreeDSL {
     val mods =
       if (applyShouldInheritAccess(inheritedMods))
         (caseMods | (inheritedMods.flags & PRIVATE)).copy(privateWithin = inheritedMods.privateWithin)
+          .tap { mods =>
+            if (currentRun.isScala3 && mods != caseMods)
+              runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `apply` method", WarningCategory.Migration, cdef.symbol)
+          }
       else
         caseMods
     factoryMeth(mods, nme.apply, cdef)
@@ -274,6 +280,10 @@ trait Unapplies extends ast.TreeDSL {
         if (currentRun.isScala3) {
           val inheritedMods = constrMods(cdef)
           Modifiers(SYNTHETIC | (inheritedMods.flags & AccessFlags), inheritedMods.privateWithin)
+            .tap { mods =>
+              if (currentRun.isScala3 && mods != Modifiers(SYNTHETIC))
+                runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `copy` method", WarningCategory.Migration, cdef.symbol)
+            }
         }
         else Modifiers(SYNTHETIC)
       val copyDefDef = atPos(cdef.pos.focus)(

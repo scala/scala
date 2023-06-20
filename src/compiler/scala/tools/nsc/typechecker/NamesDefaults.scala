@@ -524,7 +524,7 @@ trait NamesDefaults { self: Analyzer =>
    *  Verifies that names are not specified twice, and positional args don't appear after named ones.
    */
   def removeNames(typer: Typer)(args: List[Tree], params: List[Symbol]): (List[Tree], Array[Int]) = {
-    implicit val context0 = typer.context
+    implicit val context0: Context = typer.context
     def matchesName(param: Symbol, name: Name, argIndex: Int) = {
       def warn(msg: String, since: String) = context0.deprecationWarning(args(argIndex).pos, param, msg, since)
       def checkDeprecation(anonOK: Boolean) =
@@ -554,8 +554,7 @@ trait NamesDefaults { self: Analyzer =>
         val NamedArg(Ident(name), rhs) = arg: @unchecked
         params.indexWhere(p => matchesName(p, name, argIndex)) match {
           case -1 =>
-            val warnVariableInScope = !currentRun.isScala3 && context0.lookupSymbol(name, _.isVariable).isSuccess
-            UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope)
+            UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope = context0.lookupSymbol(name, _.isVariable).isSuccess)
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
             val otherName = Some(args(paramPos)) collect {
@@ -574,12 +573,10 @@ trait NamesDefaults { self: Analyzer =>
           val t = stripNamedArg(arg, argIndex)
           if (!t.isErroneous && argPos(argIndex) < 0) argPos(argIndex) = argIndex
           t
-        case (arg, argIndex) =>
-          if (positionalAllowed) {
-            argPos(argIndex) = argIndex
-            arg
-          } else
-            PositionalAfterNamedNamesDefaultError(arg)
+        case (arg, argIndex) if positionalAllowed =>
+          argPos(argIndex) = argIndex
+          arg
+        case (arg, _) => PositionalAfterNamedNamesDefaultError(arg)
       }
     }
     (namelessArgs, argPos)

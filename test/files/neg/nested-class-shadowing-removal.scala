@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:deprecation -Xsource:3.0
+// scalac: -Xsource:3
 //
 
 trait Core {

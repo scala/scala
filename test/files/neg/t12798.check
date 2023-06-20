@@ -1,0 +1,50 @@
+t12798.scala:11: error: unknown parameter name: z
+Note that assignments in argument position are no longer allowed since Scala 2.13.
+To express the assignment expression, wrap it in brackets, e.g., `{ z = ... }`.
+    f(42, z = 27)
+            ^
+t12798.scala:25: error: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_- = -42`
+  def unary_-() = -42
+      ^
+t12798.scala:28: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+drop the `extends` clause or use a regular object instead
+package object tester extends Runnable {
+                      ^
+t12798.scala:33: error: procedure syntax is deprecated for constructors: add `=`, as in method definition
+  def this(s: String) { this() }
+                     ^
+t12798.scala:34: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
+  def f() { println() }
+          ^
+t12798.scala:35: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
+  def g()
+         ^
+t12798.scala:39: error: parentheses are required around the parameter of a lambda
+Use '-Wconf:msg=lambda-parens:s' to silence this warning.
+  def f = List(42).map { x: Int => x + 1 }
+                          ^
+t12798.scala:43: error: type application is not allowed for infix operators
+  def f = List(42) map [Int] (_ + 1)
+                   ^
+t12798.scala:46: error: Top-level wildcard is not allowed
+class `misuse of underscore`[_]
+                             ^
+t12798.scala:48: error: early initializers are deprecated; use trait parameters instead.
+class `early bird` extends { val x = "hello, world" } with Runnable { def run() = println(x) }
+                           ^
+t12798.scala:17: error: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+  def f = raw"\u0043 is for $entry"
+              ^
+t12798.scala:18: error: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+  def g = raw"""\u0043 is for Cat"""
+                ^
+t12798.scala:50: error: constructor modifiers are assumed by synthetic `copy` method
+case class `case mods propagate` private (s: String)
+           ^
+t12798.scala:60: error: under -Xsource:3, inferred Option[Int] instead of Some[Int]
+  override def f = Some(27)
+               ^
+t12798.scala:52: error: constructor modifiers are assumed by synthetic `apply` method
+case class `copyless case mods propagate` private (s: String) {
+           ^
+15 errors
