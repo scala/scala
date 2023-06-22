@@ -13,7 +13,6 @@
 package scala.collection
 package mutable
 
-import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.runtime.PStatics
 
@@ -29,31 +28,31 @@ sealed abstract class ArrayBuilder[T]
   protected[this] def elems: Array[T]
   protected var size: Int = 0
 
+  def MaxSize: Int = PStatics.VM_MaxArraySize
+
   def length: Int = size
 
   override def knownSize: Int = size
 
+  protected[this] final def validSize(size: Int): Unit = {
+    if (size > MaxSize) throw new mutable.ExceededArrayBuilderCapacity()
+    else if (size < 0) throw new mutable.NegativeArrayBuilderSize(size)
+  }
+
   protected[this] final def ensureSize(size: Int): Unit = {
-    if (size > 1073741824) {
-      if (size > PStatics.VM_MaxArraySize) throw new mutable.ExceededArrayBuilderCapacity()
-      else resize(PStatics.VM_MaxArraySize)
-    } else if (capacity < size || capacity == 0) {
-      var newsize = if (capacity == 0) 16 else capacity * 2
-      while (newsize < size) newsize *= 2
+    validSize(size)
+    if (size > 1073741824 && capacity < MaxSize) resize(MaxSize)
+    else if (capacity < size || capacity == 0) {
+      var newsize:Int = if (capacity == 0) 16 else capacity * 2
+      while (newsize < size && newsize > 0) newsize *= 2
       resize(newsize)
     }
   }
 
-  final val VM_MaxArraySizeLong:Long = PStatics.VM_MaxArraySize.toLong
-  protected[this] final def ensureSizeIncrease(sizeIncrease: Int): Unit = {
-    val newSize: Long = this.size.toLong + sizeIncrease.toLong
-    if (newSize > VM_MaxArraySizeLong) {
-      throw new mutable.ExceededArrayBuilderCapacity()
-    } else ensureSize(newSize.toInt)
-  }
-
-  override final def sizeHint(size: Int): Unit =
+  override final def sizeHint(size: Int): Unit = {
+    validSize(size)
     if (capacity < size) resize(size)
+  }
 
   def clear(): Unit = size = 0
 
@@ -64,7 +63,7 @@ sealed abstract class ArrayBuilder[T]
 
   /** Add a slice of an array */
   def addAll(xs: Array[_ <: T], offset: Int, length: Int): this.type = {
-    ensureSizeIncrease(length)
+    ensureSize(this.size + length)
     Array.copy(xs, offset, elems, this.size, length)
     size += length
     this
@@ -73,9 +72,8 @@ sealed abstract class ArrayBuilder[T]
   override def addAll(xs: IterableOnce[T]): this.type = {
     val k = xs.knownSize
     if (k > 0) {
-      ensureSizeIncrease(k)
-      val actual = IterableOnce.copyElemsToArray(xs, elems, this.size)
-      if (actual != k) throw new IllegalStateException(s"Copied $actual of $k")
+      ensureSize(this.size + k)
+      IterableOnce.copyElemsToArray(xs, elems, this.size)
       size += k
     } else if (k < 0) super.addAll(xs)
     this
@@ -124,10 +122,10 @@ object ArrayBuilder {
       else java.util.Arrays.copyOf[T](elems, size)
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: T): this.type = {
       ensureSize(size + 1)
@@ -171,10 +169,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Byte): this.type = {
       ensureSize(size + 1)
@@ -213,10 +211,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Short): this.type = {
       ensureSize(size + 1)
@@ -255,10 +253,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Char): this.type = {
       ensureSize(size + 1)
@@ -297,10 +295,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Int): this.type = {
       ensureSize(size + 1)
@@ -339,10 +337,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Long): this.type = {
       ensureSize(size + 1)
@@ -381,10 +379,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Float): this.type = {
       ensureSize(size + 1)
@@ -423,10 +421,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Double): this.type = {
       ensureSize(size + 1)
@@ -465,10 +463,10 @@ object ArrayBuilder {
       newelems
     }
 
-    protected[this] def resize(size: Int): Unit = if (size < PStatics.VM_MaxArraySize) {
+    protected[this] def resize(size: Int): Unit = {
       elems = mkArray(size)
       capacity = size
-    } else throw new mutable.ExceededArrayBuilderCapacity()
+    }
 
     def addOne(elem: Boolean): this.type = {
       ensureSize(size + 1)
@@ -534,4 +532,6 @@ object ArrayBuilder {
   }
 }
 
-class ExceededArrayBuilderCapacity extends Exception(s"ArrayBuilder cannot store more than ${PStatics.VM_MaxArraySize} elements")
+class ExceededArrayBuilderCapacity extends Exception(s"ArrayBuilder cannot store more than ${PStatics.VM_MaxArraySize} elements.")
+class NegativeArrayBuilderSize(size:Int) extends Exception(s"ArrayBuilder encountered negative size parameter: $size.  This may have resulted from an overflow.")
+
