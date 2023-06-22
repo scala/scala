@@ -129,7 +129,9 @@ trait TreeAndTypeAnalysis extends Debugging {
       def filterAndSortChildren(children: Set[Symbol]) = {
         // symbols which are both sealed and abstract need not be covered themselves,
         // because all of their children must be and they cannot otherwise be created.
-        val children1 = children.toList.filterNot(child => child.isSealed && child.isAbstractClass).sortBy(_.sealedSortName)
+        val children1 = children.toList
+          .filterNot(child => child.isSealed && (child.isAbstractClass || child.hasJavaEnumFlag))
+          .sortBy(_.sealedSortName)
         children1.filterNot { child =>
           // remove private abstract children that are superclasses of other children, for example in t6159 drop X2
           child.isPrivate && child.isAbstractClass && children1.exists(sym => (sym ne child) && sym.isSubClass(child))
@@ -874,7 +876,7 @@ trait MatchAnalysis extends MatchApproximation {
                       case args                            => args
                     }.map(ListExample)
                   case _ if isTupleSymbol(cls)                  => args(brevity = true).map(TupleExample)
-                  case _ if cls.isSealed && cls.isAbstractClass =>
+                  case _ if cls.isSealed && (cls.isAbstractClass || cls.hasJavaEnumFlag) =>
                     // don't report sealed abstract classes, since
                     // 1) they can't be instantiated
                     // 2) we are already reporting any missing subclass (since we know the full domain)

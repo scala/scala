@@ -1030,11 +1030,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(RBRACE)
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
+      val hasAbstractMember = body.exists {
+        case m: MemberDef => m.mods.hasFlag(Flags.DEFERRED)
+        case _ => false
+      }
       val finalFlag = if (enumIsFinal) Flags.FINAL else 0L
+      val abstractFlag = if (hasAbstractMember) Flags.ABSTRACT else 0L
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also ClassfileParser.
-        // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
-        ClassDef(mods | Flags.JAVA_ENUM | Flags.SEALED | Flags.ABSTRACT | finalFlag, name, List(),
+        ClassDef(mods | Flags.JAVA_ENUM | Flags.SEALED | abstractFlag | finalFlag, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }

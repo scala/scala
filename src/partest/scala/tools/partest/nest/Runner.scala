@@ -249,7 +249,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
               // We'll let the checkfile diffing report this failure
               Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), CREATE, APPEND)
             case t: Throwable =>
-              Files.write(log.toPath, t.getMessage.getBytes(Charset.defaultCharset()), CREATE, APPEND)
+              val data = (if (t.getMessage != null) t.getMessage else t.getClass.getName).getBytes(Charset.defaultCharset())
+              Files.write(log.toPath, data, CREATE, APPEND)
               throw t
           }
         }
