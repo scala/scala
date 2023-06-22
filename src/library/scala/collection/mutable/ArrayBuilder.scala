@@ -35,8 +35,8 @@ sealed abstract class ArrayBuilder[T]
   override def knownSize: Int = size
 
   protected[this] final def validSize(size: Int): Unit = {
-    if (size > MaxSize) throw new mutable.ExceededArrayBuilderCapacity()
-    else if (size < 0) throw new mutable.NegativeArrayBuilderSize(size)
+    if (size > MaxSize) throw new mutable.ExceededMaximumArrayBuilderCapacity()
+    else if (size < 0) throw new mutable.EncounteredNegativeArrayBuilderCapacity(size)
   }
 
   protected[this] final def ensureSize(size: Int): Unit = {
@@ -532,6 +532,6 @@ object ArrayBuilder {
   }
 }
 
-class ExceededArrayBuilderCapacity extends Exception(s"ArrayBuilder cannot store more than ${PStatics.VM_MaxArraySize} elements.")
-class NegativeArrayBuilderSize(size:Int) extends Exception(s"ArrayBuilder encountered negative size parameter: $size.  This may have resulted from an overflow.")
+class ExceededMaximumArrayBuilderCapacity extends Exception(s"ArrayBuilder cannot store more than ${PStatics.VM_MaxArraySize} elements.")
+class EncounteredNegativeArrayBuilderCapacity(size:Int) extends Exception(s"ArrayBuilder encountered negative size parameter: $size.  This may have resulted from an overflow.")
 
