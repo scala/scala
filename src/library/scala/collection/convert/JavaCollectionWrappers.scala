@@ -34,18 +34,33 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     def hasMoreElements = underlying.hasNext
     def nextElement() = underlying.next()
     override def remove() = throw new UnsupportedOperationException
+    override def equals(other: Any): Boolean = other match {
+      case that: IteratorWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
   class JIteratorWrapper[A](val underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next
+    override def equals(other: Any): Boolean = other match {
+      case that: JIteratorWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
   class JEnumerationWrapper[A](val underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasMoreElements
     def next() = underlying.nextElement
+    override def equals(other: Any): Boolean = other match {
+      case that: JEnumerationWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
@@ -57,13 +72,11 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
   @SerialVersionUID(3L)
   class IterableWrapper[A](val underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable {
-    import scala.runtime.Statics._
-    override def equals(other: Any): Boolean =
-      other match {
-        case other: IterableWrapper[_] => underlying.equals(other.underlying)
-        case _ => false
-      }
-    override def hashCode = finalizeHash(mix(mix(0xcafebabe, "IterableWrapper".hashCode), anyHash(underlying)), 1)
+    override def equals(other: Any): Boolean = other match {
+      case that: IterableWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
@@ -74,6 +87,11 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     def iterator = underlying.iterator.asScala
     override def iterableFactory = mutable.ArrayBuffer
     override def isEmpty: Boolean = !underlying.iterator().hasNext
+    override def equals(other: Any): Boolean = other match {
+      case that: JIterableWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
@@ -86,6 +104,11 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def isEmpty = underlying.isEmpty
     override def iterableFactory = mutable.ArrayBuffer
+    override def equals(other: Any): Boolean = other match {
+      case that: JCollectionWrapper[_] => this.underlying == that.underlying
+      case _ => false
+    }
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)
@@ -254,7 +277,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
             def getKey = k
             def getValue = v
             def setValue(v1 : V) = self.put(k, v1)
-            
+
             // It's important that this implementation conform to the contract
             // specified in the javadocs of java.util.Map.Entry.hashCode
             //
@@ -529,6 +552,13 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     } catch {
       case ex: ClassCastException => null.asInstanceOf[V]
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case that: DictionaryWrapper[_, _] => this.underlying == that.underlying
+      case _ => false
+    }
+
+    override def hashCode: Int = underlying.hashCode()
   }
 
   @SerialVersionUID(3L)

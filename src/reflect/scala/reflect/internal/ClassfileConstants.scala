@@ -353,7 +353,7 @@ object ClassfileConstants {
       case JAVA_ACC_STATIC     => STATIC
       case JAVA_ACC_ABSTRACT   => if (isClass) ABSTRACT else DEFERRED
       case JAVA_ACC_INTERFACE  => TRAIT | INTERFACE | ABSTRACT
-      case JAVA_ACC_ENUM       => JAVA_ENUM
+      case JAVA_ACC_ENUM       => if (isClass) JAVA_ENUM | SEALED else JAVA_ENUM
       case JAVA_ACC_ANNOTATION => JAVA_ANNOTATION
       case _                   => 0L
     }

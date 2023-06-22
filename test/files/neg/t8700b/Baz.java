@@ -1,5 +1,4 @@
-// javaVersion: 8
-public enum Baz_1 {
+public enum Baz {
     A {
     	public void baz1() {}
     },
