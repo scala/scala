@@ -292,6 +292,7 @@ trait Trees extends api.Trees {
     def getterName: TermName = name.getterName
     def setterName: TermName = name.setterName
     def localName: TermName = name.localName
+    def namePos: Position = this.attachments.get[NamePos].map(_.pos).getOrElse(this.pos)
   }
 
   trait RefTree extends SymTree with NameTree with RefTreeApi {

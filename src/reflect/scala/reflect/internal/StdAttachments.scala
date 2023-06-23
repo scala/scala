@@ -158,4 +158,6 @@ trait StdAttachments {
   /** Java sealed classes may be qualified with a permits clause specifying allowed subclasses. */
   case class PermittedSubclasses(permits: List[Tree]) extends PlainAttachment
   case class PermittedSubclassSymbols(permits: List[Symbol]) extends PlainAttachment
+
+  case class NamePos(pos: Position) extends PlainAttachment
 }

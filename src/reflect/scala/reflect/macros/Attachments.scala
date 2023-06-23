@@ -138,6 +138,7 @@ private final class SingleAttachment[P >: Null](override val pos: P, val att: An
     else new NonemptyAttachments[P](pos, Set.empty[Any] + att + newAtt)
   override def remove[T](implicit tt: ClassTag[T]) =
     if (contains(tt)) pos.asInstanceOf[Attachments { type Pos = P }] else this
+  override def toString = s"SingleAttachment at $pos: $att"
 }
 
 // scala/bug#7018: This used to be an inner class of `Attachments`, but that led to a memory leak in the

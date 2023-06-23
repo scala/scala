@@ -342,7 +342,7 @@ trait Namers extends MethodSynthesis {
      *  the flags to keep.
      */
     def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
-      val pos         = tree.pos
+      val pos         = tree.namePos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
 
@@ -461,7 +461,7 @@ trait Namers extends MethodSynthesis {
 
     /** Enter a module symbol.
      */
-    def enterModuleSymbol(tree : ModuleDef): Symbol = {
+    def enterModuleSymbol(tree: ModuleDef): Symbol = {
       val moduleFlags = tree.mods.flags | MODULE
 
       val existingModule = context.scope lookupModule tree.name
