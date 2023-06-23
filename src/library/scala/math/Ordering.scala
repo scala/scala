@@ -76,7 +76,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Returns whether a comparison between `x` and `y` is defined, and if so
     * the result of `compare(x, y)`.
     */
-  def tryCompare(x: T, y: T) = Some(compare(x, y))
+  def tryCompare(x: T, y: T): Some[Int] = Some(compare(x, y))
 
  /** Returns an integer whose sign communicates how x compares to y.
    *

@@ -48,7 +48,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def sortedIterableFactory = TreeSet
+  override def sortedIterableFactory: TreeSet.type = TreeSet
 
   private[this] def newSetOrSelf(t: RB.Tree[A, Any]) = if(t eq tree) this else new TreeSet[A](t)
 
