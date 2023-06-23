@@ -251,7 +251,9 @@ trait Definitions extends api.StandardDefinitions {
       scope
     }
     /** Is this symbol a member of Object or Any? */
-    def isUniversalMember(sym: Symbol) = ObjectClass isSubClass sym.owner
+    def isUniversalMember(sym: Symbol) =
+      if (sym.isOverloaded) sym.alternatives.exists(alt => ObjectClass.isSubClass(alt.owner))
+      else ObjectClass.isSubClass(sym.owner)
 
     /** Is this symbol unimportable? Unimportable symbols include:
      *  - constructors, because <init> is not a real name
@@ -1269,6 +1271,7 @@ trait Definitions extends api.StandardDefinitions {
     def Object_finalize  = getMemberMethod(ObjectClass, nme.finalize_)
     def Object_notify    = getMemberMethod(ObjectClass, nme.notify_)
     def Object_notifyAll = getMemberMethod(ObjectClass, nme.notifyAll_)
+    def Object_wait      = getMemberMethod(ObjectClass, nme.wait_)
     def Object_equals    = getMemberMethod(ObjectClass, nme.equals_)
     def Object_hashCode  = getMemberMethod(ObjectClass, nme.hashCode_)
     def Object_toString  = getMemberMethod(ObjectClass, nme.toString_)

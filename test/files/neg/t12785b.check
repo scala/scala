@@ -1,0 +1,26 @@
+t12785b.scala:3: error: type mismatch;
+ found   : Predef.type
+ required: Nothing
+  def f: Nothing = null.asInstanceOf[Predef.type]
+                                    ^
+t12785b.scala:4: error: type mismatch;
+ found   : scala.package.type
+ required: Nothing
+  def g: Nothing = null.asInstanceOf[scala.`package`.type]
+                                    ^
+t12785b.scala:5: error: type mismatch;
+ found   : List.type
+ required: Nothing
+  def list: Nothing = null.asInstanceOf[List.type]
+                                       ^
+t12785b.scala:6: error: type mismatch;
+ found   : Set.type
+ required: Nothing
+  def set: Nothing = null.asInstanceOf[Set.type]
+                                      ^
+t12785b.scala:7: error: type mismatch;
+ found   : Nil.type
+ required: Nothing
+  def nil: Nothing = null.asInstanceOf[Nil.type]
+                                      ^
+5 errors
