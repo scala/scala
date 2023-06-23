@@ -46,7 +46,7 @@ class ListBuffer[A]
   @transient private[this] var mutationCount: Int = 0
 
   private var first: List[A] = Nil
-  private var last0: ::[A] = null
+  private var last0: ::[A] = null // last element (`last0` just because the name `last` is already taken)
   private[this] var aliased = false
   private[this] var len = 0
 
@@ -244,6 +244,7 @@ class ListBuffer[A]
       val follow = getNext(prev)
       if (prev eq null) first = fresh.first else prev.next = fresh.first
       fresh.last0.next = follow
+      if (follow.isEmpty) last0 = fresh.last0
       len += fresh.length
     }
   }
