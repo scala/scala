@@ -6,6 +6,7 @@ import org.junit.Assert._
 
 import scala.annotation.nowarn
 import scala.collection.SeqFactory
+import scala.tools.testkit.AssertUtil.assertThrows
 
 class ArrayDequeTest {
 
@@ -116,6 +117,12 @@ class ArrayDequeTest {
     a.trimToSize()  // Shrink to 256
     assertEquals(a.capacity, 256)
   }
+
+  @Test def `head of empty throws NoSuchElement`: Unit =
+    assertThrows[NoSuchElementException](ArrayDeque.empty[Int].head, _.endsWith("head of empty ArrayDeque"))
+
+  @Test def `last of empty throws NoSuchElement`: Unit =
+    assertThrows[NoSuchElementException](ArrayDeque.empty[Int].last, _.endsWith("last of empty ArrayDeque"))
 }
 
 object ArrayDequeTest {
