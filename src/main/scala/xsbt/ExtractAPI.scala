@@ -180,6 +180,7 @@ class ExtractAPI[GlobalType <: Global](
   private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
   private def path(components: List[PathComponent]) =
     xsbti.api.Path.of(components.toArray[PathComponent])
+  @tailrec
   private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] = {
     if (sym == NoSymbol || sym.isRoot || sym.isEmptyPackageClass || sym.isRootPackage) postfix
     else pathComponents(sym.owner, xsbti.api.Id.of(simpleName(sym)) :: postfix)
@@ -304,6 +305,7 @@ class ExtractAPI[GlobalType <: Global](
   private def viewer(s: Symbol) = (if (s.isModule) s.moduleClass else s).thisType
 
   private def defDef(in: Symbol, s: Symbol): xsbti.api.Def = {
+    @tailrec
     def build(
         t: Type,
         typeParams: Array[xsbti.api.TypeParameter],
