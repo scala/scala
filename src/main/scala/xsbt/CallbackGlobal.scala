@@ -1,9 +1,9 @@
 /*
  * Zinc - The incremental compiler for Scala.
- * Copyright Lightbend, Inc. and Mark Harrah
+ * Copyright Scala Center, Lightbend, and Mark Harrah
  *
  * Licensed under Apache License 2.0
- * (http://www.apache.org/licenses/LICENSE-2.0).
+ * SPDX-License-Identifier: Apache-2.0
  *
  * See the NOTICE file distributed with this work for
  * additional information regarding copyright ownership.
@@ -205,8 +205,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
    *
    * Changes compared to the normal version in the compiler:
    *
-   * 1. It will use the encoded name instead of the normal name.
-   * 2. It will not skip the name of the package object class (required for the class file path).
+   * 1. It will use the encoded name instead of the normal n2. It will not skip the name of the package object class (required for the class file path).
    *
    * Note that using `javaBinaryName` is not useful for these symbols because we
    * need the encoded names. Zinc keeps track of encoded names in both the binary
