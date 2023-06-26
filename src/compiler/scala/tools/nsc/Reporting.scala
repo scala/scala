@@ -340,6 +340,7 @@ object Reporting {
     object OtherMigration extends Other; add(OtherMigration)
     object OtherMatchAnalysis extends WarningCategory; add(OtherMatchAnalysis)
     object OtherDebug extends WarningCategory; add(OtherDebug)
+    object OtherNonCooperativeEquals extends Other; add(OtherNonCooperativeEquals)
 
     sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
