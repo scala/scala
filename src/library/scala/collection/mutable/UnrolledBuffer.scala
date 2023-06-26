@@ -89,7 +89,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   // def setLengthPolicy(nextLength: Int => Int): Unit = { myLengthPolicy = nextLength }
   private[collection] def calcNextLength(sz: Int) = sz // myLengthPolicy(sz)
 
-  def classTagCompanion = UnrolledBuffer
+  def classTagCompanion: UnrolledBuffer.type = UnrolledBuffer
 
   /** Concatenates the target unrolled buffer to this unrolled buffer.
     *
