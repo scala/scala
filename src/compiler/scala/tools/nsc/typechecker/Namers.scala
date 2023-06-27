@@ -537,7 +537,6 @@ trait Namers extends MethodSynthesis {
     }
 
     private def checkSelectors(tree: Import): Unit = {
-      import DuplicatesErrorKinds._
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
@@ -594,22 +593,7 @@ trait Namers extends MethodSynthesis {
             checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
       }
-      selectors foreach checkSelector
-
-      def noDuplicates(): Unit = {
-        def loop(xs: List[ImportSelector]): Unit = xs match {
-          case Nil      => ()
-          case hd :: tl =>
-            if (!hd.isWildcard && tl.exists(x => !x.isWildcard && x.name == hd.name))
-              DuplicatesError(tree, hd.name, RenamedTwice)
-            else if (hd.isRename && tl.exists(x => x.isRename && x.rename == hd.rename))
-              DuplicatesError(tree, hd.rename, AppearsTwice)
-            else loop(tl)
-        }
-        loop(selectors)
-      }
-      // checks on the whole set
-      noDuplicates()
+      selectors.foreach(checkSelector)
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {

@@ -2803,22 +2803,41 @@ self =>
      *  }}}
      */
     def importSelectors(): List[ImportSelector] = {
-      val selectors0 = inBracesOrNil(commaSeparated(importSelector()))
-
-      // Treat an import of `*, given` or `given, *` as if it was an import of `*`
-      // since the former in Scala 3 has the same semantics as the latter in Scala 2.
-      val selectors =
-        if (currentRun.isScala3 && selectors0.exists(_.isWildcard))
-          selectors0.filterNot(sel => sel.name == nme.`given` && sel.rename == sel.name)
-        else
-          selectors0
-
-      for (t <- selectors.init if t.isWildcard) syntaxError(t.namePos, "Wildcard import must be in last position")
-      selectors
+      def isWilder(sel: ImportSelector) = sel.isWildcard || currentRun.isScala3 && !sel.isRename && sel.name == nme.`given`
+      // error on duplicate target names, import x.{a=>z, b=>z}, and fix import x.{given, *} to x._
+      def checkSelectors(xs: List[ImportSelector]): List[ImportSelector] = xs match {
+        case h :: t =>
+          // wildcards must come last, and for -Xsource:3, take trailing given, * (or *, given) as _
+          if (isWilder(h)) {
+            if (t.exists(!isWilder(_)))
+              syntaxError(h.namePos, "wildcard import must be in last position")
+            xs.filter(_.isWildcard) match {
+              case ws @ (_ :: Nil) => ws
+              case Nil =>
+                syntaxError(h.namePos, "given requires a wildcard selector")
+                ImportSelector.wildAt(h.namePos) :: Nil
+              case ws @ (w :: _) =>
+                syntaxError(w.namePos, "duplicate wildcard selector")
+                w :: Nil
+            }
+          }
+          else {
+            if (!h.isMask)
+              t.find(_.rename == h.rename).foreach { duplicate =>
+                val msg =
+                  if (h.isRename || duplicate.isRename) s"${h.rename} is an ambiguous name on import"
+                  else s"${h.rename} is imported twice"
+                syntaxError(h.namePos, msg)
+              }
+            h :: checkSelectors(t)
+          }
+        case _ => Nil
+      }
+      checkSelectors(inBracesOrNil(commaSeparated(importSelector())))
     }
 
     def wildcardOrIdent() =
-      if (in.token == USCORE || currentRun.isScala3 && isRawStar) { in.nextToken() ; nme.WILDCARD }
+      if (in.token == USCORE || currentRun.isScala3 && isRawStar) { in.nextToken(); nme.WILDCARD }
       else ident()
 
     /** {{{
@@ -2826,23 +2845,17 @@ self =>
      *  }}}
      */
     def importSelector(): ImportSelector = {
-      val start        = in.offset
-      val bbq          = in.token == BACKQUOTED_IDENT
-      val name         = wildcardOrIdent()
-      var renameOffset = -1
-
-      val rename =
+      val start = in.offset
+      val bbq   = in.token == BACKQUOTED_IDENT
+      val name  = wildcardOrIdent()
+      val (rename, renameOffset) =
         if (in.token == ARROW || (currentRun.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
-          renameOffset = in.offset
-          if (name == nme.WILDCARD && !bbq) syntaxError(renameOffset, "Wildcard import cannot be renamed")
-          wildcardOrIdent()
+          if (name == nme.WILDCARD && !bbq) syntaxError(in.offset, "Wildcard import cannot be renamed")
+          (wildcardOrIdent(), in.offset)
         }
-        else if (name == nme.WILDCARD && !bbq) null
-        else {
-          renameOffset = start
-          name
-        }
+        else if (name == nme.WILDCARD && !bbq) (null, -1)
+        else (name, start)
 
       ImportSelector(name, start, rename, renameOffset)
     }
