@@ -15,5 +15,5 @@ package scala.runtime
 // things that should be in `Statics`, but can't be yet for bincompat reasons
 // TODO 3.T: move to `Statics`
 private[scala] object PStatics {
-  final val VM_MaxArraySize = 2147483645 // == `Int.MaxValue - 2`, hotspot limit
+  final val VM_MaxArraySize:Int = 2147483639 // `Int.MaxValue - 8` traditional soft limit to maximize compatibility with diverse JVMs.
 }

@@ -287,7 +287,9 @@ object IterableOnce {
   @inline private[collection] def checkArraySizeWithinVMLimit(size: Int): Unit = {
     import scala.runtime.PStatics.VM_MaxArraySize
     if (size > VM_MaxArraySize) {
-      throw new Exception(s"Size of array-backed collection exceeds VM array size limit of ${VM_MaxArraySize}")
+      throw new Exception(s"Size of array-backed collection exceeds VM array size limit of $VM_MaxArraySize.  Encountered size: $size")
+    } else if (size < 0) {
+      throw new Exception(s"Size of array-backed collection must exceed 0.  Encountered size: $size")
     }
   }
 }

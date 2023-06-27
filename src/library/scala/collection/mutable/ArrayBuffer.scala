@@ -70,13 +70,6 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     array = ArrayBuffer.ensureSize(array, size0, n)
   }
 
-  // TODO 3.T: should be `protected`, perhaps `protected[this]`
-  /** Ensure that the internal array has at least `n` additional cells more than `size0`. */
-  private[mutable] def ensureAdditionalSize(n: Int): Unit = {
-    // `.toLong` to ensure `Long` arithmetic is used and prevent `Int` overflow
-    array = ArrayBuffer.ensureSize(array, size0, size0.toLong + n)
-  }
-
   /** Uses the given size to resize internal storage, if necessary.
    *
    *  @param size Expected maximum number of elements.
@@ -147,10 +140,10 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def addOne(elem: A): this.type = {
     mutationCount += 1
-    ensureAdditionalSize(1)
-    val oldSize = size0
-    size0 = oldSize + 1
-    this(oldSize) = elem
+    val newSize = size0 + 1
+    ensureSize(newSize)
+    size0 = newSize
+    this(size0 - 1) = elem
     this
   }
 
@@ -161,7 +154,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
         val elemsLength = elems.size0
         if (elemsLength > 0) {
           mutationCount += 1
-          ensureAdditionalSize(elemsLength)
+          ensureSize(size0 + elemsLength)
           Array.copy(elems.array, 0, array, length, elemsLength)
           size0 = length + elemsLength
         }
@@ -173,7 +166,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
     checkWithinBounds(index, index)
     mutationCount += 1
-    ensureAdditionalSize(1)
+    ensureSize(size0 + 1)
     Array.copy(array, index, array, index + 1, size0 - index)
     size0 += 1
     this(index) = elem
@@ -191,7 +184,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
         val elemsLength = elems.size
         if (elemsLength > 0) {
           mutationCount += 1
-          ensureAdditionalSize(elemsLength)
+          ensureSize(size0 + elemsLength)
           val len = size0
           Array.copy(array, index, array, index + elemsLength, len - index)
           // if `elems eq this`, this copy is safe because
@@ -314,24 +307,30 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 
+  import scala.runtime.PStatics.VM_MaxArraySize
   /**
    * @param arrayLen  the length of the backing array
    * @param targetLen the minimum length to resize up to
-   * @return -1 if no resizing is needed, or the size for the new array otherwise
+   * @return -1 if no resizing is needed, the greater of targetLen and 2 * arrayLen if neither exceeds VM_MaxArraySize,
+   *         or VM_MaxArraySize otherwise.
    */
-  private def resizeUp(arrayLen: Long, targetLen: Long): Int = {
-    if (targetLen <= arrayLen) -1
+  private[mutable] def resizeUp(arrayLen: Int, targetLen: Int): Int = {
+    // Hybrid
+    if (targetLen > 0 && targetLen <= arrayLen) -1
     else {
-      if (targetLen > Int.MaxValue) throw new Exception(s"Collections cannot have more than ${Int.MaxValue} elements")
-      IterableOnce.checkArraySizeWithinVMLimit(targetLen.toInt) // safe because `targetSize <= Int.MaxValue`
+      IterableOnce.checkArraySizeWithinVMLimit(targetLen) // safe because `targetSize <= Int.MaxValue`
 
-      val newLen = math.max(targetLen, math.max(arrayLen * 2, DefaultInitialSize))
-      math.min(newLen, scala.runtime.PStatics.VM_MaxArraySize).toInt
+      math.min(
+        if (targetLen > (Int.MaxValue >> 1)) VM_MaxArraySize
+        else math.max(targetLen, math.max(arrayLen << 1, DefaultInitialSize)),
+        VM_MaxArraySize
+      )
     }
   }
+
   // if necessary, copy (curSize elements of) the array to a new array of capacity n.
   // Should use Array.copyOf(array, resizeEnsuring(array.length))?
-  private def ensureSize(array: Array[AnyRef], curSize: Int, targetSize: Long): Array[AnyRef] = {
+  private def ensureSize(array: Array[AnyRef], curSize: Int, targetSize: Int): Array[AnyRef] = {
     val newLen = resizeUp(array.length, targetSize)
     if (newLen < 0) array
     else {

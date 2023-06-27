@@ -387,28 +387,30 @@ class ArrayBufferTest {
   // scala/bug#7880 and scala/bug#12464
   @Test def `ensureSize must terminate and have limits`(): Unit = {
     val sut = getMethodAccessible[ArrayBuffer.type]("resizeUp")
-    def resizeUp(arrayLen: Long, targetLen: Long): Int = sut.invoke(ArrayBuffer, arrayLen, targetLen).asInstanceOf[Int]
+    def resizeUp(arrayLen: Int, targetLen: Int): Int = sut.invoke(ArrayBuffer, arrayLen, targetLen).asInstanceOf[Int]
 
     // check termination and correctness
     assertTrue(7 < ArrayBuffer.DefaultInitialSize)  // condition of test
     assertEquals(ArrayBuffer.DefaultInitialSize, resizeUp(7, 10))
-    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1))  // was: ok
-    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 2))  // was: ok
+    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1))  // was: ok
+    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 2))  // was: ok
     assertEquals(-1, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 1))  // was: wrong
-    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 2))  // was: hang
-    assertEquals(Int.MaxValue - 2, resizeUp(Int.MaxValue / 2, Int.MaxValue - 2))
+    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 2))  // was: hang
+    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue - 8))
 
     // check limits
     def rethrow(op: => Any): Unit =
       try op catch { case e: InvocationTargetException => throw e.getCause }
-    def checkExceedsMaxInt(targetLen: Long): Unit =
+    def checkExceedsMaxInt(targetLen: Int): Unit = {
       assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
-                              _ == "Collections cannot have more than 2147483647 elements")
-    def checkExceedsVMArrayLimit(targetLen: Long): Unit =
+                              _ == s"Size of array-backed collection must exceed 0.  Encountered size: $targetLen")
+    }
+    import scala.runtime.PStatics
+    def checkExceedsVMArrayLimit(targetLen: Int): Unit =
       assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
-                              _ == "Size of array-backed collection exceeds VM array size limit of 2147483645")
+                              _ == s"Size of array-backed collection exceeds VM array size limit of ${PStatics.VM_MaxArraySize}.  Encountered size: $targetLen")
 
-    checkExceedsMaxInt(Int.MaxValue + 1L)
+    checkExceedsMaxInt(Int.MaxValue + 1)
     checkExceedsVMArrayLimit(Int.MaxValue)
     checkExceedsVMArrayLimit(Int.MaxValue - 1)
   }
