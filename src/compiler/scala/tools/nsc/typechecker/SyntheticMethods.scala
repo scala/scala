@@ -79,10 +79,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     if (!syntheticsOk)
       return templ
 
-    val synthesizer = new ClassMethodSynthesis(
-      clazz0,
-      newTyper( if (reporter.hasErrors) context makeSilent false else context )
-    )
+    val typer = newTyper(if (reporter.hasErrors) context.makeSilent(false) else context)
+    val synthesizer = new ClassMethodSynthesis(clazz0, typer)
     import synthesizer._
 
     if (clazz0 == AnyValClass || isPrimitiveValueClass(clazz0)) return {
@@ -154,7 +152,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       Match(
         Ident(eqmeth.firstParam),
         List(
-          CaseDef(Typed(Ident(nme.WILDCARD), TypeTree(clazz.tpe)), EmptyTree, TRUE),
+          CaseDef(Typed(Ident(nme.WILDCARD), TypeTree(typer.applyTypeToWildcards(clazz.tpe))), EmptyTree, TRUE),
           CaseDef(Ident(nme.WILDCARD), EmptyTree, FALSE)
         )
       )

@@ -1,0 +1,6 @@
+t12408-backport.scala:2: warning: abstract type X in type pattern Some[X] is unchecked since it is eliminated by erasure
+class A[X] { def f[Y](x: Option[Y]) = x match { case s: Some[X] => 0; case _ => 1 } }
+                                                        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
