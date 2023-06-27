@@ -1160,10 +1160,41 @@ abstract class RefChecks extends Transform {
         else warnIfLubless()
       }
     }
+
+    private def checkSensibleAnyEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree) = {
+      def underlyingClass(tp: Type): Symbol = {
+        val sym = tp.widen.typeSymbol
+        if (sym.isAbstractType) underlyingClass(sym.info.upperBound)
+        else sym
+      }
+      val receiver = underlyingClass(qual.tpe)
+      val actual   = underlyingClass(other.tpe)
+      def typesString = "" + normalizeAll(qual.tpe.widen) + " and " + normalizeAll(other.tpe.widen)
+      def nonSensiblyEquals() = {
+        refchecksWarning(pos, s"comparing values of types $typesString using `${name.decode}` unsafely bypasses cooperative equality; use `==` instead", WarningCategory.OtherNonCooperativeEquals)
+      }
+      def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
+      def isJavaNumber(s: Symbol)  = s isSubClass JavaNumberClass
+      def isAnyNumber(s: Symbol)   = isScalaNumber(s) || isJavaNumber(s)
+      def isNumeric(s: Symbol)     = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
+      def isReference(s: Symbol)   = (unboxedValueClass(s) isSubClass AnyRefClass) || (s isSubClass ObjectClass)
+      def isUnit(s: Symbol)        = unboxedValueClass(s) == UnitClass
+      def isNumOrNonRef(s: Symbol) = isNumeric(s) || (!isReference(s) && !isUnit(s))
+      if (isNumeric(receiver) && isNumOrNonRef(actual)) {
+        if (receiver == actual) ()
+        else nonSensiblyEquals()
+      }
+      else if ((sym == Any_equals || sym == Object_equals) && isNumOrNonRef(actual) && !isReference(receiver)) {
+        nonSensiblyEquals()
+      }
+    }
+
     /** Sensibility check examines flavors of equals. */
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
         checkSensibleEquals(pos, qual, name, fn.symbol, args.head)
+      case Select(qual, name@nme.equals_) if settings.isScala213 && args.length == 1 && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
+        checkSensibleAnyEquals(pos, qual, name, fn.symbol, args.head)
       case _ =>
     }
 
