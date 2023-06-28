@@ -74,7 +74,7 @@ private[collection] case object SerializeEnd
   * it directly without using this trait if you need a non-standard factory or if you want to use a different
   * serialization scheme.
   */
-trait DefaultSerializable extends Serializable { this: scala.collection.Iterable[_] =>
+trait DefaultSerializable extends Serializable { this: scala.collection.Iterable[Any] =>
   protected[this] def writeReplace(): AnyRef = {
     val f: Factory[Any, Any] = this match {
       case it: scala.collection.SortedMap[_, _] => it.sortedMapFactory.sortedMapFactory[Any, Any](it.ordering.asInstanceOf[Ordering[Any]]).asInstanceOf[Factory[Any, Any]]
