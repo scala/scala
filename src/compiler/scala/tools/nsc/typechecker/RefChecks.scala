@@ -452,8 +452,9 @@ abstract class RefChecks extends Transform {
                   else
                     refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
               }
-              else if (other.paramss.isEmpty && !member.paramss.isEmpty
-                  && !javaDetermined(member) && !member.overrides.exists(javaDetermined)
+              else if (other.paramss.isEmpty && !member.paramss.isEmpty &&
+                !javaDetermined(member) && !member.overrides.exists(javaDetermined) &&
+                !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr)
               ) {
                 val msg = "method with a single empty parameter list overrides method without any parameter list"
                 if (currentRun.isScala3)
