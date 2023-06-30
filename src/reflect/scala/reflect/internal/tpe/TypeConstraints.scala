@@ -127,18 +127,12 @@ private[internal] trait TypeConstraints {
         case _            => !lobounds.contains(tp)
       }
       if (mustConsider) {
-        def justTwoStrings: Boolean = (
-          tp.typeSymbol == StringClass && tp.isInstanceOf[ConstantType] &&
-          lobounds.lengthCompare(1) == 0 && lobounds.head.typeSymbol == StringClass
-        )
         if (isNumericBound && isNumericValueType(tp)) {
           if (numlo == NoType || isNumericSubType(numlo, tp))
             numlo = tp
           else if (!isNumericSubType(tp, numlo))
             numlo = numericLoBound
         }
-        else if (justTwoStrings)
-          lobounds = tp.widen :: Nil // don't accumulate strings; we know they are not exactly the same bc mustConsider
         else lobounds ::= tp
       }
     }
