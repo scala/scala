@@ -1,4 +1,4 @@
-//scalac: -Wconf:cat=migration:s -Werror -Wunused:privates -Xsource:3
+//scalac: -Wconf:cat=scala3-migration:s -Werror -Wunused:privates -Xsource:3
 //
 object Domain {
   def id(id: String): Domain = Domain(Some(id), None)

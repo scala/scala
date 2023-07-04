@@ -1,4 +1,4 @@
-// scalac: -Werror -Wconf:msg=lambda-parens:s -Xsource:3 -Xmigration
+// scalac: -Werror -Wconf:msg=lambda-parens:s -Xsource:3
 
 class C {
   def f = {

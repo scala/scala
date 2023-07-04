@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xmigration -Xsource:3
+// scalac: -Xsource:3
 class C
 package object foo extends C
 

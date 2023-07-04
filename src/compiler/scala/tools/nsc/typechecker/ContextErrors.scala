@@ -190,7 +190,7 @@ trait ContextErrors extends splain.SplainErrors {
         s"Implicit definition ${if (currentRun.isScala3) "must" else "should"} have explicit type${
           if (!inferred.isErroneous) s" (inferred $inferred)" else ""
         }"
-      if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Migration)
+      if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration)
       else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType)
     }
     val sym = tree.symbol

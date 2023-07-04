@@ -1154,7 +1154,7 @@ trait Namers extends MethodSynthesis {
             val pts = pt.toString
             val leg = legacy.toString
             val help = if (pts != leg) s" instead of $leg" else ""
-            runReporting.warning(tree.pos, s"under -Xsource:3, inferred $pts$help", WarningCategory.Migration, tree.symbol)
+            runReporting.warning(tree.pos, s"under -Xsource:3, inferred $pts$help", WarningCategory.Scala3Migration, tree.symbol)
           }
           pt
         }

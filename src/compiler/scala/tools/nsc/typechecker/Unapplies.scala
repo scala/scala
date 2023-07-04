@@ -158,7 +158,7 @@ trait Unapplies extends ast.TreeDSL {
         (caseMods | (inheritedMods.flags & PRIVATE)).copy(privateWithin = inheritedMods.privateWithin)
           .tap { mods =>
             if (currentRun.isScala3 && mods != caseMods)
-              runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `apply` method", WarningCategory.Migration, cdef.symbol)
+              runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `apply` method", WarningCategory.Scala3Migration, cdef.symbol)
           }
       else
         caseMods
@@ -282,7 +282,7 @@ trait Unapplies extends ast.TreeDSL {
           Modifiers(SYNTHETIC | (inheritedMods.flags & AccessFlags), inheritedMods.privateWithin)
             .tap { mods =>
               if (currentRun.isScala3 && mods != Modifiers(SYNTHETIC))
-                runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `copy` method", WarningCategory.Migration, cdef.symbol)
+                runReporting.warning(cdef.pos, "constructor modifiers are assumed by synthetic `copy` method", WarningCategory.Scala3Migration, cdef.symbol)
             }
         }
         else Modifiers(SYNTHETIC)

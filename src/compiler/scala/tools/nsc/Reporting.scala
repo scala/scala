@@ -54,9 +54,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
       case Right(conf) =>
-        if (isScala3 && !conf.filters.exists(_._1.exists { case MessageFilter.Category(WarningCategory.Migration) => true case _ => false })) {
+        if (isScala3 && !conf.filters.exists(_._1.exists { case MessageFilter.Category(WarningCategory.Scala3Migration) => true case _ => false })) {
           val migrationAction = if (isScala3Migration) Action.Warning else Action.Error
-          val migrationCategory = MessageFilter.Category(WarningCategory.Migration) :: Nil
+          val migrationCategory = MessageFilter.Category(WarningCategory.Scala3Migration) :: Nil
           WConf(conf.filters :+ (migrationCategory, migrationAction))
         }
         else conf
@@ -364,7 +364,7 @@ object Reporting {
 
     object JavaSource extends WarningCategory; add(JavaSource)
 
-    object Migration extends WarningCategory; add(Migration)
+    object Scala3Migration extends WarningCategory; add(Scala3Migration)
 
     sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
     object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)

@@ -47,7 +47,7 @@ trait FastStringInterpolator extends FormatInterpolator {
                   }
                   def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
                   if (currentRun.isScala3) {
-                    runReporting.warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Migration, c.internal.enclosingOwner)
+                    runReporting.warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Scala3Migration, c.internal.enclosingOwner)
                     stringVal
                   }
                   else {

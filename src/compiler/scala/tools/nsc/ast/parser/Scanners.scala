@@ -967,7 +967,7 @@ trait Scanners extends ScannersCommon {
               deprecationWarning(pos, msg("deprecated"), since="2.13.2")
               strVal = processed
             }
-            else warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Migration)
+            else warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Scala3Migration)
           }
         } catch {
           case ue: StringContext.InvalidUnicodeEscapeException =>

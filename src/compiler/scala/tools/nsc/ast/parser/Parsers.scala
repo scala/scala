@@ -609,16 +609,16 @@ self =>
 
     // warn under -Xsource:3
     def migrationWarning(offset: Offset, msg: String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Migration)
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
 
     // warn under -Xsource:3, otherwise deprecation
     def hardMigrationWarning(offset: Offset, msg: String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Migration)
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
       else deprecationWarning(offset, msg, since)
 
     // deprecation or migration under -Xsource:3, with different messages
     def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Migration)
+      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration)
       else deprecationWarning(offset, depr, since)
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
