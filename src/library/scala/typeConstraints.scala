@@ -150,7 +150,7 @@ object <:< {
     override def substituteCo    [F[_]](ff: F[Any]) = ff
     override def substituteContra[F[_]](ff: F[Any]) = ff
     override def apply(x: Any) = x
-    override def flip = this
+    override def flip: Any =:= Any = this
     override def compose[C](r: C =>  Any) = r
     override def compose[C](r: C <:< Any) = r
     override def compose[C](r: C =:= Any) = r

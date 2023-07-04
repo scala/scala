@@ -66,7 +66,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
     val underlying: Iterable[A]
     def size = underlying.size
-    override def iterator = new IteratorWrapper(underlying.iterator)
+    override def iterator: IteratorWrapper[A] = new IteratorWrapper(underlying.iterator)
     override def isEmpty = underlying.isEmpty
   }
 
@@ -178,7 +178,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     }
     override def isEmpty = underlying.isEmpty
     def size = underlying.size
-    def iterator = new ju.Iterator[A] {
+    def iterator: ju.Iterator[A] = new ju.Iterator[A] {
       val ui = underlying.iterator
       var prev: Option[A] = None
       def hasNext = ui.hasNext
@@ -264,13 +264,13 @@ private[collection] object JavaCollectionWrappers extends Serializable {
     override def entrySet: ju.Set[ju.Map.Entry[K, V]] = new ju.AbstractSet[ju.Map.Entry[K, V]] {
       def size = self.size
 
-      def iterator = new ju.Iterator[ju.Map.Entry[K, V]] {
+      def iterator: ju.Iterator[ju.Map.Entry[K, V]] = new ju.Iterator[ju.Map.Entry[K, V]] {
         val ui = underlying.iterator
         var prev : Option[K] = None
 
         def hasNext = ui.hasNext
 
-        def next() = {
+        def next(): ju.Map.Entry[K, V] = {
           val (k, v) = ui.next()
           prev = Some(k)
           new ju.Map.Entry[K, V] {

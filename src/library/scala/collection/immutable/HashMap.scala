@@ -2157,7 +2157,7 @@ private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
   private[this] var hash = 0
   private[this] var value: V = _
   override def hashCode(): Int = MurmurHash3.tuple2Hash(hash, value.##, MurmurHash3.productSeed)
-  def next() = {
+  def next(): MapKeyValueTupleHashIterator[K, V] = {
     if (!hasNext)
       throw new NoSuchElementException
 

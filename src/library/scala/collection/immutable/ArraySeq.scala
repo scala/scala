@@ -355,7 +355,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofByte(val unsafeArray: Array[Byte]) extends ArraySeq[Byte] {
-    protected def elemTag = ClassTag.Byte
+    // Type erases to `ManifestFactory.ByteManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Byte.type = ClassTag.Byte
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Byte = unsafeArray(i)
@@ -396,7 +397,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofShort(val unsafeArray: Array[Short]) extends ArraySeq[Short] {
-    protected def elemTag = ClassTag.Short
+    // Type erases to `ManifestFactory.ShortManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Short.type = ClassTag.Short
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Short = unsafeArray(i)
@@ -437,7 +439,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofChar(val unsafeArray: Array[Char]) extends ArraySeq[Char] {
-    protected def elemTag = ClassTag.Char
+    // Type erases to `ManifestFactory.CharManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Char.type = ClassTag.Char
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Char = unsafeArray(i)
@@ -481,7 +484,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofInt(val unsafeArray: Array[Int]) extends ArraySeq[Int] {
-    protected def elemTag = ClassTag.Int
+    // Type erases to `ManifestFactory.IntManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Int.type = ClassTag.Int
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Int = unsafeArray(i)
@@ -522,7 +526,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofLong(val unsafeArray: Array[Long]) extends ArraySeq[Long] {
-    protected def elemTag = ClassTag.Long
+    // Type erases to `ManifestFactory.LongManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Long.type = ClassTag.Long
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Long = unsafeArray(i)
@@ -563,7 +568,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofFloat(val unsafeArray: Array[Float]) extends ArraySeq[Float] {
-    protected def elemTag = ClassTag.Float
+    // Type erases to `ManifestFactory.FloatManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Float.type = ClassTag.Float
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Float = unsafeArray(i)
@@ -597,7 +603,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofDouble(val unsafeArray: Array[Double]) extends ArraySeq[Double] {
-    protected def elemTag = ClassTag.Double
+    // Type erases to `ManifestFactory.DoubleManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Double.type = ClassTag.Double
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Double = unsafeArray(i)
@@ -631,7 +638,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofBoolean(val unsafeArray: Array[Boolean]) extends ArraySeq[Boolean] {
-    protected def elemTag = ClassTag.Boolean
+    // Type erases to `ManifestFactory.BooleanManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Boolean.type = ClassTag.Boolean
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Boolean = unsafeArray(i)
@@ -669,7 +677,8 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofUnit(val unsafeArray: Array[Unit]) extends ArraySeq[Unit] {
-    protected def elemTag = ClassTag.Unit
+    // Type erases to `ManifestFactory.UnitManifest`, but can't annotate that because it's not accessible
+    protected def elemTag: ClassTag.Unit.type = ClassTag.Unit
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Unit = unsafeArray(i)

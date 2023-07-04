@@ -368,7 +368,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
-    lazy val runtimeClass = value.getClass
+    lazy val runtimeClass: Class[_ <: AnyRef] = value.getClass
     override lazy val toString = value.toString + ".type"
   }
 

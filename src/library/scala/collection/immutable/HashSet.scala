@@ -1837,7 +1837,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
-  override def copy() = new HashCollisionSetNode[A](originalHash, hash, content)
+  override def copy(): HashCollisionSetNode[A] = new HashCollisionSetNode[A](originalHash, hash, content)
 
   override def concat(that: SetNode[A], shift: Int): SetNode[A] = that match {
     case hc: HashCollisionSetNode[A] =>

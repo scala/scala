@@ -12,9 +12,7 @@
 
 package scala.collection
 package mutable
-
 import java.util.Arrays
-
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl._
 import scala.reflect.ClassTag
@@ -161,6 +159,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofByte(val array: Array[Byte]) extends ArraySeq[Byte] {
+    // Type erases to `ManifestFactory.ByteManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Byte.type = ClassTag.Byte
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
@@ -180,6 +179,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofShort(val array: Array[Short]) extends ArraySeq[Short] {
+    // Type erases to `ManifestFactory.ShortManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Short.type = ClassTag.Short
     def length: Int = array.length
     def apply(index: Int): Short = array(index)
@@ -199,6 +199,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofChar(val array: Array[Char]) extends ArraySeq[Char] {
+    // Type erases to `ManifestFactory.CharManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Char.type = ClassTag.Char
     def length: Int = array.length
     def apply(index: Int): Char = array(index)
@@ -239,6 +240,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofInt(val array: Array[Int]) extends ArraySeq[Int] {
+    // Type erases to `ManifestFactory.IntManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Int.type = ClassTag.Int
     def length: Int = array.length
     def apply(index: Int): Int = array(index)
@@ -258,6 +260,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofLong(val array: Array[Long]) extends ArraySeq[Long] {
+    // Type erases to `ManifestFactory.LongManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Long.type = ClassTag.Long
     def length: Int = array.length
     def apply(index: Int): Long = array(index)
@@ -277,6 +280,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofFloat(val array: Array[Float]) extends ArraySeq[Float] {
+    // Type erases to `ManifestFactory.FloatManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Float.type = ClassTag.Float
     def length: Int = array.length
     def apply(index: Int): Float = array(index)
@@ -296,6 +300,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofDouble(val array: Array[Double]) extends ArraySeq[Double] {
+    // Type erases to `ManifestFactory.DoubleManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Double.type = ClassTag.Double
     def length: Int = array.length
     def apply(index: Int): Double = array(index)
@@ -315,6 +320,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofBoolean(val array: Array[Boolean]) extends ArraySeq[Boolean] {
+    // Type erases to `ManifestFactory.BooleanManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Boolean.type = ClassTag.Boolean
     def length: Int = array.length
     def apply(index: Int): Boolean = array(index)
@@ -331,6 +337,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofUnit(val array: Array[Unit]) extends ArraySeq[Unit] {
+    // Type erases to `ManifestFactory.UnitManifest`, but can't annotate that because it's not accessible
     def elemTag: ClassTag.Unit.type = ClassTag.Unit
     def length: Int = array.length
     def apply(index: Int): Unit = array(index)
