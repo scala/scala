@@ -1,4 +1,4 @@
-// scalac: -Xlint -Xsource:3 -Yrangepos:true
+// scalac: -Werror -Xlint -Xmigration -Xsource:3 -Yrangepos:true
 class A {
   def fn1 = List apply 1
   def fn2 = List apply[Int] 2

@@ -1,15 +1,10 @@
-dotless-targs-a.scala:4: warning: type application will be disallowed for infix operators
+dotless-targs-a.scala:4: error: type application is not allowed for infix operators
   def fn2 = List apply[Int] 2
                  ^
-dotless-targs-a.scala:9: warning: type application will be disallowed for infix operators
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
                 ^
-dotless-targs-a.scala:9: warning: type application will be disallowed for infix operators
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
                                                     ^
-dotless-targs-a.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
-  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
-                ^
-error: No warnings can be incurred under -Werror.
-4 warnings
-1 error
+3 errors

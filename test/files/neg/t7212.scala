@@ -1,5 +1,5 @@
 
-// scalac: -Xsource:3
+// scalac: -Xmigration -Xsource:3
 
 trait T { def f: Object }
 class K extends T { def f = "" }

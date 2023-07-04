@@ -558,18 +558,18 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       case _ => diffIsOk
     }
 
-    runTestCommon(checked, expectCompile = false)()
+    runTestCommon(checked, expectCompile = false)(identity)
   }
 
   // run compilation until failure, evaluate `andAlso` on success
-  def runTestCommon(inspector: TestState => TestState = identity, expectCompile: Boolean = true)(andAlso: => TestState = genPass()): TestState = {
+  def runTestCommon(inspector: TestState => TestState = identity, expectCompile: Boolean = true)(andAlso: TestState => TestState = _ => genPass()): TestState = {
     val rnds = compilationRounds(testFile)
     if (rnds.isEmpty) genFail("nothing to compile")
     else
       rnds.find(r => !r.result.isOk || r.result.isSkipped).map(r => inspector(r.result)) match {
-        case Some(res) => res.andAlso(andAlso)
+        case Some(res) => res.andAlso(andAlso(res))
         case None if !expectCompile => genFail("expected compilation failure")
-        case None => andAlso
+        case None => andAlso(null)
       }
   }
 
@@ -669,10 +669,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile, javaopts)
     def noexec() = genSkip("no-exec: tests compiled but not run")
-    runTestCommon()(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
+    runTestCommon()(_ => if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }
 
-  def runScalapTest(): TestState = runTestCommon() {
+  def runScalapTest(): TestState = runTestCommon() { _ =>
     import scala.tools.scalap, scalap.scalax.rules.scalasig.ByteCode, scalap.Main.decompileScala
     val isPackageObject = testFile.getName.startsWith("package")
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")

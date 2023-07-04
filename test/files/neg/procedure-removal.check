@@ -1,19 +1,27 @@
-procedure-removal.scala:4: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `bar`'s return type
+procedure-removal.scala:4: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `bar`'s return type
   def bar {}
           ^
-procedure-removal.scala:5: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `baz`'s return type
+procedure-removal.scala:5: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `baz`'s return type
   def baz
          ^
-procedure-removal.scala:6: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `boo`'s return type
+procedure-removal.scala:6: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `boo`'s return type
   def boo(i: Int, l: Long)
                           ^
-procedure-removal.scala:7: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `boz`'s return type
+procedure-removal.scala:7: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `boz`'s return type
   def boz(i: Int, l: Long) {}
                            ^
-procedure-removal.scala:8: error: '=' expected but '{' found.
+procedure-removal.scala:8: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition
   def this(i: Int) { this() } // Don't complain here! Just slap them with an error.
-                   ^
-procedure-removal.scala:9: error: 'this' expected.
+                  ^
+procedure-removal.scala:4: warning: side-effecting nullary methods are discouraged: suggest defining as `def bar()` instead
+  def bar {}
+      ^
+procedure-removal.scala:5: warning: side-effecting nullary methods are discouraged: suggest defining as `def baz()` instead
+  def baz
+      ^
+procedure-removal.scala:9: warning: side-effecting nullary methods are discouraged: suggest defining as `def foz()` instead
   def foz: Unit               // Don't complain here!
-^
-6 errors
+      ^
+error: No warnings can be incurred under -Werror.
+8 warnings
+1 error

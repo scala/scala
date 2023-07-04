@@ -1,4 +1,4 @@
 //
-// scalac: -deprecation -Xsource:3
+// scalac: -Werror -Xlint
 //
 object Test extends { type A1 = Int } with Runnable { def run() = () }

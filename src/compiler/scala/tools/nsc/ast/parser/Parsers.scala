@@ -32,7 +32,8 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  the beginnings of a campaign against this latest incursion by Cutty
  *  McPastington and his army of very similar soldiers.
  */
-trait ParsersCommon extends ScannersCommon { self =>
+trait ParsersCommon extends ScannersCommon {
+  self =>
   val global : Global
   // the use of currentUnit in the parser should be avoided as it might
   // cause unexpected behaviour when you work with two units at the
@@ -606,6 +607,20 @@ self =>
       and
     }
 
+    // warn under -Xsource:3
+    def migrationWarning(offset: Offset, msg: String, since: String): Unit =
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
+
+    // warn under -Xsource:3, otherwise deprecation
+    def hardMigrationWarning(offset: Offset, msg: String, since: String): Unit =
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
+      else deprecationWarning(offset, msg, since)
+
+    // deprecation or migration under -Xsource:3, with different messages
+    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String): Unit =
+      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration)
+      else deprecationWarning(offset, depr, since)
+
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
     def expectedMsg(token: Token): String =
       in.token match {
@@ -782,8 +797,7 @@ self =>
         val msg = "parentheses are required around the parameter of a lambda"
         val wrn = sm"""|$msg
                        |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
-        if (currentRun.isScala3)
-          deprecationWarning(tree.pos.point, wrn, "2.13.11")
+        migrationWarning(tree.pos.point, wrn, "2.13.11")
         List(convertToParam(tree))
       case _ => List(convertToParam(tree))
     }
@@ -994,10 +1008,7 @@ self =>
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
       import opinfo._
       if (targs.nonEmpty)
-        if (currentRun.isScala3)
-          syntaxError(offset, "type application is not allowed for infix operators")
-        else
-          deprecationWarning(offset, "type application will be disallowed for infix operators", "2.13.11")
+        migrationWarning(offset, "type application is not allowed for infix operators", "2.13.11")
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
       val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
@@ -2064,8 +2075,7 @@ self =>
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", without))
-          else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
+          hardMigrationWarning(in.offset, msg("deprecated", without), msg("unsupported", without), "2.10.0")
         }
         else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
       }
@@ -2616,9 +2626,9 @@ self =>
         checkQMarkDefinition()
         checkKeywordDefinition()
         val pname: TypeName =
-          if (in.token == USCORE && (isAbstractOwner || !currentRun.isScala3)) {
+          if (in.token == USCORE) {
             if (!isAbstractOwner)
-              deprecationWarning(in.offset, "Top-level wildcard is not allowed and will error under -Xsource:3", "2.13.7")
+              hardMigrationWarning(in.offset, "Top-level wildcard is not allowed", "2.13.7")
             in.nextToken()
             freshTypeName("_$$")
           }
@@ -2631,8 +2641,7 @@ self =>
           def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
                                      |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported"))
-            else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
+            hardMigrationWarning(in.offset, msg("deprecated"), msg("unsupported"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2932,12 +2941,12 @@ self =>
     def funDefOrDcl(start: Int, mods: Modifiers): Tree = {
       in.nextToken()
       if (in.token == THIS) {
-        def missingEquals() = deprecationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
+        def missingEquals() = hardMigrationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs =
-            if (in.token == LBRACE && !currentRun.isScala3) {
+            if (in.token == LBRACE) {
               missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
             }
             else {
@@ -2972,15 +2981,13 @@ self =>
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (currentRun.isScala3) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
-              else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
+              hardMigrationWarning(in.lastOffset, msg("deprecated", ": Unit"), msg("unsupported", ": Unit"), "2.13.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", ": Unit ="))
-            else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
+            hardMigrationWarning(in.offset, msg("deprecated", ": Unit ="), msg("unsupported", ": Unit ="), "2.13.0")
             restype = scalaUnitConstr
             blockExpr()
           } else {
@@ -2998,9 +3005,7 @@ self =>
         if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
           def instead = DefDef(newmods, name.toTermName.decodedName, tparams, vparamss.drop(1), restype, rhs)
           def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `$instead`"
-          def warnNilary(): Unit =
-            if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
-            else deprecationWarning(nameOffset, unaryMsg("deprecated"), "2.13.4")
+          def warnNilary() = hardMigrationWarning(nameOffset, unaryMsg("deprecated"), unaryMsg("unsupported"), "2.13.4")
           vparamss match {
             case List(List())                               => warnNilary()
             case List(List(), x :: xs) if x.mods.isImplicit => warnNilary()
@@ -3129,7 +3134,7 @@ self =>
       val nameOffset = in.offset
       val name = identForType()
       if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
-        deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
+        hardMigrationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
       def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
       val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
       atPos(start, orStart(nameOffset)) {
@@ -3140,7 +3145,7 @@ self =>
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
             val viewBoundsExist = if (currentRun.isScala3) "" else " nor view bounds `<% ...`"
-              syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
+            syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
@@ -3238,7 +3243,7 @@ self =>
           val advice =
             if (currentRun.isScala3) "use trait parameters instead."
             else "they will be replaced by trait parameters in 3.0, see the migration guide on avoiding var/val in traits."
-          deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
+          hardMigrationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
@@ -3259,8 +3264,7 @@ self =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
-        if (currentRun.isScala3) syntaxError(tdef.pos.point, msg("unsupported"))
-        else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
+        hardMigrationWarning(tdef.pos.point, msg("deprecated"), msg("unsupported"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)
@@ -3302,8 +3306,8 @@ self =>
 
       // warn now if user wrote parents for package object; `gen.mkParents` adds AnyRef to parents
       if (currentRun.isScala3 && name == nme.PACKAGEkw && !parents.isEmpty)
-        deprecationWarning(tstart, """package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-                                     |drop the `extends` clause or use a regular object instead""".stripMargin, "3.0.0")
+        migrationWarning(tstart, sm"""|package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+                                      |drop the `extends` clause or use a regular object instead""", "3.0.0")
 
       atPos(templateOffset) {
         // Exclude only the 9 primitives plus AnyVal.

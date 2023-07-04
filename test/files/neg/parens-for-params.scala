@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xsource:3
+// scalac: -Xsource:3
 
 class C {
   def f = {

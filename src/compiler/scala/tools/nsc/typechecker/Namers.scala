@@ -1148,9 +1148,17 @@ trait Namers extends MethodSynthesis {
               case _ => true
             }
           }
-        if (inferOverridden) pt
-        else dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
-             .tap(InferredImplicitError(tree, _, context))
+        val legacy = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
+        if (inferOverridden) {
+          if (!(legacy =:= pt) && currentRun.isScala3) {
+            val pts = pt.toString
+            val leg = legacy.toString
+            val help = if (pts != leg) s" instead of $leg" else ""
+            runReporting.warning(tree.pos, s"under -Xsource:3, inferred $pts$help", WarningCategory.Scala3Migration, tree.symbol)
+          }
+          pt
+        }
+        else legacy.tap(InferredImplicitError(tree, _, context))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
     }

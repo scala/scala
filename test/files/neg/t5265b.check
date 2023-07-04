@@ -1,4 +1,7 @@
 t5265b.scala:7: error: Implicit definition must have explicit type (inferred T[String])
   implicit val tsMissing = new T[String] {}   // warn val in trait
                ^
-1 error
+t5265b.scala:20: error: under -Xsource:3, inferred T[String]
+  implicit val tsChild = new T[String] {}     // nowarn because inferred from overridden
+               ^
+2 errors
