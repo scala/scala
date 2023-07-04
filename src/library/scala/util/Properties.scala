@@ -19,8 +19,8 @@ import scala.annotation.tailrec
 
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
-  protected def propCategory    = "library"
-  protected def pickJarBasedOn  = classOf[Option[_]]
+  protected def propCategory = "library"
+  protected def pickJarBasedOn: Class[Option[_]] = classOf[Option[_]]
 
   /** Scala manifest attributes.
    */

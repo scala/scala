@@ -916,16 +916,16 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
     override def iterator = Iterator.single(a)
     override def knownSize = 1
     override def head = a
-    override def headOption = Some(a)
+    override def headOption: Some[A] = Some(a)
     override def last = a
-    override def lastOption = Some(a)
-    override def view = new View.Single(a)
+    override def lastOption: Some[A] = Some(a)
+    override def view: View.Single[A] = new View.Single(a)
     override def take(n: Int) = if (n > 0) this else Iterable.empty
     override def takeRight(n: Int) = if (n > 0) this else Iterable.empty
     override def drop(n: Int) = if (n > 0) Iterable.empty else this
     override def dropRight(n: Int) = if (n > 0) Iterable.empty else this
-    override def tail = Iterable.empty
-    override def init = Iterable.empty
+    override def tail: Iterable[Nothing] = Iterable.empty
+    override def init: Iterable[Nothing] = Iterable.empty
   }
 }
 

@@ -864,7 +864,7 @@ private[collection] object RedBlackTree {
   }
 
   private[this] class EqualsIterator[A: Ordering, B](tree: Tree[A, B]) extends TreeIterator[A, B, Unit](tree, None) {
-    override def nextResult(tree: Tree[A, B]) = ???
+    override def nextResult(tree: Tree[A, B]): Nothing = ???
 
     def sameKeys[X](that:EqualsIterator[A,X]): Boolean = {
       var equal = true

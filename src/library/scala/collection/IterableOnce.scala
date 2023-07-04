@@ -19,7 +19,7 @@ import scala.collection.mutable.StringBuilder
 import scala.language.implicitConversions
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
-import scala.runtime.AbstractFunction2
+import scala.runtime.{AbstractFunction1, AbstractFunction2}
 
 /**
   * A template trait for collections which can be traversed either once only
@@ -1134,8 +1134,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
     // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
-    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any] {
-      def apply(a: A) = this
+    val sentinel: scala.Function1[A, Any] = new AbstractFunction1[A, Any] {
+      def apply(a: A): AbstractFunction1[A, Any] = this
     }
     val it = iterator
     while (it.hasNext) {

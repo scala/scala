@@ -51,7 +51,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override protected def newSpecificBuilder: Builder[Int, BitSet] = bitSetFactory.newBuilder
   override def empty: BitSet = bitSetFactory.empty
 
-  def bitSetFactory = BitSet
+  def bitSetFactory: BitSet.type = BitSet
 
   override def unsorted: Set[Int] = this
 

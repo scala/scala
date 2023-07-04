@@ -41,7 +41,7 @@ sealed abstract class BitSet
   override protected def newSpecificBuilder: Builder[Int, BitSet] = bitSetFactory.newBuilder
   override def empty: BitSet = bitSetFactory.empty
 
-  def bitSetFactory = BitSet
+  def bitSetFactory: BitSet.type = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 

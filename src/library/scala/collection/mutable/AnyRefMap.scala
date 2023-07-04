@@ -592,8 +592,8 @@ object AnyRefMap {
 
   implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (K, V), AnyRefMap[K, V]]]
   private[this] object ToBuildFrom extends BuildFrom[Any, (AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] {
-    def fromSpecific(from: Any)(it: IterableOnce[(AnyRef, AnyRef)]) = AnyRefMap.from(it)
-    def newBuilder(from: Any) = AnyRefMap.newBuilder[AnyRef, AnyRef]
+    def fromSpecific(from: Any)(it: IterableOnce[(AnyRef, AnyRef)]): AnyRefMap[AnyRef, AnyRef] = AnyRefMap.from(it)
+    def newBuilder(from: Any): ReusableBuilder[(AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] = AnyRefMap.newBuilder[AnyRef, AnyRef]
   }
 
   implicit def iterableFactory[K <: AnyRef, V]: Factory[(K, V), AnyRefMap[K, V]] = toFactory[K, V](this)
