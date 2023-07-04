@@ -1,0 +1,6 @@
+t12199.scala:4: warning: method copyArrayToImmutableIndexedSeq in class LowPriorityImplicits2 is deprecated (since 2.13.0): implicit conversions from Array to immutable.IndexedSeq are implemented by copying; use `toIndexedSeq` explicitly if you want to copy, or use the more efficient non-copying ArraySeq.unsafeWrapArray
+  val a: IndexedSeq[Int] = Array(1, 2, 3)
+                                ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
