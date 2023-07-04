@@ -1,0 +1,20 @@
+A.scala:5: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+drop the `extends` clause or use a regular object instead
+package object p extends U {
+                 ^
+B.scala:19: warning: reference to c is ambiguous;
+it is both defined in the enclosing package p and inherited in the enclosing trait RR as method c (defined in trait T)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.c`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+    def m3 = c // warn
+             ^
+B.scala:23: warning: reference to Z is ambiguous;
+it is both defined in the enclosing package p and inherited in the enclosing trait RR as trait Z (defined in trait T)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.Z`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+    def n3: Z // warn
+            ^
+2 warnings
+1 error
