@@ -105,3 +105,35 @@ class Bound[A: Context]
 object Answers {
   def answer: Int = 42
 }
+
+trait BadMix { _: InterFace =>
+  def f(a: Int,
+        b: String,               // warn
+        c: Double): Int = {
+    println(c)
+    a
+  }
+  @deprecated("no warn in deprecated API", since="yesterday")
+  def g(a: Int,
+        b: String,               // no warn
+        c: Double): Int = {
+    println(c)
+    a
+  }
+  override def call(a: Int,
+                    b: String,               // no warn, required by superclass
+                    c: Double): Int = {
+    println(c)
+    a
+  }
+
+  def meth(x: Int) = x
+
+  override def equals(other: Any): Boolean = true  // no warn
+
+  def i(implicit s: String) = answer           // yes, warn
+}
+
+class Unequal {
+  override def equals(other: Any) = toString.nonEmpty   // no warn non-trivial RHS, required by universal method
+}

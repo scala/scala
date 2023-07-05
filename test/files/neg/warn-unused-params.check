@@ -37,6 +37,12 @@ warn-unused-params.scala:102: warning: evidence parameter evidence$1 of type Con
 warn-unused-params.scala:104: warning: evidence parameter evidence$2 of type Context[A] in class Bound is never used
 class Bound[A: Context]
                ^
+warn-unused-params.scala:111: warning: parameter b in method f is never used
+        b: String,               // warn
+        ^
+warn-unused-params.scala:134: warning: parameter s in method i is never used
+  def i(implicit s: String) = answer           // yes, warn
+                 ^
 error: No warnings can be incurred under -Werror.
-13 warnings
+15 warnings
 1 error
