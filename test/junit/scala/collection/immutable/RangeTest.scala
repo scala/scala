@@ -55,19 +55,13 @@ class RangeTest {
 
   @Test
   def dropToEnd(): Unit = {
-    val test = 10 to 11
-    val it = test.iterator
-    it.drop(1)
-
-    assertEquals(11, it.next())
+    val it = 10.to(11).iterator
+    assertEquals(11, it.drop(1).next())
   }
   @Test
   def dropToEnd2(): Unit = {
-    val test = 10 until 11
-    val it = test.iterator
-    it.drop(0)
-
-    assertEquals(10, it.next())
+    val it = 10.to(11).iterator
+    assertEquals(10, it.drop(0).next())
   }
 
   @Test(expected = classOf[IllegalArgumentException])

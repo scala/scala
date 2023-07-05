@@ -274,18 +274,11 @@ class IteratorTest {
     assertEquals(10, Iterator.range(0, 10, 1).size)
     assertEquals(10, Iterator.range(10, 0, -1).size)
   }
-  @Test def range3(): Unit = {
-    val r1 = Iterator.range(0, 10)
-    assertTrue(r1 contains 5)
-    assertTrue(r1 contains 6)
-    assertFalse(r1 contains 4)
-    val r2a = Iterator.range(0, 10, 2)
-    assertFalse(r2a contains 5)
-    val r2b = Iterator.range(0, 10, 2)
-    assertTrue(r2b contains 6)
-    val r3 = Iterator.range(0, 10, 11)
-    assertFalse(r3 contains 5)
-    assertTrue(r3.isEmpty)
+  @Test def `range contains`: Unit = {
+    assertTrue(Iterator.range(0, 10).contains(5))
+    assertFalse(Iterator.range(0, 10, 2).contains(5))
+    assertTrue(Iterator.range(0, 10, 2).contains(6))
+    assertFalse(Iterator.range(0, 10, 11).contains(5))
   }
   @Test def rangeOverflow(): Unit = {
     val step = 100000000
@@ -346,8 +339,8 @@ class IteratorTest {
   }
   // ticket #429
   @Test def fromArray(): Unit = {
-    val a = List(1, 2, 3, 4).toArray
-    val xs0 = a.iterator.toList;
+    val a = Array(1, 2, 3, 4)
+    val xs0 = a.iterator.toList
     val xs1 = a.slice(0, 1).iterator
     val xs2 = a.slice(0, 2).iterator
     val xs3 = a.slice(0, 3).iterator
