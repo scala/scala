@@ -179,7 +179,7 @@ trait Namers extends MethodSynthesis {
       val newFlags = (sym.flags & LOCKED) | flags
       // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
       // over this mutated symbol, and we witness a stale cache for `parents`.
-      invalidateCaches(sym.rawInfo, sym :: sym.moduleClass :: Nil)
+      invalidateCaches(sym.rawInfo, Set(sym, sym.moduleClass))
       sym reset NoType setFlag newFlags setPos pos
       sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
 
