@@ -1533,7 +1533,7 @@ trait Contexts { self: Analyzer =>
        *
        * Scala: Bindings of different kinds have a defined precedence order:
        *
-       *  1) Definitions and declarations in lexical scope that are not top-level have the highest precedence.
+       *  1) Definitions and declarations in lexical scope have the highest precedence.
        *  1b) Definitions and declarations that are either inherited, or made
        *      available by a package clause and also defined in the same compilation unit
        *      as the reference to them, have the next highest precedence.
@@ -1545,6 +1545,8 @@ trait Contexts { self: Analyzer =>
        *     as well as bindings supplied by the compiler but not explicitly written in source code,
        *     have the lowest precedence.
        */
+
+      /* Level 4 (see above) */
       def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
 
       // Find the first candidate import
@@ -1612,15 +1614,22 @@ trait Contexts { self: Analyzer =>
         val depth0  = symbolDepth
         val wasFoundInSuper = foundInSuper
         val foundCompetingSymbol: () => Boolean =
-          if (foreignDefined) () => !foreignDefined
-          else () => !defSym.owner.isPackageObjectOrClass && !foundInSuper && !foreignDefined
+          if (foreignDefined)
+            // if the first found symbol (defSym0) is level 4 (foreignDefined), a lower level (1 or 1b) defSym is competing
+            () => defSym.exists && !foreignDefined
+          else {
+            // if defSym0 is level 1 or 1b, another defSym is competing if defined in an outer scope in the same file
+            () => defSym.exists && !(pre.typeSymbol.isPackageClass && !defSym.owner.isPackageClass) && !foundInSuper && !foreignDefined
+            //                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            //                       defined in package object (or inherited into package object)
+          }
         while ((cx ne NoContext) && cx.depth >= symbolDepth) cx = cx.outer
         if (wasFoundInSuper)
           while ((cx ne NoContext) && (cx.owner eq cx0.owner)) cx = cx.outer
         var done = false
         while (!done) {
           nextDefinition(defSym0, pre0)
-          done = (cx eq NoContext) || defSym.exists && foundCompetingSymbol()
+          done = (cx eq NoContext) || foundCompetingSymbol()
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
         if (defSym.exists && (defSym ne defSym0)) {
