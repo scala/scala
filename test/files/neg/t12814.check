@@ -1,0 +1,7 @@
+t12814.scala:32: error: cyclic aliasing or subtyping involving type T
+  val f: Function1[A, P3.T] = {
+                              ^
+t12814.scala:41: error: cyclic aliasing or subtyping involving type T
+  val f: Function1[A, P4.T] = x => x match {
+                                ^
+2 errors
