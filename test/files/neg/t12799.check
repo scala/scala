@@ -1,0 +1,9 @@
+Test_2.scala:8: warning: method answer in class C is deprecated (since beginning)
+  println(C.answer())
+            ^
+Test_2.scala:8: warning: class C in package example is deprecated (since you like it)
+  println(C.answer())
+          ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

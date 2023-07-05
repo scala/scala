@@ -1,6 +1,5 @@
-import java.lang.annotation._
 
-@Deprecated @Retention(RetentionPolicy.RUNTIME) class Foo
+import java.lang.annotation._
 
 object Test extends App {
   classOf[Foo].getAnnotation(classOf[Deprecated])
