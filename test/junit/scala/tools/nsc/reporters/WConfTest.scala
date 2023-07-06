@@ -338,7 +338,8 @@ class WConfTest extends BytecodeTesting {
       }, Array().toIndexedSeq), 0),
       msg = "",
       WarningCategory.Other,
-      site = "")
+      site = "",
+      actions = Nil)
 
     val aTest = Reporting.WConf.parseFilter("src=a/.*Test.scala", rootDir = "").getOrElse(null)
     assertTrue(aTest.matches(m("/a/FooTest.scala")))

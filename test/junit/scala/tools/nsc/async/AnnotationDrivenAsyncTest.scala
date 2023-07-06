@@ -11,7 +11,7 @@ import org.junit.{Assert, Ignore, Test}
 import scala.annotation.{StaticAnnotation, nowarn, unused}
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
@@ -515,9 +515,9 @@ class AnnotationDrivenAsyncTest {
     val out = createTempDir()
 
       val reporter = new StoreReporter(new Settings) {
-        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
+        override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
           if (severity == INFO) println(msg)
-          else super.doReport(pos, msg, severity)
+          else super.doReport(pos, msg, severity, actions)
       }
       val settings = new Settings(println(_))
       settings.async.value = true

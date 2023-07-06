@@ -16,7 +16,7 @@ package reporters
 import scala.annotation.unchecked.uncheckedStable
 import scala.collection.mutable
 import scala.reflect.internal.Reporter.Severity
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 
 /** This class implements a Reporter that stores its reports in the set `infos`. */
 class StoreReporter(val settings: Settings) extends FilteringReporter {
@@ -31,8 +31,10 @@ class StoreReporter(val settings: Settings) extends FilteringReporter {
 
   val infos = new mutable.LinkedHashSet[StoreReporter.Info]
 
-  def doReport(pos: Position, msg: String, severity: Severity): Unit =
-    infos += StoreReporter.Info(pos, msg, severity)
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = {
+    val info = StoreReporter.Info(pos, msg, severity, actions)
+    infos += info
+  }
 
   override def reset(): Unit = {
     super.reset()
@@ -40,7 +42,7 @@ class StoreReporter(val settings: Settings) extends FilteringReporter {
   }
 }
 object StoreReporter {
-  case class Info(pos: Position, msg: String, severity: Severity) {
-    override def toString: String = s"pos: $pos $msg $severity"
+  case class Info(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]) {
+    override def toString: String = s"pos: $pos $msg $severity${if (actions.isEmpty) "" else " " + actions}"
   }
 }

@@ -32,7 +32,7 @@ trait Parsers {
       })
       val tree = gen.mkTreeOrBlock(parser.parseStatsOrPackages())
       sreporter.infos.foreach {
-        case Info(pos, msg, Reporter.ERROR) => throw ParseException(pos, msg)
+        case Info(pos, msg, Reporter.ERROR, _) => throw ParseException(pos, msg)
         case _ =>
       }
       tree

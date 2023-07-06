@@ -13,9 +13,8 @@
 package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
-
 import scala.reflect.internal
-import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
+import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, StringOps}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.{FilteringReporter, Reporter}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
@@ -150,7 +149,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     case internal.Reporter.INFO    => RESET
   }
 
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = withoutTruncating {
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = withoutTruncating {
     val prefix =
       if (colorOk) severityColor(severity) + clabel(severity) + RESET
       else clabel(severity)

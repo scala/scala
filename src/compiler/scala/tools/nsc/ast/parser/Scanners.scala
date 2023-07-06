@@ -74,7 +74,7 @@ trait ScannersCommon {
     def error(off: Offset, msg: String): Unit
     def incompleteInputError(off: Offset, msg: String): Unit
     def warning(off: Offset, msg: String, category: WarningCategory): Unit
-    def deprecationWarning(off: Offset, msg: String, since: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit
 
     // advance past COMMA NEWLINE RBRACE (to whichever token is the matching close bracket)
     def skipTrailingComma(right: Token): Boolean = false
@@ -1402,7 +1402,8 @@ trait Scanners extends ScannersCommon {
     /** generate an error at the current token offset */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
-    def deprecationWarning(msg: String, since: String): Unit = deprecationWarning(offset, msg, since)
+    def deprecationWarning(msg: String, since: String): Unit = deprecationWarning(msg, since, Nil)
+    def deprecationWarning(msg: String, since: String, actions: List[CodeAction]): Unit = deprecationWarning(offset, msg, since, actions)
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String): Unit = {
@@ -1576,7 +1577,7 @@ trait Scanners extends ScannersCommon {
 
     // suppress warnings, throw exception on errors
     def warning(off: Offset, msg: String, category: WarningCategory): Unit = ()
-    def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()
+    def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction]): Unit = ()
     def error(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
@@ -1586,10 +1587,14 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def warning(off: Offset, msg: String, category: WarningCategory): Unit   = runReporting.warning(unit.position(off), msg, category, site = "")
-    override def deprecationWarning(off: Offset, msg: String, since: String)          = runReporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "")
-    override def error(off: Offset, msg: String)                                      = reporter.error(unit.position(off), msg)
-    override def incompleteInputError(off: Offset, msg: String)                       = currentRun.parsing.incompleteInputError(unit.position(off), msg)
+    override def warning(off: Offset, msg: String, category: WarningCategory): Unit =
+      runReporting.warning(unit.position(off), msg, category, site = "")
+    override def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction]) =
+      runReporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "", actions)
+    override def error(off: Offset, msg: String) =
+      reporter.error(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String) =
+      currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 

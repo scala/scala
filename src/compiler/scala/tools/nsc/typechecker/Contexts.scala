@@ -14,8 +14,8 @@ package scala.tools.nsc
 package typechecker
 
 import scala.annotation.tailrec
-import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
+import scala.collection.mutable
+import scala.reflect.internal.util.{CodeAction, ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
 
@@ -812,15 +812,25 @@ trait Contexts { self: Analyzer =>
     //
 
     /** Issue/buffer/throw the given type error according to the current mode for error reporting. */
-    private[typechecker] def issue(err: AbsTypeError)                        = reporter.issue(err)(this)
+    private[typechecker] def issue(err: AbsTypeError) = reporter.issue(err)(this)
+
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
     private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
+
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reporter.errorAndDumpIfDebug(fixPosition(pos), msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction] = Nil) =
+      reporter.errorAndDumpIfDebug(fixPosition(pos), msg, actions)
+
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner)
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site)
-    def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
+    def warning(pos: Position, msg: String, category: WarningCategory, actions: List[CodeAction] = Nil): Unit =
+      reporter.warning(fixPosition(pos), msg, category, owner, actions)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction]): Unit =
+      reporter.warning(fixPosition(pos), msg, category, site, actions)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      warning(pos, msg, category, site, Nil)
+
+    def echo(pos: Position, msg: String) = reporter.echo(fixPosition(pos), msg)
+
     def fixPosition(pos: Position): Position = pos match {
       case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
       case _ => pos
@@ -828,9 +838,8 @@ trait Contexts { self: Analyzer =>
 
 
     // TODO: buffer deprecations under silent (route through ContextReporter, store in BufferingReporter)
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
-
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since, actions)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
       runReporting.deprecationWarning(fixPosition(pos), sym, owner)
 
@@ -1712,24 +1721,19 @@ trait Contexts { self: Analyzer =>
    *
    *  To handle nested contexts, reporters share buffers. TODO: only buffer in BufferingReporter, emit immediately in ImmediateReporter
    */
-  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) {
-    type Error = AbsTypeError
-    type Warning = (Position, String, WarningCategory, Symbol)
-
-    def issue(err: AbsTypeError)(implicit context: Context): Unit = errorAndDumpIfDebug(context.fixPosition(err.errPos), addDiagString(err.errMsg))
+  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) {
+    def issue(err: AbsTypeError)(implicit context: Context): Unit = errorAndDumpIfDebug(context.fixPosition(err.errPos), addDiagString(err.errMsg), err.actions)
 
     def echo(msg: String): Unit = echo(NoPosition, msg)
+    def echo(pos: Position, msg: String): Unit = reporter.echo(pos, msg)
 
-    def echo(pos: Position, msg: String): Unit =
-      reporter.echo(pos, msg)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction] = Nil): Unit =
+      runReporting.warning(pos, msg, category, site, actions)
 
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      runReporting.warning(pos, msg, category, site)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit
 
-    def error(pos: Position, msg: String): Unit
-
-    final def errorAndDumpIfDebug(pos: Position, msg: String): Unit = {
-      error(pos, msg)
+    final def errorAndDumpIfDebug(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
+      error(pos, msg, actions)
       if (settings.VdebugTypeError.value) {
         Thread.dumpStack()
       }
@@ -1748,7 +1752,7 @@ trait Contexts { self: Analyzer =>
      *  - else, let this context reporter decide
      */
     final def issueAmbiguousError(err: AbsAmbiguousTypeError)(implicit context: Context): Unit =
-      if (context.ambiguousErrors) reporter.error(context.fixPosition(err.errPos), addDiagString(err.errMsg)) // force reporting... see TODO above
+      if (context.ambiguousErrors) reporter.error(context.fixPosition(err.errPos), addDiagString(err.errMsg), err.actions) // force reporting... see TODO above
       else handleSuppressedAmbiguous(err)
 
     @inline final def withFreshErrorBuffer[T](expr: => T): T = {
@@ -1766,7 +1770,7 @@ trait Contexts { self: Analyzer =>
           if (target.isBuffering) {
             target ++= errors
           } else {
-            errors.foreach(e => target.errorAndDumpIfDebug(e.errPos, e.errMsg))
+            errors.foreach(e => target.errorAndDumpIfDebug(e.errPos, e.errMsg, e.actions))
           }
           // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
           // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
@@ -1826,19 +1830,19 @@ trait Contexts { self: Analyzer =>
 
     final def emitWarnings() = if (_warningBuffer != null) {
       _warningBuffer foreach {
-        case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site)
+        case ContextWarning(pos, msg, category, site, actions) => runReporting.warning(pos, msg, category, site, actions)
       }
       _warningBuffer = null
     }
 
     // [JZ] Contexts, pre- the scala/bug#7345 refactor, avoided allocating the buffers until needed. This
     // is replicated here out of conservatism.
-    private def newBuffer[A]    = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
-    final protected def errorBuffer   = { if (_errorBuffer == null) _errorBuffer = newBuffer; _errorBuffer }
+    private def newBuffer[A] = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
+    final protected def errorBuffer = { if (_errorBuffer == null) _errorBuffer = newBuffer; _errorBuffer }
     final protected def warningBuffer = { if (_warningBuffer == null) _warningBuffer = newBuffer; _warningBuffer }
 
-    final def errors: immutable.Seq[Error]     = errorBuffer.toVector
-    final def warnings: immutable.Seq[Warning] = warningBuffer.toVector
+    final def errors: Seq[AbsTypeError]        = errorBuffer.toVector
+    final def warnings: Seq[ContextWarning]    = warningBuffer.toVector
     final def firstError: Option[AbsTypeError] = errorBuffer.headOption
 
     // TODO: remove ++= and clearAll* entirely in favor of more high-level combinators like withFreshErrorBuffer
@@ -1850,22 +1854,22 @@ trait Contexts { self: Analyzer =>
     final def clearAllErrors(): Unit = { _errorBuffer = null }
   }
 
-  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def makeBuffering: ContextReporter = new BufferingReporter(errorBuffer, warningBuffer)
-    def error(pos: Position, msg: String): Unit = reporter.error(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = reporter.error(pos, msg, actions)
  }
 
-  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 
     override def issue(err: AbsTypeError)(implicit context: Context): Unit             = errorBuffer += err
 
     // this used to throw new TypeError(pos, msg) -- buffering lets us report more errors (test/files/neg/macro-basic-mamdmi)
     // the old throwing behavior was relied on by diagnostics in manifestOfType
-    def error(pos: Position, msg: String): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg))
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg), actions)
 
-    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      warningBuffer += ((pos, msg, category, site))
+    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction]): Unit =
+      warningBuffer += ContextWarning(pos, msg, category, site, actions)
 
     override protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = errorBuffer += err
 
@@ -1879,12 +1883,12 @@ trait Contexts { self: Analyzer =>
    */
   private[typechecker] class ThrowingReporter extends ContextReporter {
     override def isThrowing = true
-    def error(pos: Position, msg: String): Unit = throw new TypeError(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = throw new TypeError(pos, msg)
   }
 
   /** Used during a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
   private[typechecker] class CheckingReporter extends ContextReporter {
-    def error(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = onTreeCheckerError(pos, msg)
   }
 
   class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {

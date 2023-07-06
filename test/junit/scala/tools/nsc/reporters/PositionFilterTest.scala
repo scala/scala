@@ -19,7 +19,8 @@ class PositionFilterTest {
 
   def createFilter: FilteringReporter = new FilteringReporter {
     def settings: Settings = store.settings
-    def doReport(pos: Position, msg: String, severity: Severity): Unit = store.doReport(pos, msg, severity)
+    override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+      store.doReport(pos, msg, severity, actions)
   }
 
   @Test

@@ -19,7 +19,14 @@ package ast.parser
 import scala.annotation.tailrec
 import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.{ModifierFlags => Flags, Precedence}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
+import scala.reflect.internal.util.{
+  CodeAction,
+  FreshNameCreator,
+  ListOfNil,
+  Position,
+  SourceFile,
+  TextEdit,
+}
 import Tokens._
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -48,7 +55,7 @@ trait ParsersCommon extends ScannersCommon {
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def deprecationWarning(off: Offset, msg: String, since: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit
     def accept(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
@@ -175,11 +182,11 @@ self =>
     def unit = global.currentUnit
 
     // suppress warnings; silent abort on errors
-    def warning(offset: Offset, msg: String, category: WarningCategory): Unit = ()
-    def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
+    def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction]): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction]): Unit = ()
 
-    def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
-    def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
+    def syntaxError(offset: Offset, msg: String, actions: List[CodeAction]): Unit = throw new MalformedInput(offset, msg)
+    def incompleteInputError(msg: String, actions: List[CodeAction]): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
     object symbXMLBuilder extends SymbolicXMLBuilder(this, preserveWS = true) { // DEBUG choices
       val global: self.global.type = self.global
@@ -225,12 +232,12 @@ self =>
 
     override def newScanner() = new UnitScanner(unit, patches)
 
-    override def warning(offset: Offset, msg: String, category: WarningCategory): Unit =
-      runReporting.warning(o2p(offset), msg, category, site = "")
+    override def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction]): Unit =
+      runReporting.warning(o2p(offset), msg, category, site = "", actions)
 
-    override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
+    override def deprecationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction]): Unit =
       // we cannot provide a `site` in the parser, there's no context telling us where we are
-      runReporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "")
+      runReporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "", actions)
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -241,20 +248,20 @@ self =>
     }
     def withPatches(patches: List[BracePatch]): UnitParser = new UnitParser(unit, patches)
 
-    val syntaxErrors = new ListBuffer[(Int, String)]
+    val syntaxErrors = new ListBuffer[(Int, String, List[CodeAction])]
     def showSyntaxErrors() =
-      for ((offset, msg) <- syntaxErrors)
-        reporter.error(o2p(offset), msg)
+      for ((offset, msg, actions) <- syntaxErrors)
+        reporter.error(o2p(offset), msg, actions)
 
-    override def syntaxError(offset: Offset, msg: String): Unit = {
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else reporter.error(o2p(offset), msg)
+    override def syntaxError(offset: Offset, msg: String, actions: List[CodeAction]): Unit = {
+      if (smartParsing) syntaxErrors += ((offset, msg, actions))
+      else reporter.error(o2p(offset), msg, actions)
     }
 
-    override def incompleteInputError(msg: String): Unit = {
+    override def incompleteInputError(msg: String, actions: List[CodeAction]): Unit = {
       val offset = source.content.length - 1
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else currentRun.parsing.incompleteInputError(o2p(offset), msg)
+      if (smartParsing) syntaxErrors += ((offset, msg, actions))
+      else currentRun.parsing.incompleteInputError(o2p(offset), msg, actions)
     }
 
     /** parse unit. If there are unbalanced braces,
@@ -576,50 +583,61 @@ self =>
         in.nextToken()
       }
     }
-    def warning(offset: Offset, msg: String, category: WarningCategory): Unit
-    def incompleteInputError(msg: String): Unit
-    def syntaxError(offset: Offset, msg: String): Unit
 
-    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit =
-      syntaxError(pos pointOrElse in.offset, msg, skipIt)
-    def syntaxError(msg: String, skipIt: Boolean): Unit =
-      syntaxError(in.offset, msg, skipIt)
+    def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction] = Nil): Unit
 
-    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = {
+    def incompleteInputError(msg: String, actions: List[CodeAction] = Nil): Unit
+
+    def syntaxError(offset: Offset, msg: String, actions: List[CodeAction] = Nil): Unit
+
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit = syntaxError(pos, msg, skipIt, Nil)
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit =
+      syntaxError(pos pointOrElse in.offset, msg, skipIt, actions)
+
+    def syntaxError(msg: String, skipIt: Boolean): Unit = syntaxError(msg, skipIt, Nil)
+    def syntaxError(msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit =
+      syntaxError(in.offset, msg, skipIt, actions)
+
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = syntaxError(offset, msg, skipIt, Nil)
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit = {
       if (offset > lastErrorOffset) {
-        syntaxError(offset, msg)
+        syntaxError(offset, msg, actions)
         lastErrorOffset = in.offset         // no more errors on this token.
       }
       if (skipIt)
         skip(UNDEF)
     }
 
-    def warning(msg: String, category: WarningCategory): Unit = warning(in.offset, msg, category)
+    def warning(msg: String, category: WarningCategory): Unit = warning(in.offset, msg, category, Nil)
+    def warning(msg: String, category: WarningCategory, actions: List[CodeAction]): Unit = warning(in.offset, msg, category, actions)
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean, actions: List[CodeAction] = Nil): Unit = {
       if (in.token == EOF)
-        incompleteInputError(msg)
+        incompleteInputError(msg, actions)
       else
-        syntaxError(in.offset, msg, skipIt)
+        syntaxError(in.offset, msg, skipIt, actions)
     }
-    def syntaxErrorOrIncompleteAnd[T](msg: String, skipIt: Boolean)(and: T): T = {
-      syntaxErrorOrIncomplete(msg, skipIt)
+    def syntaxErrorOrIncompleteAnd[T](msg: String, skipIt: Boolean, actions: List[CodeAction] = Nil)(and: T): T = {
+      syntaxErrorOrIncomplete(msg, skipIt, actions)
       and
     }
 
     // warn under -Xsource:3
-    def migrationWarning(offset: Offset, msg: String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
+    def migrationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      if (currentRun.isScala3)
+        warning(offset, msg, WarningCategory.Scala3Migration, actions)
 
     // warn under -Xsource:3, otherwise deprecation
-    def hardMigrationWarning(offset: Offset, msg: String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration)
-      else deprecationWarning(offset, msg, since)
+    def hardMigrationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration, actions)
+      else deprecationWarning(offset, msg, since, actions)
 
     // deprecation or migration under -Xsource:3, with different messages
+    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String, actions: List[CodeAction]): Unit =
+      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration, actions)
+      else deprecationWarning(offset, depr, since, actions)
     def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String): Unit =
-      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration)
-      else deprecationWarning(offset, depr, since)
+      hardMigrationWarning(offset, depr, migr, since, Nil)
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
     def expectedMsg(token: Token): String =
@@ -797,7 +815,11 @@ self =>
         val msg = "parentheses are required around the parameter of a lambda"
         val wrn = sm"""|$msg
                        |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
-        migrationWarning(tree.pos.point, wrn, "2.13.11")
+        def actions =
+          if (tree.pos.isRange)
+            List(CodeAction("lambda parameter", Some(msg), List(TextEdit(tree.pos, s"(${unit.sourceAt(tree.pos)})"))))
+          else Nil
+        migrationWarning(tree.pos.point, wrn, "2.13.11", actions)
         List(convertToParam(tree))
       case _ => List(convertToParam(tree))
     }
@@ -2064,6 +2086,7 @@ self =>
         in.skipCASE()
 
       val hasVal = in.token == VAL
+      val valOffset = in.offset
       if (hasVal)
         in.nextToken()
 
@@ -2072,12 +2095,17 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
+        def actions = {
+          val pos = r2p(valOffset, valOffset, valOffset + 4)
+          if (unit.sourceAt(pos) != "val ") Nil else
+            List(CodeAction("val in for comprehension", None, List(TextEdit(pos, ""))))
+        }
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          hardMigrationWarning(in.offset, msg("deprecated", without), msg("unsupported", without), "2.10.0")
+          hardMigrationWarning(in.offset, msg("deprecated", without), msg("unsupported", without), "2.10.0", actions)
         }
-        else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
+        else syntaxError(in.offset, msg("unsupported", "just remove `val`"), actions)
       }
 
       if (hasEq && eqOK && !hasCase) in.nextToken()
@@ -2978,16 +3006,18 @@ self =>
         var restype = fromWithinReturnType(typedOpt())
         def msg(what: String, instead: String) =
           s"procedure syntax is $what: instead, add `$instead` to explicitly declare `$name`'s return type"
+        def declActions = List(CodeAction("procedure syntax (decl)", None, List(TextEdit(o2p(in.lastOffset), ": Unit"))))
+        def defnActions = List(CodeAction("procedure syntax (defn)", None, List(TextEdit(o2p(in.lastOffset), ": Unit ="))))
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              hardMigrationWarning(in.lastOffset, msg("deprecated", ": Unit"), msg("unsupported", ": Unit"), "2.13.0")
+              hardMigrationWarning(in.lastOffset, msg("deprecated", ": Unit"), msg("unsupported", ": Unit"), "2.13.0", declActions)
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            hardMigrationWarning(in.offset, msg("deprecated", ": Unit ="), msg("unsupported", ": Unit ="), "2.13.0")
+            hardMigrationWarning(in.offset, msg("deprecated", ": Unit ="), msg("unsupported", ": Unit ="), "2.13.0", defnActions)
             restype = scalaUnitConstr
             blockExpr()
           } else {

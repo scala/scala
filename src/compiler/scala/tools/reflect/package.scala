@@ -15,7 +15,7 @@ package scala.tools
 import scala.language.implicitConversions
 import scala.reflect.api.JavaUniverse
 import scala.reflect.internal.Reporter
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.{ConsoleReporter, FilteringReporter}
 
@@ -88,7 +88,7 @@ package object reflect {
     val NSC_WARNING  = Reporter.WARNING
     val NSC_ERROR    = Reporter.ERROR
 
-    def doReport(pos: Position, msg: String, nscSeverity: NscSeverity): Unit =
+    override def doReport(pos: Position, msg: String, nscSeverity: NscSeverity, actions: List[CodeAction]): Unit =
       frontEnd.log(pos, msg, (nscSeverity: @unchecked) match {
         case NSC_INFO => API_INFO
         case NSC_WARNING => API_WARNING

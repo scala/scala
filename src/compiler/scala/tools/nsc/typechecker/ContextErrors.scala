@@ -15,7 +15,6 @@ package typechecker
 
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
-
 import scala.PartialFunction.cond
 import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
@@ -24,7 +23,7 @@ import scala.util.control.{ControlThrowable, NonFatal}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
-import scala.reflect.internal.util.NoSourceFile
+import scala.reflect.internal.util.{CodeAction, NoSourceFile}
 
 trait ContextErrors extends splain.SplainErrors {
   self: Analyzer =>
@@ -32,10 +31,17 @@ trait ContextErrors extends splain.SplainErrors {
   import global._
   import definitions._
 
+  final case class ContextWarning(pos: Position, msg: String, cat: WarningCategory, sym: Symbol, actions: List[CodeAction])
+
   sealed abstract class AbsTypeError {
     def errPos: Position
     def errMsg: String
     override def toString() = "[Type error at:" + errPos + "] " + errMsg
+
+    // To include code actions in type errors, add a field to the corresponding case class
+    //   override val actions: List[CodeAction] = Nil
+    // See TypeErrorWrapper for example
+    def actions: List[CodeAction] = Nil
   }
 
   abstract class AbsAmbiguousTypeError extends AbsTypeError
@@ -65,7 +71,7 @@ trait ContextErrors extends splain.SplainErrors {
     def errPos = underlyingSym.pos
   }
 
-  case class TypeErrorWrapper(ex: TypeError)
+  case class TypeErrorWrapper(ex: TypeError, override val actions: List[CodeAction] = Nil)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = ex.pos

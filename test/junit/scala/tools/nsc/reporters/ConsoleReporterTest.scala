@@ -88,8 +88,8 @@ class ConsoleReporterTest {
     reporter.settings.maxwarns.value = 1
 
     // counting happens in .error/.warning, doReport doesn't count
-    testHelper(msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING))
-    testHelper(msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR))
+    testHelper(msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING, Nil))
+    testHelper(msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR, Nil))
 
     testHelper(msg = "Testing display")(reporter.echo(_, "Testing display"))
     testHelper(msg = "Testing display", severity = "warning: ")(reporter.warning(_, "Testing display"))
@@ -100,8 +100,8 @@ class ConsoleReporterTest {
     testHelper(msg = "")(reporter.error(_, "Test maxwarns"))
 
     // the filter happens in .error/.warning, doReport always reports
-    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING))
-    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR))
+    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING, Nil))
+    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR, Nil))
 
     reporter.reset()
 
@@ -178,7 +178,8 @@ class ConsoleReporterTest {
 
       new FilteringReporter {
         def settings: Settings = conf
-        def doReport(pos: Position, msg: String, severity: Severity): Unit = reporter.doReport(pos, msg, severity)
+        override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+          reporter.doReport(pos, msg, severity, actions)
       }
     }
 
@@ -213,7 +214,7 @@ class ConsoleReporterTest {
   def filteredInfoTest(): Unit = {
     val reporter = new FilteringReporter {
       val settings: Settings = new Settings
-      def doReport(pos: Position, msg: String, severity: Severity): Unit = ()
+      override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = ()
     }
     // test obsolete API, make sure it doesn't throw
     reporter.info(NoPosition, "goodbye, cruel world", force = false)
@@ -224,7 +225,8 @@ class ConsoleReporterTest {
     val reporter = createConsoleReporter("r", writerOut)
     val adapted  = new FilteringReporter {
       def settings: Settings = reporter.settings
-      def doReport(pos: Position, msg: String, severity: Severity): Unit = reporter.doReport(pos, msg, severity)
+      override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+        reporter.doReport(pos, msg, severity, actions)
     }
 
     // pass one message
