@@ -268,4 +268,6 @@ object Test extends App {
   fIfNot()
   fHeteroArgs()
   `f interpolator baseline`()
+
+  assertEquals("hell", f"$tester%.4s")
 }
