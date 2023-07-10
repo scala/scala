@@ -70,40 +70,20 @@ trait FastStringInterpolator extends FormatInterpolator {
           case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
         }
 
-      val argsIndexed = args.toVector
-      val concatArgs = collection.mutable.ListBuffer[Tree]()
-      val numLits = parts.length
-      foreachWithIndex(treated.tail) { (lit, i) =>
-        val treatedContents = lit.asInstanceOf[Literal].value.stringValue
-        val emptyLit = treatedContents.isEmpty
-        if (i < numLits - 1) {
-          concatArgs += argsIndexed(i)
-          if (!emptyLit) concatArgs += lit
-        } else if (!emptyLit) {
-          concatArgs += lit
+      if (args.forall(treeInfo.isLiteralString)) {
+        val it1 = treated.iterator
+        val it2 = args.iterator
+        val res = new StringBuilder
+        def add(t: Tree) = res.append(t.asInstanceOf[Literal].value.value)
+        add(it1.next())
+        while (it2.hasNext) {
+          add(it2.next())
+          add(it1.next())
         }
+        val k = Constant(res.toString)
+        Literal(k).setType(ConstantType(k))
       }
-      def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
-        atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
-
-      var result: Tree = treated.head
-      val chunkSize = 32
-      if (concatArgs.lengthCompare(chunkSize) <= 0) {
-        concatArgs.foreach { t =>
-          result = mkConcat(t.pos, result, t)
-        }
-      } else {
-        concatArgs.toList.grouped(chunkSize).foreach {
-          case group =>
-            var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
-            group.foreach { t =>
-              chunkResult = mkConcat(t.pos, chunkResult, t)
-            }
-            result = mkConcat(chunkResult.pos, result, chunkResult)
-        }
-      }
-
-      result
+      else concatenate(treated, args)
 
     // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
     case t@Apply(Select(someStringContext, _interpol), args) =>
@@ -115,5 +95,42 @@ trait FastStringInterpolator extends FormatInterpolator {
           sc.parts)
       }"""
     case x => throw new MatchError(x)
+  }
+
+  def concatenate(parts: List[Tree], args: List[Tree]): Tree = {
+    val argsIndexed = args.toVector
+    val concatArgs = collection.mutable.ListBuffer[Tree]()
+    val numLits = parts.length
+    foreachWithIndex(parts.tail) { (lit, i) =>
+      val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+      val emptyLit = treatedContents.isEmpty
+      if (i < numLits - 1) {
+        concatArgs += argsIndexed(i)
+        if (!emptyLit) concatArgs += lit
+      } else if (!emptyLit) {
+        concatArgs += lit
+      }
+    }
+    def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
+      atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
+
+    var result: Tree = parts.head
+    val chunkSize = 32
+    if (concatArgs.lengthCompare(chunkSize) <= 0) {
+      concatArgs.foreach { t =>
+        result = mkConcat(t.pos, result, t)
+      }
+    } else {
+      concatArgs.toList.grouped(chunkSize).foreach {
+        case group =>
+          var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
+          group.foreach { t =>
+            chunkResult = mkConcat(t.pos, chunkResult, t)
+          }
+          result = mkConcat(chunkResult.pos, result, chunkResult)
+      }
+    }
+
+    result
   }
 }

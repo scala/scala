@@ -30,6 +30,9 @@ object Test extends App {
   import StringContext._
   import StringContextTestUtils.StringContextOps
 
+  final val tester = "hello"
+  final val number = "42"  // strings only, alas
+
   def assertEquals(s0: String, s1: String) = assert(s0 == s1, s"$s0 == $s1")
 
   def noEscape() = {
@@ -247,6 +250,8 @@ object Test extends App {
       f"${5}%s%<d"      -> "55",
       f"${3.14}%s,%<f"  -> locally"3.14,${"3.140000"}",
 
+      f"${"hello"}%-10s" -> "hello     ",
+      (f"$tester%-10s$number%3s": "hello      42") -> "hello      42",
       f"z" -> "z"
     )
 
@@ -263,4 +268,6 @@ object Test extends App {
   fIfNot()
   fHeteroArgs()
   `f interpolator baseline`()
+
+  assertEquals("hell", f"$tester%.4s")
 }

@@ -11,9 +11,9 @@ class Foo_1 {
     } finally {
       // this should be the only copy of the magic constant 3
       // making it easy to detect copies of this finally block
-      println(s"finally ${3}")
+      println("finally " + 3)
     }
-    println(s"normal flow")
+    println("normal flow")
   }
 }
 

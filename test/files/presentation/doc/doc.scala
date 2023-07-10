@@ -1,3 +1,4 @@
+// scalac: -Xlint -Werror
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base._
@@ -44,6 +45,7 @@ object Test extends InteractiveTest {
 
       val global: this.type = this
 
+      @annotation.nowarn
       override lazy val analyzer = new {
         val global: outer.type = outer
       } with doc.ScaladocAnalyzer with InteractiveAnalyzer {

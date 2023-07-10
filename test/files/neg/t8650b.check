@@ -1,0 +1,7 @@
+t8650b.scala:13: error: annotation argument needs to be a constant; found: "".+("MyLib").+(" ").+(17)
+  @deprecated(s"$greeting world", since=s"$lib $version")
+                                                ^
+t8650b.scala:16: error: annotation argument needs to be a constant; found: "".+("MyLib").+(" ").+(17)
+  @deprecated(f"$greeting world", since=f"$lib $version")
+                                                ^
+2 errors
