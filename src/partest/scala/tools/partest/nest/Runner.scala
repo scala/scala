@@ -457,9 +457,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   // for each file, cache the args for each tool
   private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, List[String]]]
 
-  // inspect given files for tool args of the form `tool: args`
-  // if args string ends in close comment, drop the `*` `/`
-  // if filter, return entire line as if quoted, else parse the args string as command line.
+  // Inspect given files for tool args in header line comments of the form `// tool: args`.
+  // If the line comment starts `//>`, accept `scalac:` options in the form of using pragmas.
+  // If `filter:`, return entire line as if quoted, else parse the args string as command line.
   // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
   def toolArgsFor(files: List[File])(tool: ToolName): List[String] = {
@@ -474,11 +474,21 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     }
     def fromHeader(name: ToolName, header: List[String]) = {
       import scala.sys.process.Parser.tokenize
-      val tag  = s"$name:"
-      val endc = "*" + "/"    // be forgiving of /* scalac: ... */
-      def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
-      val lines = header.filter(_.contains(tag)).map(line => stripped(line).trim())
-      if (name == ToolName.filter) lines else lines.flatMap(tokenize)
+      val namePattern = raw"\s*//\s*$name:\s*(.*)".r
+      val optionsPattern = raw"\s*//>\s*using\s+option(s)?\s+(.*)".r
+      def matchLine(line: String): List[String] =
+        line match {
+          case namePattern(rest) => if (name == ToolName.filter) List(rest.trim) else tokenize(rest)
+          case _ if name == ToolName.scalac =>
+            line match {
+              case optionsPattern(plural, rest) =>
+                if (plural == null) List(rest.trim)
+                else tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
+              case _ => Nil
+            }
+          case _ => Nil
+        }
+      header.flatMap(matchLine)
     }
     def readHeaderFrom(f: File): List[String] =
       Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
