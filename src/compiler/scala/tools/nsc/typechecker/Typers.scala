@@ -5568,8 +5568,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case sym      => typed1(tree setSymbol sym, mode, pt)
             }
           case LookupSucceeded(qual, sym)   =>
-            sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w =>
-              runReporting.warning(tree.pos, w.msg, WarningCategory.Other, context.owner))
+            sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w => {
+              val cat = if (currentRun.isScala3) WarningCategory.Scala3Migration else WarningCategory.Other
+              val fix = List(CodeAction("ambiguous reference", Some(w.msg), List(TextEdit(tree.pos.focusStart, w.fix))))
+              runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
+            })
             (// this -> Foo.this
             if (sym.isThisSym)
               typed1(This(sym.owner) setPos tree.pos, mode, pt)

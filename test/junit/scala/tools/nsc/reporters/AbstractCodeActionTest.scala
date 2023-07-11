@@ -76,6 +76,21 @@ abstract class AbstractCodeActionTest extends BytecodeTesting {
       """.stripMargin,
     )
 
+  @Test def outerReference(): Unit = {
+    assertCodeSuggestion(
+      """trait T { def f = 1 }
+        |object O1 { def f = 2; class C extends T { def t = f } }
+        |object O2 { def f = 2; class C extends T { object I { def t = f } } }
+        |object O3 { def f = 2; object C extends T { object I { def t = f } } }
+        |""".stripMargin,
+      """trait T { def f = 1 }
+        |object O1 { def f = 2; class C extends T { def t = this.f } }
+        |object O2 { def f = 2; class C extends T { object I { def t = C.this.f } } }
+        |object O3 { def f = 2; object C extends T { object I { def t = C.this.f } } }
+        |""".stripMargin
+    )
+  }
+
   def assertCodeSuggestion(original: String, expected: String): Unit = {
     val run = compiler.newRun()
     run.compileSources(compiler.global.newSourceFile(original) :: Nil)

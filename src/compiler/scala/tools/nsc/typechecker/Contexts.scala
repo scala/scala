@@ -1373,31 +1373,26 @@ trait Contexts { self: Analyzer =>
       LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
     def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
       LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
-    def ambiguousDefinitions(outer: Symbol, inherited: Symbol, foundInSuper: Boolean, currentClass: Symbol) =
+    def ambiguousDefinitions(outer: Symbol, inherited: Symbol, foundInSuper: Boolean, classOfInherited: Symbol, currentClass: Symbol) =
       if (foundInSuper) {
         if (inherited.isImplicit) None
         else {
           val outer1 = outer.alternatives.head
           val inherited1 = inherited.alternatives.head
-          val classDesc = if (currentClass.isAnonymousClass) "anonymous class" else currentClass.toString
-          val parent = currentClass.parentSymbols.find(_.isNonBottomSubClass(inherited1.owner)).getOrElse(NoSymbol)
+          val classDesc = if (classOfInherited.isAnonymousClass) "anonymous class" else classOfInherited.toString
+          val parent = classOfInherited.parentSymbols.find(_.isNonBottomSubClass(inherited1.owner)).getOrElse(NoSymbol)
           val inherit = if (parent.exists && parent != inherited1.owner) s", inherited through parent $parent" else ""
+          val fix = if (classOfInherited != currentClass) s"${classOfInherited.name}.this." else "this."
           val message =
             sm"""|it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
                  |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
-                 |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`."""
-          // For now (2.13.11), warn under Xsource:3. We'll consider warning by default (and erring in Xsource:3) in 2.13.12
-          if (currentRun.isScala3) {
-            // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
-            inherited.updateAttachment(LookupAmbiguityWarning(
-              sm"""|reference to ${outer1.name} is ambiguous;
-                   |$message
-                   |Or use `-Wconf:msg=legacy-binding:s` to silence this warning."""))
-            // Some(LookupAmbiguous(message)) // to make it an error in 2.13.12
-            None
-          } else
-            None
+                 |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `${fix}${outer1.name}`."""
+          inherited.updateAttachment(LookupAmbiguityWarning(
+            sm"""|reference to ${outer1.name} is ambiguous;
+                 |$message
+                 |Or use `-Wconf:msg=legacy-binding:s` to silence this warning.""", fix))
         }
+        None
       } else
         Some(LookupAmbiguous(s"it is both defined in ${outer.owner} and available as ${inherited.fullLocationString}"))
 
@@ -1643,7 +1638,7 @@ trait Contexts { self: Analyzer =>
         }
         if (defSym.exists && (defSym ne defSym0)) {
           val ambiguity =
-            if (preferDef) ambiguousDefinitions(defSym, defSym0, wasFoundInSuper, cx0.enclClass.owner)
+            if (preferDef) ambiguousDefinitions(defSym, defSym0, wasFoundInSuper, cx0.enclClass.owner, thisContext.enclClass.owner)
             else Some(ambiguousDefnAndImport(owner = defSym.owner, imp1))
           if (ambiguity.nonEmpty) return ambiguity.get
         }
