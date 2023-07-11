@@ -1,15 +1,6 @@
 Test_2.scala:2: error: exception during macro expansion:
 java.lang.Exception
 	at Macros$.impl(Macros_1.scala:6)
-#partest java20
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
-#partest java21+
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-#partest java20+
-	at java.base/java.lang.reflect.Method.invoke(Method.java:578)
-	at scala.reflect.macros.runtime.JavaReflectionRuntimes$JavaReflectionResolvers.$anonfun$resolveJavaReflectionRuntime$6(JavaReflectionRuntimes.scala:51)
-	at scala.tools.nsc.typechecker.Macros.macroExpandWithRuntime(Macros.scala:849)
-#partest
 
   Macros.exception
          ^
