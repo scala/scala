@@ -15,7 +15,7 @@
  * where 0 <= N <= MaxArity. Usage: sbt generateSources
  */
 object genprod {
-  final val MaxArity = 22
+  final val MaxArity = 23
   def arities = (1 to MaxArity).toList
 
   class Group(val name: String) {
