@@ -1,7 +1,0 @@
-Simple Build Tool: Compiler Interface Component
-Copyright 2008, 2009, 2010  Mark Harrah
-Licensed under BSD-style license (see LICENSE)
-
-Portions based on code from the Scala compiler.
-Copyright 2002-2008 EPFL, Lausanne
-Licensed under BSD-style license (see licenses/LICENSE_Scala)
