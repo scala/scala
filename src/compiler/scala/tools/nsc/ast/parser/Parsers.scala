@@ -914,7 +914,7 @@ self =>
     private[this] def checkTupleSize(elems: List[Tree]): Boolean =
       elems.lengthCompare(definitions.MaxTupleArity) <= 0 || {
         val firstInvalidElem = elems(definitions.MaxTupleArity)
-        val msg = s"tuples may not have more than ${definitions.MaxFunctionArity} elements, but ${elems.length} given"
+        val msg = s"tuples may not have more than ${definitions.MaxTupleArity} elements, but ${elems.length} given"
         syntaxError(firstInvalidElem.pos, msg, skipIt = false)
         false
       }

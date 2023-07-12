@@ -672,7 +672,9 @@ trait Definitions extends api.StandardDefinitions {
     // in JavaUniverseForce, so it is clearer to define this explicitly define this in source.
     object VarArityClass
 
-    val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+    // val MaxTupleArity, MaxProductArity, MaxFunctionArity = 23
+    val MaxProductArity, MaxTupleArity = 23
+    val MaxFunctionArity = 22
     // A unit test checks these are kept in synch with the library.
     val MaxTupleAritySpecialized, MaxProductAritySpecialized, MaxFunctionAritySpecialized = 2
 
