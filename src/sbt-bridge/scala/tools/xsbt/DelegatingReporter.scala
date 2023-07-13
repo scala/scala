@@ -19,9 +19,7 @@ import java.io.File
 import java.{ util => ju }
 import ju.Optional
 
-import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
-// Left for compatibility
-import Compat._
+import scala.reflect.internal.util.{ CodeAction, FakePos, NoPosition, Position }
 import scala.collection.JavaConverters._
 import scala.reflect.io.AbstractFile
 import xsbti.{
@@ -216,7 +214,7 @@ private final class DelegatingReporter(
     delegate.reset()
   }
 
-  protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean): Unit = {
+  override def doReport(pos: Position, msg: String, rawSeverity: Severity, actions: List[CodeAction]): Unit = {
     val skip = rawSeverity == WARNING && noWarn
     if (!skip) {
       val severity = if (warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
@@ -228,17 +226,13 @@ private final class DelegatingReporter(
         rendered0 = None,
         diagnosticCode0 = None,
         diagnosticRelatedInformation0 = Nil,
-        actions0 = getActions(pos, pos1, msg)
+        actions0 = actions.map(convertAction),
       ))
     }
   }
 
-  private def getActions(pos: Position, pos1: xsbti.Position, msg: String): List[Action] =
-    if (pos.isRange) Nil
-    else if (msg.startsWith("procedure syntax is deprecated:")) {
-      val edit = workspaceEdit(List(textEdit(pos1, ": Unit = {")))
-      action("procedure syntax", None, edit) :: Nil
-    } else Nil
+  protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean): Unit =
+    doReport(pos, msg, rawSeverity, Nil)
 
   import xsbti.Severity.{ Info, Warn, Error }
   private[this] def convert(sev: Severity): xsbti.Severity = sev match {
@@ -269,6 +263,15 @@ private final class DelegatingReporter(
       l2jl(diagnosticRelatedInformation0)
     override def actions(): ju.List[Action] = l2jl(actions0)
   }
+
+  private def convertAction(a: CodeAction): Action =
+    action(
+      title = a.title,
+      description = a.description,
+      edit = workspaceEdit(a.edits.map { edit =>
+        textEdit(DelegatingReporter.convert(edit.position), edit.newText)
+      }),
+    )
 
   private def action(
       title: String,
