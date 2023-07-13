@@ -12,6 +12,7 @@
  * additional information regarding copyright ownership.
  */
 
+package scala.tools
 package xsbt
 
 import java.util.{ HashMap => JavaMap }

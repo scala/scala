@@ -12,7 +12,8 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
+package scala.tools
+package xsbt
 
 import java.nio.file.Path
 
