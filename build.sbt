@@ -45,6 +45,7 @@ val jnaDep            = "net.java.dev.jna"               % "jna"                
 val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.12"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.9.2"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
@@ -579,6 +580,41 @@ lazy val scaladoc = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
+lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.sbtbridge"))
+  //.settings(fatalWarningsSettings)
+  .settings(
+    name := "scala2-sbt-bridge",
+    description := "sbt compiler bridge for Scala 2",
+    libraryDependencies += compilerInterfaceDep,
+    generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
+    generateServiceProviderResources("xsbti.compile.ConsoleInterface1"  -> "scala.tools.xsbt.ConsoleBridge"),
+    generateServiceProviderResources("xsbti.compile.ScaladocInterface2" -> "scala.tools.xsbt.ScaladocBridge"),
+    generateServiceProviderResources("xsbti.InteractiveConsoleFactory"  -> "scala.tools.xsbt.InteractiveConsoleBridgeFactory"),
+    Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
+    fixPom(
+      "/project/name" -> <name>Scala 2 sbt Bridge</name>,
+      "/project/description" -> <description>sbt compiler bridge for Scala 2</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    ),
+    headerLicense := Some(HeaderLicense.Custom(
+      s"""Zinc - The incremental compiler for Scala.
+         |Copyright Scala Center, Lightbend, and Mark Harrah
+         |
+         |Scala (${(ThisBuild/homepage).value.get})
+         |Copyright EPFL and Lightbend, Inc.
+         |
+         |Licensed under Apache License 2.0
+         |(http://www.apache.org/licenses/LICENSE-2.0).
+         |
+         |See the NOTICE file distributed with this work for
+         |additional information regarding copyright ownership.
+         |""".stripMargin)),
+  )
+  .dependsOn(compiler, replFrontend, scaladoc)
+
 lazy val scalap = configureAsSubproject(project)
   .settings(fatalWarningsSettings)
   .settings(
@@ -1048,7 +1084,7 @@ lazy val root: Project = (project in file("."))
 
     setIncOptions
   )
-  .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
+  .aggregate(library, reflect, compiler, interactive, repl, replFrontend, sbtBridge,
     scaladoc, scalap, testkit, partest, junit, scalacheck, tasty, tastytest, scalaDist).settings(
     Compile / sources := Seq.empty,
     onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
