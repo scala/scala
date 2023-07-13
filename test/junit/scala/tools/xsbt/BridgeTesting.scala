@@ -1,5 +1,6 @@
 package scala.tools.xsbt
 
+import xsbti.api.DependencyContext._
 import xsbti.compile.{CompileProgress, DependencyChanges}
 import xsbti.{BasicVirtualFileRef, Logger, Position, Problem, Severity, VirtualFile, VirtualFileRef, Reporter => XReporter}
 
@@ -9,6 +10,7 @@ import java.util.function.Supplier
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.testkit.TempDir
+import scala.tools.xsbt.TestCallback.ExtractedClassDependencies
 import scala.util.hashing.MurmurHash3
 
 class BridgeTesting {
@@ -36,22 +38,30 @@ class BridgeTesting {
   def compileSrcs(baseDir: Path, srcs: String*): (Seq[VirtualFile], TestCallback) =
     compileSrcs(baseDir, mkReporter, srcs: _*)
 
-  def compileSrcs(baseDir: Path, reporter: XReporter, srcs: String*): (List[VirtualFile], TestCallback) = {
+  def compileSrcs(baseDir: Path, reporter: XReporter, srcs: String*): (List[VirtualFile], TestCallback) =
+    compileSrcss(baseDir, reporter, List(srcs.toList))
+
+  def compileSrcss(baseDir: Path, reporter: XReporter, srcss: List[List[String]]): (List[VirtualFile], TestCallback) = {
     val targetDir = baseDir / "target"
     Files.createDirectory(targetDir)
     val analysisCallback = new TestCallback
-    val files = for ((src, i) <- srcs.toList.zipWithIndex) yield new StringVirtualFile(s"Test-$i.scala", src)
-    val compiler = mkCompiler
-    compiler.run(
-      sources = files.toArray,
-      changes = emptyChanges,
-      options = Array("-usejavacp", "-deprecation"),
-      output = new TestOutput(targetDir),
-      callback = analysisCallback,
-      delegate = reporter,
-      progress = ignoreProgress,
-      log = TestLogger)
-    (files, analysisCallback)
+    val filess = for ((sourceGroup, groupId) <- srcss.zipWithIndex) yield {
+      val files = sourceGroup.zipWithIndex map {
+        case (src, i) => new StringVirtualFile(s"Test-$groupId-$i.scala", src)
+      }
+      val compiler = mkCompiler
+      compiler.run(
+        sources = files.toArray,
+        changes = emptyChanges,
+        options = Array("-usejavacp", "-deprecation", "-cp", targetDir.getAbsolutePath),
+        output = new TestOutput(targetDir),
+        callback = analysisCallback,
+        delegate = reporter,
+        progress = ignoreProgress,
+        log = TestLogger)
+      files
+    }
+    (filess.flatten, analysisCallback)
   }
 
   def docSrcs(baseDir: Path, srcs: String*): Unit = {
@@ -64,6 +74,35 @@ class BridgeTesting {
       args = Array("-usejavacp", "-d", targetDir.getAbsolutePath),
       log = TestLogger,
       delegate = mkReporter)
+  }
+
+  def extractDependenciesFromSrcs(srcs: String*): ExtractedClassDependencies = withTemporaryDirectory { tmpDir =>
+    val (_, testCallback) = compileSrcs(tmpDir, srcs: _*)
+
+    val memberRefDeps = testCallback.classDependencies.toList collect {
+      case (target, src, DependencyByMemberRef) => (src, target)
+    }
+    val inheritanceDeps = testCallback.classDependencies.toList collect {
+      case (target, src, DependencyByInheritance) => (src, target)
+    }
+    val localInheritanceDeps = testCallback.classDependencies.toList collect {
+      case (target, src, LocalDependencyByInheritance) => (src, target)
+    }
+    ExtractedClassDependencies.fromPairs(memberRefDeps, inheritanceDeps, localInheritanceDeps)
+  }
+
+  def extractBinaryDependenciesFromSrcss(srcss: List[List[String]]): ExtractedClassDependencies = withTemporaryDirectory { tmpDir =>
+    val (_, testCallback) = compileSrcss(tmpDir, mkReporter, srcss)
+    val binaryDependencies = testCallback.binaryDependencies
+    ExtractedClassDependencies.fromPairs(
+      binaryDependencies.toList.collect { case (_, bin, src, DependencyByMemberRef) => src -> bin },
+      binaryDependencies.toList.collect { case (_, bin, src, DependencyByInheritance) =>
+        src -> bin
+      },
+      binaryDependencies.toList.collect { case (_, bin, src, LocalDependencyByInheritance) =>
+        src -> bin
+      },
+    )
   }
 }
 
