@@ -26,7 +26,7 @@ object TastySupport {
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "3.3.1-RC4"
+  val dottyVersion = TastySupport.supportedTASTyRelease
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).exists(_.toBoolean)
   lazy val commonSettings = Seq(
