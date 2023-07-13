@@ -763,7 +763,7 @@ val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jd
   Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(testkit, compiler, replFrontend, scaladoc)
+  .dependsOn(testkit, compiler, replFrontend, scaladoc, sbtBridge)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
