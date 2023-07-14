@@ -1624,7 +1624,7 @@ trait Trees extends api.Trees {
     protected val changedSymbols = mutable.Set.empty[Symbol]
     protected val treeTypes = mutable.Set.empty[Type]
 
-    def change(sym: Symbol) = {
+    def change(sym: Symbol): Unit = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
         changedSymbols += sym
