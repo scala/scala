@@ -1140,6 +1140,7 @@ trait Namers extends MethodSynthesis {
       tree.tpt.defineType {
         val inferOverridden = currentRun.isScala3 &&
           !pt.isWildcard && pt != NoType && !pt.isErroneous &&
+          !(tree.isInstanceOf[ValDef] && tree.symbol.isFinal && isConstantType(rhsTpe)) &&
           openMacros.isEmpty && {
             context.unit.transformed.get(tree.rhs) match {
               case Some(t) if t.hasAttachment[MacroExpansionAttachment] =>
