@@ -276,8 +276,26 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   ) ++ extra) }
 }
 
+def ivyDependencyFilter(deps: Seq[(String, String)], scalaBinaryVersion: String) = {
+  import scala.xml._
+  import scala.xml.transform._
+  new RuleTransformer(new RewriteRule {
+    override def transform(node: Node) = node match {
+      case e: Elem if e.label == "dependency" && {
+        val org = e.attribute("org").getOrElse("").toString
+        val name = e.attribute("name").getOrElse("").toString
+        deps.exists { case (g, a) =>
+          org == g && (name == a || name == (a + "_" + scalaBinaryVersion))
+        }
+      } => Seq.empty
+      case n => n
+    }
+  })
+}
+
 val pomDependencyExclusions =
   settingKey[Seq[(String, String)]]("List of (groupId, artifactId) pairs to exclude from the POM and ivy.xml")
+lazy val fixCsrIvy = taskKey[Unit]("Apply pomDependencyExclusions to coursier ivy")
 
 Global / pomDependencyExclusions := Nil
 
@@ -295,27 +313,47 @@ lazy val removePomDependencies: Seq[Setting[_]] = Seq(
               e.child.contains(<groupId>{g}</groupId>) &&
                 (e.child.contains(<artifactId>{a}</artifactId>) || e.child.contains(<artifactId>{a + "_" + scalaBinaryVersion.value}</artifactId>))
             } => Seq.empty
-        case n => Seq(n)
+        case n => n
       }
     }).transform(Seq(n2)).head
   },
-  deliverLocal := {
+  fixCsrIvy := {
+    //  - coursier makes target/sbt-bridge/resolution-cache/org.scala-lang/scala2-sbt-bridge/2.13.12-bin-SNAPSHOT/resolved.xml.xml
+    //  - copied to target/sbt-bridge//ivy-2.13.12-bin-SNAPSHOT.xml
+    //  - copied to ~/.ivy2/local/org.scala-lang/scala2-sbt-bridge/2.13.12-bin-SNAPSHOT/ivys/ivy.xml
+    import scala.jdk.CollectionConverters._
     import scala.xml._
-    import scala.xml.transform._
+    val currentProject = csrProject.value
+    val ivyModule = org.apache.ivy.core.module.id.ModuleRevisionId.newInstance(
+      currentProject.module.organization.value,
+      currentProject.module.name.value,
+      currentProject.version,
+      currentProject.module.attributes.asJava)
+    val ivyFile = ivySbt.value.withIvy(streams.value.log)(_.getResolutionCacheManager).getResolvedIvyFileInCache(ivyModule)
+    val e = ivyDependencyFilter(pomDependencyExclusions.value, scalaBinaryVersion.value)
+      .transform(Seq(XML.loadFile(ivyFile))).head
+    XML.save(ivyFile.getAbsolutePath, e, xmlDecl = true)
+  },
+  publishConfiguration := Def.taskDyn {
+    val pc = publishConfiguration.value
+    Def.task {
+      fixCsrIvy.value
+      pc
+    }
+  }.value,
+  publishLocalConfiguration := Def.taskDyn {
+    val pc = publishLocalConfiguration.value
+    Def.task {
+      fixCsrIvy.value
+      pc
+    }
+  }.value,
+  deliverLocal := {
+    // this doesn't seem to do anything currently, it probably worked before sbt used coursier
+    import scala.xml._
     val f = deliverLocal.value
-    val deps = pomDependencyExclusions.value
-    val e = new RuleTransformer(new RewriteRule {
-      override def transform(node: Node) = node match {
-        case e: Elem if e.label == "dependency" && {
-          val org = e.attribute("org").getOrElse("").toString
-          val name = e.attribute("name").getOrElse("").toString
-          deps.exists { case (g, a) =>
-             org == g && (name == a || name == (a + "_" + scalaBinaryVersion.value))
-          }
-        } => Seq.empty
-        case n => Seq(n)
-      }
-    }).transform(Seq(XML.loadFile(f))).head
+    val e = ivyDependencyFilter(pomDependencyExclusions.value, scalaBinaryVersion.value)
+      .transform(Seq(XML.loadFile(f))).head
     XML.save(f.getAbsolutePath, e, xmlDecl = true)
     f
   }
