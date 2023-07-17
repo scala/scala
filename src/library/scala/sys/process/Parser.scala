@@ -94,12 +94,14 @@ private[scala] object Parser {
       res
     }
     def badquote() = errorFn(s"Unmatched quote [${qpos.last}](${line.charAt(qpos.last)})")
+    def badescape() = errorFn("trailing backslash")
 
     @tailrec def loop(): List[String] = {
       skipWhitespace()
       start = pos
       if (done) accum.reverse
-      else if (!skipToDelim()) { badquote() ; Nil }
+      else if (!skipToDelim()) { badquote(); Nil }
+      else if (pos > line.length) { badescape(); Nil }
       else {
         accum ::= text()
         loop()

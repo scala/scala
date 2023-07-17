@@ -56,4 +56,11 @@ class ParserTest {
     check("a", "\\'b", "\\'", "c")("""a \'b \' c""")
     check("a", "\\\\b ", "c")("""a \\'b ' c""")
   }
+  @Test def `trailing escape is error`: Unit = {
+    check("hello,", raw"world!\\")(raw"""hello, world!\\""")
+    check("hello,", "world!\\\\")("hello, world!\\\\")
+    check("\\\\")("\\\\")
+    checkFails("\\", "trailing backslash")
+    checkFails("hello, world!\\", "trailing backslash")
+  }
 }
