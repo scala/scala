@@ -18,8 +18,7 @@ package immutable
   * Trait that overrides operations to take advantage of strict builders.
   */
 trait StrictOptimizedSeqOps[+A, +CC[_], +C]
-  extends Any
-    with SeqOps[A, CC, C]
+  extends SeqOps[A, CC, C]
     with collection.StrictOptimizedSeqOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 

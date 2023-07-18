@@ -25,8 +25,7 @@ import scala.runtime.Statics
   * @tparam C  Collection type
   */
 trait StrictOptimizedIterableOps[+A, +CC[_], +C]
-  extends Any
-    with IterableOps[A, CC, C] {
+  extends IterableOps[A, CC, C] {
 
   // Optimized, push-based version of `partition`
   override def partition(p: A => Boolean): (C, C) = {

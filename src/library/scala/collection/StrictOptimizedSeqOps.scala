@@ -17,8 +17,7 @@ package scala.collection
   * to take advantage of strict builders.
   */
 trait StrictOptimizedSeqOps [+A, +CC[_], +C]
-  extends Any
-    with SeqOps[A, CC, C]
+  extends SeqOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {

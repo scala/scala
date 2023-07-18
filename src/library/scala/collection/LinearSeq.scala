@@ -32,7 +32,7 @@ trait LinearSeq[+A] extends Seq[A]
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.LinearSeq)
 
 /** Base trait for linear Seq operations */
-trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]] extends Any with SeqOps[A, CC, C] {
+trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]] extends SeqOps[A, CC, C] {
 
   /** @inheritdoc
    *
@@ -259,7 +259,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   }
 }
 
-trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends Any with LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {
+trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {
   // A more efficient iterator implementation than the default LinearSeqIterator
   override def iterator: Iterator[A] = new AbstractIterator[A] {
     private[this] var current = StrictOptimizedLinearSeqOps.this

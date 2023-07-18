@@ -131,7 +131,7 @@ trait Iterable[+A] extends IterableOnce[A]
   *  The order in which operations are performed on elements is unspecified
   *  and may be nondeterministic.
   */
-trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
+trait IterableOps[+A, +CC[_], +C] extends IterableOnce[A] with IterableOnceOps[A, CC, C] {
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
     */
