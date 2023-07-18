@@ -703,7 +703,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           // Case 2
           storeContents()
           finalizeRow()
-          skipStartMarkNewline()
+          skipStartMarkNewline(): Unit
           // peek("2: start-mark-new-line/after")
         } else if (isStartMark) {
           // peek("3: start-mark")

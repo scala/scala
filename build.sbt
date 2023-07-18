@@ -580,7 +580,6 @@ lazy val scaladoc = configureAsSubproject(project)
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s",
     ),
-    Compile / scalacOptions -= "-Wvalue-discard",  // easier to enable here after re-STARR onto 2.13.9
   )
   .dependsOn(compiler)
 

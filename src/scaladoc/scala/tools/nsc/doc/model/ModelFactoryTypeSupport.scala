@@ -234,7 +234,7 @@ trait ModelFactoryTypeSupport {
             }
           }
 
-          def appendClauses = {
+          def appendClauses(): Unit = {
             nameBuffer append " forSome {"
             var first = true
             for (sym <- quantified) {
@@ -276,10 +276,10 @@ trait ModelFactoryTypeSupport {
               nameBuffer append "("
               appendType0(underlying)
               nameBuffer append ")"
-              appendClauses
+              appendClauses()
             case _ =>
               appendType0(underlying)
-              appendClauses
+              appendClauses()
           }
 
         case tb@TypeBounds(lo, hi) =>
