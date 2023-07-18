@@ -24,4 +24,13 @@ final class UnusedTest {
   implicit def i: Int = 42
 
   def u: Unit = f: Unit       // nowarn
+
+  def body = 27
+  def `single case is one-legged if`(i: Int): Unit = i match {
+    case 42 => body           // nowarn
+    case _ =>
+  }
+  def `empty case is required`(i: Int): Unit = i match {
+    case 42 => body           // warn
+  }
 }

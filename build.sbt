@@ -170,7 +170,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   Compile / scalacOptions += "-Wconf:cat=optimizer:is",
   // We use @nowarn for some methods that are deprecated in Java > 8
   Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s",
-  Compile / scalacOptions ++= Seq("-deprecation", "-feature"),
+  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-Wvalue-discard", "-Wnonunit-if:false"),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",

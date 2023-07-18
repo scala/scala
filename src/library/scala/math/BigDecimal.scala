@@ -13,6 +13,8 @@
 package scala
 package math
 
+import scala.annotation.nowarn
+import scala.collection.immutable.NumericRange
 import scala.language.implicitConversions
 
 import java.math.{
@@ -20,7 +22,6 @@ import java.math.{
   MathContext,
   RoundingMode => JRM,
 }
-import scala.collection.immutable.NumericRange
 
 object BigDecimal {
   private final val maximumHashScale = 4934           // Quit maintaining hash identity with BigInt beyond this scale
@@ -416,11 +417,15 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
       }
     case _                    => isValidLong && unifiedPrimitiveEquals(that)
   }
+  @nowarn
   override def isValidByte  = noArithmeticException(toByteExact)
+  @nowarn
   override def isValidShort = noArithmeticException(toShortExact)
   override def isValidChar  = isValidInt && toIntExact >= Char.MinValue && toIntExact <= Char.MaxValue
+  @nowarn
   override def isValidInt   = noArithmeticException(toIntExact)
-  def isValidLong  = noArithmeticException(toLongExact)
+  @nowarn
+  def isValidLong           = noArithmeticException(toLongExact)
 
   /** Tests whether this `BigDecimal` holds the decimal representation of a `Double`. */
   def isDecimalDouble = {

@@ -2044,6 +2044,14 @@ self =>
       if (cases.isEmpty)  // trigger error if there are no cases
         accept(CASE)
 
+      // treat { case P => q case _ => () } like one-legged if
+      if (cases.lengthCompare(2) == 0) {
+        cases match {
+          case nonempty :: CaseDef(Ident(nme.USCOREkw), EmptyTree, Literal(Constant(()))) :: Nil =>
+            nonempty.body.updateAttachment(TypedExpectingUnitAttachment)
+          case _ => ()
+        }
+      }
       cases
     }
 

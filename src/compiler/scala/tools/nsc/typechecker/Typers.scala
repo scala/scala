@@ -1123,8 +1123,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
           @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
+          def isUninterestingSymbol(sym: Symbol): Boolean =
+            sym != null && (
+              sym.isConstructor ||
+              sym.hasPackageFlag ||
+              sym.isPackageObjectOrClass ||
+              sym == BoxedUnitClass ||
+              sym == AnyClass ||
+              sym == AnyRefClass ||
+              sym == AnyValClass
+            )
+          def isUninterestingType(tpe: Type): Boolean =
+            tpe != null && (
+              isUnitType(tpe) ||
+              tpe.typeSymbol.isBottomClass ||
+              tpe =:= UnitTpe ||
+              tpe =:= BoxedUnitTpe ||
+              isTrivialTopType(tpe)
+            )
+          // true for a value that may be discarded without compunction
+          @inline def excludeValueDiscard(): Boolean =
+            isUninterestingSymbol(tree.symbol) || isUninterestingType(tree.tpe) || treeInfo.isThisTypeResult(tree) || treeInfo.hasExplicitUnit(tree) || isJavaApplication(tree) /*|| tree.exists(treeInfo.hasExplicitUnit(_))*/
           @inline def warnValueDiscard(): Unit =
-            if (!isPastTyper && settings.warnValueDiscard.value && !treeInfo.isThisTypeResult(tree) && !treeInfo.hasExplicitUnit(tree))
+            if (!isPastTyper && settings.warnValueDiscard.value && !excludeValueDiscard())
               context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
           @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit = if (!isPastTyper) {
             val targetIsWide = ptSym == FloatClass || ptSym == DoubleClass
@@ -2692,8 +2713,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
       initChildren(selectorTp.typeSymbol)
 
-      def finish(cases: List[CaseDef], matchType: Type) =
-        treeCopy.Match(tree, selector1, cases) setType matchType
+      def finish(cases: List[CaseDef], matchType: Type) = {
+        /*
+        // treat { case P => q case _ => () } like one-legged if
+        if (cases.lengthCompare(3) < 0) {
+          val nonempty = cases.filterNot { case CaseDef(Ident(nme.USCOREkw), EmptyTree, Literal(Constant(()))) => true case _ => false }
+          if (nonempty.length == 1)
+            nonempty.head.body.updateAttachment(TypedExpectingUnitAttachment)
+          if (nonempty.length == 1)
+            println(s"One nonempty ${nonempty.head}")
+        }
+        */
+        treeCopy.Match(tree, selector1, cases).setType(matchType)
+      }
 
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
