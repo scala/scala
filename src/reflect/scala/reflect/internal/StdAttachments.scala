@@ -160,7 +160,7 @@ trait StdAttachments {
   case object RootSelection extends PlainAttachment
 
   /** Marks a Typed tree with Unit tpt. */
-  case object TypedExpectingUnitAttachment
+  case object TypedExpectingUnitAttachment extends PlainAttachment
   def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
 
   /** For `val i = 42`, marks field as inferred so accessor (getter) can warn if implicit. */
@@ -176,4 +176,9 @@ trait StdAttachments {
 
   /** Not a named arg in an application. Used for suspicious literal booleans. */
   case object UnnamedArg extends PlainAttachment
+
+  /** Adapted under value discard at typer. */
+  case object DiscardedValue extends PlainAttachment
+  /** Discarded pure expression observed at refchecks. */
+  case object DiscardedExpr extends PlainAttachment
 }

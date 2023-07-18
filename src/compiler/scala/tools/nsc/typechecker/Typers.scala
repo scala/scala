@@ -1170,7 +1170,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           @inline def warnValueDiscard(): Unit =
             if (!isPastTyper && settings.warnValueDiscard.value && !treeInfo.isThisTypeResult(tree) && !treeInfo.hasExplicitUnit(tree))
-              context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
+              tree.updateAttachment(DiscardedValue)
           @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit = if (!isPastTyper) {
             val targetIsWide = ptSym == FloatClass || ptSym == DoubleClass
             val isInharmonic = {

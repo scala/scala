@@ -4,7 +4,7 @@ Classes_1.scala:117: warning: a pure expression does nothing in statement positi
 Classes_1.scala:124: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     ((x: String) => x + "2")
                  ^
-Classes_1.scala:129: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+Classes_1.scala:129: warning: a pure expression does nothing in statement position
   (s: String) => {
               ^
 Classes_1.scala:130: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses

@@ -1,6 +1,8 @@
-object Test extends App {
-  def foo(p: => Unit)(x:Int = 0) = x
+//> using options -Wconf:cat=other-pure-statement:silent
 
-  println(foo { val List(_*)=List(0); 1 } ())
-  println(foo { val List(_*)=List(0); 1 } (1))
+object Test extends App {
+  def foo(p: => Unit)(x: Int = 0) = x
+
+  assert(foo { val List(_*)=List(0); 42 } () == 0)
+  assert(foo { val List(_*)=List(0); 42 } (1) == 1)
 }

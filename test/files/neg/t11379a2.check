@@ -1,0 +1,21 @@
+t11379a2.scala:9: warning: discarded non-Unit value of type scala.util.Right[Nothing,Unit]
+  def test1: Either[Int, Unit] = Right(Right(()))
+                                            ^
+t11379a2.scala:10: warning: discarded non-Unit value of type scala.util.Either[Int,Unit]
+  def test2: Either[Int, Unit] = Right(()).map(_ => unitRight[Int])
+                                                             ^
+t11379a2.scala:11: warning: discarded non-Unit value of type scala.util.Either[Int,Unit]
+  def test3: Either[Int, Unit] = Right(()).map { case _ => unitRight[Int] }
+                                                                    ^
+t11379a2.scala:20: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
+  def test5: Either[Int, Unit] = Right(()).map { case _ => unitRight }
+                                                           ^
+t11379a2.scala:21: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
+  def test6: Either[Int, Unit] = Right(()).map { _ => unitRight }
+                                                      ^
+t11379a2.scala:22: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
+  def test7: Either[Int, Unit] = Right(()).map(_ => unitRight)
+                                                    ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

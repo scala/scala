@@ -1,10 +1,10 @@
-t12495.scala:4: warning: discarded non-Unit value of type (Int, Int)
-  def g = f(42, 27)
-           ^
 t12495.scala:4: warning: adapted the argument list to expected Unit type: arguments will be discarded
         signature: Function1.apply(v1: T1): R
   given arguments: 42, 27
  after adaptation: Function1((42, 27): Unit)
+  def g = f(42, 27)
+           ^
+t12495.scala:4: warning: discarded non-Unit value of type (Int, Int)
   def g = f(42, 27)
            ^
 error: No warnings can be incurred under -Werror.

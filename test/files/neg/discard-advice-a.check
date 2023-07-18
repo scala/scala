@@ -1,0 +1,12 @@
+discard-advice-a.scala:7: warning: unused value of type scala.concurrent.Future[Int]
+    Future(42)
+          ^
+discard-advice-a.scala:10: warning: unused value of type scala.concurrent.Future[Int]
+    Future(42)
+          ^
+discard-advice-a.scala:11: warning: unused value of type Boolean(true)
+    true
+    ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

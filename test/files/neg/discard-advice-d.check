@@ -1,0 +1,15 @@
+discard-advice-d.scala:7: warning: unused value of type scala.concurrent.Future[Int]
+Applicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=C.f
+    Future(42)
+          ^
+discard-advice-d.scala:10: warning: unused value of type scala.concurrent.Future[Int]
+Applicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=C.g
+    Future(42)
+          ^
+discard-advice-d.scala:11: warning: unused value of type Boolean(true)
+Applicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=C.g
+    true
+    ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

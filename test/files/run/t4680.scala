@@ -1,3 +1,5 @@
+//> using options -Wconf:cat=deprecation:s
+
 trait A extends DelayedInit {
   print("-A ")
 

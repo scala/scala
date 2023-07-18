@@ -1908,6 +1908,13 @@ abstract class RefChecks extends Transform {
         && !treeInfo.hasExplicitUnit(t)           // suppressed by explicit expr: Unit
         && !isJavaApplication(t)                  // Java methods are inherently side-effecting
       )
+      def checkDiscardValue(t: Tree): Boolean =
+        t.attachments.containsElement(DiscardedValue) && {
+          t.setAttachments(t.attachments.removeElement(DiscardedValue))
+          val msg = s"discarded non-Unit value of type ${t.tpe}"
+          refchecksWarning(t.pos, msg, WarningCategory.WFlagValueDiscard)
+          true
+        }
       // begin checkInterestingResultInStatement
       settings.warnNonUnitStatement.value && checkInterestingShapes(t) && {
         val where = t match {
@@ -1919,10 +1926,10 @@ abstract class RefChecks extends Transform {
             }
           case _ => t
         }
-        def msg = s"unused value of type ${where.tpe} (add `: Unit` to discard silently)"
+        def msg = s"unused value of type ${where.tpe}"
         refchecksWarning(where.pos, msg, WarningCategory.OtherPureStatement)
         true
-      }
+      } || checkDiscardValue(t)
     } // end checkInterestingResultInStatement
 
     override def transform(tree: Tree): Tree = {
@@ -1967,7 +1974,7 @@ abstract class RefChecks extends Transform {
             for (stat <- body)
               if (!checkInterestingResultInStatement(stat) && treeInfo.isPureExprForWarningPurposes(stat)) {
                 val msg = "a pure expression does nothing in statement position"
-                val clause = if (body.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
+                val clause = if (body.lengthCompare(2) > 0) "; multiline expressions may require enclosing parentheses" else ""
                 refchecksWarning(stat.pos, s"$msg$clause", WarningCategory.OtherPureStatement)
               }
             validateBaseTypes(currentOwner)
@@ -2038,27 +2045,30 @@ abstract class RefChecks extends Transform {
 
           case blk @ Block(stats, expr) =>
             // diagnostic info
-            val (count, result0, adapted) =
+            val (count, result0) =
               expr match {
-                case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
-                case Literal(Constant(()))                     => (0, EmptyTree, false)
-                case _                                         => (1, EmptyTree, false)
+                case Block(expr :: Nil, Literal(Constant(()))) => (1, expr)
+                case Literal(Constant(()))                     => (0, EmptyTree)
+                case _                                         => (1, EmptyTree)
               }
             val isMultiline = stats.lengthCompare(1 - count) > 0
 
-            def checkPure(t: Tree, supple: Boolean): Unit =
+            def checkPure(t: Tree): Unit =
               if (!treeInfo.hasExplicitUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
-                val msg = "a pure expression does nothing in statement position"
-                val parens = if (isMultiline) "multiline expressions might require enclosing parentheses" else ""
-                val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
+                val msg =
+                  if (t.attachments.containsElement(DiscardedExpr)) {
+                    t.setAttachments(t.attachments.removeElement(DiscardedExpr))
+                    "discarded pure expression does nothing"
+                  }
+                  else "a pure expression does nothing in statement position"
                 val text =
-                  if (supple) s"$parens$discard"
-                  else if (!parens.isEmpty) s"$msg; $parens" else msg
+                  if (!isMultiline) msg
+                  else s"$msg; multiline expressions might require enclosing parentheses"
                 refchecksWarning(t.pos, text, WarningCategory.OtherPureStatement)
               }
             // check block for unintended "expression in statement position"
-            stats.foreach { t => if (!checkInterestingResultInStatement(t)) checkPure(t, supple = false) }
-            if (result0.nonEmpty) checkPure(result0, supple = true)
+            stats.foreach { t => if (!checkInterestingResultInStatement(t)) checkPure(t) }
+            if (result0.nonEmpty) result0.updateAttachment(DiscardedExpr) // see checkPure on recursion into result
 
             def checkImplicitlyAdaptedBlockResult(t: Tree): Unit =
               expr match {

@@ -88,6 +88,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.PermittedSubclassSymbols
     this.NamePos
     this.UnnamedArg
+    this.DiscardedValue
+    this.DiscardedExpr
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

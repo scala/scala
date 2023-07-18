@@ -15,11 +15,7 @@ END
 
   42
   ^
-<pastie>:3: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-
-  42
-  ^
-<pastie>:3: warning: a pure expression does nothing in statement position
+<pastie>:3: warning: discarded pure expression does nothing
 def f(): Unit
 
 scala> :quit

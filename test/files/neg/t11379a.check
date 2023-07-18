@@ -3,23 +3,4 @@ t11379a.scala:17: error: type mismatch;
  required: Unit => Unit
   def test4: Either[Int, Unit] = Right(()).map(Right(()))
                                                     ^
-t11379a.scala:9: warning: discarded non-Unit value of type scala.util.Right[Nothing,Unit]
-  def test1: Either[Int, Unit] = Right(Right(()))
-                                            ^
-t11379a.scala:10: warning: discarded non-Unit value of type scala.util.Either[Int,Unit]
-  def test2: Either[Int, Unit] = Right(()).map(_ => unitRight[Int])
-                                                             ^
-t11379a.scala:11: warning: discarded non-Unit value of type scala.util.Either[Int,Unit]
-  def test3: Either[Int, Unit] = Right(()).map { case _ => unitRight[Int] }
-                                                                    ^
-t11379a.scala:20: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
-  def test5: Either[Int, Unit] = Right(()).map { case _ => unitRight }
-                                                           ^
-t11379a.scala:21: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
-  def test6: Either[Int, Unit] = Right(()).map { _ => unitRight }
-                                                      ^
-t11379a.scala:22: warning: discarded non-Unit value of type scala.util.Either[Nothing,Unit]
-  def test7: Either[Int, Unit] = Right(()).map(_ => unitRight)
-                                                    ^
-6 warnings
 1 error
