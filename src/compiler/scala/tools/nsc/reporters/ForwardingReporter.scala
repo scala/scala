@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.reporters
 import scala.reflect.internal.settings.MutableSettings
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.tools.nsc.Settings
 
 
@@ -20,7 +20,7 @@ import scala.tools.nsc.Settings
   * customize error reporting.
   * {{{
   *   val myReporter = new ForwardingReporter(global.reporter) {
-  *     override def doReport(pos: Position, msg: String, severity: Severity): Unit = { ... }
+  *     override def doReport(pos: Position, msg: String, severity: Severity, actions: List[Action]): Unit = { ... }
   *   }
   *   global.reporter = myReporter
   * }}}
@@ -28,7 +28,8 @@ import scala.tools.nsc.Settings
 class ForwardingReporter(delegate: FilteringReporter) extends FilteringReporter {
   def settings: Settings = delegate.settings
 
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = delegate.doReport(pos, msg, severity)
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+    delegate.doReport(pos, msg, severity, actions)
 
   override def filter(pos: Position, msg: String, severity: Severity): Int = delegate.filter(pos, msg, severity)
 
@@ -56,7 +57,8 @@ class ForwardingReporter(delegate: FilteringReporter) extends FilteringReporter 
   * maxerrs and do position filtering.
   */
 class MakeFilteringForwardingReporter(delegate: Reporter, val settings: Settings) extends FilteringReporter {
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = delegate.nonProtectedInfo0(pos, msg, severity)
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+    delegate.doReport(pos, msg, severity, actions)
 
   override def increment(severity: Severity): Unit = delegate.increment(severity)
 

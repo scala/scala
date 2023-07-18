@@ -2,12 +2,13 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testkit.BytecodeTesting
-import scala.tools.testkit.BytecodeTesting._
+import scala.collection.mutable
+import scala.tools.testkit.BytecodeTesting, BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlineWarningTest extends BytecodeTesting {
@@ -170,37 +171,37 @@ class InlineWarningTest extends BytecodeTesting {
   }
 
   @Test // scala-dev#20
-  def mixedCompilationSpuriousWarning(): Unit = {
+  def mixedCompilationSpuriousWarning: Unit = {
     val jCode =
-      """public class A {
-        |  public static final int bar() { return 100; }
-        |  public final int baz() { return 100; }
-        |}
-      """.stripMargin
+      sm"""|public class A {
+           |  public static final int bar() { return 100; }
+           |  public final int baz() { return 100; }
+           |}
+      """
 
     val sCode =
-      """class C {
-        |  @inline final def foo = A.bar()
-        |  @inline final def fii(a: A) = a.baz()
-        |  def t = foo + fii(new A)
-        |}
-      """.stripMargin
+      sm"""|class C {
+           |  @inline final def foo = A.bar()
+           |  @inline final def fii(a: A) = a.baz()
+           |  def t = foo + fii(new A)
+           |}
+      """
 
     val warns = List(
-      """C::foo()I is annotated @inline but could not be inlined:
-        |Failed to check if C::foo()I can be safely inlined to C without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
-        |The method bar()I could not be found in the class A or any of its parents.
-        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin,
+      sm"""|C::foo()I is annotated @inline but could not be inlined:
+           |Failed to check if C::foo()I can be safely inlined to C without causing an IllegalAccessError.
+           |Checking failed for instruction INVOKESTATIC A.bar ()I:
+           |The method bar()I could not be found in the class A or any of its parents.
+           |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""",
 
-      """C::fii(LA;)I is annotated @inline but could not be inlined:
-        |Failed to check if C::fii(LA;)I can be safely inlined to C without causing an IllegalAccessError. Checking instruction INVOKEVIRTUAL A.baz ()I failed:
-        |The method baz()I could not be found in the class A or any of its parents.
-        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin
+      sm"""|C::fii(LA;)I is annotated @inline but could not be inlined:
+           |Failed to check if C::fii(LA;)I can be safely inlined to C without causing an IllegalAccessError.
+           |Checking failed for instruction INVOKEVIRTUAL A.baz ()I:
+           |The method baz()I could not be found in the class A or any of its parents.
+           |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""",
     )
-    var c = 0
-    compileClasses(sCode, javaCode = List((jCode, "A.java")), allowMessage = i => { c += 1;
-      warns.exists(i.msg.contains)
-    })
-    assert(c == 2)
+    val allowed = mutable.Set.from(warns)
+    compileClasses(sCode, javaCode = List(jCode -> "A.java"), allowMessage = i => allowed.remove(i.msg))
+    assertTrue(s"${allowed.size} unseen warnings:\n$allowed", allowed.isEmpty)
   }
 }

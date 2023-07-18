@@ -122,7 +122,7 @@ object Option {
  * }}}
  *
  *  @note Many of the methods in here are duplicative with those
- *  in the Traversable hierarchy, but they are duplicated for a reason:
+ *  in the Iterable hierarchy, but they are duplicated for a reason:
  *  the implicit conversion tends to leave one with an Iterable in
  *  situations where one could have retained an Option.
  *

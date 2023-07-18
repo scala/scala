@@ -10,7 +10,7 @@ object PartestUtil {
     val srcDir = testBase / srcPath // mirror of partest.nest.PathSettings#srcDir
 
     private val testCaseFile   = GlobFilter("*.scala") | GlobFilter("*.java") | GlobFilter("*.res")
-    private val testCaseDir    = new SimpleFileFilter(f => f.isDirectory() && f.listFiles().nonEmpty && !(f.getParentFile / (f.getName + ".res")).exists())
+    private val testCaseDir    = new SimpleFileFilter(f => f.isDirectory && f.listFiles().nonEmpty && !(f.getParentFile / (f.getName + ".res")).exists())
     private val testCaseFilter = testCaseFile || testCaseDir
     private val testCaseFinder = srcDir * AllPassFilter * testCaseFilter
 
@@ -36,7 +36,8 @@ object PartestUtil {
     val knownUnaryOptions = List(
       "--pos", "--neg", "--run", "--jvm", "--res", "--ant", "--scalap", "--specialized",
       "--instrumented", "--presentation", "--failed", "--update-check", "--no-exec",
-      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--help")
+      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--realeasy", "--branch", "--version",
+      "--help")
     val srcPathOption = "--srcpath"
     val compilerPathOption = "--compilerpath"
     val grepOption = "--grep"

@@ -1,0 +1,10 @@
+using-source3b.scala:13: warning: reference to f is ambiguous;
+it is both defined in the enclosing class D and inherited in the enclosing class E as method f (defined in class C)
+In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.f`.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+    def g = f
+            ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

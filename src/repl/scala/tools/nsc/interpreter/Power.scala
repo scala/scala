@@ -13,7 +13,7 @@
 package scala.tools.nsc.interpreter
 
 import java.io.InputStream
-import java.net.URL
+import java.net.{URI, URL}
 
 import scala.collection.mutable
 import scala.io.Codec
@@ -249,9 +249,9 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
   class RichReplString(s: String) {
     // make an url out of the string
     def u: URL = (
-      if (s contains ":") new URL(s)
+      if (s contains ":") new URI(s).toURL
       else if (new java.io.File(s).exists) new java.io.File(s).toURI.toURL
-      else new URL("http://" + s)
+      else new URI("http://" + s).toURL
     )
   }
   class RichInputStream(in: InputStream)(implicit codec: Codec) {
@@ -265,7 +265,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   trait Implicits1 {
     // fallback
-    implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) =
+    implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]): PrettifierClass[T] =
       new SinglePrettifierClass[T](x)
   }
   trait Implicits2 extends Implicits1 {
@@ -289,7 +289,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
 
-    implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
+    implicit def replInputStream(in: InputStream)(implicit codec: Codec): RichInputStream = new RichInputStream(in)
     implicit def replEnhancedURLs(url: URL)(implicit codec: Codec): RichReplURL = new RichReplURL(url)(codec)
   }
 

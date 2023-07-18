@@ -13,8 +13,8 @@
 package scala.collection
 package mutable
 
+import java.lang.Integer.numberOfLeadingZeros
 import java.util.ConcurrentModificationException
-
 import scala.collection.generic.DefaultSerializable
 
 /**
@@ -41,6 +41,8 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
   final private class OpenEntry[Key, Value](var key: Key,
                                             var hash: Int,
                                             var value: Option[Value])
+
+  private[mutable] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
 }
 
 /** A mutable hash map based on an open addressing method. The precise scheme is
@@ -75,7 +77,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
 
   override def mapFactory: MapFactory[OpenHashMap] = OpenHashMap
 
-  private[this] val actualInitialSize = HashTable.nextPositivePowerOfTwo(initialSize)
+  private[this] val actualInitialSize = OpenHashMap.nextPositivePowerOfTwo(initialSize)
 
   private[this] var mask = actualInitialSize - 1
 

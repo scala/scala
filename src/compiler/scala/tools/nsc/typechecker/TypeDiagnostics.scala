@@ -41,7 +41,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  @author Paul Phillips
  */
 trait TypeDiagnostics extends splain.SplainDiagnostics {
-  self: Analyzer with StdAttachments =>
+  _: Analyzer with StdAttachments =>
 
   import global._
   import definitions._
@@ -547,7 +547,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
               else if (sym.isSynthetic && sym.isImplicit) return
-              else if (!sym.isConstructor && !isTrivial(rhs))
+              else if (!sym.isConstructor && !sym.isVar && !isTrivial(rhs))
                 for (vs <- vparamss) params ++= vs.map(_.symbol)
               defnTrees += m
             case _ =>
@@ -562,6 +562,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
         case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
           ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+        case Literal(_) =>
+          t.attachments.get[OriginalTreeAttachment].foreach(ota => traverse(ota.original))
         case _                                        =>
       }
 
@@ -694,25 +696,27 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         def wcat(sym: Symbol) = if (sym.isPrivate) WarningCategory.UnusedPrivates else WarningCategory.UnusedLocals
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
-          val pos = (
-            if (defn.pos.isDefined) defn.pos
-            else if (sym.pos.isDefined) sym.pos
-            else sym match {
-              case sym: TermSymbol => sym.referenced.pos
-              case _               => NoPosition
+          val pos =
+            sym match {
+              case sym if sym.pos.isDefined                        => sym.pos
+              case sym: TermSymbol if sym.referenced.pos.isDefined => sym.referenced.pos
+              case _ if defn.pos.isDefined                         => defn.pos
+              case _                                               => NoPosition
             }
-          )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
+          def long = if (settings.uniqid.value) s" (${sym.nameString})" else ""
+          def getterNameString(sym: Symbol): String = sym.getterName.decoded + long
           val what =
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.getterName.decoded}" }
-            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.getterName.decoded}"
-            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.name.decoded}"
-            else if (sym.isMethod) s"method ${sym.name.decoded}"
-            else if (sym.isModule) s"object ${sym.name.decoded}"
+            else if (sym.isSetter) { cond = valAdvice ; s"var ${getterNameString(sym)}" }
+            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.nameString}"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.nameString}"
+            else if (sym.isMethod) s"method ${sym.nameString}"
+            else if (sym.isModule) s"object ${sym.nameString}"
             else "term"
+          // consider using sym.owner.fullLocationString
           emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
@@ -724,7 +728,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
+          emitUnusedWarning(v.pos, s"local var ${v.nameString} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {
@@ -734,8 +738,11 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.PairsCursor(classOf(m))
-          opc.iterator.exists(pair => pair.low == m)
+          val opc = new overridingPairs.PairsCursor(classOf(m)) {
+            override protected def bases: List[Symbol] = self.baseClasses
+            override protected def exclude(sym: Symbol) = super.exclude(sym) || sym.name != m.name || sym.paramLists.isEmpty || sym.paramLists.head.isEmpty
+          }
+          opc.iterator.exists(pair => pair.low == m || pair.high == m)
         }
         import PartialFunction._
         def isConvention(p: Symbol): Boolean = (
@@ -754,8 +761,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           )
         for (s <- unusedPrivates.unusedParams if warnable(s)) {
           val what =
-            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.name} of type ${s.tpe}"
-            else s"parameter ${s/*.name*/}"
+            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.nameString} of type ${s.tpe}"
+            else s"parameter ${s.nameString}"
           val where =
             if (s.owner.isAnonymousFunction) "anonymous function" else s.owner
           emitUnusedWarning(s.pos, s"$what in $where is never used", WarningCategory.UnusedParams, s)
@@ -776,7 +783,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
 
   trait TyperDiagnostics {
-    self: Typer =>
+    _: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)

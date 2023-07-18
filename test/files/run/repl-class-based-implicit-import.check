@@ -2,7 +2,7 @@
 scala> def showInt(implicit x: Int) = println(x)
 def showInt(implicit x: Int): Unit
 
-scala> object IntHolder { implicit val myInt = 5 }
+scala> object IntHolder { implicit val myInt: Int = 5 }
 object IntHolder
 
 scala> import IntHolder.myInt

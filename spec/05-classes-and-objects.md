@@ -332,13 +332,13 @@ Furthermore, the following restrictions on modifiers apply to ´M´ and
 
 - ´M'´ must not be labeled `final`.
 - ´M´ must not be [`private`](#modifiers).
-- If ´M´ is labeled `private[´C´]` for some enclosing class or package ´C´,
-  then ´M'´ must be labeled `private[´C'´]` for some class or package ´C'´ where
-  ´C'´ equals ´C´ or ´C'´ is contained in ´C´.
-
-<!-- TODO: check whether this is accurate -->
 - If ´M´ is labeled `protected`, then ´M'´ must also be
   labeled `protected`.
+- If ´M´ is labeled `private[´C´]` (respectively `protected[´C´]`)
+  for some enclosing class or package ´C´,
+  then ´M'´ must be labeled `private[´C'´]` (or, respectively, `protected[´C'´]`)
+  for some class or package ´C'´ where
+  ´C'´ equals ´C´ or the companion of ´C´, or ´C'´ is contained in ´C´.
 - If ´M'´ is not an abstract member, then ´M´ must be labeled `override`.
   Furthermore, one of two possibilities must hold:
     - either ´M´ is defined in a subclass of the class where is ´M'´ is defined,

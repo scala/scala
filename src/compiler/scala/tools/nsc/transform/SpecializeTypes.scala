@@ -506,8 +506,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else if (!args.isEmpty)
         enteringTyper {
           foreach2(sym.typeParams, args) { (tp, arg) =>
-            if (tp.isSpecialized)
+            if (tp.isSpecialized) {
               specializedTypeVarsBuffer(arg, result)
+            } else if (sym == ValueOfClass) { // scala/bug#11489, we only update it for ValueOf 
+              arg.typeSymbol.annotations.foreach {
+                case lzai: LazyAnnotationInfo if lzai.symbol == SpecializedClass =>
+                  specializedTypeVarsBuffer(arg, result)
+                case _                                                           =>
+              }
+            }
           }
         }
     case PolyType(tparams, resTpe)   => specializedTypeVarsBuffer(resTpe, result);  tparams.foreach(sym => specializedTypeVarsBuffer(sym.info, result))
@@ -1125,7 +1132,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           } else None
         case (overridden, env) =>
-          val om = specializedOverload(clazz, overridden, env)
+          val om = specializedOverload(clazz, overriding, env, overridden)
           clazz.info.decls.enter(om)
           foreachWithIndex(om.paramss) { (params, i) =>
             foreachWithIndex(params) { (param, j) =>
@@ -1423,7 +1430,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def enterSyntheticSym(tree: Tree): Symbol = tree.symbol
     }
 
-    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
+    override protected def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
       new SpecializeBodyDuplicator(context)
 
     override def newNamer(context: Context): Namer =

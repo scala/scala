@@ -19,6 +19,7 @@ import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
 import PartialFunction.cond
+import util.StringContextStripMarginOps
 
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>
@@ -103,6 +104,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val lazyHolders      = symbolsMap(ScalaValueClasses, x => getClassIfDefined("scala.runtime.Lazy" + x))
     lazy val LazyRefClass     = getClassIfDefined("scala.runtime.LazyRef")
     lazy val LazyUnitClass    = getClassIfDefined("scala.runtime.LazyUnit")
+    lazy val RichFloatClass   = getClassIfDefined("scala.runtime.RichFloat")
 
     lazy val allRefClasses: Set[Symbol] = {
       refClass.values.toSet ++ volatileRefClass.values.toSet ++ Set(VolatileObjectRefClass, ObjectRefClass)
@@ -181,6 +183,8 @@ trait Definitions extends api.StandardDefinitions {
     }
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
+    lazy val ScalaIntegralValueClasses: Set[Symbol] = Set(CharClass, ByteClass, ShortClass, IntClass, LongClass)
+
     def underlyingOfValueClass(clazz: Symbol): Type =
       clazz.derivedValueClassUnbox.tpe.resultType
 
@@ -247,7 +251,9 @@ trait Definitions extends api.StandardDefinitions {
       scope
     }
     /** Is this symbol a member of Object or Any? */
-    def isUniversalMember(sym: Symbol) = ObjectClass isSubClass sym.owner
+    def isUniversalMember(sym: Symbol) =
+      if (sym.isOverloaded) sym.alternatives.exists(alt => ObjectClass.isSubClass(alt.owner))
+      else ObjectClass.isSubClass(sym.owner)
 
     /** Is this symbol unimportable? Unimportable symbols include:
      *  - constructors, because <init> is not a real name
@@ -855,7 +861,7 @@ trait Definitions extends api.StandardDefinitions {
                        |  was: $restpe
                        |  now""")(methodToExpressionTp(restpe))
       case mt @ MethodType(_, restpe) if mt.isImplicit             => methodToExpressionTp(restpe)
-      case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+      case mt @ MethodType(_, restpe) =>
         if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
         else functionType(mt.paramTypes, methodToExpressionTp(restpe))
       case NullaryMethodType(restpe)                               => methodToExpressionTp(restpe)
@@ -1265,6 +1271,7 @@ trait Definitions extends api.StandardDefinitions {
     def Object_finalize  = getMemberMethod(ObjectClass, nme.finalize_)
     def Object_notify    = getMemberMethod(ObjectClass, nme.notify_)
     def Object_notifyAll = getMemberMethod(ObjectClass, nme.notifyAll_)
+    def Object_wait      = getMemberMethod(ObjectClass, nme.wait_)
     def Object_equals    = getMemberMethod(ObjectClass, nme.equals_)
     def Object_hashCode  = getMemberMethod(ObjectClass, nme.hashCode_)
     def Object_toString  = getMemberMethod(ObjectClass, nme.toString_)

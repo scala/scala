@@ -82,3 +82,12 @@ object app {
     x f0
   }
 }
+
+trait Nuance {
+  def f2(i: Int, j: Int) = ()
+  def `always report bad named arg`: Unit = {
+    f2(k = 42)
+    f2(17, k = 42)
+    f2(17, 27, k = 42)
+  }
+}

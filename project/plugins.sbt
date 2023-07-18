@@ -1,5 +1,10 @@
-scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
-  "-Xlint:-unused,_", "-Xfatal-warnings")
+scalacOptions ++= Seq(
+  "-unchecked",
+  "-feature",
+  "-deprecation",
+  "-Xlint:-unused,_",
+  "-Werror",
+  "-Wconf:msg=IntegrationTest .* is deprecated:s,msg=itSettings .* is deprecated:s")
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 
@@ -17,11 +22,11 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
-  "org.slf4j" % "slf4j-nop" % "1.7.36",
+  "org.slf4j" % "slf4j-nop" % "2.0.0",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
 )
 
@@ -29,6 +34,6 @@ Global / concurrentRestrictions := Seq(
   Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970
 )
 
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.7.0")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.3")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.5")

@@ -15,21 +15,22 @@ package tools.nsc
 package reporters
 
 import java.io.{BufferedReader, PrintWriter}
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 
 /** This class implements a Reporter that displays messages on a text console. */
 class ConsoleReporter(val settings: Settings, val reader: BufferedReader, val writer: PrintWriter, val echoWriter: PrintWriter) extends FilteringReporter with PrintReporter {
   def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
   def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) = this(settings, reader, writer, writer)
 
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = display(pos, msg, severity)
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = display(pos, msg, severity)
 
   override def finish(): Unit = {
     import reflect.internal.util.StringOps.countElementsAsString
     if (!settings.nowarn.value && hasWarnings)
-      echo(countElementsAsString(warningCount, WARNING.toString.toLowerCase))
+      writer.println(countElementsAsString(warningCount, WARNING.toString.toLowerCase))
     if (hasErrors)
-      echo(countElementsAsString(errorCount, ERROR.toString.toLowerCase))
+      writer.println(countElementsAsString(errorCount, ERROR.toString.toLowerCase))
+    writer.flush()
     super.finish()
   }
 }

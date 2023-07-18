@@ -323,4 +323,19 @@ class ListBufferTest {
     test(ArrayBuffer[String]())
     test(ListBuffer[String]())
   }
+
+  @Test
+  def t12796(): Unit = {
+    val b = ListBuffer(1).patchInPlace(1, List(2), 1)
+    assertEquals(2, b.last)
+    assertEquals(List(1, 2), b.toList)
+  }
+
+  @Test
+  def t12796b(): Unit = {
+    val b = ListBuffer(1, 2)
+    b.insertAll(2, List(3))
+    assertEquals(3, b.last)
+    assertEquals(List(1, 2, 3), b.toList)
+  }
 }

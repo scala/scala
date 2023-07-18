@@ -1,1 +1,7 @@
+newSource:70: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.ambiguating.X[T])
+  implicit def AtoX[T](a: A[T]) = new X[T]
+               ^
+newSource:71: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.ambiguating.Z[T])
+  implicit def AtoZ[T](a: A[T]) = new Z[T]
+               ^
 Done.

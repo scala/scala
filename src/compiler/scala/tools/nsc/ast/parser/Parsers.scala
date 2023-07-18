@@ -19,7 +19,14 @@ package ast.parser
 import scala.annotation.tailrec
 import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.{ModifierFlags => Flags, Precedence}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
+import scala.reflect.internal.util.{
+  CodeAction,
+  FreshNameCreator,
+  ListOfNil,
+  Position,
+  SourceFile,
+  TextEdit,
+}
 import Tokens._
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -32,7 +39,8 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  the beginnings of a campaign against this latest incursion by Cutty
  *  McPastington and his army of very similar soldiers.
  */
-trait ParsersCommon extends ScannersCommon { self =>
+trait ParsersCommon extends ScannersCommon {
+  self =>
   val global : Global
   // the use of currentUnit in the parser should be avoided as it might
   // cause unexpected behaviour when you work with two units at the
@@ -47,7 +55,7 @@ trait ParsersCommon extends ScannersCommon { self =>
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def deprecationWarning(off: Offset, msg: String, since: String): Unit
+    def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit
     def accept(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
@@ -174,11 +182,11 @@ self =>
     def unit = global.currentUnit
 
     // suppress warnings; silent abort on errors
-    def warning(offset: Offset, msg: String, category: WarningCategory): Unit = ()
-    def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
+    def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction]): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction]): Unit = ()
 
-    def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
-    def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
+    def syntaxError(offset: Offset, msg: String, actions: List[CodeAction]): Unit = throw new MalformedInput(offset, msg)
+    def incompleteInputError(msg: String, actions: List[CodeAction]): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
     object symbXMLBuilder extends SymbolicXMLBuilder(this, preserveWS = true) { // DEBUG choices
       val global: self.global.type = self.global
@@ -224,12 +232,12 @@ self =>
 
     override def newScanner() = new UnitScanner(unit, patches)
 
-    override def warning(offset: Offset, msg: String, category: WarningCategory): Unit =
-      runReporting.warning(o2p(offset), msg, category, site = "")
+    override def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction]): Unit =
+      runReporting.warning(o2p(offset), msg, category, site = "", actions)
 
-    override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
+    override def deprecationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction]): Unit =
       // we cannot provide a `site` in the parser, there's no context telling us where we are
-      runReporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "")
+      runReporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "", actions)
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -240,20 +248,20 @@ self =>
     }
     def withPatches(patches: List[BracePatch]): UnitParser = new UnitParser(unit, patches)
 
-    val syntaxErrors = new ListBuffer[(Int, String)]
+    val syntaxErrors = new ListBuffer[(Int, String, List[CodeAction])]
     def showSyntaxErrors() =
-      for ((offset, msg) <- syntaxErrors)
-        reporter.error(o2p(offset), msg)
+      for ((offset, msg, actions) <- syntaxErrors)
+        reporter.error(o2p(offset), msg, actions)
 
-    override def syntaxError(offset: Offset, msg: String): Unit = {
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else reporter.error(o2p(offset), msg)
+    override def syntaxError(offset: Offset, msg: String, actions: List[CodeAction]): Unit = {
+      if (smartParsing) syntaxErrors += ((offset, msg, actions))
+      else reporter.error(o2p(offset), msg, actions)
     }
 
-    override def incompleteInputError(msg: String): Unit = {
+    override def incompleteInputError(msg: String, actions: List[CodeAction]): Unit = {
       val offset = source.content.length - 1
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else currentRun.parsing.incompleteInputError(o2p(offset), msg)
+      if (smartParsing) syntaxErrors += ((offset, msg, actions))
+      else currentRun.parsing.incompleteInputError(o2p(offset), msg, actions)
     }
 
     /** parse unit. If there are unbalanced braces,
@@ -477,7 +485,7 @@ self =>
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
 
-    /** The implicit parameters introduced by `_` in the current expression.
+    /** The parameters introduced by `_` "placeholder syntax" in the current expression.
      *  Parameters appear in reverse order.
      */
     var placeholderParams: List[ValDef] = Nil
@@ -529,8 +537,8 @@ self =>
 
     @tailrec
     final def isWildcard(t: Tree): Boolean = t match {
-      case Ident(name1) => !placeholderParams.isEmpty && name1 == placeholderParams.head.name
-      case Typed(t1, _) => isWildcard(t1)
+      case Ident(name1)     => !placeholderParams.isEmpty && name1 == placeholderParams.head.name
+      case Typed(t1, _)     => isWildcard(t1)
       case Annotated(t1, _) => isWildcard(t1)
       case _ => false
     }
@@ -575,36 +583,61 @@ self =>
         in.nextToken()
       }
     }
-    def warning(offset: Offset, msg: String, category: WarningCategory): Unit
-    def incompleteInputError(msg: String): Unit
-    def syntaxError(offset: Offset, msg: String): Unit
 
-    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit =
-      syntaxError(pos pointOrElse in.offset, msg, skipIt)
-    def syntaxError(msg: String, skipIt: Boolean): Unit =
-      syntaxError(in.offset, msg, skipIt)
+    def warning(offset: Offset, msg: String, category: WarningCategory, actions: List[CodeAction] = Nil): Unit
 
-    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = {
+    def incompleteInputError(msg: String, actions: List[CodeAction] = Nil): Unit
+
+    def syntaxError(offset: Offset, msg: String, actions: List[CodeAction] = Nil): Unit
+
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit = syntaxError(pos, msg, skipIt, Nil)
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit =
+      syntaxError(pos pointOrElse in.offset, msg, skipIt, actions)
+
+    def syntaxError(msg: String, skipIt: Boolean): Unit = syntaxError(msg, skipIt, Nil)
+    def syntaxError(msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit =
+      syntaxError(in.offset, msg, skipIt, actions)
+
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = syntaxError(offset, msg, skipIt, Nil)
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean, actions: List[CodeAction]): Unit = {
       if (offset > lastErrorOffset) {
-        syntaxError(offset, msg)
+        syntaxError(offset, msg, actions)
         lastErrorOffset = in.offset         // no more errors on this token.
       }
       if (skipIt)
         skip(UNDEF)
     }
 
-    def warning(msg: String, category: WarningCategory): Unit = warning(in.offset, msg, category)
+    def warning(msg: String, category: WarningCategory): Unit = warning(in.offset, msg, category, Nil)
+    def warning(msg: String, category: WarningCategory, actions: List[CodeAction]): Unit = warning(in.offset, msg, category, actions)
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean, actions: List[CodeAction] = Nil): Unit = {
       if (in.token == EOF)
-        incompleteInputError(msg)
+        incompleteInputError(msg, actions)
       else
-        syntaxError(in.offset, msg, skipIt)
+        syntaxError(in.offset, msg, skipIt, actions)
     }
-    def syntaxErrorOrIncompleteAnd[T](msg: String, skipIt: Boolean)(and: T): T = {
-      syntaxErrorOrIncomplete(msg, skipIt)
+    def syntaxErrorOrIncompleteAnd[T](msg: String, skipIt: Boolean, actions: List[CodeAction] = Nil)(and: T): T = {
+      syntaxErrorOrIncomplete(msg, skipIt, actions)
       and
     }
+
+    // warn under -Xsource:3
+    def migrationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      if (currentRun.isScala3)
+        warning(offset, msg, WarningCategory.Scala3Migration, actions)
+
+    // warn under -Xsource:3, otherwise deprecation
+    def hardMigrationWarning(offset: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      if (currentRun.isScala3) warning(offset, msg, WarningCategory.Scala3Migration, actions)
+      else deprecationWarning(offset, msg, since, actions)
+
+    // deprecation or migration under -Xsource:3, with different messages
+    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String, actions: List[CodeAction]): Unit =
+      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration, actions)
+      else deprecationWarning(offset, depr, since, actions)
+    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String): Unit =
+      hardMigrationWarning(offset, depr, migr, since, Nil)
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
     def expectedMsg(token: Token): String =
@@ -777,14 +810,24 @@ self =>
 
     /** Convert tree to formal parameter list. */
     def convertToParams(tree: Tree): List[ValDef] = tree match {
-      case Parens(ts) => ts map convertToParam
-      case _          => List(convertToParam(tree))
+      case Parens(ts) => ts.map(convertToParam)
+      case Typed(Ident(_), _) =>
+        val msg = "parentheses are required around the parameter of a lambda"
+        val wrn = sm"""|$msg
+                       |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
+        def actions =
+          if (tree.pos.isRange)
+            List(CodeAction("lambda parameter", Some(msg), List(TextEdit(tree.pos, s"(${unit.sourceAt(tree.pos)})"))))
+          else Nil
+        migrationWarning(tree.pos.point, wrn, "2.13.11", actions)
+        List(convertToParam(tree))
+      case _ => List(convertToParam(tree))
     }
 
     /** Convert tree to formal parameter. */
     def convertToParam(tree: Tree): ValDef = atPos(tree.pos) {
       def removeAsPlaceholder(name: Name): Unit = {
-        placeholderParams = placeholderParams filter (_.name != name)
+        placeholderParams = placeholderParams.filter(_.name != name)
       }
       def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
       def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
@@ -986,10 +1029,12 @@ self =>
 
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
       import opinfo._
+      if (targs.nonEmpty)
+        migrationWarning(offset, "type application is not allowed for infix operators", "2.13.11")
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
       val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
-      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, opinfo.targs))
+      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, targs))
     }
 
     def reduceExprStack(base: List[OpInfo], top: Tree): Tree    = reduceStack(isExpr = true, base, top)
@@ -1388,7 +1433,7 @@ self =>
      *  }}}
      */
     def stableId(): Tree =
-      path(thisOK = false, typeOK = false)
+      path(thisOK = true, typeOK = false)
 
     /** {{{
     *   QualId ::= Id {`.` Id}
@@ -1617,8 +1662,22 @@ self =>
           val cond = condExpr()
           newLinesOpt()
           val thenp = expr()
-          val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-          else literalUnit
+          val elsep =
+            if (in.token == ELSE) {
+              in.nextToken()
+              expr()
+            }
+            else {
+              // user asked to silence warnings on unibranch if; also suppresses value discard
+              if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
+                thenp match {
+                  case Block(_, res) => res.updateAttachment(TypedExpectingUnitAttachment)
+                  case _ => ()
+                }
+                thenp.updateAttachment(TypedExpectingUnitAttachment)
+              }
+              literalUnit
+            }
           If(cond, thenp, elsep)
         }
         parseIf
@@ -1692,54 +1751,52 @@ self =>
       case IMPLICIT =>
         implicitClosure(in.skipToken(), location)
       case _ =>
-        def parseOther = {
+        def parseOther: Tree = {
           var t = postfixExpr()
-          if (in.token == EQUALS) {
-            t match {
-              case Ident(_) | Select(_, _) | Apply(_, _) =>
-                t = atPos(t.pos.start, in.skipToken()) { gen.mkAssign(t, expr()) }
-              case _ =>
-            }
-          } else if (in.token == COLON) {
-            t = stripParens(t)
-            val colonPos = in.skipToken()
-            if (in.token == USCORE) {
-              //todo: need to handle case where USCORE is a wildcard in a type
-              val uscorePos = in.skipToken()
-              if (isIdent && in.name == nme.STAR) {
-                in.nextToken()
-                t = atPos(t.pos.start, colonPos) {
-                  Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
-                }
-              } else {
-                syntaxErrorOrIncomplete("`*` expected", skipIt = true)
+          in.token match {
+            case EQUALS =>
+              t match {
+                case Ident(_) | Select(_, _) | Apply(_, _) =>
+                  t = atPos(t.pos.start, in.skipToken()) { gen.mkAssign(t, expr()) }
+                case _ =>
               }
-            } else if (isAnnotation) {
-              t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
-            } else {
-              t = atPos(t.pos.start, colonPos) {
-                val tpt = typeOrInfixType(location)
-                if (isWildcard(t))
-                  (placeholderParams: @unchecked) match {
-                    case (vd @ ValDef(mods, name, _, _)) :: rest =>
-                      placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+            case COLON =>
+              t = stripParens(t)
+              val colonPos = in.skipToken()
+              if (in.token == USCORE) {
+                //todo: need to handle case where USCORE is a wildcard in a type
+                val uscorePos = in.skipToken()
+                if (isIdent && in.name == nme.STAR) {
+                  in.nextToken()
+                  t = atPos(t.pos.start, colonPos) {
+                    Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                   }
-                // this does not correspond to syntax, but is necessary to
-                // accept closures. We might restrict closures to be between {...} only.
-                Typed(t, tpt)
+                }
+                else syntaxErrorOrIncomplete("`*` expected", skipIt = true)
               }
-            }
-          } else if (in.token == MATCH) {
-            t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+              else if (isAnnotation)
+                t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
+              else
+                t = atPos(t.pos.start, colonPos) {
+                  val tpt = typeOrInfixType(location)
+                  // for placeholder syntax `(_: Int) + 1`; function literal `(_: Int) => 42` uses `t` below
+                  if (isWildcard(t))
+                    (placeholderParams: @unchecked) match {
+                      case (vd @ ValDef(mods, name, _, _)) :: rest =>
+                        placeholderParams = treeCopy.ValDef(vd, mods, name, tpt.duplicate, EmptyTree) :: rest
+                    }
+                  // this does not correspond to syntax, but is necessary to accept closures. See below & convertToParam.
+                  Typed(t, tpt)
+                }
+            case MATCH =>
+              t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
+            case _ =>
           }
           // disambiguate between self types "x: Int =>" and orphan function literals "(x: Int) => ???"
           // "(this: Int) =>" is parsed as an erroneous function literal but emits special guidance on
           // what's probably intended.
           def lhsIsTypedParamList() = t match {
-            case Parens(List(Typed(This(_), _))) => {
-              reporter.error(t.pos, "self-type annotation may not be in parentheses")
-              false
-            }
+            case Parens(List(Typed(This(_), _))) => reporter.error(t.pos, "self-type annotation may not be in parentheses"); false
             case Parens(xs)                      => xs.forall(isTypedParam)
             case _                               => false
           }
@@ -1760,15 +1817,15 @@ self =>
      *  Expr ::= implicit Id `=>` Expr
      *  }}}
      */
-
     def implicitClosure(start: Offset, location: Location): Tree = {
       val param0 = convertToParam {
         atPos(in.offset) {
-          Ident(ident()) match {
-            case expr if in.token == COLON  =>
-              in.nextToken() ; Typed(expr, typeOrInfixType(location))
-            case expr => expr
+          val p = stripParens(postfixExpr())  //if (in.token == USCORE) freshPlaceholder() else Ident(ident())
+          if (in.token == COLON) {
+            in.nextToken()
+            Typed(p, typeOrInfixType(location))
           }
+          else p
         }
       }
       val param = copyValDef(param0)(mods = param0.mods | Flags.IMPLICIT)
@@ -2029,6 +2086,7 @@ self =>
         in.skipCASE()
 
       val hasVal = in.token == VAL
+      val valOffset = in.offset
       if (hasVal)
         in.nextToken()
 
@@ -2037,13 +2095,17 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
+        def actions = {
+          val pos = r2p(valOffset, valOffset, valOffset + 4)
+          if (unit.sourceAt(pos) != "val ") Nil else
+            List(CodeAction("val in for comprehension", None, List(TextEdit(pos, ""))))
+        }
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", without))
-          else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
+          hardMigrationWarning(in.offset, msg("deprecated", without), msg("unsupported", without), "2.10.0", actions)
         }
-        else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
+        else syntaxError(in.offset, msg("unsupported", "just remove `val`"), actions)
       }
 
       if (hasEq && eqOK && !hasCase) in.nextToken()
@@ -2084,7 +2146,7 @@ self =>
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start, scala3Wildcard)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else {
-          typ() match {
+          this.typ() match {
             case Ident(name: TypeName) if nme.isVariableName(name) =>
               atPos(start) { Bind(name, EmptyTree) }
             case t => t
@@ -2232,10 +2294,8 @@ self =>
        *
        * XXX: Hook for IDE
        */
-      def simplePattern(): Tree = (
-        // simple diagnostics for this entry point
-        simplePattern(() => syntaxErrorOrIncompleteAnd("illegal start of simple pattern", skipIt = true)(errorPatternTree))
-      )
+      def simplePattern(): Tree =
+        simplePattern(() => syntaxErrorOrIncompleteAnd("illegal start of simple pattern", skipIt = true)(errorPatternTree)) // simple diagnostics for this entry point
       def simplePattern(onError: () => Tree): Tree = {
         val start = in.offset
         in.token match {
@@ -2275,7 +2335,7 @@ self =>
     }
     /** The implementation of the context sensitive methods for parsing outside of patterns. */
     final val outPattern = new PatternContextSensitive {
-      def argType(): Tree = typ()
+      def argType(): Tree = this.typ()
       def functionArgType(): Tree = paramType(repeatedParameterOK = false, useStartAsPosition = true)
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */
@@ -2594,9 +2654,9 @@ self =>
         checkQMarkDefinition()
         checkKeywordDefinition()
         val pname: TypeName =
-          if (in.token == USCORE && (isAbstractOwner || !currentRun.isScala3)) {
+          if (in.token == USCORE) {
             if (!isAbstractOwner)
-              deprecationWarning(in.offset, "Top-level wildcard is not allowed and will error under -Xsource:3", "2.13.7")
+              hardMigrationWarning(in.offset, "Top-level wildcard is not allowed", "2.13.7")
             in.nextToken()
             freshTypeName("_$$")
           }
@@ -2609,8 +2669,7 @@ self =>
           def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
                                      |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported"))
-            else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
+            hardMigrationWarning(in.offset, msg("deprecated"), msg("unsupported"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
@@ -2907,15 +2966,15 @@ self =>
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      *  }}}
      */
-    def funDefOrDcl(start : Int, mods: Modifiers): Tree = {
+    def funDefOrDcl(start: Int, mods: Modifiers): Tree = {
       in.nextToken()
       if (in.token == THIS) {
-        def missingEquals() = deprecationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
+        def missingEquals() = hardMigrationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs =
-            if (in.token == LBRACE && !currentRun.isScala3) {
+            if (in.token == LBRACE) {
               missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
             }
             else {
@@ -2933,7 +2992,9 @@ self =>
     }
 
     def funDefRest(start: Offset, nameOffset: Offset, mods: Modifiers, name: Name): Tree = {
-      val result = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+      def orStart(p: Offset) = if (name.toTermName == nme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
+      val result = atPos(start, orStart(nameOffset)) {
         var newmods = mods
         // contextBoundBuf is for context bounded type parameters of the form
         // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
@@ -2945,18 +3006,18 @@ self =>
         var restype = fromWithinReturnType(typedOpt())
         def msg(what: String, instead: String) =
           s"procedure syntax is $what: instead, add `$instead` to explicitly declare `$name`'s return type"
+        def declActions = List(CodeAction("procedure syntax (decl)", None, List(TextEdit(o2p(in.lastOffset), ": Unit"))))
+        def defnActions = List(CodeAction("procedure syntax (defn)", None, List(TextEdit(o2p(in.lastOffset), ": Unit ="))))
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (currentRun.isScala3) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
-              else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
+              hardMigrationWarning(in.lastOffset, msg("deprecated", ": Unit"), msg("unsupported", ": Unit"), "2.13.0", declActions)
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", ": Unit ="))
-            else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
+            hardMigrationWarning(in.offset, msg("deprecated", ": Unit ="), msg("unsupported", ": Unit ="), "2.13.0", defnActions)
             restype = scalaUnitConstr
             blockExpr()
           } else {
@@ -2974,16 +3035,14 @@ self =>
         if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
           def instead = DefDef(newmods, name.toTermName.decodedName, tparams, vparamss.drop(1), restype, rhs)
           def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `$instead`"
-          def warnNilary(): Unit =
-            if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
-            else deprecationWarning(nameOffset, unaryMsg("deprecated"), "2.13.4")
+          def warnNilary() = hardMigrationWarning(nameOffset, unaryMsg("deprecated"), unaryMsg("unsupported"), "2.13.4")
           vparamss match {
             case List(List())                               => warnNilary()
             case List(List(), x :: xs) if x.mods.isImplicit => warnNilary()
             case _ => // ok
           }
         }
-        DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
+        DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs).updateAttachment(namePos)
       }
       signalParseProgress(result.pos)
       result
@@ -3105,8 +3164,10 @@ self =>
       val nameOffset = in.offset
       val name = identForType()
       if (currentRun.isScala3 && in.token == LBRACKET && isAfterLineEnd)
-        deprecationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
-      atPos(start, if (name == tpnme.ERROR) start else nameOffset) {
+        hardMigrationWarning(in.offset, "type parameters should not follow newline", "2.13.7")
+      def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
+      atPos(start, orStart(nameOffset)) {
         savingClassContextBounds {
           val contextBoundBuf = new ListBuffer[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf, ParamOwner.Class)
@@ -3114,7 +3175,7 @@ self =>
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
             val viewBoundsExist = if (currentRun.isScala3) "" else " nor view bounds `<% ...`"
-              syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
+            syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
@@ -3122,7 +3183,7 @@ self =>
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
           val template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          val result = gen.mkClassDef(mods, name, tparams, template)
+          val result = gen.mkClassDef(mods, name, tparams, template).updateAttachment(namePos)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)
@@ -3142,9 +3203,11 @@ self =>
       checkKeywordDefinition()
       val name = ident()
       val tstart = in.offset
-      atPos(start, if (name == nme.ERROR) start else nameOffset) {
+      def orStart(p: Offset) = if (name == tpnme.ERROR) start else p
+      val namePos = NamePos(r2p(orStart(nameOffset), orStart(nameOffset)))
+      atPos(start, orStart(nameOffset)) {
         val template = templateOpt(mods, if (isPackageObject) nme.PACKAGEkw else name, NoMods, Nil, tstart)
-        ModuleDef(mods, name.toTermName, template)
+        ModuleDef(mods, name.toTermName, template).updateAttachment(namePos)
       }
     }
 
@@ -3210,7 +3273,7 @@ self =>
           val advice =
             if (currentRun.isScala3) "use trait parameters instead."
             else "they will be replaced by trait parameters in 3.0, see the migration guide on avoiding var/val in traits."
-          deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
+          hardMigrationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
@@ -3231,8 +3294,7 @@ self =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
-        if (currentRun.isScala3) syntaxError(tdef.pos.point, msg("unsupported"))
-        else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
+        hardMigrationWarning(tdef.pos.point, msg("deprecated"), msg("unsupported"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
         treeCopy.DocDef(docdef, comm, rhs)
@@ -3274,8 +3336,8 @@ self =>
 
       // warn now if user wrote parents for package object; `gen.mkParents` adds AnyRef to parents
       if (currentRun.isScala3 && name == nme.PACKAGEkw && !parents.isEmpty)
-        deprecationWarning(tstart, """package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-                                     |drop the `extends` clause or use a regular object instead""".stripMargin, "3.0.0")
+        migrationWarning(tstart, sm"""|package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+                                      |drop the `extends` clause or use a regular object instead""", "3.0.0")
 
       atPos(templateOffset) {
         // Exclude only the 9 primitives plus AnyVal.
@@ -3490,7 +3552,7 @@ self =>
         else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
             val start = in.skipToken()
-            if (isIdent) stats += implicitClosure(start, InBlock)
+            if (isIdent || in.token == USCORE) stats += implicitClosure(start, InBlock)
             else stats ++= localDef(Flags.IMPLICIT)
           } else {
             stats ++= localDef(0)

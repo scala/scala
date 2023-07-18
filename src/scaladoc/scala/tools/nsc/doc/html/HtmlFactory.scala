@@ -95,7 +95,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
   )
 
   final def webjarResources = List(
-    ("jquery.min.js", "/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=")
+    ("jquery.min.js", "oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=")
   )
 
   /** Generates the Scaladoc site for a model into the site root.

@@ -196,10 +196,6 @@ trait StdAttachments {
    * track of other adapted trees.
    */
   case class OriginalTreeAttachment(original: Tree)
-
-  /** Marks a Typed tree with Unit tpt. */
-  case object TypedExpectingUnitAttachment
-  def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
 }
 
 

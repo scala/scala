@@ -1,0 +1,6 @@
+t12529.scala:21: error: `abstract override` modifiers required to override:
+abstract override def m(a: Int): Int (defined in trait C)
+  with override def m(a: Int): Int (defined in trait D)
+class X extends E with D
+      ^
+1 error

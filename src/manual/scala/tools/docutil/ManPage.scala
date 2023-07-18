@@ -24,7 +24,7 @@ object ManPage {
   case class Emph(contents: AbstractText) extends AbstractText
   case class Mono(contents: AbstractText) extends AbstractText
   case class Quote(contents: AbstractText) extends AbstractText
-  implicit def str2text(str: String) = Text(str)
+  implicit def str2text(str: String): Text = Text(str)
 
   case class Definition(term: AbstractText, description: AbstractText)
   case class DefinitionList(definitions: Definition*) extends AbstractText
@@ -37,14 +37,14 @@ object ManPage {
   case class CodeSample(text: String) extends Paragraph
   case class BlockQuote(text: AbstractText) extends Paragraph
   implicit def text2para(text: AbstractText): Paragraph = TextParagraph(text)
-  implicit def str2para(str: String) = text2para(str2text(str))
+  implicit def str2para(str: String): Paragraph = text2para(str2text(str))
 
   case class BulletList(items: AbstractText*) extends Paragraph
   case class NumberedList(items: AbstractText*) extends Paragraph
   case class TitledPara(title: String, text: AbstractText) extends Paragraph
 
   case class EmbeddedSection(section: Section) extends Paragraph
-  implicit def section2Para(section: Section) = EmbeddedSection(section)
+  implicit def section2Para(section: Section): EmbeddedSection = EmbeddedSection(section)
 
   case class Section(title: String, paragraphs: Paragraph*)
 

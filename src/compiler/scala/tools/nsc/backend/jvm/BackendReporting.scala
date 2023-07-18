@@ -191,12 +191,14 @@ object BackendReporting {
             s"\nthat would cause an IllegalAccessError when inlined into class $callsiteClass."
 
         case IllegalAccessCheckFailed(_, _, _, _, callsiteClass, instruction, cause) =>
-          s"Failed to check if $calleeMethodSig can be safely inlined to $callsiteClass without causing an IllegalAccessError. Checking instruction ${AsmUtils.textify(instruction)} failed:\n" + cause
+          sm"""|Failed to check if $calleeMethodSig can be safely inlined to $callsiteClass without causing an IllegalAccessError.
+               |Checking failed for instruction ${AsmUtils.textify(instruction)}:
+               |$cause"""
 
         case MethodWithHandlerCalledOnNonEmptyStack(_, _, _, _, callsiteClass, callsiteName, callsiteDesc) =>
-          s"""The operand stack at the callsite in ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)} contains more values than the
-             |arguments expected by the callee $calleeMethodSig. These values would be discarded
-             |when entering an exception handler declared in the inlined method.""".stripMargin
+          sm"""|The operand stack at the callsite in ${BackendReporting.methodSignature(callsiteClass, callsiteName, callsiteDesc)} contains more values than the
+               |arguments expected by the callee $calleeMethodSig. These values would be discarded
+               |when entering an exception handler declared in the inlined method."""
 
         case SynchronizedMethod(_, _, _, _) =>
           s"Method $calleeMethodSig cannot be inlined because it is synchronized."

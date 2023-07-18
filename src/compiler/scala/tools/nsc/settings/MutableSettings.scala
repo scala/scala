@@ -945,14 +945,19 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     def clear(): Unit = (v = Nil)
 
-    // we slightly abuse the usual meaning of "contains" here by returning
-    // true if our phase list contains "_", regardless of the incoming argument
+    /* True if the named phase is selected.
+     *
+     * A setting value "_" or "all" selects all phases by name.
+     */
     def contains(phName: String)     = doAllPhases || containsName(phName)
-    def containsName(phName: String) = stringValues exists (phName startsWith _)
+    /* True if the given phase name matches the selection, possibly as prefixed "~name". */
+    def containsName(phName: String) = stringValues.exists(phName.startsWith(_))
     def containsId(phaseId: Int)     = phaseIdTest(phaseId)
-    def containsPhase(ph: Phase)     = contains(ph.name) || containsId(ph.id)
+    /* True if the phase is selected by name or "all", or by id, or by prefixed "~name". */
+    def containsPhase(ph: Phase)     = contains(ph.name) || containsId(ph.id) || containsName(s"~${ph.name}") ||
+      ph.next != null && containsName(s"~${ph.next.name}")  // null if called during construction
 
-    def doAllPhases = stringValues.contains("_")
+    def doAllPhases = stringValues.exists(s => s == "_" || s == "all")
     def unparse: List[String] = value.map(v => s"$name:$v")
 
     withHelpSyntax(
@@ -973,5 +978,5 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 }
 
 private object Optionlike {
-  def unapply(s: String): Boolean = s.startsWith("-")
+  def unapply(s: String): Boolean = s.startsWith("-") && s != "-"
 }

@@ -440,7 +440,7 @@ private[concurrent] object INode {
 private[concurrent] final class FailedNode[K, V](p: MainNode[K, V]) extends MainNode[K, V] {
   WRITE_PREV(p)
 
-  def string(lev: Int) = throw new UnsupportedOperationException
+  def string(lev: Int): Nothing = throw new UnsupportedOperationException
 
   def cachedSize(ct: AnyRef): Int = throw new UnsupportedOperationException
 

@@ -177,9 +177,20 @@ object Numeric {
   implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.Double.IeeeOrdering
 
   trait BigDecimalIsConflicted extends Numeric[BigDecimal] {
-    def plus(x: BigDecimal, y: BigDecimal): BigDecimal = x + y
-    def minus(x: BigDecimal, y: BigDecimal): BigDecimal = x - y
-    def times(x: BigDecimal, y: BigDecimal): BigDecimal = x * y
+    // works around pollution of math context by ignoring identity element
+    def plus(x: BigDecimal, y: BigDecimal): BigDecimal = {
+      import BigDecimalIsConflicted._0
+      if (x eq _0) y else x + y
+    }
+    def minus(x: BigDecimal, y: BigDecimal): BigDecimal = {
+      import BigDecimalIsConflicted._0
+      if (x eq _0) -y else x - y
+    }
+    // works around pollution of math context by ignoring identity element
+    def times(x: BigDecimal, y: BigDecimal): BigDecimal = {
+      import BigDecimalIsConflicted._1
+      if (x eq _1) y else x * y
+    }
     def negate(x: BigDecimal): BigDecimal = -x
     def fromInt(x: Int): BigDecimal = BigDecimal(x)
     def parseString(str: String): Option[BigDecimal] = Try(BigDecimal(str)).toOption
@@ -187,6 +198,10 @@ object Numeric {
     def toLong(x: BigDecimal): Long = x.longValue
     def toFloat(x: BigDecimal): Float = x.floatValue
     def toDouble(x: BigDecimal): Double = x.doubleValue
+  }
+  private object BigDecimalIsConflicted {
+    private val _0 = BigDecimal(0)   // cached zero is ordinarily cached for default math context
+    private val _1 = BigDecimal(1)   // cached one is ordinarily cached for default math context
   }
 
   trait BigDecimalIsFractional extends BigDecimalIsConflicted with Fractional[BigDecimal] {

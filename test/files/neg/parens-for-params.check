@@ -1,0 +1,5 @@
+parens-for-params.scala:5: error: parentheses are required around the parameter of a lambda
+Use '-Wconf:msg=lambda-parens:s' to silence this warning.
+    x: Int => x * 2
+     ^
+1 error

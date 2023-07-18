@@ -14,8 +14,7 @@ package scala.tools.nsc
 
 import scala.annotation.nowarn
 import scala.reflect.internal.util.{FreshNameCreator, NoSourceFile, SourceFile}
-import scala.collection.mutable
-import scala.collection.mutable.{LinkedHashSet, ListBuffer}
+import scala.collection.mutable, mutable.ArrayDeque
 
 trait CompilationUnits { global: Global =>
 
@@ -47,6 +46,9 @@ trait CompilationUnits { global: Global =>
     implicit val fresh: FreshNameCreator = freshNameCreator
     def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX) = global.freshTermName(prefix)
     def freshTypeName(prefix: String)                              = global.freshTypeName(prefix)
+
+    def sourceAt(pos: Position): String =
+      if (pos.start < pos.end) new String(source.content.slice(pos.start, pos.end)) else ""
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
@@ -127,7 +129,9 @@ trait CompilationUnits { global: Global =>
     val transformed = new mutable.AnyRefMap[Tree, Tree]
 
     /** things to check at end of compilation unit */
-    val toCheck = new ListBuffer[() => Unit]
+    val toCheck = ArrayDeque.empty[CompilationUnit.ToCheck]
+    private[nsc] def addPostUnitCheck(check: CompilationUnit.ToCheckAfterUnit): Unit = toCheck.append(check)
+    private[nsc] def addPostTyperCheck(check: CompilationUnit.ToCheckAfterTyper): Unit = toCheck.append(check)
 
     /** The features that were already checked for this unit */
     var checkedFeatures = Set[Symbol]()
@@ -142,11 +146,17 @@ trait CompilationUnits { global: Global =>
     def targetPos: Position = NoPosition
 
     /** For sbt compatibility (https://github.com/scala/scala/pull/4588) */
-    val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
+    val icode: mutable.LinkedHashSet[icodes.IClass] = new mutable.LinkedHashSet
 
     /** Is this about a .java source file? */
     val isJava: Boolean = source.isJava
 
     override def toString() = source.toString()
+  }
+
+  object CompilationUnit {
+    sealed trait ToCheck { def apply(): Unit }
+    trait ToCheckAfterUnit extends ToCheck
+    trait ToCheckAfterTyper extends ToCheck
   }
 }

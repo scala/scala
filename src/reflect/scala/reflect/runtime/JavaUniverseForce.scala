@@ -77,6 +77,12 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ChangeOwnerAttachment
     this.InterpolatedString
     this.RootSelection
+    this.TypedExpectingUnitAttachment
+    this.FieldTypeInferred
+    this.LookupAmbiguityWarning
+    this.PermittedSubclasses
+    this.PermittedSubclassSymbols
+    this.NamePos
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -503,6 +509,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.lazyHolders
     definitions.LazyRefClass
     definitions.LazyUnitClass
+    definitions.RichFloatClass
     definitions.allRefClasses
     definitions.UnitClass
     definitions.ByteClass
@@ -527,6 +534,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClasses
     definitions.ScalaValueClassesSet
     definitions.ScalaNumericValueClassesSet
+    definitions.ScalaIntegralValueClasses
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType

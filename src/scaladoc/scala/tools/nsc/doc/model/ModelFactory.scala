@@ -331,7 +331,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
             case "TPL_NAME" => tplName
           }
           val patchedString = patches.replaceAllIn(settings.docsourceurl.value, m => java.util.regex.Matcher.quoteReplacement(substitute(m.group(1))) )
-          new java.net.URL(patchedString)
+          new java.net.URI(patchedString).toURL
         }
       else None
     }
@@ -927,7 +927,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         }
         else None
       def resultType =
-        makeTypeInTemplateContext(aSym.tpe, inTpl, aSym)
+        makeTypeInTemplateContext(aSym.tpe, this.inTpl, aSym)
       def isImplicit = aSym.isImplicit
     }
 

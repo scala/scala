@@ -398,27 +398,28 @@ class InlinerTest extends BytecodeTesting {
     // A, so `flop` cannot be inlined, we cannot check if it's safe.
 
     val javaCode =
-      """public class A {
-        |  public static final int bar() { return 100; }
-        |}
-      """.stripMargin
+      sm"""|public class A {
+           |  public static final int bar() { return 100; }
+           |}
+        """
 
     val scalaCode =
-      """class B {
-        |  @inline final def flop = A.bar
-        |  def g = flop
-        |}
-      """.stripMargin
+      sm"""|class B {
+           |  @inline final def flop = A.bar
+           |  def g = flop
+           |}
+        """
 
     val warn =
-      """B::flop()I is annotated @inline but could not be inlined:
-        |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError. Checking instruction INVOKESTATIC A.bar ()I failed:
-        |The method bar()I could not be found in the class A or any of its parents.
-        |Note that class A is defined in a Java source (mixed compilation), no bytecode is available.""".stripMargin
+      sm"""|B::flop()I is annotated @inline but could not be inlined:
+           |Failed to check if B::flop()I can be safely inlined to B without causing an IllegalAccessError.
+           |Checking failed for instruction INVOKESTATIC A.bar ()I:
+           |The method bar()I could not be found in the class A or any of its parents.
+           |Note that class A is defined in a Java source (mixed compilation), no bytecode is available."""
 
     var c = 0
-    val b = compileClass(scalaCode, List((javaCode, "A.java")), allowMessage = i => {c += 1; i.msg contains warn})
-    assert(c == 1, c)
+    val b = compileClass(scalaCode, List(javaCode -> "A.java"), allowMessage = i => { c += 1; i.msg.contains(warn) })
+    assertEquals(1, c)
     val ins = getInstructions(b, "g")
     val invokeFlop = Invoke(INVOKEVIRTUAL, "B", "flop", "()I", false)
     assert(ins contains invokeFlop, ins.stringLines)
@@ -2275,5 +2276,20 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t1b"))
     assertInvoke(getMethod(c, "t2a"), "T", "p")
     assertInvoke(getMethod(c, "t2b"), "T", "p")
+  }
+
+  @Test def t10404(): Unit = {
+    val c1 =
+      """trait T { def f = 1 }
+        |trait U extends T { def f: Int }
+        |trait V extends U
+        |""".stripMargin
+    val c2 =
+      """class K {
+        |  @inline final def u(c: V) = c.f
+        |  def r = u(new V { })
+        |}
+        |""".stripMargin
+    compileClassesSeparately(List(c1, c2), compilerArgs)
   }
 }

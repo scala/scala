@@ -33,21 +33,23 @@ object StringOps {
   private class StringIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < s.length
-    def next(): Char = try {
+    def next(): Char = {
+      if (pos >= s.length) Iterator.empty.next()
       val r = s.charAt(pos)
       pos += 1
       r
-    } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
+    }
   }
 
   private class ReverseIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = s.length-1
     def hasNext: Boolean = pos >= 0
-    def next(): Char = try {
+    def next(): Char = {
+      if (pos < 0) Iterator.empty.next()
       val r = s.charAt(pos)
       pos -= 1
       r
-    } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
+    }
   }
 
   private class GroupedIterator(s: String, groupSize: Int) extends AbstractIterator[String] {

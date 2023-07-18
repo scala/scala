@@ -27,6 +27,8 @@ abstract class ConstantFolder {
   val global: Global
   import global._
 
+  val foldableUnaryOps: Set[Name] = nme.isEncodedUnary ++ List(nme.toChar, nme.toInt, nme.toLong, nme.toFloat, nme.toDouble)
+
   // We can fold side effect free terms and their types
   object FoldableTerm {
     @inline private def effectless(sym: Symbol): Boolean = sym != null && !sym.isLazy && (sym.isVal || sym.isGetter && sym.accessed.isVal)
@@ -55,13 +57,13 @@ abstract class ConstantFolder {
     }
 
   /** If tree is a constant operation, replace with result. */
-  def apply(tree: Tree, site: Symbol): Tree = {
+  def apply(tree: Tree, site: Symbol): Tree = if (isPastTyper) tree else
     try {
       tree match {
-        case Apply(Select(FoldableTerm(x), op), List(FoldableTerm(y))) => fold(tree, foldBinop(op, x, y), true)
-        case Apply(Select(ConstantTerm(x), op), List(ConstantTerm(y))) => fold(tree, foldBinop(op, x, y), false)
-        case Select(FoldableTerm(x), op) => fold(tree, foldUnop(op, x), true)
-        case Select(ConstantTerm(x), op) => fold(tree, foldUnop(op, x), false)
+        case Apply(Select(FoldableTerm(x), op), List(FoldableTerm(y))) => fold(tree, foldBinop(op, x, y), foldable = true)
+        case Apply(Select(ConstantTerm(x), op), List(ConstantTerm(y))) => fold(tree, foldBinop(op, x, y), foldable = false)
+        case Select(FoldableTerm(x), op) => fold(tree, foldUnop(op, x), foldable = true)
+        case Select(ConstantTerm(x), op) => fold(tree, foldUnop(op, x), foldable = false)
         case _ => tree
       }
     } catch {
@@ -70,41 +72,59 @@ abstract class ConstantFolder {
           runReporting.warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}", WarningCategory.LintConstant, site)
         tree
     }
-  }
 
-  /** If tree is a constant value that can be converted to type `pt`, perform
-   *  the conversion.
+  /** If tree is a constant value that can be converted to type `pt`, perform the conversion.
    */
   def apply(tree: Tree, pt: Type, site: Symbol): Tree = {
     val orig = apply(tree, site)
     orig.tpe match {
-      case tp@ConstantType(x) => fold(orig, x convertTo pt, isConstantType(tp))
+      case tp@ConstantType(x) => fold(orig, x.convertTo(pt), foldable = isConstantType(tp))
       case _ => orig
     }
   }
 
+  /** Set the computed constant type.
+   */
   private def fold(orig: Tree, folded: Constant, foldable: Boolean): Tree =
     if ((folded eq null) || folded.tag == UnitTag) orig
-    else if(foldable) orig setType FoldableConstantType(folded)
+    else if (foldable) orig setType FoldableConstantType(folded)
     else orig setType LiteralType(folded)
 
-  private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
-    case (nme.UNARY_!, BooleanTag) => Constant(!x.booleanValue)
-
-    case (nme.UNARY_~ , IntTag    ) => Constant(~x.intValue)
-    case (nme.UNARY_~ , LongTag   ) => Constant(~x.longValue)
-
-    case (nme.UNARY_+ , IntTag    ) => Constant(+x.intValue)
-    case (nme.UNARY_+ , LongTag   ) => Constant(+x.longValue)
-    case (nme.UNARY_+ , FloatTag  ) => Constant(+x.floatValue)
-    case (nme.UNARY_+ , DoubleTag ) => Constant(+x.doubleValue)
-
-    case (nme.UNARY_- , IntTag    ) => Constant(-x.intValue)
-    case (nme.UNARY_- , LongTag   ) => Constant(-x.longValue)
-    case (nme.UNARY_- , FloatTag  ) => Constant(-x.floatValue)
-    case (nme.UNARY_- , DoubleTag ) => Constant(-x.doubleValue)
-
-    case _ => null
+  private def foldUnop(op: Name, x: Constant): Constant = {
+    val N = nme
+    import N._
+    val value: Any = op match {
+      case UNARY_! => if (x.tag == BooleanTag) !x.booleanValue else null
+      case UNARY_~ => x.tag match {
+        case IntTag  => ~x.intValue
+        case LongTag => ~x.longValue
+        case _ => null
+      }
+      case UNARY_+ => x.tag match {
+        case IntTag    => +x.intValue
+        case LongTag   => +x.longValue
+        case FloatTag  => +x.floatValue
+        case DoubleTag => +x.doubleValue
+        case _ => null
+      }
+      case UNARY_- => x.tag match {
+        case IntTag    => -x.intValue
+        case LongTag   => -x.longValue
+        case FloatTag  => -x.floatValue
+        case DoubleTag => -x.doubleValue
+        case _ => null
+      }
+      case _ if x.isNumeric => op match {
+        case `toChar`   => x.charValue
+        case `toInt`    => x.intValue
+        case `toLong`   => x.longValue
+        case `toFloat`  => x.floatValue
+        case `toDouble` => x.doubleValue
+        case _ => null
+      }
+      case _ => null
+    }
+    if (value != null) Constant(value) else null
   }
 
   /** These are local helpers to keep foldBinop from overly taxing the

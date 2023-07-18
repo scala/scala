@@ -3,4 +3,8 @@ t3006.scala:8: error: type mismatch;
  required: Int
   println(A(3) + "H")
                  ^
+t3006.scala:6: warning: Implicit definition should have explicit type (inferred Test.Foo)
+  implicit def aToFoo(x: A) = new Foo(x);
+               ^
+1 warning
 1 error

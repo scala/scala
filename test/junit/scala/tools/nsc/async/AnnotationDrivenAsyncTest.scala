@@ -9,8 +9,9 @@ import org.junit.Assert.assertEquals
 import org.junit.{Assert, Ignore, Test}
 
 import scala.annotation.{StaticAnnotation, nowarn, unused}
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
@@ -367,6 +368,109 @@ class AnnotationDrivenAsyncTest {
     assertEquals(classOf[Array[String]], result.getClass)
   }
 
+  @Test
+  def testPositions(): Unit = {
+    val code =
+      """
+        |import scala.tools.nsc.async.{autoawait, customAsync}
+        |object Test {
+        |  @autoawait def id(a: Int) = a
+        |  @customAsync def test = {
+        |    val x = id(1) // L1
+        |    val y = id(2) // L2
+        |    x + y         // L3
+        | }
+        |}""".stripMargin
+
+    val result = compile(code)
+
+    import result.global._
+    // settings.Xprintpos.value = true // enable to help debugging
+    val fsmMethodParsed = result.parseTree.find { case dt: DefTree => dt.name.string_==("test") case _ => false }
+    fsmMethodParsed.get match {
+      case DefDef(_, _, _, _, _, Block(stats, expr)) =>
+        // collect the two stats and expr from L1 L2 L3
+        val parseTreeStats: List[Tree] = stats ++ List(expr)
+        val fsmTree                        = result.fsmTree
+        val posMap = mutable.LinkedHashMap[Tree, mutable.Buffer[Tree]]()
+
+        // Traverse the tree and record parent-child relationship
+        val parentMap = mutable.LinkedHashMap[Tree, Tree]()
+        def collectParents(t: Tree): Unit = {
+          for (child <- t.children) {
+            parentMap(child) = t
+            collectParents(child)
+          }
+        }
+        def isAncestor(child: Tree, parent: Tree): Boolean = {
+          parentMap.get(child) match {
+            case None => false
+            case Some(p) => parent == p || isAncestor(p, parent)
+          }
+        }
+        collectParents(fsmTree.get)
+
+        // Traverse the tree to find the genererated code the corresponds (by range position inclusion)
+        // of the user-written stats/expr.
+        for {
+          parseTreeStat <- parseTreeStats
+          pos = parseTreeStat.pos
+          tree <- fsmTree.get
+        } {
+          if (pos.includes(tree.pos)) {
+            posMap.get(parseTreeStat) match {
+              case Some(existing) =>
+                // Produce minimal output by discarding sub-trees that are contained by larger trees in the
+                // value of posMap.
+                if (!existing.exists(t => isAncestor(tree, t))) {
+                  val (retained, discarded) = existing.toList.partition(t => isAncestor(t, tree) || !isAncestor(tree, t))
+                  existing.clear()
+                  existing ++= retained
+                  existing += tree
+                }
+              case None =>
+                posMap(parseTreeStat) = mutable.ListBuffer(tree)
+            }
+          }
+        }
+
+        // The synthetic exception handler and state machine loop should not be positioned within
+        // the position of L1, L2, or L3, as this would trigger a breakpoint at the line on each
+        // state transition
+        val incorrectlyContainedTryOrWhileLoop = posMap.values.flatMap(_.collect { case t: Try => t; case ld: LabelDef if ld.name.containsName(nme.WHILE_PREFIX) => ld})
+        assert(incorrectlyContainedTryOrWhileLoop.isEmpty, incorrectlyContainedTryOrWhileLoop)
+
+        // Some synthetic code _will_ be at L1 L2 and L3, but this is only directly related to
+        // the save and restore of the variables used/produced by this state.
+        def oneliner(s: String) = s.replace(System.lineSeparator(), "\\n")
+        val actual = posMap.toList.map { case (orig, corresponding) => s"${oneliner(orig.toString)}\n${"-" * 80}\n${corresponding.map(t => oneliner(t.toString)).mkString("\n")}"}.mkString("\n" * 3)
+        val expected =
+          """val x = id(1)
+            |--------------------------------------------------------------------------------
+            |case 0 => {\n  val awaitable$async: scala.tools.nsc.async.CustomFuture = scala.tools.nsc.async.CustomFuture._successful(scala.Int.box(Test.this.id(1)));\n  tr = self.getCompleted(awaitable$async);\n  self.state_=(1);\n  if (null.!=(tr))\n    while$()\n  else\n    {\n      self.onComplete(awaitable$async);\n      return ()\n    }\n}
+            |<synthetic> val await$1: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
+            |self.x = scala.Int.unbox(await$1)
+            |
+            |
+            |val y = id(2)
+            |--------------------------------------------------------------------------------
+            |val awaitable$async: scala.tools.nsc.async.CustomFuture = scala.tools.nsc.async.CustomFuture._successful(scala.Int.box(Test.this.id(2)))
+            |tr = self.getCompleted(awaitable$async)
+            |self.state_=(2)
+            |if (null.!=(tr))\n  while$()\nelse\n  {\n    self.onComplete(awaitable$async);\n    return ()\n  }
+            |<synthetic> val await$2: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
+            |val y: Int = scala.Int.unbox(await$2)
+            |
+            |
+            |x.$plus(y)
+            |--------------------------------------------------------------------------------
+            |self.completeSuccess(scala.Int.box(self.x.+(y)))
+            |return ()""".stripMargin
+        assertEquals(expected, actual)
+    }
+  }
+
+
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
   @Ignore
@@ -389,76 +493,111 @@ class AnnotationDrivenAsyncTest {
     f
   }
 
+  abstract class CompileResult {
+    val global: Global
+    val tree: global.Tree
+    val parseTree: global.Tree
+    def run(): Any
+    def close(): Unit
+    def fsmTree: Option[global.Tree] = tree.find { case dd: global.DefDef => dd.symbol.name.containsName("fsm"); case _ => false }
+  }
+
   def run(code: String, compileOnly: Boolean = false): Any = {
+    val compileResult = compile(code, compileOnly)
+    try
+      if (!compileOnly) compileResult.run()
+    finally {
+      compileResult.close()
+    }
+  }
+
+  def compile(code: String, compileOnly: Boolean = false): CompileResult = {
     val out = createTempDir()
-    try {
+
       val reporter = new StoreReporter(new Settings) {
-        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
+        override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
           if (severity == INFO) println(msg)
-          else super.doReport(pos, msg, severity)
+          else super.doReport(pos, msg, severity, actions)
       }
       val settings = new Settings(println(_))
       settings.async.value = true
       settings.outdir.value = out.getAbsolutePath
+      settings.Yrangepos.value = true
       settings.embeddedDefaults(getClass.getClassLoader)
 
-      // settings.debug.value = true
-      // settings.uniqid.value = true
-      // settings.processArgumentString("-Xprint:typer,posterasure,async -nowarn")
-      // settings.log.value = List("async")
+    // settings.debug.value = true
+    // settings.uniqid.value = true
+    // settings.processArgumentString("-Xprint:typer,posterasure,async -nowarn")
+    // settings.log.value = List("async")
 
-      // NOTE: edit ANFTransform.traceAsync to `= true` to get additional diagnostic tracing.
+    // NOTE: edit ANFTransform.traceAsync to `= true` to get additional diagnostic tracing.
 
-      val isInSBT = !settings.classpath.isSetByUser
-      if (isInSBT) settings.usejavacp.value = true
-      val global = new Global(settings, reporter) {
-        self =>
+    val isInSBT = !settings.classpath.isSetByUser
+    if (isInSBT) settings.usejavacp.value = true
+    val g = new Global(settings, reporter) {
+      self =>
 
-        @nowarn("cat=deprecation&msg=early initializers")
+      @nowarn("cat=deprecation&msg=early initializers")
         object late extends {
           val global: self.type = self
         } with AnnotationDrivenAsyncPlugin
 
-        override protected def loadPlugins(): List[Plugin] = late :: Nil
-      }
-      import global._
+      override protected def loadPlugins(): List[Plugin] = late :: Nil
+    }
 
-      val run = new Run
-      val source = newSourceFile(code)
-      run.compileSources(source :: Nil)
-      if (compileOnly) return null
-      def showInfo(info: StoreReporter#Info): String = {
-        Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
+    import g._
+
+    val run    = new Run
+    val source = newSourceFile(code)
+    run.compileSources(source :: Nil)
+
+    def showInfo(info: StoreReporter#Info): String = {
+      Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
+    }
+
+    Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)
+    Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasWarnings)
+
+    val unit: CompilationUnit = run.units.next()
+    val parseTree0 = newUnitParser(unit).parse()
+    new CompileResult {
+      val global: g.type = g
+
+      val tree = unit.body
+      override val parseTree: global.Tree = parseTree0
+
+      def run(): Any = {
+        try {
+          val loader = new URLClassLoader(Seq(new File(settings.outdir.value).toURI.toURL), global.getClass.getClassLoader)
+          val cls    = loader.loadClass("Test")
+          val result = try {
+            cls.getMethod("test").invoke(null)
+          } catch {
+            case ite: InvocationTargetException => throw ite.getCause
+            case _: NoSuchMethodException       =>
+              cls.getMethod("main", classOf[Array[String]]).invoke(null, null)
+          }
+          result match {
+            case t: scala.concurrent.Future[_] =>
+              scala.concurrent.Await.result(t, Duration.Inf)
+            case cf: CustomFuture[_]           =>
+              cf._block
+            case cf: CompletableFuture[_]      =>
+              cf.get()
+            case value                         => value
+          }
+        } catch {
+          case ve: VerifyError =>
+            val asm = out.listFiles().flatMap { file =>
+              val asmp = AsmUtils.textify(AsmUtils.readClass(file.getAbsolutePath))
+              asmp :: Nil
+            }.mkString("\n\n")
+            throw new AssertionError(asm, ve)
+        }
       }
-      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)
-      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasWarnings)
-      val loader = new URLClassLoader(Seq(new File(settings.outdir.value).toURI.toURL), global.getClass.getClassLoader)
-      val cls = loader.loadClass("Test")
-      val result = try {
-        cls.getMethod("test").invoke(null)
-      } catch {
-        case ite: InvocationTargetException => throw ite.getCause
-        case _: NoSuchMethodException =>
-          cls.getMethod("main", classOf[Array[String]]).invoke(null, null)
+      override def close(): Unit = {
+        scala.reflect.io.Path.apply(out).deleteRecursively()
       }
-      result match {
-        case t: scala.concurrent.Future[_] =>
-          scala.concurrent.Await.result(t, Duration.Inf)
-        case cf: CustomFuture[_] =>
-          cf._block
-        case cf: CompletableFuture[_] =>
-          cf.get()
-        case value => value
-      }
-    } catch {
-      case ve: VerifyError =>
-        val asm = out.listFiles().flatMap { file =>
-          val asmp = AsmUtils.textify(AsmUtils.readClass(file.getAbsolutePath))
-          asmp :: Nil
-        }.mkString("\n\n")
-        throw new AssertionError(asm, ve)
-    } finally {
-      scala.reflect.io.Path.apply(out).deleteRecursively()
     }
   }
 }

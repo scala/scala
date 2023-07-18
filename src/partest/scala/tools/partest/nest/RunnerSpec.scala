@@ -56,8 +56,10 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optDebug        = "debug"        / "enable debugging output, preserve generated files" --?
 
   heading("Other options:")
-  val optVersion      = "version"      / "show Scala version and exit"  --?
-  val optHelp         = "help"         / "show this page and exit"      --?
+  val optDev     = "realeasy" / "real easy way to test --release 8 and check uncommitted checks" --?
+  val optBranch  = "branch"   / "test changes on this branch"                                    --?
+  val optVersion = "version"  / "show Scala version and exit"                                    --?
+  val optHelp    = "help"     / "show this page and exit"                                        --?
 
 }
 

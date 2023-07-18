@@ -20,18 +20,17 @@ import java.lang.Integer.toHexString
 import java.net.URLClassLoader
 import java.util.UUID
 
-import scala.collection.{immutable, mutable}
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
+import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.tools.nsc.Reporting.WarningCategory
 import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
+import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.tasty.{TastyUniverse, TastyUnpickler}
+import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
 import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
@@ -593,19 +592,13 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       getScope(jflags) enter sym
 
       // sealed java enums
-      if (jflags.isEnum) {
-        val enumClass = sym.owner.linkedClassOfClass
-        enumClass match {
+      if (jflags.isEnum)
+        sym.owner.linkedClassOfClass match {
           case NoSymbol =>
             devWarning(s"no linked class for java enum $sym in ${sym.owner}. A referencing class file might be missing an InnerClasses entry.")
-          case linked =>
-            if (!linked.isSealed)
-              // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also JavaParsers.
-              // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
-              linked setFlag (SEALED | ABSTRACT)
-            linked addChild sym
+          case enumClass =>
+            enumClass.addChild(sym)
         }
-      }
     }
   }
 
@@ -826,7 +819,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.DeprecatedATTR =>
           in.skip(attrLen)
-          if (sym == clazz)
+          if (!sym.hasAnnotation(JavaDeprecatedAttr))
+            sym.addAnnotation(JavaDeprecatedAttr)
+          if (sym == clazz && !staticModule.hasAnnotation(JavaDeprecatedAttr))
             staticModule.addAnnotation(JavaDeprecatedAttr)
 
         case tpnme.ConstantValueATTR =>
@@ -839,7 +834,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             val paramNameAccess = new Array[Int](paramCount)
             var i = 0
             while (i < paramCount) {
-              paramNames(i) = pool.getExternalName(u2())
+              paramNames(i) = u2() match {
+                case 0 => null  // may occur on JDK 21+, as per scala/bug#12783
+                case index => pool.getExternalName(index)
+              }
               paramNameAccess(i) = u2()
               i += 1
             }
@@ -852,16 +850,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           in.skip(attrLen)
 
         case tpnme.RuntimeAnnotationATTR =>
-            val numAnnots = u2()
-          val annots = new ListBuffer[AnnotationInfo]
-          for (n <- 0 until numAnnots; annot <- parseAnnotation(u2()))
-            annots += annot
-          /* `sym.withAnnotations(annots)`, like `sym.addAnnotation(annot)`, prepends,
-           * so if we parsed in classfile order we would wind up with the annotations
-           * in reverse order in `sym.annotations`. Instead we just read them out the
-           * other way around, for now. TODO: sym.addAnnotation add to the end?
-           */
-          sym.setAnnotations(sym.annotations ::: annots.toList)
+          val numAnnots = u2()
+          numAnnots times {
+            parseAnnotation(u2()).foreach(addUniqueAnnotation(sym, _))
+          }
 
         // TODO 1: parse runtime visible annotations on parameters
         // case tpnme.RuntimeParamAnnotationATTR
@@ -903,6 +895,17 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             debuglog(s"$sym in ${sym.owner} is a java8+ default method.")
           }
           in.skip(attrLen)
+
+        case tpnme.PermittedSubclassesATTR =>
+          sym.setFlag(SEALED)
+          val numberOfClasses = u2()
+          numberOfClasses times {
+            val k = pool.getClassSymbol(u2())
+            completer match {
+              case ctc: ClassTypeCompleter => ctc.permittedSubclasses ::= k   // sym.addChild(k)
+              case _ =>
+            }
+          }
 
         case _ =>
           in.skip(attrLen)
@@ -1345,6 +1348,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
+  // on JDK 21+, `names` may include nulls, as per scala/bug#12783
   private class ParamNames(val names: Array[NameOrString], val access: Array[Int]) {
     assert(names.length == access.length, "Require as many names as access")
     def length = names.length
@@ -1356,6 +1360,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var exceptions: List[NameOrString] = Nil
   }
   private final class ClassTypeCompleter(name: Name, jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
+    var permittedSubclasses: List[symbolTable.Symbol] = Nil
     override def complete(sym: symbolTable.Symbol): Unit = {
       val info = if (sig != null) sigToType(sym, sig) else {
         val superTpe = if (parent == null) definitions.AnyClass.tpe_* else getClassSymbol(parent.value).tpe_*
@@ -1364,6 +1369,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         ClassInfoType(superTpe1 :: ifacesTypes, instanceScope, clazz)
       }
       sym.setInfo(info)
+      // enum children are its enum fields, so don't register subclasses (which are listed as permitted)
+      if (!sym.hasJavaEnumFlag)
+        for (k <- permittedSubclasses)
+          if (k.parentSymbols.contains(sym))
+            sym.addChild(k)
     }
   }
 
@@ -1445,8 +1455,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             case (i, param) =>
               val isSynthetic = (paramNames.access(i) & ACC_SYNTHETIC) != 0
               if (!isSynthetic) {
-                param.name = paramNames.names(i).name.toTermName.encode
                 param.resetFlag(SYNTHETIC)
+                val nameOrString = paramNames.names(i)
+                if (nameOrString != null)
+                  param.name = nameOrString.name.toTermName.encode
               }
           }
           // there's not anything we can do, but it's slightly worrisome
@@ -1491,9 +1503,34 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   protected def getScope(flags: JavaAccFlags): Scope =
     if (flags.isStatic) staticScope else instanceScope
+
+  // Append annotation. For Java deprecation, prefer an annotation with values (since, etc).
+  private def addUniqueAnnotation(symbol: Symbol, annot: AnnotationInfo): symbol.type =
+    if (annot.atp.typeSymbol == JavaDeprecatedAttr) {
+      def ensureDepr(sym: Symbol): sym.type = {
+        if (sym.hasAnnotation(JavaDeprecatedAttr))
+          if (List(0, 1).exists(annot.constantAtIndex(_).isDefined))
+            sym.setAnnotations {
+              def drop(cur: AnnotationInfo): Boolean = cur.atp.typeSymbol == JavaDeprecatedAttr
+              sym.annotations.foldRight(annot :: Nil)((a, all) => if (drop(a)) all else a :: all)
+            }
+          else sym
+        else sym.addAnnotation(annot)
+      }
+      if (symbol == clazz)
+        ensureDepr(staticModule)
+      ensureDepr(symbol)
+    }
+    else symbol.addAnnotation(annot)
 }
 object ClassfileParser {
-  private implicit class GoodTimes(val n: Int) extends AnyVal {
-    def times(body: => Unit) = (1 to n).foreach(_ => body)
+  private implicit class GoodTimes(private val n: Int) extends AnyVal {
+    def times(body: => Unit): Unit = {
+      var i = n
+      while (i > 0) {
+        body
+        i -= 1
+      }
+    }
   }
 }

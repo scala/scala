@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+// scalac: -Xsource:3 -Xmigration
 
 case class A private (i: Int)
 object A {

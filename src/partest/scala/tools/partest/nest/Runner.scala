@@ -16,25 +16,26 @@ package nest
 import java.io.{Console => _, _}
 import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
-import java.nio.file.{Files, StandardOpenOption}
+import java.nio.file.{Files, Path, StandardOpenOption}, StandardOpenOption.{APPEND, CREATE}
 
 import scala.annotation.nowarn
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
-import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader, ScalaClassLoader.URLClassLoader
 import scala.sys.process.{Process, ProcessLogger}
 import scala.tools.nsc.Properties.{isWin, propOrEmpty}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
-import ClassPath.join
-import TestState.{Crash, Fail, Pass, Skip, Updated}
-import FileManager.{compareContents, joinPaths, withTempFile}
-import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try, Using}
+import scala.util.Properties.isJavaAtLeast
 import scala.util.chaining._
-import scala.util.control.ControlThrowable
+import scala.util.control.{ControlThrowable, NonFatal}
+import scala.util.matching.Regex
+import ClassPath.join
+import FileManager.{compareContents, joinPaths, withTempFile}
+import TestState.{Crash, Fail, Pass, Skip, Updated}
 
 /** pos/t1234.scala or pos/t1234 if dir */
 case class TestInfo(testFile: File) {
@@ -112,7 +113,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       joinPaths(outDir :: testClassPath),
       "-J-Duser.language=en",
       "-J-Duser.country=US"
-    ) ++ (toolArgsFor(files)("javac")
+    ) ++ (toolArgsFor(files)(ToolName.javac)
     ) ++ (files.map(_.getAbsolutePath)
     )
 
@@ -231,26 +232,26 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       def run(): Unit = {
         StreamCapture.withExtraProperties(propertyOptions(fork = false).toMap) {
           try {
-            val out = Files.newOutputStream(log.toPath, StandardOpenOption.APPEND)
+            val out = Files.newOutputStream(log.toPath, CREATE, APPEND)
             try {
               val loader = new URLClassLoader(classesDir.toURI.toURL :: Nil, getClass.getClassLoader)
               StreamCapture.capturingOutErr(out) {
                 val cls = loader.loadClass("Test")
                 val main = cls.getDeclaredMethod("main", classOf[Array[String]])
-                try {
-                  main.invoke(null, Array[String]("jvm"))
-                } catch {
-                  case ite: InvocationTargetException => throw ite.getCause
-                }
+                try main.invoke(null, Array[String]("jvm"))
+                catch { case ite: InvocationTargetException => throw ite.getCause }
               }
-            }  finally {
-              out.close()
             }
+            finally out.close()
           } catch {
             case t: ControlThrowable => throw t
-            case t: Throwable =>
+            case NonFatal(t) =>
               // We'll let the checkfile diffing report this failure
-              Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), StandardOpenOption.APPEND)
+              Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), CREATE, APPEND)
+            case t: Throwable =>
+              val data = (if (t.getMessage != null) t.getMessage else t.getClass.getName).getBytes(Charset.defaultCharset())
+              Files.write(log.toPath, data, CREATE, APPEND)
+              throw t
           }
         }
         ()
@@ -333,18 +334,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     compareContents(original = checked, revised = logged, originalName = checkname, revisedName = logFile.getName)
   }
 
-  val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
-  val gitDiffOptions = "--ignore-space-at-eol --no-index " + propOrEmpty("partest.git_diff_options")
-    // --color=always --word-diff
-
   def gitDiff(f1: File, f2: File): Option[String] = {
-    try gitRunner map { git =>
-      val cmd  = s"$git diff $gitDiffOptions $f1 $f2"
-      val diff = Process(cmd).lazyLines_!.drop(4).map(_ + "\n").mkString
-
-      "\n" + diff
-    }
-    catch { case t: Exception => None }
+    val gitDiffOptions = "--ignore-space-at-eol --no-index " + propOrEmpty("partest.git_diff_options")
+      // --color=always --word-diff
+    runGit(s"diff $gitDiffOptions $f1 $f2")(_.drop(4).map(_ + "\n").mkString).map("\n" + _)
   }
 
   /** Normalize the log output by applying test-specific filters
@@ -360,37 +353,39 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  any Windows backslashes with the one true file separator char.
    */
   def normalizeLog(): Unit = {
-    import scala.util.matching.Regex
-
     // Apply judiciously; there are line comments in the "stub implementations" error output.
-    val slashes    = """[/\\]+""".r
+    val slashes = """[/\\]+""".r
     def squashSlashes(s: String) = slashes.replaceAllIn(s, "/")
 
     // this string identifies a path and is also snipped from log output.
-    val elided     = parentFile.getAbsolutePath
+    val elided = parentFile.getAbsolutePath
 
     // something to mark the elision in the log file (disabled)
-    val ellipsis   = "" //".../"    // using * looks like a comment
+    val ellipsis = "" //".../"    // using * looks like a comment
 
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
     val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
-    def canonicalize(s: String): String =
-      pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m group 1)))
-
-    def masters    = {
-      val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
-      files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filter(s => !(s startsWith "#"))
-    }
-    val filters    = toolArgs("filter", split = false) ++ masters
-    val elisions   = ListBuffer[String]()
-    //def lineFilter(s: String): Boolean  = !(filters exists (s contains _))
-    def lineFilter(s: String): Boolean  = (
-      filters map (_.r) forall { r =>
-        val res = (r findFirstIn s).isEmpty
-        if (!res) elisions += s
-        res
+    def canonicalize: String => String = {
+      val hiders = toolArgs(ToolName.hide).map(_.r)
+      (s: String) => {
+        val pathless = pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m.group(1))))
+        if (hiders.isEmpty) pathless
+        else hiders.foldLeft(pathless)((s, r) => r.replaceAllIn(s, m => "***"))
       }
-    )
+    }
+
+    def masters = {
+      val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
+      files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filterNot(_.startsWith("#"))
+    }
+    val filters = toolArgs(ToolName.filter) ++ masters
+    lazy val elisions = ListBuffer[String]()
+    def lineFilter(s: String): Boolean =
+      filters.map(_.r).forall { r =>
+        val unfiltered = r.findFirstIn(s).isEmpty
+        if (!unfiltered && suiteRunner.verbose) elisions += s
+        unfiltered
+      }
 
     logFile.mapInPlace(canonicalize)(lineFilter)
     if (suiteRunner.verbose && elisions.nonEmpty) {
@@ -423,22 +418,13 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     }
   }
 
-  /** 1. Creates log file and output directory.
-   *  2. Runs script function, providing log file and output directory as arguments.
-   *     2b. or, just run the script without context and return a new context
-   */
-  def runInContext(body: => TestState): TestState = {
-    body
-  }
-
   /** Grouped files in group order, and lex order within each group. */
-  def groupedFiles(sources: List[File]): List[List[File]] = (
+  def groupedFiles(sources: List[File]): List[List[File]] =
     if (sources.sizeIs > 1) {
-      val grouped = sources groupBy (_.group)
-      grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
+      val grouped = sources.groupBy(_.group)
+      grouped.keys.toList.sorted.map(grouped(_).sortBy(_.getName))
     }
     else List(sources)
-  )
 
   /** Source files for the given test file. */
   def sources(file: File): List[File] = if (file.isDirectory) file.listFiles.toList.filter(_.isJavaOrScala) else List(file)
@@ -455,70 +441,95 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   // all sources in a round may contribute flags via // scalac: -flags
+  // under --realeasy, if a javaVersion isn't specified, require the minimum viable using -release 8
+  // to avoid accidentally committing a test that requires a later JVM.
   def flagsForCompilation(sources: List[File]): List[String] = {
-    val perFile = toolArgsFor(sources)("scalac")
-    if (parentFile.getParentFile.getName == "macro-annot") "-Ymacro-annotations" :: perFile
-    else perFile
+    var perFile = toolArgsFor(sources)(ToolName.scalac)
+    if (parentFile.getParentFile.getName == "macro-annot")
+      perFile ::= "-Ymacro-annotations"
+    if (realeasy && isJavaAtLeast(9) && !perFile.exists(releaseFlag.matches) && toolArgsFor(sources)(ToolName.javaVersion).isEmpty)
+      perFile ::= "-release:8"
+    perFile
   }
+  private val releaseFlag = raw"--?release(?::\d+)?".r
 
   // inspect sources for tool args
-  def toolArgs(tool: String, split: Boolean = true): List[String] =
-    toolArgsFor(sources(testFile))(tool, split)
+  def toolArgs(tool: ToolName): List[String] = toolArgsFor(sources(testFile))(tool)
 
-  // inspect given files for tool args of the form `tool: args`
-  // if args string ends in close comment, drop the `*` `/`
-  // if split, parse the args string as command line.
+  // for each file, cache the args for each tool
+  private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, List[String]]]
+
+  // Inspect given files for tool args in header line comments of the form `// tool: args`.
+  // If the line comment starts `//>`, accept `scalac:` options in the form of using pragmas.
+  // If `filter:`, return entire line as if quoted, else parse the args string as command line.
+  // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
   //
-  def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
-    def argsFor(f: File): List[String] = {
-      import scala.jdk.OptionConverters._
-      import scala.sys.process.{Parser => CommandLineParser}, CommandLineParser.tokenize
-      val max  = 10
-      val tag  = s"$tool:"
-      val endc = "*" + "/"    // be forgiving of /* scalac: ... */
-      def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
-      def argsplitter(s: String) = if (split) tokenize(s) else List(s.trim())
-      val args = Using.resource(Files.lines(f.toPath, codec.charSet))(
-        _.limit(max).filter(_.contains(tag)).map(stripped).findAny.toScala
-      )
-      args.map(argsplitter).getOrElse(Nil)
+  def toolArgsFor(files: List[File])(tool: ToolName): List[String] = {
+    def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).apply(tool)
+    def readToolArgs(f: File): Map[ToolName, List[String]] = {
+      val header = readHeaderFrom(f)
+      ToolName.values.toList
+        .map(name => name -> fromHeader(name, header))
+        .filterNot(_._2.isEmpty)
+        .toMap[ToolName, List[String]]
+        .withDefaultValue(List.empty[String])
     }
+    def fromHeader(name: ToolName, header: List[String]) = {
+      import scala.sys.process.Parser.tokenize
+      val namePattern = raw"\s*//\s*$name:\s*(.*)".r
+      val optionsPattern = raw"\s*//>\s*using\s+option(s)?\s+(.*)".r
+      def matchLine(line: String): List[String] =
+        line match {
+          case namePattern(rest) => if (name == ToolName.filter) List(rest.trim) else tokenize(rest)
+          case _ if name == ToolName.scalac =>
+            line match {
+              case optionsPattern(plural, rest) =>
+                if (plural == null) List(rest.trim)
+                else tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
+              case _ => Nil
+            }
+          case _ => Nil
+        }
+      header.flatMap(matchLine)
+    }
+    def readHeaderFrom(f: File): List[String] =
+      Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
     files.flatMap(argsFor)
   }
 
-  abstract class CompileRound {
-    def fs: List[File]
-    def result: TestState
+  sealed abstract class CompileRound {
+    def files: List[File]
     def description: String
+    protected def computeResult: TestState
 
-    def fsString = fs map (_.toString stripPrefix parentFile.toString + "/") mkString " "
-    def isOk = result.isOk
-    def mkScalacString(): String = s"""scalac $fsString"""
-    override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
+    final lazy val result: TestState = { pushTranscript(description); computeResult }
+
+    final protected def fsString = files.map(_.toString.stripPrefix(s"$parentFile/")).mkString(" ")
+    final override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
   }
-  case class OnlyJava(fs: List[File]) extends CompileRound {
+  final case class OnlyJava(files: List[File]) extends CompileRound {
     def description = s"""javac $fsString"""
-    lazy val result = { pushTranscript(description) ; javac(fs) }
+    override protected def computeResult = javac(files)
   }
-  case class OnlyScala(fs: List[File]) extends CompileRound {
-    def description = mkScalacString()
-    lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
+  final case class OnlyScala(files: List[File]) extends CompileRound {
+    def description = s"""scalac $fsString"""
+    override protected def computeResult = attemptCompile(files)
   }
-  case class ScalaAndJava(fs: List[File]) extends CompileRound {
-    def description = mkScalacString()
-    lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
+  final case class ScalaAndJava(files: List[File]) extends CompileRound {
+    def description = s"""scalac $fsString"""
+    override protected def computeResult = attemptCompile(files)
   }
-  case class SkipRound(fs: List[File], state: TestState) extends CompileRound {
+  final case class SkipRound(files: List[File], state: TestState) extends CompileRound {
     def description: String = state.status
-    lazy val result = { pushTranscript(description); state }
+    override protected def computeResult = state
   }
 
   def compilationRounds(file: File): List[CompileRound] = {
     import scala.util.Properties.javaSpecVersion
-    val Range = """(\d+)(?:(\+)|(?: *\- *(\d+)))?""".r
+    val Range = """(\d+)(?:(\+)|(?:-(\d+)))?""".r
     lazy val currentJavaVersion = javaSpecVersion.stripPrefix("1.").toInt
     val allFiles = sources(file)
-    val skipStates = toolArgsFor(allFiles)("javaVersion", split = false).flatMap({
+    val skipStates = toolArgsFor(allFiles)(ToolName.javaVersion).flatMap {
       case v @ Range(from, plus, to) =>
         val ok =
           if (plus == null)
@@ -526,11 +537,12 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
             else from.toInt <= currentJavaVersion && currentJavaVersion <= to.toInt
           else
             currentJavaVersion >= from.toInt
-        if (ok) None
+        if (ok && suiteRunner.realeasy && from.toInt > 8) Some(genSkip(s"skipped on Java $javaSpecVersion, compiling against JDK8 but must run on $v"))
+        else if (ok) None
         else Some(genSkip(s"skipped on Java $javaSpecVersion, only running on $v"))
       case v =>
         Some(genFail(s"invalid javaVersion range in test comment: $v"))
-    })
+    }
     skipStates.headOption match {
       case Some(state) => List(SkipRound(List(file), state))
       case _ => groupedFiles(allFiles).flatMap(mixedCompileGroup)
@@ -538,7 +550,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
-    val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
+    val (scalaFiles, javaFiles) = allFiles.partition(_.isScala)
     val round1                  = if (scalaFiles.isEmpty) None else Some(ScalaAndJava(allFiles))
     val round2                  = if (javaFiles.isEmpty) None else Some(OnlyJava(javaFiles))
 
@@ -547,25 +559,30 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def runPosTest(): TestState =
     if (checkFile.exists) genFail("unexpected check file for pos test (use -Werror with neg test to verify warnings)")
-    else runTestCommon()
+    else runTestCommon()()
 
-  def runNegTest(): TestState = runInContext {
+  def runNegTest(): TestState = {
     // pass if it checks and didn't crash the compiler
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
-    def checked(r: CompileRound) = r.result match {
+    def checked(r: TestState) = r match {
       case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
       case _ => diffIsOk
     }
 
-    compilationRounds(testFile).find(r => !r.result.isOk || r.result.isSkipped).map(checked).getOrElse(genFail("expected compilation failure"))
+    runTestCommon(checked, expectCompile = false)(identity)
   }
 
   // run compilation until failure, evaluate `andAlso` on success
-  def runTestCommon(andAlso: => TestState = genPass()): TestState = runInContext {
-    // DirectCompiler already says compilation failed
-    val res = compilationRounds(testFile).find(r => !r.result.isOk || r.result.isSkipped).map(_.result).getOrElse(genPass())
-    res andAlso andAlso
+  def runTestCommon(inspector: TestState => TestState = identity, expectCompile: Boolean = true)(andAlso: TestState => TestState = _ => genPass()): TestState = {
+    val rnds = compilationRounds(testFile)
+    if (rnds.isEmpty) genFail("nothing to compile")
+    else
+      rnds.find(r => !r.result.isOk || r.result.isSkipped).map(r => inspector(r.result)) match {
+        case Some(res) => res.andAlso(andAlso(res))
+        case None if !expectCompile => genFail("expected compilation failure")
+        case None => andAlso(null)
+      }
   }
 
   def extraClasspath = kind match {
@@ -660,25 +677,20 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   private def runRunTest(): TestState = {
-    val javaopts = toolArgs("java")
+    val javaopts = toolArgs(ToolName.java)
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile, javaopts)
     def noexec() = genSkip("no-exec: tests compiled but not run")
-    runTestCommon(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
+    runTestCommon()(_ => if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }
 
-  private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
-    import scala.tools.scalap
-    import scalap.scalax.rules.scalasig.ByteCode
-
-    scalap.Main.decompileScala(ByteCode.forClass(clazz).bytes, isPackageObject)
-  }
-
-  def runScalapTest(): TestState = runTestCommon {
-    val isPackageObject = testFile.getName startsWith "package"
+  def runScalapTest(): TestState = runTestCommon() { _ =>
+    import scala.tools.scalap, scalap.scalax.rules.scalasig.ByteCode, scalap.Main.decompileScala
+    val isPackageObject = testFile.getName.startsWith("package")
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")
     val loader          = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), this.getClass.getClassLoader)
-    logFile writeAll decompileClass(loader loadClass className, isPackageObject)
+    def decompileClass(clazz: Class[_]): String = decompileScala(ByteCode.forClass(clazz).bytes, isPackageObject)
+    logFile.writeAll(decompileClass(loader.loadClass(className)))
     diffIsOk
   }
 
@@ -778,4 +790,17 @@ final class TestTranscript {
   def add(action: String): this.type = { buf += action ; this }
   def append(text: String): Unit = { val s = buf.last ; buf.dropRightInPlace(1) ; buf += (s + text) }
   def toList = buf.toList
+}
+
+// Tool names in test file header: scalac, javac, java, javaVersion, filter, hide.
+sealed trait ToolName
+object ToolName {
+  case object scalac extends ToolName
+  case object javac extends ToolName
+  case object java extends ToolName
+  case object javaVersion extends ToolName
+  case object filter extends ToolName
+  case object hide extends ToolName
+  val values = Array(scalac, javac, java, javaVersion, filter, hide)
+  def named(s: String): ToolName = values.find(_.toString.equalsIgnoreCase(s)).getOrElse(throw new IllegalArgumentException(s))
 }

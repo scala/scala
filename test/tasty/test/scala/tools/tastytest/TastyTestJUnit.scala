@@ -2,6 +2,7 @@ package scala.tools.tastytest
 
 import org.junit.{Test => test, BeforeClass => setup, AfterClass => teardown}
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scala.util.{Try, Failure, Properties}
 

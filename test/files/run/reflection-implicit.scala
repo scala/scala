@@ -3,7 +3,7 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 
 class C {
-  implicit val v = new C
+  implicit val v: C = new C
   implicit def d(x: C)(implicit c: C): Int = ???
   implicit class X(val x: Int)
 }

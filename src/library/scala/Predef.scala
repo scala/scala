@@ -579,7 +579,7 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
 }
 
 private[scala] abstract class LowPriorityImplicits2 {
-  @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
+  @deprecated("implicit conversions from Array to immutable.IndexedSeq are implemented by copying; use `toIndexedSeq` explicitly if you want to copy, or use the more efficient non-copying ArraySeq.unsafeWrapArray", since="2.13.0")
   implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =
     if (xs eq null) null
     else new ArrayOps(xs).toIndexedSeq

@@ -47,12 +47,16 @@ class StdReplVals(final val intp: IMain) extends ReplVals {
     import intp.global.Symbol
 
     private val tagFn = ReplVals.mkCompilerTypeFromTag[intp.global.type](global)
-    implicit def mkCompilerTypeFromTag(sym: Symbol) = tagFn(sym)
+    implicit def mkCompilerTypeFromTag(sym: Symbol): ATFT[global.type] = tagFn(sym)
   }
 
   final lazy val replImplicits = new ReplImplicits
 
   def typed[T <: analyzer.global.Tree](tree: T): T = typer.typed(tree).asInstanceOf[T]
+}
+trait ATFT[G <: Global] {
+  def apply[M](implicit m1: ru.TypeTag[M]): G#Type
+  def apply[M1, M2](implicit m1: ru.TypeTag[M1], m2: ru.TypeTag[M2]): G#Type
 }
 
 object ReplVals {
@@ -72,7 +76,7 @@ object ReplVals {
     def compilerTypeFromTag(t: ApiUniverse # WeakTypeTag[_]): Global#Type =
       definitions.compilerTypeFromTag(t)
 
-    class AppliedTypeFromTags(sym: Symbol) {
+    class AppliedTypeFromTags(sym: Symbol) extends ATFT[T] {
       def apply[M](implicit m1: ru.TypeTag[M]): Type =
         if (sym eq NoSymbol) NoType
         else appliedType(sym, compilerTypeFromTag(m1).asInstanceOf[Type])

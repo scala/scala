@@ -26,7 +26,7 @@ import scala.runtime.AbstractFunction1
   *  @tparam A         the type of the elements contained in this tree set
   *  @param ordering   the implicit ordering used to compare objects of type `A`
   *
-  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#red-black-trees "Scala's Collection Library overview"]]
   *  section on `Red-Black Trees` for more information.
   *
   *  @define Coll `immutable.TreeSet`
@@ -48,7 +48,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def sortedIterableFactory = TreeSet
+  override def sortedIterableFactory: TreeSet.type = TreeSet
 
   private[this] def newSetOrSelf(t: RB.Tree[A, Any]) = if(t eq tree) this else new TreeSet[A](t)
 

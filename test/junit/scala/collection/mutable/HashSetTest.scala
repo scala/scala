@@ -86,28 +86,19 @@ class HashSetTest {
   }
 
   class OnceOnly extends IterableOnce[Int] {
-    override def knownSize: Int = 1
+    var iterated = false
 
-    var iterated:Boolean = false
-
-    override def iterator: Iterator[Int] = {
-      new Iterator[Int] {
-        assert(!iterated)
-        iterated = true
-        private var v = Option(42)
-        override def hasNext: Boolean = v.nonEmpty && knownSize > 0
-        override def next(): Int = {
-          val res = v.get
-          v = None
-          res
-        }
-      }
+    override def iterator = {
+      assertFalse("Attempt to re-iterate!", iterated)
+      iterated = true
+      Iterator.single(42)
     }
   }
 
   @Test
-  def addAllTest2(): Unit = {
+  def `addAll adds exactly once`: Unit = {
     val hs = HashSet.empty[Int]
     hs.addAll(new OnceOnly)
+    assertEquals(1, hs.size)
   }
 }

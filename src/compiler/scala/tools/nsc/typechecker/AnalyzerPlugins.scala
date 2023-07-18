@@ -54,7 +54,8 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
     /**
      * Let analyzer plugins change the types assigned to definitions. For definitions that have
      * an annotated type, the assigned type is obtained by typing that type tree. Otherwise, the
-     * type is inferred by typing the definition's righthand side.
+     * type is inferred by typing the definition's righthand side, or from the overridden
+     * member under `-Xsource:3`.
      *
      * In order to know if the type was inferred, you can query the `wasEmpty` field in the `tpt`
      * TypeTree of the definition (for DefDef and ValDef).

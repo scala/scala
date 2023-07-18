@@ -45,14 +45,14 @@ trait BuildFrom[-From, -A, +C] extends Any { self =>
 object BuildFrom extends BuildFromLowPriority1 {
 
   /** Build the source collection type from a MapOps */
-  implicit def buildFromMapOps[CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _], K0, V0, K, V]: BuildFrom[CC[K0, V0], (K, V), CC[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
+  implicit def buildFromMapOps[CC[X, Y] <: Map[X, Y] with MapOps[X, Y, CC, _], K0, V0, K, V]: BuildFrom[CC[K0, V0] with Map[K0, V0], (K, V), CC[K, V] with Map[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
     //TODO: Reuse a prototype instance
     def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = (from: MapOps[K0, V0, CC, _]).mapFactory.newBuilder[K, V]
     def fromSpecific(from: CC[K0, V0])(it: IterableOnce[(K, V)]): CC[K, V] = (from: MapOps[K0, V0, CC, _]).mapFactory.from(it)
   }
 
   /** Build the source collection type from a SortedMapOps */
-  implicit def buildFromSortedMapOps[CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], K0, V0, K : Ordering, V]: BuildFrom[CC[K0, V0], (K, V), CC[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
+  implicit def buildFromSortedMapOps[CC[X, Y] <: SortedMap[X, Y] with SortedMapOps[X, Y, CC, _], K0, V0, K : Ordering, V]: BuildFrom[CC[K0, V0] with SortedMap[K0, V0], (K, V), CC[K, V] with SortedMap[K, V]] = new BuildFrom[CC[K0, V0], (K, V), CC[K, V]] {
     def newBuilder(from: CC[K0, V0]): Builder[(K, V), CC[K, V]] = (from: SortedMapOps[K0, V0, CC, _]).sortedMapFactory.newBuilder[K, V]
     def fromSpecific(from: CC[K0, V0])(it: IterableOnce[(K, V)]): CC[K, V] = (from: SortedMapOps[K0, V0, CC, _]).sortedMapFactory.from(it)
   }
@@ -92,7 +92,10 @@ object BuildFrom extends BuildFromLowPriority1 {
 trait BuildFromLowPriority1 extends BuildFromLowPriority2 {
 
   /** Build the source collection type from an Iterable with SortedOps */
-  implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
+  // Restating the upper bound of CC in the result type seems redundant, but it serves to prune the
+  // implicit search space for faster compilation and reduced change of divergence. See the compilation
+  // test in test/junit/scala/collection/BuildFromTest.scala and discussion in https://github.com/scala/scala/pull/10209
+  implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0] with SortedSet[A0], A, CC[A] with SortedSet[A]] = new BuildFrom[CC[A0], A, CC[A]] {
     def newBuilder(from: CC[A0]): Builder[A, CC[A]] = (from: SortedSetOps[A0, CC, _]).sortedIterableFactory.newBuilder[A]
     def fromSpecific(from: CC[A0])(it: IterableOnce[A]): CC[A] = (from: SortedSetOps[A0, CC, _]).sortedIterableFactory.from(it)
   }

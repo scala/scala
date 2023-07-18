@@ -7,20 +7,17 @@ import java.lang.reflect.InvocationTargetException
 import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows, fail}
 import scala.tools.testkit.ReflectUtil.{getMethodAccessible, _}
+import scala.util.chaining._
 
 class ArrayBufferTest {
 
   /* Test for scala/bug#9043 */
   @Test
-  def testInsertAll(): Unit = {
-    val traver = ArrayBuffer(2, 4, 5, 7)
+  def testInsertAll: Unit = {
+    def traver = ArrayBuffer(2, 4, 5, 7)
     val testSeq = List(1, 3, 6, 9)
 
-    def insertAt(x: Int) = {
-      val clone = traver.clone()
-      clone.insertAll(x, testSeq)
-      clone
-    }
+    def insertAt(x: Int) = traver.tap(_.insertAll(x, testSeq))
 
     // Just insert some at position 0
     assertEquals(ArrayBuffer(1, 3, 6, 9, 2, 4, 5, 7), insertAt(0))
@@ -34,6 +31,9 @@ class ArrayBufferTest {
     // Overflow is caught
     assertThrows[IndexOutOfBoundsException] { insertAt(-1) }
     assertThrows[IndexOutOfBoundsException] { insertAt(traver.size + 10) }
+
+    val xs = new Iterable[Int] { def iterator = Iterator(42); override def knownSize = 10 }
+    assertThrows[IllegalStateException] { traver.tap(_.insertAll(0, xs)) }
   }
 
   @Test

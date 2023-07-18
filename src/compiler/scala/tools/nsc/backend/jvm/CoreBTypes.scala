@@ -210,6 +210,9 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   def                     jliLambdaMetafactoryRef   : ClassBType = _jliLambdaMetafactoryRef.get
   private[this] lazy val _jliLambdaMetafactoryRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[java.lang.invoke.LambdaMetafactory]))
 
+  def                     jliStringConcatFactoryRef : ClassBType = _jliStringConcatFactoryRef.get
+  private[this] lazy val _jliStringConcatFactoryRef : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(getRequiredClass("java.lang.invoke.StringConcatFactory")))
+
   def                     srBoxesRunTimeRef         : ClassBType = _srBoxesRunTimeRef.get
   private[this] lazy val _srBoxesRunTimeRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime]))
 

@@ -127,4 +127,20 @@ t8667.scala:76: error: can't supply unit value with infix notation because nulla
 t8667.scala:77: error: no arguments allowed for nullary method f0: (): Int
     x.f0(())
          ^
-43 errors
+t8667.scala:89: error: unknown parameter name: k
+    f2(k = 42)
+         ^
+t8667.scala:89: error: not enough arguments for method f2: (i: Int, j: Int): Unit.
+Unspecified value parameters i, j.
+    f2(k = 42)
+      ^
+t8667.scala:90: error: unknown parameter name: k
+    f2(17, k = 42)
+             ^
+t8667.scala:91: error: unknown parameter name: k
+    f2(17, 27, k = 42)
+                 ^
+t8667.scala:91: error: too many arguments (found 3, expected 2) for method f2: (i: Int, j: Int): Unit
+    f2(17, 27, k = 42)
+      ^
+48 errors

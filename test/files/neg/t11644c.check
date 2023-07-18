@@ -1,0 +1,14 @@
+s.scala:13: warning: Eta-expansion to expected type J, which is not a function type but is SAM-convertible to Int => Int.
+Avoid eta-expansion by writing the function literal `((i: Int) => bump(i))` or `bump(_)`.
+This warning can be filtered with `-Wconf:cat=lint-eta-sam`.
+    c.f(bump),
+        ^
+s.scala:14: warning: Eta-expansion to expected type K, which is not a function type but is SAM-convertible to Int => Int.
+trait K should be annotated with `@FunctionalInterface` if eta-expansion is desired.
+Avoid eta-expansion by writing the function literal `((i: Int) => bump(i))` or `bump(_)`.
+This warning can be filtered with `-Wconf:cat=lint-eta-sam`.
+    c.g(bump),
+        ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

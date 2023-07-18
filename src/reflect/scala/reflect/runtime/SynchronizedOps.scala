@@ -59,7 +59,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
     def syncLockSynchronized[T](body: => T): T = if (isCompilerUniverse) body else syncLock.synchronized { body }
     override def isEmpty: Boolean = syncLockSynchronized { super.isEmpty }
     override def size: Int = syncLockSynchronized { super.size }
-    override def enter[T <: Symbol](sym: T): T = syncLockSynchronized { super.enter(sym) }
+    override def enter[T <: Symbol](sym: T): sym.type = syncLockSynchronized { super.enter(sym) }
     override def rehash(sym: Symbol, newname: Name) = syncLockSynchronized { super.rehash(sym, newname) }
     override def unlink(e: ScopeEntry) = syncLockSynchronized { super.unlink(e) }
     override def unlink(sym: Symbol) = syncLockSynchronized { super.unlink(sym) }

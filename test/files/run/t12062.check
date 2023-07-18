@@ -102,7 +102,6 @@ source-newSource2.scala,line-27 TestShort.this.value()
 
 class TestInt
 source-newSource3.scala,line-2 TestInt.super.<init>()
-source-newSource3.scala,line-3 1.toInt()
 source-newSource3.scala,line-6 java.lang.Integer.toString(TestInt.this.value())
 source-newSource3.scala,line-6 TestInt.this.value()
 source-newSource3.scala,line-7 java.lang.Integer.hashCode(TestInt.this.value())
@@ -151,7 +150,6 @@ source-newSource3.scala,line-27 TestInt.this.value()
 
 class TestLong
 source-newSource4.scala,line-2 TestLong.super.<init>()
-source-newSource4.scala,line-3 1.toLong()
 source-newSource4.scala,line-6 java.lang.Long.toString(TestLong.this.value())
 source-newSource4.scala,line-6 TestLong.this.value()
 source-newSource4.scala,line-7 java.lang.Long.hashCode(TestLong.this.value())
@@ -220,7 +218,6 @@ source-newSource6.scala,line-8 TestChar.this.value()
 
 class TestFloat
 source-newSource7.scala,line-2 TestFloat.super.<init>()
-source-newSource7.scala,line-3 1.toFloat()
 source-newSource7.scala,line-6 java.lang.Float.toString(TestFloat.this.value())
 source-newSource7.scala,line-6 TestFloat.this.value()
 source-newSource7.scala,line-7 java.lang.Float.hashCode(TestFloat.this.value())
@@ -297,7 +294,6 @@ source-newSource7.scala,line-38 TestFloat.this.value()
 
 class TestDouble
 source-newSource8.scala,line-2 TestDouble.super.<init>()
-source-newSource8.scala,line-3 1.toDouble()
 source-newSource8.scala,line-6 java.lang.Double.toString(TestDouble.this.value())
 source-newSource8.scala,line-6 TestDouble.this.value()
 source-newSource8.scala,line-7 java.lang.Double.hashCode(TestDouble.this.value())

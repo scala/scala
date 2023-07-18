@@ -719,7 +719,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
     *
-    *  @param suffix   the traversable to append.
+    *  @param suffix   the iterable to append.
     *  @tparam B     the element type of the returned collection.
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
@@ -916,16 +916,16 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
     override def iterator = Iterator.single(a)
     override def knownSize = 1
     override def head = a
-    override def headOption = Some(a)
+    override def headOption: Some[A] = Some(a)
     override def last = a
-    override def lastOption = Some(a)
-    override def view = new View.Single(a)
+    override def lastOption: Some[A] = Some(a)
+    override def view: View.Single[A] = new View.Single(a)
     override def take(n: Int) = if (n > 0) this else Iterable.empty
     override def takeRight(n: Int) = if (n > 0) this else Iterable.empty
     override def drop(n: Int) = if (n > 0) Iterable.empty else this
     override def dropRight(n: Int) = if (n > 0) Iterable.empty else this
-    override def tail = Iterable.empty
-    override def init = Iterable.empty
+    override def tail: Iterable[Nothing] = Iterable.empty
+    override def init: Iterable[Nothing] = Iterable.empty
   }
 }
 

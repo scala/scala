@@ -3,7 +3,7 @@ package scala.build
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
 import java.util.jar.Attributes
-import sbt._
+import sbt.{License => _, _}
 import sbt.Keys._
 import collection.JavaConverters._
 import VersionUtil.versionProperties
@@ -85,7 +85,7 @@ object Osgi {
     def resourceDirectoryRef(f: File) = (if (f.getName endsWith ".jar") "@" else "") + f.getAbsolutePath
 
     val includeRes = resourceDirectories.filter(_.exists).map(resourceDirectoryRef).mkString(",")
-    if (!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
+    if (includeRes.nonEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
     builder.getProperties.asScala.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
     // builder.build is not thread-safe because it uses a static SimpleDateFormat.  This ensures
     // that all calls to builder.build are serialized.

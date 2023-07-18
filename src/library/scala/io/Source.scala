@@ -132,7 +132,7 @@ object Source {
   /** same as fromURL(new URL(s))
    */
   def fromURL(s: String)(implicit codec: Codec): BufferedSource =
-    fromURL(new URL(s))(codec)
+    fromURL(new URI(s).toURL)(codec)
 
   /** same as fromInputStream(url.openStream())(Codec(enc))
    */

@@ -1,4 +1,4 @@
-/* scalac: -Ywarn-dead-code -Xfatal-warnings */
+// scalac: -Wdead-code -Werror
 object Other {
   def oops(msg: String = "xxx"): Nothing = throw new Exception(msg) // should not warn
 }

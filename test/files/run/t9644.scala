@@ -19,7 +19,7 @@ object Test extends App {
   val RetentionPolicy_RUNTIME = symbolOf[RetentionPolicy].companion.info.decl(TermName("RUNTIME"))
   r.tree match {
     case Apply(Select(New(tpt), _), List(NamedArg(Ident(TermName("value")), Literal(Constant(RetentionPolicy_RUNTIME))))) =>
-      assert (tpt.tpe.typeSymbol == symbolOf[Retention], tpt.tpe.typeSymbol)
+      assert(tpt.tpe.typeSymbol == symbolOf[Retention], tpt.tpe.typeSymbol)
   }
 
 }

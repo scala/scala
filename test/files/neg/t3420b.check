@@ -1,0 +1,4 @@
+t3420b.scala:8: error: value translateEscapes is not a member of String
+  def f(s: String) = s.translateEscapes
+                       ^
+1 error

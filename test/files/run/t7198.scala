@@ -1,5 +1,5 @@
+// filter: Over the moon
 /* spew a few lines
- * filter: Over the moon
  */
 object Test extends App {
   Console println "The quick brown fox jumped"

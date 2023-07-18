@@ -111,9 +111,36 @@ class AssertUtilTest {
     assertEquals(0, sut.errors.head._2.getSuppressed.length)
   }
 
+  @Test def `probe for stack safety`: Unit = {
+    import scala.util.Try
+    assertStackSafe(probeStackSafety[Unit](), probeStackSafety[Unit]())
+    assertFails(_ => true)(assertStackSafe[Any](probeStackSafety[Unit](), Try(probeStackSafety[Unit]())))
+  }
+
   /** TODO
   @Test def `hexdump is supplementary-aware`: Unit = {
     assertEquals("00000000  f0 90 90 80                                       |𐐀.|", hexdump("\ud801\udc00").next())
   }
   */
+
+  @Test def `assertSameElements reports fail of IterableOnce`: Unit = {
+    assertFails(_ == "expected:<List(1, 2, 3)> but was:<List(1, 2, 3, 4)>") {
+      assertSameElements(List(1, 2, 3), Iterator(1, 2, 3, 4))
+    }
+    assertFails(_ == "expected:<List(1, 2, 3)> but was:<List(1, 2, 3, 4)>") {
+      assertSameElements(List(1, 2, 3), Set(1, 2, 3, 4))
+    }
+    assertFails(_ == "expected:<Vector(1, 2, 3)> but was:<List(1, 2, 3, 4)>") {
+      assertSameElements(Vector(1, 2, 3), Iterator(1, 2, 3, 4))
+    }
+    assertFails(_ == "force use of canonical method expected:<Vector(1, 2, 3)> but was:<List(1, 2, 3, 4)>") {
+      assertSameElements(Vector(1, 2, 3), Iterator(1, 2, 3, 4).to(Iterable), message = "force use of canonical method")
+    }
+  }
+  @Test def `assertSameElements supports Array directly`: Unit = {
+    assertSameElements(Array(42), Array(42))
+    assertFails(_ == "expected:<ArraySeq(17)> but was:<ArraySeq(42)>") {
+      assertSameElements(Array(17), Array(42))
+    }
+  }
 }

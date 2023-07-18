@@ -173,7 +173,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class ByteManifest extends AnyValManifest[scala.Byte]("Byte") {
-    def runtimeClass = java.lang.Byte.TYPE
+    def runtimeClass: Class[java.lang.Byte] = java.lang.Byte.TYPE
     @inline override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): ArraySeq[Byte] = new ArraySeq.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
@@ -189,7 +189,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class ShortManifest extends AnyValManifest[scala.Short]("Short") {
-    def runtimeClass = java.lang.Short.TYPE
+    def runtimeClass: Class[java.lang.Short] = java.lang.Short.TYPE
     @inline override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): ArraySeq[Short] = new ArraySeq.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
@@ -205,7 +205,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class CharManifest extends AnyValManifest[scala.Char]("Char") {
-    def runtimeClass = java.lang.Character.TYPE
+    def runtimeClass: Class[java.lang.Character] = java.lang.Character.TYPE
     @inline override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): ArraySeq[Char] = new ArraySeq.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
@@ -221,7 +221,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class IntManifest extends AnyValManifest[scala.Int]("Int") {
-    def runtimeClass = java.lang.Integer.TYPE
+    def runtimeClass: Class[java.lang.Integer] = java.lang.Integer.TYPE
     @inline override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): ArraySeq[Int] = new ArraySeq.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
@@ -237,7 +237,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class LongManifest extends AnyValManifest[scala.Long]("Long") {
-    def runtimeClass = java.lang.Long.TYPE
+    def runtimeClass: Class[java.lang.Long] = java.lang.Long.TYPE
     @inline override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): ArraySeq[Long] = new ArraySeq.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
@@ -253,7 +253,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class FloatManifest extends AnyValManifest[scala.Float]("Float") {
-    def runtimeClass = java.lang.Float.TYPE
+    def runtimeClass: Class[java.lang.Float] = java.lang.Float.TYPE
     @inline override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): ArraySeq[Float] = new ArraySeq.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
@@ -269,7 +269,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class DoubleManifest extends AnyValManifest[scala.Double]("Double") {
-    def runtimeClass = java.lang.Double.TYPE
+    def runtimeClass: Class[java.lang.Double] = java.lang.Double.TYPE
     @inline override def newArray(len: Int): Array[Double] = new Array[Double](len)
     override def newWrappedArray(len: Int): ArraySeq[Double] = new ArraySeq.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
@@ -286,7 +286,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class BooleanManifest extends AnyValManifest[scala.Boolean]("Boolean") {
-    def runtimeClass = java.lang.Boolean.TYPE
+    def runtimeClass: Class[java.lang.Boolean] = java.lang.Boolean.TYPE
     @inline override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): ArraySeq[Boolean] = new ArraySeq.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
@@ -302,7 +302,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private[reflect] class UnitManifest extends AnyValManifest[scala.Unit]("Unit") {
-    def runtimeClass = java.lang.Void.TYPE
+    def runtimeClass: Class[java.lang.Void] = java.lang.Void.TYPE
     @inline override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): ArraySeq[Unit] = new ArraySeq.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
@@ -368,7 +368,7 @@ object ManifestFactory {
 
   @SerialVersionUID(1L)
   final private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
-    lazy val runtimeClass = value.getClass
+    lazy val runtimeClass: Class[_ <: AnyRef] = value.getClass
     override lazy val toString = value.toString + ".type"
   }
 

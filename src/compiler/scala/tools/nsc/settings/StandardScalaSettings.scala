@@ -73,7 +73,7 @@ trait StandardScalaSettings { _: MutableSettings =>
       // .withAbbreviation("-Xtarget")
       // .withAbbreviation("-Xunchecked-java-output-version")
       .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
-  def targetValue: String = releaseValue.getOrElse(target.value)
+  def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -103,7 +103,7 @@ object StandardScalaSettings {
   val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
     case SpecificScalaVersion(1, minor, _, _) => minor
     case SpecificScalaVersion(major, _, _, _) => major
-    case _ => 19
+    case _ => 21
   }
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)

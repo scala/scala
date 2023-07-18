@@ -39,7 +39,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.valuesIterator.exists(_.isHelping)
@@ -499,7 +499,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val showPhases         = BooleanSetting("-Vphases", "Print a synopsis of compiler phases.")
     .withAbbreviation("-Xshow-phases")
   val Yposdebug          = BooleanSetting("-Vpos", "Trace position validation.") withAbbreviation "-Ypos-debug"
-  val Xprint             = PhasesSetting("-Vprint", "Print out program after")
+  val Xprint             = PhasesSetting("-Vprint", "Print out program after (or ~phase for before and after)", "typer")
     .withAbbreviation("-Xprint")
   val Xprintpos          = BooleanSetting("-Vprint-pos", "Print tree positions, as offsets.")
     .withAbbreviation("-Xprint-pos")

@@ -26,7 +26,7 @@ import scala.collection.generic.DefaultSerializable
   *  access take constant time (amortized time). Prepends and removes are
   *  linear in the buffer size.
   *
-  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
   *  section on `Array Buffers` for more information.
 
   *
@@ -197,7 +197,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
           //   - `copyElemsToArray` will call `System.arraycopy`
           //   - `System.arraycopy` will effectively "read" all the values before
           //     overwriting any of them when two arrays are the the same reference
-          IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
+          val actual = IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
+          if (actual != elemsLength) throw new IllegalStateException(s"Copied $actual of $elemsLength")
           size0 = len + elemsLength // update size AFTER the copy, in case we're inserting a proxy
         }
       case _ => insertAll(index, ArrayBuffer.from(elems))
@@ -295,7 +296,8 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     if (k >= 0) {
       // Avoid reallocation of buffer if length is known
       val array = ensureSize(emptyArray, 0, k) // don't duplicate sizing logic, and check VM array size limit
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      val actual = IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      if (actual != k) throw new IllegalStateException(s"Copied $actual of $k")
       new ArrayBuffer[B](array, k)
     }
     else new ArrayBuffer[B] ++= coll

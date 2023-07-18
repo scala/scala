@@ -1,7 +1,14 @@
 t7131.scala:21: error: type mismatch;
  found   : Iterable[U]
  required: That
- Note: implicit method convertToSimpleMappable is not applicable here because it comes after the application point and it lacks an explicit result type
+ Note: implicit method convertToSimpleMappable is not applicable here because it comes after the application point and it lacks an explicit result type.
         x.value.map(f)
                    ^
+t7131.scala:28: warning: Implicit definition should have explicit type (inferred ObservableValue.TraversableMappable[T,Container])
+  implicit def convertToTraversableMappable[T, Container[X] <: Traversable[X]](x: ObservableValue[Container[T]]) =
+               ^
+t7131.scala:43: warning: Implicit definition should have explicit type (inferred ObservableValue.NestedMappable[T,Container])
+  implicit def convertToSimpleMappable[T, Container[X] <: ObservableValue.HasMap[X, Container]](x: ObservableValue[Container[T]]) =
+               ^
+2 warnings
 1 error

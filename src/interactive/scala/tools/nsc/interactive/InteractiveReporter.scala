@@ -14,10 +14,10 @@ package scala.tools.nsc
 package interactive
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.tools.nsc.reporters.FilteringReporter
 
-case class Problem(pos: Position, msg: String, severityLevel: Int)
+case class Problem(pos: Position, msg: String, severityLevel: Int, actions: List[CodeAction])
 
 abstract class InteractiveReporter extends FilteringReporter {
 
@@ -27,7 +27,7 @@ abstract class InteractiveReporter extends FilteringReporter {
 
   val otherProblems = new ArrayBuffer[Problem]
 
-  override def doReport(pos: Position, msg: String, severity: Severity): Unit = try {
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = try {
     val problems =
       if (compiler eq null) {
         otherProblems
@@ -44,7 +44,7 @@ abstract class InteractiveReporter extends FilteringReporter {
         compiler.debugLog("[no position] :" + msg)
         otherProblems
       }
-    problems += Problem(pos, msg, severity.id)
+    problems += Problem(pos, msg, severity.id, actions)
   } catch {
     case ex: UnsupportedOperationException =>
   }

@@ -19,7 +19,7 @@ import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
-import util.{ReusableInstance, Statistics}
+import util.{ReusableInstance, Statistics, StringContextStripMarginOps}
 
 trait Trees extends api.Trees {
   self: SymbolTable =>
@@ -292,6 +292,7 @@ trait Trees extends api.Trees {
     def getterName: TermName = name.getterName
     def setterName: TermName = name.setterName
     def localName: TermName = name.localName
+    def namePos: Position = this.attachments.get[NamePos].map(_.pos).getOrElse(this.pos)
   }
 
   trait RefTree extends SymTree with NameTree with RefTreeApi {
@@ -1426,7 +1427,7 @@ trait Trees extends api.Trees {
       else Modifiers(flags, privateWithin, newAnns) setPositions positions
     }
 
-    override def toString = "Modifiers(%s, %s, %s)".format(flagString, annotations mkString ", ", positions)
+    override def toString = s"Modifiers($flagString, ${annotations.mkString(",")}, $positions)"
   }
 
   object Modifiers extends ModifiersExtractor
@@ -1452,7 +1453,7 @@ trait Trees extends api.Trees {
     super.setType(NoType)
 
     override def canHaveAttrs = false
-    override def setPos(pos: Position) = { requireLegal(pos, NoPosition, "pos"); this }
+    override def setPos(pos: Position): this.type = { requireLegal(pos, NoPosition, "pos"); this }
     override def pos_=(pos: Position) = setPos(pos)
     override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
     override def tpe_=(t: Type) = setType(t)
@@ -1464,15 +1465,13 @@ trait Trees extends api.Trees {
     override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
     private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
 
-    private def requireLegal(value: Any, allowed: Any, what: String) = (
-      if (value != allowed) {
+    private def requireLegal(value: Any, allowed: Any, what: String): Unit =
+      if (value != allowed && this != pendingSuperCall) {
         log(s"can't set $what for $self to value other than $allowed")
         if (settings.isDebug && settings.isDeveloper)
-          (new Throwable).printStackTrace
+          new Throwable(s"can't set $what for $self to value other than $allowed").printStackTrace
       }
-    )
-    override def traverse(traverser: Traverser): Unit =
-      ()
+    override def traverse(traverser: Traverser): Unit = ()
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs {
@@ -1622,13 +1621,29 @@ trait Trees extends api.Trees {
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends InternalTraverser {
-    final def change(sym: Symbol) = {
+    protected val changedSymbols = mutable.Set.empty[Symbol]
+    protected val treeTypes = mutable.Set.empty[Type]
+
+    def change(sym: Symbol): Unit = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner
-        if (sym.isModule) sym.moduleClass.owner = newowner
+        changedSymbols += sym
+        if (sym.isModule) {
+          sym.moduleClass.owner = newowner
+          changedSymbols += sym.moduleClass
+        }
       }
     }
+
+    override def apply[T <: Tree](tree: T): T = {
+      traverse(tree)
+      if (changedSymbols.nonEmpty)
+        new InvalidateTypeCaches(changedSymbols).invalidate(treeTypes)
+      tree
+    }
+
     override def traverse(tree: Tree): Unit = {
+      if (tree.tpe != null) treeTypes += tree.tpe
       tree match {
         case _: Return =>
           if (tree.symbol == oldowner) {
@@ -1760,7 +1775,10 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = SubstSymMap(from, to)
-    private[this] var mutatedSymbols: List[Symbol] = Nil
+
+    protected val changedSymbols = mutable.Set.empty[Symbol]
+    protected val treeTypes = mutable.Set.empty[Type]
+
     override def transform(tree: Tree): Tree = {
       @tailrec
       def subst(from: List[Symbol], to: List[Symbol]): Unit = {
@@ -1769,6 +1787,7 @@ trait Trees extends api.Trees {
           else subst(from.tail, to.tail)
       }
       tree modifyType symSubst
+      if (tree.tpe != null) treeTypes += tree.tpe
 
       if (tree.hasSymbolField) {
         subst(from, to)
@@ -1781,7 +1800,7 @@ trait Trees extends api.Trees {
                   |TreeSymSubstituter: updated info of symbol ${sym}
                   |  Old: ${showRaw(sym.info, printTypes = true, printIds = true)}
                   |  New: ${showRaw(newInfo, printTypes = true, printIds = true)}""")
-                mutatedSymbols ::= sym
+                changedSymbols += sym
                 sym updateInfo newInfo
               }
             }
@@ -1806,7 +1825,8 @@ trait Trees extends api.Trees {
     }
     def apply[T <: Tree](tree: T): T = {
       val tree1 = transform(tree)
-      invalidateTreeTpeCaches(tree1, mutatedSymbols)
+      if (changedSymbols.nonEmpty)
+        new InvalidateTypeCaches(changedSymbols).invalidate(treeTypes)
       tree1.asInstanceOf[T]
     }
     override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)

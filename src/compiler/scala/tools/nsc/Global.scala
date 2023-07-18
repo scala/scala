@@ -135,9 +135,22 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
-  /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
-  // Fixes scala/bug#8779
-  def optimizerClassPath(base: ClassPath): ClassPath = base
+
+  /* Create a class path for the backend, based on the given class path.
+   * Used to make classes available to the inliner's bytecode repository.
+   *
+   * In particular, if ct.sym is used for compilation, replace it with jrt.
+   *
+   * See ReplGlobal, which appends a classpath entry containing products of previous runs.  (Fixes scala/bug#8779.)
+   */
+  def optimizerClassPath(base: ClassPath): ClassPath =
+    base match {
+      case AggregateClassPath(entries) if entries.head.isInstanceOf[CtSymClassPath] =>
+        JrtClassPath(release = None, closeableRegistry)
+          .map(jrt => AggregateClassPath(entries.drop(1).prepended(jrt)))
+          .getOrElse(base)
+      case _ => base
+    }
 
   def classPath: ClassPath = platform.classPath
 
@@ -1275,26 +1288,26 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       // doesn't select a unique phase, that might be surprising too.
       def checkPhaseSettings(including: Boolean, specs: Seq[String]*) = {
         def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
-        def isSpecial(s: String) = (s == "_" || isRange(s))
+        def isMulti(s: String) = s == "_" || s == "all" || isRange(s) || s.startsWith("~")
         val tester = new ss.PhasesSetting("fake","fake")
         for (p <- specs.flatten.to(Set)) {
           tester.value = List(p)
           val count =
             if (including) first.iterator.count(tester.containsPhase(_))
-            else phaseDescriptors.count(pd => tester.contains(pd.phaseName))
+            else phaseDescriptors.count(pd => tester.contains(pd.phaseName) || tester.contains(s"~${pd.phaseName}"))
           if (count == 0) runReporting.warning(NoPosition, s"'$p' specifies no phase", WarningCategory.Other, site = "")
-          if (count > 1 && !isSpecial(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
-          if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
+          if (count > 1 && !isMulti(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
+          if (!including && isMulti(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
           tester.clear()
         }
       }
       // phases that are excluded; for historical reasons, these settings only select by phase name
       val exclusions = List(ss.stopBefore, ss.stopAfter, ss.skip)
       val inclusions = ss.visibleSettings collect {
-        case s: ss.PhasesSetting if !(exclusions contains s) => s.value
+        case s: ss.PhasesSetting if !exclusions.contains(s) => s.value
       }
       checkPhaseSettings(including = true, inclusions.toSeq: _*)
-      checkPhaseSettings(including = false, exclusions map (_.value): _*)
+      checkPhaseSettings(including = false, exclusions.map(_.value): _*)
 
       // Report the overhead of statistics measurements per every run
       if (settings.areStatisticsEnabled)
@@ -1463,13 +1476,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       val global: Global.this.type = Global.this
       lazy val trackers = currentRun.units.toList map (x => SymbolTracker(x))
       def snapshot() = {
-        inform("\n[[symbol layout at end of " + phase + "]]")
+        println(s"\n[[symbol layout at end of $phase]]")
         exitingPhase(phase) {
           trackers foreach { t =>
             t.snapshot()
-            inform(t.show("Heading from " + phase.prev.name + " to " + phase.name))
+            println(t.show(s"Heading from ${phase.prev.name} to ${phase.name}"))
           }
         }
+        println()
       }
     }
 
@@ -1479,7 +1493,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     private def printArgs(sources: List[SourceFile]): Unit =
       settings.printArgs.valueSetByUser foreach { value =>
-        val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString())).mkString("", "\n", "\n")
+        def quote(s: String) = if (s.charAt(0) != '"' && s.contains(' ')) "\"" + s + "\"" else s
+        val allArgs = settings.recreateArgs ::: sources.map(_.file.absolute.toString())
+        val argsFile = allArgs.map(quote).mkString("", "\n", "\n")
         value match {
           case "-" =>
             reporter.echo(argsFile)
@@ -1491,23 +1507,19 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         }
       }
 
-    /** Compile list of source files,
-     *  unless there is a problem already,
-     *  such as a plugin was passed a bad option.
+    /** Compile a list of source files, unless there is a problem already, e.g., a plugin was passed a bad option.
      */
     def compileSources(sources: List[SourceFile]): Unit = if (!reporter.hasErrors) {
       printArgs(sources)
-
       def checkDeprecations() = {
         warnDeprecatedAndConflictingSettings()
         reporting.summarizeErrors()
       }
-
-      val units = sources map scripted map (file => new CompilationUnit(file, warningFreshNameCreator))
-
-      units match {
+      sources match {
         case Nil => checkDeprecations()   // nothing to compile, report deprecated options
-        case _   => compileUnits(units)
+        case _   =>
+          val units = sources.map(src => new CompilationUnit(scripted(src), warningFreshNameCreator))
+          compileUnits(units)
       }
     }
 
@@ -1540,7 +1552,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           informTime(globalPhase.description, phaseTimer.nanos)
 
         // progress update
-        if ((settings.Xprint containsPhase globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
+        if (settings.Xprint.containsPhase(globalPhase) || settings.printLate.value && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) nodePrinters.printAll()
           else printAllUnits()
@@ -1716,10 +1728,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   } // class Run
 
   def printAllUnits(): Unit = {
-    print("[[syntax trees at end of %25s]]".format(phase))
-    exitingPhase(phase)(currentRun.units foreach { unit =>
-      nodePrinters showUnit unit
-    })
+    print(f"[[syntax trees at end of $phase%25s]]")
+    exitingPhase(phase)(currentRun.units.foreach(nodePrinters.showUnit(_)))
   }
 
   /** We resolve the class/object ambiguity by passing a type/term name.

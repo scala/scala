@@ -15,12 +15,14 @@ package tools
 package nsc
 
 import java.util.regex.PatternSyntaxException
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.reflect.internal.util.{NoSourceFile, Position, SourceFile}
+import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, SourceFile}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
+import scala.tools.nsc.settings.NoScalaVersion
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
@@ -38,6 +40,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     val rootDirPrefix: String =
       if (settings.rootdir.value.isEmpty) ""
       else Regex.quote(new java.io.File(settings.rootdir.value).getCanonicalPath.replace("\\", "/"))
+    @nowarn("cat=deprecation")
+    def isScala3 = settings.isScala3.value
+    def isScala3Migration = settings.Xmigration.value != NoScalaVersion
     lazy val wconf = WConf.parse(settings.Wconf.value, rootDirPrefix) match {
       case Left(msgs) =>
         val multiHelp =
@@ -48,7 +53,13 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           else ""
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
-      case Right(c) => c
+      case Right(conf) =>
+        if (isScala3 && !conf.filters.exists(_._1.exists { case MessageFilter.Category(WarningCategory.Scala3Migration) => true case _ => false })) {
+          val migrationAction = if (isScala3Migration) Action.Warning else Action.Error
+          val migrationCategory = MessageFilter.Category(WarningCategory.Scala3Migration) :: Nil
+          WConf(conf.filters :+ (migrationCategory, migrationAction))
+        }
+        else conf
     }
 
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
@@ -88,7 +99,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           source <- suppressions.keysIterator.toList
           sups   <- suppressions.remove(source)
           sup    <- sups.reverse
-        } if (!sup.used && !sup.synthetic) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
+        } if (!sup.used && !sup.synthetic) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, "", Nil))
     }
 
     def reportSuspendedMessages(unit: CompilationUnit): Unit = {
@@ -109,16 +120,16 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
     private def issueWarning(warning: Message): Unit = {
       def verbose = warning match {
-        case Message.Deprecation(_, msg, site, origin, version) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.filterString}] $msg"
-        case Message.Origin(_, msg, category, site, origin @ _) => s"[${category.name} @ $site] $msg"  // origin text is obvious at caret
-        case Message.Plain(_, msg, category, site) => s"[${category.name} @ $site] $msg"
+        case Message.Deprecation(_, msg, site, origin, version, _) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.filterString}] $msg"
+        case Message.Origin(_, msg, category, site, origin @ _, _) => s"[${category.name} @ $site] $msg"  // origin text is obvious at caret
+        case Message.Plain(_, msg, category, site, _) => s"[${category.name} @ $site] $msg"
       }
       wconf.action(warning) match {
-        case Action.Error => reporter.error(warning.pos, warning.msg)
-        case Action.Warning => reporter.warning(warning.pos, warning.msg)
-        case Action.WarningVerbose => reporter.warning(warning.pos, verbose)
-        case Action.Info => reporter.echo(warning.pos, warning.msg)
-        case Action.InfoVerbose => reporter.echo(warning.pos, verbose)
+        case Action.Error => reporter.error(warning.pos, warning.msg, warning.actions)
+        case Action.Warning => reporter.warning(warning.pos, warning.msg, warning.actions)
+        case Action.WarningVerbose => reporter.warning(warning.pos, verbose, warning.actions)
+        case Action.Info => reporter.echo(warning.pos, warning.msg, warning.actions)
+        case Action.InfoVerbose => reporter.echo(warning.pos, verbose, warning.actions)
         case a @ (Action.WarningSummary | Action.InfoSummary) =>
           val m = summaryMap(a, warning.category.summaryCategory)
           if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
@@ -195,16 +206,19 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       impl(sym)
     } else ""
 
-    override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
-      issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
+    override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction] = Nil): Unit =
+      issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since), actions))
 
+    // multiple overloads cannot use default args
+    def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String, actions: List[CodeAction]): Unit =
+      deprecationWarning(pos, msg, since, siteName(site), siteName(origin), actions)
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
       val version = origin.deprecationVersion.getOrElse("")
       val since   = if (version.isEmpty) version else s" (since $version)"
-      val message = origin.deprecationMessage.map(": " + _).getOrElse("")
+      val message = origin.deprecationMessage.filter(!_.isEmpty).map(": " + _).getOrElse("")
       deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
     }
 
@@ -257,17 +271,19 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
 
-    // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.
+    // Used in the optimizer where we don't have symbols, the site string is created from the class internal name and method name.
+    def warning(pos: Position, msg: String, category: WarningCategory, site: String, actions: List[CodeAction]): Unit =
+      issueIfNotSuppressed(Message.Plain(pos, msg, category, site, actions))
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      issueIfNotSuppressed(Message.Plain(pos, msg, category, site))
+      warning(pos, msg, category, site, Nil)
 
     // Preferred over the overload above whenever a site symbol is available
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      warning(pos, msg, category, siteName(site))
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction] = Nil): Unit =
+      warning(pos, msg, category, siteName(site), actions)
 
     // Provide an origin for the warning.
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
-      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin))
+      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
 
     // used by Global.deprecationWarnings, which is used by sbt
     def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
@@ -309,17 +325,18 @@ object Reporting {
     def msg: String
     def category: WarningCategory
     def site: String // sym.FullName of the location where the warning is positioned, may be empty
+    def actions: List[CodeAction]
   }
 
   object Message {
     // an ordinary Message has a `category` for filtering and the `site` where it was issued
-    final case class Plain(pos: Position, msg: String, category: WarningCategory, site: String) extends Message
+    final case class Plain(pos: Position, msg: String, category: WarningCategory, site: String, actions: List[CodeAction]) extends Message
 
     // a Plain message with an `origin` which should not be empty. For example, the origin of an unused import is the fully-qualified selection
-    final case class Origin(pos: Position, msg: String, category: WarningCategory, site: String, origin: String) extends Message
+    final case class Origin(pos: Position, msg: String, category: WarningCategory, site: String, origin: String, actions: List[CodeAction]) extends Message
 
     // `site` and `origin` may be empty
-    final case class Deprecation(pos: Position, msg: String, site: String, origin: String, since: Version) extends Message {
+    final case class Deprecation(pos: Position, msg: String, site: String, origin: String, since: Version, actions: List[CodeAction]) extends Message {
       def category: WarningCategory = WarningCategory.Deprecation
     }
   }
@@ -341,7 +358,7 @@ object Reporting {
     private val insertDash = "(?=[A-Z][a-z])".r
 
     val all: mutable.Map[String, WarningCategory] = mutable.Map.empty
-    private def add(c: WarningCategory): Unit = all += ((c.name, c))
+    private def add(c: WarningCategory): Unit = all.put(c.name, c).ensuring(_.isEmpty, s"lint '${c.name}' added twice")
 
     object Deprecation extends WarningCategory; add(Deprecation)
 
@@ -353,15 +370,18 @@ object Reporting {
 
     object JavaSource extends WarningCategory; add(JavaSource)
 
+    object Scala3Migration extends WarningCategory; add(Scala3Migration)
+
     sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
     object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)
     object OtherShadowing extends Other; add(OtherShadowing)
     object OtherPureStatement extends Other; add(OtherPureStatement)
-    object OtherMigration extends Other; add(OtherMigration)
+    object OtherMigration extends Other; add(OtherMigration) // API annotation
     object OtherMatchAnalysis extends Other; add(OtherMatchAnalysis)
     object OtherDebug extends Other; add(OtherDebug)
     object OtherNullaryOverride extends Other; add(OtherNullaryOverride)
     object OtherNonCooperativeEquals extends Other; add(OtherNonCooperativeEquals)
+    object OtherImplicitType extends Other; add(OtherImplicitType)
 
     sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
@@ -407,6 +427,9 @@ object Reporting {
     object LintUnitSpecialization extends Lint; add(LintUnitSpecialization)
     object LintMultiargInfix extends Lint; add(LintMultiargInfix)
     object LintPerformance extends Lint; add(LintPerformance)
+    object LintIntDivToFloat extends Lint; add(LintIntDivToFloat)
+    object LintUniversalMethods extends Lint; add(LintUniversalMethods)
+    object LintNumericMethods extends Lint; add(LintNumericMethods)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)
@@ -521,7 +544,7 @@ object Reporting {
 
     final case class DeprecatedSince(comp: Int, version: ParseableVersion) extends MessageFilter {
       def matches(message: Message): Boolean = message match {
-        case Message.Deprecation(_, _, _, _, mv: ParseableVersion) =>
+        case Message.Deprecation(_, _, _, _, mv: ParseableVersion, _) =>
           if (comp == -1) mv.smaller(version)
           else if (comp == 0) mv.same(version)
           else mv.greater(version)

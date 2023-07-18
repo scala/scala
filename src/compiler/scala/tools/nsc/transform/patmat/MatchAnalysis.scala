@@ -110,7 +110,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
     private def enumerateSealed(tp: Type, grouped: Boolean): List[List[Type]] = {
       val tpApprox = analyzer.approximateAbstracts(tp)
-      val pre      = tpApprox.prefix
+      val pre      = tp.prefix
       val sym      = tp.typeSymbol
 
       def subclassesToSubtypes(syms: List[Symbol]): List[Type] = syms.flatMap { sym =>
@@ -120,7 +120,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         //    sealed trait X[T]; class XInt extends X[Int]
         // XInt not valid when enumerating X[String]
         // however, must also approximate abstract types
-        val memberType  = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
+        val memberType  = nestedMemberType(sym, pre, tp.typeSymbol.owner)
         val subTp       = appliedType(memberType, WildcardType.fillList(sym.typeParams.length))
         val subTpApprox = analyzer.approximateAbstracts(subTp)
         if (subTpApprox <:< tpApprox) Some(checkableType(subTp)) else None
@@ -129,8 +129,13 @@ trait TreeAndTypeAnalysis extends Debugging {
       def filterAndSortChildren(children: Set[Symbol]) = {
         // symbols which are both sealed and abstract need not be covered themselves,
         // because all of their children must be and they cannot otherwise be created.
-        children.toList.filter(x => !(x.isSealed || x.isPrivate) || !x.isAbstractClass || isPrimitiveValueClass(x))
+        val children1 = children.toList
+          .filterNot(child => child.isSealed && (child.isAbstractClass || child.hasJavaEnumFlag))
           .sortBy(_.sealedSortName)
+        children1.filterNot { child =>
+          // remove private abstract children that are superclasses of other children, for example in t6159 drop X2
+          child.isPrivate && child.isAbstractClass && children1.exists(sym => (sym ne child) && sym.isSubClass(child))
+        }
       }
 
       @tailrec def groupChildren(wl: List[Symbol], acc: List[List[Symbol]]): List[List[Symbol]] = wl match {
@@ -871,7 +876,7 @@ trait MatchAnalysis extends MatchApproximation {
                       case args                            => args
                     }.map(ListExample)
                   case _ if isTupleSymbol(cls)                  => args(brevity = true).map(TupleExample)
-                  case _ if cls.isSealed && cls.isAbstractClass =>
+                  case _ if cls.isSealed && (cls.isAbstractClass || cls.hasJavaEnumFlag) =>
                     // don't report sealed abstract classes, since
                     // 1) they can't be instantiated
                     // 2) we are already reporting any missing subclass (since we know the full domain)

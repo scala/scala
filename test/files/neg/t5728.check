@@ -1,4 +1,8 @@
 t5728.scala:3: error: implicit classes must accept exactly one primary constructor parameter
   implicit class Foo
                  ^
+t5728.scala:5: warning: Implicit definition should have explicit type (inferred Test.Foo)
+  implicit def Foo = new Foo
+               ^
+1 warning
 1 error

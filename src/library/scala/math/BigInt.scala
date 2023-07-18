@@ -278,6 +278,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
     (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
   }
 
+  @deprecated("isWhole on an integer type is always true", "2.12.15")
   def isWhole: Boolean = true
   def underlying: BigInteger = bigInteger
 

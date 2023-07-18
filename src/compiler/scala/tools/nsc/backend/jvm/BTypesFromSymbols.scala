@@ -305,24 +305,16 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     def javaClassfileFlags(classSym: Symbol): Int = {
       assert(classSym.isJava, s"Expected Java class symbol, got ${classSym.fullName}")
       import asm.Opcodes._
-      def enumFlags = ACC_ENUM | {
-        // Java enums have the `ACC_ABSTRACT` flag if they have a deferred method.
-        // We cannot trust `hasAbstractFlag`: the ClassfileParser adds `ABSTRACT` and `SEALED` to all
-        // Java enums for exhaustiveness checking.
-        val hasAbstractMethod = classSym.info.decls.exists(s => s.isMethod && s.isDeferred)
-        if (hasAbstractMethod) ACC_ABSTRACT else 0
-      }
-        // scala/bug#9393: the classfile / java source parser make java annotation symbols look like classes.
-        // here we recover the actual classfile flags.
-        ( if (classSym.hasJavaAnnotationFlag)                        ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0) |
-      ( if (classSym.isPublic)                                     ACC_PUBLIC    else 0) |
-      ( if (classSym.isFinal)                                      ACC_FINAL     else 0) |
+      // scala/bug#9393: the classfile / java source parser make java annotation symbols look like classes.
+      // here we recover the actual classfile flags.
+      (if (classSym.hasJavaAnnotationFlag) ACC_ANNOTATION | ACC_INTERFACE | ACC_ABSTRACT else 0) |
+      (if (classSym.isPublic)              ACC_PUBLIC    else 0) |
+      (if (classSym.isFinal)               ACC_FINAL     else 0) |
        // see the link above. javac does the same: ACC_SUPER for all classes, but not interfaces.)
-      ( if (classSym.isInterface)                                  ACC_INTERFACE else ACC_SUPER) |
-       // for Java enums, we cannot trust `hasAbstractFlag` (see comment in enumFlags))
-      ( if (!classSym.hasJavaEnumFlag && classSym.hasAbstractFlag) ACC_ABSTRACT  else 0) |
-      ( if (classSym.isArtifact)                                   ACC_SYNTHETIC else 0) |
-      ( if (classSym.hasJavaEnumFlag)                              enumFlags     else 0)
+      (if (classSym.isInterface)           ACC_INTERFACE else ACC_SUPER) |
+      (if (classSym.hasAbstractFlag)       ACC_ABSTRACT  else 0) |
+      (if (classSym.isArtifact)            ACC_SYNTHETIC else 0) |
+      (if (classSym.hasJavaEnumFlag)       ACC_ENUM      else 0)
     }
 
     // Check for hasAnnotationFlag for scala/bug#9393: the classfile / java source parsers add

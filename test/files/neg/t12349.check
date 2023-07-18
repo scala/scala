@@ -31,129 +31,150 @@ def a7(): Unit (defined in class t12349a)
 t12349b.scala:13: error: weaker access privileges in overriding
 def a8(): Unit (defined in class t12349a)
   override should be public
-    protected[this]    override def a8(): Unit = println("Inner12349b#a8()") // weaker access privileges
+    protected[Inner12349b] override def a8(): Unit = println("Inner12349b#a8()") // weaker access privileges
+                                        ^
+t12349b.scala:15: error: weaker access privileges in overriding
+def aA(): Unit (defined in class t12349a)
+  override should be public
+    protected[this]    override def aA(): Unit = println("Inner12349b#aA()") // weaker access privileges
                                     ^
-t12349b.scala:14: error: weaker access privileges in overriding
-def a9(): Unit (defined in class t12349a)
+t12349b.scala:16: error: weaker access privileges in overriding
+def aB(): Unit (defined in class t12349a)
   override should not be private
-      private[this]    override def a9(): Unit = println("Inner12349b#a9()") // weaker access privileges
+      private[this]    override def aB(): Unit = println("Inner12349b#aB()") // weaker access privileges
                                     ^
-t12349b.scala:18: error: weaker access privileges in overriding
+t12349b.scala:20: error: weaker access privileges in overriding
 protected[package t12349] def b3(): Unit (defined in class t12349a)
   override should not be private
       private          override def b3(): Unit = println("Inner12349b#b3()") // weaker access privileges
                                     ^
-t12349b.scala:20: error: weaker access privileges in overriding
+t12349b.scala:22: error: weaker access privileges in overriding
 protected[package t12349] def b5(): Unit (defined in class t12349a)
   override should at least be protected[t12349]
       private[t12349b] override def b5(): Unit = println("Inner12349b#b5()") // weaker access privileges
                                     ^
-t12349b.scala:22: error: weaker access privileges in overriding
+t12349b.scala:24: error: weaker access privileges in overriding
 protected[package t12349] def b7(): Unit (defined in class t12349a)
   override should at least be protected[t12349]
       private[t12349]  override def b7(): Unit = println("Inner12349b#b7()") // weaker access privileges
                                     ^
-t12349b.scala:24: error: weaker access privileges in overriding
-protected[package t12349] def b9(): Unit (defined in class t12349a)
+t12349b.scala:28: error: weaker access privileges in overriding
+protected[package t12349] def bB(): Unit (defined in class t12349a)
   override should not be private
-      private[this]    override def b9(): Unit = println("Inner12349b#b9()") // weaker access privileges
+      private[this]    override def bB(): Unit = println("Inner12349b#bB()") // weaker access privileges
                                     ^
-t12349b.scala:27: error: weaker access privileges in overriding
+t12349b.scala:31: error: weaker access privileges in overriding
 private[package t12349] def c2(): Unit (defined in class t12349a)
   override should at least be private[t12349]
     protected          override def c2(): Unit = println("Inner12349b#c2()") // weaker access privileges
                                     ^
-t12349b.scala:28: error: weaker access privileges in overriding
+t12349b.scala:32: error: weaker access privileges in overriding
 private[package t12349] def c3(): Unit (defined in class t12349a)
   override should not be private
       private          override def c3(): Unit = println("Inner12349b#c3()") // weaker access privileges
                                     ^
-t12349b.scala:29: error: weaker access privileges in overriding
+t12349b.scala:33: error: weaker access privileges in overriding
 private[package t12349] def c4(): Unit (defined in class t12349a)
   override should at least be private[t12349]
     protected[t12349b] override def c4(): Unit = println("Inner12349b#c4()") // weaker access privileges
                                     ^
-t12349b.scala:30: error: weaker access privileges in overriding
+t12349b.scala:34: error: weaker access privileges in overriding
 private[package t12349] def c5(): Unit (defined in class t12349a)
   override should at least be private[t12349]
       private[t12349b] override def c5(): Unit = println("Inner12349b#c5()") // weaker access privileges
                                     ^
-t12349b.scala:33: error: weaker access privileges in overriding
+t12349b.scala:37: error: weaker access privileges in overriding
 private[package t12349] def c8(): Unit (defined in class t12349a)
   override should at least be private[t12349]
-    protected[this]    override def c8(): Unit = println("Inner12349b#c8()") // weaker access privileges
+    protected[Inner12349b] override def c8(): Unit = println("Inner12349b#c8()") // weaker access privileges
+                                        ^
+t12349b.scala:39: error: weaker access privileges in overriding
+private[package t12349] def cA(): Unit (defined in class t12349a)
+  override should at least be private[t12349]
+    protected[this]    override def cA(): Unit = println("Inner12349b#cA()") // weaker access privileges
                                     ^
-t12349b.scala:34: error: weaker access privileges in overriding
-private[package t12349] def c9(): Unit (defined in class t12349a)
+t12349b.scala:40: error: weaker access privileges in overriding
+private[package t12349] def cB(): Unit (defined in class t12349a)
   override should not be private
-      private[this]    override def c9(): Unit = println("Inner12349b#c9()") // weaker access privileges
+      private[this]    override def cB(): Unit = println("Inner12349b#cB()") // weaker access privileges
                                     ^
-t12349b.scala:36: error: method d1 overrides nothing
+t12349b.scala:42: error: method d1 overrides nothing
                        override def d1(): Unit = println("Inner12349b#d1()") // overrides nothing
                                     ^
-t12349b.scala:37: error: method d2 overrides nothing
+t12349b.scala:43: error: method d2 overrides nothing
     protected          override def d2(): Unit = println("Inner12349b#d2()") // overrides nothing
                                     ^
-t12349b.scala:38: error: method d3 overrides nothing
+t12349b.scala:44: error: method d3 overrides nothing
       private          override def d3(): Unit = println("Inner12349b#d3()") // overrides nothing
                                     ^
-t12349b.scala:39: error: method d4 overrides nothing
+t12349b.scala:45: error: method d4 overrides nothing
     protected[t12349b] override def d4(): Unit = println("Inner12349b#d4()") // overrides nothing
                                     ^
-t12349b.scala:40: error: method d5 overrides nothing
+t12349b.scala:46: error: method d5 overrides nothing
       private[t12349b] override def d5(): Unit = println("Inner12349b#d5()") // overrides nothing
                                     ^
-t12349b.scala:41: error: method d6 overrides nothing
+t12349b.scala:47: error: method d6 overrides nothing
     protected[t12349]  override def d6(): Unit = println("Inner12349b#d6()") // overrides nothing
                                     ^
-t12349b.scala:42: error: method d7 overrides nothing
+t12349b.scala:48: error: method d7 overrides nothing
       private[t12349]  override def d7(): Unit = println("Inner12349b#d7()") // overrides nothing
                                     ^
-t12349b.scala:43: error: method d8 overrides nothing
-    protected[this]    override def d8(): Unit = println("Inner12349b#d8()") // overrides nothing
+t12349b.scala:49: error: method d8 overrides nothing
+    protected[Inner12349b] override def d8(): Unit = println("Inner12349b#d8()") // overrides nothing
+                                        ^
+t12349b.scala:51: error: method dA overrides nothing
+    protected[this]    override def dA(): Unit = println("Inner12349b#dA()") // overrides nothing
                                     ^
-t12349b.scala:44: error: method d9 overrides nothing
-      private[this]    override def d9(): Unit = println("Inner12349b#d9()") // overrides nothing
+t12349b.scala:52: error: method dB overrides nothing
+      private[this]    override def dB(): Unit = println("Inner12349b#dB()") // overrides nothing
                                     ^
-t12349c.scala:11: error: weaker access privileges in overriding
+t12349b.scala:50: error: method d9 overrides nothing
+      private[Inner12349b] override def d9(): Unit = println("Inner12349b#d9()") // overrides nothing
+                                        ^
+t12349c.scala:9: error: weaker access privileges in overriding
 def a2(): Unit (defined in class t12349a)
   override should be public
       protected          override def a2(): Unit = println("Inner12349c#a2()") // weaker access privileges
                                       ^
-t12349c.scala:12: error: weaker access privileges in overriding
+t12349c.scala:10: error: weaker access privileges in overriding
 def a3(): Unit (defined in class t12349a)
   override should not be private
         private          override def a3(): Unit = println("Inner12349c#a3()") // weaker access privileges
                                       ^
-t12349c.scala:13: error: weaker access privileges in overriding
+t12349c.scala:11: error: weaker access privileges in overriding
 def a4(): Unit (defined in class t12349a)
   override should be public
       protected[t12349c] override def a4(): Unit = println("Inner12349c#a4()") // weaker access privileges
                                       ^
-t12349c.scala:14: error: weaker access privileges in overriding
+t12349c.scala:12: error: weaker access privileges in overriding
 def a5(): Unit (defined in class t12349a)
   override should be public
         private[t12349c] override def a5(): Unit = println("Inner12349c#a5()") // weaker access privileges
                                       ^
-t12349c.scala:15: error: weaker access privileges in overriding
+t12349c.scala:13: error: weaker access privileges in overriding
 def a6(): Unit (defined in class t12349a)
   override should be public
       protected[pkg]     override def a6(): Unit = println("Inner12349c#a6()") // weaker access privileges
                                       ^
-t12349c.scala:16: error: weaker access privileges in overriding
+t12349c.scala:14: error: weaker access privileges in overriding
 def a7(): Unit (defined in class t12349a)
   override should be public
         private[pkg]     override def a7(): Unit = println("Inner12349c#a7()") // weaker access privileges
                                       ^
-t12349c.scala:17: error: weaker access privileges in overriding
+t12349c.scala:15: error: weaker access privileges in overriding
 def a8(): Unit (defined in class t12349a)
   override should be public
-      protected[this]    override def a8(): Unit = println("Inner12349c#a8()") // weaker access privileges
+      protected[Inner12349c] override def a8(): Unit = println("Inner12349c#a8()") // weaker access privileges
+                                          ^
+t12349c.scala:17: error: weaker access privileges in overriding
+def aA(): Unit (defined in class t12349a)
+  override should be public
+      protected[this]    override def aA(): Unit = println("Inner12349c#aA()") // weaker access privileges
                                       ^
 t12349c.scala:18: error: weaker access privileges in overriding
-def a9(): Unit (defined in class t12349a)
+def aB(): Unit (defined in class t12349a)
   override should not be private
-        private[this]    override def a9(): Unit = println("Inner12349c#a9()") // weaker access privileges
+        private[this]    override def aB(): Unit = println("Inner12349c#aB()") // weaker access privileges
                                       ^
 t12349c.scala:22: error: weaker access privileges in overriding
 protected[package t12349] def b3(): Unit (defined in class t12349a)
@@ -170,79 +191,93 @@ protected[package t12349] def b7(): Unit (defined in class t12349a)
   override should at least be protected[t12349]
         private[pkg]     override def b7(): Unit = println("Inner12349c#b7()") // weaker access privileges
                                       ^
-t12349c.scala:28: error: weaker access privileges in overriding
-protected[package t12349] def b9(): Unit (defined in class t12349a)
+t12349c.scala:30: error: weaker access privileges in overriding
+protected[package t12349] def bB(): Unit (defined in class t12349a)
   override should not be private
-        private[this]    override def b9(): Unit = println("Inner12349c#b9()") // weaker access privileges
+        private[this]    override def bB(): Unit = println("Inner12349c#bB()") // weaker access privileges
                                       ^
-t12349c.scala:31: error: weaker access privileges in overriding
+t12349c.scala:33: error: weaker access privileges in overriding
 private[package t12349] def c2(): Unit (defined in class t12349a)
   override should at least be private[t12349]
       protected          override def c2(): Unit = println("Inner12349c#c2()") // weaker access privileges
                                       ^
-t12349c.scala:32: error: weaker access privileges in overriding
+t12349c.scala:34: error: weaker access privileges in overriding
 private[package t12349] def c3(): Unit (defined in class t12349a)
   override should not be private
         private          override def c3(): Unit = println("Inner12349c#c3()") // weaker access privileges
                                       ^
-t12349c.scala:33: error: weaker access privileges in overriding
+t12349c.scala:35: error: weaker access privileges in overriding
 private[package t12349] def c4(): Unit (defined in class t12349a)
   override should at least be private[t12349]
       protected[t12349c] override def c4(): Unit = println("Inner12349c#c4()") // weaker access privileges
                                       ^
-t12349c.scala:34: error: weaker access privileges in overriding
+t12349c.scala:36: error: weaker access privileges in overriding
 private[package t12349] def c5(): Unit (defined in class t12349a)
   override should at least be private[t12349]
         private[t12349c] override def c5(): Unit = println("Inner12349c#c5()") // weaker access privileges
                                       ^
-t12349c.scala:35: error: weaker access privileges in overriding
+t12349c.scala:37: error: weaker access privileges in overriding
 private[package t12349] def c6(): Unit (defined in class t12349a)
   override should at least be private[t12349]
       protected[pkg]     override def c6(): Unit = println("Inner12349c#c6()") // weaker access privileges
                                       ^
-t12349c.scala:36: error: weaker access privileges in overriding
+t12349c.scala:38: error: weaker access privileges in overriding
 private[package t12349] def c7(): Unit (defined in class t12349a)
   override should at least be private[t12349]
         private[pkg]     override def c7(): Unit = println("Inner12349c#c7()") // weaker access privileges
                                       ^
-t12349c.scala:37: error: weaker access privileges in overriding
+t12349c.scala:39: error: weaker access privileges in overriding
 private[package t12349] def c8(): Unit (defined in class t12349a)
   override should at least be private[t12349]
-      protected[this]    override def c8(): Unit = println("Inner12349c#c8()") // weaker access privileges
+      protected[Inner12349c] override def c8(): Unit = println("Inner12349c#c8()") // weaker access privileges
+                                          ^
+t12349c.scala:41: error: weaker access privileges in overriding
+private[package t12349] def cA(): Unit (defined in class t12349a)
+  override should at least be private[t12349]
+      protected[this]    override def cA(): Unit = println("Inner12349c#cA()") // weaker access privileges
                                       ^
-t12349c.scala:38: error: weaker access privileges in overriding
-private[package t12349] def c9(): Unit (defined in class t12349a)
+t12349c.scala:42: error: weaker access privileges in overriding
+private[package t12349] def cB(): Unit (defined in class t12349a)
   override should not be private
-        private[this]    override def c9(): Unit = println("Inner12349c#c9()") // overrides nothing (invisible)
+        private[this]    override def cB(): Unit = println("Inner12349c#cB()") // weaker access privileges
                                       ^
-t12349c.scala:30: error: method c1 overrides nothing
+t12349c.scala:32: error: method c1 overrides nothing
                          override def c1(): Unit = println("Inner12349c#c1()") // overrides nothing (invisible)
                                       ^
-t12349c.scala:40: error: method d1 overrides nothing
+t12349c.scala:44: error: method d1 overrides nothing
                          override def d1(): Unit = println("Inner12349c#d1()") // overrides nothing
                                       ^
-t12349c.scala:41: error: method d2 overrides nothing
+t12349c.scala:45: error: method d2 overrides nothing
       protected          override def d2(): Unit = println("Inner12349c#d2()") // overrides nothing
                                       ^
-t12349c.scala:42: error: method d3 overrides nothing
+t12349c.scala:46: error: method d3 overrides nothing
         private          override def d3(): Unit = println("Inner12349c#d3()") // overrides nothing
                                       ^
-t12349c.scala:43: error: method d4 overrides nothing
+t12349c.scala:47: error: method d4 overrides nothing
       protected[t12349c] override def d4(): Unit = println("Inner12349c#d4()") // overrides nothing
                                       ^
-t12349c.scala:44: error: method d5 overrides nothing
+t12349c.scala:48: error: method d5 overrides nothing
         private[t12349c] override def d5(): Unit = println("Inner12349c#d5()") // overrides nothing
                                       ^
-t12349c.scala:45: error: method d6 overrides nothing
+t12349c.scala:49: error: method d6 overrides nothing
       protected[pkg]     override def d6(): Unit = println("Inner12349c#d6()") // overrides nothing
                                       ^
-t12349c.scala:46: error: method d7 overrides nothing
+t12349c.scala:50: error: method d7 overrides nothing
         private[pkg]     override def d7(): Unit = println("Inner12349c#d7()") // overrides nothing
                                       ^
-t12349c.scala:47: error: method d8 overrides nothing
-      protected[this]    override def d8(): Unit = println("Inner12349c#d8()") // overrides nothing
+t12349c.scala:51: error: method d8 overrides nothing
+      protected[Inner12349c] override def d8(): Unit = println("Inner12349c#d8()") // overrides nothing
+                                          ^
+t12349c.scala:53: error: method dA overrides nothing
+      protected[this]    override def dA(): Unit = println("Inner12349c#dA()") // overrides nothing
                                       ^
-t12349c.scala:48: error: method d9 overrides nothing
-        private[this]    override def d9(): Unit = println("Inner12349c#d9()") // overrides nothing
+t12349c.scala:54: error: method dB overrides nothing
+        private[this]    override def dB(): Unit = println("Inner12349c#dB()") // overrides nothing
                                       ^
-57 errors
+t12349c.scala:40: error: method c9 overrides nothing
+        private[Inner12349c] override def c9(): Unit = println("Inner12349c#c9()") // weaker access privileges
+                                          ^
+t12349c.scala:52: error: method d9 overrides nothing
+        private[Inner12349c] override def d9(): Unit = println("Inner12349c#d9()") // overrides nothing
+                                          ^
+66 errors

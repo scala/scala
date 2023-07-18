@@ -140,8 +140,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def original = orig
     def setOriginal(t: Tree): this.type = {
       orig = t
-      this setPos t.pos
-      this
+      setPos(t.pos)
     }
 
     override def toString = completeAnnotationToString(this)

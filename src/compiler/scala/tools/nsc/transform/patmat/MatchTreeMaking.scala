@@ -640,13 +640,36 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               case a :: b :: c :: _ => 3
               case cases            => cases.map {
                 case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
-                case c                                      => 1
+                case _                                      => 1
               }.sum
             }
             lengthMax3(cases) > 2
           }
           hasSwitchAnnotation && exceedsTwoCasesOrAlts
         case _ => false
+      }
+    }
+
+    // See the use of RegularSwitchMaker by SwitchEmission#emitSwitch, which this code emulates or duplicates.
+    private object Switchable {
+      val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe, StringTpe)
+
+      def apply(scrutSym: Symbol, cases: List[List[TreeMaker]]): Boolean = switchableTpe(scrutSym.tpe.dealiasWiden) && {
+        def switchable(tms: List[TreeMaker]): Boolean =
+          tms.forall {
+            case EqualityTestTreeMaker(_, SwitchablePattern(), _) => true
+            case AlternativesTreeMaker(_, altss, _) => Switchable(scrutSym, altss)
+            case BodyTreeMaker(_, _) => true
+            case _ => false
+          }
+        cases.forall(switchable)
+      }
+
+      object SwitchablePattern {
+        def unapply(pat: Tree): Boolean = pat.tpe match {
+          case const: ConstantType => const.value.isIntRange || const.value.tag == StringTag || const.value.tag == NullTag
+          case _ => false
+        }
       }
     }
 
@@ -665,6 +688,12 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           if (requiresSwitch(scrut, cases))
             typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
+          // If cases are switchable, suppress warning for exhaustivity.
+          // The switch was not emitted, probably because there aren't enough cases.
+          val suppression1 =
+            if (Switchable(scrutSym, cases)) suppression.copy(suppressExhaustive = true)
+            else suppression
+
           if (!cases.isEmpty) {
             // before optimizing, check cases for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
@@ -677,7 +706,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               case _                              => matchFailGen
             }
 
-            analyzeCases(scrutSym, cases, pt, suppression)
+            analyzeCases(scrutSym, cases, pt, suppression1)
 
             val (optimizedCases, toHoist) = optimizeCases(scrutSym, cases, pt, selectorPos)
 

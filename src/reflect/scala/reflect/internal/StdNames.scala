@@ -320,6 +320,7 @@ trait StdNames {
     final val SignatureATTR: NameType              = nameType("Signature")
     final val SourceFileATTR: NameType             = nameType("SourceFile")
     final val SyntheticATTR: NameType              = nameType("Synthetic")
+    final val PermittedSubclassesATTR: NameType    = nameType("PermittedSubclasses")
 
     final val scala_ : NameType = nameType("scala")
 
@@ -1277,11 +1278,16 @@ trait StdNames {
     final val keywords = kw.result
   }
 
-  // "The identifiers var, yield, and record are restricted identifiers because they are not allowed in some contexts"
-  // A type identifier is an identifier that is not the character sequence var, yield, or record.
-  // An unqualified method identifier is an identifier that is not the character sequence yield.
+  // The identifiers non-sealed, permits, record, sealed, var, and yield are restricted identifiers
+  // because they are not allowed in some contexts.
+  // A type identifier is an identifier that is not the character sequence permits, record, sealed, var, or yield.
+  // An unqualified method identifier is an identifier that is not the character sequence yield. (JLS 3.8)
   class JavaRestrictedIdentifiers {
+    final val PERMITS: TermName = TermName("permits")
     final val RECORD: TermName = TermName("record")
+    final val SEALED: TermName = TermName("sealed")
+    final val UNSEALED: TermName = TermName("non-sealed")
+    final val NON: TermName = TermName("non")
     final val VAR: TermName    = TermName("var")
     final val YIELD: TermName  = TermName("yield")
   }

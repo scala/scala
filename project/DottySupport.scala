@@ -5,14 +5,14 @@ import sbt.Keys._
 import java.io.File
 
 import sbt.librarymanagement.{
-  ivy, DependencyResolution, ScalaModuleInfo, UpdateConfiguration, UnresolvedWarningConfiguration
+  DependencyResolution, ScalaModuleInfo, UpdateConfiguration, UnresolvedWarningConfiguration
 }
 
 /**
   * Settings to support validation of TastyUnpickler against the release of dotty with the matching TASTy version
   */
 object TastySupport {
-  val supportedTASTyRelease = "3.2.0-RC1" // TASTy version 28.2-1
+  val supportedTASTyRelease = "3.3.1-RC4" // TASTy version 28.4-1
   val scala3Compiler = "org.scala-lang" % "scala3-compiler_3" % supportedTASTyRelease
   val scala3Library = "org.scala-lang" % "scala3-library_3" % supportedTASTyRelease
 
@@ -26,9 +26,9 @@ object TastySupport {
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "3.1.2-RC1"
+  val dottyVersion = TastySupport.supportedTASTyRelease
   val compileWithDotty: Boolean =
-    Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
+    Option(System.getProperty("scala.build.compileWithDotty")).exists(_.toBoolean)
   lazy val commonSettings = Seq(
     Compile / scalacOptions ++= Seq(
       "-language:implicitConversions" // Avoid a million warnings
@@ -41,7 +41,7 @@ object DottySupport {
     // Add the scala3-library sources to the sourcepath and disable fatal warnings
     Compile / scalacOptions := {
       val old = (Compile / scalacOptions).value
-      val withoutFatalWarnings = old.filter(opt => opt != "-Werror" && !opt.startsWith("-Wconf"))
+      val withoutFatalWarnings = old.filterNot(opt => opt == "-Werror" || opt.startsWith("-Wconf"))
 
       val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = withoutFatalWarnings.span(_ != "-sourcepath")
 
@@ -68,10 +68,8 @@ object DottySupport {
     Compile / sourceGenerators += Def.task {
       object DottyLibrarySourceFilter extends FileFilter {
         def accept(file: File): Boolean = {
-          val name = file.name
-          val path = file.getCanonicalPath
-          file.isFile &&
-          (path.endsWith(".scala") || path.endsWith(".java"))
+          val name = file.getName
+          file.isFile && (name.endsWith(".scala") || name.endsWith(".java"))
         }
       }
 

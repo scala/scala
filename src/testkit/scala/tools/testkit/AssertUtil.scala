@@ -12,22 +12,24 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
+import org.junit.Assert.{assertEquals, assertNotEquals}
+import org.junit.Assert.{assertFalse, assertTrue}
 
-import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime.stringOf
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
-import scala.util.chaining._
+import scala.reflect.ClassTag
+import scala.runtime.BoxesRunTime
+import scala.runtime.ScalaRunTime.stringOf
 import scala.util.{Failure, Success, Try}
+import scala.util.chaining._
 import scala.util.control.{ControlThrowable, NonFatal}
+import java.lang.ref._
+import java.lang.reflect.{Array => _, _}
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
-import java.lang.ref._
-import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
-import scala.annotation.nowarn
 
 /** This module contains additional higher-level assert statements
  *  that are ultimately based on junit.Assert primitives.
@@ -61,6 +63,18 @@ object AssertUtil {
   private def dump(s: String) = hexdump(s).mkString("\n")
   def assertEqualStrings(expected: String)(actual: String) =
     assert(expected == actual, s"Expected:\n${dump(expected)}\nActual:\n${dump(actual)}")
+
+  // assertEquals but use BoxesRunTime.equals
+  // let junit format a message on failure
+  def assertEqualsAny(expected: Any, actual: Any): Unit =
+    if (!BoxesRunTime.equals(expected, actual)) assertEquals(expected, actual)
+  // as a bonus, message is by-name, though retains junit parameter order
+  def assertEqualsAny(message: => String, expected: Any, actual: Any): Unit =
+    if (!BoxesRunTime.equals(expected, actual)) assertEquals(message, expected, actual)
+  def assertNotEqualsAny(expected: Any, actual: Any): Unit =
+    if (BoxesRunTime.equals(expected, actual)) assertNotEquals(expected, actual)
+  def assertNotEqualsAny(message: => String, expected: Any, actual: Any): Unit =
+    if (BoxesRunTime.equals(expected, actual)) assertNotEquals(message, expected, actual)
 
   private final val timeout = 60 * 1000L                 // wait a minute
 
@@ -145,18 +159,34 @@ object AssertUtil {
 
   def assertFails[U](checkMessage: String => Boolean)(body: => U): Unit = assertThrows[AssertionError](body, checkMessage)
 
-  /** JUnit-style assertion for `IterableLike.sameElements`.
-   */
-  def assertSameElements[A, B >: A](expected: Iterable[A], actual: Iterable[B], message: String = ""): Unit =
-    if (!expected.iterator.sameElements(actual))
-      fail(
-        f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
-      )
+  private def orEmpty(b: Boolean)(text: => String): String = if (b) text else ""
 
-  /** Convenient for testing iterators.
+  /** JUnit-style assertion for `Seq#sameElements`.
+   *  The `actual` is iterated twice if failure is reported.
    */
-  def assertSameElements[A, B >: A](expected: Iterable[A], actual: IterableOnce[B]): Unit =
-    assertSameElements(expected, actual.iterator.to(List), "")
+  def assertSameElements[A, B >: A](expected: Seq[A], actual: Iterable[B], message: String = ""): Unit =
+    if (!expected.sameElements(actual))
+      fail(f"${orEmpty(message.nonEmpty)(s"$message ")}expected:<${stringOf(expected)}> but was:<${stringOf(actual)}>")
+
+  /** Convenience for testing iterators and non-Seqs.
+   *  The `actual` is collected to a `List` for reporting errors.
+   */
+  def assertSameElements[A, B >: A](expected: Seq[A], actual: IterableOnce[B]): Unit =
+    assertSameElements(expected, actual.iterator.to(Iterable), message = "")
+
+  /** Convenience for testing iterators and non-Seqs.
+   *  The `expected` is collected to a `List` for reporting errors.
+   */
+  def assertSameElements[A, B >: A](expected: IterableOnce[A], actual: IterableOnce[B]): Unit =
+    assertSameElements(expected.iterator.to(Seq), actual)
+
+  /** Convenience for testing arrays. Avoids warning about implicit conversion to Seq.
+   */
+  def assertSameElements[A, B >: A](expected: Array[A], actual: Array[B]): Unit =
+    assertSameElements(expected, actual, message = "")
+
+  def assertSameElements[A, B >: A](expected: Array[A], actual: Array[B], message: String): Unit =
+    assertSameElements(expected.toIndexedSeq, actual.toIndexedSeq, message)
 
   /** Value is not strongly reachable from roots after body is evaluated.
    */
@@ -304,6 +334,23 @@ object AssertUtil {
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
 
   def withoutATrace[A](body: => A) = NoTrace(body)
+
+  /** To be thrown by test code to check stack depth. */
+  case class Probe(depth: Int) extends ControlThrowable
+
+  /** To be called by test code to check stack depth from assertStackSafe. */
+  def probeStackSafety[A](): A = throw new Probe(Thread.currentThread.getStackTrace.length)
+
+  def assertStackSafe[A](run1: => A, run2: => A): Unit = {
+    var res1 = -1
+    var res2 = -1
+    def check(f: Int => Unit): Probe => Boolean = {
+      case Probe(depth) => f(depth); true
+    }
+    assertThrown[Probe](check(depth => res1 = depth))(run1)
+    assertThrown[Probe](check(depth => res2 = depth))(run2)
+    assertEquals(s"Expected equal stack depths, but got $res1 and $res2", res1, res2)
+  }
 }
 
 object TestDuration {

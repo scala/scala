@@ -15,6 +15,7 @@ package reflect
 package internal
 
 import scala.annotation.unchecked.uncheckedStable
+import scala.reflect.internal.util.CodeAction
 import settings.MutableSettings
 
 /** Provides delegates to the reporter doing the actual work.
@@ -35,7 +36,7 @@ trait Reporting { self : Positions =>
   type PerRunReporting <: PerRunReportingBase
   protected def PerRunReporting: PerRunReporting
   abstract class PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction] = Nil): Unit
 
     /** Have we already supplemented the error message of a compiler crash? */
     private[this] var supplementedError = false
@@ -96,24 +97,33 @@ abstract class Reporter {
   @uncheckedStable final def WARNING: Severity = Reporter.WARNING
   @uncheckedStable final def ERROR: Severity   = Reporter.ERROR
 
-  // TODO: rename to `doReport`, remove the `force` parameter.
+  // TODO: rename to `doReport`, remove the `force` parameter (but sbt compat).
   // Note: `force` is ignored. It used to mean: if `!force`, the reporter may skip INFO messages.
   // If `force`, INFO messages were always printed. Now, INFO messages are always printed.
+  @deprecatedOverriding("extend scala.tools.nsc.reporters.FilteringReporter, and override doReport instead", "2.13.12")
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
+
+  def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+    info0(pos, msg, severity, force = false)
 
   /** @return Reporter.Display, or override for Count, Suppress
    */
   def filter(pos: Position, msg: String, severity: Severity): Int = Reporter.Display
 
-  final def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
-  final def echo(pos: Position, msg: String): Unit    = if (filter(pos, msg, INFO) == 0) info0(pos, msg, INFO, force = true)
-  final def warning(pos: Position, msg: String): Unit = filteredInfo(pos, msg, WARNING)
-  final def error(pos: Position, msg: String): Unit   = filteredInfo(pos, msg, ERROR)
+  final def echo(msg: String): Unit = echo(util.NoPosition, msg)
+  final def echo(pos: Position, msg: String, actions: List[CodeAction] = Nil): Unit =
+    if (filter(pos, msg, INFO) == 0) doReport(pos, msg, INFO, actions)
 
-  private def filteredInfo(pos: Position, msg: String, severity: Severity): Unit = {
+  final def warning(pos: Position, msg: String, actions: List[CodeAction] = Nil): Unit =
+    filteredInfo(pos, msg, WARNING, actions)
+
+  final def error(pos: Position, msg: String, actions: List[CodeAction] = Nil): Unit =
+    filteredInfo(pos, msg, ERROR, actions)
+
+  private def filteredInfo(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = {
     val f = filter(pos, msg, severity)
     if (f <= 1) increment(severity)
-    if (f == 0) info0(pos, msg, severity, force = false)
+    if (f == 0) doReport(pos, msg, severity, actions)
   }
 
   def increment(severity: Severity): Unit = severity match {

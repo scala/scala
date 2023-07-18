@@ -345,6 +345,63 @@ class SettingsTest {
     assertFalse(s.optInlinerEnabled)
     assertTrue(s.optBoxUnbox)
   }
+  @Test def `print args to reporter`: Unit = {
+    val s = settings
+    val args = "-Vprint-args" :: "-" :: Nil
+    val (ok, rest) = s.processArguments(args, processAll = true)
+    assertTrue(ok)
+    assertTrue(rest.isEmpty)
+    assertFalse(s.isInfo)
+    assertTrue(s.printArgs.isSetByUser)
+  }
+  @Test def `name-based phases setting accepts tilde prefix`: Unit = {
+    val start = new Phase(null) { def name = "start"; def run() = () }
+    val chunk = new Phase(start) { def name = "chunker"; def run() = () }
+    val clean = new Phase(chunk) { def name = "clean"; def run() = () }
+    val go    = new Phase(clean) { def name = "go"; def run() = () }
+    val end   = new Phase(go) { def name = "end"; def run() = () }
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    val ps = new s.PhasesSetting("-Yp", descr="", default="")
+    s.allSettings(ps.name) = ps
+    val args = List("-Yp:clean,~chunker,3")
+    val (ok, residual) = s.processArguments(args, processAll = true)
+    assertTrue(ok)
+    assertTrue(residual.isEmpty)
+    assertTrue(ps.contains("clean"))
+    assertFalse(ps.contains("chunker"))
+    assertTrue(ps.contains("~chunker"))
+    assertFalse(ps.contains("start"))
+    assertFalse(ps.contains("end"))
+    assertTrue(ps.containsPhase(clean))
+    assertTrue(ps.containsPhase(chunk))
+    assertTrue(ps.containsPhase(start))
+    assertTrue(ps.containsPhase(start.next))
+    assertTrue(ps.contains(s"~${start.next.name}"))
+    assertTrue(ps.containsPhase(go))
+    assertTrue(ps.containsId(go.id))
+    assertFalse(ps.containsPhase(end))
+    assertFalse(ps.containsId(end.id))
+  }
+  @Test def `phases setting accepts all or underscore`: Unit = {
+    val start = new Phase(null) { def name = "start"; def run() = () }
+    def check(args: String*): MutableSettings#PhasesSetting = {
+      val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+      val ps = new s.PhasesSetting("-Yp", descr="", default="")
+      s.allSettings(ps.name) = ps
+      val (ok, residual) = s.processArguments(args.toList, processAll = true)
+      assertTrue(ok)
+      assertTrue(residual.isEmpty)
+      ps
+    }
+    assertTrue(check("-Yp:start").containsPhase(start))
+    assertTrue(check("-Yp:start").contains("start"))
+    assertTrue(check("-Yp:start").containsName("start"))
+    assertTrue(check("-Yp:all").containsPhase(start))
+    assertTrue(check("-Yp:all").contains("start"))
+    assertFalse(check("-Yp:all").containsName("start"))
+    assertTrue(check("-Yp:_").containsPhase(start))
+    assertTrue(check("-Yp:junk,_").containsPhase(start))
+  }
 }
 object SettingsTest {
   import language.implicitConversions

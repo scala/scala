@@ -466,7 +466,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   def isWhole = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
 
-  def underlying = bigDecimal
+  def underlying: java.math.BigDecimal = bigDecimal
 
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.

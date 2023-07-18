@@ -902,7 +902,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
     def isDeprecated           = hasAnnotation(DeprecatedAttr) || (isJava && hasAnnotation(JavaDeprecatedAttr))
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
-    def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecationVersion     = getAnnotation(DeprecatedAttr).flatMap(_.stringArg(1)) match {
+                                   case v @ Some(_) => v
+                                   case _ => getAnnotation(JavaDeprecatedAttr).flatMap(_.stringArg(0))
+                                 }
     def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (ann => ann.symbolArg(0).orElse(ann.stringArg(0).map(newTermName)).orElse(Some(nme.NO_NAME)))
     def deprecatedParamVersion = getAnnotation(DeprecatedNameAttr) flatMap (_ stringArg 1)
     def hasDeprecatedInheritanceAnnotation
@@ -1011,25 +1014,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
 
-    /** A helper function for isEffectivelyFinal. */
-    private def isNotOverridden = (
-      owner.isClass && (
-           owner.isEffectivelyFinal
-        || (owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && (overridingSymbol(c) == NoSymbol)))
-      )
-    )
-
     /** Is this symbol effectively final? I.e, it cannot be overridden */
     final def isEffectivelyFinal: Boolean = (
-         ((this hasFlag FINAL | PACKAGE) && this != SingletonClass)
+         hasFlag(FINAL | PACKAGE) && this != SingletonClass
       || isModuleOrModuleClass
-      || isTerm && (isPrivate || isLocalToBlock || (hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED)))
+      || isTerm && (isPrivate || isLocalToBlock || hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED))
       // We track known subclasses of term-owned classes, use that to infer finality.
       // However, don't look at owner for refinement classes (it's basically arbitrary).
       || isClass && !isRefinementClass && originalOwner.isTerm && children.isEmpty
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
-    final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)
+    final def isEffectivelyFinalOrNotOverridden: Boolean = {
+      def isNotOverridden =
+        owner.isClass && (
+             owner.isEffectivelyFinal
+          || owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && overridingSymbol(c) == NoSymbol)
+        )
+      isEffectivelyFinal || isTerm && !isDeferred && isNotOverridden
+    }
 
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass
@@ -1096,21 +1098,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
 
     def exists: Boolean = !isTopLevel || {
-      val isSourceLoader = rawInfo match {
-        case sl: SymLoader => sl.fromSource
-        case _             => false
-      }
-      def warnIfSourceLoader(): Unit = {
+      def warnIfSourceLoader(): false = {
+        val isSourceLoader = rawInfo match {
+          case sl: SymLoader => sl.fromSource
+          case _             => false
+        }
+        // Predef is completed early due to its autoimport; we used to get here when type checking its
+        // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
+        // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
+        // get here anymore.
         if (isSourceLoader)
-          // Predef is completed early due to its autoimport; we used to get here when type checking its
-          // parent LowPriorityImplicits. See comment in c5441dc for more elaboration.
-          // Since the fix for scala/bug#7335 Predef parents must be defined in Predef.scala, and we should not
-          // get here anymore.
           devWarning(s"calling Symbol#exists with sourcefile based symbol loader may give incorrect results.")
+        false
       }
-
-      rawInfo load this
-      rawInfo != NoType || { warnIfSourceLoader(); false }
+      rawInfo.load(this)
+      rawInfo != NoType || warnIfSourceLoader()
     }
 
     final def isInitialized: Boolean =
@@ -1871,7 +1873,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info match {
         case ci @ ClassInfoType(_, _, _) =>
           setInfo(ci.copy(parents = ci.parents :+ SerializableTpe))
-          invalidateCaches(ci.typeSymbol.typeOfThis, ci.typeSymbol :: Nil)
+          invalidateCaches(ci.typeSymbol.typeOfThis, Set(ci.typeSymbol))
         case i =>
           abort("Only ClassInfoTypes can be made serializable: "+ i)
       }
@@ -1914,8 +1916,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def filterAnnotations(p: AnnotationInfo => Boolean): this.type =
       setAnnotations(annotations filter p)
 
-    def addAnnotation(annot: AnnotationInfo): this.type =
-      setAnnotations(annot :: annotations)
+    def addAnnotation(annot: AnnotationInfo): this.type = setAnnotations(annotations.appended(annot))
 
     // Convenience for the overwhelmingly common cases, and avoid varags and listbuilders
     final def addAnnotation(sym: Symbol): this.type = {
@@ -3874,7 +3875,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   private[scala] final def argsDependOnPrefix(sym: Symbol): Boolean = {
     val tt = sym.owner.thisType
 
-    @annotation.tailrec
+    @tailrec
     def loop(mt: Type): Boolean = {
       mt match {
         case MethodType(params, restpe) => params.exists(_.info.dealias.exists(_ == tt)) || loop(restpe)

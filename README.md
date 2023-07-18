@@ -3,6 +3,8 @@
 This is the home of the [Scala 2](https://www.scala-lang.org)
 standard library, compiler, and language spec.
 
+If you want to visit the Scala 3 repository, go to the [lampepfl/dotty](https://github.com/lampepfl/dotty).
+
 # How to contribute
 
 Issues and bug reports for Scala 2 are located in [scala/bug](https://github.com/scala/bug). That tracker is also where new contributors may find issues to work on: [good first issues](https://github.com/scala/bug/labels/good%20first%20issue), [help wanted](https://github.com/scala/bug/labels/help%20wanted).
@@ -38,6 +40,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | 2.12.x branch, compiler performance, weird compiler bugs, lambdas |
  <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | getting started, build, CI, community build, Jenkins, docs, library, REPL |
  <img src="https://avatars.githubusercontent.com/dwijnand"      height="50px" title="Dale Wijnand"/>         | [`@dwijnand`](https://github.com/dwijnand)           | pattern matcher, MiMa, partest |
+ <img src="https://avatars.githubusercontent.com/som-snytt"     height="50px" title="Som Snytt"/>            | [`@som-snytt`](https://github.com/som-snytt)         | warnings/lints/errors, REPL, compiler options, compiler internals, partest |
  <img src="https://avatars.githubusercontent.com/Ichoran"       height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/viktorklang"   height="50px" title="Viktor Klang"/>         | [`@viktorklang`](https://github.com/viktorklang)     | concurrency, futures |
  <img src="https://avatars.githubusercontent.com/sjrd"          height="50px" title="Sébastien Doeraene"/>   | [`@sjrd`](https://github.com/sjrd)                   | interactions with Scala.js |
@@ -187,7 +190,7 @@ Once you've started an `sbt` session you can run one of the core commands:
     - Note that the `-bin` string marks the version binary compatible. Using it in
       sbt will cause the `scalaBinaryVersion` to be `2.13`. If the version is not
       binary compatible, we recommend using `-pre`, e.g., `2.14.0-pre-abcd123-SNAPSHOT`.
-    - Optionally `set publishArtifact in (Compile, packageDoc) in ThisBuild := false`
+    - Optionally `set ThisBuild / Compile / packageDoc / publishArtifact := false`
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on

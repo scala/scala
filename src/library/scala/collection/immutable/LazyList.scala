@@ -19,7 +19,7 @@ import java.lang.{StringBuilder => JStringBuilder}
 
 import scala.annotation.tailrec
 import scala.collection.generic.SerializeEnd
-import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder, StringBuilder}
+import scala.collection.mutable.{Builder, ReusableBuilder, StringBuilder}
 import scala.language.implicitConversions
 import scala.runtime.Statics
 
@@ -220,7 +220,7 @@ import scala.runtime.Statics
   *
   *  @tparam A    the type of the elements contained in this lazy list.
   *
-  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lazylists "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#lazylists "Scala's Collection Library overview"]]
   *  section on `LazyLists` for more information.
   *  @define Coll `LazyList`
   *  @define coll lazy list
@@ -1356,7 +1356,7 @@ object LazyList extends SeqFactory[LazyList] {
     private[this] def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
       var these = coll
-      while(these.knownNonEmpty) {
+      while (these.knownNonEmpty) {
         out.writeObject(these.head)
         these = these.tail
       }
@@ -1366,14 +1366,17 @@ object LazyList extends SeqFactory[LazyList] {
 
     private[this] def readObject(in: ObjectInputStream): Unit = {
       in.defaultReadObject()
-      val init = new ArrayBuffer[A]
+      val init = new mutable.ListBuffer[A]
       var initRead = false
       while (!initRead) in.readObject match {
         case SerializeEnd => initRead = true
         case a => init += a.asInstanceOf[A]
       }
       val tail = in.readObject().asInstanceOf[LazyList[A]]
-      coll = init ++: tail
+      // scala/scala#10118: caution that no code path can evaluate `tail.state`
+      // before the resulting LazyList is returned
+      val it = init.toList.iterator
+      coll = newLL(stateFromIteratorConcatSuffix(it)(tail.state))
     }
 
     private[this] def readResolve(): Any = coll

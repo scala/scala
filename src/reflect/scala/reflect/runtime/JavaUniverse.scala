@@ -19,7 +19,7 @@ import scala.reflect.internal.{SomePhase, TreeInfo}
 import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
 import scala.reflect.api.{TypeCreator, Universe}
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.{CodeAction, Statistics}
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
@@ -39,13 +39,15 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   // TODO: why put output under isLogging? Calls to inform are already conditional on debug/verbose/...
   import scala.reflect.internal.Reporter
   override def reporter: Reporter = new Reporter {
+    @nowarn("msg=overriding method info0")
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = log(msg)
   }
 
   // minimal Run to get Reporting wired
   def currentRun = new RunReporting {}
   class PerRunReporting extends PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = reporter.warning(pos, msg)
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction]): Unit =
+      reporter.warning(pos, msg)
   }
   protected def PerRunReporting = new PerRunReporting
 

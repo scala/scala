@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
 
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer.
   *
-  *  Append, prepend, removeFirst, removeLast and random-access (indexed-lookup and indexed-replacement)
+  *  Append, prepend, removeHead, removeLast and random-access (indexed-lookup and indexed-replacement)
   *  take amortized constant time. In general, removals and insertions at i-th index are O(min(i, n-i))
   *  and thus insertions and removals from end/beginning are fast.
   *
@@ -436,7 +436,7 @@ class ArrayDeque[A] protected (
 
   override def isEmpty = start == end
 
-  protected override def klone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
+  override protected def klone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
 
   override def iterableFactory: SeqFactory[ArrayDeque] = ArrayDeque
 
@@ -531,7 +531,8 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      val actual = IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
+      if (actual != s) throw new IllegalStateException(s"Copied $actual of $s")
       new ArrayDeque[B](array, start = 0, end = s)
     } else new ArrayDeque[B]() ++= coll
   }

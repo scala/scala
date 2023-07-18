@@ -19,7 +19,7 @@ import scala.annotation.tailrec
   *
   *  $concurrentmapinfo
   *
-  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
   *  section on `Concurrent Maps` for more information.
   *
   *  @tparam K  the key type of the map
@@ -97,7 +97,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     case None =>
       val v = op
       putIfAbsent(key, v) match {
-        case Some(nv) => nv
+        case Some(ov) => ov
         case None => v
       }
   }

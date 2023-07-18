@@ -1,9 +1,7 @@
 import scala.collection.immutable.TreeSeqMap
 
 import org.scalacheck._
-import Arbitrary.arbitrary
 import Prop._
-import Gen._
 
 object TreeSeqMapTest extends Properties("TreeSeqMap") {
   property("transitive test") = {
@@ -24,7 +22,7 @@ object TreeSeqMapTest extends Properties("TreeSeqMap") {
     m1 != m2 ==> {
       val vm1 = TreeSeqMap.from(m1)
       val vm2 = TreeSeqMap.from(m2)
-      m1 != m2
+      vm1 != vm2
     }
   }
 }

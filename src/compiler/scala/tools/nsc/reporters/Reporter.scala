@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package reporters
 
-import scala.annotation.unused
+import scala.annotation.{nowarn, unused}
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.{Position, ScalaClassLoader}
@@ -26,10 +26,6 @@ abstract class Reporter extends internal.Reporter {
   // used by sbt
   @deprecated("Use echo, as internal.Reporter does not support unforced info", since="2.13.0")
   final def info(pos: Position, msg: String, @unused force: Boolean): Unit = info0(pos, msg, INFO, force = true)
-
-  // allow calling info0 in MakeFilteringForwardingReporter
-  private[reporters] final def nonProtectedInfo0(pos: Position, msg: String, severity: Severity): Unit =
-    info0(pos, msg, severity, force = true)
 
   // overridden by sbt, IDE -- should not be in the reporting interface
   // (IDE receives comments from ScaladocAnalyzer using this hook method)
@@ -97,11 +93,19 @@ object Reporter {
 abstract class FilteringReporter extends Reporter {
   def settings: Settings
 
-  // this should be the abstract method all the way up in reflect.internal.Reporter, but sbt compat
-  def doReport(pos: Position, msg: String, severity: Severity): Unit
+  @deprecatedOverriding("override the `doReport` overload (defined in reflect.internal.Reporter) instead", "2.13.12")
+  @deprecated("use the `doReport` overload instead", "2.13.12")
+  def doReport(pos: Position, msg: String, severity: Severity): Unit = doReport(pos, msg, severity, Nil)
 
-  @deprecatedOverriding("override doReport instead", "2.13.1") // overridden in scalameta for example
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = doReport(pos, msg, severity)
+  // this should be the abstract method all the way up in reflect.internal.Reporter, but sbt compat
+  // the abstract override is commented-out to maintain binary compatibility for FilteringReporter subclasses
+  // override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit
+
+  @deprecatedOverriding("override `doReport` instead", "2.13.1") // overridden in scalameta for example
+  @nowarn("cat=deprecation")
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
+    // call the deprecated overload to support existing FilteringReporter subclasses (they override that overload)
+    doReport(pos, msg, severity)
 
   private lazy val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
   private lazy val messages  = mutable.Map[Position, List[String]]() withDefaultValue Nil
@@ -118,8 +122,8 @@ abstract class FilteringReporter extends Reporter {
     }
     // Invoked when an error or warning is filtered by position.
     @inline def suppress = {
-      if (settings.prompt.value) doReport(pos, msg, severity)
-      else if (settings.isDebug) doReport(pos, s"[ suppressed ] $msg", severity)
+      if (settings.prompt.value) doReport(pos, msg, severity, Nil)
+      else if (settings.isDebug) doReport(pos, s"[ suppressed ] $msg", severity, Nil)
       Suppress
     }
     if (!duplicateOk(pos, severity, msg)) suppress else if (!maxOk) Count else Display

@@ -9,7 +9,7 @@ object TestCtxFns {
     def puts[T](t: T): Unit = logs += t.toString
   }
 
-  implicit val ctx = new TestContext
+  implicit val ctx: TestContext = new TestContext
 
   def test1: Unit = {
     puts(23)(ctx)

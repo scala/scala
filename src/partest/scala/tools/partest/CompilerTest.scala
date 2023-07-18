@@ -12,6 +12,7 @@
 
 package scala.tools.partest
 
+import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc._
 
@@ -46,7 +47,7 @@ abstract class CompilerTest extends DirectTest {
       if (sym eq NoSymbol) NoType
       else appliedType(sym, compilerTypeFromTag(t))
   }
-  implicit def mkMkType(sym: Symbol) = new MkType(sym)
+  implicit def mkMkType(sym: Symbol): MkType = new MkType(sym)
 
   def allMembers(root: Symbol): List[Symbol] = {
     def loop(seen: Set[Symbol], roots: List[Symbol]): List[Symbol] = {

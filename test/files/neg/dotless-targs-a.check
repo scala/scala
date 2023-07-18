@@ -1,0 +1,10 @@
+dotless-targs-a.scala:4: error: type application is not allowed for infix operators
+  def fn2 = List apply[Int] 2
+                 ^
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators
+  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+                ^
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators
+  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+                                                    ^
+3 errors

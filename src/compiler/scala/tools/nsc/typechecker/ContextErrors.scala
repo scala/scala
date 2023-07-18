@@ -15,15 +15,15 @@ package typechecker
 
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
-
 import scala.PartialFunction.cond
 import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.{ControlThrowable, NonFatal}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
-import scala.reflect.internal.util.NoSourceFile
+import scala.reflect.internal.util.{CodeAction, NoSourceFile}
 
 trait ContextErrors extends splain.SplainErrors {
   self: Analyzer =>
@@ -31,10 +31,17 @@ trait ContextErrors extends splain.SplainErrors {
   import global._
   import definitions._
 
+  final case class ContextWarning(pos: Position, msg: String, cat: WarningCategory, sym: Symbol, actions: List[CodeAction])
+
   sealed abstract class AbsTypeError {
     def errPos: Position
     def errMsg: String
     override def toString() = "[Type error at:" + errPos + "] " + errMsg
+
+    // To include code actions in type errors, add a field to the corresponding case class
+    //   override val actions: List[CodeAction] = Nil
+    // See TypeErrorWrapper for example
+    def actions: List[CodeAction] = Nil
   }
 
   abstract class AbsAmbiguousTypeError extends AbsTypeError
@@ -64,7 +71,7 @@ trait ContextErrors extends splain.SplainErrors {
     def errPos = underlyingSym.pos
   }
 
-  case class TypeErrorWrapper(ex: TypeError)
+  case class TypeErrorWrapper(ex: TypeError, override val actions: List[CodeAction] = Nil)
     extends AbsTypeError {
     def errMsg = ex.msg
     def errPos = ex.pos
@@ -107,11 +114,9 @@ trait ContextErrors extends splain.SplainErrors {
 
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
+    // OPT: avoid error string creation for errors that won't see the light of day
     def typeErrorMsg(context: Context, found: Type, req: Type) =
-      if (context.openImplicits.nonEmpty && !settings.Vimplicits.value)
-         // OPT: avoid error string creation for errors that won't see the light of day, but predicate
-        //       this on -Xsource:2.13 for bug compatibility with https://github.com/scala/scala/pull/7147#issuecomment-418233611
-        "type mismatch"
+      if (!context.openImplicits.isEmpty && !settings.Vimplicits.value) "type mismatch"
       else "type mismatch" + foundReqMsg(found, req)
   }
 
@@ -153,7 +158,7 @@ trait ContextErrors extends splain.SplainErrors {
     MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
   /** The implicit not found message from the annotation, and whether it's a supplement message or not. */
-  def NoImplicitFoundAnnotation(tree: Tree, param: Symbol): (Boolean, String) = {
+  def NoImplicitFoundAnnotation(tree: Tree, param: Symbol): (Boolean, String) =
     param match {
       case ImplicitNotFoundMsg(msg) => (false, msg.formatParameterMessage(tree))
       case _ =>
@@ -167,7 +172,6 @@ trait ContextErrors extends splain.SplainErrors {
             true -> supplement
         }
     }
-  }
 
   def NoImplicitFoundError(tree: Tree, param: Symbol)(implicit context: Context): Unit = {
     val (isSupplement, annotationMsg) = NoImplicitFoundAnnotation(tree, param)
@@ -184,6 +188,24 @@ trait ContextErrors extends splain.SplainErrors {
     }
     val errMsg = splainPushOrReportNotFound(tree, param, annotationMsg)
     issueNormalTypeError(tree, if (errMsg.isEmpty) defaultErrMsg else errMsg)
+  }
+
+  private def InferredImplicitErrorImpl(tree: Tree, inferred: Type, cx: Context, isTyper: Boolean): Unit = {
+    def err(): Unit = {
+      val msg =
+        s"Implicit definition ${if (currentRun.isScala3) "must" else "should"} have explicit type${
+          if (!inferred.isErroneous) s" (inferred $inferred)" else ""
+        }"
+      if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration)
+      else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType)
+    }
+    val sym = tree.symbol
+    // Defer warning field of class until typing getter (which is marked implicit)
+    if (sym.isImplicit) {
+      if (!sym.isLocalToBlock) err()
+    }
+    else if (!isTyper && sym.isField && !sym.isLocalToBlock)
+      sym.updateAttachment(FieldTypeInferred)
   }
 
   trait TyperContextErrors {
@@ -391,50 +413,70 @@ trait ContextErrors extends splain.SplainErrors {
 
       //typedSelect
       def NotAMemberError(sel: Tree, qual: Tree, name: Name, cx: Context) = {
-        import util.{ EditDistance, StringUtil }
+        import util.EditDistance, util.StringUtil.oxford
         def errMsg: String = {
+          val editThreshold  = 3
+          val maxSuggestions = 4
+
           val owner            = qual.tpe.typeSymbol
           val target           = qual.tpe.widen
           def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
           def nameString       = decodeWithKind(name, owner)
           /* Illuminating some common situations and errors a bit further. */
           def addendum         = {
-            def orEmpty(cond: Boolean)(s: => String) = if (cond) s else ""
+            @inline def orEmpty(cond: Boolean)(s: => String) = if (cond) s else ""
             val companionSymbol: Symbol = {
               if (name.isTermName && owner.isPackageClass)
                 target.member(name.toTypeName)
               else NoSymbol
             }
             val companion = orEmpty(companionSymbol != NoSymbol)(s"note: $companionSymbol exists, but it has no companion object.")
-            // find out all the names available under target within 2 edit distances
-            lazy val alternatives: List[String] = {
-              val editThreshold = 2
+            // find out all the names available under target within ~2 edit distances
+            lazy val alternatives: List[(Int, String)] = {
               val x = name.decode
-              if (context.openImplicits.nonEmpty || (x.size < 2) || x.endsWith("=")) Nil
+              // effectively suppress comparison ops, but if they say <= and there is >=, offer it
+              def isEncodedComparison(n: Name) = n match {
+                case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE => true
+                case _ => false
+              }
+              val nameIsComparison = isEncodedComparison(name)
+              if (context.openImplicits.nonEmpty || x.length < 2) Nil
               else {
                 target.members.iterator
-                  .filter(sym => (sym.isTerm == name.isTermName) &&
+                  .filter(sym => sym.isTerm == name.isTermName &&
                     !sym.isConstructor &&
                     !nme.isLocalName(sym.name) &&
+                    isEncodedComparison(sym.name) == nameIsComparison &&
+                    sym.name != nme.EQ && sym.name != nme.NE &&
                     cx.isAccessible(sym, target))
                   .map(_.name.decode)
-                  .filter(n => (n.length > 2) &&
-                    (math.abs(n.length - x.length) <= editThreshold) &&
-                    (n != x) &&
-                    !n.contains("$") &&
-                    EditDistance.levenshtein(n, x) <= editThreshold)
-                  .distinct.toList
+                  .filter { n =>
+                    math.abs(n.length - x.length) <= editThreshold &&
+                    n != x &&
+                    !n.contains("$")
+                  }
+                  .map(n => (EditDistance.levenshtein(n, x), n))
+                  .filter { case (d, n) =>
+                    val nset = n.endsWith("_=")
+                    val xset = x.endsWith("_=")
+                    val (n1, x1) = if (nset && xset) (n.dropRight(2), x.dropRight(2)) else (n, x)
+                    def contained = x1.forall(c => n1.indexOf(c) >= 0)
+                    !(nset ^ xset) && d <= editThreshold && (d <= n1.length/2 && d <= x1.length/2 || contained)
+                  }
+                  .toList.sorted
               }
             }
-            val altStr: String = {
-              val maxSuggestions = 4
-              orEmpty(companionSymbol == NoSymbol) {
-                alternatives match {
-                  case Nil => ""
-                  case xs  => s"did you mean ${StringUtil.oxford(xs.sorted.take(maxSuggestions), "or")}?"
-                }
+            val altStr: String =
+              orEmpty(companionSymbol == NoSymbol && alternatives.nonEmpty) {
+                val d0 = alternatives.head._1
+                val (best0, rest0) = alternatives.span(_._1 == d0)
+                val best = best0.map(_._2).distinct
+                val rest = rest0.map(_._2).distinct
+                val more = (maxSuggestions - best.length) max 0
+                val add1 = orEmpty(more > 0 && rest.nonEmpty)(s" or perhaps ${oxford(rest.take(more), "or")}?")
+                val add2 = orEmpty(best.length > maxSuggestions || rest.length > more)(" or...?")
+                s"did you mean ${oxford(best.take(maxSuggestions), "or")}?$add1$add2"
               }
-            }
             val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
             val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
             val javaRules = orEmpty(owner.isJavaDefined && owner.isClass && !owner.hasPackageFlag) {
@@ -673,11 +715,10 @@ trait ContextErrors extends splain.SplainErrors {
       def NotEnoughArgsError(tree: Tree, fun: Tree, missing: List[Symbol]) = {
         val notEnoughArgumentsMsg = {
           val suffix = if (missing.isEmpty) "" else {
-            val keep = missing take 3 map (_.name)
+            val keep = missing.take(3).map(_.name)
             val ess  = if (missing.tail.isEmpty) "" else "s"
-            f".%nUnspecified value parameter$ess ${
-              keep.mkString("", ", ", if ((missing drop 3).nonEmpty) "..." else ".")
-            }"
+            val dots = if (missing.drop(3).nonEmpty) "..." else "."
+            keep.mkString(s".\nUnspecified value parameter$ess ", ", ", dots)
           }
           s"not enough arguments for ${ treeSymTypeMsg(fun) }$suffix"
         }
@@ -834,11 +875,6 @@ trait ContextErrors extends splain.SplainErrors {
         setError(tree)
       }
 
-      def DependentMethodTpeConversionToFunctionError(tree: Tree, tp: Type): Tree = {
-        issueNormalTypeError(tree, "method with dependent type " + tp + " cannot be converted to function value")
-        setError(tree)
-      }
-
       // cases where we do not necessarily return trees
 
       //checkStarPatOK
@@ -855,7 +891,7 @@ trait ContextErrors extends splain.SplainErrors {
 
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {
-        issueNormalTypeError(tree, sym.kindString + " " + sym.fullName + " is not a value")
+        issueNormalTypeError(tree, s"${sym.kindString} ${sym.fullName} is not a value")
         setError(tree)
       }
 
@@ -1049,6 +1085,8 @@ trait ContextErrors extends splain.SplainErrors {
       def MacroAnnotationTopLevelModuleBadExpansion(ann: Tree) =
         issueNormalTypeError(ann, "top-level object can only expand into an eponymous object")
 
+      def InferredImplicitError(tree: Tree, inferred: Type, cx: Context): Unit =
+        InferredImplicitErrorImpl(tree, inferred, cx, isTyper = true)
     }
 
     /** This file will be the death of me. */
@@ -1077,7 +1115,7 @@ trait ContextErrors extends splain.SplainErrors {
 
     object InferErrorGen {
 
-      implicit val contextInferErrorGen = getContext
+      implicit val contextInferErrorGen: Context = getContext
 
       object PolyAlternativeErrorKind extends Enumeration {
         type ErrorType = Value
@@ -1282,7 +1320,7 @@ trait ContextErrors extends splain.SplainErrors {
 
     object NamerErrorGen {
 
-      implicit val contextNamerErrorGen = context
+      implicit val contextNamerErrorGen: Context = context
 
       object SymValidateErrors extends Enumeration {
         val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
@@ -1400,6 +1438,9 @@ trait ContextErrors extends splain.SplainErrors {
         issueNormalTypeError(tree, name.decode + " " + msg)
       }
     }
+
+    def InferredImplicitError(tree: Tree, inferred: Type, cx: Context): Unit =
+      InferredImplicitErrorImpl(tree, inferred, cx, isTyper = false)
   }
 
   trait ImplicitsContextErrors {

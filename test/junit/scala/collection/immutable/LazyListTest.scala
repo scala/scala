@@ -8,11 +8,78 @@ import org.junit.Assert._
 
 import scala.annotation.unused
 import scala.collection.mutable.{Builder, ListBuffer}
-import scala.tools.testkit.AssertUtil
+import scala.tools.testkit.{AssertUtil, ReflectUtil}
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])
 class LazyListTest {
+
+  @Test
+  def serialization(): Unit = {
+    import java.io._
+
+    def serialize(obj: AnyRef): Array[Byte] = {
+      val buffer = new ByteArrayOutputStream
+      val out = new ObjectOutputStream(buffer)
+      out.writeObject(obj)
+      buffer.toByteArray
+    }
+
+    def deserialize(a: Array[Byte]): AnyRef = {
+      val in = new ObjectInputStream(new ByteArrayInputStream(a))
+      in.readObject
+    }
+
+    def serializeDeserialize[T <: AnyRef](obj: T) = deserialize(serialize(obj)).asInstanceOf[T]
+
+    val l = LazyList.from(10)
+
+    val ld1 = serializeDeserialize(l)
+    assertEquals(l.take(10).toList, ld1.take(10).toList)
+
+    l.tail.head
+    val ld2 = serializeDeserialize(l)
+    assertEquals(l.take(10).toList, ld2.take(10).toList)
+
+    LazyListTest.serializationForceCount = 0
+    val u = LazyList.from(10).map(x => { LazyListTest.serializationForceCount += 1; x })
+
+    @unused def printDiff(): Unit = {
+      val a = serialize(u)
+      ReflectUtil.getFieldAccessible[LazyList[_]]("scala$collection$immutable$LazyList$$stateEvaluated").setBoolean(u, true)
+      val b = serialize(u)
+      val i = a.zip(b).indexWhere(p => p._1 != p._2)
+      println("difference: ")
+      println(s"val from = ${a.slice(i - 10, i + 10).mkString("List[Byte](", ", ", ")")}")
+      println(s"val to   = ${b.slice(i - 10, i + 10).mkString("List[Byte](", ", ", ")")}")
+    }
+
+    // to update this test, comment-out `LazyList.writeReplace` and run `printDiff`
+    // printDiff()
+
+    val from = List[Byte](83, 116, 97, 116, 101, 59, 120, 112, 0, 0, 0, 115, 114, 0, 33, 106, 97, 118, 97, 46)
+    val to   = List[Byte](83, 116, 97, 116, 101, 59, 120, 112, 0, 0, 1, 115, 114, 0, 33, 106, 97, 118, 97, 46)
+
+    assertEquals(LazyListTest.serializationForceCount, 0)
+
+    u.head
+    assertEquals(LazyListTest.serializationForceCount, 1)
+
+    val data = serialize(u)
+    var i = data.indexOfSlice(from)
+    to.foreach(x => {data(i) = x; i += 1})
+
+    val ud1 = deserialize(data).asInstanceOf[LazyList[Int]]
+
+    // this check failed before scala/scala#10118, deserialization triggered evaluation
+    assertEquals(LazyListTest.serializationForceCount, 1)
+
+    ud1.tail.head
+    assertEquals(LazyListTest.serializationForceCount, 2)
+
+    u.tail.head
+    assertEquals(LazyListTest.serializationForceCount, 3)
+  }
 
   @Test
   def t6727_and_t6440_and_8627(): Unit = {
@@ -377,4 +444,8 @@ class LazyListTest {
     LazyList(1).lazyAppendedAll({ count += 1; Seq(2)}).toList
     assertEquals(1, count)
   }
+}
+
+object LazyListTest {
+  var serializationForceCount = 0
 }

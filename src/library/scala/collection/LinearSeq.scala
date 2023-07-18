@@ -34,9 +34,23 @@ object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.LinearSeq)
 /** Base trait for linear Seq operations */
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]] extends Any with SeqOps[A, CC, C] {
 
-  // To be overridden in implementations:
-  def isEmpty: Boolean
+  /** @inheritdoc
+   *
+   *  Note: *Must* be overridden in subclasses. The default implementation that is inherited from [[SeqOps]]
+   *     uses `lengthCompare`, which is defined here to use `isEmpty`.
+   */
+  override def isEmpty: Boolean
+
+  /** @inheritdoc
+   *
+   *  Note: *Must* be overridden in subclasses. The default implementation is inherited from [[IterableOps]].
+   */
   def head: A
+
+  /** @inheritdoc
+   *
+   *  Note: *Must* be overridden in subclasses. The default implementation is inherited from [[IterableOps]].
+   */
   def tail: C
 
   override def headOption: Option[A] =

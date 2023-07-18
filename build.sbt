@@ -37,7 +37,7 @@ import scala.build._, VersionUtil._
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.13.2"
 val junitInterfaceDep = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.15.4"                          % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.17.0"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
@@ -73,7 +73,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-Global / baseVersion       := "2.13.9"
+Global / baseVersion       := "2.13.12"
 Global / baseVersionSuffix := "SNAPSHOT"
 ThisBuild / organization   := "org.scala-lang"
 ThisBuild / homepage       := Some(url("https://www.scala-lang.org"))
@@ -134,6 +134,12 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
   projectFolder := thisProject.value.id, // overridden in configureAsSubproject
+  Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
+  Compile / javacOptions ++= (
+    if (scala.util.Properties.isJavaAtLeast("20"))
+      Seq("-Xlint:-options")  // allow `-source 1.8` and `-target 1.8`
+    else
+      Seq()),
   Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
   Compile / unmanagedJars := Seq.empty,  // no JARs in version control!
   Compile / sourceDirectory := baseDirectory.value,
@@ -1049,7 +1055,7 @@ lazy val root: Project = (project in file("."))
     setIncOptions
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
+    scaladoc, scalap, testkit, partest, junit, scalacheck, tasty, tastytest, scalaDist).settings(
     Compile / sources := Seq.empty,
     onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
       |version=${(Global / version).value} scalaVersion=${(Global / scalaVersion).value}

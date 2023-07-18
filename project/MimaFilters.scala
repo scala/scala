@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.8"),
+    mimaReferenceVersion := Some("2.13.11"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -31,14 +31,16 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
 
-    // scala/scala#9819
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.PriorityQueue#ResizableArrayAccess.p_ensureAdditionalSize"), // private[PriorityQueue]
-    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics"),  // private[scala]
-    ProblemFilters.exclude[MissingClassProblem]("scala.runtime.PStatics$"), // private[scala]
+    // KEEP: make use of CompletionStage#handle to get a better performance than CompletionStage#whenComplete.
+    ProblemFilters.exclude[MissingTypesProblem]("scala.concurrent.impl.FutureConvertersImpl$P"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.apply"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
-    // internal to wrappers
-    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.getOrElseUpdate"),
-    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.convert.JavaCollectionWrappers#JMapWrapperLike.updateWith"),
+    // PR 10406
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse#PerRunReporting.deprecationWarning"),
   )
 
   override val buildSettings = Seq(

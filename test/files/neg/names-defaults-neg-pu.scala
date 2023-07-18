@@ -188,3 +188,7 @@ object t3685 {
   class u20 { val x: Int = u.f(x = "32") }
   class u21 { var x: Int = u.f(x = "32") }
 }
+class A3[T](x: T = null) // scala/bug#4727 cf A2
+class t4727 {
+  def f = new A3[Int]()
+}

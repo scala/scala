@@ -973,7 +973,7 @@ object Iterator extends IterableFactory[Iterator] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
     override def knownSize: Int = 0
-    override protected def sliceIterator(from: Int, until: Int) = this
+    override protected def sliceIterator(from: Int, until: Int): AbstractIterator[Nothing] = this
   }
 
   /** Creates a target $coll from an existing source collection

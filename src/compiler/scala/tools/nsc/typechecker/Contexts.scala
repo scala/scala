@@ -14,8 +14,8 @@ package scala.tools.nsc
 package typechecker
 
 import scala.annotation.tailrec
-import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
+import scala.collection.mutable
+import scala.reflect.internal.util.{CodeAction, ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
 
@@ -50,13 +50,6 @@ trait Contexts { self: Analyzer =>
     val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
   }
   private lazy val NoJavaMemberFound = (NoType, NoSymbol)
-
-  def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
-    LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
-  def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
-    LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
-  def ambiguousDefinitions(owner: Symbol, other: Symbol) =
-    LookupAmbiguous(s"it is both defined in $owner and available as ${other.fullLocationString}")
 
   private lazy val startContext = NoContext.make(
     Template(List(), noSelfType, List()) setSymbol global.NoSymbol setType global.NoType,
@@ -590,7 +583,7 @@ trait Contexts { self: Analyzer =>
             inSilentMode {
               try {
                 set(disable = ImplicitsEnabled | EnrichmentEnabled) // restored by inSilentMode
-                tryOnce(false)
+                tryOnce(isLastTry = false)
                 reporter.hasErrors
               } catch {
                 case ex: CyclicReference => throw ex
@@ -602,7 +595,7 @@ trait Contexts { self: Analyzer =>
         // do last try if try with implicits enabled failed
         // (or if it was not attempted because they were disabled)
         if (doLastTry)
-          tryOnce(true)
+          tryOnce(isLastTry = true)
       }
     }
 
@@ -819,15 +812,25 @@ trait Contexts { self: Analyzer =>
     //
 
     /** Issue/buffer/throw the given type error according to the current mode for error reporting. */
-    private[typechecker] def issue(err: AbsTypeError)                        = reporter.issue(err)(this)
+    private[typechecker] def issue(err: AbsTypeError) = reporter.issue(err)(this)
+
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
     private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
+
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reporter.errorAndDumpIfDebug(fixPosition(pos), msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction] = Nil) =
+      reporter.errorAndDumpIfDebug(fixPosition(pos), msg, actions)
+
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner)
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site)
-    def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
+    def warning(pos: Position, msg: String, category: WarningCategory, actions: List[CodeAction] = Nil): Unit =
+      reporter.warning(fixPosition(pos), msg, category, owner, actions)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction]): Unit =
+      reporter.warning(fixPosition(pos), msg, category, site, actions)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      warning(pos, msg, category, site, Nil)
+
+    def echo(pos: Position, msg: String) = reporter.echo(fixPosition(pos), msg)
+
     def fixPosition(pos: Position): Position = pos match {
       case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
       case _ => pos
@@ -835,9 +838,8 @@ trait Contexts { self: Analyzer =>
 
 
     // TODO: buffer deprecations under silent (route through ContextReporter, store in BufferingReporter)
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
-
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String, actions: List[CodeAction] = Nil): Unit =
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since, actions)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
       runReporting.deprecationWarning(fixPosition(pos), sym, owner)
 
@@ -896,7 +898,9 @@ trait Contexts { self: Analyzer =>
     private def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
         (sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)) ||
-        (base.isJavaDefined && base.isModuleClass && sub.isNonBottomSubClass(base.linkedClassOfClass))
+        (base.isJavaDefined && base.isModuleClass && (
+          sub.isNonBottomSubClass(base.linkedClassOfClass) ||
+            sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base.linkedClassOfClass)))
 
     /** Return the closest enclosing context that defines a subclass of `clazz`
      *  or a companion object thereof, or `NoContext` if no such context exists.
@@ -1249,30 +1253,13 @@ trait Contexts { self: Analyzer =>
         || unit.exists && s.sourceFile != unit.source.file)
       )
 
-
-    /** Does the import just import the defined symbol?
-     *
-     *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
-     *  `S` is both made available in `p` and imported, an ambiguity.
-     *  (The import is not used and is extraneous, but normally a definition
-     *  in `p` would shadow and result in maybe a warning, not an error.)
-     *
-     *  Don't attempt to interfere with correctness everywhere.
-     *  `object X { def f = ??? ; def g = { import X.f ; f } }`
-     *
-     *  This method doesn't use the ImportInfo, `imp1`.
-     */
-    private[Contexts] def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
-      val res = impSym == defSym
-      if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
-      res
-    }
-
     /** If the given import is permitted, fetch the symbol and filter for accessibility.
      */
-    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol =
+    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol = {
       if (isExcludedRootImport(imp)) NoSymbol
-      else sym.filter(isAccessible(_, imp.qual.tpe, superAccess = false))
+      else sym.filter(s => s.exists && isAccessible(s, imp.qual.tpe, superAccess = false))
+      // `exists` above completes SymbolLoaders, which sets the symbol's access flags (scala/bug#12736)
+    }
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
@@ -1379,6 +1366,40 @@ trait Contexts { self: Analyzer =>
     private[this] var pre: Type                = _ // the prefix type of defSym, if a class member
     private[this] var cx: Context              = _ // the context under consideration
     private[this] var symbolDepth: Int         = _ // the depth of the directly found symbol
+    private[this] var foundInPrefix: Boolean   = _ // the symbol was found in pre
+    private[this] var foundInSuper: Boolean    = _ // the symbol was found super of context class (inherited)
+
+    def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
+      LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
+    def ambiguousDefnAndImport(owner: Symbol, imp: ImportInfo) =
+      LookupAmbiguous(s"it is both defined in $owner and imported subsequently by \n$imp")
+    def ambiguousDefinitions(outer: Symbol, inherited: Symbol, foundInSuper: Boolean, currentClass: Symbol) =
+      if (foundInSuper) {
+        if (inherited.isImplicit) None
+        else {
+          val outer1 = outer.alternatives.head
+          val inherited1 = inherited.alternatives.head
+          val classDesc = if (currentClass.isAnonymousClass) "anonymous class" else currentClass.toString
+          val parent = currentClass.parentSymbols.find(_.isNonBottomSubClass(inherited1.owner)).getOrElse(NoSymbol)
+          val inherit = if (parent.exists && parent != inherited1.owner) s", inherited through parent $parent" else ""
+          val message =
+            sm"""|it is both defined in the enclosing ${outer1.owner} and inherited in the enclosing $classDesc as $inherited1 (defined in ${inherited1.ownsString}$inherit)
+                 |In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
+                 |Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.${outer1.name}`."""
+          // For now (2.13.11), warn under Xsource:3. We'll consider warning by default (and erring in Xsource:3) in 2.13.12
+          if (currentRun.isScala3) {
+            // passing the message to `typedIdent` as attachment, we don't have the position here to report the warning
+            inherited.updateAttachment(LookupAmbiguityWarning(
+              sm"""|reference to ${outer1.name} is ambiguous;
+                   |$message
+                   |Or use `-Wconf:msg=legacy-binding:s` to silence this warning."""))
+            // Some(LookupAmbiguous(message)) // to make it an error in 2.13.12
+            None
+          } else
+            None
+        }
+      } else
+        Some(LookupAmbiguous(s"it is both defined in ${outer.owner} and available as ${inherited.fullLocationString}"))
 
     def apply(thisContext: Context, name: Name)(qualifies: Symbol => Boolean): NameLookup = {
       lookupError  = null
@@ -1387,6 +1408,8 @@ trait Contexts { self: Analyzer =>
       pre          = NoPrefix
       cx           = thisContext
       symbolDepth  = -1
+      foundInPrefix = false
+      foundInSuper = false
 
       def finish(qual: Tree, sym: Symbol): NameLookup = (
         if (lookupError ne null) lookupError
@@ -1403,8 +1426,8 @@ trait Contexts { self: Analyzer =>
         finish(qual, sym)
       }
 
-      def lookupInPrefix(name: Name): Symbol = {
-        if (thisContext.unit.isJava) {
+      def lookupInPrefix(name: Name): Symbol =
+        if (thisContext.unit.isJava)
           thisContext.javaFindMember(pre, name, qualifies) match {
             case (_, NoSymbol) =>
               NoSymbol
@@ -1412,17 +1435,16 @@ trait Contexts { self: Analyzer =>
               pre = pre1
               sym
           }
-        } else {
+        else
           pre.member(name).filter(qualifies)
-        }
-      }
+
       def accessibleInPrefix(s: Symbol) =
         thisContext.isAccessible(s, pre, superAccess = false)
 
       def searchPrefix = {
         cx = cx.enclClass
         val found0 = lookupInPrefix(name)
-        val found1 = found0 filter accessibleInPrefix
+        val found1 = found0.filter(accessibleInPrefix)
         if (found0.exists && !found1.exists && inaccessible == null)
           inaccessible = LookupInaccessible(found0, analyzer.lastAccessCheckDetails)
 
@@ -1469,16 +1491,26 @@ trait Contexts { self: Analyzer =>
       }
 
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
-      def nextDefinition(): Unit =
+      def nextDefinition(lastDef: Symbol, lastPre: Type): Unit = {
+        var inPrefix = false
+        defSym = NoSymbol
         while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
           pre    = cx.enclClass.prefix
-          defSym = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope) match {
-            case NoSymbol => searchPrefix
-            case found    => found
+          defSym = lookupInScope(cx.owner, pre, cx.scope) match {
+            case NoSymbol => inPrefix = true; searchPrefix
+            case found    => inPrefix = false; found
           }
           if (!defSym.exists) cx = cx.outer // push further outward
         }
-      nextDefinition()
+        if ((defSym.isAliasType || lastDef.isAliasType) && pre.memberType(defSym) =:= lastPre.memberType(lastDef))
+          defSym = NoSymbol
+        if (defSym.isStable && lastDef.isStable &&
+          (lastPre.memberType(lastDef).termSymbol == defSym || pre.memberType(defSym).termSymbol == lastDef))
+          defSym = NoSymbol
+        foundInPrefix = inPrefix && defSym.exists
+        foundInSuper  = foundInPrefix && defSym.alternatives.forall(_.owner != cx.owner)
+      }
+      nextDefinition(NoSymbol, NoPrefix)
 
       if (symbolDepth < 0)
         symbolDepth = cx.depth
@@ -1488,6 +1520,9 @@ trait Contexts { self: Analyzer =>
       val importCursor = new ImportCursor(thisContext, name)
       import importCursor.{imp1, imp2}
 
+      // The symbol resolved by the given import for `name`, paired with the selector that was used.
+      // If `requireExplicit`, then only "named" or "specific" selectors are considered.
+      // In addition, the symbol must be accessible (in the current context) and satisfy the `qualifies` predicate.
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean): (ImportSelector, Symbol) = {
         val pair @ (sel, sym) = imp.importedSelectedSymbol(name, requireExplicit)
         if (sym == NoSymbol) pair
@@ -1507,13 +1542,20 @@ trait Contexts { self: Analyzer =>
        *
        * Scala: Bindings of different kinds have a defined precedence order:
        *
-       *  1) Definitions and declarations that are local, inherited, or made available by
-       *     a package clause and also defined in the same compilation unit as the reference, have highest precedence.
+       *  1) Definitions and declarations in lexical scope have the highest precedence.
+       *  1b) Definitions and declarations that are either inherited, or made
+       *      available by a package clause and also defined in the same compilation unit
+       *      as the reference to them, have the next highest precedence.
+       *      (Only in -Xsource:3, same precedence as 1 with a warning in Scala 2.)
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
-       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
-       *     as the reference, have lowest precedence. Also "root" imports added implicitly.
+       *  4) Bindings made available by a package clause,
+       *     but not also defined in the same compilation unit as the reference to them,
+       *     as well as bindings supplied by the compiler but not explicitly written in source code,
+       *     have the lowest precedence.
        */
+
+      /* Level 4 (see above) */
       def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
 
       // Find the first candidate import
@@ -1527,7 +1569,8 @@ trait Contexts { self: Analyzer =>
           @inline def importCompetesWithDefinition =
             if (thisContext.unit.isJava) imp.depth == symbolDepth && defIsLevel4
             else defIsLevel4
-          imp.depth > symbolDepth || importCompetesWithDefinition
+          !cx(ContextMode.InPackageClauseName) &&
+            (imp.depth > symbolDepth || importCompetesWithDefinition)
         }
 
         while (!impSym.exists && importCursor.imp1Exists && importCanShadowAtDepth(importCursor.imp1)) {
@@ -1542,6 +1585,12 @@ trait Contexts { self: Analyzer =>
       advanceCursorToNextImport()
 
       val preferDef: Boolean = defSym.exists && (!impSym.exists || {
+        // Does the import just import the defined symbol?
+        def reconcileAmbiguousImportAndDef: Boolean = {
+          val res = impSym == defSym
+          if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
+          res
+        }
         // 4) root imported symbols have same (lowest) precedence as package-owned symbols in different compilation units.
         if (imp1.depth < symbolDepth && imp1.isRootImport && foreignDefined)
           true
@@ -1554,36 +1603,54 @@ trait Contexts { self: Analyzer =>
         // Defined symbols take precedence over erroneous imports.
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
           true
-        // Try to reconcile them before giving up, at least if the def is not visible
-        else if (foreignDefined && thisContext.reconcileAmbiguousImportAndDef(name, impSym, defSym))
+        // Try to reconcile them before giving up
+        else if (foreignDefined && reconcileAmbiguousImportAndDef)
           true
         // Otherwise they are irreconcilably ambiguous
         else
           return ambiguousDefnAndImport(defSym.alternatives.head.owner, imp1)
       })
 
-      // If the defSym is at 4, and there is a def at 1 in scope due to packaging, then the reference is ambiguous.
-      if (foreignDefined && !defSym.hasPackageFlag && !thisContext.unit.isJava) {
+      // If the defSym is at 4, and there is a def at 1b in scope due to packaging, then the reference is ambiguous.
+      // Also if defSym is at 1b inherited, the reference can be rendered ambiguous by a def at 1a in scope.
+      val possiblyAmbiguousDefinition =
+        foundInSuper && cx.owner.isClass ||
+        foreignDefined && !defSym.hasPackageFlag
+      if (possiblyAmbiguousDefinition && !thisContext.unit.isJava) {
         val defSym0 = defSym
         val pre0    = pre
         val cx0     = cx
+        val depth0  = symbolDepth
+        val wasFoundInSuper = foundInSuper
+        val foundCompetingSymbol: () => Boolean =
+          if (foreignDefined)
+            // if the first found symbol (defSym0) is level 4 (foreignDefined), a lower level (1 or 1b) defSym is competing
+            () => defSym.exists && !foreignDefined
+          else {
+            // if defSym0 is level 1 or 1b, another defSym is competing if defined in an outer scope in the same file
+            () => defSym.exists && !(pre.typeSymbol.isPackageClass && !defSym.owner.isPackageClass) && !foundInSuper && !foreignDefined
+            //                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            //                       defined in package object (or inherited into package object)
+          }
         while ((cx ne NoContext) && cx.depth >= symbolDepth) cx = cx.outer
+        if (wasFoundInSuper)
+          while ((cx ne NoContext) && (cx.owner eq cx0.owner)) cx = cx.outer
         var done = false
         while (!done) {
-          defSym = NoSymbol
-          nextDefinition()
-          done = (cx eq NoContext) || defSym.exists && !foreignDefined
+          nextDefinition(defSym0, pre0)
+          done = (cx eq NoContext) || foundCompetingSymbol()
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
         if (defSym.exists && (defSym ne defSym0)) {
           val ambiguity =
-            if (preferDef) ambiguousDefinitions(owner = defSym.owner, defSym0)
-            else ambiguousDefnAndImport(owner = defSym.owner, imp1)
-          return ambiguity
+            if (preferDef) ambiguousDefinitions(defSym, defSym0, wasFoundInSuper, cx0.enclClass.owner)
+            else Some(ambiguousDefnAndImport(owner = defSym.owner, imp1))
+          if (ambiguity.nonEmpty) return ambiguity.get
         }
         defSym = defSym0
         pre    = pre0
         cx     = cx0
+        symbolDepth = depth0
       }
 
       if (preferDef) impSym = NoSymbol else defSym = NoSymbol
@@ -1654,24 +1721,19 @@ trait Contexts { self: Analyzer =>
    *
    *  To handle nested contexts, reporters share buffers. TODO: only buffer in BufferingReporter, emit immediately in ImmediateReporter
    */
-  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) {
-    type Error = AbsTypeError
-    type Warning = (Position, String, WarningCategory, Symbol)
-
-    def issue(err: AbsTypeError)(implicit context: Context): Unit = errorAndDumpIfDebug(context.fixPosition(err.errPos), addDiagString(err.errMsg))
+  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) {
+    def issue(err: AbsTypeError)(implicit context: Context): Unit = errorAndDumpIfDebug(context.fixPosition(err.errPos), addDiagString(err.errMsg), err.actions)
 
     def echo(msg: String): Unit = echo(NoPosition, msg)
+    def echo(pos: Position, msg: String): Unit = reporter.echo(pos, msg)
 
-    def echo(pos: Position, msg: String): Unit =
-      reporter.echo(pos, msg)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction] = Nil): Unit =
+      runReporting.warning(pos, msg, category, site, actions)
 
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      runReporting.warning(pos, msg, category, site)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit
 
-    def error(pos: Position, msg: String): Unit
-
-    final def errorAndDumpIfDebug(pos: Position, msg: String): Unit = {
-      error(pos, msg)
+    final def errorAndDumpIfDebug(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
+      error(pos, msg, actions)
       if (settings.VdebugTypeError.value) {
         Thread.dumpStack()
       }
@@ -1690,7 +1752,7 @@ trait Contexts { self: Analyzer =>
      *  - else, let this context reporter decide
      */
     final def issueAmbiguousError(err: AbsAmbiguousTypeError)(implicit context: Context): Unit =
-      if (context.ambiguousErrors) reporter.error(context.fixPosition(err.errPos), addDiagString(err.errMsg)) // force reporting... see TODO above
+      if (context.ambiguousErrors) reporter.error(context.fixPosition(err.errPos), addDiagString(err.errMsg), err.actions) // force reporting... see TODO above
       else handleSuppressedAmbiguous(err)
 
     @inline final def withFreshErrorBuffer[T](expr: => T): T = {
@@ -1708,7 +1770,7 @@ trait Contexts { self: Analyzer =>
           if (target.isBuffering) {
             target ++= errors
           } else {
-            errors.foreach(e => target.errorAndDumpIfDebug(e.errPos, e.errMsg))
+            errors.foreach(e => target.errorAndDumpIfDebug(e.errPos, e.errMsg, e.actions))
           }
           // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
           // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
@@ -1768,19 +1830,19 @@ trait Contexts { self: Analyzer =>
 
     final def emitWarnings() = if (_warningBuffer != null) {
       _warningBuffer foreach {
-        case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site)
+        case ContextWarning(pos, msg, category, site, actions) => runReporting.warning(pos, msg, category, site, actions)
       }
       _warningBuffer = null
     }
 
     // [JZ] Contexts, pre- the scala/bug#7345 refactor, avoided allocating the buffers until needed. This
     // is replicated here out of conservatism.
-    private def newBuffer[A]    = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
-    final protected def errorBuffer   = { if (_errorBuffer == null) _errorBuffer = newBuffer; _errorBuffer }
+    private def newBuffer[A] = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
+    final protected def errorBuffer = { if (_errorBuffer == null) _errorBuffer = newBuffer; _errorBuffer }
     final protected def warningBuffer = { if (_warningBuffer == null) _warningBuffer = newBuffer; _warningBuffer }
 
-    final def errors: immutable.Seq[Error]     = errorBuffer.toVector
-    final def warnings: immutable.Seq[Warning] = warningBuffer.toVector
+    final def errors: Seq[AbsTypeError]        = errorBuffer.toVector
+    final def warnings: Seq[ContextWarning]    = warningBuffer.toVector
     final def firstError: Option[AbsTypeError] = errorBuffer.headOption
 
     // TODO: remove ++= and clearAll* entirely in favor of more high-level combinators like withFreshErrorBuffer
@@ -1792,22 +1854,22 @@ trait Contexts { self: Analyzer =>
     final def clearAllErrors(): Unit = { _errorBuffer = null }
   }
 
-  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def makeBuffering: ContextReporter = new BufferingReporter(errorBuffer, warningBuffer)
-    def error(pos: Position, msg: String): Unit = reporter.error(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = reporter.error(pos, msg, actions)
  }
 
-  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 
     override def issue(err: AbsTypeError)(implicit context: Context): Unit             = errorBuffer += err
 
     // this used to throw new TypeError(pos, msg) -- buffering lets us report more errors (test/files/neg/macro-basic-mamdmi)
     // the old throwing behavior was relied on by diagnostics in manifestOfType
-    def error(pos: Position, msg: String): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg))
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg), actions)
 
-    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      warningBuffer += ((pos, msg, category, site))
+    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction]): Unit =
+      warningBuffer += ContextWarning(pos, msg, category, site, actions)
 
     override protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = errorBuffer += err
 
@@ -1821,12 +1883,12 @@ trait Contexts { self: Analyzer =>
    */
   private[typechecker] class ThrowingReporter extends ContextReporter {
     override def isThrowing = true
-    def error(pos: Position, msg: String): Unit = throw new TypeError(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = throw new TypeError(pos, msg)
   }
 
   /** Used during a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
   private[typechecker] class CheckingReporter extends ContextReporter {
-    def error(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = onTreeCheckerError(pos, msg)
   }
 
   class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
@@ -2031,6 +2093,8 @@ object ContextMode {
     * When set, Java annotations may be instantiated directly.
     */
   final val TypingAnnotation: ContextMode         = 1 << 19
+
+  final val InPackageClauseName: ContextMode      = 1 << 20
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers

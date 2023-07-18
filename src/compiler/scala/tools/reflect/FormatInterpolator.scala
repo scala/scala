@@ -21,7 +21,6 @@ import scala.util.matching.Regex.Match
 import java.util.Formattable
 
 abstract class FormatInterpolator {
-
   import FormatInterpolator._
   import SpecifierGroups.{Value => SpecGroup, _}
 
@@ -33,6 +32,8 @@ abstract class FormatInterpolator {
   import treeInfo.Applied
 
   private def bail(msg: String) = global.abort(msg)
+
+  def concatenate(parts: List[Tree], args: List[Tree]): Tree
 
   def interpolateF: Tree = c.macroApplication match {
     //case q"$_(..$parts).f(..$args)" =>
@@ -81,6 +82,9 @@ abstract class FormatInterpolator {
     val actuals = ListBuffer.empty[Tree]
     val convert = ListBuffer.empty[Conversion]
 
+    // whether this format does more than concatenate strings
+    var formatting = false
+
     def argType(argi: Int, types: Type*): Type = {
       val tpe = argTypes(argi)
       types.find(t => argConformsTo(argi, tpe, t))
@@ -94,6 +98,7 @@ abstract class FormatInterpolator {
             else all.head + all.tail.map { case req(what) => what case _ => "?" }.mkString(", ", ", ", "")
           }
           c.error(args(argi).pos, msg)
+          reported = true
           actuals += args(argi)
           types.head
         }
@@ -112,8 +117,8 @@ abstract class FormatInterpolator {
       }
 
     // Append the nth part to the string builder, possibly prepending an omitted %s first.
-    // Sanity-check the % fields in this part.
-    def loop(remaining: List[Tree], n: Int): Unit = {
+    // Check the % fields in this part.
+    def loop(remaining: List[Tree], n: Int): Unit =
       remaining match {
         case part0 :: more =>
           val part1 = part0 match {
@@ -139,6 +144,8 @@ abstract class FormatInterpolator {
           else if (!matches.hasNext) insertStringConversion()
           else {
             val cv = Conversion(matches.next(), part0.pos, argc)
+            if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.flags.nonEmpty)
+              formatting = true
             if (cv.isLiteral) insertStringConversion()
             else if (cv.isIndexed) {
               if (cv.index.getOrElse(-1) == n) accept(cv)
@@ -155,16 +162,23 @@ abstract class FormatInterpolator {
             val cv = Conversion(matches.next(), part0.pos, argc)
             if (n == 0 && cv.hasFlag('<')) cv.badFlag('<', "No last arg")
             else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
+            formatting = true
           }
           loop(more, n = n + 1)
         case Nil =>
       }
-    }
     loop(parts, n = 0)
+
+    def constantly(s: String) = {
+      val k = Constant(s)
+      Literal(k).setType(ConstantType(k))
+    }
 
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
     val format = amended.mkString
-    if (actuals.isEmpty && !format.contains("%")) Literal(Constant(format))
+    if (actuals.isEmpty && !formatting) constantly(format)
+    else if (!reported && actuals.forall(treeInfo.isLiteralString)) constantly(format.format(actuals.map(_.asInstanceOf[Literal].value.value).toIndexedSeq: _*))
+    else if (!formatting) concatenate(amended.map(p => constantly(p.stripPrefix("%s"))).toList, actuals.toList)
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(
@@ -225,12 +239,13 @@ abstract class FormatInterpolator {
         val badFlags = flags.filterNot { case '-' | '<' => true case _ => false }
         badFlags.isEmpty or badFlag(badFlags(0), s"Only '-' allowed for $msg")
       }
-      def goodFlags = {
+      def goodFlags = flags.isEmpty || {
+        for (dupe <- flags.diff(flags.distinct).distinct) errorAt(Flags, flags.lastIndexOf(dupe))(s"Duplicate flag '$dupe'")
         val badFlags = flags.filterNot(okFlags.contains(_))
         for (f <- badFlags) badFlag(f, s"Illegal flag '$f'")
         badFlags.isEmpty
       }
-      def goodIndex = {
+      def goodIndex = !isIndexed || {
         if (index.nonEmpty && hasFlag('<')) warningAt(Index)("Argument index ignored if '<' flag is present")
         val okRange = index.map(i => i > 0 && i <= argc).getOrElse(true)
         okRange || hasFlag('<') or errorAt(Index)("Argument index out of range")
@@ -389,19 +404,24 @@ object FormatInterpolator {
         }
         val suggest = {
           val r = "([0-7]{1,3}).*".r
-          (s0 drop e.index + 1) match {
-            case r(n) => altOf { n.foldLeft(0){ case (a, o) => (8 * a) + (o - '0') } }
+          s0.drop(e.index + 1) match {
+            case r(n) => altOf(n.foldLeft(0) { case (a, o) => (8 * a) + (o - '0') })
             case _    => ""
           }
         }
-        val txt =
-          if ("" == suggest) ""
-          else s"use $suggest instead"
-        txt
+        if (suggest.isEmpty) ""
+        else s"use $suggest instead"
       }
+      def control(ctl: Char, i: Int, name: String) =
+        c.error(errPoint, s"\\$ctl is not supported, but for $name use \\u${f"$i%04x"};\n${e.getMessage}")
       if (e.index == s0.length - 1) c.error(errPoint, """Trailing '\' escapes nothing.""")
-      else if (octalOf(s0(e.index + 1)) >= 0) c.error(errPoint, s"octal escape literals are unsupported: $alt")
-      else c.error(errPoint, e.getMessage)
+      else s0(e.index + 1) match {
+        case 'a' => control('a', 0x7, "alert or BEL")
+        case 'v' => control('v', 0xB, "vertical tab")
+        case 'e' => control('e', 0x1B, "escape")
+        case i if octalOf(i) >= 0 => c.error(errPoint, s"octal escape literals are unsupported: $alt")
+        case _   => c.error(errPoint, e.getMessage)
+      }
       s0
   }
 }

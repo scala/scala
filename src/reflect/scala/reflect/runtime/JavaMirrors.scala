@@ -14,12 +14,6 @@ package scala
 package reflect
 package runtime
 
-import scala.language.existentials
-
-import scala.ref.WeakReference
-import scala.collection.mutable.WeakHashMap
-import scala.collection.immutable.ArraySeq
-
 import java.io.IOException
 import java.lang.{ Class => jClass, Package => jPackage }
 import java.lang.annotation.{ Annotation => jAnnotation }
@@ -31,15 +25,19 @@ import java.lang.reflect.{
   ParameterizedType, WildcardType, AnnotatedElement }
 import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.annotation.nowarn
+import scala.collection.immutable.ArraySeq
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.language.existentials
+import scala.ref.WeakReference
+import scala.reflect.api.TypeCreator
 import scala.reflect.internal.{ JavaAccFlags, MissingRequirementError }
+import scala.runtime.{BoxesRunTime, ClassValueCompat, ScalaRunTime}
+import internal.Flags._
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
-import scala.collection.mutable.ListBuffer
-import internal.Flags._
+import internal.util.StringContextStripMarginOps
 import ReflectionUtils._
-import scala.annotation.nowarn
-import scala.reflect.api.TypeCreator
-import scala.runtime.{BoxesRunTime, ClassValueCompat, ScalaRunTime}
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
@@ -354,9 +352,10 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     // because both AnyVal and its primitive descendants define their own getClass methods
     private def isGetClass(meth: MethodSymbol) = (meth.name string_== "getClass") && meth.paramss.flatten.isEmpty
     private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
-    lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
-    lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
-                                        Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
+    lazy val bytecodelessMethodOwners =
+      Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
+    lazy val bytecodefulObjectMethods =
+      Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString, Object_notify, Object_notifyAll) ++ Object_wait.alternatives
     private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
       if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == runDefinitions.Predef_classOf || meth.isMacro) return true
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)

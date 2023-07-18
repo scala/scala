@@ -495,10 +495,22 @@ abstract class Erasure extends InfoTransform
     }
 
     /** Check that a bridge only overrides members that are also overridden by the original member.
-     *  This test is necessary only for members that have a value class in their type.
-     *  Such members are special because their types after erasure and after post-erasure differ/.
+     *
+     *  That is, check that the signature of the bridge method does not accidentally override some
+     *  other method, possibly written by the user or inherited.
+     *
+     *  As an optimization, only perform this check for susceptible bridges.
+     *
+     *  This test is necessary for members that have a value class in their type.
+     *  Such members are special because their types after erasure and after post-erasure differ.
      *  This means we generate them after erasure, but the post-erasure transform might introduce
      *  a name clash. The present method guards against these name clashes.
+     *
+     *  A bridge might also introduce a signature that accidentally matches an existing method.
+     *  In that case, it will have a parameter erased to the upper bound of a type parameter
+     *  in the signature of the member overridden by the original member. (That upper bound might
+     *  be `Object`.) By contrast, erasure of a parameter `List[A]` would already have induced an error
+     *  if there were a matching member.
      *
      *  @param  member   The original member
      *  @param  other    The overridden symbol for which the bridge was generated
@@ -519,7 +531,7 @@ abstract class Erasure extends InfoTransform
       }
       for (bc <- root.baseClasses) {
         if (settings.isDebug)
-          exitingPostErasure(println(
+          exitingPostErasure(debuglog(
             sm"""check bridge overrides in $bc
                 |${bc.info.nonPrivateDecl(bridge.name)}
                 |${site.memberType(bridge)}
@@ -552,54 +564,50 @@ abstract class Erasure extends InfoTransform
       val other  = high
       val otpe   = highErased
 
-      val bridgeNeeded = exitingErasure (
+      val bridgeNeeded = exitingErasure {
+        def hasBridge = {
+          var e = bridgesScope.lookupEntry(member.name)
+          while ((e ne null) && !(e.sym.tpe =:= otpe && bridgeTarget(e.sym) == member))
+            e = bridgesScope.lookupNextEntry(e)
+          e ne null
+        }
         !member.isMacro &&
         !(other.tpe =:= member.tpe) &&
         !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
-        { var e = bridgesScope.lookupEntry(member.name)
-          while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-            e = bridgesScope.lookupNextEntry(e)
-          (e eq null)
-        }
-      )
-      if (!bridgeNeeded)
-        return
-
-      var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | FINAL)
-      // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
-      // end up with two module symbols with the same name in the same scope, which is surprising
-      // when implementing later phases.
-      if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
-      val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
-
-      debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
-        other, flagsToString(newFlags),
-        otpe, other.locationString, member,
-        specialErasure(root)(member.tpe), member.locationString)
-      )
-
-      // the parameter symbols need to have the new owner
-      bridge setInfo (otpe cloneInfo bridge)
-      bridgeTarget(bridge) = member
-
-      def sigContainsValueClass = (member.tpe exists (_.typeSymbol.isDerivedValueClass))
-
-      val shouldAdd = (
-            !sigContainsValueClass
-        ||  (checkBridgeOverrides(member, other, bridge) match {
-              case Nil => true
-              case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
-              case es => for ((pos, msg) <- es) reporter.error(pos, msg); false
-            })
-      )
-
-      if (shouldAdd) {
-        exitingErasure(root.info.decls enter bridge)
-
-        bridgesScope enter bridge
-        addBridge(bridge, member, other)
-        //bridges ::= makeBridgeDefDef(bridge, member, other)
+        !hasBridge
       }
+      def addBridgeIfOK(): Unit = {
+        var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | FINAL)
+        // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
+        // end up with two module symbols with the same name in the same scope, which is surprising
+        // when implementing later phases.
+        if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
+        val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
+
+        debuglog(s"generating bridge from $other (${flagsToString(newFlags)}): ${otpe}${other.locationString} to $member: ${specialErasure(root)(member.tpe)}${member.locationString}")
+
+        // the parameter symbols need to have the new owner
+        bridge setInfo (otpe cloneInfo bridge)
+        bridgeTarget(bridge) = member
+
+        val shouldAdd = {
+          val sigContainsValueClass = member.tpe.exists(_.typeSymbol.isDerivedValueClass)
+          def bridgeMayClash = other.paramss.exists(_.exists(_.tpe match { case TypeRef(_, r, _) => r.isTypeParameter case _ => false }))
+          def bridgeIsAOK = checkBridgeOverrides(member, other, bridge) match {
+            case Nil => true
+            case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
+            case es => for ((pos, msg) <- es) reporter.error(pos, msg); false
+          }
+          !sigContainsValueClass && !bridgeMayClash || bridgeIsAOK
+        }
+        if (shouldAdd) {
+          exitingErasure(root.info.decls enter bridge)
+
+          bridgesScope enter bridge
+          addBridge(bridge, member, other) // GenerateBridges.addBridge bridges ::= makeBridgeDefDef(bridge, member, other)
+        }
+      }
+      if (bridgeNeeded) addBridgeIfOK()
     }
 
     protected def addBridge(bridge: Symbol, member: Symbol, other: Symbol): Unit = {} // hook for GenerateBridges
@@ -607,8 +615,8 @@ abstract class Erasure extends InfoTransform
 
   class GenerateBridges(unit: CompilationUnit, root: Symbol) extends EnterBridges(unit, root) {
 
-    var bridges      = List.empty[Tree]
-    var toBeRemoved  = immutable.Set.empty[Symbol]
+    var bridges     = List[Tree]()
+    var toBeRemoved = immutable.Set.empty[Symbol]
 
     def generate(): (List[Tree], immutable.Set[Symbol]) = {
       super.computeAndEnter()
@@ -659,7 +667,6 @@ abstract class Erasure extends InfoTransform
       }
       DefDef(bridge, rhs)
     }
-
   }
 
   /** The modifier typer which retypes with erased types. */

@@ -75,6 +75,29 @@ package scala.annotation
  *     (O: C).f() // elided if compiled with `-Xelide-below 1`
  *   }
  * }}}
+ *
+ * Note for Scala 3 users:
+ * If you're using Scala 3, the annotation exists since Scala 3 uses the Scala 2
+ * standard library, but it's unsupported by the Scala 3 compiler. Instead, to
+ * achieve the same result you'd want to utilize the `inline if` feature to
+ * introduce behavior that makes a method de facto elided at compile-time.
+ * {{{
+ *    type LogLevel = Int
+ *    
+ *    object LogLevel:
+ *      inline val Info = 0
+ *      inline val Warn = 1
+ *      inline val Debug = 2
+ *    
+ *    inline val appLogLevel = LogLevel.Warn
+ *    
+ *    inline def log(msg: String, inline level: LogLevel): Unit = 
+ *      inline if (level <= appLogLevel) then println(msg)
+ *    
+ *    log("Warn log", LogLevel.Warn)
+ *    
+ *    log("Debug log", LogLevel. Debug)
+ * }}}
  */
 final class elidable(final val level: Int) extends scala.annotation.ConstantAnnotation
 

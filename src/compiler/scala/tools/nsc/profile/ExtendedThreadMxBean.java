@@ -260,13 +260,14 @@ class SunThreadMxBean extends ExtendedThreadMxBean {
         super(underlying);
         this.real = underlying;
         try {
-            getThreadUserTimeMethod = real.getClass().getMethod("getThreadUserTime", long[].class);
-            isThreadAllocatedMemoryEnabledMethod = real.getClass().getMethod("isThreadAllocatedMemoryEnabled");
-            setThreadAllocatedMemoryEnabledMethod = real.getClass().getMethod("setThreadAllocatedMemoryEnabled", Boolean.TYPE);
-            getThreadAllocatedBytesMethod1 = real.getClass().getMethod("getThreadAllocatedBytes", Long.TYPE);
-            getThreadAllocatedBytesMethod2 = real.getClass().getMethod("getThreadAllocatedBytes", long[].class);
-            isThreadAllocatedMemorySupportedMethod = real.getClass().getMethod("isThreadAllocatedMemorySupported");
-            getThreadCpuTimeMethod = real.getClass().getMethod("getThreadCpuTime", long[].class);
+            Class<?> cls = Class.forName("com.sun.management.ThreadMXBean");
+            getThreadUserTimeMethod = cls.getMethod("getThreadUserTime", long[].class);
+            isThreadAllocatedMemoryEnabledMethod = cls.getMethod("isThreadAllocatedMemoryEnabled");
+            setThreadAllocatedMemoryEnabledMethod = cls.getMethod("setThreadAllocatedMemoryEnabled", Boolean.TYPE);
+            getThreadAllocatedBytesMethod1 = cls.getMethod("getThreadAllocatedBytes", Long.TYPE);
+            getThreadAllocatedBytesMethod2 = cls.getMethod("getThreadAllocatedBytes", long[].class);
+            isThreadAllocatedMemorySupportedMethod = cls.getMethod("isThreadAllocatedMemorySupported");
+            getThreadCpuTimeMethod = cls.getMethod("getThreadCpuTime", long[].class);
 
             getThreadUserTimeMethod.setAccessible(true);
             isThreadAllocatedMemoryEnabledMethod.setAccessible(true);
