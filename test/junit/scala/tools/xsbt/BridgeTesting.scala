@@ -1,11 +1,13 @@
 package scala.tools.xsbt
 
+import xsbti.api.ClassLike
 import xsbti.api.DependencyContext._
 import xsbti.compile.{CompileProgress, DependencyChanges}
-import xsbti.{BasicVirtualFileRef, Logger, Position, Problem, Severity, VirtualFile, VirtualFileRef, Reporter => XReporter}
+import xsbti.{BasicVirtualFileRef, InteractiveConsoleInterface, Logger, Position, Problem, Severity, VirtualFile, VirtualFileRef, Reporter => XReporter}
 
 import java.io.{ByteArrayInputStream, File, InputStream}
 import java.nio.file.{Files, Path}
+import java.util.Optional
 import java.util.function.Supplier
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.io.AbstractFile
@@ -23,6 +25,8 @@ class BridgeTesting {
   def mkReporter: TestingReporter = new TestingReporter()
 
   def mkCompiler: CompilerBridge = new CompilerBridge()
+
+  def mkConsole: InteractiveConsoleBridgeFactory = new InteractiveConsoleBridgeFactory()
 
   def mkScaladoc: ScaladocBridge = new ScaladocBridge()
 
@@ -103,6 +107,67 @@ class BridgeTesting {
         src -> bin
       },
     )
+  }
+
+  /**
+   * Compiles given source code using Scala compiler and returns API representation
+   * extracted by ExtractAPI class.
+   */
+  def extractApisFromSrc(src: String): Set[ClassLike] = withTemporaryDirectory { tmpDir =>
+    val (Seq(tempSrcFile), analysisCallback) = compileSrcs(tmpDir, src)
+    analysisCallback.apis(tempSrcFile)
+  }
+
+  /**
+   * Compiles given source code using Scala compiler and returns API representation
+   * extracted by ExtractAPI class.
+   */
+  def extractApisFromSrcs(srcs: List[String]*): Seq[Set[ClassLike]] = withTemporaryDirectory { tmpDir =>
+    val (tempSrcFiles, analysisCallback) = compileSrcss(tmpDir, mkReporter, srcs.toList)
+    tempSrcFiles.map(analysisCallback.apis)
+  }
+
+  def extractUsedNamesFromSrc(src: String): Map[String, Set[String]] = withTemporaryDirectory { tmpDir =>
+    val (_, analysisCallback) = compileSrcs(tmpDir, src)
+    analysisCallback.usedNames.toMap
+  }
+
+  /**
+   * Extract used names from the last source file in `sources`.
+   *
+   * The previous source files are provided to successfully compile examples.
+   * Only the names used in the last src file are returned.
+   */
+  def extractUsedNamesFromSrc(sources: String*): Map[String, Set[String]] = withTemporaryDirectory { tmpDir =>
+    val (srcFiles, analysisCallback) = compileSrcs(tmpDir, sources: _*)
+    srcFiles
+      .map { srcFile =>
+        val classesInSrc = analysisCallback.classNames(srcFile).map(_._1)
+        classesInSrc.map(className => className -> analysisCallback.usedNames(className)).toMap
+      }
+      .reduce(_ ++ _)
+  }
+
+  def interactiveConsole(baseDir: Path)(args: String*): InteractiveConsoleInterface = {
+    val targetDir = baseDir / "target"
+    Files.createDirectory(targetDir)
+    val sc = mkConsole
+    sc.createConsole(
+      args = Array("-usejavacp") ++ args,
+      bootClasspathString = "",
+      classpathString = "",
+      initialCommands = "",
+      cleanupCommands = "",
+      loader = Optional.empty,
+      bindNames = Array(),
+      bindValues = Array(),
+      log = TestLogger)
+  }
+
+  def withInteractiveConsole[A](f: InteractiveConsoleInterface => A): A = withTemporaryDirectory { tmpDir =>
+    val repl = interactiveConsole(tmpDir)()
+    try f(repl)
+    finally repl.close()
   }
 }
 

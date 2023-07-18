@@ -27,7 +27,7 @@ class TestCallback extends AnalysisCallback {
   val apis: scala.collection.mutable.Map[VirtualFileRef, Set[ClassLike]] =
     scala.collection.mutable.Map.empty
 
-  def usedNames = usedNamesAndScopes.mapValues(_.map(_.name))
+  def usedNames = usedNamesAndScopes.view.mapValues(_.map(_.name)).toMap
 
   override def startSource(source: File): Unit = ???
   override def startSource(source: VirtualFile): Unit = {
@@ -153,14 +153,22 @@ object TestCallback {
     }
 
     private def pairsToMultiMap[A, B](pairs: Seq[(A, B)]): Map[A, Set[B]] = {
-      import scala.collection.mutable.{ HashMap, MultiMap }
-      val emptyMultiMap = new HashMap[A, scala.collection.mutable.Set[B]] with MultiMap[A, B]
+      import scala.collection.{ mutable => m }
+      val emptyMultiMap = new m.HashMap[A, m.Set[B]]
       val multiMap = pairs.foldLeft(emptyMultiMap) {
-        case (acc, (key, value)) =>
-          acc.addBinding(key, value)
+        case (acc, (key, value)) => acc.get(key) match {
+          case None =>
+            val s = m.Set.empty[B]
+            s += value
+            acc(key) = s
+            acc
+          case Some(s) =>
+            s += value
+            acc
+        }
       }
       // convert all collections to immutable variants
-      multiMap.toMap.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
+      multiMap.toMap.view.mapValues(_.toSet).toMap.withDefaultValue(Set.empty)
     }
   }
 }
