@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.internal.util.{CodeAction, ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
 import scala.tools.nsc.Reporting.WarningCategory
@@ -1846,6 +1846,7 @@ trait Contexts { self: Analyzer =>
     final def firstError: Option[AbsTypeError] = errorBuffer.headOption
 
     // TODO: remove ++= and clearAll* entirely in favor of more high-level combinators like withFreshErrorBuffer
+    @nowarn("cat=w-flag-value-discard")
     final private[typechecker] def ++=(errors: Iterable[AbsTypeError]): Unit = errorBuffer ++= errors
 
     // null references to buffers instead of clearing them,
@@ -1859,6 +1860,7 @@ trait Contexts { self: Analyzer =>
     def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = runReporting.error(pos, msg, actions)
  }
 
+  @nowarn("cat=w-flag-value-discard")
   private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[ContextWarning] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 

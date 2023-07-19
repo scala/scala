@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ArrayDeque
 
 /** Defines the sub-components for the namer, packageobjects, and typer phases.
@@ -47,6 +48,7 @@ trait Analyzer extends AnyRef
       override val checkable = false
       override def keepsTypeParams = false
 
+      @nowarn("cat=w-flag-value-discard")
       def apply(unit: CompilationUnit): Unit = newNamer(rootContext(unit)).enterSym(unit.body)
     }
   }

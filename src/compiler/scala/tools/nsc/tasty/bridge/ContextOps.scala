@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 
 import scala.collection.mutable
@@ -410,6 +411,7 @@ trait ContextOps { self: TastyUniverse =>
         enterIfUnseen0(owner.rawInfo.decls, decl)
     }
 
+    @nowarn("cat=w-flag-value-discard")
     protected final def enterIfUnseen0(decls: u.Scope, decl: Symbol): Unit = {
       if (allowsOverload(decl) || decl.isParamGetter) {
         if (canEnterOverload(decl)) {
@@ -700,6 +702,7 @@ trait ContextOps { self: TastyUniverse =>
     private[this] var myTraitParamAccessors: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
 
     /** Collect evidence from definitions that is required by `enterLatentDefs`. */
+    @nowarn("cat=w-flag-value-discard")
     private[ContextOps] def collectLatentEvidence(owner: Symbol, sym: Symbol): Unit = {
 
       def macroMap() = {

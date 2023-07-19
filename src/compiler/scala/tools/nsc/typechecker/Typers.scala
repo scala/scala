@@ -14,9 +14,8 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.{tailrec, unused}
-import scala.collection.mutable
-import mutable.ListBuffer
+import scala.annotation.{nowarn, tailrec, unused}
+import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
@@ -465,7 +464,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ =>
           QualifyingClassError(tree, qual)
           // Delay `setError` in namer, scala/bug#10748
-          if (immediate) setError(tree) else unit.addPostUnitCheck(() => setError(tree))
+          if (immediate) setError(tree) else unit.addPostUnitCheck(() => setError(tree): @nowarn("cat=w-flag-value-discard"))
           NoSymbol
       }
 
@@ -751,7 +750,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           if (immediate) action()
-          else { unit.addPostUnitCheck(() => action()); true }
+          else { unit.addPostUnitCheck(() => action(): @nowarn("cat=w-flag-value-discard")); true }
         }
       }
 

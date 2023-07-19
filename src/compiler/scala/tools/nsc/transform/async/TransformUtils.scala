@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -211,7 +212,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
         else
           attachNoAwait(tree)
         super.traverse(tree)
-      } finally stack.pop()
+      } finally stack.pop(): @nowarn("cat=w-flag-value-discard")
     }
   }
 

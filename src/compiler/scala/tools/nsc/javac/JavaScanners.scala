@@ -13,14 +13,14 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util.JavaCharArrayReader
-import scala.reflect.internal.util._
-import scala.reflect.internal.Chars._
 import JavaTokens._
-import scala.annotation.{switch, tailrec}
-import scala.language.implicitConversions
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.immutable.ArraySeq
+import scala.language.implicitConversions
+import scala.reflect.internal.Chars._
+import scala.reflect.internal.util._
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.util.JavaCharArrayReader
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {
@@ -601,6 +601,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     final protected def putCommentChar(): Unit = { processCommentChar(); in.next() }
 
     @tailrec final protected def skipBlockComment(isDoc: Boolean): Unit = {
@@ -739,6 +740,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** read a triple-quote delimited text block, starting after the first three
       * double quotes
       */
+    @nowarn("cat=w-flag-value-discard")
     private def getTextBlock(): Unit = {
       // Open delimiter is followed by optional space, then a newline
       while (in.ch == ' ' || in.ch == '\t' || in.ch == FF) {

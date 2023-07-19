@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package settings
 
+import scala.annotation.nowarn
 import scala.tools.util.PathResolver.Defaults
 import scala.util.Properties.{isJavaAtLeast, javaSpecVersion}
 
@@ -36,12 +37,14 @@ trait StandardScalaSettings { _: MutableSettings =>
   /** Other settings.
    */
   val dependencyfile =  StringSetting ("-dependencyfile", "file", "Set dependency tracking file.", ".scala_dependencies") withAbbreviation "--dependency-file"
+  @nowarn("cat=w-flag-value-discard")
   val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs. See also -Wconf.") withAbbreviation "--deprecation" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=deprecation:w"))
     else Wconf.tryToSet(List(s"cat=deprecation:s"))
   }
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding) withAbbreviation "--encoding"
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.") withAbbreviation "--explain-types"
+  @nowarn("cat=w-flag-value-discard")
   val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly. See also -Wconf.") withAbbreviation "--feature" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=feature:w"))
     else Wconf.tryToSet(List(s"cat=feature:s"))
@@ -92,6 +95,7 @@ trait StandardScalaSettings { _: MutableSettings =>
       // .withAbbreviation("-Xunchecked-java-output-version")
       .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
   def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
+  @nowarn("cat=w-flag-value-discard")
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))

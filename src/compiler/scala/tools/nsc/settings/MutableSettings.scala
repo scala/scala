@@ -17,6 +17,7 @@ package nsc
 package settings
 
 import io.{AbstractFile, Path, PlainFile, VirtualDirectory}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.Clearable
 import scala.io.Source
@@ -694,6 +695,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
     def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    @nowarn("cat=w-flag-value-discard")
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     /** Try to set args, handling "help" and default.
@@ -819,8 +821,10 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       else value = value.appendedAll(seen.reverse)
       Some(rest)
     }
+    @nowarn("cat=w-flag-value-discard")
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
-    def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    def tryToSetColon(args: List[String])             = tryToSetArgs(args, halting = false)
+    @nowarn("cat=w-flag-value-discard")
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     def clear(): Unit         = (v = Nil)
@@ -881,6 +885,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
+    @nowarn("cat=w-flag-value-discard")
     override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil) // used from ide
 
     withHelpSyntax(name + ":<" + helpArg + ">")

@@ -15,6 +15,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
@@ -26,6 +27,7 @@ abstract class Flatten extends InfoTransform {
 
   /** Updates the owning scope with the given symbol, unlinking any others.
    */
+  @nowarn("cat=w-flag-value-discard")
   private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     removeSymbolInCurrentScope(sym)
     sym.owner.info.decls enter sym

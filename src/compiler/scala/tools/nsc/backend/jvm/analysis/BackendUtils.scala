@@ -16,7 +16,7 @@ package analysis
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
@@ -465,9 +465,9 @@ abstract class BackendUtils extends PerRunInit {
     onIndyLambdaImplMethod(hostClass)(_.getOrElseUpdate(method, mutable.Map.empty)(indy) = handle)
   }
 
-  def removeIndyLambdaImplMethod(hostClass: InternalName, method: MethodNode, indy: InvokeDynamicInsnNode): Unit = {
+  @nowarn("cat=w-flag-value-discard")
+  def removeIndyLambdaImplMethod(hostClass: InternalName, method: MethodNode, indy: InvokeDynamicInsnNode): Unit =
     onIndyLambdaImplMethodIfPresent(hostClass)(_.get(method).foreach(_.remove(indy)))
-  }
 
   /**
    * The methods used as lambda bodies for IndyLambda instructions within `hostClass`. Note that

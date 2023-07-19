@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.reflect.internal.util.ListOfNil
 import symtab.Flags._
@@ -119,6 +120,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   }
 
   // TODO: add MIXEDIN (see e.g., `accessed` on `Symbol`)
+  @nowarn("cat=w-flag-value-discard")
   private def setMixedinAccessorFlags(orig: Symbol, cloneInSubclass: Symbol): Unit =
     cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
 

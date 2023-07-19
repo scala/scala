@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package settings
 
+import scala.annotation.nowarn
+
 /** A Settings abstraction boiled out of the original highly mutable Settings
  *  class with the intention of creating an ImmutableSettings which can be used
  *  interchangeably.   Except of course without the mutants.
@@ -109,6 +111,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
      *  Currently used by Eclipse SDT only.
      *  !!! Needs test.
      */
+    @nowarn("cat=w-flag-value-discard")
     def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil)
 
     /** Standard options are shown on the `-help` output,

@@ -12,9 +12,10 @@
 
 package scala.tools.reflect
 
+import scala.PartialFunction.cond
+import scala.annotation.nowarn
 import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.ListBuffer
-import scala.PartialFunction.cond
 import scala.util.chaining._
 import scala.util.matching.Regex.Match
 
@@ -131,7 +132,7 @@ abstract class FormatInterpolator {
           def insertStringConversion(): Unit = {
             amended += "%s" + part
             convert += Conversion(formatPattern.findAllMatchIn("%s").next(), part0.pos, argc)  // improve
-            argType(n-1, AnyTpe)
+            argType(n-1, AnyTpe): @nowarn("cat=w-flag-value-discard")
           }
           def errorLeading(op: Conversion) = op.errorAt(Spec)(s"conversions must follow a splice; ${Conversion.literalHelp}")
           def accept(op: Conversion): Unit = {

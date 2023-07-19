@@ -15,7 +15,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.ListOfNil
@@ -287,7 +287,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
             } else {
               if (isJavaInterface)
                 erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += owner
-              cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol] setAlias member
+              cloneAndAddMixinMember(mixinClass, member).asInstanceOf[TermSymbol].setAlias(member): @nowarn("cat=w-flag-value-discard")
             }
           }
 

@@ -15,6 +15,7 @@ package tools.nsc
 package backend.jvm
 
 import scala.PartialFunction.cond
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.tools.asm
 import scala.tools.asm.{ClassWriter, Label}
@@ -674,6 +675,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // Make sure to build (and cache) a ClassBType for every type that is referenced in
       // a generic signature. Otherwise, looking up the type later (when collecting nested
       // classes, or when computing stack map frames) might fail.
+      @nowarn("cat=w-flag-value-discard")
       def enterReferencedClass(sym: Symbol): Unit = enteringJVM(classBTypeFromSymbol(sym))
 
       val erasedTypeSym = sym.info.typeSymbol

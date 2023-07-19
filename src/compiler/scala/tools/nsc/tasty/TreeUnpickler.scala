@@ -16,6 +16,7 @@ import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat, TastyF
 import TastyRefs._, TastyFlags._, TastyFormat._
 import ForceKinds._
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
@@ -885,7 +886,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             else rhs.tpe
           ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
-          if (sym.is(Param)) sym.reset(Private | Protected)
+          if (sym.is(Param)) sym.reset(Private | Protected): @nowarn("cat=w-flag-value-discard")
         }
       }
 

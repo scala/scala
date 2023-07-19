@@ -15,6 +15,7 @@ package fsc
 
 import java.io.PrintStream
 
+import scala.annotation.nowarn
 import scala.reflect.internal.util.FakePos
 import scala.reflect.internal.FatalError
 import scala.tools.nsc.io.Directory
@@ -190,6 +191,7 @@ object CompileServer {
     * until the callback is finished. Callbacks should be kept simple and clients should not try to
     * interact with the server while the callback is processing.
     */
+  @nowarn("cat=w-flag-value-discard")
   def execute(startupCallback : () => Unit, args: Array[String]): Unit = {
     val debug = args contains "-v"
     var port = 0

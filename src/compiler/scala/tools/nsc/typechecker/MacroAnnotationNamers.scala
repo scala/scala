@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.typechecker
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 
 // imported from scalamacros/paradise
@@ -130,7 +131,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
             }
             updatePosFlags(m, tree.pos, moduleFlags)
             setPrivateWithin(tree, m)
-            m.moduleClass andAlso (setPrivateWithin(tree, _))
+            m.moduleClass.andAlso(setPrivateWithin(tree, _)): @nowarn("cat=w-flag-value-discard")
             context.unit.synthetics -= m
             tree.symbol = m
           }
@@ -448,6 +449,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       markMaybeExpandee(m)
       m.setInfo(new MaybeExpandeeCompanionCompleter(tree) {
         override def kind = s"maybeExpandeeCompanionCompleter for ${m.rawname}#${m.id}"
+        @nowarn("cat=w-flag-value-discard")
         override def maybeExpand(): Unit = {
           c.rawInfo.completeOnlyExpansions(c)
           // this is a very tricky part of annotation expansion

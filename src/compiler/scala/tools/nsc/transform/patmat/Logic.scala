@@ -13,6 +13,7 @@
 package scala
 package tools.nsc.transform.patmat
 
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 import scala.collection.{IterableOps, mutable}
 import scala.reflect.internal.util.Collections._
@@ -614,6 +615,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
+      @nowarn("cat=w-flag-value-discard")
       def registerEquality(c: Const): Unit = { ensureCanModify() ; symForEqualsTo.getOrElseUpdate(c, Sym(this, c)) }
 
       // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)

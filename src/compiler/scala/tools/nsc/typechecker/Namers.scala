@@ -181,7 +181,7 @@ trait Namers extends MethodSynthesis {
       // over this mutated symbol, and we witness a stale cache for `parents`.
       invalidateCaches(sym.rawInfo, Set(sym, sym.moduleClass))
       sym reset NoType setFlag newFlags setPos pos
-      sym.moduleClass andAlso (updatePosFlags(_, pos, moduleClassFlags(flags)))
+      sym.moduleClass.andAlso(updatePosFlags(_, pos, moduleClassFlags(flags))): @nowarn("cat=w-flag-value-discard")
 
       if (sym.isTopLevel) {
         companionSymbolOf(sym, context) andAlso { companion =>
@@ -467,7 +467,7 @@ trait Namers extends MethodSynthesis {
       if (existingModule.isModule && !existingModule.hasPackageFlag && inCurrentScope(existingModule) && (currentRun.canRedefine(existingModule) || existingModule.isSynthetic)) {
         updatePosFlags(existingModule, tree.pos, moduleFlags)
         setPrivateWithin(tree, existingModule)
-        existingModule.moduleClass andAlso (setPrivateWithin(tree, _))
+        existingModule.moduleClass.andAlso(setPrivateWithin(tree, _)): @nowarn("cat=w-flag-value-discard")
         context.unit.synthetics -= existingModule
         tree.symbol = existingModule
       }
@@ -757,6 +757,7 @@ trait Namers extends MethodSynthesis {
       }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def enterPackage(tree: PackageDef): Unit = {
       val sym = createPackageSymbol(tree.pos, tree.pid)
       tree.symbol = sym
@@ -899,6 +900,7 @@ trait Namers extends MethodSynthesis {
 
     def moduleClassTypeCompleter(tree: ModuleDef) = new ModuleClassTypeCompleter(tree)
     class ModuleClassTypeCompleter(tree: ModuleDef) extends TypeCompleterBase(tree) {
+      @nowarn("cat=w-flag-value-discard")
       override def completeImpl(sym: Symbol): Unit = {
         val moduleSymbol = tree.symbol
         assert(moduleSymbol.moduleClass == sym, moduleSymbol.moduleClass)
@@ -1680,7 +1682,7 @@ trait Namers extends MethodSynthesis {
         }
         if (overrides) baseParamss = baseParamss.tail
         previous :+ vparams
-      }
+      }: @nowarn("cat=w-flag-value-discard")
     }
 
     private object DefaultGetterNamerSearch {
@@ -1698,6 +1700,7 @@ trait Namers extends MethodSynthesis {
       private val cda: Option[ConstructorDefaultsAttachment] = module.attachments.get[ConstructorDefaultsAttachment]
       private val moduleNamer = cda.flatMap(x => Option(x.companionModuleClassNamer))
 
+      @nowarn("cat=w-flag-value-discard")
       def createAndEnter(f: Symbol => Symbol): Unit = {
         val default = f(module.moduleClass)
         moduleNamer match {
@@ -1713,6 +1716,7 @@ trait Namers extends MethodSynthesis {
             }
         }
       }
+      @nowarn("cat=w-flag-value-discard")
       def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit = {
         cda match {
           case Some(attachment) =>
@@ -1736,9 +1740,10 @@ trait Namers extends MethodSynthesis {
         assert(ctx != NoContext, meth)
         newNamer(ctx)
       }
-      def createAndEnter(f: Symbol => Symbol): Unit = {
+      @nowarn("cat=w-flag-value-discard")
+      def createAndEnter(f: Symbol => Symbol): Unit =
         ownerNamer.enterInScope(f(ownerNamer.context.owner))
-      }
+      @nowarn("cat=w-flag-value-discard")
       def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit = {
         val tree = create(ownerNamer, rtparams0)
         ownerNamer.enterSyntheticSym(tree)
@@ -1966,6 +1971,7 @@ trait Namers extends MethodSynthesis {
         }
       }
 
+    @nowarn("cat=w-flag-value-discard")
     private def annotate(sym: Symbol, annotSigs: List[AnnotationInfo]): Unit = {
       sym setAnnotations annotSigs
 
@@ -2198,7 +2204,7 @@ trait Namers extends MethodSynthesis {
         if (sym.owner == method && sym.isValueParameter && !okParams(sym))
           namer.NamerErrorGen.IllegalDependentMethTpeError(sym)(ctx)
 
-      case _ => mapOver(tp)
+      case _ => mapOver(tp): @nowarn("cat=w-flag-value-discard")
     }
     def check(vparamss: List[List[Symbol]]): Unit = {
       for (vps <- vparamss) {

@@ -16,6 +16,7 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -66,7 +67,7 @@ trait ParsersCommon extends ScannersCommon {
       try body
       finally {
         in.skipTrailingComma(left + 1)
-        accept(left + 1)
+        accept(left + 1): @nowarn("cat=w-flag-value-discard")
       }
     }
     @inline final def inParens[T](body: => T): T                  = inGroupers(LPAREN)(body)
@@ -664,7 +665,7 @@ self =>
      */
     def acceptStatSep(): Unit = in.token match {
       case NEWLINE | NEWLINES => in.nextToken()
-      case _                  => accept(SEMI)
+      case _                  => accept(SEMI): @nowarn("cat=w-flag-value-discard")
     }
     def acceptStatSepOpt() =
       if (!isStatSeqEnd)

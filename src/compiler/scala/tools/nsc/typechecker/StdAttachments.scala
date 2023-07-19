@@ -218,13 +218,12 @@ trait MacroAnnotationAttachments {
       sym.updateAttachment(SymbolCompleterAttachment(sym.rawInfo))
     } else sym
   }
-  def restoreCompleter(sym: Symbol): Unit = {
+  def restoreCompleter(sym: Symbol): Unit =
     if (sym != null && sym != NoSymbol) {
       val oldCompleter = sym.attachments.get[SymbolCompleterAttachment].get.info
       sym setInfo oldCompleter
       sym.attachments.remove[SymbolCompleterAttachment]
-    } else ()
-  }
+    }
 
   // here we should really store and retrieve duplicates of trees in order to avoid leakage through tree attributes
   case class SymbolSourceAttachment(source: Tree)

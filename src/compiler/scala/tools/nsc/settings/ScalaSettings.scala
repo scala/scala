@@ -429,6 +429,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val noInlineMissingScalaInlineInfoAttr = Choice("no-inline-missing-attribute", "Warn if an inlining decision cannot be made because a Scala classfile does not have a ScalaInlineInfo attribute.")
   }
 
+  @nowarn("cat=w-flag-value-discard")
   val optWarnings = MultiChoiceSetting(
     name = "-Wopt",
     helpArg = "warning",

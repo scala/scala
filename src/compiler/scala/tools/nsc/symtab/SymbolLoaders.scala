@@ -16,11 +16,12 @@ package symtab
 import classfile.{ClassfileParser, ReusableDataReader}
 import java.io.IOException
 
+import scala.annotation.nowarn
 import scala.reflect.internal.MissingRequirementError
-import scala.reflect.io.{AbstractFile, NoAbstractFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.reflect.internal.util.ReusableInstance
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 
 /** This class ...
  *
@@ -358,7 +359,7 @@ abstract class SymbolLoaders {
 
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {
     protected def description = "module class loader"
-    protected def doComplete(root: Symbol): Unit = { root.sourceModule.initialize }
+    protected def doComplete(root: Symbol): Unit = root.sourceModule.initialize: @nowarn("cat=w-flag-value-discard")
     override def associatedFile(self: Symbol): AbstractFile = {
       val sourceModule = self.sourceModule
       sourceModule.rawInfo match {

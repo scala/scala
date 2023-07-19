@@ -12,12 +12,13 @@
 
 package scala.tools.nsc.tasty
 
+import scala.annotation.nowarn
 import scala.collection.mutable
+import scala.reflect.io.AbstractFile
 import scala.tools.tasty.{ErasedTypeRef, Signature, TastyFormat, TastyHeaderUnpickler, TastyName, TastyReader, TastyRefs}
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
 import TastyName._
-import scala.reflect.io.AbstractFile
 
 /**The entry point to TASTy unpickling for nsc, initialises a `TastyUniverse#Context` with the root symbols of a
  * top-level class, then parses the header and names from a TASTy file, before entering symbols from the `ASTs` section
@@ -134,8 +135,10 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
     result
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def readHeader(): Unit = new TastyHeaderUnpickler(reader).readHeader()
 
+  @nowarn("cat=w-flag-value-discard")
   def readNames()(implicit ctx: Context): Unit = {
     ctx.log(s"reading names:")
     doUntil(readEnd()) { nameTable.add(readNameContents()) }

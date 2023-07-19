@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
@@ -214,7 +215,7 @@ trait Solving extends Logic {
          */
         def atMostOne(ops: List[Sym]): Unit = {
           (ops: @unchecked) match {
-            case hd :: Nil  => convertSym(hd)
+            case hd :: Nil  => convertSym(hd): @nowarn("cat=w-flag-value-discard")
             case x1 :: tail =>
               // sequential counter: 3n-4 clauses
               // pairwise encoding: n*(n-1)/2 clauses

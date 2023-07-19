@@ -210,7 +210,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         case GTEQ     => EQUALS
       }
       if (closers isDefinedAt in.token) in.token = closers(in.token)
-      else accept(GT)
+      else accept(GT): @nowarn("cat=w-flag-value-discard")
     }
 
     def identForType(): TypeName = ident().toTypeName

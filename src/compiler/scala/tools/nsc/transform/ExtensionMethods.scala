@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 
@@ -33,6 +34,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   def newTransformer(unit: CompilationUnit): AstTransformer =
     new Extender(unit)
 
+  @nowarn("cat=w-flag-value-discard")
   private def companionModuleForce(sym: Symbol) = {
     sym.andAlso(_.owner.initialize) // See scala/bug#6976. `companionModule` only calls `rawInfo`. (Why?)
     sym.companionModule

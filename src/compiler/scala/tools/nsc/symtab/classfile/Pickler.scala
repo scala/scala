@@ -368,7 +368,9 @@ abstract class Pickler extends SubComponent {
       // Only used when pickling trees, i.e. in an argument of some Annotation
       // annotations in Modifiers are removed by the typechecker
       override def traverseModifiers(mods: Modifiers): Unit = if (putEntry(mods)) putEntry(mods.privateWithin)
+      @nowarn("cat=w-flag-value-discard")
       override def traverseName(name: Name): Unit           = putEntry(name)
+      @nowarn("cat=w-flag-value-discard")
       override def traverseConstant(const: Constant): Unit  = putEntry(const)
       override def traverse(tree: Tree): Unit               = putTree(tree)
 
@@ -390,7 +392,7 @@ abstract class Pickler extends SubComponent {
      */
     private def putConstant(c: Constant): Unit = {
       if (putEntry(c)) {
-        if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
+        if (c.tag == StringTag) putEntry(newTermName(c.stringValue)): @nowarn("cat=w-flag-value-discard")
         else if (c.tag == ClazzTag) putType(c.typeValue)
         else if (c.tag == EnumTag) putSymbol(c.symbolValue)
       }

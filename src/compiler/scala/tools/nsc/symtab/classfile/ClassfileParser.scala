@@ -20,6 +20,7 @@ import java.lang.Integer.toHexString
 import java.net.URLClassLoader
 import java.util.UUID
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.JavaAccFlags
@@ -554,7 +555,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       // require a refactor of `sigToType`.
       //
       // We would also need to make sure that clazzTParams is populated before member type completers called sig2type.
-      clazz.initialize
+      clazz.initialize: @nowarn("cat=w-flag-value-discard")
     }
   }
 

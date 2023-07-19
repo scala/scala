@@ -183,9 +183,7 @@ abstract class NodePrinters {
     }
 
     def treePrefix(tree: Tree) = showPosition(tree) + tree.productPrefix
-    def printMultiline(tree: Tree)(body: => Unit): Unit = {
-      printMultiline(treePrefix(tree), showAttributes(tree))(body)
-    }
+    def printMultiline(tree: Tree)(body: => Unit): Unit = printMultiline(treePrefix(tree), showAttributes(tree))(body)
     def printMultiline(prefix: String, comment: String)(body: => Unit): Unit = {
       printLine(prefix + "(", comment)
       indent(body)
@@ -311,7 +309,7 @@ abstract class NodePrinters {
         case Super(qual, mix) =>
           printMultiline(tree) {
             traverse(qual)
-            showName(mix)
+            println(showName(mix))
           }
         case Template(parents, self, body) =>
           printMultiline(tree) {

@@ -15,6 +15,7 @@ package backend.jvm
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
@@ -126,6 +127,7 @@ abstract class PostProcessor extends PerRunInit {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def localOptimizations(classNode: ClassNode): Unit = {
     val stats = frontendAccess.unsafeStatistics
     stats.timed(stats.methodOptTimer)(localOpt.methodOptimizations(classNode))

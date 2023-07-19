@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
 import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.reflect.internal.Depth
 import scala.util.control.ControlThrowable
@@ -1189,7 +1190,7 @@ trait Infer extends Checkable {
         case _ =>
           def not = if (isFullyDefined(pt)) "" else "not "
           devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt (${not}fully defined)")
-          ConstrInstantiationError(tree, resTp, pt)
+          ConstrInstantiationError(tree, resTp, pt): @nowarn("cat=w-flag-value-discard")
       }
     }
 
@@ -1401,6 +1402,7 @@ trait Infer extends Checkable {
               || isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)
             )
           }
+          @nowarn("cat=w-flag-value-discard")
           def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
           def paramlessOr(error: => Unit): Unit = {
             val paramless =
@@ -1419,7 +1421,7 @@ trait Infer extends Checkable {
               // If erroneous expected type, don't issue spurious error and don't `tryTwice` again with implicits.
               // scala/bug#6912 except it does not loop
               paramlessOr {
-                if (pt.isErroneous) setError(tree)
+                if (pt.isErroneous) setError(tree): @nowarn("cat=w-flag-value-discard")
                 else AmbiguousExprAlternativeError(tree, pre, best, competing, pt, isSecondTry)
               }
             case _ if bests.isEmpty || alts0.isEmpty =>
@@ -1527,6 +1529,7 @@ trait Infer extends Checkable {
           val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
           // println(s"bestForExpectedType($argtpes, $pt): $alts -app-> ${alts filter isAltApplicable(pt)} -arity-> $applicable")
           val ranked      = bestAlternatives(applicable)(rankAlternatives)
+          @nowarn("cat=w-flag-value-discard")
           def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
@@ -1562,7 +1565,8 @@ trait Infer extends Checkable {
         case _                       => PolyAlternativeErrorKind.ArgsDoNotConform  // didn't conform to bounds
       }
       def fail() = PolyAlternativeError(tree, argtypes, matchingLength, errorKind)
-      def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
+      @nowarn("cat=w-flag-value-discard")
+      def finish(sym: Symbol, tpe: Type): Unit = tree.setSymbol(sym).setType(tpe)
       // Alternatives which conform to bounds
       def checkWithinBounds(sym: Symbol): Unit = sym.alternatives match {
         case Nil if argtypes.exists(_.isErroneous) =>

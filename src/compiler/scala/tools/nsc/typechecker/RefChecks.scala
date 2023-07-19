@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.CodeAction
@@ -1290,6 +1291,7 @@ abstract class RefChecks extends Transform {
     }
 
     /* Check whether argument types conform to bounds of type parameters */
+    @nowarn("cat=w-flag-value-discard")
     private def checkBounds(tree0: Tree, pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type]): Unit =
       try typer.infer.checkBounds(tree0, pre, owner, tparams, argtps, "")
       catch {

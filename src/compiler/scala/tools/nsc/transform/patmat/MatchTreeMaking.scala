@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
@@ -183,20 +184,20 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           val usedBinders = new mutable.HashSet[Symbol]()
           // all potentially stored subpat binders
           val potentiallyStoredBinders = stored.unzip._1.toSet
-          def ref(sym: Symbol) =
+          def ref(sym: Symbol): Unit =
             if (potentiallyStoredBinders(sym)) usedBinders += sym
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
           val typeTraverser = new TypeTraverser {
-            def traverse(tp: Type) = {
+            def traverse(tp: Type): Unit = {
               tp match {
                 case SingleType(_, sym) => ref(sym)
                 case _ =>
               }
-              mapOver(tp)
+              mapOver(tp): @nowarn("cat=w-flag-value-discard")
             }
           }
           in.foreach {
-            case tt: TypeTree => typeTraverser.apply(tt.tpe)
+            case tt: TypeTree => typeTraverser.apply(tt.tpe): @nowarn("cat=w-flag-value-discard")
             case t => ref(t.symbol)
           }
 

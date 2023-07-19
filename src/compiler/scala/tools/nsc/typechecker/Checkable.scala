@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** On pattern matcher checkability:
@@ -107,7 +108,7 @@ trait Checkable {
         s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)"
       }
 
-      foreach2(tps1, tps2)(_ =:= _)
+      foreach2(tps1, tps2)(_ =:= _): @nowarn("cat=w-flag-value-discard")
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
       // figure it out. It seems there is more work to do if I

@@ -12,6 +12,7 @@
 
 package scala.tools.nsc
 
+import scala.annotation.nowarn
 import scala.reflect.io.{ AbstractFile, Directory, File, Path }
 import scala.tools.nsc.classpath.ClassPathFactory
 import scala.tools.nsc.io.Jar
@@ -96,7 +97,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
         else
           Directory.makeTemp("scalascript").tap { tmp =>
             // delete the directory after the user code has finished
-            Runtime.getRuntime.addShutdownHook(new Thread(() => tmp.deleteRecursively()))
+            Runtime.getRuntime.addShutdownHook(new Thread(() => tmp.deleteRecursively(): @nowarn("cat=w-flag-value-discard")))
             settings.outdir.value = tmp.path
           }
 
@@ -186,7 +187,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     catch {
       case NonFatal(e) => Some(e)
     }
-    finally scriptFile.delete()  // in case there was a compilation error
+    finally scriptFile.delete(): @nowarn("cat=w-flag-value-discard") // in case there was a compilation error
   }
 }
 

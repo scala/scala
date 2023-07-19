@@ -15,6 +15,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 /**
@@ -396,7 +397,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     override def traverse(tree: Tree) = tree match {
       case _: DefDef if tree.symbol.hasFlag(SYNCHRONIZED) =>
-        thisReferringMethods add tree.symbol
+        thisReferringMethods.add(tree.symbol): @nowarn("cat=w-flag-value-discard")
       case DefDef(_, _, _, _, _, _) if tree.symbol.isDelambdafyTarget || tree.symbol.isLiftedMethod =>
         // we don't expect defs within defs. At this phase trees should be very flat
         if (currentMethod.exists) devWarning("Found a def within a def at a phase where defs are expected to be flattened out.")

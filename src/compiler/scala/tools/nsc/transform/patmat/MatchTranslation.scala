@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package transform.patmat
 
+import scala.annotation.nowarn
+
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
 trait MatchTranslation {
@@ -130,7 +132,7 @@ trait MatchTranslation {
         }
 
         foreach2(extractor.subBoundTrees, extractor.subPatTypes(unappBinder)) { (bt, pt) =>
-          setVarInfo(bt.binder, pt)
+          setVarInfo(bt.binder, pt): @nowarn("cat=w-flag-value-discard")
         }
 
         step(makers: _*)(extractor.subBoundTrees: _*)

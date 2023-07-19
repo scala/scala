@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 trait AsyncAnalysis extends TransformUtils  {
@@ -73,7 +74,10 @@ trait AsyncAnalysis extends TransformUtils  {
     /**
      * @return true, if the tree contained an unsupported await.
      */
-    private def reportUnsupportedAwait(tree: Tree, whyUnsupported: String): Boolean = {
+    private def reportUnsupportedAwait(tree: Tree, whyUnsupported: String): Unit =
+      testUnsupportedAwait(tree, whyUnsupported): @nowarn("cat=w-flag-value-discard")
+
+    private def testUnsupportedAwait(tree: Tree, whyUnsupported: String): Boolean = {
       val badAwaits = ListBuffer[Tree]()
       object traverser extends Traverser {
         override def traverse(tree: Tree): Unit = {
