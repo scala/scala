@@ -13,6 +13,7 @@
 package scala
 package util
 
+import scala.annotation.nowarn
 import scala.runtime.Statics
 import scala.util.control.NonFatal
 
@@ -257,6 +258,7 @@ final case class Success[+T](value: T) extends Try[T] {
   override def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value) catch { case NonFatal(e) => Failure(e) }
   override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: T => U): Unit = f(value)
   override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this flatMap s
   override def map[U](f: T => U): Try[U] = Try[U](f(value))

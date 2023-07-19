@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
@@ -274,9 +275,8 @@ object Map extends MapFactory[Map] {
       else new Map2(key1, value1, key, value)
     def removed(key: K): Map[K, V] =
       if (key == key1) Map.empty else this
-    override def foreach[U](f: ((K, V)) => U): Unit = {
-      f((key1, value1))
-    }
+    @nowarn("cat=w-flag-value-discard")
+    override def foreach[U](f: ((K, V)) => U): Unit = f((key1, value1))
     override def exists(p: ((K, V)) => Boolean): Boolean = p((key1, value1))
     override def forall(p: ((K, V)) => Boolean): Boolean = p((key1, value1))
     override protected[collection] def filterImpl(pred: ((K, V)) => Boolean, isFlipped: Boolean): Map[K, V] =
@@ -356,6 +356,7 @@ object Map extends MapFactory[Map] {
       if (key == key1) new Map1(key2, value2)
       else if (key == key2) new Map1(key1, value1)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
     }
@@ -462,6 +463,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map2(key1, value1, key3, value3)
       else if (key == key3) new Map2(key1, value1, key2, value2)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
     }
@@ -585,6 +587,7 @@ object Map extends MapFactory[Map] {
       else if (key == key3) new Map3(key1, value1, key2, value2, key4, value4)
       else if (key == key4) new Map3(key1, value1, key2, value2, key3, value3)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }

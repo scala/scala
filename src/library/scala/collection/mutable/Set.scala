@@ -12,6 +12,7 @@
 
 package scala.collection.mutable
 
+import scala.annotation.nowarn
 import scala.collection.{IterableFactory, IterableFactoryDefaults, IterableOps}
 
 /** Base trait for mutable sets */
@@ -61,6 +62,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     *  @param elem     the element to be added or removed
     *  @param included a flag indicating whether element should be included or excluded.
     */
+  @nowarn("cat=w-flag-value-discard")
   def update(elem: A, included: Boolean): Unit = {
     if (included) add(elem)
     else remove(elem)

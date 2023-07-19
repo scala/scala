@@ -12,6 +12,8 @@
 
 package scala.concurrent
 
+import scala.annotation.nowarn
+
 /** A `SyncChannel` allows one to exchange data synchronously between
  *  a reader and a writer thread. The writer thread is blocked until the
  *  data to be written has been read by a corresponding reader thread.
@@ -44,7 +46,7 @@ class SyncChannel[A] {
       }
     }
 
-    writeReq.get
+    writeReq.get: @nowarn("cat=w-flag-value-discard")
   }
 
   def read: A = {

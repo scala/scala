@@ -15,6 +15,7 @@ package mutable
 
 import java.lang.Integer.numberOfLeadingZeros
 import java.util.ConcurrentModificationException
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializable
 
 /**
@@ -149,6 +150,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
   }
 
   // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
+  @nowarn("cat=w-flag-value-discard")
   override def update(key: Key, value: Value): Unit = put(key, value)
 
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
@@ -257,6 +259,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     protected def nextResult(node: Entry): A
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def clone() = {
     val it = new OpenHashMap[Key, Value]
     foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get))
@@ -273,6 +276,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     *  @tparam U  The return type of the specified function `f`, return result of which is ignored.
     *  @param f   The function to apply to each key, value mapping.
     */
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f : ((Key, Value)) => U): Unit = {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
@@ -280,6 +284,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
       f((entry.key, entry.value.get))}
     )
   }
+  @nowarn("cat=w-flag-value-discard")
   override def foreachEntry[U](f : (Key, Value) => U): Unit = {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {

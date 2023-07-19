@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.nowarn
 import scala.collection.mutable.{Builder, ReusableBuilder}
 
 /** A base trait for ordered, immutable maps.
@@ -89,9 +90,11 @@ object SeqMap extends MapFactory[SeqMap] {
       else new SeqMap2(key1, value1, key, value)
     def removed(key: K): SeqMap[K, V] =
       if (key == key1) SeqMap.empty else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
     }
+    @nowarn("cat=w-flag-value-discard")
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
     }
@@ -123,9 +126,11 @@ object SeqMap extends MapFactory[SeqMap] {
       if (key == key1) new SeqMap1(key2, value2)
       else if (key == key2) new SeqMap1(key1, value1)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
     }
+    @nowarn("cat=w-flag-value-discard")
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)
@@ -163,9 +168,11 @@ object SeqMap extends MapFactory[SeqMap] {
       else if (key == key2) new SeqMap2(key1, value1, key3, value3)
       else if (key == key3) new SeqMap2(key1, value1, key2, value2)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
     }
+    @nowarn("cat=w-flag-value-discard")
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)
@@ -221,9 +228,11 @@ object SeqMap extends MapFactory[SeqMap] {
       else if (key == key3) new SeqMap3(key1, value1, key2, value2, key4, value4)
       else if (key == key4) new SeqMap3(key1, value1, key2, value2, key3, value3)
       else this
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
+    @nowarn("cat=w-flag-value-discard")
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
       f(key2, value2)

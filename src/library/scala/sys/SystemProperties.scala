@@ -13,10 +13,11 @@
 package scala
 package sys
 
+import scala.annotation.nowarn
 import scala.collection.{mutable, Iterator}
 import scala.jdk.CollectionConverters._
-import java.security.AccessControlException
 import scala.language.implicitConversions
+import java.security.AccessControlException
 
 /** A bidirectional map wrapping the java System properties.
  *  Changes to System properties will be immediately visible in the map,
@@ -48,6 +49,7 @@ extends mutable.AbstractMap[String, String] {
   override def contains(key: String): Boolean =
     wrapAccess(super.contains(key)) exists (x => x)
 
+  @nowarn("cat=w-flag-value-discard")
   override def clear(): Unit = wrapAccess(System.getProperties().clear())
   def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
   def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }

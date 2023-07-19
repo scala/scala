@@ -13,6 +13,7 @@
 package scala
 package sys
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 /** The internal implementation of scala.sys.Prop.
@@ -35,6 +36,7 @@ private[sys] class PropImpl[+T](val key: String, valueFn: String => T) extends P
     if (isSet) underlying.getOrElse(key, "")
     else ""
 
+  @nowarn("cat=w-flag-value-discard")
   def clear(): Unit = underlying -= key
   def option: Option[T] = if (isSet) Some(value) else None
   def or[T1 >: T](alt: => T1): T1 = if (isSet) value else alt

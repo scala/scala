@@ -116,6 +116,7 @@ private[concurrent] object Promise {
      * WARNING: the `resolved` value needs to have been pre-resolved using `resolve()`
      * INTERNAL API
      */
+    @nowarn("cat=w-flag-value-discard")
     override final def apply(resolved: Try[T]): Unit =
       tryComplete0(get(), resolved)
 
@@ -142,6 +143,7 @@ private[concurrent] object Promise {
         val buffer = new AtomicReference[Success[Any]]()
         val zipped = new DefaultPromise[R]()
 
+        @nowarn("cat=w-flag-value-discard")
         val thisF: Try[T] => Unit = {
           case left: Success[_] =>
             val right = buffer.getAndSet(left).asInstanceOf[Success[U]]
@@ -151,6 +153,7 @@ private[concurrent] object Promise {
             zipped.tryComplete(f.asInstanceOf[Failure[R]])
         }
 
+        @nowarn("cat=w-flag-value-discard")
         val thatF: Try[U] => Unit = {
           case right: Success[_] =>
             val left = buffer.getAndSet(right).asInstanceOf[Success[T]]
@@ -212,6 +215,7 @@ private[concurrent] object Promise {
       else this.asInstanceOf[Future[S]]
 
 
+    @nowarn("cat=w-flag-value-discard")
     override final def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit =
       dispatchOrAddCallbacks(get(), new Transformation[T, Unit](Xform_onComplete, func, executor))
 
@@ -328,6 +332,7 @@ private[concurrent] object Promise {
       }
 
     // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
+    @nowarn("cat=w-flag-value-discard")
     @tailrec
     private[this] final def submitWithValue(callbacks: Callbacks[T], resolved: Try[T]): Unit =
       if(callbacks.isInstanceOf[ManyCallbacks[T]]) {
@@ -360,6 +365,7 @@ private[concurrent] object Promise {
      * Unlinks (removes) the link chain if the root is discovered to be already completed,
      * and completes the `owner` with that result.
      **/
+    @nowarn("cat=w-flag-value-discard")
     @tailrec private[concurrent] final def unlink(resolved: Try[T]): Unit = {
       val state = get()
       if (state.isInstanceOf[Link[_]]) {

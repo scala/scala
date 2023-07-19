@@ -15,10 +15,11 @@ package immutable
 
 import java.lang.IllegalStateException
 
-import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
-import scala.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
+import scala.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.language.implicitConversions
 
 /** Utility class for long maps.
@@ -209,12 +210,14 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   /**
     * Loops over the key, value pairs of the map in unsigned order of the keys.
     */
+  @nowarn("cat=w-flag-value-discard")
   override final def foreach[U](f: ((Long, T)) => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
     case LongMap.Tip(key, value) => f((key, value))
     case LongMap.Nil =>
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override final def foreachEntry[U](f: (Long, T) => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
     case LongMap.Tip(key, value) => f(key, value)
@@ -232,6 +235,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
+  @nowarn("cat=w-flag-value-discard")
   final def foreachKey[U](f: Long => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
     case LongMap.Tip(key, _) => f(key)
@@ -249,6 +253,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
+  @nowarn("cat=w-flag-value-discard")
   final def foreachValue[U](f: T => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
     case LongMap.Tip(_, value) => f(value)

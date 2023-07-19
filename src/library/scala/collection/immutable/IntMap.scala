@@ -13,10 +13,11 @@
 package scala.collection
 package immutable
 
-import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
+import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.language.implicitConversions
 
 /** Utility class for integer maps.
@@ -214,12 +215,14 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   /**
     * Loops over the key, value pairs of the map in unsigned order of the keys.
     */
+  @nowarn("cat=w-flag-value-discard")
   override final def foreach[U](f: ((Int, T)) => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
     case IntMap.Tip(key, value) => f((key, value))
     case IntMap.Nil =>
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreachEntry[U](f: (IntMapUtils.Int, T) => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
     case IntMap.Tip(key, value) => f(key, value)
@@ -237,6 +240,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     *
     * @param f The loop body
     */
+  @nowarn("cat=w-flag-value-discard")
   final def foreachKey[U](f: Int => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
     case IntMap.Tip(key, _) => f(key)
@@ -254,6 +258,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     *
     * @param f The loop body
     */
+  @nowarn("cat=w-flag-value-discard")
   final def foreachValue[U](f: T => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
     case IntMap.Tip(_, value) => f(value)

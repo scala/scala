@@ -1141,6 +1141,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               tpe =:= BoxedUnitTpe ||
               isTrivialTopType(tpe)
             )
+          // java lacks this.type idiom to distinguish side-effecting method, so ignore result of invoking java method.
+          def isJavaApplication(t: Tree): Boolean = t match {
+            case Apply(f, _) => f.symbol.isJavaDefined && !isUniversalMember(f.symbol)
+            case _ => false
+          }
           // true for a value that may be discarded without compunction
           @inline def excludeValueDiscard(): Boolean =
             isUninterestingSymbol(tree.symbol) || isUninterestingType(tree.tpe) || treeInfo.isThisTypeResult(tree) || treeInfo.hasExplicitUnit(tree) || isJavaApplication(tree) /*|| tree.exists(treeInfo.hasExplicitUnit(_))*/

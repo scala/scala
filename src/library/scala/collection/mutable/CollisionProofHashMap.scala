@@ -13,8 +13,9 @@
 package scala.collection
 package mutable
 
-import scala.{unchecked => uc}
+import scala.annotation.nowarn
 import scala.annotation.{implicitNotFound, tailrec, unused}
+import scala.{unchecked => uc}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.runtime.Statics
@@ -112,6 +113,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def update(key: K, value: V): Unit = put0(key, value, false)
 
   override def put(key: K, value: V): Option[V] = put0(key, value, true) match {

@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Set.Set4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 
@@ -174,6 +175,7 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) Set.empty
       else this
     def iterator: Iterator[A] = Iterator.single(elem1)
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: A => U): Unit = f(elem1)
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
@@ -206,6 +208,7 @@ object Set extends IterableFactory[Set] {
     }
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 }
 
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
@@ -257,6 +260,7 @@ object Set extends IterableFactory[Set] {
     }
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 }
 
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -312,6 +316,7 @@ object Set extends IterableFactory[Set] {
     }
     private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 case 3 => elem4 }
 
+    @nowarn("cat=w-flag-value-discard")
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }

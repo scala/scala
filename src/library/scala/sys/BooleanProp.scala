@@ -13,6 +13,7 @@
 package scala
 package sys
 
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 /** A few additional conveniences for Boolean properties.
@@ -42,6 +43,7 @@ object BooleanProp {
       case x: Boolean if !x   => val old = value ; clear() ; old
       case x                  => super.setValue(newValue)
     }
+    @nowarn("cat=w-flag-value-discard")
     def enable()  = this setValue true
     def disable() = this.clear()
     def toggle()  = if (value) disable() else enable()

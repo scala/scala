@@ -108,6 +108,7 @@ class LinkedHashMap[K, V]
     case sm => sm
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def update(key: K, value: V): Unit = put0(key, value, false)
 
   override def remove(key: K): Option[V] = removeEntry0(key) match {

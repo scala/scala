@@ -17,6 +17,7 @@ package immutable
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
+import scala.annotation.nowarn
 import scala.collection.Hashing.improve
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
@@ -188,6 +189,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   /** Applies a function f to each element, and its corresponding **original** hash, in this Set
     * Stops iterating the first time that f returns `false`.*/
+  @nowarn("cat=w-flag-value-discard")
   @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
 
   def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {

@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
@@ -94,7 +95,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     sizeHint(xs.knownSize)
     xs match {
       case hs: immutable.HashSet[A] =>
-        hs.foreachWithHash((k, h) => addElem(k, improveHash(h)))
+        hs.foreachWithHash((k, h) => addElem(k, improveHash(h)): @nowarn("cat=w-flag-value-discard"))
         this
       case hs: mutable.HashSet[A] =>
         val iter = hs.nodeIterator

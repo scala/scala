@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.nowarn
+
 /** Base type of mutable Maps */
 trait Map[K, V]
   extends Iterable[(K, V)]
@@ -101,6 +103,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     *  @param key    The key to update
     *  @param value  The new value
     */
+  @nowarn("cat=w-flag-value-discard")
   def update(key: K, value: V): Unit = { coll += ((key, value)) }
 
   /**
