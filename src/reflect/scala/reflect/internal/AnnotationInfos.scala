@@ -172,6 +172,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     override def pos: Position = if (_forced) forcedInfo.pos else NoPosition
 
+    @nowarn("cat=w-flag-value-discard")
     override def completeInfo(): Unit = forcedInfo
   }
 

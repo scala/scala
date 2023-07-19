@@ -1140,6 +1140,7 @@ private[internal] trait TypeMaps {
   }
 
   class ForEachTypeTraverser(f: Type => Unit) extends TypeTraverser {
+    @nowarn("cat=w-flag-value-discard")
     def traverse(tp: Type): Unit = {
       f(tp)
       tp.mapOver(this)

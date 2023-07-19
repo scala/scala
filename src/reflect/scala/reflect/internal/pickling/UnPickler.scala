@@ -21,9 +21,10 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
+import scala.annotation.nowarn
+import scala.annotation.switch
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.annotation.switch
 import scala.util.control.NonFatal
 
 abstract class UnPickler {
@@ -736,7 +737,7 @@ abstract class UnPickler {
       catch {
         case e: MissingRequirementError => throw toTypeError(e)
       } finally {
-        completingStack.remove(completingStack.length - 1)
+        completingStack.remove(completingStack.length - 1): @nowarn("cat=w-flag-value-discard")
       }
 
       override def complete(sym: Symbol) : Unit = {
@@ -762,7 +763,7 @@ abstract class UnPickler {
           })
         }
 
-        sym.asInstanceOf[TermSymbol].setAlias(alias)
+        sym.asInstanceOf[TermSymbol].setAlias(alias): @nowarn("cat=w-flag-value-discard")
       }
       catch {
         case e: MissingRequirementError => throw toTypeError(e)

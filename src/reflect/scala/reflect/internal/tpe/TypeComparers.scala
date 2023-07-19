@@ -15,6 +15,7 @@ package reflect
 package internal
 package tpe
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import util.{StringContextStripMarginOps, TriState}
@@ -299,7 +300,7 @@ trait TypeComparers {
             pendingSubTypes += p
             isSubType1(tp1, tp2, depth)
           } finally {
-            pendingSubTypes -= p
+            pendingSubTypes -= p: @nowarn("cat=w-flag-value-discard")
           }
       } else {
         isSubType1(tp1, tp2, depth)

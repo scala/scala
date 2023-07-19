@@ -15,6 +15,7 @@ package reflect
 package internal
 
 import Variance._
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.reflect.internal.util.ReusableInstance
 
@@ -161,6 +162,7 @@ trait Variances {
        *  and flip the relative variance for its type parameters. (flipping the variance a second
        *  time negates the first flip).
        */
+      @nowarn("cat=w-flag-value-discard")
       def validateDefinition(base: Symbol): Unit = {
         this.base = base
         base.info match {
@@ -217,8 +219,8 @@ trait Variances {
      *  Instead this method applies a naive algorithm which is correct but less efficient:
      *  use `varianceInType` to check each type parameter of a PolyType separately.
      */
-    def validateVarianceOfPolyTypesIn(tpe: Type): Unit =
-      PolyTypeVarianceMap(tpe)
+    @nowarn("cat=w-flag-value-discard")
+    def validateVarianceOfPolyTypesIn(tpe: Type): Unit = PolyTypeVarianceMap(tpe)
 
     override def traverse(tree: Tree): Unit = {
       def sym = tree.symbol

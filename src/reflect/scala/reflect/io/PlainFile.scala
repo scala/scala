@@ -17,11 +17,13 @@ package io
 import java.nio.ByteBuffer
 import java.nio.file.StandardOpenOption
 import java.util
+import scala.annotation.nowarn
 
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true
   override def iterator = givenPath.list filter (_.exists) map (x => new PlainFile(x))
+  @nowarn("cat=w-flag-value-discard")
   override def delete(): Unit = givenPath.deleteRecursively()
 }
 
@@ -108,6 +110,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   def create(): Unit = if (!exists) givenPath.createFile()
 
   /** Delete the underlying file or directory (recursively). */
+  @nowarn("cat=w-flag-value-discard")
   def delete(): Unit =
     if (givenPath.isFile) givenPath.delete()
     else if (givenPath.isDirectory) givenPath.toDirectory.deleteRecursively()

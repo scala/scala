@@ -751,6 +751,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     override def printTree(tree: Tree): Unit = {
       parentsStack.push(tree)
       try {

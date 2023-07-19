@@ -16,6 +16,7 @@ import java.io.Closeable
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 object ChromeTrace {
@@ -169,6 +170,7 @@ final class ChromeTrace(f: Path) extends Closeable {
     context.push(ObjectContext(true))
     traceWriter.write("{")
   }
+  @nowarn("cat=w-flag-value-discard")
   private def objEnd(): Unit = {
     traceWriter.write("}")
     context.pop()
@@ -177,6 +179,7 @@ final class ChromeTrace(f: Path) extends Closeable {
     traceWriter.write("[")
     context.push(ArrayContext(true))
   }
+  @nowarn("cat=w-flag-value-discard")
   private def arrEnd(): Unit = {
     traceWriter.write("]")
     context.pop()

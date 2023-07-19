@@ -19,6 +19,7 @@ import scala.annotation.nowarn
 @nowarn("cat=deprecation&origin=scala\\.reflect\\.internal\\.Internals\\.compat")
 @nowarn("cat=deprecation&origin=scala\\.reflect\\.internal\\.Trees\\.emptyValDef")
 trait JavaUniverseForce { self: runtime.JavaUniverse  =>
+  @nowarn("cat=w-flag-value-discard")
   def force(): Unit = {
     Literal(Constant(42)).duplicate
     nme.flattenedName(NoSymbol, nme.NO_NAME)

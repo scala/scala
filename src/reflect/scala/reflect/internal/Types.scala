@@ -16,14 +16,13 @@ package internal
 
 import java.util.Objects
 
-import scala.collection.mutable
+import scala.annotation.{nowarn, tailrec, unused}
+import scala.collection.mutable, mutable.{ListBuffer, LinkedHashSet}
 import scala.ref.WeakReference
-import mutable.{ListBuffer, LinkedHashSet}
-import Flags._
 import scala.util.control.ControlThrowable
-import scala.annotation.{tailrec, unused}
 import util.{ReusableInstance, Statistics}
 import util.ThreeValues._
+import Flags._
 import Variance._
 import Depth._
 import TypeConstants._
@@ -1828,7 +1827,7 @@ trait Types
       def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
       def loop(tp: Type): Unit = dealiasRefinement(tp) match {
         case RefinedType(parents, ds) if ds.isEmpty => parents.foreach(loop)
-        case tp => flattened.add(tp)
+        case tp => flattened.add(tp): @nowarn("cat=w-flag-value-discard")
       }
       parents foreach loop
       if (decls.isEmpty && flattened.size == 1) {
@@ -1989,9 +1988,10 @@ trait Types
         }
         tp.mapOver(this)
       }
+      @nowarn("cat=w-flag-value-discard")
       def enter(tparam0: Symbol, parent: Type): Unit = {
         this.tparam = tparam0
-        this(parent)
+        apply(parent)
       }
     }
 
@@ -2510,6 +2510,7 @@ trait Types
         else relativeInfo.baseType(clazz)
       } finally basetypeRecursions -= 1
 
+    @nowarn("cat=w-flag-value-discard")
     private def baseTypeOfNonClassTypeRefLogged(clazz: Symbol) =
       if (pendingBaseTypes add this) try relativeInfo.baseType(clazz) finally { pendingBaseTypes remove this }
       // TODO: is this optimization for AnyClass worth it? (or is it playing last-ditch cycle defense?)
