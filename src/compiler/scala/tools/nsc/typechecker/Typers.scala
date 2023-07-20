@@ -2717,19 +2717,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
       initChildren(selectorTp.typeSymbol)
 
-      def finish(cases: List[CaseDef], matchType: Type) = {
-        /*
-        // treat { case P => q case _ => () } like one-legged if
-        if (cases.lengthCompare(3) < 0) {
-          val nonempty = cases.filterNot { case CaseDef(Ident(nme.USCOREkw), EmptyTree, Literal(Constant(()))) => true case _ => false }
-          if (nonempty.length == 1)
-            nonempty.head.body.updateAttachment(TypedExpectingUnitAttachment)
-          if (nonempty.length == 1)
-            println(s"One nonempty ${nonempty.head}")
-        }
-        */
+      def finish(cases: List[CaseDef], matchType: Type) =
         treeCopy.Match(tree, selector1, cases).setType(matchType)
-      }
 
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
