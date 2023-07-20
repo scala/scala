@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
@@ -84,11 +85,13 @@ class DirectCompileTest extends BytecodeTesting {
     }, ins)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def compileErroneous(): Unit = {
     compileToBytes("class C { def f: String = 1 }", allowMessage = _.msg contains "type mismatch")
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def residentRedefineFinalFlag(): Unit = {
     val compiler = newCompiler()
@@ -100,6 +103,7 @@ class DirectCompileTest extends BytecodeTesting {
     compiler.compileToBytes(b)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def residentMultipleRunsNotCompanions(): Unit = {
     val compiler = newCompiler()

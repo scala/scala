@@ -158,6 +158,8 @@ object AssertUtil {
   def assertCondNot[A](x: A)(pf: PartialFunction[A, Boolean]): Unit = assertFalse(PartialFunction.cond(x)(pf))
 
   def assertFails[U](checkMessage: String => Boolean)(body: => U): Unit = assertThrows[AssertionError](body, checkMessage)
+  // avoid value discard warnings
+  def assertSucceeds[U](body: U): Unit = ()
 
   private def orEmpty(b: Boolean)(text: => String): String = if (b) text else ""
 

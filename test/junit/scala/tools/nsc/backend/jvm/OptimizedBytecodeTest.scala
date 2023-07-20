@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.AssertUtils.assertSucceeds
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
@@ -91,7 +92,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |arguments expected by the callee ErrorHandler$::defaultIfIOException(Lscala/Function0;Lscala/Function0;)Ljava/lang/Object;. These values would be discarded
         |when entering an exception handler declared in the inlined method.""".stripMargin
 
-    compileClasses(code, allowMessage = _.msg == msg)
+    assertSucceeds(compileClasses(code, allowMessage = _.msg == msg))
   }
 
   @Test
@@ -105,7 +106,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    compileToBytes(code)
+    assertSucceeds(compileToBytes(code))
   }
 
   @Test
@@ -130,7 +131,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    compileToBytes(code)
+    assertSucceeds(compileToBytes(code))
   }
 
   @Test
@@ -158,7 +159,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    compileToBytes(code)
+    assertSucceeds(compileToBytes(code))
   }
 
   @Test
@@ -174,7 +175,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    compileToBytes(code)
+    assertSucceeds(compileToBytes(code))
   }
 
   @Test
@@ -196,7 +197,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  val NoContext = self.analyzer.NoContext
         |}
       """.stripMargin
-    compileClasses(code)
+    assertSucceeds(compileClasses(code))
   }
 
   @Test

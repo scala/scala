@@ -154,7 +154,11 @@ class ArraySeqTest {
     assert(ArraySeq(as: _*) eq as)
   }
 
-  private def assertConcat[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Array[_] = {
+  @nowarn("cat=w-flag-value-discard")
+  private def assertConcat[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Unit =
+    assertConcated(lhs, rhs, expect)
+
+  private def assertConcated[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Array[_] = {
     val appended = lhs ++ rhs
     val prepended = lhs ++: rhs
     assertEquals(appended, expect)
@@ -167,7 +171,7 @@ class ArraySeqTest {
   def concatPrimative(): Unit = {
     val a = ArraySeq(1, 3)
     val b = ArraySeq(5, 7)
-    val underlyingArray = assertConcat(a, b, ArraySeq(1, 3, 5, 7))
+    val underlyingArray = assertConcated(a, b, ArraySeq(1, 3, 5, 7))
     assertEquals(underlyingArray.getClass, classOf[Array[Int]])
   }
 

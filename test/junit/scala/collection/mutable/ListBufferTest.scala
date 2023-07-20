@@ -106,15 +106,9 @@ class ListBufferTest {
     assertEquals(ListBuffer(0, 1), b3)
   }
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
-  def removeWithNegativeIndex(): Unit = {
-    ListBuffer(0, 1, 2).remove(-1)
-  }
+  def removeWithNegativeIndex(): Unit = assertThrows[IndexOutOfBoundsException](ListBuffer(0, 1, 2).remove(-1))
 
-  @Test(expected = classOf[IndexOutOfBoundsException])
-  def removeWithTooLargeIndex(): Unit = {
-    ListBuffer(0).remove(1)
-  }
+  def removeWithTooLargeIndex(): Unit = assertThrows[IndexOutOfBoundsException](ListBuffer(0).remove(1))
 
   @Test
   def testRemoveMany(): Unit = {

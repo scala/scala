@@ -5,9 +5,10 @@ import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
+import scala.collection.Sizes
 import scala.ref.WeakReference
 import scala.tools.testkit.AllocationTest
-import scala.collection.Sizes
 
 @RunWith(classOf[JUnit4])
 class ListTest extends AllocationTest {
@@ -101,11 +102,13 @@ class ListTest extends AllocationTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def emptyNonAllocating(): Unit = {
     nonAllocating(List.empty)
     nonAllocating(List())
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def smallListAllocation(): Unit = {
     exactAllocates(Sizes.list * 1, "list  size 1")(List("0"))
     exactAllocates(Sizes.list * 2, "list  size 2")(List("0", "1"))
@@ -116,6 +119,7 @@ class ListTest extends AllocationTest {
     exactAllocates(Sizes.list * 7, "list  size 7")(List("0", "1", "2", "3", "4", "5", "6"))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def largeListAllocation(): Unit = {
     def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
     exactAllocates(expected(10), "list  size 10")(

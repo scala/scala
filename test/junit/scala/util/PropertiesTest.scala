@@ -4,9 +4,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
+
 class PropertiesTest {
   final val TestProperty = "scala.util.PropertiesTest.__test_property__"
 
+  @nowarn("cat=w-flag-value-discard")
   @Before
   def beforeEach(): Unit = {
     Properties.clearProp(TestProperty)

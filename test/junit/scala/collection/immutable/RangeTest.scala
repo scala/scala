@@ -3,6 +3,7 @@ package scala.collection.immutable
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil
 
 @RunWith(classOf[JUnit4])
@@ -64,6 +65,7 @@ class RangeTest {
     assertEquals(10, it.drop(0).next())
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test(expected = classOf[IllegalArgumentException])
   def largeRangeMap(): Unit = {
     Int.MinValue to Int.MaxValue map identity

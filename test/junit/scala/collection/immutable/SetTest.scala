@@ -6,6 +6,8 @@ import scala.Predef.{any2stringadd => _, _}
 import org.junit.Assert.{assertEquals, assertNotSame, assertSame, assertTrue}
 import org.junit.Test
 
+import scala.annotation.nowarn
+
 class SetTest {
   @Test
   def test_SI8346_toSet_soundness(): Unit = {
@@ -99,6 +101,7 @@ class SetTest {
     assertEquals(Set(1), s4)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def t7326(): Unit = {
     def testCorrectness(): Unit = {

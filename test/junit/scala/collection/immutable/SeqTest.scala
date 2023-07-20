@@ -4,17 +4,20 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.collection.Sizes
 import scala.tools.testkit.{AllocationTest, CompileTime}
 
 @RunWith(classOf[JUnit4])
 class SeqTest extends AllocationTest {
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def emptyNonAllocating(): Unit = {
     nonAllocating(Seq.empty)
     nonAllocating(Seq())
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def smallSeqAllocation(): Unit = {
     if (CompileTime.versionNumberString == "2.13.2") return
     exactAllocates(Sizes.list * 1, "immutable seq  size 1")(Seq("0"))
@@ -25,6 +28,7 @@ class SeqTest extends AllocationTest {
     exactAllocates(Sizes.list * 6, "immutable seq  size 6")(Seq("0", "1", "2", "3", "4", "5"))
     exactAllocates(Sizes.list * 7, "immutable seq  size 7")(Seq("0", "1", "2", "3", "4", "5", "6"))
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def largeSeqAllocation(): Unit = {
     def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
     exactAllocates(expected(10), "immutable seq size 10")(

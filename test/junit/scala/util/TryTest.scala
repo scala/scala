@@ -186,10 +186,8 @@ class TryTest {
     @unused val n = t.filter{ x => fail() ; true }
   }
 
-  @Test def testRescueSuccess(): Unit = {
-    val t = Success(1)
-    t.recoverWith{ case x => fail() ; Try(-1) }
-  }
+  @Test def testRescueSuccess(): Unit =
+    Success(()).recoverWith { case x => fail(); Try(()) }.get
 
   @Test def testRescueFailure(): Unit = {
     val t = Failure(new Exception("foo"))

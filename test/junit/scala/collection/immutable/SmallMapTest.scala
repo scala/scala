@@ -3,6 +3,7 @@ package scala.collection.immutable
 import org.junit.Assert._
 import org.junit._
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
 class SmallMapTest extends AllocationTest {
@@ -60,6 +61,7 @@ class SmallMapTest extends AllocationTest {
     assertEquals(Nil, test.valuesIterator.drop(5).toList)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def mapEmptyAllocating(): Unit = {
     val test = Map.empty
     nonAllocating(iterator(test), ignoreEqualCheck = true)
@@ -73,8 +75,8 @@ class SmallMapTest extends AllocationTest {
     nonAllocating(valuesIterator(test), ignoreEqualCheck = true)
     nonAllocating(consume(valuesIterator(test)), ignoreEqualCheck = true)
     nonAllocating(consume(valuesIterator(test).drop(1)), ignoreEqualCheck = true)
-
   }
+
   @Test def mapEmptyBehaviour(): Unit = {
     val test = Map.empty[String, String]
     testIterator(test)

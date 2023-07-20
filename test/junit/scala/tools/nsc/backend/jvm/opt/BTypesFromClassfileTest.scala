@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -91,6 +92,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def check(classSym: Symbol): Unit = duringBackend {
     clearCache()
     val fromSymbol = classBTypeFromSymbol(classSym)

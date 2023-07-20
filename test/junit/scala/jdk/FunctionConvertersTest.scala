@@ -17,6 +17,7 @@ import java.io.NotSerializableException
 import org.junit.Assert.{ assertThrows => _, _ }
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.jdk.FunctionConverters._
 import scala.jdk.javaapi.{FunctionConverters => conv}
@@ -918,6 +919,7 @@ class FunctionConvertersTest {
     in.readObject.asInstanceOf[T]
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def wrappersSerializable(): Unit = {
     val sf = (x: Int, y: Int) => x + y

@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertSameElements, fail}
 
 import org.junit.Assert.{assertEquals, assertSame, fail => _}
@@ -22,12 +23,12 @@ class ListSetTest {
     assertEquals(List("a", "b", "c", "d"), m.toList)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def hasTailRecursiveDelete(): Unit = {
     val s = ListSet(1 to 50000: _*)
-    try s - 25000 catch {
-      case e: StackOverflowError => fail("A stack overflow occurred")
-    }
+    try s - 25000
+    catch { case e: StackOverflowError => fail("A stack overflow occurred") } // should NOT catch (even) in test
   }
 
   @Test

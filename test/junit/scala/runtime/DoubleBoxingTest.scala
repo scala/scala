@@ -3,8 +3,10 @@ package scala.runtime
 import org.junit._
 import Assert._
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
+@nowarn("cat=w-flag-value-discard")
 class DoubleBoxingTest extends SideEffectTest with AllocationTest {
   val nan      = Double.NaN
   val value    = 999D

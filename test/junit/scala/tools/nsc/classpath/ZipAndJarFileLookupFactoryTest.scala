@@ -6,6 +6,8 @@ import org.junit.Test
 import java.net.{URI, URL}
 import java.nio.file._
 import java.nio.file.attribute.FileTime
+
+import scala.annotation.nowarn
 import scala.reflect.io.AbstractFile
 import scala.tools.testkit.ForDeletion
 import scala.tools.testkit.Releasables._
@@ -50,6 +52,7 @@ class ZipAndJarFileLookupFactoryTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   private def createZip(zipLocation: Path, content: Array[Byte], internalPath: String): Unit = {
     val env = new java.util.HashMap[String, String]()
     env.put("create", String.valueOf(Files.notExists(zipLocation)))

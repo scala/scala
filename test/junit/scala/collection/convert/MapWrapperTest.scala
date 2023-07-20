@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.jdk.CollectionConverters._
-import scala.tools.testkit.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.{assertSucceeds, assertThrows}
 import scala.util.chaining._
 
 @RunWith(classOf[JUnit4])
@@ -59,7 +59,7 @@ class MapWrapperTest {
     val javaMap = Map(1 -> null).asJava
 
     // Before the fix for scala/bug#8504, this throws a NPE
-    javaMap.hashCode
+    assertSucceeds(javaMap.hashCode)
   }
 
   // regression test for https://github.com/scala/bug/issues/10663

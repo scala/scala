@@ -1,6 +1,7 @@
 package scala.collection
 
 import org.junit.Test
+import scala.annotation.nowarn
 import scala.collection.{mutable => cm, immutable => ci}
 import scala.jdk.CollectionConverters._
 
@@ -30,6 +31,7 @@ class SetMapConsistencyTest {
     var m = m0
     def title = title0
     def adders = 5
+    @nowarn("cat=w-flag-value-discard")
     def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m += ((a, v))
       case 1 => m(a) = v
@@ -161,6 +163,7 @@ class SetMapConsistencyTest {
     protected var m = s0
     def title = title0
     def adders = 5
+    @nowarn("cat=w-flag-value-discard")
     def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m += a
       case 1 => m(a) = true
@@ -530,6 +533,7 @@ class SetMapConsistencyTest {
     assert(nfe == 4)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def test_SI8727(): Unit = {
     val map = Map(0 -> "zero", 1 -> "one")

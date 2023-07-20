@@ -4,11 +4,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.{collection => c}
 import scala.collection.{immutable => i, mutable => m}
 
 @RunWith(classOf[JUnit4])
 class UnsortedTest {
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def usortedIsSpecific(): Unit = {
     c.BitSet(1).unsorted: c.Set[Int]

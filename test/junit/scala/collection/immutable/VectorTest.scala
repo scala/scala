@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.immutable.VectorInline.{WIDTH3, WIDTH4, WIDTH5}
 import scala.collection.mutable.{ListBuffer, StringBuilder}
@@ -631,6 +632,7 @@ class VectorTest {
 
   // scala/bug#12027
   // This took forever in 2.13.2
+  @nowarn("cat=w-flag-value-discard")
   @Test def testAppendWithTinyLhs(): Unit = {
     (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => Vector(i) ++ v }
     (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => v.prependedAll(Vector(i)) }

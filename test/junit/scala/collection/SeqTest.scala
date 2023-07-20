@@ -3,6 +3,7 @@ package scala.collection
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.{AllocationTest, CompileTime}
 
 class SeqTest extends AllocationTest {
@@ -91,11 +92,13 @@ class SeqTest extends AllocationTest {
     assert(s.lengthIs != 2)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def emptyNonAllocating(): Unit = {
     nonAllocating(Seq.empty)
     nonAllocating(Seq())
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def smallSeqAllocation(): Unit = {
     if (CompileTime.versionNumberString == "2.13.2") return
     exactAllocates(Sizes.list * 1, "collection seq  size 1")(Seq("0"))
@@ -107,6 +110,7 @@ class SeqTest extends AllocationTest {
     exactAllocates(Sizes.list * 7, "collection seq  size 7")(Seq("0", "1", "2", "3", "4", "5", "6"))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def largeSeqAllocation(): Unit = {
     def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
     exactAllocates(expected(10) , "collection seq size 10")(

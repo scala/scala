@@ -1,8 +1,10 @@
 package scala.collection
 package mutable
 
-import org.junit.Assert.{assertEquals, assertNotEquals}
+import org.junit.Assert.assertEquals
 import org.junit.Test
+
+import scala.tools.testkit.AssertUtil.assertThrows
 
 class SortedMapTest {
   @Test
@@ -60,18 +62,11 @@ class SortedMapTest {
 
     val newTreeMap: SortedMap[String, Int] = originalMap.flatMap((kv: (Int, String)) => TreeMap(kv._2 -> kv._1))
 
-    try {
-      newTreeMap("Three")
-    } catch {
-      case e: Exception => {
-        assertNotEquals("Three is not present in this map", e.getMessage)
-        assertEquals("key not found: Three", e.getMessage)
-      }
-    }
+    assertThrows[NoSuchElementException](newTreeMap("Three"), _ == "key not found: Three")
   }
 
   @Test
-  def testDefaultValueIsPersistedWhenNewSortedMapIsCreatedFromSpecificIterableInOperationsLikeFilter(): Unit = {
+  def `default function survives filter`: Unit = {
     val evenNumbers: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 4 -> "Four", 5 -> "Five"))
       .withDefault(defaultValueFunction)
       .filter((kv: (Int, String)) => kv._1 % 2 == 0)
@@ -80,20 +75,13 @@ class SortedMapTest {
   }
 
   @Test
-  def testDefaulValueIsNotPersistedWhenNewMapIterableIsConcatenatedToOriginalMutableMap(): Unit = {
+  def `default value survives concat`: Unit = {
     val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefaultValue("element missing")
 
     val newMap: SortedMap[Int, String] = originalMap ++ SortedMap.from(Map(3 -> "Three")).withDefaultValue("foobar")
 
-    try {
-      newMap(4)
-    } catch {
-      case e: Exception => {
-        assertNotEquals("element missing", e.getMessage)
-        assertEquals("key not found: 4", e.getMessage)
-      }
-    }
+    assertEquals("element missing", newMap(4)) // see below, behavior changed for 2.13 but this test was faulty
   }
 
   private def defaultValueFunction: Int => String = {

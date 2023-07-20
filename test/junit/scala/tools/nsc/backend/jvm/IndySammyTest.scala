@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -141,6 +141,6 @@ class IndySammyTest extends BytecodeTesting {
   @Test
   def testStaticIfNoThisReference(): Unit = {
     val methodNodes = compileAsmMethods("def foo = () => () => () => 42")
-    methodNodes.forall(m => !m.name.contains("anonfun") || (m.access & ACC_STATIC) == ACC_STATIC)
+    assertTrue(methodNodes.forall(m => !m.name.contains("anonfun") || (m.access & ACC_STATIC) == ACC_STATIC))
   }
 }

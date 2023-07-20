@@ -3,6 +3,8 @@ package scala.collection
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
+
 class MapTest {
   @deprecated("Tests deprecated API", since="2.13")
   @Test def test(): Unit = {
@@ -54,6 +56,7 @@ class MapTest {
     assertEquals(1 :: m.toList.sorted, s1.toList.sortBy { case (x: Int, _) => x ; case x: Int => x })
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def flatMapOption(): Unit = {
     def f(p: (Int, Int)) = if (p._1 < p._2) Some((p._1, p._2)) else None

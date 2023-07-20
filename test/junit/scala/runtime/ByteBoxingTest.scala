@@ -3,18 +3,17 @@ package scala.runtime
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
 class ByteBoxingTest extends SideEffectTest with AllocationTest {
   val value: Byte = 127.toByte
 
-  @Test def hash1(): Unit = {
-    nonAllocating(value.hashCode())
-  }
+  @nowarn("cat=w-flag-value-discard")
+  @Test def hash1(): Unit = nonAllocating(value.hashCode())
 
-  @Test def hash2(): Unit = {
-    nonAllocating(value.##)
-  }
+  @nowarn("cat=w-flag-value-discard")
+  @Test def hash2(): Unit = nonAllocating(value.##)
 
   @Test def float(): Unit = {
     assertEquals(value, nonAllocating(value.floatValue()), 0D)

@@ -1,10 +1,12 @@
 package scala.collection
 package mutable
 
-import org.junit.Assert._
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.tools.testkit.AssertUtil.assertSucceeds
 
 @RunWith(classOf[JUnit4])
 class CollisionProofHashMapTest {
@@ -33,7 +35,7 @@ class CollisionProofHashMapTest {
   def getOrElseUpdate_noEval(): Unit = {
     val hm = new mutable.CollisionProofHashMap[Int, Int]()
     hm.put(0, 0)
-    hm.getOrElseUpdate(0, throw new AssertionError())
+    assertSucceeds(hm.getOrElseUpdate(0, throw new AssertionError()))
   }
 
   def getOrElseUpdate_keyIdempotence(): Unit = {

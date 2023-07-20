@@ -3,8 +3,10 @@ package scala.runtime
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
+@nowarn("cat=w-flag-value-discard")
 class FloatBoxingTest extends SideEffectTest with AllocationTest {
   val nan      = Float.NaN
   val value    = 12345F

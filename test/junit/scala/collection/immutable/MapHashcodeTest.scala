@@ -3,12 +3,14 @@ package scala.collection.immutable
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 import scala.util.hashing.MurmurHash3
 
 
 class MapHashcodeTest extends AllocationTest {
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def nonAllocatingMapN(): Unit = {
     val t0 = Map.empty
     val t1 = new Map.Map1(1, 1)
@@ -52,6 +54,7 @@ class MapHashcodeTest extends AllocationTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def nonAllocatingListMap(): Unit = {
     val t0 = ListMap.empty[String, String]
     val t1 = t0.updated("1", "1")
@@ -106,6 +109,7 @@ class MapHashcodeTest extends AllocationTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def nonAllocatingSortedMap(): Unit = {
     val t0 = SortedMap.empty[String, String]
     val t1 = t0.updated("1", "1")
@@ -160,6 +164,7 @@ class MapHashcodeTest extends AllocationTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def nonAllocatingHashMap(): Unit = {
     val t0 = HashMap.empty[String, String]
     val t1 = t0.updated("1", "1")

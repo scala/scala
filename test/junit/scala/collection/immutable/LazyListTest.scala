@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.mutable.{Builder, ListBuffer}
 import scala.tools.testkit.{AssertUtil, ReflectUtil}
@@ -403,6 +404,7 @@ class LazyListTest {
     check(LazyList.tabulate(5)(_ + 1))
   }
 
+  @nowarn("cat=w-flag-value-discard") // spurious
   @Test
   def builder(): Unit = {
     def build(init: Builder[Int, LazyList[Int]] => Unit): LazyList[Int] = {

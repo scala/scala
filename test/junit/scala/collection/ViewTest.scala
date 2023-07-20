@@ -3,6 +3,7 @@ package scala.collection
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.tools.testkit.AssertUtil.assertSameElements
 
@@ -102,6 +103,7 @@ class ViewTest {
     checkThrows(ll.toList)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @deprecated("Tests deprecated API", since="2.13")
   @Test
   def `t10103 result of view must be indexed seq`(): Unit = {

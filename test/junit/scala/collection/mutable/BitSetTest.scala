@@ -34,9 +34,9 @@ class BitSetTest {
 
   @Test def test_SI8647(): Unit = {
     val bs = BitSet()
-    bs.map(_ + 1)    // Just needs to compile
+    assertSucceeds(bs.map(_ + 1))    // Just needs to compile
     val xs = bs: SortedSet[Int]
-    xs.map(_ + 1)    // Also should compile (did before)
+    assertSucceeds(xs.map(_ + 1))    // Also should compile (did before)
   }
 
   @Test def t10164(): Unit = {

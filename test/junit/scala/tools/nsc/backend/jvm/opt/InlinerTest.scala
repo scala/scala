@@ -13,6 +13,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.AssertUtil.assertSucceeds
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
@@ -2290,6 +2291,6 @@ class InlinerTest extends BytecodeTesting {
         |  def r = u(new V { })
         |}
         |""".stripMargin
-    compileClassesSeparately(List(c1, c2), compilerArgs)
+    assertSucceeds(compileClassesSeparately(List(c1, c2), compilerArgs))
   }
 }

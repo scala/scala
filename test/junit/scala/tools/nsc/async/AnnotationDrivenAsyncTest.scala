@@ -595,9 +595,7 @@ class AnnotationDrivenAsyncTest {
             throw new AssertionError(asm, ve)
         }
       }
-      override def close(): Unit = {
-        scala.reflect.io.Path.apply(out).deleteRecursively()
-      }
+      override def close(): Unit = scala.reflect.io.Path.apply(out).deleteRecursively(): @nowarn("cat=w-flag-value-discard")
     }
   }
 }

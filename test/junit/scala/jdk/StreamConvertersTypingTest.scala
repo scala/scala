@@ -17,6 +17,7 @@ import java.util.stream._
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
@@ -82,6 +83,7 @@ class StreamConvertersTypingTest {
     (s2pps: IntStream).count()
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def toArrayTests(): Unit = {
     val ia = Array(1,2,3)
@@ -219,6 +221,7 @@ class StreamConvertersTypingTest {
 
   // check that `stepper` returns the right type
   // check that `seqStream` and `parStream` extension methods are available and have the right type
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def stepperSeqStreamParStreamMethods(): Unit = {
     import java.util.stream._
@@ -378,6 +381,7 @@ class StreamConvertersTypingTest {
     // val s9: Stepper[Long] = r.stepper // no StepperShape instance
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def stringStepper(): Unit = {
     val r = "millie"
@@ -422,6 +426,7 @@ class StreamConvertersTypingTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def accumulatorStepper(): Unit = {
     val ia = Accumulator(1, 2, 3)

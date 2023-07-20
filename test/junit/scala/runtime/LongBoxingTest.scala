@@ -3,8 +3,10 @@ package scala.runtime
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
+@nowarn("cat=w-flag-value-discard")
 class LongBoxingTest extends SideEffectTest with AllocationTest {
   val value = 99999999999999L
 

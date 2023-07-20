@@ -5,8 +5,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.util.chaining._
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil._
+import scala.util.chaining._
 
 import java.lang.ref._
 
@@ -181,14 +182,14 @@ class IteratorTest {
     }
     locally {
       val it = Iterator.continually(ref.get()).grouped(1)
-      assertNotReachable(thing, it)(it.next())
+      assertNotReachable(thing, it)(it.next()): @nowarn("cat=w-flag-value-discard")
     }
   }
   @Test def `sliding must hold elements`: Unit = {
     val thing = new Object
     val ref = new WeakReference(thing)
     val it = Iterator.continually(ref.get()).sliding(2,1)
-    assertFails(_.contains("Root <iterator> held reference")) { assertNotReachable(thing, it)(it.next()) }
+    assertFails(_.contains("Root <iterator> held reference")) { assertNotReachable(thing, it)(it.next()) }: @nowarn("cat=w-flag-value-discard")
   }
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
@@ -374,6 +375,7 @@ class IteratorTest {
   }
   // iterator-iterate-lazy.scala
   // was java.lang.UnsupportedOperationException: tail of empty list
+  @nowarn("cat=w-flag-value-discard")
   @Test def iterateIsSufficientlyLazy(): Unit = {
     //Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).toList  // suffices
     Iterator.iterate((1 to 5).toList)(_.tail).takeWhile(_.nonEmpty).map(_.head).toList
