@@ -703,7 +703,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           // Case 2
           storeContents()
           finalizeRow()
-          skipStartMarkNewline()
+          skipStartMarkNewline(): @nowarn("cat=w-flag-value-discard")
           // peek("2: start-mark-new-line/after")
         } else if (isStartMark) {
           // peek("3: start-mark")

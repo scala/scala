@@ -12,6 +12,7 @@
 
 package scala.tools.nsc
 
+import scala.annotation.nowarn
 import interpreter.shell.{ILoop, ShellConfig}
 
 object JarRunner extends CommonRunner {
@@ -42,6 +43,7 @@ class MainGenericRunner {
   }
 
   def process(args: Array[String]): Boolean = {
+    @nowarn("cat=w-flag-value-discard")
     val command = new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
     import command.{settings, howToRun, thingToRun, shortUsageMsg}
     import MainGenericRunner.CommandFailure

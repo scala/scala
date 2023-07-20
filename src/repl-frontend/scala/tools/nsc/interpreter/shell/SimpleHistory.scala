@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.interpreter.shell
 
+import scala.annotation.nowarn
 import scala.collection.mutable.{Buffer, ListBuffer}
 
 class SimpleHistory extends History {
@@ -51,6 +52,7 @@ class SimpleHistory extends History {
   def moveToFirst()     = (size > 0) && (index != 0) && setTo(0)
   def moveToLast()      = (size > 0) && (index < lastIndex) && setTo(lastIndex)
   def moveTo(idx: Int)  = (idx > 0) && (idx <= lastIndex) && setTo(idx)
+  @nowarn("cat=w-flag-value-discard")
   def moveToEnd(): Unit = setTo(size)
 
   def asStrings = buf.toList

@@ -17,14 +17,16 @@ import java.io.PrintWriter
 
 import io.VirtualDirectory
 import settings.MutableSettings
-import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
+import scala.annotation.nowarn
 import scala.collection.mutable.Clearable
+import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
 
 /** Directory to save .class files to. */
 trait ReplDir extends AbstractFile with Clearable { }
 
 private class ReplVirtualDir() extends VirtualDirectory("(memory)", None) with ReplDir { }
 private class ReplRealDir(dir: Directory) extends PlainDirectory(dir) with ReplDir {
+  @nowarn("cat=w-flag-value-discard")
   def clear() = {
     dir.deleteRecursively()
     dir.createDirectory()

@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 
 import scala.PartialFunction.cond
 import scala.Predef.{println => _, _}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
@@ -476,7 +477,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           in = SimpleReader(fileReader, out, interactive = verbose, verbose = verbose)
           loop()
         }
-      }
+      }: @nowarn("cat=w-flag-value-discard")
     finally in = savedIn
   }
 
@@ -575,6 +576,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   def editCommand(what: String): Result = editCommand(what, ShellConfig.EDITOR)
 
   def editCommand(what: String, editor: Option[String]): Result = {
+    @nowarn("cat=w-flag-value-discard")
     def diagnose(code: String): Unit = paste.incomplete("The edited code is incomplete!\n", "<edited>", code)
 
     def edit(text: String): Result = editor match {
@@ -599,9 +601,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
               }
             case x => echo(s"Error exit from $ed ($x), ignoring")
           }
-        } finally {
-          tmp.delete()
         }
+        finally tmp.delete(): @nowarn("cat=w-flag-value-discard")
       case None =>
         if (history.historicize(text)) echo("Placing text in recent history.")
         else echo(f"No EDITOR defined and you can't change history, echoing your text:%n$text")
@@ -1019,6 +1020,7 @@ object ILoop {
   def runForTranscript(code: String, settings: Settings, inSession: Boolean = false): String =
     runForTranscript(code, settings, TestConfig(settings), inSession)
 
+  @nowarn("cat=w-flag-value-discard")
   def runForTranscript(code: String, settings: Settings, config: ShellConfig, inSession: Boolean): String = {
     import java.io.{BufferedReader, OutputStreamWriter, StringReader}
     import java.lang.System.{lineSeparator => EOL}
@@ -1062,6 +1064,7 @@ object ILoop {
   /** Creates an interpreter loop with default settings and feeds
    *  the given code to it as input.
    */
+  @nowarn("cat=w-flag-value-discard")
   def run(code: String, sets: Settings = new Settings): String = {
     import java.io.{BufferedReader, OutputStreamWriter, StringReader}
 

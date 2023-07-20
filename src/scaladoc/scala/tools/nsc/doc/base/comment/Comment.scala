@@ -15,6 +15,7 @@ package doc
 package base
 package comment
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 /** A Scaladoc comment and all its tags.
@@ -36,18 +37,16 @@ abstract class Comment {
           list foreach scan
         case tag: HtmlTag => {
           if (stack.nonEmpty && tag.canClose(stack.last)) {
-            stack.remove(stack.length-1)
+            stack.remove(stack.length-1): @nowarn("cat=w-flag-value-discard")
           } else {
             tag.close match {
               case Some(t) =>
                 stack += t
               case None =>
-                ;
             }
           }
         }
         case _ =>
-          ;
       }
     }
     scan(inline)

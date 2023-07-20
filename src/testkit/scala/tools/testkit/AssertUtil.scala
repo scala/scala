@@ -222,7 +222,7 @@ object AssertUtil {
   /** Assert no new threads, with some margin for arbitrary threads to exit. */
   def assertZeroNetThreads(body: => Unit): Unit = {
     val group = new ThreadGroup("junit")
-    try assertZeroNetThreads(group)(body)
+    try assertZeroNetThreads(group)(body).get // must succeed, result is Unit
     finally group.destroy(): @nowarn("cat=deprecation") // deprecated since JDK 16, will be removed
   }
   def assertZeroNetThreads[A](group: ThreadGroup)(body: => A): Try[A] = {
@@ -250,16 +250,13 @@ object AssertUtil {
     }
     val result = new AtomicReference[Try[A]]()
     def test(): Try[A] =
-      try {
-        val checked = check()
-        result.set(checked)
-        checked
-      } finally {
-        testDone.countDown()
-      }
+      try check().tap(result.set)
+      finally testDone.countDown()
+    @nowarn("cat=w-flag-value-discard")
+    def testDiscarding(): Unit = test()
 
     val timeout = 10 * 1000L
-    val thread = new Thread(group, () => test())
+    val thread = new Thread(group, () => testDiscarding())
     def abort(): Try[A] = {
       group.interrupt()
       new Failure(new AssertionError("Test did not complete"))
@@ -365,6 +362,7 @@ class NoTrace[A](body: => A) extends Runnable {
 
   @volatile private[testkit] var result: Option[A] = None
 
+  @nowarn("cat=w-flag-value-discard")
   def run(): Unit = {
     import AssertUtil.assertZeroNetThreads
     val group = new ThreadGroup("notrace") {

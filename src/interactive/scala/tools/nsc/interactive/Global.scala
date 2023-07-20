@@ -398,6 +398,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val platform: Global.this.platform.type = Global.this.platform
   } with BrowsingLoaders
 
+  @nowarn("cat=w-flag-value-discard")
   override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
     val isPastNamer = force || currentTyperRun == null || (currentTyperRun.currentUnit match {
       case unit: RichCompilationUnit => unit.isParsed
@@ -799,9 +800,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  If we do just removeUnit, some problems with default parameters can ensue.
    *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
    */
-  private def afterRunRemoveUnitsOf(sources: List[SourceFile]): Unit = {
-    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun ++= sources map (_.file) }
-  }
+  private def afterRunRemoveUnitsOf(sources: List[SourceFile]): Unit =
+    toBeRemovedAfterRun.synchronized[toBeRemovedAfterRun.type] { toBeRemovedAfterRun ++= sources.map(_.file) }
 
   /** A fully attributed tree located at position `pos` */
   private[scala] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {

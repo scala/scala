@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 /** Mix this into an object and use it as a phasing
@@ -78,13 +79,13 @@ trait Phased {
     val saved = get
     set(ph)
     try atCurrent(body)
-    finally set(saved)
+    finally set(saved): @nowarn("cat=w-flag-value-discard")
   }
   def atMulti[T](phs: Seq[PhaseName])(body: => T): Seq[T] = {
     val saved = multi
     setMulti(phs)
     try multi(body)
-    finally setMulti(saved)
+    finally setMulti(saved): @nowarn("cat=w-flag-value-discard")
   }
 
   def atMap[T](phs: Seq[PhaseName])(body: => T): Seq[(PhaseName, T)] =

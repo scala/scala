@@ -12,6 +12,8 @@
 
 package scala.tools.partest
 
+import scala.annotation.nowarn
+
 trait StubErrorMessageTest extends StoreReporterDirectTest {
   // Stub to feed to partest, unused
   def code = throw new Error("Use `userCode` instead of `code`.")

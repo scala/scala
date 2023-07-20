@@ -15,6 +15,7 @@ package scala.tools.nsc.interpreter.shell
 import java.io.{Closeable, OutputStream, PrintWriter, Reader}
 import java.util.Arrays.asList
 import javax.script._
+import scala.annotation.nowarn
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.{CodeAction, Position}
@@ -65,7 +66,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     Set.from(terms)
   }
 
-
+  @nowarn("cat=w-flag-value-discard")
   def dynamicContext_=(ctx: ScriptContext): Unit = intp.call("set", ctx)
 
   def dynamicContext: ScriptContext = intp.call("value") match {

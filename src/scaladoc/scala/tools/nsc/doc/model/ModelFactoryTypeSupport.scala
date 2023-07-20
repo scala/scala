@@ -276,10 +276,10 @@ trait ModelFactoryTypeSupport {
               nameBuffer append "("
               appendType0(underlying)
               nameBuffer append ")"
-              appendClauses
+              appendClauses: @nowarn("cat=w-flag-value-discard")
             case _ =>
               appendType0(underlying)
-              appendClauses
+              appendClauses: @nowarn("cat=w-flag-value-discard")
           }
 
         case tb@TypeBounds(lo, hi) =>

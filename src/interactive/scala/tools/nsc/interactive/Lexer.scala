@@ -14,6 +14,8 @@ package scala.tools.nsc.interactive
 
 import java.io.Reader
 
+import scala.annotation.nowarn
+
 /** Companion object of class `Lexer` which defines tokens and some utility concepts
  *  used for tokens and lexers
  */
@@ -89,7 +91,8 @@ object Lexer {
     (if (d < 10) d + '0' else d - 10 + 'A').toChar
   }
 
-  private def addToStr(buf: StringBuilder, ch: Char): Unit = {
+  @nowarn("cat=w-flag-value-discard") // spurious
+  private def addToStr(buf: StringBuilder, ch: Char): Unit =
     ch match {
       case '"' => buf ++= "\\\""
       case '\b' => buf ++= "\\b"
@@ -102,7 +105,6 @@ object Lexer {
         if (' ' <= ch && ch < 128) buf += ch
         else buf ++= "\\u" += toUDigit(ch >>> 12) += toUDigit(ch >>> 8) += toUDigit(ch >>> 4) += toUDigit(ch.toInt)
     }
-  }
 
   /** Returns given string enclosed in `"`-quotes with all string characters escaped
    *  so that they correspond to the JSON standard.

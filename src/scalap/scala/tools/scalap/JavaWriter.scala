@@ -13,6 +13,7 @@
 package scala.tools.scalap
 
 import java.io._
+import scala.annotation.nowarn
 import scala.reflect.NameTransformer
 
 class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer) {
@@ -119,6 +120,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 
   def isConstr(name: String) = (name == "<init>")
 
+  @nowarn("cat=w-flag-value-discard")
   def printField(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]): Unit = {
     print(flagsToStr(false, flags))
     if ((flags & 0x0010) != 0)
@@ -128,6 +130,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     print(": " + getType(tpe) + ";").newline
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]): Unit = {
     if (getName(name) == "<init>")
     print(flagsToStr(false, flags))

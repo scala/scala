@@ -15,6 +15,7 @@ package scala.tools.nsc.interpreter
 import java.io.InputStream
 import java.net.{URI, URL}
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.io.Codec
 import scala.language.implicitConversions
@@ -144,6 +145,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   /** Quietly starts up power mode and runs whatever is in init.
    */
+  @nowarn("cat=w-flag-value-discard")
   def unleash(): Unit = intp.reporter.withoutPrintingResults {
     // First we create the ReplVals instance and bind it to $r
     intp.bind("$r", replVals)

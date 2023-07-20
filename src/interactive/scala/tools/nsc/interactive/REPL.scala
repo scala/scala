@@ -14,6 +14,7 @@ package scala
 package tools.nsc
 package interactive
 
+import scala.annotation.nowarn
 import scala.reflect.internal.util._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
@@ -126,7 +127,7 @@ object REPL {
           Thread.sleep(millis.toLong)
           println("ask type now")
           comp.askLoadedTyped(toSourceFile(file), keepLoaded = true, typedResult)
-          typedResult.get
+          typedResult.get: @nowarn("cat=w-flag-value-discard")
         case List("typeat", file, off1, off2) =>
           doTypeAt(makePos(file, off1, off2))
         case List("typeat", file, off1) =>
@@ -167,5 +168,5 @@ object REPL {
     res
   }
 
-  def show[T](svar: Response[T]) = using(svar)(res => println("==> "+res))
+  def show[T](svar: Response[T]): Unit = using(svar)(res => println("==> "+res)).getOrElse(())
 }
