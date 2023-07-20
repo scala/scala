@@ -1672,20 +1672,27 @@ self =>
           val cond = condExpr()
           newLinesOpt()
           val thenp = expr()
+          def onelegged(): Unit = {
+            thenp match {
+              case Block(_, res) => res.updateAttachment(TypedExpectingUnitAttachment)
+              case _ => ()
+            }
+            thenp.updateAttachment(TypedExpectingUnitAttachment)
+          }
           val elsep =
             if (in.token == ELSE) {
               in.nextToken()
-              expr()
+              expr() match {
+                case empty @ Literal(Constant(())) if settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value =>
+                  onelegged()
+                  empty
+                case nonempty => nonempty
+              }
             }
             else {
               // user asked to silence warnings on unibranch if; also suppresses value discard
-              if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
-                thenp match {
-                  case Block(_, res) => res.updateAttachment(TypedExpectingUnitAttachment)
-                  case _ => ()
-                }
-                thenp.updateAttachment(TypedExpectingUnitAttachment)
-              }
+              if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value)
+                onelegged()
               literalUnit
             }
           If(cond, thenp, elsep)
@@ -2045,8 +2052,8 @@ self =>
       if (cases.isEmpty)  // trigger error if there are no cases
         accept(CASE)
 
-      // treat { case P => q case _ => () } like one-legged if
-      if (cases.lengthCompare(2) == 0) {
+      // treat { case P => q case _ => () } like one-legged if [where the second leg is always ()]
+      if (cases.lengthCompare(2) == 0 && settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
         cases match {
           case nonempty :: CaseDef(Ident(nme.USCOREkw), EmptyTree, Literal(Constant(()))) :: Nil =>
             nonempty.body.updateAttachment(TypedExpectingUnitAttachment)

@@ -15,14 +15,15 @@ package scala.concurrent
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 
-import scala.util.control.{NonFatal, NoStackTrace}
-import scala.util.{Failure, Success, Try}
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.collection.BuildFrom
 import scala.collection.mutable.{Builder, ArrayBuffer}
-import scala.reflect.ClassTag
-
 import scala.concurrent.ExecutionContext.parasitic
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
+import scala.util.control.{NonFatal, NoStackTrace}
+
 
 /** A `Future` represents a value which may or may not be currently available,
  *  but will be available at some point, or an exception if that value could not be made available.

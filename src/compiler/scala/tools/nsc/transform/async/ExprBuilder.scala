@@ -12,8 +12,8 @@
 
 package scala.tools.nsc.transform.async
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.annotation.nowarn
+import scala.collection.mutable, mutable.ListBuffer
 
 trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   import global._
