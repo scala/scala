@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
+
 trait StdAttachments {
   self: Analyzer =>
 
@@ -218,6 +220,7 @@ trait MacroAnnotationAttachments {
       sym.updateAttachment(SymbolCompleterAttachment(sym.rawInfo))
     } else sym
   }
+  @nowarn("cat=w-flag-value-discard")
   def restoreCompleter(sym: Symbol): Unit =
     if (sym != null && sym != NoSymbol) {
       val oldCompleter = sym.attachments.get[SymbolCompleterAttachment].get.info

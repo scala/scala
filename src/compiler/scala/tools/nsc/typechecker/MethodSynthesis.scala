@@ -188,6 +188,7 @@ trait MethodSynthesis {
       deriveBeanAccessors(tree, namer)
     }
 
+    @nowarn("cat=w-flag-value-discard")
     private def deriveBeanAccessors(tree: ValDef, namer: Namer): Unit = {
       // TODO: can we look at the annotations symbols? (name-based introduced in 8cc477f8b6, see neg/t3403)
       val hasBeanProperty = tree.mods hasAnnotationNamed tpnme.BeanPropertyAnnot

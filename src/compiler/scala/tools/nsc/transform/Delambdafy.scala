@@ -395,6 +395,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     private var currentMethod: Symbol = NoSymbol
 
+    @nowarn("cat=w-flag-value-discard")
     override def traverse(tree: Tree) = tree match {
       case _: DefDef if tree.symbol.hasFlag(SYNCHRONIZED) =>
         thisReferringMethods.add(tree.symbol): @nowarn("cat=w-flag-value-discard")

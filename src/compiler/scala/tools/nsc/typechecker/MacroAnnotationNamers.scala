@@ -180,6 +180,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     protected def finishSymbol(tree: Tree): Unit = {
       // annotations on parameters expand together with their owners
       // therefore when we actually get to enter the parameters, we shouldn't even bother checking

@@ -1094,6 +1094,7 @@ private[internal] trait TypeMaps {
       new CollectingTraverser(inTree)
     }
 
+    @nowarn("cat=w-flag-value-discard")
     override def foldOver(arg: Tree) = if (!result) findInTree.collect(arg)
   }
 

@@ -544,6 +544,7 @@ trait Namers extends MethodSynthesis {
       // warn proactively if specific import loses to definition in scope,
       // since it may result in desired implicit not imported into scope.
       def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
+        @nowarn("cat=w-flag-value-discard")
         def check(to: Name): Unit = {
           val e = context.scope.lookupEntry(to)
 
@@ -554,7 +555,7 @@ trait Namers extends MethodSynthesis {
             val defSym = context.prefix.member(to) filter (
               sym => sym.exists && context.isAccessible(sym, context.prefix, superAccess = false))
 
-            defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
+            defSym.andAlso(typer.permanentlyHiddenWarning(pos, to0, _))
           }
         }
         if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {
@@ -1911,6 +1912,7 @@ trait Namers extends MethodSynthesis {
      * @param cdef is the class definition of the case class
      * @param namer is the namer of the module class (the comp. obj)
      */
+    @nowarn("cat=w-flag-value-discard")
     def addApplyUnapply(cdef: ClassDef, namer: Namer): Unit = {
       if (!cdef.symbol.hasAbstractFlag)
         namer.enterSyntheticSym(caseModuleApplyMeth(cdef))

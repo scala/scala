@@ -367,6 +367,7 @@ abstract class Pickler extends SubComponent {
     private object putTreeTraverser extends Traverser {
       // Only used when pickling trees, i.e. in an argument of some Annotation
       // annotations in Modifiers are removed by the typechecker
+      @nowarn("cat=w-flag-value-discard")
       override def traverseModifiers(mods: Modifiers): Unit = if (putEntry(mods)) putEntry(mods.privateWithin)
       @nowarn("cat=w-flag-value-discard")
       override def traverseName(name: Name): Unit           = putEntry(name)

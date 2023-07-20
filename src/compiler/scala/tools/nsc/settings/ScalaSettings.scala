@@ -333,6 +333,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
   // when `-opt` is passed without explicit choices. When `-opt` is not explicitly specified, the
   // set `opt.value` is empty.
+  @nowarn("cat=w-flag-value-discard")
   val opt = MultiChoiceSetting(
     name = "-opt",
     helpArg = "optimization",

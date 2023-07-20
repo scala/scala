@@ -162,14 +162,13 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
   def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity): Unit = {
-      if (!(written contains tpl)) {
+    def writeTemplate(tpl: DocTemplateEntity): Unit =
+      if (!written.contains(tpl)) {
         val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
         writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))
         written += tpl
-        tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate
+        tpl.templates.collect { case d: DocTemplateEntity => d }.foreach(writeTemplate)
       }
-    }
 
     writeTemplate(universe.rootPackage)
   }

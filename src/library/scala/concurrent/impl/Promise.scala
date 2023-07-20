@@ -169,6 +169,7 @@ private[concurrent] object Promise {
       }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     override final def foreach[U](f: T => U)(implicit executor: ExecutionContext): Unit = {
       val state = get()
       if (!state.isInstanceOf[Failure[_]]) dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_foreach, f, executor))
@@ -345,6 +346,7 @@ private[concurrent] object Promise {
 
     /** Link this promise to the root of another promise.
      */
+    @nowarn("cat=w-flag-value-discard")
     @tailrec private[concurrent] final def linkRootOf(target: DefaultPromise[T], link: Link[T]): Unit =
       if (this ne target) {
         val state = get()
@@ -457,6 +459,7 @@ private[concurrent] object Promise {
     }
 
     // Gets invoked by the ExecutionContext, when we have a value to transform.
+    @nowarn("cat=w-flag-value-discard")
     override final def run(): Unit = {
       val v   = _arg
       val fun = _fun

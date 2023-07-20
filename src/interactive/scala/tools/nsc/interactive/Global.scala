@@ -1313,7 +1313,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         try reloadSources(List(source))
         finally {
           waitLoadedTyped(source, response, keepLoaded, onSameThread = true)
-          if (!keepLoaded) removeUnitOf(source)
+          if (!keepLoaded) removeUnitOf(source): @nowarn("cat=w-flag-value-discard")
         }
     }
   }

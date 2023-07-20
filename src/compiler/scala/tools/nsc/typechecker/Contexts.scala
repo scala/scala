@@ -1789,6 +1789,7 @@ trait Contexts { self: Analyzer =>
     // can we encode this statically?
 
     // have to pass in context because multiple contexts may share the same ContextReporter
+    @nowarn("cat=w-flag-value-discard")
     def reportFirstDivergentError(fun: Tree, param: Symbol, paramTp: Type)(implicit context: Context): Unit =
       errors.collectFirst {
         case dte: DivergentImplicitTypeError => dte

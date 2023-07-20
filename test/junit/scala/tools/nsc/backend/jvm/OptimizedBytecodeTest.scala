@@ -6,7 +6,7 @@ import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
-import scala.tools.testkit.AssertUtils.assertSucceeds
+import scala.tools.testkit.AssertUtil.assertSucceeds
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 

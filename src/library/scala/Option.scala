@@ -12,6 +12,8 @@
 
 package scala
 
+import scala.annotation.nowarn
+
 object Option {
 
   import scala.language.implicitConversions
@@ -433,6 +435,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    *  @see map
    *  @see flatMap
    */
+  @nowarn("cat=w-flag-value-discard")
   @inline final def foreach[U](f: A => U): Unit = {
     if (!isEmpty) f(this.get)
   }

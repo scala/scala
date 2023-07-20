@@ -16,7 +16,7 @@ class PerRunInitTestMap extends PerRunInitTest {
   override def newData(): Data = underTest.recordPerRunCache(mutable.Map.empty)
   override def dontClear(data: Data): Unit = underTest.global.perRunCaches.unrecordCache(data)
 
-  override def add(id: Int, data: Data): Unit = data.addOne(s"key $id", s"value $id")
+  override def add(id: Int, data: Data): Unit = data.addOne((s"key $id", s"value $id"))
 
   override def sizeOf(data: Data): Int = data.size
 

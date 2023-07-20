@@ -5221,14 +5221,13 @@ trait Types
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `found <:< required`. */
-  def explainTypes(found: Type, required: Type): Unit = {
+  @nowarn("cat=w-flag-value-discard")
+  def explainTypes(found: Type, required: Type): Unit =
     if (settings.explaintypes.value) withTypesExplained(found <:< required)
-  }
 
   /** If option `explaintypes` is set, print a subtype trace for `op(found, required)`. */
-  def explainTypes(op: (Type, Type) => Any, found: Type, required: Type): Unit = {
+  def explainTypes(op: (Type, Type) => Any, found: Type, required: Type): Unit =
     if (settings.explaintypes.value) withTypesExplained(op(found, required))
-  }
 
   /** Execute `op` while printing a trace of the operations on types executed. */
   def withTypesExplained[A](op: => A): A = {

@@ -107,6 +107,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   }
 
   /** Does this abstract file denote an existing file? */
+  @nowarn("cat=w-flag-value-discard")
   def create(): Unit = if (!exists) givenPath.createFile()
 
   /** Delete the underlying file or directory (recursively). */
@@ -214,6 +215,7 @@ final class PlainNioFile(val nioPath: java.nio.file.Path) extends AbstractFile {
   def create(): Unit = if (!exists)  Files.createFile(nioPath)
 
   /** Delete the underlying file or directory (recursively). */
+  @nowarn("cat=w-flag-value-discard")
   def delete(): Unit =
     if (Files.isRegularFile(nioPath)) Files.deleteIfExists(nioPath)
     else if (Files.isDirectory(nioPath)) new Directory(nioPath.toFile).deleteRecursively()

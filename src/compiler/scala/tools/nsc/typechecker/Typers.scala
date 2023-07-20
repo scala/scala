@@ -431,16 +431,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       lockedSym.unlock()
     }
 
-    def checkNonCyclic(sym: Symbol): Unit = {
+    def checkNonCyclic(sym: Symbol): Unit =
       if (!checkNonCyclic(sym.pos, sym.tpe_*)) sym.setInfo(ErrorType)
-    }
 
-    def checkNonCyclic(defn: Tree, tpt: Tree): Unit = {
+    @nowarn("cat=w-flag-value-discard")
+    def checkNonCyclic(defn: Tree, tpt: Tree): Unit =
       if (!checkNonCyclic(defn.pos, tpt.tpe, defn.symbol)) {
         tpt setType ErrorType
         defn.symbol.setInfo(ErrorType)
       }
-    }
 
     def reenterValueParams(vparamss: List[List[ValDef]]): Unit = {
       for (vparams <- vparamss)

@@ -785,6 +785,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       private[this] var pendingLoadActions: List[() => Unit] = Nil
       private[this] val relatedSymbols = clazz +: (if (module != NoSymbol) List(module, module.moduleClass) else Nil)
 
+      @nowarn("cat=w-flag-value-discard")
       override def load(sym: Symbol): Unit = {
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
@@ -826,10 +827,10 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
         def enter(sym: Symbol, mods: JavaAccFlags) = followStatic(clazz, module, mods).info.decls enter sym
 
-        def enterEmptyCtorIfNecessary(): Unit = {
+        @nowarn("cat=w-flag-value-discard")
+        def enterEmptyCtorIfNecessary(): Unit =
           if (jclazz.getConstructors.isEmpty)
             clazz.info.decls.enter(clazz.newClassConstructor(NoPosition))
-        }
 
         for (jinner <- jclazz.getDeclaredClasses) {
           jclassAsScala(jinner) // inner class is entered as a side-effect

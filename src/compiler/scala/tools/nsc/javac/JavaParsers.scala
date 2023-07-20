@@ -581,12 +581,12 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM, typeNames.EMPTY, anns), t, ident().toTermName)
     }
 
-    def optThrows(): Unit = {
+    @nowarn("cat=w-flag-value-discard")
+    def optThrows(): Unit =
       if (in.token == THROWS) {
         in.nextToken()
         repsep(() => typ(), COMMA)
       }
-    }
 
     def methodBody(): Tree = {
       skipAhead()

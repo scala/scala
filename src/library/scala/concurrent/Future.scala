@@ -733,6 +733,7 @@ object Future {
     else {
       val p = Promise[T]()
       val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
+        @nowarn("cat=w-flag-value-discard")
         override final def apply(v1: Try[T]): Unit =  {
           val r = getAndSet(null)
           if (r ne null)

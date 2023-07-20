@@ -134,6 +134,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def forkAt(start: Addr): TreeReader = new TreeReader(subReader(start, endAddr))
     def fork: TreeReader = forkAt(currentAddr)
 
+    @nowarn("cat=w-flag-value-discard")
     def skipTree(tag: Int): Unit =
       if (tag >= firstLengthTreeTag) goto(readEnd())
       else if (tag >= firstNatASTTreeTag) { readNat(); skipTree() }
@@ -154,6 +155,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *  Template node, but need to be listed separately in the OwnerTree of the enclosing class
      *  in order not to confuse owner chains.
      */
+    @nowarn("cat=w-flag-value-discard")
     def scanTree(buf: mutable.ListBuffer[OwnerTree], mode: MemberDefMode): Unit = {
       val start = currentAddr
       val tag = readByte()

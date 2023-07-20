@@ -109,7 +109,8 @@ abstract class PostProcessor extends PerRunInit {
     }
   }
 
-  def runGlobalOptimizations(generatedUnits: Iterable[GeneratedCompilationUnit]): Unit = {
+  @nowarn("cat=w-flag-value-discard")
+  def runGlobalOptimizations(generatedUnits: Iterable[GeneratedCompilationUnit]): Unit =
     // add classes to the bytecode repo before building the call graph: the latter needs to
     // look up classes and methods in the code repo.
     if (compilerSettings.optAddToBytecodeRepository) {
@@ -125,7 +126,6 @@ abstract class PostProcessor extends PerRunInit {
       else if (compilerSettings.optClosureInvocations)
         closureOptimizer.rewriteClosureApplyInvocations(None, mutable.Map.empty)
     }
-  }
 
   @nowarn("cat=w-flag-value-discard")
   def localOptimizations(classNode: ClassNode): Unit = {

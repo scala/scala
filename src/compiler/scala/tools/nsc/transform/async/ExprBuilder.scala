@@ -206,6 +206,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     }
     def isRoot = outer.isEmpty
 
+    @nowarn("cat=w-flag-value-discard")
     private def addStats(): Unit = {
       stats.foreach(stat => add(stat, isExpr = false))
       add(expr, isExpr = true)
