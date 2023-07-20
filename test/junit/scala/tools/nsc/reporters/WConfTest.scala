@@ -142,14 +142,14 @@ class WConfTest extends BytecodeTesting {
   @Test
   def warnVerbose: Unit =
     check(reports(code, "any:wv"), List(
-      l5a.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l5a._2),
-      l5b.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.g | version=1.2.3] " + l5b._2),
-      l7.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l7._2),
-      l9.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l9._2),
-      l11.copy(_2 = "[other @ A.fruitlessTypeTest] " + l11._2),
-      l13.copy(_2 = "[unchecked @ A.uncheckedTypeTest] " + l13._2),
-      l16.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l16._2),
-      l20.copy(_2 = "[optimizer @ A.optimizerWarning] " + l20._2),
+      l5a.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=deprecation, site=A.invokeDeprecated, origin=A.f"),
+      l5b.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=deprecation, site=A.invokeDeprecated, origin=A.g, version=1.2.3"),
+      l7.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=feature-reflective-calls, site=A.featureReflectiveCalls"),
+      l9.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=A.pureExpressionAsStatement"),
+      l11.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other, site=A.fruitlessTypeTest"),
+      l13.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=unchecked, site=A.uncheckedTypeTest"),
+      l16.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=unchecked, site=A.Outer.UncheckedWarningSummarized.equals"),
+      l20.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=optimizer, site=A.optimizerWarning"),
       )
     )
 
@@ -233,7 +233,7 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def unusedSite(): Unit = {
-    check(infos(code, "cat=unused:iv", lint = true), (25, "[unused-locals @ A.unusedLocal.h] local val h in method unusedLocal is never used") :: Nil)
+    check(infos(code, "cat=unused:iv", lint = true), (25, "local val h in method unusedLocal is never used\nApplicable -Wconf / @nowarn filters for this message: msg=<part of the message>, cat=unused-locals, site=A.unusedLocal.h") :: Nil)
     check(errors(code, "site=A\\.unusedLocal\\..*:e", lint = true), l25 :: Nil)
   }
 

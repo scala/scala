@@ -1,9 +1,13 @@
 deprecate_package_object_extends.scala:3: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
 drop the `extends` clause or use a regular object instead
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 package object foo extends C
                    ^
 deprecate_package_object_extends.scala:5: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
 drop the `extends` clause or use a regular object instead
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 package foo2 { object `package` extends C }
                                 ^
 2 errors
