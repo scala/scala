@@ -16,7 +16,7 @@ package scala.tools.nsc.interpreter
 package shell
 
 import java.io.{BufferedReader, PrintWriter}
-import java.nio.file.Files
+import java.nio.file.{Files, Path => JPath}
 import java.util.concurrent.TimeUnit
 
 import scala.PartialFunction.cond
@@ -27,6 +27,7 @@ import scala.language.implicitConversions
 import scala.reflect.classTag
 import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.{AbstractFile, Directory, File, Path}
+import scala.sys.process.Parser.tokenize
 import scala.tools.asm.ClassReader
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{stackTraceString, stringFromStream}
@@ -54,6 +55,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   def Repl(config: ShellConfig, interpreterSettings: Settings, out: PrintWriter) =
     new IMain(interpreterSettings, None, interpreterSettings, new ReplReporterImpl(config, interpreterSettings, out))
 
+  def global = intp.asInstanceOf[IMain].global
 
   // Set by run and interpretAllFrom (to read input from file).
   private var in: InteractiveReader = _
@@ -70,6 +72,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     else SimpleReader()
 
   private val interpreterInitialized = new java.util.concurrent.CountDownLatch(1)
+
+  def createTempDirectory(): JPath = Files.createTempDirectory("scala-repl").tap(_.toFile().deleteOnExit())
 
   // TODO: move echo and friends to ReplReporterImpl
   // When you know you are most likely breaking into the middle
@@ -655,14 +659,13 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def loadCommand(arg: String): Result = {
-    import scala.sys.process.{Parser => CommandLineParser}
     def run(file: String, args: List[String], verbose: Boolean) = withFile(file) { f =>
       intp.interpret(s"val args: Array[String] = ${ args.map("\"" + _ + "\"").mkString("Array(", ",", ")") }")
       interpretAllFrom(f, verbose)
       Result recording s":load $arg"
     } getOrElse Result.default
 
-    CommandLineParser.tokenize(arg) match {
+    tokenize(arg) match {
       case "-v" :: file :: rest => run(file, rest, verbose = true)
       case file :: rest         => run(file, rest, verbose = false)
       case _                    => echo("usage: :load -v file") ; Result.default
@@ -771,64 +774,79 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
    * :paste <~ EOF
    *   ~your code
    * EOF
+   * and optionally
+   * :paste -java
    */
   def pasteCommand(arg: String): Result = {
     var shouldReplay: Option[String] = None
     var label = "<pastie>"
     def result = Result(keepRunning = true, shouldReplay)
-    val (raw, file, margin) =
-      if (arg.isEmpty) (false, None, None)
-      else {
-        def maybeRaw(ss: List[String]) = if (ss.nonEmpty && ss.head == "-raw") (true, ss.tail) else (false, ss)
-        def maybeHere(ss: List[String]) =
-          if (ss.nonEmpty && ss.head.startsWith("<")) (ss.head.dropWhile(_ == '<'), ss.tail)
-          else (null, ss)
-
-        val (raw0, ss0) = maybeRaw(words(arg))
-        val (margin0, ss1) = maybeHere(ss0)
-        val file0 = ss1 match {
-          case Nil      => null
-          case x :: Nil => x
-          case _        => echo("usage: :paste [-raw] file | < EOF") ; return result
-        }
-        (raw0, Option(file0), Option(margin0))
-      }
-    val code = (file, margin) match {
-      case (Some(name), None) =>
-        label = name
-        withFile(name) { f =>
-          shouldReplay = Some(s":paste $arg")
-          val s = f.slurp().trim()
-          if (s.isEmpty) echo(s"File contains no code: $f")
-          else echo(s"Pasting file $f...")
-          s
-        } getOrElse ""
-      case (eof, _) =>
-        echo(s"// Entering paste mode (${ eof getOrElse "ctrl-D" } to finish)\n")
-        in.withSecondaryPrompt("") {
-          val delimiter = eof orElse config.pasteDelimiter.option
-          val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
-          val text = (
-            margin filter (_.nonEmpty) map {
-              case "-" => input.linesIterator map (_.trim) mkString "\n"
-              case m => input stripMargin m.head // ignore excess chars in "<<||"
-            } getOrElse input
-            ).trim
-          if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
-          else echo("\n// Exiting paste mode, now interpreting.\n")
-          text
-        }
+    val (flags, args) = tokenize(arg).span(_.startsWith("-"))
+    def raw  = flags.contains("-raw")
+    def java = flags.contains("-java")
+    def usage() = echo("usage: :paste [-raw | -java] file | < EOF")
+    def pasteFile(name: String): String = {
+      label = name
+      withFile(name) { f =>
+        shouldReplay = Some(s":paste $arg")
+        f.slurp().trim().tap(s => echo(if (s.isEmpty) s"File contains no code: $f" else s"Pasting file $f..."))
+      }.getOrElse("")
     }
-    def interpretCode() = {
-      if (intp.withLabel(label)(intp interpret code) == Incomplete)
+    def pasteWith(margin: String, eof: Option[String]): String = {
+      echo(s"// Entering paste mode (${ eof getOrElse "ctrl-D" } to finish)\n")
+      in.withSecondaryPrompt("") {
+        val delimiter = eof.orElse(config.pasteDelimiter.option)
+        def atEOF(s: String) = delimiter.map(_ == s).getOrElse(false)
+        val input = readWhile(s => !atEOF(s)).mkString("\n")
+        val text =
+          margin match {
+            case ""  => input.trim
+            case "-" => input.linesIterator.map(_.trim).mkString("\n")
+            case _   => input.stripMargin(margin.head).trim
+          }
+        echo(if (text.isEmpty) "\n// Nothing pasted, nothing gained.\n" else "\n// Exiting paste mode, now interpreting.\n")
+        text
+      }
+    }
+    def interpretCode(code: String) =
+      if (intp.withLabel(label)(intp.interpret(code)) == Incomplete)
         paste.incomplete("The pasted code is incomplete!\n", label, code)
-    }
-    def compileCode() = paste.compilePaste(label = label, code = code)
-
-    if (code.nonEmpty)
-      intp.reporter.indenting(0) {
-        if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
+    def compileCode(code: String) = paste.compilePaste(label = label, code = code)
+    def compileJava(code: String): Unit = {
+      def pickLabel() = {
+        val gstable = global
+        val jparser = gstable.newJavaUnitParser(gstable.newCompilationUnit(code = code))
+        val result = jparser.parse().collect {
+          case gstable.ClassDef(mods, className, _, _) if mods.isPublic => className
+        }
+        result.headOption
       }
+      pickLabel() match {
+        case Some(className) =>
+          label = s"${className.decoded}"
+          val out = createTempDirectory()
+          JavacTool(out, intp.classLoader).compile(label, code) match {
+            case Some(errormsg) => echo(s"Compilation failed! $errormsg")
+            case None => intp.addUrlsToClassPath(out.toUri().toURL())
+          }
+        case _ =>
+          echo(s"No class detected in source!")
+      }
+    }
+    def dispatch(code: String): Unit =
+      if (code.nonEmpty)
+        intp.reporter.indenting(0) {
+          if (java) compileJava(code)
+          else if (raw || paste.isPackaged(code)) compileCode(code)
+          else interpretCode(code)
+        }
+    args match {
+      case name :: Nil if !name.startsWith("<")       => dispatch(pasteFile(name))
+      case Nil                                        => dispatch(pasteWith("", None))
+      case here :: Nil                                => dispatch(pasteWith(here.slice(1, 2), None))
+      case here :: eof :: Nil if here.startsWith("<") => dispatch(pasteWith(here.slice(1, 2), Some(eof)))
+      case _ => usage()
+    }
     result
   }
 

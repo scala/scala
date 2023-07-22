@@ -441,14 +441,11 @@ object JavapTool {
 
 // Machinery to run JavapTask reflectively
 class JavapTask(val loader: ScalaClassLoader, intp: Repl) extends JavapTool {
-  import javax.tools.{Diagnostic, DiagnosticListener,
+  import javax.tools.{DiagnosticListener,
                     ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
                     SimpleJavaFileObject, StandardLocation}
   import java.io.CharArrayWriter
-  import java.util.Locale
-  import java.util.concurrent.ConcurrentLinkedQueue
   import scala.jdk.CollectionConverters._
-  import scala.collection.mutable.Clearable
   import JavapTool._
   import Javap.{filterLines, showable}
 
@@ -471,22 +468,6 @@ class JavapTask(val loader: ScalaClassLoader, intp: Repl) extends JavapTool {
   //  val Ok, Error, CmdErr, SysErr, Abnormal = Value
   //}
 
-  class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
-    type D = Diagnostic[_ <: JavaFileObject]
-    val diagnostics = new ConcurrentLinkedQueue[D]
-    override def report(d: Diagnostic[_ <: JavaFileObject]) = diagnostics.add(d)
-    override def clear() = diagnostics.clear()
-    /** All diagnostic messages.
-     *  @param locale Locale for diagnostic messages, null by default.
-     */
-    def messages(implicit locale: Locale = null) = diagnostics.asScala.map(_.getMessage(locale)).toList
-
-    def reportable(): String = {
-      import scala.util.Properties.lineSeparator
-      clear()
-      if (messages.nonEmpty) messages.mkString("", lineSeparator, lineSeparator) else ""
-    }
-  }
   val reporter = new JavaReporter
 
   // DisassemblerTool.getStandardFileManager(reporter,locale,charset)
@@ -553,8 +534,8 @@ class JavapTask(val loader: ScalaClassLoader, intp: Repl) extends JavapTool {
     case Input(target, actual, Success(_)) =>
       import java.lang.reflect.InvocationTargetException
       try {
-        if (task(options, Seq(actual), inputs).call()) JpResult(showable(intp, filter, filterLines(target, s"${reporter.reportable()}${written}")))
-        else JpResult(reporter.reportable())
+        if (task(options, Seq(actual), inputs).call()) JpResult(showable(intp, filter, filterLines(target, s"${reporter.reported()}${written}")))
+        else JpResult(reporter.reported())
       } catch {
         case e: InvocationTargetException  => e.getCause match {
           case t: IllegalArgumentException => JpResult(t.getMessage) // bad option
