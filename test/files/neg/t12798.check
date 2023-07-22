@@ -4,47 +4,75 @@ To express the assignment expression, wrap it in brackets, e.g., `{ z = ... }`.
     f(42, z = 27)
             ^
 t12798.scala:25: error: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_- = -42`
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def unary_-() = -42
       ^
 t12798.scala:28: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
 drop the `extends` clause or use a regular object instead
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 package object tester extends Runnable {
                       ^
 t12798.scala:33: error: procedure syntax is deprecated for constructors: add `=`, as in method definition
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def this(s: String) { this() }
                      ^
 t12798.scala:34: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f() { println() }
           ^
 t12798.scala:35: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def g()
          ^
 t12798.scala:39: error: parentheses are required around the parameter of a lambda
 Use '-Wconf:msg=lambda-parens:s' to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f = List(42).map { x: Int => x + 1 }
                           ^
 t12798.scala:43: error: type application is not allowed for infix operators
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f = List(42) map [Int] (_ + 1)
                    ^
 t12798.scala:46: error: Top-level wildcard is not allowed
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 class `misuse of underscore`[_]
                              ^
 t12798.scala:48: error: early initializers are deprecated; use trait parameters instead.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 class `early bird` extends { val x = "hello, world" } with Runnable { def run() = println(x) }
                            ^
 t12798.scala:17: error: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=interpolated unicode such as C.f
   def f = raw"\u0043 is for $entry"
               ^
 t12798.scala:18: error: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=interpolated unicode such as C.g
   def g = raw"""\u0043 is for Cat"""
                 ^
 t12798.scala:50: error: constructor modifiers are assumed by synthetic `copy` method
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=case mods propagate
 case class `case mods propagate` private (s: String)
            ^
 t12798.scala:60: error: under -Xsource:3, inferred Option[Int] instead of Some[Int]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Child.f
   override def f = Some(27)
                ^
 t12798.scala:52: error: constructor modifiers are assumed by synthetic `apply` method
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=copyless case mods propagate
 case class `copyless case mods propagate` private (s: String) {
            ^
 15 errors

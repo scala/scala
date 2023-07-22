@@ -73,7 +73,7 @@ trait Warnings {
          |  - error / e
          |  - warning / w
          |  - warning-summary / ws (summary with the number of warnings, like for deprecations)
-         |  - warning-verbose / wv (show warning category and site)
+         |  - warning-verbose / wv (show applicable filters with each warning)
          |  - info / i             (infos are not counted as warnings and don't affect `-Werror`)
          |  - info-summary / is
          |  - info-verbose / iv

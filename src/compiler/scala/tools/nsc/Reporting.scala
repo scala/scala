@@ -119,17 +119,27 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     private def issueWarning(warning: Message): Unit = {
-      def verbose = warning match {
-        case Message.Deprecation(_, msg, site, origin, version, _) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.filterString}] $msg"
-        case Message.Origin(_, msg, category, site, origin @ _, _) => s"[${category.name} @ $site] $msg"  // origin text is obvious at caret
-        case Message.Plain(_, msg, category, site, _) => s"[${category.name} @ $site] $msg"
-      }
+      def ifNonEmpty(kind: String, filter: String) = if (filter.nonEmpty) s", $kind=$filter" else ""
+      def filterHelp =
+        s"msg=<part of the message>, cat=${warning.category.name}" +
+          ifNonEmpty("site", warning.site) +
+          (warning match {
+            case Message.Deprecation(_, _, _, origin, version, _) =>
+              ifNonEmpty("origin", origin) + ifNonEmpty("version", version.filterString)
+            case _ => ""
+          })
+      def scala3migration(isError: Boolean) =
+        if (isError && isScala3 && warning.category == WarningCategory.Scala3Migration)
+          "\nScala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings."
+        else ""
+      def helpMsg(kind: String, isError: Boolean = false) =
+        s"${warning.msg}${scala3migration(isError)}\nApplicable -Wconf / @nowarn filters for this $kind: $filterHelp"
       wconf.action(warning) match {
-        case Action.Error => reporter.error(warning.pos, warning.msg, warning.actions)
+        case Action.Error => reporter.error(warning.pos, helpMsg("fatal warning", isError = true), warning.actions)
         case Action.Warning => reporter.warning(warning.pos, warning.msg, warning.actions)
-        case Action.WarningVerbose => reporter.warning(warning.pos, verbose, warning.actions)
+        case Action.WarningVerbose => reporter.warning(warning.pos, helpMsg("warning"), warning.actions)
         case Action.Info => reporter.echo(warning.pos, warning.msg, warning.actions)
-        case Action.InfoVerbose => reporter.echo(warning.pos, verbose, warning.actions)
+        case Action.InfoVerbose => reporter.echo(warning.pos, helpMsg("message"), warning.actions)
         case a @ (Action.WarningSummary | Action.InfoSummary) =>
           val m = summaryMap(a, warning.category.summaryCategory)
           if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
