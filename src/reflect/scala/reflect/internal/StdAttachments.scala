@@ -153,7 +153,7 @@ trait StdAttachments {
   /** For `val i = 42`, marks field as inferred so accessor (getter) can warn if implicit. */
   case object FieldTypeInferred extends PlainAttachment
 
-  case class LookupAmbiguityWarning(msg: String) extends PlainAttachment
+  case class LookupAmbiguityWarning(msg: String, fix: String) extends PlainAttachment
 
   /** Java sealed classes may be qualified with a permits clause specifying allowed subclasses. */
   case class PermittedSubclasses(permits: List[Tree]) extends PlainAttachment
