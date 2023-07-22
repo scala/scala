@@ -1925,7 +1925,7 @@ abstract class RefChecks extends Transform {
 
           case _: TypeTreeWithDeferredRefCheck => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
           case tpt@TypeTree() =>
-            if(tpt.original != null) {
+            if (tpt.original != null) {
               tpt.original foreach {
                 case dc: TypeTreeWithDeferredRefCheck =>
                   transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results

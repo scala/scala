@@ -1,0 +1,6 @@
+value-discard-if.scala:12: warning: discarded non-Unit value of type Int
+    case 42 => body           // warn
+               ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -16,6 +16,7 @@ package concurrent
 
 import java.util.concurrent.atomic._
 import scala.{unchecked => uc}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap.RemovalPolicy
 import scala.collection.generic.DefaultSerializable
@@ -391,13 +392,11 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     }
   }
 
-  private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int): Unit = {
-    val m = nd.GCAS_READ(ct)
-    m match {
-      case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct)
-      case _ =>
+  private def clean(nd: INode[K, V], ct: TrieMap[K, V], lev: Int): Unit =
+    nd.GCAS_READ(ct) match {
+      case cn: CNode[K, V] => nd.GCAS(cn, cn.toCompressed(ct, lev, gen), ct): @nowarn("cat=w-flag-value-discard")
+      case _ => ()
     }
-  }
 
   def isNullInode(ct: TrieMap[K, V]) = GCAS_READ(ct) eq null
 

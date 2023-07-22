@@ -77,7 +77,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   private val _transcript = new TestTranscript
 
-  def pushTranscript(msg: String) = _transcript.add(msg)
+  @nowarn("cat=w-flag-value-discard")
+  def pushTranscript(msg: String): Unit = _transcript.add(msg)
 
   lazy val outDir = { outFile.mkdirs() ; outFile }
 
@@ -704,6 +705,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     result andAlso diffIsOk
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def cleanup(state: TestState): Unit = {
     if (state.isOk) logFile.delete()
     if (!suiteRunner.debug) Directory(outDir).deleteRecursively()

@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.AbstractIterator
 import scala.collection.mutable
@@ -420,6 +421,7 @@ abstract class BoxUnbox {
 
       // We don't need to worry about CallGraph.closureInstantiations and
       // BackendUtils.indyLambdaImplMethods, the removed instructions are not IndyLambdas
+      @nowarn("cat=w-flag-value-discard")
       def removeFromCallGraph(insn: AbstractInsnNode): Unit = insn match {
         case mi: MethodInsnNode => callGraph.removeCallsite(mi, method)
         case _ =>

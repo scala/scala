@@ -2112,6 +2112,7 @@ trait Namers extends MethodSynthesis {
 
   abstract class TypeCompleter extends LazyType {
     def tree: Tree
+    @nowarn("cat=w-flag-value-discard")
     override def forceDirectSuperclasses(): Unit =
       tree.foreach {
         case dt: DefTree => global.withPropagateCyclicReferences(Option(dt.symbol).map(_.maybeInitialize))

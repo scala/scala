@@ -220,7 +220,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
             printMethod(flags, name, tpe, attribs)
       }
       undent.print("}").newline
-    }
+    }: @nowarn("cat=w-flag-value-discard")
   }
 
 }

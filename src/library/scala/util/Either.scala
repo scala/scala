@@ -13,6 +13,8 @@
 package scala
 package util
 
+import scala.annotation.nowarn
+
 /** Represents a value of one of two possible types (a disjoint union).
  *  An instance of `Either` is an instance of either [[scala.util.Left]] or [[scala.util.Right]].
  *
@@ -264,6 +266,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  }}}
    *  @param f The side-effecting function to execute.
    */
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: B => U): Unit = this match {
     case Right(b) => f(b)
     case _        =>
@@ -545,6 +548,7 @@ object Either {
      *  }}}
      *  @param f The side-effecting function to execute.
      */
+    @nowarn("cat=w-flag-value-discard")
     def foreach[U](f: A => U): Unit = e match {
       case Left(a) => f(a)
       case _       => ()
@@ -704,9 +708,10 @@ object Either {
      *  }}}
      *  @param f The side-effecting function to execute.
      */
+    @nowarn("cat=w-flag-value-discard")
     def foreach[U](f: B => U): Unit = e match {
       case Right(b) => f(b)
-      case _        => ()
+      case _        =>
     }
 
     /** Returns the value from this `Right` or the given argument if this is a `Left`.

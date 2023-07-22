@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
@@ -496,6 +496,7 @@ abstract class LocalOpt {
 
       // We don't need to worry about CallGraph.closureInstantiations and
       // BackendUtils.indyLambdaImplMethods, the removed instructions are not IndyLambdas
+      @nowarn("cat=w-flag-value-discard")
       def removeFromCallGraph(insn: AbstractInsnNode): Unit = insn match {
         case mi: MethodInsnNode => callGraph.removeCallsite(mi, method)
         case _ =>
