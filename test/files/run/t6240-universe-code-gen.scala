@@ -50,6 +50,7 @@ object Test extends App {
         |
         |@nowarn("cat=deprecation&origin=scala\\\\.reflect\\\\.internal\\\\.Internals\\\\.compat")
         |@nowarn("cat=deprecation&origin=scala\\\\.reflect\\\\.internal\\\\.Trees\\\\.emptyValDef")
+        |@nowarn("cat=w-flag-value-discard")
         |trait JavaUniverseForce { self: runtime.JavaUniverse  =>
         |  def force(): Unit = {
         |    Literal(Constant(42)).duplicate
