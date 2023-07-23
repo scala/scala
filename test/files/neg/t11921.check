@@ -8,6 +8,8 @@ it is both defined in the enclosing method lazyMap and inherited in the enclosin
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.coll`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C.lazyMap.$anon.iterator
       def iterator = coll.iterator.map(f)    // coll is ambiguous
                      ^
 2 errors
