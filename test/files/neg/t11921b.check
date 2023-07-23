@@ -6,6 +6,8 @@ it is both defined in the enclosing object Test and inherited in the enclosing c
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test1.Test.D.<local D>
       println(x)  // error
               ^
 t11921b.scala:15: error: reference to x is ambiguous;
@@ -13,6 +15,8 @@ it is both defined in the enclosing object Test and inherited in the enclosing a
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test1.Test.f.$anon.<local $anon>
         println(x)  // error
                 ^
 t11921b.scala:26: error: reference to y is ambiguous;
@@ -20,6 +24,8 @@ it is both defined in the enclosing method c and inherited in the enclosing anon
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test2.c.$anon.<local $anon>
       println(y)  // error
               ^
 t11921b.scala:38: error: reference to y is ambiguous;
@@ -27,6 +33,8 @@ it is both defined in the enclosing method c and inherited in the enclosing clas
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `E.this.y`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test3.c.E.F.<local F>
         println(y)  // error
                 ^
 t11921b.scala:65: error: reference to global is ambiguous;
@@ -34,6 +42,8 @@ it is both defined in the enclosing package <empty> and inherited in the enclosi
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.global`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=D.<local D>
   println(global)    // error
           ^
 t11921b.scala:75: error: reference to x is ambiguous;
@@ -41,6 +51,8 @@ it is both defined in the enclosing object Uhu and inherited in the enclosing cl
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `C.this.x`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test5.Uhu.C.Inner.t
         def t = x // ambiguous, message mentions parent B
                 ^
 t11921b.scala:89: error: reference to a is ambiguous;
@@ -48,6 +60,8 @@ it is both defined in the enclosing class C and inherited in the enclosing trait
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.a`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test6.C.J.t
       val t = a // error
               ^
 t11921b.scala:136: error: reference to lo is ambiguous;
@@ -55,6 +69,8 @@ it is both defined in the enclosing object test10 and inherited in the enclosing
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.lo`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test10.C.v
     def v = t(lo) // error
               ^
 9 errors
