@@ -242,6 +242,17 @@ object StringContext {
         sum + 1
       }
       arr
+      /*
+      def loop(chunks: Seq[String], ttl: Int, i: Int, arr: Array[Int]): Array[Int] =
+        chunks match {
+          case Seq(_) => arr
+          case Seq(h, rest: _*) =>
+            val bump = ttl + h.length
+            arr(bump) = i
+            loop(rest, bump + 1, i + 1, arr)
+        }
+      loop(patternChunks, ttl = 0, i = 0, Array.fill(patternLength + 1)(-1))
+      */
     }
 
     while (patternIndex < patternLength || inputIndex < nameLength) {

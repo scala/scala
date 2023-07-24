@@ -173,7 +173,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   Compile / scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
-    //"-Wvalue-discard", // await restarr
+    "-Wvalue-discard", // await restarr
+    "-Wnonunit-statement", // await restarr
     //"-Wnonunit-if:false", // uncomment to ignore one-legged if or case
   ),
   Compile / doc / scalacOptions ++= Seq(

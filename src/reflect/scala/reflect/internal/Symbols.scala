@@ -18,12 +18,12 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
-import util.{ ReusableInstance, Statistics, shortClassOfInstance }
-import Flags._
-import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
+import util.{ReusableInstance, Statistics, shortClassOfInstance}
+import Flags._
 import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
@@ -1374,10 +1374,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       new TermSymbol(this, pos, name) initFlags newFlags
 
     final def newExtensionMethodSymbol(companion: Symbol, pos: Position): MethodSymbol = {
-      val extensionMeth = (
+      val extensionMeth =
         companion.moduleClass.newMethod(this.name.extensionName, pos, this.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
-          setAnnotations this.annotations
-      )
+          .setAnnotations(this.annotations)
       defineOriginalOwner(extensionMeth, this.owner)
       // @strictfp on class means strictfp on all methods, but `setAnnotations` won't copy it
       if (this.isStrictFP && !extensionMeth.hasAnnotation(ScalaStrictFPAttr))
@@ -1544,6 +1543,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       rawInfo
     }
 
+    @nowarn("cat=w-flag-value-discard")
     private def completeInfo(): Unit = try {
       assert(infos ne null, this.name)
       assert(infos.prev eq null, this.name)
@@ -1554,6 +1554,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo(ErrorType)
           throw CyclicReference(this, tp)
         }
+        ()
       } else {
         _rawflags |= LOCKED
       }
@@ -1584,9 +1585,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def info_=(info: Type): Unit = {
       assert(info ne null, "Can't assign a null type")
-      if (infos ne null) {
+      if (infos ne null)
         infos.reset(currentPeriod, info)
-      } else
+      else
         infos = TypeHistory(currentPeriod, info, null)
       unlock()
       _validTo = if (info.isComplete) currentPeriod else NoPeriod
@@ -1609,8 +1610,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Set the info and enter this symbol into the owner's scope. */
     def setInfoAndEnter(info: Type): this.type = {
       setInfo(info)
-      owner.info.decls enter this
-      this
+      owner.info.decls.enter(this)
     }
 
     /** Set new info valid from start of this phase. */
@@ -1913,26 +1913,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def withoutAnnotations: this.type =
       setAnnotations(Nil)
 
-    def filterAnnotations(p: AnnotationInfo => Boolean): this.type =
-      setAnnotations(annotations filter p)
+    def filterAnnotations(p: AnnotationInfo => Boolean): this.type = setAnnotations(annotations filter p)
+
+    override def removeAnnotation(sym: Symbol): this.type = filterAnnotations(!_.matches(sym))
 
     override def removeAnnotation(sym: Symbol): this.type = filterAnnotations(!_.matches(sym))
 
     def addAnnotation(annot: AnnotationInfo): this.type = setAnnotations(annotations.appended(annot))
 
     // Convenience for the overwhelmingly common cases, and avoid varags and listbuilders
-    final def addAnnotation(sym: Symbol): this.type = {
-      addAnnotation(sym, Nil)
-    }
-    final def addAnnotation(sym: Symbol, arg: Tree): this.type = {
-      addAnnotation(sym, arg :: Nil)
-    }
-    final def addAnnotation(sym: Symbol, arg1: Tree, arg2: Tree): this.type = {
-      addAnnotation(sym, arg1 :: arg2 :: Nil)
-    }
-    final def addAnnotation(sym: Symbol, args: Tree*): this.type = {
-      addAnnotation(sym, args.toList)
-    }
+    final def addAnnotation(sym: Symbol): this.type = addAnnotation(sym, Nil)
+    final def addAnnotation(sym: Symbol, arg: Tree): this.type = addAnnotation(sym, arg :: Nil)
+    final def addAnnotation(sym: Symbol, arg1: Tree, arg2: Tree): this.type = addAnnotation(sym, arg1 :: arg2 :: Nil)
+    final def addAnnotation(sym: Symbol, args: Tree*): this.type = addAnnotation(sym, args.toList)
     final def addAnnotation(sym: Symbol, args: List[Tree]): this.type = {
       // The assertion below is meant to prevent from issues like scala/bug#7009 but it's disabled
       // due to problems with cycles while compiling Scala library. It's rather shocking that
@@ -2059,11 +2052,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       cloneSymbol(newOwner, newFlags, null)
     final def cloneSymbol(newOwner: Symbol, newFlags: Long, newName: Name): TypeOfClonedSymbol = {
       val clone = cloneSymbolImpl(newOwner, newFlags)
-      ( clone
-          setPrivateWithin privateWithin
-          setInfo (this.info cloneInfo clone)
-          setAnnotations this.annotations
-      )
+      clone
+        .setPrivateWithin(privateWithin)
+        .setInfo(this.info.cloneInfo(clone))
+        .setAnnotations(this.annotations)
       assert(clone.attachments.isEmpty, "cloned symbol cannot have attachments")
       clone.setAttachments(this.attachments.cloneAttachments)
       if (clone.thisSym != clone)
@@ -3459,7 +3451,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val clone = owner.newClassSymbol(name, pos, newFlags)
       if (thisSym != this) {
         clone.typeOfThis = typeOfThis
-        clone.thisSym setName thisSym.name
+        val cloneThis = clone.thisSym
+        cloneThis.setName(thisSym.name)
       }
       clone.associatedFile = _associatedFile
       clone
@@ -3850,7 +3843,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         this._prev = null
         this
       } else
-          TypeHistory(validFrom, info, null)
+        TypeHistory(validFrom, info, null)
 
     private def phaseString = {
       val phase = phaseOf(validFrom)

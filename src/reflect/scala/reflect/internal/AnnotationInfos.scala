@@ -57,7 +57,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case _ => None
       }
 
-    def removeAnnotation(cls: Symbol): Self = filterAnnotations(ann => !(ann matches cls))
+    def removeAnnotation(cls: Symbol): Self = filterAnnotations(!_.matches(cls))
 
     def withAnnotation(annot: AnnotationInfo): Self
 

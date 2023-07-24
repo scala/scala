@@ -1862,7 +1862,7 @@ abstract class RefChecks extends Transform {
           case _ => t
         }
         def msg = s"unused value of type ${where.tpe}"
-        refchecksWarning(where.pos, msg, WarningCategory.OtherPureStatement)
+        refchecksWarning(where.pos, msg, WarningCategory.WFlagValueDiscard)
         true
       }
     } // end checkInterestingResultInStatement
