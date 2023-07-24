@@ -360,8 +360,14 @@ abstract class TreeInfo {
       tree.tpe match {
         case ThisType(sym) =>
           sym == receiver.symbol
-        case SingleType(p, sym) =>
-          sym == receiver.symbol || argss.exists(_.exists(sym == _.symbol))
+        case SingleType(_, sym) =>
+          def loopCore(t: Tree): Boolean = t.symbol == sym || {
+            dissectCore(t) match {
+              case Select(r, _) => loopCore(r)
+              case _ => false
+            }
+          }
+          loopCore(receiver) || argss.exists(_.exists(sym == _.symbol))
         case _ =>
           def checkSingle(sym: Symbol): Boolean =
             (sym == receiver.symbol) || {
@@ -879,7 +885,7 @@ abstract class TreeInfo {
   /** Returns a wrapper that knows how to destructure and analyze applications.
    */
   final def dissectApplied(tree: Tree) = new Applied(tree)
-  /** Equivalent ot disectApplied(tree).core, but more efficient */
+  /** Equivalent of disectApplied(tree).core, but more efficient */
   @scala.annotation.tailrec
   final def dissectCore(tree: Tree): Tree = tree match {
     case TypeApply(fun, _) =>

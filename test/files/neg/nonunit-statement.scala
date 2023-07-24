@@ -197,3 +197,7 @@ class Depends {
     ()
   }
 }
+class MutateChain {
+  val thing = ListBuffer.empty[Int]
+  thing.addOne(42).addOne(27)  // nowarn the chained apply
+}
