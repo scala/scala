@@ -1830,6 +1830,8 @@ abstract class RefChecks extends Transform {
         case Apply(f, _) => f.symbol.isJavaDefined && !isUniversalMember(f.symbol)
         case _ => false
       }
+      // lazy val x and object x may entail a forcing reference x, a side-effecting operation that results in x.type
+      def isLazyMember(t: Tree): Boolean = t.symbol != null && (t.symbol.isLazy || t.symbol.isModule)
       // The quirk of typechecking if is that the LUB often results in boring types.
       // Parser adds suppressing attachment on `if (b) expr` when user has `-Wnonunit-if:false`.
       def checkInterestingShapes(t: Tree): Boolean =
@@ -1849,6 +1851,7 @@ abstract class RefChecks extends Transform {
         && !treeInfo.isSuperConstrCall(t)         // just a thing
         && !treeInfo.hasExplicitUnit(t)           // suppressed by explicit expr: Unit
         && !isJavaApplication(t)                  // Java methods are inherently side-effecting
+        && !isLazyMember(t)                       // side effect forcing a lazy val
       )
       // begin checkInterestingResultInStatement
       settings.warnNonUnitStatement.value && checkInterestingShapes(t) && {

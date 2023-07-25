@@ -1144,9 +1144,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case Apply(f, _) => f.symbol.isJavaDefined && !isUniversalMember(f.symbol)
             case _ => false
           }
+          def isLazyMember(t: Tree): Boolean = t.symbol != null && (t.symbol.isLazy || t.symbol.isModule)
           // true for a value that may be discarded without compunction
           @inline def excludeValueDiscard(): Boolean =
-            isUninterestingSymbol(tree.symbol) || isUninterestingType(tree.tpe) || treeInfo.isThisTypeResult(tree) || treeInfo.hasExplicitUnit(tree) || isJavaApplication(tree) /*|| tree.exists(treeInfo.hasExplicitUnit(_))*/
+            isUninterestingSymbol(tree.symbol) || isUninterestingType(tree.tpe) || treeInfo.isThisTypeResult(tree) ||
+            treeInfo.hasExplicitUnit(tree) || isJavaApplication(tree) ||
+            isLazyMember(tree) /*|| tree.exists(treeInfo.hasExplicitUnit(_))*/
           @inline def warnValueDiscard(): Unit =
             if (!isPastTyper && settings.warnValueDiscard.value && !excludeValueDiscard())
               context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
