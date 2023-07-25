@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.generic.DefaultSerializable
 import scala.reflect.ClassTag
@@ -175,6 +176,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
       headptr.remove(idx, this)
     } else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
+  @nowarn("cat=w-flag-value-discard")
   @tailrec final def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
       remove(idx)
@@ -272,6 +274,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       next = new Unrolled[T](0, new Array[T](nextlength), null, buff)
       next append elem
     }
+    @nowarn("cat=w-flag-value-discard")
     def foreach[U](f: T => U): Unit = {
       var unrolled = this
       var i = 0
@@ -318,8 +321,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
     } else {
       // allocate a new node and store element
       // then make it point to this
-      val newhead = new Unrolled[T](buff)
-      newhead append elem
+      val newhead = new Unrolled[T](buff).append(elem)
       newhead.next = this
       newhead
     }
@@ -347,7 +349,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       var i = 0
       while (i < size) {
         if(array(i) == elem) {
-          remove(i, buffer)
+          remove(i, buffer): @nowarn("cat=w-flag-value-discard")
           return true
         }
         i += 1
