@@ -13,7 +13,7 @@
 package scala
 package runtime
 
-
+import scala.annotation.nowarn
 import scala.collection.{BuildFrom, IterableOps}
 import scala.language.implicitConversions
 
@@ -105,6 +105,7 @@ final class Tuple2Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2]](p
 
   def iterator: Iterator[(El1, El2)] = coll1.iterator.zip(coll2.iterator)
   override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: (El1, El2) => U): Unit = {
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator

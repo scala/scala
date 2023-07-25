@@ -274,7 +274,8 @@ object SeqMap extends MapFactory[SeqMap] {
           if (vectorMapBuilder == null) {
             vectorMapBuilder = new VectorMapBuilder
           }
-          elems.asInstanceOf[SeqMap4[K, V]].buildTo(vectorMapBuilder)
+          val e1 = elems.asInstanceOf[SeqMap4[K, V]]
+          e1.buildTo(vectorMapBuilder)
           vectorMapBuilder.addOne(elem)
         }
       }

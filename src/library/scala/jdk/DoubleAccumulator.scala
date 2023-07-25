@@ -13,10 +13,11 @@
 package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.{lang => jl}
 import java.util.Spliterator
 import java.util.function.{Consumer, DoubleConsumer}
-import java.{lang => jl}
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.implicitConversions
@@ -160,6 +161,7 @@ final class DoubleAccumulator
   /** Returns an `Iterator` over the contents of this `DoubleAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Double] = stepper.iterator
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: Double => U): Unit = {
     val s = stepper
     while (s.hasStep) f(s.nextStep())
@@ -181,6 +183,7 @@ final class DoubleAccumulator
     b.result()
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def collect(pf: PartialFunction[Double, Double]): DoubleAccumulator = {
     val b = newSpecificBuilder
     val s = stepper

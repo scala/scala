@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.nowarn
+
 private[mutable] trait CheckedIndexedSeqView[+A] extends IndexedSeqView[A] {
   protected val mutationCount: () => Int
 
@@ -29,6 +31,7 @@ private[mutable] trait CheckedIndexedSeqView[+A] extends IndexedSeqView[A] {
   override def map[B](f: A => B): IndexedSeqView[B] = new CheckedIndexedSeqView.Map(this, f)(mutationCount)
   override def reverse: IndexedSeqView[A] = new CheckedIndexedSeqView.Reverse(this)(mutationCount)
   override def slice(from: Int, until: Int): IndexedSeqView[A] = new CheckedIndexedSeqView.Slice(this, from, until)(mutationCount)
+  @nowarn("cat=w-flag-value-discard")
   override def tapEach[U](f: A => U): IndexedSeqView[A] = new CheckedIndexedSeqView.Map(this, { (a: A) => f(a); a})(mutationCount)
 
   override def concat[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new CheckedIndexedSeqView.Concat(this, suffix)(mutationCount)

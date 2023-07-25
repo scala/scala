@@ -13,10 +13,11 @@
 package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.{lang => jl}
 import java.util.Spliterator
 import java.util.function.{Consumer, LongConsumer}
-import java.{lang => jl}
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, LongStepper, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.implicitConversions
@@ -160,6 +161,7 @@ final class LongAccumulator
   /** Returns an `Iterator` over the contents of this `LongAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Long] = stepper.iterator
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: Long => U): Unit = {
     val s = stepper
     while (s.hasStep) f(s.nextStep())
@@ -181,6 +183,7 @@ final class LongAccumulator
     b.result()
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def collect(pf: PartialFunction[Long, Long]): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper

@@ -13,10 +13,11 @@
 package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.{lang => jl}
 import java.util.Spliterator
 import java.util.function.{Consumer, IntConsumer}
-import java.{lang => jl}
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, IntStepper, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.implicitConversions
@@ -165,6 +166,7 @@ final class IntAccumulator
   /** Returns an `Iterator` over the contents of this `IntAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Int] = stepper.iterator
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: Int => U): Unit = {
     val s = stepper
     while (s.hasStep) f(s.nextStep())
@@ -186,6 +188,7 @@ final class IntAccumulator
     b.result()
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def collect(pf: PartialFunction[Int, Int]): IntAccumulator = {
     val b = newSpecificBuilder
     val s = stepper

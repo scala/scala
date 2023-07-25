@@ -91,6 +91,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     addElem(elem, computeHash(elem))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def addAll(xs: IterableOnce[A]): this.type = {
     sizeHint(xs.knownSize)
     xs match {
@@ -115,6 +116,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def subtractAll(xs: IterableOnce[A]): this.type = {
     if (size == 0) {
       return this
@@ -361,9 +363,11 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
-  @`inline` def addOne(elem: A): this.type = { add(elem); this }
+  @nowarn("cat=w-flag-value-discard")
+  @inline def addOne(elem: A): this.type = { add(elem); this }
 
-  @`inline` def subtractOne(elem: A): this.type = { remove(elem); this }
+  @nowarn("cat=w-flag-value-discard")
+  @inline def subtractOne(elem: A): this.type = { remove(elem); this }
 
   override def knownSize: Int = size
 
@@ -446,6 +450,7 @@ object HashSet extends IterableFactory[HashSet] {
       else if((_next eq null) || (_hash > h)) null
       else _next.findNode(k, h)
 
+    @nowarn("cat=w-flag-value-discard")
     @tailrec
     def foreach[U](f: K => U): Unit = {
       f(_key)

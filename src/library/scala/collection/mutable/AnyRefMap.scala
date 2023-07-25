@@ -361,7 +361,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     while (e > 0) {
       while(i < _hashes.length && { val h = _hashes(i); h+h == 0 && i < _hashes.length}) i += 1
       if (i < _hashes.length) {
-        f((_keys(i).asInstanceOf[K], _values(i).asInstanceOf[V]))
+        f((_keys(i).asInstanceOf[K], _values(i).asInstanceOf[V])): @nowarn("cat=w-flag-value-discard")
         i += 1
         e -= 1
       }
@@ -375,7 +375,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     while (e > 0) {
       while(i < _hashes.length && { val h = _hashes(i); h+h == 0 && i < _hashes.length}) i += 1
       if (i < _hashes.length) {
-        f(_keys(i).asInstanceOf[K], _values(i).asInstanceOf[V])
+        f(_keys(i).asInstanceOf[K], _values(i).asInstanceOf[V]): @nowarn("cat=w-flag-value-discard")
         i += 1
         e -= 1
       }
@@ -419,7 +419,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
       val h = _hashes(i)
       if (h+h != 0) {
         j += 1
-        f(elems(i).asInstanceOf[A])
+        f(elems(i).asInstanceOf[A]): @nowarn("cat=w-flag-value-discard")
       }
       i += 1
     }

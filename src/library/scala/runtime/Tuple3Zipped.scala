@@ -13,7 +13,7 @@
 package scala
 package runtime
 
-
+import scala.annotation.nowarn
 import scala.collection.{BuildFrom, IterableOps}
 import scala.language.implicitConversions
 
@@ -113,6 +113,7 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
 
   def iterator: Iterator[(El1, El2, El3)] = coll1.iterator.zip(coll2.iterator).zip(coll3.iterator).map { case ((a, b), c) => (a, b, c)}
   override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator

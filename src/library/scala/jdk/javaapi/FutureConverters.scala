@@ -13,6 +13,7 @@
 package scala.jdk.javaapi
 
 import java.util.concurrent.{CompletableFuture, CompletionStage}
+import scala.annotation.nowarn
 import scala.concurrent.impl.FutureConvertersImpl.{CF, P}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
@@ -72,7 +73,7 @@ object FutureConverters {
       case f: Future[T @unchecked] => f
       case cf: CompletableFuture[T @unchecked] if cf.isDone && !cf.isCompletedExceptionally =>
         val p = new P[T](cs)
-        p.tryComplete(Success(cf.join()))
+        p.tryComplete(Success(cf.join())): @nowarn("cat=w-flag-value-discard")
         p.future
       case _ =>
         val p = new P[T](cs)

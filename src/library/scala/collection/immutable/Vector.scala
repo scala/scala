@@ -17,6 +17,7 @@ import java.lang.Math.{abs, max => mmax, min => mmin}
 import java.util.Arrays.{copyOf, copyOfRange}
 import java.util.{Arrays, Spliterator}
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
@@ -2121,7 +2122,7 @@ private object VectorStatics {
     val len = a.length
     if(level == 0) {
       while(i < len) {
-        f(a(i).asInstanceOf[A])
+        f(a(i).asInstanceOf[A]): @nowarn("cat=w-flag-value-discard")
         i += 1
       }
     } else {
@@ -2352,7 +2353,7 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
     }
   }
 
-  override def drop(n: Int): Iterator[A] = {
+  override def drop(n: Int): this.type = {
     if(n > 0) {
       val oldpos = i1-len1+totalLength
       val newpos = mmin(oldpos + n, totalLength)
@@ -2377,7 +2378,7 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
     this
   }
 
-  override def take(n: Int): Iterator[A] = {
+  override def take(n: Int): this.type = {
     if(n < knownSize) {
       val trunc = knownSize - mmax(0, n)
       totalLength -= trunc

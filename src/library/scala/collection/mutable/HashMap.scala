@@ -94,12 +94,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     if(target > table.length) growTable(target)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def addAll(xs: IterableOnce[(K, V)]): this.type = {
     sizeHint(xs.knownSize)
 
     xs match {
       case hm: immutable.HashMap[K, V] =>
-        hm.foreachWithHash((k, v, h) => put0(k, v, improveHash(h), getOld = false)): @nowarn("cat=w-flag-value-discard")
+        hm.foreachWithHash((k, v, h) => put0(k, v, improveHash(h), getOld = false))
         this
       case hm: mutable.HashMap[K, V] =>
         val iter = hm.nodeIterator
@@ -174,7 +175,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
               growTable(table.length * 2)
               index(hash)
             } else indexedHash
-          put0(key, value, false, hash, newIndexedHash)
+          put0(key, value, false, hash, newIndexedHash): @nowarn("cat=w-flag-value-discard")
+          ()
 
         case (Some(_), Some(newValue)) => foundNode.value = newValue
       }
@@ -182,6 +184,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def subtractAll(xs: IterableOnce[K]): this.type = {
     if (size == 0) {
       return this
@@ -470,7 +473,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         if(contentSize + 1 >= threshold) growTable(table.length * 2)
         // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
         val newIdx = if (table0 eq table) idx else index(hash)
-        put0(key, default, false, hash, newIdx)
+        put0(key, default, false, hash, newIdx): @nowarn("cat=w-flag-value-discard")
         default
       }
     }
@@ -489,8 +492,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   @nowarn("cat=w-flag-value-discard")
   override def update(key: K, value: V): Unit = put0(key, value, false)
 
+  @nowarn("cat=w-flag-value-discard")
   def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
 
+  @nowarn("cat=w-flag-value-discard")
   def subtractOne(elem: K): this.type = { remove0(elem); this }
 
   override def knownSize: Int = size
@@ -638,12 +643,14 @@ object HashMap extends MapFactory[HashMap] {
       else if((_next eq null) || (_hash > h)) null
       else _next.findNode(k, h)
 
+    @nowarn("cat=w-flag-value-discard")
     @tailrec
     def foreach[U](f: ((K, V)) => U): Unit = {
       f((_key, _value))
       if(_next ne null) _next.foreach(f)
     }
 
+    @nowarn("cat=w-flag-value-discard")
     @tailrec
     def foreachEntry[U](f: (K, V) => U): Unit = {
       f(_key, _value)

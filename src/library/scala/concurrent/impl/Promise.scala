@@ -163,7 +163,7 @@ private[concurrent] object Promise {
             zipped.tryComplete(f.asInstanceOf[Failure[R]])
         }
         // Cheaper than this.onComplete since we already polled the state
-        this.dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_onComplete, thisF, executor))
+        this.dispatchOrAddCallbacks(state, new Transformation[T, Unit](Xform_onComplete, thisF, executor)): @nowarn("cat=w-flag-value-discard")
         that.onComplete(thatF)
         zipped.future
       }
@@ -254,6 +254,7 @@ private[concurrent] object Promise {
         }
       } else throw new IllegalArgumentException("Cannot wait for Undefined duration of time")
 
+    @nowarn("cat=w-flag-value-discard")
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
     final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
@@ -300,7 +301,7 @@ private[concurrent] object Promise {
         val state = get()
         if (!state.isInstanceOf[Try[_]]) {
           val resolved = if (other.isInstanceOf[DefaultPromise[_]]) other.asInstanceOf[DefaultPromise[T]].value0 else other.value.orNull
-          if (resolved ne null) tryComplete0(state, resolved)
+          if (resolved ne null) { tryComplete0(state, resolved): @nowarn("cat=w-flag-value-discard"); () }
           else other.onComplete(this)(ExecutionContext.parasitic)
         }
       }

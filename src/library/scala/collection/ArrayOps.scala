@@ -43,6 +43,8 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   copyArrayToImmutableIndexedSeq => _,
   _
 }
+
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.immutable.Range
 import scala.collection.mutable.ArrayBuilder
@@ -65,6 +67,7 @@ object ArrayOps {
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
       */
+    @nowarn("cat=w-flag-value-discard")
     def foreach[U](f: A => U): Unit = {
       val len = xs.length
       var i = 0
@@ -476,9 +479,10 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
     val res1, res2 = ArrayBuilder.make[A]
     var i = 0
-    while(i < xs.length) {
+    while (i < xs.length) {
       val x = xs(i)
-      (if(p(x)) res1 else res2) += x
+      val part = if (p(x)) res1 else res2
+      part += x
       i += 1
     }
     (res1.result(), res2.result())
@@ -1316,6 +1320,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   /** Apply `f` to each element for its side effects.
     * Note: [U] parameter needed to help scalac's type inference.
     */
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: A => U): Unit = {
     val len = xs.length
     var i = 0

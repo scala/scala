@@ -13,6 +13,7 @@ import scala.tools.testkit.{AssertUtil, ReflectUtil}
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard&msg=unused value")
 class LazyListTest {
 
   @Test

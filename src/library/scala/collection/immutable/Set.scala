@@ -394,7 +394,8 @@ private final class SetBuilderImpl[A] extends ReusableBuilder[A, Set[A]] {
         if (hashSetBuilder == null) {
           hashSetBuilder = new HashSetBuilder
         }
-        elems.asInstanceOf[Set4[A]].buildTo(hashSetBuilder)
+        val e1 = elems.asInstanceOf[Set4[A]]
+        e1.buildTo(hashSetBuilder)
         hashSetBuilder.addOne(elem)
       }
     }

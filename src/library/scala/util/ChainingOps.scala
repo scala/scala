@@ -13,10 +13,11 @@
 package scala
 package util
 
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 trait ChainingSyntax {
-  @`inline` implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
+  @inline implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }
 
 /** Adds chaining methods `tap` and `pipe` to every type.
@@ -36,6 +37,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *  @tparam U     the result type of the function `f`.
     *  @return       the original value `self`.
     */
+  @nowarn("cat=w-flag-value-discard")
   def tap[U](f: A => U): A = {
     f(self)
     self

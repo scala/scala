@@ -17,6 +17,7 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{StringBuilder => JStringBuilder}
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.SerializeEnd
@@ -59,6 +60,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     *  @note  This function will force the realization of the entire Stream
     *  unless the `f` throws an exception.
     */
+  @nowarn("cat=w-flag-value-discard")
   @tailrec
   override final def foreach[U](f: A => U): Unit = {
     if (!this.isEmpty) {

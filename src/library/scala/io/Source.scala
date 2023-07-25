@@ -13,11 +13,10 @@
 package scala
 package io
 
+import scala.annotation.nowarn
 import scala.collection.{AbstractIterator, BufferedIterator}
 import java.io.{Closeable, FileInputStream, FileNotFoundException, InputStream, PrintStream, File => JFile}
 import java.net.{URI, URL}
-
-import scala.annotation.nowarn
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -225,7 +224,7 @@ abstract class Source extends Iterator[Char] with Closeable {
       if (ch == '\n') false
       else if (ch == '\r') {
         if (iter.hasNext && iter.head == '\n')
-          iter.next()
+          iter.next(): @nowarn("cat=w-flag-value-discard")
 
         false
       }

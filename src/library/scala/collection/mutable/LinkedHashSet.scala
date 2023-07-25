@@ -93,11 +93,13 @@ class LinkedHashSet[A]
     put0(elem, hash, index(hash))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def addOne(elem: A): this.type = {
     add(elem)
     this
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def subtractOne(elem: A): this.type = {
     remove(elem)
     this
@@ -122,6 +124,7 @@ class LinkedHashSet[A]
     override def extract(nd: Entry): Entry = nd
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: A => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {

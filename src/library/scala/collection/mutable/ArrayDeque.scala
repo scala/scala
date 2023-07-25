@@ -444,6 +444,7 @@ class ArrayDeque[A] protected (
     * Note: This does not actually resize the internal representation.
     * See clearAndShrink if you want to also resize internally
     */
+  @nowarn("cat=w-flag-value-discard")
   def clear(): Unit = {
     while(nonEmpty) {
       removeHeadAssumingNonEmpty()

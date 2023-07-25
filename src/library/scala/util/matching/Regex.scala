@@ -26,6 +26,7 @@
  */
 package scala.util.matching
 
+import scala.annotation.nowarn
 import scala.collection.AbstractIterator
 import java.util.regex.{ Pattern, Matcher }
 
@@ -398,7 +399,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     new AbstractIterator[Match] {
       def hasNext = matchIterator.hasNext
       def next(): Match = {
-        matchIterator.next()
+        matchIterator.next(): @nowarn("cat=w-flag-value-discard")
         new Match(matchIterator.source, matchIterator.matcher, matchIterator._groupNames).force
       }
     }
@@ -817,6 +818,7 @@ object Regex {
      *  As a side effect, advance the underlying matcher if necessary;
      *  queries about the current match data pertain to the underlying matcher.
      */
+    @nowarn("cat=w-flag-value-discard")
     def hasNext: Boolean = {
       nextSeen match {
         case 0 => nextSeen = if (matcher.find()) 1 else 3
@@ -830,6 +832,7 @@ object Regex {
     /** The next matched substring of `source`.
      *  As a side effect, advance the underlying matcher if necessary.
      */
+    @nowarn("cat=w-flag-value-discard")
     def next(): String = {
       nextSeen match {
         case 0 => if (!hasNext) throw new NoSuchElementException ; next()
@@ -869,6 +872,7 @@ object Regex {
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
+      @nowarn("cat=w-flag-value-discard")
       def next() = { self.next(); new Match(source, matcher, _groupNames).force }
     }
 
@@ -876,6 +880,7 @@ object Regex {
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
+      @nowarn("cat=w-flag-value-discard")
       def next() = { self.next(); new Match(source, matcher, _groupNames).force }
     }
   }

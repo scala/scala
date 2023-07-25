@@ -22,6 +22,7 @@ import Uncloseable.protect
 import java.io.{FileInputStream, FileOutputStream}
 import java.util.concurrent.LinkedBlockingQueue
 
+import scala.annotation.nowarn
 import scala.util.control.NonFatal
 
 private[process] trait ProcessBuilderImpl {
@@ -183,7 +184,7 @@ private[process] trait ProcessBuilderImpl {
             case NonFatal(_) => -2
           }
         }
-      }
+      }: @nowarn("cat=w-flag-value-discard")
       lazilyListed.lazyList
     }
 
@@ -197,7 +198,7 @@ private[process] trait ProcessBuilderImpl {
       val streamed = Streamed[String](nonZeroException, capacity)
       val process  = run(BasicIO(withInput, streamed.process, log))
 
-      Spawn("LineStream")(streamed done process.exitValue())
+      Spawn("LineStream")(streamed.done(process.exitValue())): @nowarn("cat=w-flag-value-discard")
       streamed.stream()
     }
 

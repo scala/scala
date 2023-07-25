@@ -145,7 +145,7 @@ class LinkedHashMap[K, V]
         if (contentSize + 1 >= threshold) growTable(table.length * 2)
         // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
         val newIdx = if (table0 eq table) idx else index(hash)
-        put0(key, default, false, hash, newIdx)
+        put0(key, default, false, hash, newIdx): @nowarn("cat=w-flag-value-discard")
         default
       }
     }
@@ -206,11 +206,13 @@ class LinkedHashMap[K, V]
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def addOne(kv: (K, V)): this.type = {
     put(kv._1, kv._2)
     this
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def subtractOne(key: K): this.type = {
     remove(key)
     this
@@ -300,7 +302,8 @@ class LinkedHashMap[K, V]
               growTable(table.length * 2)
               index(hash)
             } else indexedHash
-          put0(key, value, false, hash, newIndexedHash)
+          put0(key, value, false, hash, newIndexedHash): @nowarn("cat=w-flag-value-discard")
+          ()
 
         case (Some(_), Some(newValue)) => foundEntry.value = newValue
       }
@@ -315,6 +318,7 @@ class LinkedHashMap[K, V]
     }
 
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: ((K, V)) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
@@ -323,6 +327,7 @@ class LinkedHashMap[K, V]
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreachEntry[U](f: (K, V) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {

@@ -13,12 +13,11 @@
 package scala
 package collection.mutable
 
-import collection.{AbstractIterator, Iterator}
-
-import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
+import scala.annotation.nowarn
+import scala.collection.{AbstractIterator, Iterator}
 import scala.util.hashing.byteswap32
 
-import java.lang.Integer
+import java.lang.Integer, Integer.{numberOfLeadingZeros, rotateRight}
 
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class `HashTable[A]` implements a hashtable
@@ -234,7 +233,7 @@ private[collection] trait HashTable[A, B, Entry >: Null <: HashEntry[A, Entry]] 
 
     while (es != null) {
       val next = es.next // Cache next in case f removes es.
-      f(es.asInstanceOf[Entry])
+      f(es.asInstanceOf[Entry]): @nowarn("cat=w-flag-value-discard")
       es = next
 
       while (es == null && idx > 0) {

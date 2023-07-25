@@ -51,7 +51,9 @@ extends mutable.AbstractMap[String, String] {
 
   @nowarn("cat=w-flag-value-discard")
   override def clear(): Unit = wrapAccess(System.getProperties().clear())
+  @nowarn("cat=w-flag-value-discard")
   def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
+  @nowarn("cat=w-flag-value-discard")
   def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
 
   @annotation.nowarn("cat=deprecation") // AccessControlException is deprecated on JDK 17

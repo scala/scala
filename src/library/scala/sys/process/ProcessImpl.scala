@@ -17,6 +17,7 @@ import processInternal._
 import java.util.concurrent.LinkedBlockingQueue
 import java.io.{PipedInputStream, PipedOutputStream}
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 
 private[process] trait ProcessImpl {
@@ -94,7 +95,8 @@ private[process] trait ProcessImpl {
     def isAlive()   = processThread.isAlive()
     def destroy()   = destroyer()
     def exitValue() = futureValue() getOrElse scala.sys.error("No exit code: process destroyed.")
-    def start()     = { futureThread ;() }
+    @nowarn("cat=w-flag-value-discard")
+    def start()     = futureThread
 
     protected lazy val (processThread, (futureThread, futureValue), destroyer) = {
       val code = new LinkedBlockingQueue[Option[Int]](1)
@@ -263,19 +265,17 @@ private[process] trait ProcessImpl {
   private[process] class SimpleProcess(p: JProcess, inputThread: Thread, outputThreads: List[Thread]) extends Process {
     override def isAlive() = p.isAlive()
     override def exitValue() = {
-      try p.waitFor()                   // wait for the process to terminate
-      finally interrupt()
-      outputThreads foreach (_.join())  // this ensures that all output is complete before returning (waitFor does not ensure this)
+      val x = try p.waitFor() finally interrupt() // wait for the process to terminate
+      outputThreads.foreach(_.join())  // this ensures that all output is complete before returning (waitFor does not ensure this)
 
-      p.exitValue()
+      x // p.exitValue()
     }
-    override def destroy() = {
+    override def destroy() =
       try {
-        outputThreads foreach (_.interrupt()) // on destroy, don't bother consuming any more output
+        outputThreads.foreach(_.interrupt()) // on destroy, don't bother consuming any more output
         p.destroy()
       }
       finally interrupt()
-    }
     // we interrupt the input thread to notify it that it can terminate
     private[this] def interrupt(): Unit = if (inputThread != null) inputThread.interrupt()
   }

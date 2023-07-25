@@ -112,7 +112,7 @@ trait Buffer[A]
     */
   def subtractOne (x: A): this.type = {
     val i = indexOf(x)
-    if (i != -1) remove(i)
+    if (i != -1) remove(i, count = 1)
     this
   }
 
