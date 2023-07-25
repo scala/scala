@@ -1,7 +1,7 @@
-import scala.tools.partest.ParserTest
 import scala.reflect.internal.util.BatchSourceFile
+import scala.tools.partest.DirectTest
 
-object Test extends ParserTest {
+object Test extends DirectTest {
   // Java code
   override def code = """
     |public @interface MyAnnotation { String value(); }
@@ -13,4 +13,6 @@ object Test extends ParserTest {
     assert(sourceCodes.size == 1)
     List(new BatchSourceFile("annodef.java", sourceCodes(0)))
   }
+
+  override def show(): Unit = if (!compile()) println("Compilation failed!")
 }

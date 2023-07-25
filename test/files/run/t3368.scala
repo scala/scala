@@ -1,8 +1,7 @@
 
-import scala.tools.partest.ParserTest
+import scala.tools.partest.DirectTest
 
-
-object Test extends ParserTest {
+object Test extends DirectTest {
 
   override def code = """
   trait X {
@@ -22,5 +21,7 @@ object Test extends ParserTest {
   """
 
   // coalescing
-  override def extraSettings = s"${super.extraSettings} -Xxml:coalescing"
+  override def extraSettings: String = "-usejavacp -Ystop-after:parser -Vprint:parser -Xxml:coalescing"
+
+  override def show(): Unit = if (!compile()) println("Compilation failed!")
 }
