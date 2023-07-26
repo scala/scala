@@ -1585,8 +1585,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def info_=(info: Type): Unit = {
       assert(info ne null, "Can't assign a null type")
-      if (infos ne null)
-        infos.reset(currentPeriod, info)
+      if (infos ne null) {
+        infos.reset(currentPeriod, info): @nowarn("cat=w-flag-value-discard")
+        ()
+      }
       else
         infos = TypeHistory(currentPeriod, info, null)
       unlock()
@@ -1723,7 +1725,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Initialize the symbol */
     final def initialize: this.type = {
-      if (!isInitialized) info
+      if (!isInitialized) info: @nowarn("cat=w-flag-value-discard")
       this
     }
     def maybeInitialize = {
@@ -1750,7 +1752,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         return this
 
       this setFlag TRIEDCOOKING
-      info  // force the current info
+      info: @nowarn("cat=w-flag-value-discard") // force the current info
       if (isJavaDefined || isType && owner.isJavaDefined)
         this modifyInfo rawToExistential
       else if (isOverloaded) {
@@ -2387,7 +2389,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     protected final def flatOwnerInfo: Type = {
       if (needsFlatClasses)
-        info
+        info: @nowarn("cat=w-flag-value-discard")
       owner.rawInfo
     }
 

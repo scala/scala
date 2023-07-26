@@ -22,10 +22,10 @@ import scala.reflect.internal.util.Statistics
 trait Scopes extends api.Scopes { self: SymbolTable =>
 
   // Reset `scopeCount` per every run
-  private[scala] var scopeCount = 0
-  perRunCaches.recordCache {
+  private[scala] var scopeCount: Int = {
     val clearCount: Clearable = () => {scopeCount = 0}
-    clearCount
+    perRunCaches.recordCache(clearCount)
+    0
   }
 
   /** An ADT to represent the results of symbol name lookups.

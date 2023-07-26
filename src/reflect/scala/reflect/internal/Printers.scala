@@ -1172,9 +1172,12 @@ trait Printers extends api.Printers { self: SymbolTable =>
     private[this] val counters = Map[Class[_], Int]()
     private def nextCounter[T: ClassTag] = {
       val clazz = classTag[T].runtimeClass
-      counters.getOrElseUpdate(clazz, 0)
-      counters(clazz) = counters(clazz) + 1
-      counters(clazz)
+      //counters.getOrElseUpdate(clazz, 0)
+      //counters(clazz) = counters(clazz) + 1
+      //counters(clazz)
+      val next = counters.getOrElse(clazz, 0) + 1
+      counters.update(clazz, next)
+      next
     }
 
     private[this] val footnotes = Map[Class[_], SortedSet[Int]]()

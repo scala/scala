@@ -19,9 +19,9 @@ import java.nio.file.{Files, OpenOption, Path}
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-
-import scala.concurrent.duration.Duration
+import scala.annotation.nowarn
 import scala.concurrent.{Await, Promise}
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 object FileUtils {
@@ -172,7 +172,8 @@ object FileUtils {
             } else if (next eq AsyncBufferedWriter.Close) {
               underlying.flush()
               underlying.close()
-              asyncStatus.trySuccess(())
+              asyncStatus.trySuccess(()): @nowarn("cat=w-flag-value-discard")
+              ()
             } else {
               val array = next.array()
               next.flip()
@@ -182,7 +183,7 @@ object FileUtils {
           }
         } catch {
           case t: Throwable =>
-            asyncStatus.tryFailure(t)
+            asyncStatus.tryFailure(t): @nowarn("cat=w-flag-value-discard")
             throw t
         }
         finally scheduled.set(false)

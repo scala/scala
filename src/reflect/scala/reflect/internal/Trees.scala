@@ -237,7 +237,7 @@ trait Trees extends api.Trees {
      */
     def modifyType(f: Type => Type): this.type =
       if (tpe eq null) this
-      else this setType f(tpe)
+      else this.setType(f(tpe))
 
     /** If `pf` is defined for a given subtree, call super.traverse(pf(tree)),
      *  otherwise super.traverse(tree).
@@ -1755,8 +1755,10 @@ trait Trees extends api.Trees {
   class TypeMapTreeSubstituter(val typeMap: TypeMap) extends InternalTraverser {
     override def traverse(tree: Tree): Unit = {
       tree modifyType typeMap
-      if (tree.isDef)
-        tree.symbol modifyInfo typeMap
+      if (tree.isDef) {
+        val s = tree.symbol
+        s.modifyInfo(typeMap)
+      }
 
       tree.traverse(this)
     }

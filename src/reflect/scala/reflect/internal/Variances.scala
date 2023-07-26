@@ -119,7 +119,8 @@ trait Variances {
        *  same is true of the parameters (ValDefs) unless we are inside a
        *  refinement, in which case they are checked from here.
        */
-      def apply(tp: Type): Type = {
+      @nowarn("cat=w-flag-value-discard")
+      def apply(tp: Type): tp.type = {
         tp match {
           case _ if isUncheckedVariance(tp)                    =>
           case _ if resultTypeOnly(tp)                         => apply(tp.resultType)
@@ -189,7 +190,8 @@ trait Variances {
             issueVarianceError(ownerOf(pt), tparam, required, pt)
         }
 
-      def apply(tp: Type): Type = {
+      @nowarn("cat=w-flag-value-discard")
+      def apply(tp: Type): tp.type = {
         tp match {
           case pt @ PolyType(typeParams, TypeBounds(lo, hi)) =>
             typeParams.foreach { tparam =>

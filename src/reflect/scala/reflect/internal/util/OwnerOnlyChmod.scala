@@ -19,6 +19,7 @@ import java.nio.file.attribute._
 import java.nio.file.{Files, Path}
 import java.util.EnumSet
 
+import scala.annotation.nowarn
 
 object OwnerOnlyChmod {
   // @requires Files.exists(path)
@@ -54,6 +55,7 @@ object OwnerOnlyChmod {
     chmod(path)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def chmodFileAndWrite(path: Path, contents: Array[Byte]): Unit = {
     val sbc = Files.newByteChannel(path, EnumSet.of(WRITE, CREATE, TRUNCATE_EXISTING))
     try sbc.write(ByteBuffer.wrap(contents)) finally sbc.close()

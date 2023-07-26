@@ -26,6 +26,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.JDK9Reflectors
+import scala.util.chaining._
 import ZipArchive._
 
 /** An abstraction for zip files and streams.  Everything is written the way
@@ -303,13 +304,11 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
   }
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
-final class URLZipArchive(val url: URL) extends ZipArchive(null) {
+final class URLZipArchive(val url: URL) extends ZipArchive(file=null) {
   def iterator: Iterator[Entry] = {
-    val root     = new DirEntry(RootEntry)
-    val dirs     = new java.util.HashMap[String, DirEntry]()
-    dirs.put(RootEntry, root)
-    val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
-    closeables ::= in
+    val root = new DirEntry(RootEntry)
+    val dirs = new java.util.HashMap[String, DirEntry]().tap(_.put(RootEntry, root))
+    val in   = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input))).tap(closeables ::= _)
 
     @tailrec def loop(): Unit = {
       val zipEntry = in.getNextEntry()
@@ -336,16 +335,14 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
           loop()
 
           if (offset == arr.length) arr
-          else throw new IOException("Input stream truncated: read %d of %d bytes".format(offset, len))
+          else throw new IOException(s"Input stream truncated: read $offset of $len bytes")
         }
         override def sizeOption = Some(zipEntry.getSize().toInt)
       }
 
       if (zipEntry != null) {
         val dir = getDir(dirs, zipEntry)
-        if (zipEntry.isDirectory)
-          dir
-        else {
+        if (!zipEntry.isDirectory) {
           val f = if (zipEntry.getSize() == 0) new EmptyFileEntry() else new FileEntry()
           dir.entries(f.name) = f
         }
@@ -378,11 +375,10 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   }
 }
 
-final class ManifestResources(val url: URL) extends ZipArchive(null) {
+final class ManifestResources(val url: URL) extends ZipArchive(file=null) {
   def iterator = {
     val root     = new DirEntry(RootEntry)
-    val dirs     = new java.util.HashMap[String, DirEntry]
-    dirs.put(RootEntry, root)
+    val dirs     = new java.util.HashMap[String, DirEntry]().tap(_.put(RootEntry, root))
     val manifest = new Manifest(input)
     closeables ::= input
     val iter     = manifest.getEntries().keySet().iterator.asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
@@ -422,7 +418,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
     case _                => false
   }
 
-  private def resourceInputStream(path: String): InputStream = {
+  private def resourceInputStream(path: String): InputStream =
     new FilterInputStream(null) {
       override def read(): Int = {
         if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)
@@ -435,7 +431,6 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
         in = null
       }
     }
-  }
   private[this] var closeables: List[java.io.Closeable] = Nil
   override def close(): Unit = {
     closeables.foreach(_.close())

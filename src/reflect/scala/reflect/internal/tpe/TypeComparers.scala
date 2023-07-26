@@ -15,7 +15,6 @@ package reflect
 package internal
 package tpe
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import util.{StringContextStripMarginOps, TriState}
@@ -29,7 +28,7 @@ trait TypeComparers {
   private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
   private[this] val _pendingSubTypes = new mutable.HashSet[SubTypePair]
-  def pendingSubTypes = _pendingSubTypes
+  def pendingSubTypes: mutable.Set[SubTypePair] = _pendingSubTypes
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
     // scala/bug#8146 we used to implement equality here in terms of pairwise =:=.
@@ -297,10 +296,10 @@ trait TypeComparers {
           false // see neg/t8146-no-finitary*
         else
           try {
-            pendingSubTypes += p
+            pendingSubTypes(p) = true
             isSubType1(tp1, tp2, depth)
           } finally {
-            pendingSubTypes -= p: @nowarn("cat=w-flag-value-discard")
+            pendingSubTypes(p) = false
           }
       } else {
         isSubType1(tp1, tp2, depth)

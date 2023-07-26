@@ -163,7 +163,7 @@ abstract class UnPickler {
       val tag = readByte().toInt
       assert(tag == CLASSsym, "Entry must be a class symbol")
 
-      readNat(); // read length
+      readNat(): @nowarn("cat=w-flag-value-discard") // read length
       val result = readNameRef() == tpnme.REFINE_CLASS_NAME
       readIndex = savedIndex
       result
@@ -478,7 +478,7 @@ abstract class UnPickler {
     /** Read a ClassfileAnnotArg (argument to a classfile annotation)
      */
     private def readArrayAnnot() = {
-      readByte() // skip the `annotargarray` tag
+      readByte(): @nowarn("cat=w-flag-value-discard") // skip the `annotargarray` tag
       val end = readEnd()
       until(end, () => readClassfileAnnotArg(readNat())).toArray
     }
@@ -633,7 +633,7 @@ abstract class UnPickler {
       if (tag != MODIFIERS)
         errorBadSignature("expected a modifiers tag (" + tag + ")")
 
-      readEnd()
+      readEnd(): @nowarn("cat=w-flag-value-discard")
       val pflagsHi = readNat()
       val pflagsLo = readNat()
       val pflags = (pflagsHi.toLong << 32) + pflagsLo
@@ -729,7 +729,7 @@ abstract class UnPickler {
         val tp = at(i, () => readType())
 
         if (p ne null) {
-          slowButSafeEnteringPhase(p)(sym setInfo tp)
+          slowButSafeEnteringPhase(p)(sym.setInfo(tp)): @nowarn("cat=w-flag-value-discard")
         }
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))

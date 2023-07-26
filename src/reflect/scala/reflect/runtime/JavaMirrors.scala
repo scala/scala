@@ -292,11 +292,11 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         checkMemberOf(field, symbol)
         if ((field.isMethod && !field.isAccessor) || field.isModule) ErrorNotField(field)
         val name = if (field.isAccessor) field.localName else field.name
-        val field1 = (field.owner.info decl name).asTerm
-        try fieldToJava(field1)
+        val field1 = field.owner.info.decl(name).asTerm
+        (try fieldToJava(field1)
         catch {
           case _: NoSuchFieldException => ErrorNonExistentField(field1)
-        }
+        }): @nowarn("cat=w-flag-value-discard")
         new JavaFieldMirror(instance, field1)
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
@@ -773,10 +773,11 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       // one doesn't need to do non-trivial computations to assign flags for Java-based reflection artifacts
       // therefore I'm moving flag-assigning logic from completion to construction
       val flags = jclazz.scalaFlags
-      clazz setFlag (flags | JAVA)
+      clazz.setFlag(flags | JAVA)
       if (module != NoSymbol) {
-        module setFlag (flags & PRIVATE | JAVA)
-        module.moduleClass setFlag (flags & PRIVATE | JAVA)
+        module.setFlag(flags & PRIVATE | JAVA)
+        val mc = module.moduleClass
+        mc.setFlag(flags & PRIVATE | JAVA)
       }
       markFlagsCompleted(clazz, module)(mask = AllFlags)
 
@@ -822,7 +823,8 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         }
         clazz setInfo GenPolyType(tparams, new ClassInfoType(parents, newScope, clazz))
         if (module != NoSymbol) {
-          module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
+          val mc = module.moduleClass
+          mc.setInfo(new ClassInfoType(List(), newScope, mc))
         }
 
         def enter(sym: Symbol, mods: JavaAccFlags) = followStatic(clazz, module, mods).info.decls enter sym
@@ -1010,8 +1012,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         opkg.asModule
       else {
         val pkg = owner.newPackage(name)
-        pkg.moduleClass setInfo new LazyPackageType
-        pkg setInfoAndEnter pkg.moduleClass.tpe
+        val mod = pkg.moduleClass
+        mod.setInfo(new LazyPackageType)
+        pkg.setInfoAndEnter(pkg.moduleClass.tpe)
         markFlagsCompleted(pkg)(mask = AllFlags)
         info("made Scala "+pkg)
         pkg
@@ -1211,9 +1214,8 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       field
     }
 
-    private def setMethType(meth: Symbol, tparams: List[Symbol], params: List[Symbol], restpe: Type) = {
-      meth setInfo GenPolyType(tparams, MethodType(params, restpe))
-    }
+    private def setMethType(meth: Symbol, tparams: List[Symbol], params: List[Symbol], restpe: Type): Unit =
+      meth.setInfo(GenPolyType(tparams, MethodType(params, restpe)))
 
     /**
      * The Scala method that corresponds to given Java method without taking

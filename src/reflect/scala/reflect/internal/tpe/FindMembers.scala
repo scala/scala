@@ -74,8 +74,8 @@ trait FindMembers {
         }
       }
       val deferredSeen = walkBaseClasses(selectorClass, requiredFlags, excludedFlags | DEFERRED)
-      if (deferredSeen) // OPT: the `if` avoids a second pass if the first pass didn't spot any candidates.
-        walkBaseClasses(selectorClass, requiredFlags | DEFERRED, excludedFlags & ~(DEFERRED.toLong))
+      if (deferredSeen && walkBaseClasses(selectorClass, requiredFlags | DEFERRED, excludedFlags & ~(DEFERRED.toLong)))
+        () // OPT: the conditional avoids a second pass if the first pass didn't spot any candidates.
       result
     }
 

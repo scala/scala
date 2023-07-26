@@ -14,8 +14,9 @@ package scala
 package reflect
 package internal
 
-import Flags._
 import scala.annotation.tailrec
+import Flags._
+import util._
 
 abstract class TreeInfo {
   // FIXME: With `global` as a `val`, implementers must use early initializers, which
@@ -253,35 +254,31 @@ abstract class TreeInfo {
     foreachMethodParamAndArg(params, args)((param, arg) => b += f(param, arg))
     b.result()
   }
-  def foreachMethodParamAndArg(params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => Unit): Boolean = {
+  private def foreachMethodParamAndArg(params: List[Symbol], args: List[Tree])(f: (Symbol, Tree) => Unit): Unit = {
     val plen   = params.length
     val alen   = args.length
-    def fail() = {
+    def fail() =
       global.devWarning(
-        s"""|Mismatch trying to zip method parameters and argument list:
-            |  params = $params
-            |    args = $args""".stripMargin)
-      false
-    }
+        sm"""|Mismatch trying to zip method parameters and argument list:
+             |  params = $params
+             |    args = $args""")
 
     if (plen == alen) foreach2(params, args)(f)
-    else if (params.isEmpty) return fail()
+    else if (params.isEmpty) fail()
     else if (isVarArgsList(params)) {
       val plenInit = plen - 1
       if (alen == plenInit) {
-        if (alen == 0) Nil        // avoid calling mismatched zip
+        if (alen == 0) ()        // avoid calling mismatched zip
         else foreach2(params.init, args)(f)
       }
-      else if (alen < plenInit) return fail()
+      else if (alen < plenInit) fail()
       else {
         foreach2(params.init, args take plenInit)(f)
         val remainingArgs = args drop plenInit
         foreach2(List.fill(remainingArgs.size)(params.last), remainingArgs)(f)
       }
     }
-    else return fail()
-
-    true
+    else fail()
   }
 
   def isFunctionMissingParamType(tree: Tree): Boolean = tree match {

@@ -15,15 +15,14 @@ package reflect
 package internal
 
 import java.net.URLClassLoader
+import java.util.concurrent.TimeUnit
 
 import scala.annotation.{elidable, nowarn, tailrec}
 import scala.collection.mutable
-import util._
-import java.util.concurrent.TimeUnit
-
 import scala.reflect.internal.settings.MutableSettings
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 import scala.reflect.io.AbstractFile
+import util._
 
 abstract class SymbolTable extends macros.Universe
                               with Collections
@@ -252,7 +251,7 @@ abstract class SymbolTable extends macros.Universe
   }
   final def popPhase(ph: Phase): Unit = {
     if (keepPhaseStack) {
-      phStack.pop()
+      phStack.pop(): @nowarn("cat=w-flag-value-discard")
     }
     phase = ph
   }

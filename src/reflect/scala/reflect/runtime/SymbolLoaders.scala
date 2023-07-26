@@ -14,6 +14,7 @@ package scala
 package reflect
 package runtime
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 
@@ -168,8 +169,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
                 // 7) that might materialize symbols and enter them into our scope (because syntheticCoreClasses live in rootMirror)
                 // 8) now we come back here and try to enter one of the now entered symbols => BAM!
                 // therefore we use enterIfNew rather than just enter
-                enterIfNew(clazz)
-                enterIfNew(module)
+                enterIfNew(clazz): @nowarn("cat=w-flag-value-discard")
+                enterIfNew(module): @nowarn("cat=w-flag-value-discard")
                 (clazz, module)
               }
             debugInfo(s"created $module/${module.moduleClass} in $pkgClass")

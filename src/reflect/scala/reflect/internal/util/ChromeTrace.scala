@@ -68,7 +68,7 @@ final class ChromeTrace(f: Path) extends Closeable {
   override def close(): Unit = {
     arrEnd()
     objEnd()
-    context.pop()
+    context.pop(): @nowarn("cat=w-flag-value-discard")
     tidCache.remove()
     traceWriter.close()
   }

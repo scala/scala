@@ -139,7 +139,8 @@ trait Importers { to: SymbolTable =>
           symMap.weakUpdate(their, my)
           if (their.thisSym != their) {
             my.typeOfThis = importType(their.typeOfThis)
-            my.thisSym setName importName(their.thisSym.name)
+            val s = my.thisSym
+            s.setName(importName(their.thisSym.name))
           }
           my.associatedFile = their.associatedFile
           my

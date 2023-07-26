@@ -2536,6 +2536,7 @@ trait Trees { self: Universe =>
     /** Leave apply available in the generic traverser to do something else.
      */
     def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
+    //def apply[T <: Tree](tree: T): tree.type = { traverse(tree); tree }
   }
 
   /** Delegates the traversal strategy to `scala.reflect.internal.Trees`,

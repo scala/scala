@@ -15,6 +15,7 @@ package reflect
 package internal
 
 import util._
+import scala.annotation.nowarn
 
 /** Handling range positions
  *  atPos, the main method in this trait, will add positions to a tree,
@@ -59,7 +60,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
         // Workaround, which explicitly includes annotations of traversed trees, can be removed when TODO above is resolved:
         head match { case md: MemberDef => rest = md.mods.annotations ::: rest  case _ => }
 
-        accum(head)
+        accum(head): @nowarn("cat=w-flag-value-discard")
       }
       accum.result(default, focus)
     }
@@ -400,19 +401,17 @@ trait Positions extends api.Positions { self: SymbolTable =>
     if (useOffsetPositions || !pos.isOpaqueRange) {
       posAssigner.pos = pos
       posAssigner.traverse(tree)
-      tree
     }
-    else {
-      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
-        tree.setPos(pos)
-        tree.onlyChild match {
-          case EmptyTree =>
-            setChildrenPos(pos, tree)
-          case only =>
-            atPos(pos)(only)
-        }
+    else if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
+      tree.setPos(pos)
+      tree.onlyChild match {
+        case EmptyTree =>
+          setChildrenPos(pos, tree)
+        case only =>
+          atPos(pos)(only): @nowarn("cat=w-flag-value-discard")
+          ()
       }
-      tree
     }
+    tree
   }
 }

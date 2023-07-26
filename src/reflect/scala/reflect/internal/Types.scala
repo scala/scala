@@ -1116,12 +1116,11 @@ trait Types
     override def isError: Boolean = true
     override def decls: Scope = new ErrorScope(NoSymbol)
     override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      var sym = decls lookup name
-      if (sym == NoSymbol) {
-        sym = NoSymbol.newErrorSymbol(name)
-        decls enter sym
+      val errscope = decls
+      errscope.lookup(name) match {
+        case NoSymbol => errscope.enter(NoSymbol.newErrorSymbol(name))
+        case sym => sym
       }
-      sym
     }
     override def baseType(clazz: Symbol): Type = this
     override def safeToString: String = "<error>"
@@ -1907,7 +1906,7 @@ trait Types
     private[scala] def expansiveRefs(tparam: Symbol) = {
       if (state == UnInitialized) {
         computeRefs()
-        while (state != Initialized) propagate()
+        while (state != Initialized) propagate(): @nowarn("cat=w-flag-value-discard")
       }
       getRefs(Expansive, tparam)
     }
@@ -2009,7 +2008,7 @@ trait Types
 
     /** Propagate to form transitive closure.
      *  Set state to Initialized if no change resulted from propagation.
-     *  @return   true iff there as a change in last iteration
+     *  @return   true iff there was a change in last iteration
      */
     private def propagate(): Boolean = {
       if (state == UnInitialized) computeRefs()

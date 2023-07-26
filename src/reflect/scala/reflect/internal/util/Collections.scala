@@ -390,9 +390,9 @@ trait Collections {
     val bs = new mutable.BitSet()
     var ys = xs
     var i: Int = 0
-    while (! ys.isEmpty){
+    while (!ys.isEmpty) {
       if (pred(ys.head))
-        bs.add(i)
+        bs.addOne(i)
       ys = ys.tail
       i += 1
     }
@@ -468,11 +468,14 @@ trait Collections {
               zs = zs.tail
               j += 1
             }
-            (if (b) ayes else nays) += y
+            val votes = if (b) ayes else nays
+            votes += y
+            ()
           }
           n += 1
         } else {
-          (if (b) ayes else nays) += y
+          val votes = if (b) ayes else nays
+          votes += y
         }
         ys = ys.tail
       }

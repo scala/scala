@@ -16,8 +16,8 @@ package internal
 
 import scala.annotation.{meta, migration, nowarn, tailrec}
 import scala.collection.mutable
-import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
+import Flags._
 import PartialFunction.cond
 import util.StringContextStripMarginOps
 
@@ -241,6 +241,7 @@ trait Definitions extends api.StandardDefinitions {
       fullyInitializeType(sym.tpe_*)
       sym
     }
+    @nowarn("cat=w-flag-value-discard")
     def fullyInitializeType(tp: Type): tp.type = {
       tp.typeParams foreach fullyInitializeSymbol
       mforeach(tp.paramss)(fullyInitializeSymbol)
@@ -589,6 +590,7 @@ trait Definitions extends api.StandardDefinitions {
     /**Implementation of a class that is identical to `scala.reflect.macros.internal.macroImpl`,
      * but only exists at compile time
      */
+    @nowarn("cat=w-flag-value-discard")
     lazy val MacroImplLocationAnnotation = {
       val internalPkg       = MacroImplAnnotation.owner.suchThat(_.isPackageClass)
       val MacroImplLocation = internalPkg.newClassSymbol(tpnme.macroImplLocation, NoPosition)
@@ -1402,7 +1404,8 @@ trait Definitions extends api.StandardDefinitions {
         case _ =>
           RuntimePackageClass.info.decls enter sym
           // This attribute needs a constructor so that modifiers in parsed Java code make sense
-          sym.info.decls enter sym.newClassConstructor(NoPosition)
+          val scope = sym.info.decls
+          scope.enter(sym.newClassConstructor(NoPosition))
           sym
       }
     }

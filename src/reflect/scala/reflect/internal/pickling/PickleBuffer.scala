@@ -15,6 +15,7 @@ package reflect
 package internal
 package pickling
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 
 /** Variable length byte arrays, with methods for basic pickling and unpickling.
@@ -145,7 +146,8 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   def toIndexedSeq: IndexedSeq[(Int, Array[Byte])] = {
     val saved = readIndex
     readIndex = 0
-    readNat() ; readNat()     // discarding version
+    readNat(): @nowarn("cat=w-flag-value-discard") // discarding version
+    readNat(): @nowarn("cat=w-flag-value-discard") // discarding version
     val result = new Array[(Int, Array[Byte])](readNat())
 
     result.indices foreach { index =>
@@ -186,7 +188,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     val index = new Array[Int](readNat()) // nbEntries_Nat
     for (i <- 0 until index.length) {
       index(i) = readIndex
-      readByte() // skip type_Nat
+      readByte(): @nowarn("cat=w-flag-value-discard") // skip type_Nat
       readIndex = readNat() + readIndex // read length_Nat, jump to next entry
     }
     index

@@ -15,6 +15,8 @@ package reflect
 package io
 
 import java.io.{ File => JFile }
+import scala.annotation.nowarn
+
 /**
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
@@ -29,7 +31,7 @@ object Directory {
   // Like File.makeTemp but creates a directory instead
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null): Directory = {
     val path = File.makeTemp(prefix, suffix, dir)
-    path.delete()
+    path.delete(): @nowarn("cat=w-flag-value-discard")
     path.createDirectory()
   }
 }

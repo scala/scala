@@ -231,7 +231,7 @@ class ArrayDeque[A] protected (
     }
   }
 
-  def remove(idx: Int, count: Int): Unit = {
+  def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
       requireBounds(idx)
       val n = length
@@ -271,7 +271,6 @@ class ArrayDeque[A] protected (
     } else {
       require(count == 0, s"removing negative number of elements: $count")
     }
-  }
 
   def remove(idx: Int): A = {
     val elem = this(idx)
