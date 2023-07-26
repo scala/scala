@@ -14,11 +14,12 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.nowarn
 import scala.annotation.tailrec
-import mutable.{Builder, ListBuffer}
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
+import mutable.{Builder, ListBuffer}
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -327,6 +328,7 @@ sealed abstract class List[+A]
 
   // Overridden with an implementation identical to the inherited one (at this time)
   // solely so it can be finalized and thus inlinable.
+  @nowarn("cat=w-flag-value-discard")
   @inline final override def foreach[U](f: A => U): Unit = {
     var these = this
     while (!these.isEmpty) {

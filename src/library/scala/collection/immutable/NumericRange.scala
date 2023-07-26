@@ -12,6 +12,7 @@
 
 package scala.collection.immutable
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, Iterator, Stepper, StepperShape}
 
@@ -108,6 +109,7 @@ sealed class NumericRange[T](
     else locationAfterN(idx)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[@specialized(Specializable.Unit) U](f: T => U): Unit = {
     var count = 0
     var current = start

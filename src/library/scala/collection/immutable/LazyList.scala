@@ -17,6 +17,7 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{StringBuilder => JStringBuilder}
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.{Builder, ReusableBuilder, StringBuilder}
@@ -337,6 +338,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *  @note  This function will force the realization of the entire LazyList
     *  unless the `f` throws an exception.
     */
+  @nowarn("cat=w-flag-value-discard")
   @tailrec
   override def foreach[U](f: A => U): Unit = {
     if (!isEmpty) {
@@ -509,6 +511,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
+  @nowarn("cat=w-flag-value-discard")
   override def tapEach[U](f: A => U): LazyList[A] = map { a => f(a); a }
 
   private def mapImpl[B](f: A => B): LazyList[B] =

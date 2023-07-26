@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializationProxy
 import scala.language.implicitConversions
 
@@ -424,6 +425,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   override def keysIterator: Iterator[Long] = super.keysIterator
   override def valuesIterator: Iterator[V] = super.valuesIterator
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: ((Long,V)) => U): Unit = {
     if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
     if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
@@ -438,6 +440,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreachEntry[U](f: (Long,V) => U): Unit = {
     if ((extraKeys & 1) == 1) f(0L, zeroValue.asInstanceOf[V])
     if ((extraKeys & 2) == 2) f(Long.MinValue, minValue.asInstanceOf[V])
@@ -486,6 +489,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     clone().asInstanceOf[LongMap[V1]].addOne(key, value)
 
   /** Applies a function to all keys of this map. */
+  @nowarn("cat=w-flag-value-discard")
   def foreachKey[A](f: Long => A): Unit = {
     if ((extraKeys & 1) == 1) f(0L)
     if ((extraKeys & 2) == 2) f(Long.MinValue)
@@ -501,6 +505,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   /** Applies a function to all values of this map. */
+  @nowarn("cat=w-flag-value-discard")
   def foreachValue[A](f: V => A): Unit = {
     if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V])
     if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V])

@@ -269,6 +269,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *
     *  @see [[sizeIs]]
     */
+  @nowarn("cat=w-flag-value-discard")
   def sizeCompare(otherSize: Int): Int = {
     if (otherSize < 0) 1
     else {
@@ -317,6 +318,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  is `O(this.size min that.size)` instead of `O(this.size + that.size)`.
     *  The method should be overridden if computing `size` is cheap and `knownSize` returns `-1`.
     */
+  @nowarn("cat=w-flag-value-discard")
   def sizeCompare(that: Iterable[_]): Int = {
     val thatKnownSize = that.knownSize
 
@@ -837,6 +839,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def inits: Iterator[C] = iterateUntilEmpty(_.init)
 
+  @nowarn("cat=w-flag-value-discard")
   override def tapEach[U](f: A => U): C = fromSpecific(new View.Map(this, { (a: A) => f(a); a }))
 
   // A helper for tails and inits.

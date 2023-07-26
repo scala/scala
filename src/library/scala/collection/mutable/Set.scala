@@ -46,7 +46,9 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
    */
   def add(elem: A): Boolean =
     !contains(elem) && {
-      coll += elem; true
+      val c = coll
+      c += elem
+      true
     }
 
   /** Updates the presence of a single element in this set.
@@ -75,7 +77,8 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
    */
   def remove(elem: A): Boolean = {
     val res = contains(elem)
-    coll -= elem
+    val c = coll
+    c -= elem
     res
   }
 

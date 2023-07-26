@@ -143,6 +143,7 @@ object MapView extends MapViewFactory {
 
   @SerialVersionUID(3L)
   class TapEach[K, +V, +U](underlying: SomeMapOps[K, V], f: ((K, V)) => U) extends AbstractMapView[K, V] {
+    @nowarn("cat=w-flag-value-discard")
     override def get(key: K): Option[V] = {
       underlying.get(key) match {
         case s @ Some(v) =>

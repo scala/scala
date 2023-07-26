@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializationProxy
 import scala.math.Ordering
 
@@ -251,7 +252,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
       val result = resarr.p_array(1)
       resarr.p_array(1) = resarr.p_array(resarr.p_size0)
       resarr.p_array(resarr.p_size0) = null // erase reference from array
-      fixDown(resarr.p_array, 1, resarr.p_size0 - 1)
+      fixDown(resarr.p_array, 1, resarr.p_size0 - 1): @nowarn("cat=w-flag-value-discard")
       toA(result)
     } else
       throw new NoSuchElementException("no element to remove from heap")

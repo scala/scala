@@ -235,24 +235,16 @@ object StringContext {
     // it refers to a glob wildcard; a non-negative integer indicates which
     // glob wildcard it represents, while -1 means it doesn't represent any
     val matchIndices = {
-      val arr = Array.fill(patternLength + 1)(-1)
-      patternChunks.init.zipWithIndex.foldLeft(0) { case (ttl, (chunk, i)) =>
-        val sum = ttl + chunk.length
-        arr(sum) = i
-        sum + 1
-      }
-      arr
-      /*
       def loop(chunks: Seq[String], ttl: Int, i: Int, arr: Array[Int]): Array[Int] =
         chunks match {
           case Seq(_) => arr
-          case Seq(h, rest: _*) =>
+          case Seq(h, rest @ _*) =>
             val bump = ttl + h.length
             arr(bump) = i
             loop(rest, bump + 1, i + 1, arr)
+          case Seq() => Array.empty
         }
       loop(patternChunks, ttl = 0, i = 0, Array.fill(patternLength + 1)(-1))
-      */
     }
 
     while (patternIndex < patternLength || inputIndex < nameLength) {

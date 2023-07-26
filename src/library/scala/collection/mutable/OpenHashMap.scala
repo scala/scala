@@ -153,9 +153,11 @@ class OpenHashMap[Key, Value](initialSize : Int)
   @nowarn("cat=w-flag-value-discard")
   override def update(key: Key, value: Value): Unit = put(key, value)
 
+  @nowarn("cat=w-flag-value-discard")
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
   def addOne (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
 
+  @nowarn("cat=w-flag-value-discard")
   @deprecatedOverriding("subtractOne should not be overridden in order to maintain consistency with remove.", "2.11.0")
   def subtractOne (key: Key): this.type = { remove(key); this }
 

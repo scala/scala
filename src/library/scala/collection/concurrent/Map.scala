@@ -13,6 +13,7 @@
 package scala
 package collection.concurrent
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 
 /** A template trait for mutable maps that allow concurrent access.
@@ -176,7 +177,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
-      if (!p(k, v)) removeRefEq(k, v)
+      if (!p(k, v)) { removeRefEq(k, v): @nowarn("cat=w-flag-value-discard"); () }
     }
     this
   }
@@ -185,7 +186,7 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     val it = iterator
     while (it.hasNext) {
       val (k, v) = it.next()
-      replaceRefEq(k, v, f(k, v))
+      replaceRefEq(k, v, f(k, v)): @nowarn("cat=w-flag-value-discard")
     }
     this
   }

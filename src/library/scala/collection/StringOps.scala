@@ -15,6 +15,7 @@ package collection
 
 import java.lang.{StringBuilder => JStringBuilder}
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper}
 import scala.collection.immutable.{ArraySeq, WrappedString}
@@ -69,6 +70,7 @@ object StringOps {
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
       */
+    @nowarn("cat=w-flag-value-discard")
     def foreach[U](f: Char => U): Unit = {
       val len = s.length
       var i = 0
@@ -1032,6 +1034,7 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Apply `f` to each element for its side effects.
     * Note: [U] parameter needed to help scalac's type inference.
     */
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: Char => U): Unit = {
     val len = s.length
     var i = 0

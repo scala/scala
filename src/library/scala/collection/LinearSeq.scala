@@ -132,6 +132,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     skipped.head
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: A => U): Unit = {
     var these: LinearSeq[A] = coll
     while (!these.isEmpty) {

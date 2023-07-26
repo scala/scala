@@ -188,6 +188,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     else if (Ordering.Int isReverseOf ord) largestInt
     else super.min(ord)
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: Int => U): Unit = {
     /* NOTE: while loops are significantly faster as of 2.11 and
        one major use case of bitsets is performance. Also, there

@@ -13,6 +13,7 @@
 package scala
 package collection.mutable
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import collection.{AbstractIterator, Iterator}
 import java.lang.String
@@ -435,12 +436,14 @@ private[collection] object RedBlackTree {
   private[this] def foreachNode[A, B, U](node: Node[A, B], f: ((A, B)) => U): Unit =
     if (node ne null) foreachNodeNonNull(node, f)
 
+  @nowarn("cat=w-flag-value-discard")
   private[this] def foreachNodeNonNull[A, B, U](node: Node[A, B], f: ((A, B)) => U): Unit = {
     if (node.left ne null) foreachNodeNonNull(node.left, f)
     f((node.key, node.value))
     if (node.right ne null) foreachNodeNonNull(node.right, f)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = {
     def g(node: Node[A, _]): Unit = {
       val l = node.left
@@ -453,6 +456,7 @@ private[collection] object RedBlackTree {
     if(r ne null) g(r)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
     def g(node: Node[A, B]): Unit = {
       val l = node.left

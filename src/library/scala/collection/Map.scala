@@ -237,6 +237,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** Apply `f` to each key/value pair for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */
+  @nowarn("cat=w-flag-value-discard")
   def foreachEntry[U](f: (K, V) => U): Unit = {
     val it = iterator
     while (it.hasNext) {

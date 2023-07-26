@@ -389,6 +389,7 @@ object View extends IterableFactory[View] {
       private[this] val it = underlying.iterator
       private[this] var i = 0
       def next(): A = {
+        @nowarn("cat=w-flag-value-discard")
         val value = if (i == index) { it.next(); elem } else it.next()
         i += 1
         value

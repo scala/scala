@@ -12,10 +12,11 @@
 
 package scala.collection.immutable
 
-import scala.collection.AbstractIterator
 import java.lang.Integer.bitCount
 import java.lang.Math.ceil
 import java.lang.System.arraycopy
+import scala.annotation.nowarn
+import scala.collection.AbstractIterator
 
 private[collection] object Node {
   final val HashCodeLength = 32
@@ -206,7 +207,7 @@ private[immutable] abstract class ChampBaseReverseIterator[A, T <: Node[T]] exte
   def this(rootNode: T) = {
     this()
     pushNode(rootNode)
-    searchNextValueNode()
+    searchNextValueNode(): @nowarn("cat=w-flag-value-discard")
   }
 
   private final def setupPayloadNode(node: T): Unit = {

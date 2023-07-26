@@ -695,7 +695,8 @@ private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, 
         if (hashMapBuilder == null) {
           hashMapBuilder = new HashMapBuilder
         }
-        elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder)
+        val e1 = elems.asInstanceOf[Map4[K, V]]
+        e1.buildTo(hashMapBuilder)
         hashMapBuilder.addOne(key, value)
       }
     }

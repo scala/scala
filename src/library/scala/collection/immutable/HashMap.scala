@@ -16,6 +16,7 @@ package collection.immutable
 import java.lang.Integer.bitCount
 import java.lang.System.arraycopy
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
 import scala.collection.Stepper.EfficientSplit
@@ -824,7 +825,7 @@ private final class BitmapIndexedMapNode[K, +V](
 
       val subNodeNew: MapNode[K, V1] = subNode match {
         case subNodeBm: BitmapIndexedMapNode[K, V] if (bitpos & shallowlyMutableNodeMap) != 0 =>
-          subNodeBm.updateWithShallowMutations(key, value, originalHash, keyHash, shift + BitPartitionSize, 0)
+          subNodeBm.updateWithShallowMutations(key, value, originalHash, keyHash, shift + BitPartitionSize, 0): @nowarn("cat=w-flag-value-discard")
           subNodeBm
         case _ =>
           val result = subNode.updated(key, value, originalHash, keyHash, shift + BitPartitionSize, replaceValue = true)
@@ -1108,6 +1109,7 @@ private final class BitmapIndexedMapNode[K, +V](
     )
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreach[U](f: ((K, V)) => U): Unit = {
     val iN = payloadArity // arity doesn't change during this operation
     var i = 0
@@ -1124,6 +1126,7 @@ private final class BitmapIndexedMapNode[K, +V](
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   override def foreachEntry[U](f: (K, V) => U): Unit = {
     val iN = payloadArity // arity doesn't change during this operation
     var i = 0

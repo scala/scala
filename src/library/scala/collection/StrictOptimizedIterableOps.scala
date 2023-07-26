@@ -259,8 +259,8 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {
-      lead.next()
-      it.next()
+      lead.next(): @nowarn("cat=w-flag-value-discard")
+      it.next(): @nowarn("cat=w-flag-value-discard")
     }
     while (it.hasNext) b += it.next()
     b.result()
@@ -277,7 +277,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     val it = iterator
     while (lead.hasNext) {
       b += it.next()
-      lead.next()
+      lead.next(): @nowarn("cat=w-flag-value-discard")
     }
     b.result()
   }

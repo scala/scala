@@ -560,7 +560,7 @@ private final class BitmapIndexedSetNode[A](
 
       val subNodeNew: SetNode[A] = subNode match {
         case subNodeBm: BitmapIndexedSetNode[A] if (bitpos & shallowlyMutableNodeMap) != 0 =>
-          subNodeBm.updateWithShallowMutations(element, originalHash, elementHash, shift + BitPartitionSize, 0)
+          subNodeBm.updateWithShallowMutations(element, originalHash, elementHash, shift + BitPartitionSize, 0): @nowarn("cat=w-flag-value-discard")
           subNodeBm
         case _ =>
           val subNodeNew = subNode.updated(element, originalHash, elementHash, shift + BitPartitionSize)
@@ -953,6 +953,7 @@ private final class BitmapIndexedSetNode[A](
     this.cachedJavaKeySetHashCode = this.cachedJavaKeySetHashCode - oldNode.cachedJavaKeySetHashCode + node.cachedJavaKeySetHashCode
   }
 
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: A => U): Unit = {
     val thisPayloadArity = payloadArity
     var i = 0
@@ -1795,6 +1796,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
 
   def size: Int = content.length
 
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: A => U): Unit = {
     val iter = content.iterator
     while (iter.hasNext) {

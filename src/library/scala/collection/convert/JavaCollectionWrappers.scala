@@ -14,10 +14,11 @@ package scala
 package collection
 package convert
 
+import java.{lang => jl, util => ju}
 import java.util.{concurrent => juc}
 import java.util.{NavigableMap}
-import java.{lang => jl, util => ju}
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 import scala.util.chaining._
@@ -187,7 +188,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
-              ms remove e
+              ms.remove(e): @nowarn("cat=w-flag-value-discard")
               prev = None
             case _ =>
               throw new UnsupportedOperationException("remove")
@@ -423,6 +424,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
       def next() = { val e = ui.next(); (e.getKey, e.getValue) }
     }
 
+    @nowarn("cat=w-flag-value-discard")
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       val i = underlying.entrySet().iterator()
       while (i.hasNext) {

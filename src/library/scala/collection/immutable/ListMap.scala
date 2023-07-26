@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.generic.DefaultSerializable
@@ -91,6 +92,7 @@ sealed class ListMap[K, +V]
         override def updated[V1 >: V](key: K, value: V1): Map[K, V1] = ListMap.this.updated(key, value)
         override def get(key: K): Option[V] = ListMap.this.get(key)
         override def iterator: Iterator[(K, V)] = ListMap.this.iterator
+        @nowarn("cat=w-flag-value-discard")
         override def foreachEntry[U](f: (K, V) => U): Unit = {
           var curr: ListMap[K, V] = ListMap.this
           while (curr.nonEmpty) {

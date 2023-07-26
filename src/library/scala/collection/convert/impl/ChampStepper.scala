@@ -13,6 +13,7 @@
 package scala.collection.convert
 package impl
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 import scala.collection.immutable.Node
@@ -148,7 +149,8 @@ extends EfficientSplit {
             j -= 1
           }
           nodeCursorsAndLengths(2*fork) = i
-          searchNextValueNode()
+          searchNextValueNode(): @nowarn("cat=w-flag-value-discard")
+          ()
         }
         semi
       }

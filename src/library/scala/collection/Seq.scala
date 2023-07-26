@@ -146,7 +146,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
     */
-  @`inline` final def :+ [B >: A](elem: B): CC[B] = appended(elem)
+  @inline final def :+ [B >: A](elem: B): CC[B] = appended(elem)
 
   /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.
@@ -894,7 +894,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         }
         case Some(1) => None
         case Some(n) => Some(n - 1)
-      }
+      }: @nowarn("cat=w-flag-value-discard")
       include
     })
   }
@@ -919,7 +919,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         }
         case Some(1) => None
         case Some(n) => Some(n - 1)
-      }
+      }: @nowarn("cat=w-flag-value-discard")
       include
     })
   }

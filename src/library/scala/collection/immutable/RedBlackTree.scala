@@ -14,8 +14,9 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.meta.{getter, setter}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
+import scala.annotation.meta.{getter, setter}
 import scala.runtime.Statics.releaseFence
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
@@ -271,6 +272,7 @@ private[collection] object RedBlackTree {
     else a.count == b.count && (new EqualsIterator(a)).sameEntries(new EqualsIterator(b))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
@@ -279,6 +281,7 @@ private[collection] object RedBlackTree {
 
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
 
+  @nowarn("cat=w-flag-value-discard")
   private[this] def _foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = {
     if (tree.left ne null) _foreachKey(tree.left, f)
     f((tree.key))
@@ -287,6 +290,7 @@ private[collection] object RedBlackTree {
 
   def foreachEntry[A, B, U](tree:Tree[A,B], f: (A, B) => U):Unit = if (tree ne null) _foreachEntry(tree,f)
 
+  @nowarn("cat=w-flag-value-discard")
   private[this] def _foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
     if (tree.left ne null) _foreachEntry(tree.left, f)
     f(tree.key, tree.value)
@@ -568,20 +572,21 @@ private[collection] object RedBlackTree {
 
     //mutable APIs
     private[RedBlackTree] def makeImmutable: this.type = {
-      def makeImmutableImpl(): Unit = {
+      def makeImmutableImpl(): Unit =
         if (isMutable) {
           var size = 1
           if (_left ne null) {
-            _left.makeImmutable
-            size += _left.count
+            val t = _left
+            t.makeImmutable
+            size += t.count
           }
           if (_right ne null) {
-            _right.makeImmutable
-            size += _right.count
+            val t = _right
+            t.makeImmutable
+            size += t.count
           }
           _count |= size //retains colour
         }
-      }
       makeImmutableImpl()
       this
     }

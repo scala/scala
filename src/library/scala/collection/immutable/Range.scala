@@ -13,9 +13,10 @@
 package scala
 package collection.immutable
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.convert.impl.RangeStepper
 import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, Iterator, Stepper, StepperShape}
+import scala.collection.convert.impl.RangeStepper
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
@@ -181,6 +182,7 @@ sealed abstract class Range(
     else start + (step * idx)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   /*@`inline`*/ final override def foreach[@specialized(Unit) U](f: Int => U): Unit = {
     // Implementation chosen on the basis of favorable microbenchmarks
     // Note--initialization catches step == 0 so we don't need to here

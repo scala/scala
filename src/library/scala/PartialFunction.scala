@@ -227,6 +227,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *  @return  a function which maps arguments `x` to `isDefinedAt(x)`. The resulting function
    *           runs `action(this(x))` where `this` is defined.
    */
+  @nowarn("cat=w-flag-value-discard")
   def runWith[U](action: B => U): A => Boolean = { x =>
     val z = applyOrElse(x, checkFallback[B])
     if (!fallbackOccurred(z)) { action(z); true } else false

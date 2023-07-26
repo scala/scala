@@ -12,9 +12,10 @@
 
 package scala.collection
 
-import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
 import scala.runtime.Statics
 
 /** Iterators are data structures that allow to iterate over a sequence
@@ -449,7 +450,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
     while (i < from && hasNext) {
-      next()
+      next(): @nowarn("cat=w-flag-value-discard")
       i += 1
     }
 
@@ -947,6 +948,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   override def tapEach[U](f: A => U): Iterator[A] = new AbstractIterator[A] {
     override def knownSize = self.knownSize
     override def hasNext = self.hasNext
+    @nowarn("cat=w-flag-value-discard")
     override def next() = {
       val _next = self.next()
       f(_next)
@@ -1220,6 +1222,7 @@ object Iterator extends IterableFactory[Iterator] {
     private[this] var remaining = limit
     private[this] var dropping  = start
     @inline private def unbounded = remaining < 0
+    @nowarn("cat=w-flag-value-discard")
     private def skip(): Unit =
       while (dropping > 0) {
         if (underlying.hasNext) {

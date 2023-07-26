@@ -15,7 +15,6 @@ package collection
 
 import scala.annotation.nowarn
 
-
 trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   override def view: SeqView[A] = this
 
@@ -27,6 +26,7 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   override def drop(n: Int): SeqView[A] = new SeqView.Drop(this, n)
   override def takeRight(n: Int): SeqView[A] = new SeqView.TakeRight(this, n)
   override def dropRight(n: Int): SeqView[A] = new SeqView.DropRight(this, n)
+  @nowarn("cat=w-flag-value-discard")
   override def tapEach[U](f: A => U): SeqView[A] = new SeqView.Map(this, { (a: A) => f(a); a })
 
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)

@@ -12,6 +12,7 @@
 
 package scala.collection
 
+import scala.annotation.nowarn
 import scala.language.implicitConversions
 
 /** Decorator representing lazily zipped pairs.
@@ -105,6 +106,7 @@ final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterabl
 
   def forall(p: (El1, El2) => Boolean): Boolean = !exists((el1, el2) => !p(el1, el2))
 
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: (El1, El2) => U): Unit = {
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator
@@ -239,6 +241,7 @@ final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
 
   def forall(p: (El1, El2, El3) => Boolean): Boolean = !exists((el1, el2, el3) => !p(el1, el2, el3))
 
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator
@@ -376,6 +379,7 @@ final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
 
   def forall(p: (El1, El2, El3, El4) => Boolean): Boolean = !exists((el1, el2, el3, el4) => !p(el1, el2, el3, el4))
 
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: (El1, El2, El3, El4) => U): Unit = {
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator

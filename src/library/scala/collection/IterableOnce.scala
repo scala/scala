@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.StringBuilder
@@ -571,6 +572,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /** Apply `f` to each element for its side effects
    *  Note: [U] parameter needed to help scalac's type inference.
    */
+  @nowarn("cat=w-flag-value-discard")
   def foreach[U](f: A => U): Unit = {
     val it = iterator
     while(it.hasNext) f(it.next())
@@ -858,6 +860,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @return    the number of elements in this $coll.
    */
+  @nowarn("cat=w-flag-value-discard")
   def size: Int =
     if (knownSize >= 0) knownSize
     else {
