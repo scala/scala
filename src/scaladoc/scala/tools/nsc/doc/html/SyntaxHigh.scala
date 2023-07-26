@@ -99,15 +99,14 @@ private[html] object SyntaxHigh {
 
     def comment(i: Int): String = {
       val out = new StringBuilder("/")
-      def line(i: Int): Int =
-        if (i == buf.length || buf(i) == '\n') i
+      def line(i: Int): Unit =
+        if (i == buf.length || buf(i) == '\n') ()
         else {
           out append buf(i)
           line(i+1)
         }
       var level = 0
-      def multiline(i: Int, star: Boolean): Int = {
-        if (i == buf.length) return i
+      def multiline(i: Int, star: Boolean): Unit = if (i != buf.length) {
         val ch = buf(i)
         out append ch
         ch match {
@@ -117,7 +116,7 @@ private[html] object SyntaxHigh {
           case '/' =>
             if (star) {
               if (level > 0) level -= 1
-              if (level == 0) i else multiline(i+1, star = true)
+              if (level == 0) () else multiline(i+1, star = true)
             } else
               multiline(i+1, star = false)
           case _ =>
@@ -131,9 +130,9 @@ private[html] object SyntaxHigh {
     /* e.g. `val endOfLine = '\u000A'`*/
     def charlit(j: Int): String = {
       val out = new StringBuilder("'")
-      def charlit0(i: Int, bslash: Boolean): Int = {
-        if (i == buf.length) i
-        else if (i > j+6) { out setLength 0; j }
+      def charlit0(i: Int, bslash: Boolean): Unit =
+        if (i == buf.length) ()
+        else if (i > j+6) { out setLength 0; () }
         else {
           val ch = buf(i)
           out append ch
@@ -141,13 +140,12 @@ private[html] object SyntaxHigh {
             case '\\' =>
               charlit0(i+1, bslash = true)
             case '\'' if !bslash =>
-              i
+              ()
             case _ =>
               if (bslash && '0' <= ch && ch <= '9') charlit0(i+1, bslash = true)
               else charlit0(i+1, bslash = false)
           }
         }
-      }
       charlit0(j, bslash = false)
       out.toString
     }
@@ -195,48 +193,36 @@ private[html] object SyntaxHigh {
 
     def numlit(i: Int): String = {
       val out = new StringBuilder
-      def intg(i: Int): Int = {
-        if (i == buf.length) return i
-        val ch = buf(i)
-        ch match {
+      def intg(i: Int): Unit = if (i != buf.length)
+        buf(i) match {
           case '.' =>
+            out.append('.')
+            frac(i+1)
+          case ch if Character.isDigit(ch) =>
+            out append ch
+            intg(i+1)
+          case _ =>
+        }
+      def frac(i: Int): Unit = if (i != buf.length)
+        buf(i) match {
+          case ch @ ('e' | 'E') =>
+            out append ch
+            expo(i+1, signed = false)
+          case ch if Character.isDigit(ch) =>
             out append ch
             frac(i+1)
           case _ =>
-            if (Character.isDigit(ch)) {
-              out append ch
-              intg(i+1)
-            } else i
         }
-      }
-      def frac(i: Int): Int = {
-        if (i == buf.length) return i
-        val ch = buf(i)
-        ch match {
-          case 'e' | 'E' =>
-            out append ch
-            expo(i+1, signed = false)
-          case _ =>
-            if (Character.isDigit(ch)) {
-              out append ch
-              frac(i+1)
-            } else i
-        }
-      }
-      def expo(i: Int, signed: Boolean): Int = {
-        if (i == buf.length) return i
-        val ch = buf(i)
-        ch match {
-          case '+' | '-' if !signed =>
+      def expo(i: Int, signed: Boolean): Unit = if (i != buf.length)
+        buf(i) match {
+          case ch @ ('+' | '-') if !signed =>
             out append ch
             expo(i+1, signed = true)
+          case ch if Character.isDigit(ch) =>
+            out append ch
+            expo(i+1, signed)
           case _ =>
-            if (Character.isDigit(ch)) {
-              out append ch
-              expo(i+1, signed)
-            } else i
         }
-      }
       intg(i)
       out.toString
     }

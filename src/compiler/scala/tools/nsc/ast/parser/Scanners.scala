@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.Chars._
 import scala.reflect.internal.util._
@@ -89,6 +89,9 @@ trait ScannersCommon {
     private var lastDoc: DocComment = null
     // get last doc comment
     def flushDoc(): DocComment = try lastDoc finally lastDoc = null
+    // discard last doc comment
+    @nowarn("cat=w-flag-value-discard")
+    def discardDoc(): Unit = flushDoc()
     def registerDocComment(raw: String, pos: Position) = {
       lastDoc = DocComment(raw, pos)
       signalParsedDocComment(raw, pos)

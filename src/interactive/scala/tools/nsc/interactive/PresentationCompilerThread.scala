@@ -12,6 +12,8 @@
 
 package scala.tools.nsc.interactive
 
+import scala.annotation.nowarn
+
 /** A presentation compiler thread. This is a lightweight class, delegating most
  *  of its functionality to the compiler instance.
  *
@@ -25,7 +27,7 @@ final class PresentationCompilerThread(var compiler: Global, name: String = "")
     compiler.debugLog("starting new runner thread")
     while (compiler ne null) try {
       compiler.checkNoResponsesOutstanding()
-      compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
+      compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true }): @nowarn("cat=w-flag-value-discard")
       compiler.pollForWork(compiler.NoPosition)
       while (compiler.isOutOfDate) {
         try {

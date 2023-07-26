@@ -19,6 +19,7 @@ import java.io.PrintStream
 import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
+import scala.annotation.nowarn
 import scala.reflect.internal.{Flags, Names}
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 
@@ -130,7 +131,7 @@ object ShowPickled extends Names {
     val entryList = makeEntryList(buf, index)
     buf.readIndex = 0
 
-    def p(s: String) = out print s
+    def p(s: String): Unit = out.print(s)
 
     def printNameRef(): Unit = {
       val idx = buf.readNat()
@@ -188,6 +189,7 @@ object ShowPickled extends Names {
      * interpreted are for the most part going to tell you the wrong thing.
      * It's not so easy to duplicate the logic applied in the UnPickler.
      */
+    @nowarn("cat=w-flag-value-discard")
     def printEntry(i: Int): Unit = {
       buf.readIndex = index(i)
       p("" + i + "," + buf.readIndex + ": ")
@@ -210,7 +212,7 @@ object ShowPickled extends Names {
           if (tag == CLASSsym && (buf.readIndex < end)) printTypeRef()
         case EXTref | EXTMODCLASSref =>
           printNameRef()
-          if (buf.readIndex < end) { printSymbolRef() }
+          if (buf.readIndex < end) printSymbolRef()
         case THIStpe =>
           printSymbolRef()
         case SINGLEtpe =>

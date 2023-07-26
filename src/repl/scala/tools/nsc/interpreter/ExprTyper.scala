@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.interpreter
 
+import scala.annotation.nowarn
 import Results.{Result, Success}
 
 trait ExprTyper {
@@ -58,7 +59,7 @@ trait ExprTyper {
       }
     }
     def asError(): Symbol = {
-      doInterpret(code)
+      doInterpret(code): @nowarn("cat=w-flag-value-discard")
       NoSymbol
     }
     reporter.suppressOutput { asExpr() orElse asDefn() } orElse asError()

@@ -5,7 +5,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
+
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 class SortedSetTest {
   import SortedSetTest._
 

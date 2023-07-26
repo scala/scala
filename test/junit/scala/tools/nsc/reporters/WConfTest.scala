@@ -17,12 +17,13 @@ import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 import java.io.{File => JFile}
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.internal.{Reporter => InternalReporter}
+import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.reflect.io.PlainFile
-import scala.tools.nsc.Reporting.{Version, WarningCategory}
 import scala.reflect.io.File
+import scala.tools.nsc.Reporting.{Version, WarningCategory}
 import scala.tools.nsc.reporters.StoreReporter.Info
 import scala.tools.testkit.AssertUtil.fail
 import scala.tools.testkit.BytecodeTesting
@@ -42,6 +43,7 @@ class WConfTest extends BytecodeTesting {
   def infos(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] =
     reports(code, extraWconf, lint).filter(_.severity == InternalReporter.INFO)
 
+  @nowarn("cat=w-flag-value-discard")
   def reports(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] = {
     // lint has a postSetHook to enable `deprecated`, which in turn adds to `Wconf`,
     // but since we clear and initialize Wconf after enabling lint, that effect is cancelled.

@@ -13,11 +13,12 @@
 package scala.tools.nsc
 package ast
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import symtab.Flags._
 import scala.reflect.internal.util.FreshNameCreator
 import scala.reflect.internal.util.ListOfNil
+import symtab.Flags._
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -382,7 +383,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     defineOriginalOwner(anonClass, fun.symbol.originalOwner)
 
     val samDef = mkMethodFromFunction(localTyper)(anonClass, fun)
-    anonClass.info.decls enter samDef.symbol
+    anonClass.info.decls.enter(samDef.symbol): @nowarn("cat=w-flag-value-discard")
 
     localTyper.typedPos(fun.pos) {
       Block(

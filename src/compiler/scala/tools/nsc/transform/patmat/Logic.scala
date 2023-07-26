@@ -851,7 +851,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     // corresponds to a type test that does not imply any value-equality (well, except for outer checks, which we don't model yet)
     sealed class TypeConst(val tp: Type) extends Const {
       assert(!(tp =:= ConstantNull))
-      /*private[this] val id: Int = */ Const.nextTypeId
+      /*private[this] val id: Int = */ Const.nextTypeId: @nowarn("cat=w-flag-value-discard")
 
       val wideTp = widenToClass(tp)
       def isValue = false
@@ -900,7 +900,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
       // debug.patmat("VC"+(tp, wideTp, toString))
       assert(!(tp =:= ConstantNull)) // TODO: assert(!tp.isStable)
-      /*private[this] val id: Int = */Const.nextValueId
+      /*private[this] val id: Int = */Const.nextValueId: @nowarn("cat=w-flag-value-discard")
       def isValue = true
     }
 

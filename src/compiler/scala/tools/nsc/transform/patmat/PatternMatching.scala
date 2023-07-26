@@ -209,7 +209,8 @@ trait Interface extends ast.TreeDSL {
             }
             tree1 match {
               case _: DefTree =>
-                tree1.symbol.modifyInfo(_.substituteTypes(from, toTypes))
+                val symbol1 = tree1.symbol
+                symbol1.modifyInfo(_.substituteTypes(from, toTypes))
               case _ =>
             }
             tree1.modifyType(_.substituteTypes(from, toTypes))

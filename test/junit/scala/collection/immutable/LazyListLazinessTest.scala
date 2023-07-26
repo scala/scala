@@ -3,8 +3,10 @@ package scala.collection.immutable
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.collection.{IterableOnce, Iterator, SeqFactory}
 
+@nowarn("cat=w-flag-value-discard")
 class LazyListLazinessTest {
   import LazyListLazinessTest._
 
@@ -926,6 +928,7 @@ class LazyListLazinessTest {
   }
 }
 
+@nowarn("cat=w-flag-value-discard")
 private object LazyListLazinessTest {
   /* core laziness utilities */
 

@@ -1,6 +1,7 @@
 package scala.collection
 
 import org.junit.Test
+import org.junit.Assert.assertTrue
 import scala.annotation.nowarn
 import scala.collection.{mutable => cm, immutable => ci}
 import scala.jdk.CollectionConverters._
@@ -322,7 +323,7 @@ class SetMapConsistencyTest {
       () => boxMlm[Int], () => boxMhm[Int], () => boxMohm[Int], () => boxMtm[Int], () => boxJavaM[Int],
       () => boxIim, () => boxIhm[Int], () => boxIlm[Int], () => boxItm[Int]
     )
-    assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), intKeys, 2000) } )
+    assertTrue( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), intKeys, 2000) } )
   }
   
   @Test
@@ -331,7 +332,7 @@ class SetMapConsistencyTest {
       () => boxMjm, () => boxIjm, () => boxJavaM[Long],
       () => boxMlm[Long], () => boxMhm[Long], () => boxMtm[Long], () => boxMohm[Long], () => boxIhm[Long], () => boxIlm[Long]
     )
-    assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), longKeys, 10000) } )
+    assertTrue( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), longKeys, 10000) } )
   }
   
   @Test
@@ -341,7 +342,7 @@ class SetMapConsistencyTest {
       () => boxMlm[String], () => boxMhm[String], () => boxMarm[String], () => boxJavaM[String],
       () => boxIhm[String], () => boxIlm[String]
     )
-    assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), stringKeys, 5000) } )
+    assertTrue( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), stringKeys, 5000) } )
   }
   
   @Test
@@ -349,7 +350,7 @@ class SetMapConsistencyTest {
     val maps = Array[() => MapBox[Any]](
       () => boxMlm[Any], () => boxMhm[Any], () => boxMohm[Any], () => boxJavaM[Any], () => boxIhm[Any], () => boxIlm[Any]
     )
-    assert( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), anyKeys, 10000) } )
+    assertTrue( maps.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), anyKeys, 10000) } )
   }
   
   @Test
@@ -358,7 +359,7 @@ class SetMapConsistencyTest {
       () => boxMhm[Int], () => boxIhm[Int], () => boxJavaS[Int],
       () => boxMbs, () => boxMhs[Int], () => boxMts[Int], () => boxIbs, () => boxIhs[Int], () => boxIls[Int], () => boxIts[Int]
     )
-    assert( sets.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), smallKeys, 1000, valuer = _ => 0) } )
+    assertTrue( sets.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), smallKeys, 1000, valuer = _ => 0) } )
   }
   
   @Test 
@@ -367,7 +368,7 @@ class SetMapConsistencyTest {
       () => boxMhm[Any], () => boxIhm[Any], () => boxJavaS[Any],
       () => boxMhs[Any], () => boxIhs[Any], () => boxIls[Any]
     )
-    assert( sets.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), anyKeys, 10000, valuer = _ => 0) } )
+    assertTrue( sets.sliding(2).forall{ ms => churn(ms(0)(), ms(1)(), anyKeys, 10000, valuer = _ => 0) } )
   }
   
   @Test
@@ -375,9 +376,9 @@ class SetMapConsistencyTest {
     import cm.{LongMap, HashMap}
     var lm = LongMap.empty[Long]
     longKeys.zipWithIndex.foreach{ case (k,i) => lm(k) = i }
-    assert{ lm.map{ case (k,v) => -k*k -> v.toString }.getClass == lm.getClass }
+    assertTrue{ lm.map{ case (k,v) => -k*k -> v.toString }.getClass == lm.getClass }
       
-    assert {
+    assertTrue {
       val lm2 = new LongMap[Unit](2000000)
       for (i <- 0 until 1000000) lm2(i) = ()
       
@@ -387,15 +388,15 @@ class SetMapConsistencyTest {
     
     lm = LongMap(8L -> 22L, -5L -> 5L, Long.MinValue -> 0L)
     
-    assert{ var s = 0L; lm.foreachKey(s += _); s == Long.MinValue + 3 }
-    assert{ var s = 0L; lm.foreachValue(s += _); s == 27L }
-    assert { 
+    assertTrue{ var s = 0L; lm.foreachKey(s += _); s == Long.MinValue + 3 }
+    assertTrue{ var s = 0L; lm.foreachValue(s += _); s == 27L }
+    assertTrue { 
       val m2 = lm.mapValuesNow(_+2)
       lm.transformValues(_+2)
       m2 == lm && !(m2 eq lm) && (for ((_,v) <- lm) yield v).sum == 33L
     }
 
-    assert {
+    assertTrue {
       val lm2 = new LongMap[String](_.toString)
       lm2.+=(5L -> "fish", 0L -> "unicorn")
       val hm2 = (new HashMap[Long,String]) ++= lm2
@@ -414,9 +415,9 @@ class SetMapConsistencyTest {
     var arm = AnyRefMap.empty[String, Int]
     stringKeys.zipWithIndex.foreach{ case (k,i) => arm(k) = i }
 
-    assert{ arm.map{ case (k,v) => (if (k==null) "" else k+k) -> v.toString }.getClass == arm.getClass }
+    assertTrue{ arm.map{ case (k,v) => (if (k==null) "" else k+k) -> v.toString }.getClass == arm.getClass }
     
-    assert {
+    assertTrue {
       val arm2 = new AnyRefMap[java.lang.Integer,Unit](2000000)
       for (i <- 0 until 1000000) arm2(java.lang.Integer.valueOf(i)) = ()      
       arm2.size == 1000000 && 
@@ -425,7 +426,7 @@ class SetMapConsistencyTest {
     
     arm = AnyRefMap("heron" -> 22, "dove" -> 5, "budgie" -> 0)
     
-    assert{
+    assertTrue{
       var s = ""
       arm.foreachKey(s += _)
       s.length == "herondovebudgie".length &&
@@ -434,15 +435,15 @@ class SetMapConsistencyTest {
       s.contains("budgie")
     }
 
-    assert{ var s = 0L; arm.foreachValue(s += _); s == 27L }
+    assertTrue{ var s = 0L; arm.foreachValue(s += _); s == 27L }
 
-    assert { 
+    assertTrue { 
       val m2 = arm.mapValuesNow(_+2)
       arm.transformValues(_+2)
       m2 == arm && !(m2 eq arm) && (for ((_,v) <- arm) yield v).sum == 33L
     }
 
-    assert {
+    assertTrue {
       val arm2 = new AnyRefMap[String, String](x => if (x==null) "null" else x)
       arm2.+=("cod" -> "fish", "Rarity" -> "unicorn")
       val hm2 = (new HashMap[String,String]) ++= arm2
@@ -477,19 +478,20 @@ class SetMapConsistencyTest {
         }
         res > 0
       }
-    assert(test)
+    assertTrue(test)
   }
   
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def testSI8213(): Unit = {
     val am = new scala.collection.mutable.AnyRefMap[String, Int]
     for (i <- 0 until 1024) am += i.toString -> i
     am.getOrElseUpdate("1024", { am.clear(); -1 })
-    assert(am == scala.collection.mutable.AnyRefMap("1024" -> -1))
+    assertTrue(am == scala.collection.mutable.AnyRefMap("1024" -> -1))
     val lm = new scala.collection.mutable.LongMap[Int]
     for (i <- 0 until 1024) lm += i.toLong -> i
     lm.getOrElseUpdate(1024, { lm.clear(); -1 })
-    assert(lm == scala.collection.mutable.LongMap(1024L -> -1))
+    assertTrue(lm == scala.collection.mutable.LongMap(1024L -> -1))
   }
   
   // Mutating when an iterator is in the wild shouldn't produce random junk in the iterator
@@ -499,13 +501,13 @@ class SetMapConsistencyTest {
     def f() = {
       val xs = scala.collection.mutable.AnyRefMap[String, Int]("a" -> 1)
       val it = xs.iterator
-      it.hasNext
+      assertTrue(it.hasNext)
       xs.clear()
     
       if (it.hasNext) Some(it.next())
       else None
     }
-    assert(f() match {
+    assertTrue(f() match {
       case Some((null, _)) => false
       case _ => true
     })
@@ -514,8 +516,8 @@ class SetMapConsistencyTest {
   @Test
   def testSI8264(): Unit = {
     val hs = immutable.Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
-    assert( hs.toList.toSet == hs )
-    assert( hs == hs.toList.toSet )
+    assertTrue( hs.toList.toSet == hs )
+    assertTrue( hs == hs.toList.toSet )
   }
 
   @Test
@@ -529,8 +531,8 @@ class SetMapConsistencyTest {
     lm.iterator.foreach(_ => nit += 1)
     var nfe = 0
     lm.foreach(_ => nfe += 1)
-    assert(nit == 4)
-    assert(nfe == 4)
+    assertTrue(nit == 4)
+    assertTrue(nfe == 4)
   }
 
   @nowarn("cat=w-flag-value-discard")
@@ -538,7 +540,7 @@ class SetMapConsistencyTest {
   def test_SI8727(): Unit = {
     val map = Map(0 -> "zero", 1 -> "one")
     val m = map.view.filterKeys(i => if (map contains i) true else throw new NoSuchElementException).toMap
-    assert(m.contains(0) && m.get(0).nonEmpty)
+    assertTrue(m.contains(0) && m.get(0).nonEmpty)
     // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
     // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions
     // would have thrown a NSEE:

@@ -4,6 +4,8 @@ import org.junit.Assert._
 import org.junit.{After, Assert, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.annotation.nowarn
 import scala.annotation.StaticAnnotation
 import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
@@ -45,7 +47,8 @@ class TypesTest {
     import rootMirror.EmptyPackageClass
     val (module, moduleClass) = EmptyPackageClass.newModuleAndClassSymbol(TermName("O"), NoPosition, 0L)
     val minfo = ClassInfoType(List(ObjectTpe), newScope, moduleClass)
-    module.moduleClass setInfo minfo
+    val mc = module.moduleClass
+    mc.setInfo(minfo)
     module setInfo module.moduleClass.tpe
     val tp1 = TypeRef(ThisType(EmptyPackageClass), moduleClass, Nil)
     val tp2 = SingleType(ThisType(EmptyPackageClass), module)
@@ -212,12 +215,12 @@ class TypesTest {
 
     val FooTpe = typeOf[Foo[Int]] match {
       case TypeRef(pre, sym, _) =>
-        sym.typeParams // doing it for the side effect
+        sym.typeParams: @nowarn("cat=w-flag-value-discard") // doing it for the side effect
         TypeRef(pre, sym, Nil)
     }
     val BarTpe = typeOf[Bar[Int, Int]] match {
       case TypeRef(pre, sym, _) =>
-        sym.typeParams // doing it for the side effect
+        sym.typeParams: @nowarn("cat=w-flag-value-discard") // doing it for the side effect
         TypeRef(pre, sym, Nil)
     }
 

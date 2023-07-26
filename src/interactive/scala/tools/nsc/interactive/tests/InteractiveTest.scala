@@ -15,6 +15,7 @@ package interactive
 package tests
 
 import core._
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 /** A base class for writing interactive compiler tests.
@@ -96,7 +97,7 @@ abstract class InteractiveTest
     // ask the presentation compiler to track all sources. We do
     // not wait for the file to be entirely typed because we do want
     // to exercise the presentation compiler on scoped type requests.
-    askReload(sourceFiles.toIndexedSeq)
+    askReload(sourceFiles.toIndexedSeq): @nowarn("cat=w-flag-value-discard")
     // make sure all sources are parsed before running the test. This
     // is because test may depend on the sources having been parsed at
     // least once

@@ -19,8 +19,8 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
-import mutable.ListBuffer
+import scala.annotation.nowarn
+import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
@@ -110,7 +110,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         // Diagnostic for scala/bug#7091
         if (!accDefs.contains(clazz))
           reporter.error(sel.pos, s"Internal error: unable to store accessor definition in ${clazz}. clazz.hasPackageFlag=${clazz.hasPackageFlag}. Accessor required for ${sel} (${showRaw(sel)})")
-        else storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
+        else {
+          storeAccessorDefinition(clazz, DefDef(acc, EmptyTree)): @nowarn("cat=w-flag-value-discard")
+          ()
+        }
         acc
       }
 
@@ -282,7 +285,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           // we need to deSkolemize symbol so we get the same symbol as others would get when
           // inspecting type parameter from "outside"; see the discussion of skolems here:
           // https://groups.google.com/d/topic/scala-internals/0j8laVNTQsI/discussion
-          typeDef.symbol.deSkolemize.setFlag(SPECIALIZED)
+          val desk = typeDef.symbol.deSkolemize
+          desk.setFlag(SPECIALIZED)
           typeDef
 
         case sel @ Select(qual, name) =>
@@ -485,7 +489,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         })
 
         debuglog("created protected accessor: " + code)
-        storeAccessorDefinition(clazz, code)
+        storeAccessorDefinition(clazz, code): @nowarn("cat=w-flag-value-discard")
         newAcc
       }
       val selection = Select(This(clazz), protAcc)
@@ -542,7 +546,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         protAcc setInfoAndEnter accessorType
         val obj :: value :: Nil = params: @unchecked
-        storeAccessorDefinition(clazz, DefDef(protAcc, Assign(Select(Ident(obj), field.name), Ident(value))))
+        storeAccessorDefinition(clazz, DefDef(protAcc, Assign(Select(Ident(obj), field.name), Ident(value)))): @nowarn("cat=w-flag-value-discard")
 
         protAcc
       }

@@ -87,8 +87,9 @@ abstract class SymbolLoaders {
     enterModule(owner, newModule(owner, name), completer)
 
   def enterModule(owner: Symbol, module: ModuleSymbol, completer: SymbolLoader): Symbol = {
-    module setInfo completer
-    module.moduleClass setInfo moduleClassLoader
+    module.setInfo(completer)
+    val mc = module.moduleClass
+    mc.setInfo(moduleClassLoader)
     enterIfNew(owner, module, completer)
   }
 
@@ -129,7 +130,8 @@ abstract class SymbolLoaders {
     }
     // todo: find out initialization sequence for pkg/pkg.moduleClass is different from enterModule
     val pkg = root.newPackage(pname)
-    pkg.moduleClass setInfo completer
+    val mc = pkg.moduleClass
+    mc.setInfo(completer)
     pkg setInfo pkg.moduleClass.tpe
     root.info.decls enter pkg
     pkg

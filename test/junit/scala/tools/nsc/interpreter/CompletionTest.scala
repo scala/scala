@@ -4,10 +4,12 @@ import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
 import java.io.{PrintWriter, StringWriter}
+import scala.annotation.nowarn
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell._
 
+@nowarn("cat=w-flag-value-discard&msg=Result")
 class CompletionTest {
   val EmptyString = "" // def string results include the empty string so that JLine won't insert "def ..." at the cursor
 
@@ -22,7 +24,7 @@ class CompletionTest {
 
   private def setup(sources: SourceFile*): Completion = {
     val intp = newIMain()
-    intp.compileSources(sources: _*)
+    assertTrue(intp.compileSources(sources: _*))
     val completer = new ReplCompletion(intp)
     completer
   }

@@ -15,9 +15,9 @@ package tools.nsc
 package transform
 
 import scala.PartialFunction.cond
+import scala.annotation.nowarn
 import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.symtab.Flags._
@@ -832,7 +832,7 @@ abstract class UnCurry extends InfoTransform
         return flatdd
 
       val forwSym: Symbol = {
-        currentClass.info // make sure the info is up to date, so the varargs forwarder symbol has been generated
+        currentClass.info: @nowarn("cat=w-flag-value-discard") // make sure the info is up to date, so the varargs forwarder symbol has been generated
         flatdd.symbol.attachments.get[VarargsSymbolAttachment] match {
           case Some(VarargsSymbolAttachment(sym)) => sym
           case None =>

@@ -618,6 +618,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     toBeRemoved.synchronized {
       toBeRemovedAfterRun.synchronized {
         toBeRemoved ++= toBeRemovedAfterRun
+        ()
       }
     }
 
@@ -696,7 +697,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     for (d <- deleted) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d; () }
       currentTopLevelSyms -= d
     }
   }
@@ -759,8 +760,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private[interactive] def reloadSource(source: SourceFile): Unit = {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
-    toBeRemoved.synchronized { toBeRemoved -= source.file }
-    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun -= source.file }
+    toBeRemoved.synchronized { toBeRemoved -= source.file; () }
+    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun -= source.file; () }
     reset(unit)
     //parseAndEnter(unit)
   }
@@ -787,7 +788,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val deletedSyms = currentTopLevelSyms filter {sym => deletedFiles contains sym.sourceFile}
     for (d <- deletedSyms) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d; () }
       currentTopLevelSyms -= d
     }
     sources foreach (removeUnitOf(_))
@@ -1036,7 +1037,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Return all members visible without prefix in context enclosing `pos`. */
   private def scopeMembers(pos: Position): List[ScopeMember] = {
-    typedTreeAt(pos) // to make sure context is entered
+    typedTreeAt(pos): @nowarn("cat=w-flag-value-discard") // to make sure context is entered
     val context = doLocateContext(pos)
     val locals = new Members[ScopeMember]
     val enclosing = new Members[ScopeMember]

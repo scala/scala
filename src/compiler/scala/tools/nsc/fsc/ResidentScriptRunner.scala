@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package fsc
 
+import scala.annotation.nowarn
 import scala.reflect.io.Path
 import scala.util.control.NonFatal
 
@@ -45,7 +46,7 @@ final class DaemonKiller(settings: GenericRunnerSettings) extends ScriptRunner {
 
   private def shutdownDaemon() =
     try {
-      new StandardCompileClient().process(Array("-shutdown"))
+      new StandardCompileClient().process(Array("-shutdown")): @nowarn("cat=w-flag-value-discard")
       None
     } catch {
       case NonFatal(t) => Some(t)

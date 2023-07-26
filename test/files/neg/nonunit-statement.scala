@@ -201,3 +201,25 @@ class MutateChain {
   val thing = ListBuffer.empty[Int]
   thing.addOne(42).addOne(27)  // nowarn the chained apply
 }
+
+class `singleton use of parameter` {
+  def m(): Unit = {
+    def f(b: ListBuffer[String]): b.type = {
+      b += "more" // nowarn as usual
+      f(b)  // nowarn because it just returns the existing value
+      b
+    }
+    val buf = ListBuffer.empty[String]
+    f(buf) // nowarn
+    ()
+  }
+}
+
+class `passing this` {
+  def b = true
+  def f(x: Any): x.type = x
+  def g = {
+    if (b) f(this)
+    42
+  }
+}

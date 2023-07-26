@@ -14,6 +14,7 @@ import java.lang.ref._
 import Seq.empty
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 class IteratorTest {
 
   private def from0 = Iterator.from(0)

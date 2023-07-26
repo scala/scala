@@ -187,7 +187,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     /** Consume one token of the specified type, or
       * signal an error if it is not there.
       */
-    def accept(token: Int): Int = {
+    def acceptAt(token: Int): Int = {
       val pos = in.currentPos
       if (in.token != token) {
         val posToReport = in.currentPos
@@ -292,7 +292,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       }
 
     def typ(): Tree = {
-      annotations() // TODO: fix scala/bug#9883 (JSR 308)
+      annotations(): @nowarn("cat=w-flag-value-discard") // TODO: fix scala/bug#9883 (JSR 308)
       optArrayBrackets {
         if (in.token == FINAL) in.nextToken()
         if (in.token == IDENTIFIER) {
@@ -504,7 +504,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               val lookahead = in.in.lookahead
               while (i < n && lookahead.ch != SU) {
                 if (lookahead.ch != s.charAt(i)) return false
-                lookahead.next()
+                lookahead.next(): @nowarn("cat=w-flag-value-discard")
                 i += 1
               }
               i == n && Character.isWhitespace(lookahead.ch)
@@ -631,7 +631,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
       } else if (in.token == LBRACE && rtptName != nme.EMPTY && parentToken == RECORD) {
         // compact constructor
-        methodBody()
+        methodBody(): @nowarn("cat=w-flag-value-discard")
         List.empty
       } else {
         var mods1 = mods
@@ -961,10 +961,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             case _ => false
           }
 
-          (if (mods.hasStaticFlag || inInterface && !(decls exists isDefDef))
-             statics
-           else
-             members) ++= decls
+          val scope =
+            if (mods.hasStaticFlag || inInterface && !decls.exists(isDefDef)) statics
+            else members
+          scope ++= decls
+          ()
         }
       }
       (statics.toList, members.toList)
@@ -1097,7 +1098,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       var pos = in.currentPos
       val pkg: RefTree =
         if (in.token == AT || in.token == PACKAGE) {
-          annotations() // TODO: put these somewhere?
+          annotations(): @nowarn("cat=w-flag-value-discard") // TODO: put these somewhere?
           pos = in.currentPos
           accept(PACKAGE)
           val pkg = qualId().asInstanceOf[RefTree]

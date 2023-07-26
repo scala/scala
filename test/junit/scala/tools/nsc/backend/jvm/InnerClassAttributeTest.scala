@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.BytecodeTesting
@@ -67,7 +68,7 @@ class InnerClassAttributeTest extends BytecodeTesting {
     assertEquals(c.innerClasses.asScala.toList.map(_.name), Nil)
 
     val cn = compileClass(code)
-    getMethod(cn, "$deserializeLambda$") // exists
+    getMethod(cn, "$deserializeLambda$"): @nowarn("cat=w-flag-value-discard") // exists
     assertEquals(cn.innerClasses.asScala.toList.map(_.name), List("java/lang/invoke/MethodHandles$Lookup"))
   }
 }

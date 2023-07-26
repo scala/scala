@@ -234,6 +234,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
         val gcEvent = GcEventData("", reportNs, startTime, endTime, duration, name, action, cause, threads)
         synchronized {
           gcEvents += gcEvent
+          ()
         }
         reporter.reportGc(gcEvent)
       case x => throw new MatchError(x)

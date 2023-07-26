@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
@@ -211,7 +212,7 @@ trait LiveVariables extends ExprBuilder {
       val workList = mutable.Queue[Node](terminal)
       while (!workList.isEmpty) {
         val node = workList.dequeue()
-        node.updateExit()
+        node.updateExit(): @nowarn("cat=w-flag-value-discard")
         val entryChanged = node.updateEntry()
         if (entryChanged) {
           workList ++= node.pred

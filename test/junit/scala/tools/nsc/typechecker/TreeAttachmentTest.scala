@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
@@ -26,7 +27,7 @@ class TreeAttachmentTest extends BytecodeTesting {
           |}
           |""".stripMargin
 
-      compiler.compileClasses(code)
+      compiler.compileClasses(code): @nowarn("cat=w-flag-value-discard")
       val run = compiler.newRun()
       run.compileUnits(newCompilationUnit(code) :: Nil, run.parserPhase)
       val tree : Tree = run.units.next().body

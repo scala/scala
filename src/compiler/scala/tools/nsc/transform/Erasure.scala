@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{immutable, mutable}
@@ -601,9 +602,9 @@ abstract class Erasure extends InfoTransform
           !sigContainsValueClass && !bridgeMayClash || bridgeIsAOK
         }
         if (shouldAdd) {
-          exitingErasure(root.info.decls enter bridge)
+          exitingErasure(root.info.decls.enter(bridge)): @nowarn("cat=w-flag-value-discard")
 
-          bridgesScope enter bridge
+          bridgesScope.enter(bridge)
           addBridge(bridge, member, other) // GenerateBridges.addBridge bridges ::= makeBridgeDefDef(bridge, member, other)
         }
       }
@@ -1359,7 +1360,9 @@ abstract class Erasure extends InfoTransform
                 case FoldableConstantType(_) if !vd1.rhs.isInstanceOf[Literal] =>
                   val deconst = vd1.tpt.tpe.deconst
                   vd1.tpt setType deconst
-                  tree1.symbol.setInfo(deconst)
+                  val sym = tree1.symbol
+                  sym.setInfo(deconst)
+                  ()
                 case _ =>
               }
               vd1

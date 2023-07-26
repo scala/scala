@@ -3,13 +3,15 @@ package scala.reflect
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
+
 class FieldAccessTest {
 
   class TestClass {
     private val x = 123
     locally {
       () => x
-    }
+    }: @nowarn("cat=w-flag-value-discard")
   }
 
   /** scala/bug#9306 */

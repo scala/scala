@@ -6,6 +6,7 @@ import org.junit._
 import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
+@nowarn("cat=w-flag-value-discard")
 class SmallMapTest extends AllocationTest {
   def iterator(m: Map[_,_])       = m.iterator
   def keysIterator(m: Map[_,_])   = m.keysIterator
@@ -61,7 +62,6 @@ class SmallMapTest extends AllocationTest {
     assertEquals(Nil, test.valuesIterator.drop(5).toList)
   }
 
-  @nowarn("cat=w-flag-value-discard")
   @Test def mapEmptyAllocating(): Unit = {
     val test = Map.empty
     nonAllocating(iterator(test), ignoreEqualCheck = true)

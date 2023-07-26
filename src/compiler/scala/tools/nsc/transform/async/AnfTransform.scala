@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.Flags
@@ -88,8 +89,8 @@ private[async] trait AnfTransform extends TransformUtils {
                 result
             }
           }
-          val simpleApply              = treeCopy.Apply(tree, simpleFun, argExprss)
-          simpleApply.attachments.remove[ContainsAwait.type]
+          val simpleApply = treeCopy.Apply(tree, simpleFun, argExprss)
+          simpleApply.attachments.remove[ContainsAwait.type]: @nowarn("cat=w-flag-value-discard") // TODO
           if (isAwait(fun)) {
             val valDef = defineVal(transformState.name.await(), treeCopy.Apply(tree, fun, argExprss), tree.pos)
             val ref    = gen.mkAttributedStableRef(valDef.symbol).setType(tree.tpe)

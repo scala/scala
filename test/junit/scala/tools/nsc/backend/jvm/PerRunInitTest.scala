@@ -13,7 +13,7 @@ import scala.tools.nsc.reporters.StoreReporter
 
 class PerRunInitTestMap extends PerRunInitTest {
   type Data =  mutable.Map[String, String]
-  override def newData(): Data = underTest.recordPerRunCache(mutable.Map.empty)
+  override def newData(): Data = underTest.recordPerRunCache(mutable.Map.empty[String, String])
   override def dontClear(data: Data): Unit = underTest.global.perRunCaches.unrecordCache(data)
 
   override def add(id: Int, data: Data): Unit = data.addOne((s"key $id", s"value $id"))
@@ -23,7 +23,7 @@ class PerRunInitTestMap extends PerRunInitTest {
 }
 class PerRunInitTestSet extends PerRunInitTest {
   type Data =  mutable.Set[String]
-  override def newData(): Data = underTest.recordPerRunCache(mutable.Set.empty)
+  override def newData(): Data = underTest.recordPerRunCache(mutable.Set.empty[String])
   override def dontClear(data: Data): Unit = underTest.global.perRunCaches.unrecordCache(data)
 
   override def add(id: Int, data: Data): Unit = data += s"value $id"

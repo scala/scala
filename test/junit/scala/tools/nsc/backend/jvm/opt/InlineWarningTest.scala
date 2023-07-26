@@ -7,10 +7,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.testkit.BytecodeTesting, BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 class InlineWarningTest extends BytecodeTesting {
   def optInline = "-opt:inline:**"
   override def compilerArgs = s"$optInline -Wopt"

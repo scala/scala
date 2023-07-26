@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.annotation.nowarn
 import scala.tools.asm.{Handle, Opcodes}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
@@ -323,7 +324,8 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   private[this] lazy val _srRefConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy(nonOverloadedConstructors(allRefClasses))
 
   private def specializedSubclasses(cls: Symbol): List[Symbol] = {
-    exitingSpecialize(cls.info) // the `transformInfo` method of specialization adds specialized subclasses to the `specializedClass` map
+    // the `transformInfo` method of specialization adds specialized subclasses to the `specializedClass` map
+    exitingSpecialize(cls.info): @nowarn("cat=w-flag-value-discard")
     val map = specializeTypes.specializedClass.getOrNull(cls)
     if (map == null) Nil
     else map.values.toList

@@ -166,7 +166,7 @@ trait Contexts { self: Analyzer =>
               if (sym != NoSymbol) openPackageModule(sym, force = true)
               full
             }
-            name.split('.').toList.init.foldLeft("")(force)
+            name.split('.').toList.init.foldLeft("")(force): @nowarn("cat=w-flag-value-discard")
             getModuleIfDefined(name)
           } orElse NoSymbol.tap(_ => globalError(s"bad preamble import $name"))
       }
@@ -404,7 +404,7 @@ trait Contexts { self: Analyzer =>
 
             val cdef = {
               val cdef0 = ClassDef(csym, NoMods, ListOfNil, vdefs, pos)
-              typer.namer.enterSym(cdef0)
+              typer.namer.enterSym(cdef0): @nowarn("cat=w-flag-value-discard")
               typer.typed(cdef0)
             }
 
@@ -439,7 +439,7 @@ trait Contexts { self: Analyzer =>
           val dict = {
             val rhs = atPos(pos)(Apply(Select(New(Ident(dictClassSym)), nme.CONSTRUCTOR), List()))
             val vdef0 = ValDef(dictSym, rhs)
-            typer.namer.enterSym(vdef0)
+            typer.namer.enterSym(vdef0): @nowarn("cat=w-flag-value-discard")
             typer.typed(vdef0)
           }
 

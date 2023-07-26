@@ -6,11 +6,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertSucceeds
 
 @RunWith(classOf[JUnit4])
 class CollisionProofHashMapTest {
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def getOrElseUpdate_mutationInCallback(): Unit = {
     val hm = new mutable.CollisionProofHashMap[String, String]()
@@ -23,6 +25,7 @@ class CollisionProofHashMapTest {
     assertEquals(Some(""), hm.get("0"))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def getOrElseUpdate_evalOnce(): Unit = {
     var i = 0
@@ -34,10 +37,12 @@ class CollisionProofHashMapTest {
   @Test
   def getOrElseUpdate_noEval(): Unit = {
     val hm = new mutable.CollisionProofHashMap[Int, Int]()
-    hm.put(0, 0)
+    hm.update(0, 0)
     assertSucceeds(hm.getOrElseUpdate(0, throw new AssertionError()))
   }
 
+  @nowarn("cat=w-flag-value-discard")
+  @Test
   def getOrElseUpdate_keyIdempotence(): Unit = {
     val map = mutable.CollisionProofHashMap[String, String]()
 

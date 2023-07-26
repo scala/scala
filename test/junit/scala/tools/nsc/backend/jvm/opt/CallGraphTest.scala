@@ -5,6 +5,7 @@ package opt
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.immutable.IntMap
 import scala.jdk.CollectionConverters._
@@ -15,6 +16,7 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
+@nowarn("cat=w-flag-value-discard&msg=ClassNode")
 class CallGraphTest extends BytecodeTesting {
   override def compilerArgs = "-opt:inline:** -Wopt"
   import compiler._

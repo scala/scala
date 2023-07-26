@@ -15,6 +15,7 @@ package doc
 package base
 
 import comment._
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait extracts all required information for documentation from compilation units.
@@ -203,7 +204,7 @@ trait MemberLookupBase {
   }
 
   def externalSignature(sym: Symbol) = {
-    sym.info // force it, otherwise we see lazy types
+    sym.info: @nowarn("cat=w-flag-value-discard") // force it, otherwise we see lazy types
     (sym.nameString + sym.signatureString).replaceAll("\\s", "")
   }
 }

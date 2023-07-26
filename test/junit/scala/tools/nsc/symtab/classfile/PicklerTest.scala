@@ -4,6 +4,7 @@ import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
@@ -31,7 +32,7 @@ class PicklerTest extends BytecodeTesting {
       syms.flatMap(sym => sym.name.toString :: sym.info.decls.toList.map(decl => global.definitions.fullyInitializeSymbol(decl).defString))
     }
     val decls1 = showDecls(compiler1.global)
-    compiler2.global.classPath
+    compiler2.global.classPath: @nowarn("cat=w-flag-value-discard")
     compiler2.global.platform.currentClassPath = Some(AggregateClassPath(new VirtualDirectoryClassPath(out) :: compiler2.global.platform.currentClassPath.get :: Nil))
     new compiler2.global.Run
     val decls2 = showDecls(compiler2.global)

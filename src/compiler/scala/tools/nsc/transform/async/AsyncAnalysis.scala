@@ -79,7 +79,7 @@ trait AsyncAnalysis extends TransformUtils  {
 
     private def testUnsupportedAwait(tree: Tree, whyUnsupported: String): Boolean = {
       val badAwaits = ListBuffer[Tree]()
-      object traverser extends Traverser {
+      object traverser extends InternalTraverser {
         override def traverse(tree: Tree): Unit = {
           super.traverse(tree)
           tree match {

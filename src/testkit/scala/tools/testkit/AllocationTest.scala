@@ -80,7 +80,7 @@ trait AllocationTest {
     case Nil       => ""
     case a :: tail =>
       val sb = new StringBuilder
-      def append(a: Long, count: Int) = sb.append(s" allocation $a ($count times)\n")
+      def append(a: Long, count: Int): sb.type = sb.append(s" allocation $a ($count times)\n")
       @tailrec def loop(allocations: List[Long], last: Long, count: Int): String = allocations match {
         case Nil                    => append(last, count).result()
         case a :: tail if a != last => append(a, count); loop(tail, a, 1)

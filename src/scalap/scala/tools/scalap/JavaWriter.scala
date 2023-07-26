@@ -16,6 +16,7 @@ import java.io._
 import scala.annotation.nowarn
 import scala.reflect.NameTransformer
 
+@nowarn("cat=w-flag-value-discard")
 class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer) {
 
   val cf = classfile

@@ -452,7 +452,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // TODO: use derive symbol variant?
 //            println(s"cloning accessor $member to $clazz")
             // start at uncurry so that we preserve that part of the history where an accessor has a NullaryMethodType
-            enteringUncurry { clonedAccessor setInfo ((clazz.thisType memberType member) cloneInfo clonedAccessor) }
+            enteringUncurry { clonedAccessor.setInfo((clazz.thisType memberType member) cloneInfo clonedAccessor) }: @nowarn("cat=w-flag-value-discard")
             clonedAccessor
           }
 
@@ -686,8 +686,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
               // (it was never allowed, but the verifier enforces this now).
               fieldSel.setFlag(MUTABLE)
               val isInStaticModule = fieldSel.owner.isModuleClass && fieldSel.owner.sourceModule.isStaticModule
-              if (!isInStaticModule) // the <clinit> lock is enough.
-                fieldSel.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
+              if (!isInStaticModule) { // the <clinit> lock is enough.
+                val sym = fieldSel.owner.primaryConstructor
+                sym.updateAttachment(ConstructorNeedsFence)
+              }
             }
 
             afterOwnPhase { // the assign only type checks after our phase (assignment to val)

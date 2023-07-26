@@ -351,7 +351,8 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     private def buildStateAndOpenNextState(nextState: Int, style: StateTransitionStyle): Unit =
       buildStateAndOpenNextState(nextState, nextState, style)
     private def buildStateAndOpenNextState(toState: Int, nextState: Int, style: StateTransitionStyle): Unit = {
-      addState(stateBuilder.build(toState, style))
+      val state = stateBuilder.build(toState, style)
+      addState(state)
       stateBuilder = new AsyncStateBuilder(nextState, this)
     }
 

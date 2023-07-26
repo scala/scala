@@ -301,9 +301,9 @@ abstract class ExplicitOuter extends InfoTransform
           case _ =>
         }
         if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree)) {
-          selfOrSuperCalls push currentOwner.owner
+          selfOrSuperCalls.push(currentOwner.owner)
           val transformed = super.transform(tree)
-          selfOrSuperCalls.pop()
+          selfOrSuperCalls.pop(): @nowarn("cat=w-flag-value-discard")
           transformed
         } else
           super.transform(tree)

@@ -5,6 +5,8 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+import scala.annotation.nowarn
+
 /* Tests various maps by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
 class ArraySortingTest {
@@ -31,7 +33,7 @@ class ArraySortingTest {
   @Test
   def testSortInPlace(): Unit = {
     val arr = Array(3, 2, 1)
-    arr.sortInPlace()
+    arr.sortInPlace(): @nowarn("cat=w-flag-value-discard")
 
     assertEquals(ArraySeq(1, 2, 3), ArraySeq.make(arr))
   }

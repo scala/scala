@@ -1,12 +1,12 @@
 package scala.collection
 
-import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
-import org.junit.Test
+import org.junit.{Assert, Test}, Assert.{assertEquals, assertFalse, assertSame, assertTrue}
 
+import scala.annotation.nowarn
+import scala.collection.{immutable => im}
 import scala.collection.mutable.ArrayBuffer
 
-import scala.collection.{immutable => im}
-
+@nowarn("cat=w-flag-value-discard")
 class FactoriesTest {
 
   val seq: Seq[Int] = ArrayBuffer(1, 2, 3)

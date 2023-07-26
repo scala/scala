@@ -1460,7 +1460,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           case -1   => mkName(str)
           case idx  =>
             val phasePart = str drop (idx + 1)
-            settings.Yshow.tryToSetColon(phasePart.split(',').toList)
+            settings.Yshow.tryToSetColon(phasePart.split(',').toList): @nowarn("cat=w-flag-value-discard")
             mkName(str take idx)
         }
       }
@@ -1693,6 +1693,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase[Unit](firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
+        ()
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }

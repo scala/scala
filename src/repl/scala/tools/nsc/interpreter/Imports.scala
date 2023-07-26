@@ -145,7 +145,7 @@ trait Imports {
       select(allReqAndHandlers.reverseIterator.map { case (r, h) => ReqAndHandler(r, h) }.toList, wanted).reverse
     }
 
-    def addLevelChangingImport() = code.append(s"import _root_.scala.tools.nsc.interpreter.`${INTERPRETER_IMPORT_LEVEL_UP}`\n")
+    def addLevelChangingImport(): Unit = code.append(s"import _root_.scala.tools.nsc.interpreter.`${INTERPRETER_IMPORT_LEVEL_UP}`\n")
 
     // add code for a new object to hold some imports
     def addWrapperCode(): Unit = {

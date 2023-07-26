@@ -3,8 +3,10 @@ package scala.collection.immutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+
+import scala.annotation.nowarn
 import scala.math._
-import scala.util._
+import scala.util._, control.Breaks._
 
 /* Tests various ranges by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
@@ -51,7 +53,7 @@ class RangeConsistencyTest {
   @Test
   def rangeChurnTest(): Unit = {
     val rn = new Random(4370)
-    for (i <- 0 to 10000) { control.Breaks.breakable {
+    for (i <- 0 to 10000) { breakable {
       val start = rn.nextInt()
       val end = rn.nextInt()
       val step = rn.nextInt(4) match {
@@ -62,8 +64,8 @@ class RangeConsistencyTest {
       }
       val r = if (rn.nextBoolean()) Range.inclusive(start, end, step) else Range(start, end, step)
       
-      try { r.length }
-      catch { case iae: IllegalArgumentException => control.Breaks.break() }
+      (try r.length
+      catch { case iae: IllegalArgumentException => break() }): @nowarn("cat=w-flag-value-discard")
       
       val lpuff = rn.nextInt(4) match {
         case 0 => 1L

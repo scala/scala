@@ -74,6 +74,7 @@ class MapTest {
   def t11589(): Unit = {
     // tests the strictness of Map#values
 
+    @nowarn("cat=w-flag-value-discard")
     def check(m: collection.Map[Int, Int]): Unit = {
       def checkImmutable[K, V](m: immutable.Map[Int, Int]): Unit = {
         var i = 0

@@ -16,6 +16,7 @@ package analysis
 
 import java.util
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.tree._
@@ -154,7 +155,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   // Auxiliary constructor required for implementing `NullnessAnalyzer.newFrame`
   def this(src: Frame[_ <: NullnessValue]) = {
     this(src.getLocals, src.getMaxStackSize)
-    init(src)
+    init(src): @nowarn("cat=w-flag-value-discard")
   }
 
   private def setNullness(s: AliasSet, v: NullnessValue) = {

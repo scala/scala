@@ -14,8 +14,9 @@ package scala.tools.nsc
 package ast
 
 import java.lang.System.{lineSeparator => EOL}
-import symtab.Flags._
+import scala.annotation.nowarn
 import scala.reflect.internal.util.ListOfNil
+import symtab.Flags._
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.
@@ -212,7 +213,7 @@ abstract class NodePrinters {
     }
 
     def traverse(tree: Tree): Unit = {
-      showPosition(tree)
+      showPosition(tree): @nowarn("cat=w-flag-value-discard")
 
       tree match {
         case ApplyDynamic(fun, args)      => applyCommon(tree, fun, args)
@@ -232,7 +233,7 @@ abstract class NodePrinters {
 
         case ld @ LabelDef(name, params, rhs) =>
           printMultiline(tree) {
-            showNameAndPos(ld)
+            showNameAndPos(ld): @nowarn("cat=w-flag-value-discard")
             traverseList("()", "params")(params)
             traverse(rhs)
           }

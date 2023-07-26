@@ -121,7 +121,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
       def jarOK = jarFile.canRead && jarFile.isFresher(File(scriptFile))
 
       def recompile(): Option[Throwable] = {
-        jarFile.delete()
+        jarFile.delete(): @nowarn("cat=w-flag-value-discard")
 
         compile match {
           case Some(compiledPath) =>
@@ -132,7 +132,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
                   Jar.create(jarFile, compiledPath.toDirectory, mainClass)
                   None
                 } catch {
-                  case NonFatal(e) => jarFile.delete() ; Some(e)
+                  case NonFatal(e) => jarFile.delete(): @nowarn("cat=w-flag-value-discard"); Some(e)
                 }
               } else None
             } else Some(NoScriptError)

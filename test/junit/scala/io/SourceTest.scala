@@ -4,6 +4,7 @@ package scala.io
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertThrows, fail}
 
 import java.io.{Console => _, _}
@@ -33,6 +34,7 @@ class SourceTest {
     }
   }
   @Test def loadFromMissingResource(): Unit = assertThrows[FileNotFoundException](Source.fromResource("missing.txt"))
+  @nowarn("cat=w-flag-value-discard")
   @Test def canCustomizeReporting() = {
     class CapitalReporting(is: InputStream) extends BufferedSource(is) {
       override def report(pos: Int, msg: String, out: PrintStream): Unit = {
@@ -58,6 +60,7 @@ class SourceTest {
     s.reportError(s.pos, "That doesn't sound right.", ps)
     assertEquals("0030: THAT DOESN'T SOUND RIGHT.", out.toString(charSet))
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def canAltCustomizeReporting() = {
     class CapitalReporting(is: InputStream)(implicit codec: Codec) extends Source {
       override val iter = {

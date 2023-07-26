@@ -13,6 +13,8 @@
 package scala.reflect.reify
 package phases
 
+import scala.annotation.nowarn
+
 trait Calculate {
   self: Reifier =>
 

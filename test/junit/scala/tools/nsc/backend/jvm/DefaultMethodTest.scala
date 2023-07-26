@@ -20,7 +20,8 @@ class DefaultMethodTest extends BytecodeTesting {
       /** Transforms a single tree. */
       override def transform(tree: global.Tree): global.Tree = tree match {
         case dd @ DefDef(_, Foo, _, _, _, _) =>
-          dd.symbol.setFlag(Flags.JAVA_DEFAULTMETHOD).resetFlag(Flags.DEFERRED)
+          val sym = dd.symbol
+          sym.setFlag(Flags.JAVA_DEFAULTMETHOD).resetFlag(Flags.DEFERRED)
           copyDefDef(dd)(rhs = Literal(Constant(1)).setType(definitions.IntTpe))
         case _ => super.transform(tree)
       }

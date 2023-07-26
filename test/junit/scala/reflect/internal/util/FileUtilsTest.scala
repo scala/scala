@@ -5,6 +5,8 @@ import java.io._
 import org.junit.Assert._
 import org.junit._
 
+import scala.annotation.nowarn
+
 class FileUtilsTest {
 
   @Test def writeIsSame(): Unit = {
@@ -50,6 +52,7 @@ class FileUtilsTest {
     fileExpected.delete()
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test def showPerformance(): Unit = {
     //warmup
     for (i <- 1 to 1000) {

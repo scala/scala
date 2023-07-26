@@ -231,6 +231,7 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Fully initialize the symbol, type, or scope.
      */
+    @nowarn("cat=w-flag-value-discard")
     def fullyInitializeSymbol(sym: Symbol): sym.type = {
       sym.initialize
       // Watch out for those darn raw types on method parameters
@@ -336,11 +337,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val RuntimeNullClass    = requiredClass[scala.runtime.Null$]
 
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
-      locally {
-        this initFlags ABSTRACT | FINAL
-        this setInfoAndEnter ClassInfoType(List(parent.tpe), newScope, this)
-        this.markAllCompleted()
-      }
+      this.initFlags(ABSTRACT | FINAL)
+      this.setInfoAndEnter(ClassInfoType(List(parent.tpe), newScope, this))
+      this.markAllCompleted()
       final override def isBottomClass = true
       final override def isThreadsafe(purpose: SymbolOps): Boolean = true
     }

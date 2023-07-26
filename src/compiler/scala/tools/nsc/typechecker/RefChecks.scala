@@ -1560,7 +1560,7 @@ abstract class RefChecks extends Transform {
       def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = if (annots.isEmpty) Nil else {
         annots.foreach { ann =>
           checkVarArgs(ann.atp, tree)
-          RefCheckTypeMap.check(ann.atp, tree)
+          RefCheckTypeMap.check(ann.atp, tree): @nowarn("cat=w-flag-value-discard")
           if (ann.original != null && ann.original.hasExistingSymbol)
             checkUndesiredProperties(ann.original.symbol, tree.pos)
         }
@@ -1965,13 +1965,14 @@ abstract class RefChecks extends Transform {
             transformSelect(x)
 
           case Literal(Constant(tpe: Type)) =>
-            RefCheckTypeMap.check(tpe, tree)
+            RefCheckTypeMap.check(tpe, tree): @nowarn("cat=w-flag-value-discard")
             tree
 
           case UnApply(fun, args) =>
-            transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
-                           // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
-                           // probably not, until we allow parameterised extractors
+            transform(fun): @nowarn("cat=w-flag-value-discard")
+            // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
+            // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
+            // probably not, until we allow parameterised extractors
             tree
 
           case blk @ Block(stats, expr) =>

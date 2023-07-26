@@ -16,9 +16,11 @@ import java.util.ConcurrentModificationException
 
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class MutationTrackerTest {
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def checkedIterator(): Unit = {
     var mutationCount = 0

@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.testkit.ASMConverters._
@@ -22,6 +23,7 @@ class UnreachableCodeTest extends ClearAfterClass {
   val dceCompiler           = cached("dceCompiler",       () => newCompiler(extraArgs = "-opt:unreachable-code"))
   val noOptCompiler         = cached("noOptCompiler",     () => newCompiler(extraArgs = "-opt:l:none"))
 
+  @nowarn("cat=w-flag-value-discard")
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)
     dceCompiler.global.genBCode.postProcessor.localOpt.removeUnreachableCodeImpl(method, "C")

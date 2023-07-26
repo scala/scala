@@ -184,7 +184,8 @@ trait Namers extends MethodSynthesis {
       sym.moduleClass.andAlso(updatePosFlags(_, pos, moduleClassFlags(flags))): @nowarn("cat=w-flag-value-discard")
 
       if (sym.isTopLevel) {
-        companionSymbolOf(sym, context) andAlso { companion =>
+        val companion = companionSymbolOf(sym, context)
+        companion.andAlso { companion =>
           val assignNoType = companion.rawInfo match {
             case _: SymLoader => true
             case tp           => tp.isComplete && (runId(sym.validTo) != currentRunId)
@@ -300,7 +301,7 @@ trait Namers extends MethodSynthesis {
           case tree @ ValDef(_, _, _, _)                     => enterValDef(tree)
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
-          case DocDef(_, defn)                               => enterSym(defn)
+          case DocDef(_, defn)                               => enterSym(defn): @nowarn("cat=w-flag-value-discard"); ()
           case tree @ Import(_, _)                           => enterImport(tree); returnContext = context.makeImportContext(tree)
           case _ =>
         }
@@ -453,8 +454,9 @@ trait Namers extends MethodSynthesis {
 
     def enterModuleDef(tree: ModuleDef): Unit = {
       val sym = enterModuleSymbol(tree)
-      sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
-      sym setInfo completerOf(tree)
+      val mc = sym.moduleClass
+      mc.setInfo(namerOf(sym).moduleClassTypeCompleter(tree))
+      sym.setInfo(completerOf(tree))
       validateCompanionDefs(tree)
     }
 
@@ -472,10 +474,12 @@ trait Namers extends MethodSynthesis {
         tree.symbol = existingModule
       }
       else {
-        enterInScope(assignMemberSymbol(tree))
+        enterInScope(assignMemberSymbol(tree)): @nowarn("cat=w-flag-value-discard")
         val m = tree.symbol
-        m.moduleClass setFlag moduleClassFlags(moduleFlags)
-        setPrivateWithin(tree, m.moduleClass)
+        val mc = m.moduleClass
+        mc.setFlag(moduleClassFlags(moduleFlags))
+        setPrivateWithin(tree, mc)
+        ()
       }
 
       val m = tree.symbol
@@ -488,6 +492,7 @@ trait Namers extends MethodSynthesis {
       m
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def enterSyms(trees: List[Tree]): Unit =
       trees.foldLeft(this: Namer) { (namer, t) =>
         val ctx = namer enterSym t
@@ -748,7 +753,7 @@ trait Namers extends MethodSynthesis {
       }
 
       if (isScala && deriveAccessors(tree)) enterGetterSetter(tree)
-      else assignAndEnterFinishedSymbol(tree)
+      else { assignAndEnterFinishedSymbol(tree): @nowarn("cat=w-flag-value-discard"); () }
 
       if (isEnumConstant(tree)) {
         val annots = annotSig(tree.mods.annotations, tree, _ => true)
@@ -770,12 +775,14 @@ trait Namers extends MethodSynthesis {
       tree.symbol = sym
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def enterTypeDef(tree: TypeDef): Unit = assignAndEnterFinishedSymbol(tree)
 
     def enterDefDef(tree: DefDef): Unit = {
       tree match {
         case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) =>
-          assignAndEnterFinishedSymbol(tree)
+          assignAndEnterFinishedSymbol(tree): @nowarn("cat=w-flag-value-discard")
+          ()
         case DefDef(mods, name, _, _, _, _) =>
           val sym = enterInScope(assignMemberSymbol(tree))
 
@@ -787,6 +794,7 @@ trait Namers extends MethodSynthesis {
             } else completerOf(tree)
 
           sym setInfo completer
+          ()
       }
       if (mexists(tree.vparamss)(_.mods.hasDefault))
         enterDefaultGetters(tree.symbol, tree, tree.vparamss, tree.tparams)
@@ -802,7 +810,8 @@ trait Namers extends MethodSynthesis {
 
       if (mods.isCase) {
         val m = ensureCompanionObject(tree, caseModuleDef)
-        m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
+        val mc = m.moduleClass
+        mc.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
       val hasDefault = impl.body exists treeInfo.isConstructorWithDefault
       if (hasDefault) {
@@ -835,7 +844,7 @@ trait Namers extends MethodSynthesis {
     def enterIfNotThere(sym: Symbol): Unit = { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
-      enterSym(tree)
+      enterSym(tree): @nowarn("cat=w-flag-value-discard")
       context.unit.synthetics(tree.symbol) = tree
       tree.symbol
     }
@@ -877,7 +886,7 @@ trait Namers extends MethodSynthesis {
 
         val tp = typeSig(tree, annotations)
 
-        findCyclicalLowerBound(tp) andAlso { sym =>
+        findCyclicalLowerBound(tp).andAlso { sym =>
           if (needsCycleCheck) {
             // neg/t1224:  trait C[T] ; trait A { type T >: C[T] <: C[C[T]] }
             // To avoid an infinite loop on the above, we cannot break all cycles
@@ -885,7 +894,7 @@ trait Namers extends MethodSynthesis {
             sym reset sym.info
             sym.initialize
           }
-        }
+        }: @nowarn("cat=w-flag-value-discard")
 
         sym.setInfo(if (!sym.isJavaDefined) tp else RestrictJavaArraysMap(tp))
 
@@ -1172,7 +1181,7 @@ trait Namers extends MethodSynthesis {
           pt
         }
         else legacy.tap(InferredImplicitError(tree, _, context))
-      }.setPos(tree.pos.focus)
+      }.setPos(tree.pos.focus): @nowarn("cat=w-flag-value-discard")
       tree.tpt.tpe
     }
 
@@ -1281,7 +1290,7 @@ trait Namers extends MethodSynthesis {
       }
 
       val classTp = ClassInfoType(parents, decls, clazz)
-      templateNamer.expandMacroAnnotations(templ.body)
+      templateNamer.expandMacroAnnotations(templ.body): @nowarn("cat=w-flag-value-discard")
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
     }
 
@@ -1307,11 +1316,14 @@ trait Namers extends MethodSynthesis {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
         // Don't force the owner's info lest we create cycles as in scala/bug#6357.
-        enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
+        enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef): @nowarn("cat=w-flag-value-discard")
+        ()
       }
 
-      if (settings.YmacroAnnotations.value && treeInfo.isMacroAnnotation(cdef))
-        typer.typedMacroAnnotation(cdef)
+      if (settings.YmacroAnnotations.value && treeInfo.isMacroAnnotation(cdef)) {
+        typer.typedMacroAnnotation(cdef): @nowarn("cat=w-flag-value-discard")
+        ()
+      }
 
       pluginsTp
     }
@@ -1483,7 +1495,11 @@ trait Namers extends MethodSynthesis {
       // because @macroImpl annotation only gets assigned during typechecking
       // otherwise macro defs wouldn't be able to robustly coexist with their clients
       // because a client could be typechecked before a macro def that it uses
-      if (meth.isMacro) typer.computeMacroDefType(ddef, resTpFromOverride) // note: `pt` argument ignored in `computeMacroDefType`
+      if (meth.isMacro) {
+        // note: `pt` argument ignored in `computeMacroDefType`
+        typer.computeMacroDefType(ddef, resTpFromOverride): @nowarn("cat=w-flag-value-discard")
+        ()
+      }
 
       if (vparamSymss.lengthCompare(0) > 0) { // OPT fast path for methods of 0-1 parameter lists
         val checkDependencies = new DependentTypeChecker(context)(this)

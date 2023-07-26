@@ -16,6 +16,7 @@ class ListTest extends AllocationTest {
    * Test that empty iterator does not hold reference
    * to complete List
    */
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def testIteratorGC(): Unit = {
     var num = 0
@@ -51,6 +52,7 @@ class ListTest extends AllocationTest {
     Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def updated(): Unit = {
     val xs = 1 :: 2 :: Nil

@@ -49,14 +49,14 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
 
   val jvmargs  = PrefixSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
   val defines  = PrefixSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")
-  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "") withAbbreviation "--tool-class-path"
+  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "").withAbbreviation("--tool-class-path"): @nowarn("cat=w-flag-value-discard")
   val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.") withAbbreviation "--no-boot-class-path"
 
   /**
    *  Standard settings
    */
   // argfiles is only for the help message
-  /*val argfiles = */ BooleanSetting("@<file>", "A text file containing compiler arguments (options and source files)")
+  /*val argfiles = */ BooleanSetting("@<file>", "A text file containing compiler arguments (options and source files)"): @nowarn("cat=w-flag-value-discard")
   val classpath     = PathSetting   ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
   val outdir        = OutputSetting (".").withPostSetHook(s => try outputDirs.setSingleOutput(s.value) catch { case FatalError(msg) => errorFn(msg) }).tap(_.postSetHook())
 

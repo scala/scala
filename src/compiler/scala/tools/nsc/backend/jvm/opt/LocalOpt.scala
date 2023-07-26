@@ -186,6 +186,7 @@ abstract class LocalOpt {
     // For correctness, after removing unreachable code, we have to eliminate empty exception
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
     // code unreachable and therefore requires running another round.
+    @nowarn("cat=w-flag-value-discard")
     def removalRound(): Boolean = {
       val insnsRemoved = removeUnreachableCodeImpl(method, ownerClassName)
       if (insnsRemoved) {
@@ -198,7 +199,7 @@ abstract class LocalOpt {
     }
 
     val changed = removalRound()
-    if (changed) removeUnusedLocalVariableNodes(method)()
+    if (changed) removeUnusedLocalVariableNodes(method)(): @nowarn("cat=w-flag-value-discard")
     BackendUtils.setDceDone(method)
     changed
   }
@@ -647,10 +648,13 @@ abstract class LocalOpt {
               itr.remove()
               changed = true
               insn match {
-                case invocation: MethodInsnNode => callGraph.removeCallsite(invocation, method)
-              case indy: InvokeDynamicInsnNode =>
-                callGraph.removeClosureInstantiation(indy, method)
-                removeIndyLambdaImplMethod(ownerClassName, method, indy)
+                case invocation: MethodInsnNode =>
+                  callGraph.removeCallsite(invocation, method): @nowarn("cat=w-flag-value-discard")
+                  ()
+                case indy: InvokeDynamicInsnNode =>
+                  callGraph.removeClosureInstantiation(indy, method): @nowarn("cat=w-flag-value-discard")
+                  removeIndyLambdaImplMethod(ownerClassName, method, indy): @nowarn("cat=w-flag-value-discard")
+                  ()
                 case _ =>
               }
             }
@@ -1215,7 +1219,7 @@ object LocalOptImpls {
         changed ||= jumpRemoved
       }
 
-      if (changed) run()
+      if (changed) run(): @nowarn("cat=w-flag-value-discard")
       changed
     }
 

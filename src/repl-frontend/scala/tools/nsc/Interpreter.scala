@@ -130,7 +130,7 @@ class InterpreterLoop {
       }
 
       override def closeInterpreter(): Unit = {
-        interpreter.interpret(??? : String)
+        interpreter.interpret(??? : String): @nowarn("cat=w-flag-value-discard")
         super.closeInterpreter()
       }
     }

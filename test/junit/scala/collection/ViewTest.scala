@@ -87,6 +87,7 @@ class ViewTest {
 
   @Test
   def updated(): Unit = {
+    @nowarn("cat=w-flag-value-discard")
     def checkThrows[U](f: => U) = try { f; assertTrue(false) } catch { case _: IndexOutOfBoundsException => }
     // View.Updated can update the last element but not the one after:
     val v1 = new View.Updated(0 until 5, 4, 0)

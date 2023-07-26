@@ -35,6 +35,7 @@ import scala.collection.immutable.ArraySeq
  *  @param nameAtRef an index of names from the tasty file of this unpickler
  *  @param tasty     the handle on the `TastyUniverse`
  */
+@nowarn("cat=w-flag-value-discard")
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
     nameAtRef: NameRef => TastyName)(implicit

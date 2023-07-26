@@ -14,11 +14,13 @@ package scala.tools.nsc
 package doc
 package html
 
+import java.io.{File => JFile}
+
 import model._
-import java.io.{ File => JFile }
-import io.{ Streamable, Directory }
-import scala.collection.mutable
+import io.{Streamable, Directory}
 import page.diagram._
+import scala.annotation.nowarn
+import scala.collection.mutable
 import scala.reflect.internal.Reporter
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
@@ -111,7 +113,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
         assert(inputStream != null, p)
       }.toByteArray()
       val dest = Directory(siteRoot) / subPath
-      dest.parent.createDirectory()
+      dest.parent.createDirectory(): @nowarn("cat=w-flag-value-discard")
       val out = dest.toFile.bufferedOutput()
       try out.write(bytes, 0, bytes.length)
       finally out.close()
@@ -141,7 +143,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
         throw new Exception(s"Subresource Integrity unmatched on ${resourceName}. Could be wrong webjar or hijacked: $actualSRI")
 
       val dest = Directory(siteRoot) / "lib" / resourceName
-      dest.parent.createDirectory()
+      dest.parent.createDirectory(): @nowarn("cat=w-flag-value-discard")
       dest.toFile.writeAll(fileContent)
     }
 

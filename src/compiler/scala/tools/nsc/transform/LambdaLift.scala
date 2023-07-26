@@ -15,9 +15,9 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.nowarn
 import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
+import scala.collection.mutable, mutable.{LinkedHashMap, LinkedHashSet}
 import scala.tools.nsc.Reporting.WarningCategory.LintPerformance
 
 abstract class LambdaLift extends InfoTransform {
@@ -197,6 +197,7 @@ abstract class LambdaLift extends InfoTransform {
 
     /** The traverse function */
     private val freeVarTraverser = new InternalTraverser {
+      @nowarn("cat=w-flag-value-discard")
       override def traverse(tree: Tree): Unit = {
 //       try { //debug
         val sym = tree.symbol

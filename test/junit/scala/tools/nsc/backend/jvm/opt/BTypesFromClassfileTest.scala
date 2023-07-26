@@ -28,7 +28,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
 
   locally {
     new global.Run() // initializes some of the compiler
-  }
+  }: @nowarn("cat=w-flag-value-discard")
 
   def clearCache() = {
     bTypes.classBTypeCache.clear()

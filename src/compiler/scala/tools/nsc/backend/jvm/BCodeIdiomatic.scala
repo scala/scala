@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable
 import scala.tools.asm
 import scala.tools.asm.tree.MethodInsnNode
@@ -26,6 +26,7 @@ import scala.tools.nsc.backend.jvm.GenBCode._
  *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
  *
  */
+@nowarn("cat=w-flag-value-discard")
 abstract class BCodeIdiomatic {
   val global: Global
   val bTypes: BTypesFromSymbols[global.type]

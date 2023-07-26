@@ -367,6 +367,7 @@ class ArrayBufferTest {
 
   @Test def t12176_indexOutOfBoundsExceptionMessage(): Unit = {
     def newAB = ArrayBuffer('a', 'b', 'c')
+    @nowarn("cat=w-flag-value-discard")
     def iiobe[A](f: => A, msg: String) =
       try {
         f; fail("Did not throw IndexOutOfBoundsException")
@@ -437,7 +438,7 @@ class ArrayBufferTest {
     locally {
       val buf = new ArrayBuffer[Int](42)
       Iterator.continually(42).take(42).foreach(buf.addOne)
-      buf.remove(buf.size - 1)
+      buf.remove(buf.size - 1, 1)
       assertEquals(42, array(buf).length)
     }
     // double capacity
@@ -491,6 +492,7 @@ class ArrayBufferTest {
   // scala/bug#12284
   @Test
   def viewConsistency(): Unit = {
+    @nowarn("cat=w-flag-value-discard")
     def check[U](op: ArrayBuffer[Int] => U): Unit = {
       val buf = ArrayBuffer.from(1 to 50)
       val view = buf.view

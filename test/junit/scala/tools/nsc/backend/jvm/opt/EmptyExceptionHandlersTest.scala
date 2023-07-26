@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
@@ -22,6 +23,7 @@ class EmptyExceptionHandlersTest extends BytecodeTesting {
 
   val exceptionDescriptor = "java/lang/Exception"
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def eliminateEmpty(): Unit = {
     val handlers = List(ExceptionHandler(Label(1), Label(2), Label(2), Some(exceptionDescriptor)))
@@ -35,6 +37,7 @@ class EmptyExceptionHandlersTest extends BytecodeTesting {
     assertTrue(convertMethod(asmMethod).handlers.isEmpty)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def eliminateHandlersGuardingNops(): Unit = {
     val handlers = List(ExceptionHandler(Label(1), Label(2), Label(2), Some(exceptionDescriptor)))

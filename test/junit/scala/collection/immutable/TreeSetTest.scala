@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
 @RunWith(classOf[JUnit4])
@@ -29,6 +30,7 @@ class TreeSetTest extends AllocationTest {
     assertSame(m, TreeSet.from(m))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def min(): Unit = {
     assertEquals(1, TreeSet(1, 2, 3).min)
@@ -43,6 +45,7 @@ class TreeSetTest extends AllocationTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def max(): Unit = {
     assertEquals(3, TreeSet(1, 2, 3).max)

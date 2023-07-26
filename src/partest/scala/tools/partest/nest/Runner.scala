@@ -653,7 +653,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     // res/t687.res depends on ignoring its compilation failure
     // and just looking at the diff, so I made them all do that
     // because this is long enough.
-    /*val res =*/ Output.withRedirected(logWriter)(try loop() finally resReader.close())
+    /*val res =*/ Output.withRedirected(logWriter)(try loop() finally resReader.close()): @nowarn("cat=w-flag-value-discard")
 
     /*res andAlso*/ diffIsOk
   }

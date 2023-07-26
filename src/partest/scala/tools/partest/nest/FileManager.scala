@@ -18,6 +18,8 @@ package nest
 import java.io.{File, IOException}
 import java.net.URLClassLoader
 
+import scala.annotation.nowarn
+
 object FileManager {
   def getLogFile(dir: File, fileBase: String, kind: String): File =
     new File(dir, fileBase + "-" + kind + ".log")
@@ -35,6 +37,7 @@ object FileManager {
   def overwriteFileWith(dest: File, file: File) =
     dest.isFile && copyFile(file, dest)
 
+  @nowarn("cat=w-flag-value-discard")
   def copyFile(from: File, dest: File): Boolean = {
     if (from.isDirectory) {
       assert(dest.isDirectory, "cannot copy directory to file")

@@ -3,6 +3,7 @@ package scala.util
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.reflect.ClassTag
 import scala.util.control.ControlThrowable
@@ -720,6 +721,7 @@ class UsingTest {
     assertThrowableClass[NullPointerException](npe)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def managerDisallowsNull(): Unit = {
     val npe = Using.Manager { m =>
@@ -735,6 +737,7 @@ class UsingTest {
     assertThrowableClass[RuntimeException](ex)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def managerCatchesOpeningException(): Unit = {
     val ex = Using.Manager { m =>
@@ -836,6 +839,7 @@ object UsingTest {
   def use(resource: BaseResource, t: String => Throwable): Throwable =
     catchThrowable(Using.resource(resource)(opThrowing(t)))
 
+  @nowarn("cat=w-flag-value-discard")
   private def opThrowing(t: String => Throwable): BaseResource => Nothing =
     r => {
       r.identity("test")

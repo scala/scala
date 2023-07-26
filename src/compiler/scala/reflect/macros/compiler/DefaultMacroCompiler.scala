@@ -13,6 +13,7 @@
 package scala.reflect.macros
 package compiler
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Global
 
 abstract class DefaultMacroCompiler extends Resolvers
@@ -99,7 +100,10 @@ abstract class DefaultMacroCompiler extends Resolvers
 
     try {
       if (vanillaResult.isSuccess || bundleResult.isSuccess) ensureUnambiguousSuccess()
-      if (vanillaResult.isFailure && bundleResult.isFailure) reportMostAppropriateFailure()
+      if (vanillaResult.isFailure && bundleResult.isFailure) {
+        reportMostAppropriateFailure(): @nowarn("cat=w-flag-value-discard")
+        ()
+      }
       vanillaResult.orElse(bundleResult).get
     } catch {
       case MacroImplResolutionException(pos, msg) =>

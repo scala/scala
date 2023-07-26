@@ -588,7 +588,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // can move "val sym = tree.symbol" before this line, because
       // inferExprAlternative side-effects the tree's symbol.
       if (tree.symbol.isOverloaded && !mode.inFunMode)
-        inferExprAlternative(tree, pt)
+        inferExprAlternative(tree, pt): @nowarn("cat=w-flag-value-discard")
 
       val sym = tree.symbol
       val isStableIdPattern = mode.typingPatternNotConstructor && tree.isTerm
@@ -1161,7 +1161,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               context.warning(tree.pos, msg, WarningCategory.Deprecation,
                 runReporting.codeAction("add conversion", tree.pos, s"${CodeAction.maybeWrapInParens(orig)}.to${ptSym.name}", msg))
             } else {
-              object warnIntDiv extends Traverser {
+              object warnIntDiv extends InternalTraverser {
                 def isInt(t: Tree) = ScalaIntegralValueClasses(t.tpe.typeSymbol)
                 override def traverse(tree: Tree): Unit = tree match {
                   case Apply(Select(q, nme.DIV), _) if isInt(q) =>
@@ -1229,6 +1229,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def hasPolymorphicApply = applyMeth.alternatives exists (_.tpe.typeParams.nonEmpty)
           def hasMonomorphicApply = applyMeth.alternatives exists (_.tpe.paramSectionCount > 0)
 
+          @nowarn("cat=w-flag-value-discard")
           def badDynamicApply() = {
             tree match {
               case Apply(fun, _) => DynamicRewriteError(tree, ApplyWithoutArgsError(tree, fun))
@@ -1335,6 +1336,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       adapt(tree, mode, pt, original)
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def instantiate(tree: Tree, mode: Mode, pt: Type): Tree = {
       inferExprInstance(tree, context.extractUndetparams(), pt, useWeaklyCompatible = true)
       adapt(tree, mode, pt)
@@ -1702,6 +1704,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  which encodes the fact that supercall argss are unknown during parsing and need to be transplanted
      *  from one of the parent types. Read more about why the argss are unknown in `tools.nsc.ast.Trees.Template`.
      */
+    @nowarn("cat=w-flag-value-discard")
     private def typedPrimaryConstrBody(templ: Template)(actualSuperCall: => Tree): Tree =
         treeInfo.firstConstructor(templ.body) match {
         case ctor @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
@@ -1790,6 +1793,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         )
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefTpe)))
       case first :: rest =>
@@ -1841,6 +1845,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
         if (parent == DynamicClass) checkFeature(parentPos, currentRun.runDefinitions.DynamicsFeature)
 
+      @nowarn("cat=w-flag-value-discard")
       def validateParentClass(parent: Tree, superclazz: Symbol) =
         if (!parent.isErrorTyped) { // redundant
           val psym = parent.tpe.typeSymbol.initialize
@@ -1943,7 +1948,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       try {
         val typedMods = typedModifiers(cdef.mods)
         assert(clazz != NoSymbol, cdef)
-        reenterTypeParams(cdef.tparams)
+        reenterTypeParams(cdef.tparams): @nowarn("cat=w-flag-value-discard")
         val tparams1 = cdef.tparams.mapConserve(typedTypeDef)
         val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
         val impl2 = finishMethodSynthesis(impl1, clazz, context)
@@ -2372,7 +2377,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             tp0.dealiasWidenChain forall (t => check(t.typeSymbol))
           }
-          checkAbstract(paramType, "Parameter type")
+          checkAbstract(paramType, "Parameter type"): @nowarn("cat=w-flag-value-discard")
 
           if (sym.isDerivedValueClass)
             failStruct(paramPos, member="Parameter type", referTo="a user-defined value class")
@@ -2384,6 +2389,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         failStruct(ddef.tpt.pos, member="Result type", referTo="a user-defined value class")
     }
 
+    @nowarn("cat=w-flag-value-discard")
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol.initialize
       currentRun.profiler.beforeTypedImplDef(meth)
@@ -2495,6 +2501,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
     // use typedTypeDef instead. this version is called after creating a new context for the TypeDef
+    @nowarn("cat=w-flag-value-discard")
     private def typedTypeDefImpl(tdef: TypeDef): TypeDef = {
       tdef.symbol.initialize
       reenterTypeParams(tdef.tparams)
@@ -2688,6 +2695,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
+      @nowarn("cat=w-flag-value-discard")
       def initChildren(sym: Symbol): Unit =
         if (sym.isJava && sym.isSealed)
           sym.attachments.get[PermittedSubclassSymbols] match {
@@ -2994,6 +3002,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *     function type is a built-in FunctionN or some SAM type
       *
       */
+    @nowarn("cat=w-flag-value-discard")
     def inferSamType(fun: Tree, pt: Type, mode: Mode): Boolean =
       if (pt.isInstanceOf[OverloadedArgProto]) inferSamType(fun, pt.underlying, mode) // scala/bug#12560
       else fun match {
@@ -3255,6 +3264,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     // Assuming the expected number of parameters, which all have type annotations, do the happy path.
+    @nowarn("cat=w-flag-value-discard")
     private def doTypedFunction(fun: Function, bodyPt: Type) = {
       val vparams = fun.vparams
       val vparamSyms = vparams map { vparam =>
@@ -3326,6 +3336,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
+      @nowarn("cat=w-flag-value-discard")
       def typedStat(stat: Tree): Tree = stat match {
         case s if context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(s) => OnlyDeclarationsError(s)
         case imp @ Import(_, _) =>
@@ -3786,7 +3797,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case Block(Nil, _) =>
                     // if the block does not have any ValDef we can remove it. Note that the call to
                     // "transformNamedApplication" is always needed in order to obtain targs/previousArgss
-                    fun1.attachments.remove[NamedApplyInfo]
+                    fun1.attachments.remove[NamedApplyInfo]: @nowarn("cat=w-flag-value-discard")
                     true
                   case _ => false
                 }
@@ -3797,7 +3808,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (!sameLength(allArgs, args) && callToCompanionConstr(context, funSym)) {
                   duplErrorTree(ModuleUsingCompanionClassDefaultArgsError(tree))
                 } else if (lencmp2 > 0) {
-                  removeNames(Typer.this)(allArgs, params) // #3818
+                  removeNames(Typer.this)(allArgs, params): @nowarn("cat=w-flag-value-discard") // #3818
                   duplErrTree
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
@@ -3811,7 +3822,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
                   tryTupleApply orElse {
-                    removeNames(Typer.this)(allArgs, params) // report bad names
+                    removeNames(Typer.this)(allArgs, params): @nowarn("cat=w-flag-value-discard") // report bad names
                     duplErrorTree(NotEnoughArgsError(tree, fun, missing))
                   }
                 }
@@ -3895,7 +3906,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               } else handleMonomorphicCall
             } else if (needsInstantiation(tparams, formals, args)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
-              inferExprInstance(fun, tparams)
+              inferExprInstance(fun, tparams): @nowarn("cat=w-flag-value-discard")
               doTypedApply(tree, fun, args, mode, pt)
             } else {
               def handlePolymorphicCall = {
@@ -3953,6 +3964,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */
+    @nowarn("cat=w-flag-value-discard")
     def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       var unmappable: Boolean = false
@@ -4408,6 +4420,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!checkClassOrModuleType(tpt) && noGen) tpt
       else atPos(tree.pos)(gen.mkClassOf(tpt.tpe))
 
+    @nowarn("cat=w-flag-value-discard")
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Mode): Tree = {
       for (wc <- tree.whereClauses)
         if (wc.symbol == NoSymbol) { namer enterSym wc; wc.symbol setFlag EXISTENTIAL }
@@ -4467,7 +4480,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val isClassOf = fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol)
           if (isJava && fun.symbol.isTerm) args.foreach(_.modifyType(rawToExistential)) // e.g. List.class, parsed as classOf[List]
           val targs = mapList(args)(_.tpe)
-          checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
+          checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, ""): @nowarn("cat=w-flag-value-discard")
           if (isClassOf)
             typedClassOf(tree, args.head, noGen = true)
           else {
@@ -4599,7 +4612,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val fun = atPos(wrappingPos(qual :: targs)) {
             gen.mkTypeApply(Select(qual, opName) setPos qual.pos, targs)
           }
-          if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // scala/bug#7617
+          if (opName == nme.updateDynamic) suppressMacroExpansion(fun): @nowarn("cat=w-flag-value-discard") // scala/bug#7617
           val nameStringLit = {
             val p = if (treeSelection.pos.isDefined) treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent else treeSelection.pos
             atPos(p) {
@@ -5449,7 +5462,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               vsym.setInfo(uncheckedBounds(qual.tpe))
               val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
               context.pendingStabilizers ::= vdef
-              qual.changeOwner(context.owner -> vsym)
+              qual.changeOwner(context.owner -> vsym): @nowarn("cat=w-flag-value-discard")
               val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
               return typedSelect(tree, newQual, name)
             }
@@ -5497,7 +5510,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   result,
                   TypeTreeWithDeferredRefCheck(qual) { () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
                     // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
-                    checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
+                    checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, ""): @nowarn("cat=w-flag-value-discard")
                     qual // you only get to see the wrapped tree after running this check :-p
                   }.setType(qual.tpe).setPos(qual.pos),
                   name
@@ -5534,10 +5547,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val tree1 = typedSelect(tree, qualTyped, name)
 
             if (tree.hasAttachment[PostfixAttachment.type])
-              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
+              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode): @nowarn("cat=w-flag-value-discard")
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
+              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString): @nowarn("cat=w-flag-value-discard")
 
             qualTyped.symbol match {
               case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)
@@ -5737,7 +5750,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
                 // we can't simply use original in refchecks because it does not contains types
                 // (and the only typed trees we have been mangled so they're not quite the original tree anymore)
-                checkBounds(result, tpt1.tpe.prefix, tpt1.symbol.owner, tpt1.symbol.typeParams, argtypes, "")
+                checkBounds(result, tpt1.tpe.prefix, tpt1.symbol.owner, tpt1.symbol.typeParams, argtypes, ""): @nowarn("cat=w-flag-value-discard")
                 result // you only get to see the wrapped tree after running this check :-p
               }.setType(result.tpe).setPos(result.pos)
             else result
@@ -5870,7 +5883,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // We peeled off the `_` marker for the typed1 call, so we don't know that the user has requested eta-expansion.
             // See scala/bug#8299.
             val funTyped = typed1(suppressMacroExpansion(expr), mode | FUNmode, WildcardType)
-            if (funTyped.tpe.isInstanceOf[OverloadedType]) inferExprAlternative(funTyped, pt)
+            if (funTyped.tpe.isInstanceOf[OverloadedType]) inferExprAlternative(funTyped, pt): @nowarn("cat=w-flag-value-discard")
             funTyped match {
               case macroDef if treeInfo.isMacroApplication(macroDef) => MacroEtaError(macroDef)
               case methodValue                                       => typedEta(checkDead(context, methodValue))
@@ -6205,7 +6218,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (mode1.inPatternMode && !mode1.inPolyMode && result.isType)
           PatternMustBeValue(result, pt)
 
-        if (shouldPopTypingStack) typingStack.showPop(result)
+        if (shouldPopTypingStack) typingStack.showPop(result): @nowarn("cat=w-flag-value-discard")
 
         result
       } catch {

@@ -49,7 +49,7 @@ class SortedMapTest {
     val originalTreeMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
       .withDefault(defaultValueFunction)
 
-    originalTreeMap.remove(3)
+    originalTreeMap.subtractOne(3)
 
     assertEquals("3 is not present in this map", originalTreeMap(3))
     assertEquals(2, originalTreeMap.size)

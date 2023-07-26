@@ -35,7 +35,7 @@ class ZipAndJarFileLookupFactoryTest {
       assert(cp2 eq cp1)
 
       // check things work after the cache hit
-      cp1.findClassFile("p2.X").get.toByteArray
+      cp1.findClassFile("p2.X").get.toByteArray: @nowarn("cat=w-flag-value-discard")
 
       val lastMod1 = Files.getLastModifiedTime(f)
       // Create a new zip at the same path with different contents and last modified

@@ -112,7 +112,7 @@ class ArrayDequeTest {
 
     a.trimToSize()  // Can't shrink
     assertEquals(a.capacity, 512)
-    a.remove(0)     // No reallocation because array isn't empty enough
+    a.remove(0, 1)  // No reallocation because array isn't empty enough
     assertEquals(a.capacity, 512)
     a.trimToSize()  // Shrink to 256
     assertEquals(a.capacity, 256)

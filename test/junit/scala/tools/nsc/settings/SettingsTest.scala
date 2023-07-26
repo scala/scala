@@ -3,6 +3,7 @@ package settings
 
 import org.junit.Assert._
 import org.junit.Test
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class SettingsTest {
@@ -247,6 +248,7 @@ class SettingsTest {
       marginallyEquals(expected, m.help)
     })
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def `wildcard doesn't disable everything`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:_" :: Nil, true)
@@ -254,12 +256,14 @@ class SettingsTest {
     assertTrue("is enabled", settings.optUnreachableCode)
     assertFalse("inliner is not enabled", settings.optInlinerEnabled)
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def `kill switch can be enabled explicitly`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:unreachable-code,none" :: Nil, true)
     assertTrue("has the choice", settings.opt.contains(settings.optChoices.unreachableCode))
     assertFalse("is not enabled", settings.optUnreachableCode)
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def `kill switch disables inline`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:inline:**" :: "-opt:none" :: Nil, true)

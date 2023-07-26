@@ -233,7 +233,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         case md: MemberDef =>
           if (currentOwner == stateMachineClass) {
             if (liftedSyms(tree.symbol)) {
-              stateMachineClass.info.decls.enter(md.symbol)
+              val sym = md.symbol
+              stateMachineClass.info.decls.enter(sym)
               super.transform(tree)
             } else if (md.symbol == applySym || md.symbol == stateMachineClass) {
               super.transform(tree)

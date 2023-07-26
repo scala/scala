@@ -394,6 +394,12 @@ abstract class TreeInfo {
           }
           fun.symbol != null && loop(fun.symbol.info)
       }
+    case Applied(_, _, argss) =>
+      tree.tpe match {
+        case SingleType(_, sym) =>
+          argss.exists(_.exists(sym == _.symbol))
+        case _ => false
+      }
     case _ =>
       tree.tpe.isInstanceOf[ThisType]
   }

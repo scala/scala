@@ -295,7 +295,7 @@ class ListBufferTest {
       assertR(x.length, 2, "length D")
 
       // removing first element
-      x.remove(0)
+      x.remove(0, 1)
       assertR(x.length, 1, "length E")
 
       // toList

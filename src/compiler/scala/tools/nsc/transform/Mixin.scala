@@ -20,7 +20,6 @@ import scala.collection.mutable
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.ListOfNil
 
-
 abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   import global._
   import definitions._
@@ -367,7 +366,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
                  && !isOverriddenAccessor(mixinMember, clazz.info.baseClasses)) {
           // mixin accessor for constructor parameter
           // (note that a paramaccessor cannot have a constant type as it must have a user-defined type)
-          cloneAndAddMixinMember(mixinClass, mixinMember)
+          cloneAndAddMixinMember(mixinClass, mixinMember): @nowarn("cat=w-flag-value-discard")
 
           val name = mixinMember.name
 
@@ -440,7 +439,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       tree match {
         case Template(parents, self, body) =>
           localTyper = erasure.newTyper(rootContext.make(tree, currentOwner))
-          exitingMixin(currentOwner.owner.info)//todo: needed?
+          exitingMixin(currentOwner.owner.info): @nowarn("cat=w-flag-value-discard") //todo: needed?
 
           if (!currentOwner.isTrait && !isPrimitiveValueClass(currentOwner))
             addMixedinMembers(currentOwner, unit)
@@ -459,7 +458,8 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
               case blk@Block(stats, expr) =>
                 assert(dd.symbol.originalOwner.isClass, dd.symbol)
                 def nullify(sym: Symbol) = {
-                  sym.accessedOrSelf.setFlag(MUTABLE)
+                  val accessed = sym.accessedOrSelf
+                  accessed.setFlag(MUTABLE)
                   Select(gen.mkAttributedThis(sym.enclClass), sym.accessedOrSelf) === NULL
                 }
                 val stats1 = stats ::: fieldsToNull.map(nullify)

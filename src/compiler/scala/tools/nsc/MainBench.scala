@@ -12,6 +12,8 @@
 
 package scala.tools.nsc
 
+import scala.annotation.nowarn
+
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
@@ -32,7 +34,7 @@ object MainBench extends Driver with EvalLoop {
         theCompiler.settings.Ystatistics.value           = List("all")
         theCompiler.settings.YhotStatisticsEnabled.value = true
       }
-      process(args)
+      process(args): @nowarn("cat=w-flag-value-discard")
       val end = System.nanoTime()
       val duration = (end-start)/1000000
       println(s"${duration}ms")

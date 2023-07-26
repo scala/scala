@@ -5,6 +5,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertFails, assertNotReachable, assertThrows}
 import scala.util.Random
 import scala.util.chaining._
@@ -59,6 +60,7 @@ class PriorityQueueTest {
     assertThrows[NoSuchElementException](PriorityQueue.empty[Int].last)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def copyToArray(): Unit = {
 

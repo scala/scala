@@ -750,7 +750,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
             debug.patmat("def: "+ ((d, d.symbol.ownerChain, currentOwner.ownerChain)))
 
-            d.symbol.moduleClass andAlso (_.owner = currentOwner)
+            d.symbol.moduleClass.andAlso(_.owner = currentOwner): @nowarn("cat=w-flag-value-discard")
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
           //   debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))

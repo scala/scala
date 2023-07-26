@@ -51,7 +51,9 @@ trait ParsersCommon extends ScannersCommon {
   abstract class ParserCommon {
     val in: ScannerCommon
     def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit
-    def accept(token: Token): Int
+    @nowarn("cat=w-flag-value-discard")
+    final def accept(token: Token): Unit = acceptAt(token)
+    def acceptAt(token: Token): Int
 
     /** Methods inParensOrError and similar take a second argument which, should
      *  the next token not be the expected opener (e.g. LPAREN) will be returned
@@ -62,12 +64,13 @@ trait ParsersCommon extends ScannersCommon {
      *  Skip trailing comma is pushed down to scanner because this abstract parser
      *  doesn't have token info.
      */
+    @nowarn("cat=w-flag-value-discard")
     @inline final def inGroupers[T](left: Token)(body: => T): T = {
       accept(left)
       try body
       finally {
         in.skipTrailingComma(left + 1)
-        accept(left + 1): @nowarn("cat=w-flag-value-discard")
+        accept(left + 1)
       }
     }
     @inline final def inParens[T](body: => T): T                  = inGroupers(LPAREN)(body)
@@ -207,7 +210,10 @@ self =>
       accept(LBRACE)
       var openBraces = 1
       while (in.token != EOF && openBraces > 0) {
-        if (in.token == XMLSTART) xmlLiteral()
+        if (in.token == XMLSTART) {
+          xmlLiteral(): @nowarn("cat=w-flag-value-discard")
+          ()
+        }
         else {
           if (in.token == LBRACE) openBraces += 1
           else if (in.token == RBRACE) openBraces -= 1
@@ -642,7 +648,7 @@ self =>
       }
 
     /** Consume one token of the specified type, or signal an error if it is not there. */
-    def accept(token: Token): Offset = {
+    def acceptAt(token: Token): Offset = {
       val offset = in.offset
       if (in.token != token) {
         syntaxErrorOrIncomplete(expectedMsg(token), skipIt = false)
@@ -901,7 +907,7 @@ self =>
 
     /** Create a tuple term Tree. If the arity is not supported, a syntax error is emitted. */
     def makeSafeTupleTerm(elems: List[Tree]) = {
-      checkTupleSize(elems)
+      checkTupleSize(elems): @nowarn("cat=w-flag-value-discard")
       makeTupleTerm(elems)
     }
 
@@ -1007,7 +1013,7 @@ self =>
     private def pushOpInfo(top: Tree): Unit = {
       val name   = in.name
       val offset = in.offset
-      ident()
+      ident(): @nowarn("cat=w-flag-value-discard")
       val targs = if (in.token == LBRACKET) exprTypeArgs() else Nil
       val opinfo = OpInfo(top, name, targs, offset)
       opstack ::= opinfo
@@ -1379,7 +1385,7 @@ self =>
         in.nextToken()
         t = atPos(start) { This(tpnme.EMPTY) }
         if (!thisOK || in.token == DOT) {
-          t = selectors(start, t, typeOK, accept(DOT))
+          t = selectors(start, t, typeOK, acceptAt(DOT))
         }
       } else if (in.token == SUPER) {
         in.nextToken()
@@ -1400,7 +1406,7 @@ self =>
             in.nextToken()
             t = atPos(start) { This(name.toTypeName) }
             if (!thisOK || in.token == DOT)
-              t = selectors(start, t, typeOK, accept(DOT))
+              t = selectors(start, t, typeOK, acceptAt(DOT))
           } else if (in.token == SUPER) {
             in.nextToken()
             t = atPos(start) { Super(This(name.toTypeName), mixinQualifierOpt()) }
@@ -1672,27 +1678,31 @@ self =>
           val cond = condExpr()
           newLinesOpt()
           val thenp = expr()
-          def onelegged(): Unit = {
-            thenp match {
-              case Block(_, res) => res.updateAttachment(TypedExpectingUnitAttachment)
-              case _ => ()
+          // convert if (p) s to if (p) { s; () } else (); the original result expr gets the attachment at user request
+          def onelegged(arm: Tree): Unit =
+            arm match {
+              case blk @ Block(_, res) =>
+                if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
+                  res.updateAttachment(TypedExpectingUnitAttachment)
+                  blk.updateAttachment(TypedExpectingUnitAttachment)
+                }
+              case arm =>
+                if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value) {
+                  arm.updateAttachment(TypedExpectingUnitAttachment)
+                }
             }
-            thenp.updateAttachment(TypedExpectingUnitAttachment)
-          }
           val elsep =
             if (in.token == ELSE) {
               in.nextToken()
               expr() match {
-                case empty @ Literal(Constant(())) if settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value =>
-                  onelegged()
+                case empty @ Literal(Constant(())) =>
+                  onelegged(thenp)
                   empty
                 case nonempty => nonempty
               }
             }
             else {
-              // user asked to silence warnings on unibranch if; also suppresses value discard
-              if (settings.warnNonUnitIf.isSetByUser && !settings.warnNonUnitIf.value)
-                onelegged()
+              onelegged(thenp)
               literalUnit
             }
           If(cond, thenp, elsep)
@@ -2065,7 +2075,7 @@ self =>
 
     // IDE HOOK (so we can memoize case blocks) // needed?
     def caseBlock(): Tree =
-      atPos(accept(ARROW))(block())
+      atPos(acceptAt(ARROW))(block())
 
     /** {{{
      *  Guard ::= if PostfixExpr
@@ -2737,7 +2747,7 @@ self =>
      *  }}}
      */
     def importClause(): List[Tree] = {
-      val offset = accept(IMPORT)
+      val offset = acceptAt(IMPORT)
       commaSeparated(importExpr()) match {
         case Nil => Nil
         case t :: rest =>
@@ -3109,7 +3119,7 @@ self =>
      *  }}}
      */
     def selfInvocation(vparamss: List[List[ValDef]]): Tree =
-      atPos(accept(THIS)) {
+      atPos(acceptAt(THIS)) {
         newLineOptWhenFollowedBy(LBRACE)
         var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
         newLineOptWhenFollowedBy(LBRACE)
@@ -3281,7 +3291,7 @@ self =>
     def packageOrPackageObject(start: Offset): Tree =
       if (in.token == OBJECT) joinComment(packageObjectDef(start) :: Nil).head
       else {
-        in.flushDoc()
+        in.discardDoc()
         makePackaging(start, pkgQualId(), inBracesOrNil(topStatSeq()))
       }
 
@@ -3300,8 +3310,12 @@ self =>
           case _      => parent
         })
       }
-      readAppliedParent()
-      while (in.token == WITH) { in.nextToken(); readAppliedParent() }
+      readAppliedParent(): @nowarn("cat=w-flag-value-discard")
+      while (in.token == WITH) {
+        in.nextToken()
+        readAppliedParent(): @nowarn("cat=w-flag-value-discard")
+        ()
+      }
       parents.toList
     }
 
@@ -3467,7 +3481,7 @@ self =>
       case PACKAGE  =>
         packageOrPackageObject(in.skipToken()) :: Nil
       case IMPORT =>
-        in.flushDoc()
+        in.discardDoc()
         importClause()
       case _ if isAnnotation || isTemplateIntro || isModifier || isValidSoftModifier =>
         joinComment(topLevelTmplDef :: Nil)
@@ -3482,7 +3496,7 @@ self =>
       var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
       if (isExprIntro) checkNoEscapingPlaceholders {
-        in.flushDoc()
+        in.discardDoc()
         val first = expr(InTemplate) // @S: first statement is potentially converted so cannot be stubbed.
         if (in.token == ARROW) {
           first match {
@@ -3517,12 +3531,12 @@ self =>
     def templateStats(): List[Tree] = checkNoEscapingPlaceholders { statSeq(templateStat) }
     def templateStat: PartialFunction[Token, List[Tree]] = {
       case IMPORT =>
-        in.flushDoc()
+        in.discardDoc()
         importClause()
       case _ if isDefIntro || isModifier || isAnnotation || isValidSoftModifier =>
         joinComment(nonLocalDefOrDcl)
       case _ if isExprIntro =>
-        in.flushDoc()
+        in.discardDoc()
         statement(InTemplate) :: Nil
     }
 
@@ -3644,7 +3658,7 @@ self =>
               ts ++= topStatSeq()
             }
           } else {
-            in.flushDoc()
+            in.discardDoc()
             val pkg = pkgQualId()
 
             if (in.token == EOF) {

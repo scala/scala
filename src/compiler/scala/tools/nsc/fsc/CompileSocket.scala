@@ -16,14 +16,15 @@ import java.math.BigInteger
 import java.nio.charset.StandardCharsets.UTF_8
 import java.security.SecureRandom
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.io.Codec
 import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.tools.nsc.Properties.scalacDir
 import scala.tools.nsc.io.File
-import scala.util.control.NonFatal
 import scala.util.Properties
+import scala.util.control.NonFatal
 
 trait HasCompileSocket {
   def compileSocket: CompileSocket
@@ -101,6 +102,7 @@ class CompileSocket extends CompileOutputCommon {
   def portFile(port: Int): File = portsDir / File(port.toString)
 
   /** Poll for a server port number; return -1 if none exists yet */
+  @nowarn("cat=w-flag-value-discard")
   private def pollPort(): Int = if (fixPort > 0) {
     if (portsDir.list.toList.exists(_.name == fixPort.toString)) fixPort else -1
   } else portsDir.list.toList match {
@@ -159,6 +161,7 @@ class CompileSocket extends CompileOutputCommon {
     val retryDelay = 50L
     val maxAttempts = (maxMillis / retryDelay).toInt
 
+    @nowarn("cat=w-flag-value-discard")
     @tailrec
     def getsock(attempts: Int): Option[Socket] = attempts match {
       case 0    => warn("Unable to establish connection to compilation daemon") ; None
@@ -205,7 +208,7 @@ class CompileSocket extends CompileOutputCommon {
       ff.length
     }
     if ((Iterator continually check take 50 find (_ > 0)).isEmpty) {
-      ff.delete()
+      ff.delete(): @nowarn("cat=w-flag-value-discard")
       fatal("Unable to establish connection to server.")
     }
     val result = f.readLine()

@@ -2,10 +2,12 @@ package scala.collection
 
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.mutable.Builder
 import scala.math.Ordering
 
+@nowarn("cat=w-flag-value-discard")
 class BuildFromTest {
 
   // You can either overload methods for IterableOps and Iterable with SortedOps (if you want to support constrained collection types)

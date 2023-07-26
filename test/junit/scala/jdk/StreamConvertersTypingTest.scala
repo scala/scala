@@ -25,6 +25,7 @@ import scala.collection._
 class StreamConvertersTypingTest {
   def anyStepper[T](c: IterableOnce[T]): AnyStepper[T] = c.stepper
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def keyValueSteppers(): Unit = {
     import scala.jdk.StreamConverters._
@@ -106,6 +107,7 @@ class StreamConvertersTypingTest {
     */
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def convertStreamToScala(): Unit = {
     import scala.jdk.StreamConverters._

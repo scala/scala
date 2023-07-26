@@ -23,7 +23,7 @@ class BinaryTreeStepperTest {
   def testStepper(): Unit = {
     val s = collection.immutable.TreeSet.from(Array(-1, 48, 111, 115, 0, 116, 5399)).stepper
     val t = collection.mutable.Set.empty[Int]
-    while (s.hasStep) t.add(s.nextStep())
+    while (s.hasStep) t.addOne(s.nextStep())
 
     assertEquals(Set(-1, 48, 111, 115, 0, 116, 5399), t)
   }

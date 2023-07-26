@@ -4,8 +4,11 @@ import org.junit.Assert._
 import org.junit.Test
 import org.openjdk.jol.info.GraphWalker
 
+import scala.annotation.nowarn
+
 /** Tests for [[OpenHashMap]]. */
 @deprecated("Tests deprecated API", since="2.13")
+@nowarn("cat=w-flag-value-discard")
 class OpenHashMapTest {
   /** Test that an [[OpenHashMap]] correctly maintains its internal `deleted` count. */
   @Test

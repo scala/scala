@@ -68,6 +68,7 @@ trait Infer extends Checkable {
   }
 
   // @requires sam == samOf(samTp)
+  @nowarn("cat=w-flag-value-discard")
   def instantiateSamFromFunction(funTp: Type, samTp: Type, sam: Symbol) = {
     val samClassSym = samTp.typeSymbol
 
@@ -172,7 +173,7 @@ trait Infer extends Checkable {
     case SingleType(pre, _)                          => isFullyDefined(pre)
     case RefinedType(ts, _)                          => ts forall isFullyDefined
     case TypeVar(_, constr) if constr.inst == NoType => false
-    case _                                           => falseIfNoInstance { instantiate(tp); true }
+    case _                                           => falseIfNoInstance { instantiate(tp): @nowarn("cat=w-flag-value-discard"); true }
   }
 
   /** Solve constraint collected in types `tvars`.
@@ -192,7 +193,7 @@ trait Infer extends Checkable {
       // we'll find out later whether it works", meaning don't issue an error here when types
       // don't conform to bounds. That means you can never trust the results of implicit search.
       // For an example where this was not being heeded, scala/bug#2421.
-      solve(tvars, tparams, getVariance, upper, depth)
+      solve(tvars, tparams, getVariance, upper, depth): @nowarn("cat=w-flag-value-discard")
       tvars map instantiate
     }
   }
@@ -228,7 +229,7 @@ trait Infer extends Checkable {
       if (tree.hasSymbolField)
         tree setSymbol errorSym
 
-      tree setType ErrorType
+      tree.setType(ErrorType)
     }
 
     def getContext = context

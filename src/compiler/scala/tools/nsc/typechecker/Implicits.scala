@@ -343,10 +343,12 @@ trait Implicits extends splain.SplainData {
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
     val owner = result.typeSymbol
-    (name match {
-      case x: TermName => owner.newMethod(x)
-      case x: TypeName => owner.newAbstractType(x)
-    }).setInfoAndEnter(tp)
+    val member: Symbol =
+      name match {
+        case x: TermName => owner.newMethod(x)
+        case x: TypeName => owner.newAbstractType(x)
+      }
+    member.setInfoAndEnter(tp)
 
     result
   }
@@ -904,7 +906,7 @@ trait Implicits extends splain.SplainData {
             val targs = solvedTypes(tvars, undetParams, varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+            checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred "): @nowarn("cat=w-flag-value-discard")
 
             // In case we stepped on a macro along the way, the macro was expanded during the call to adapt. Along the way,
             // any type parameters that were instantiated were NOT yet checked for bounds, so we need to repeat the above
@@ -953,9 +955,13 @@ trait Implicits extends splain.SplainData {
             // see scala/bug#6966 to see what goes wrong if we use the result of this
             // as the SearchResult.
             itree3 match {
-              case TypeApply(fun, args)           => typedTypeApply(itree3, EXPRmode, fun, args)
-              case Apply(TypeApply(fun, args), _) => typedTypeApply(itree3, EXPRmode, fun, args) // t2421c
-              case t                              => t
+              case TypeApply(fun, args) =>
+                typedTypeApply(itree3, EXPRmode, fun, args): @nowarn("cat=w-flag-value-discard")
+                ()
+              case Apply(TypeApply(fun, args), _) =>
+                typedTypeApply(itree3, EXPRmode, fun, args): @nowarn("cat=w-flag-value-discard") // t2421c
+                ()
+              case _ =>
             }
 
             context.reporter.firstError match {
@@ -1086,7 +1092,7 @@ trait Implicits extends splain.SplainData {
               // We don't want errors that occur while checking the implicit info
               // to influence the check of further infos, but we should retain divergent implicit errors
               // (except for the one we already squirreled away)
-              context.reporter.retainDivergentErrorsExcept(divergentError.getOrElse(null))
+              context.reporter.retainDivergentErrorsExcept(divergentError.getOrElse(null)): @nowarn("cat=w-flag-value-discard")
             }
             search
           }

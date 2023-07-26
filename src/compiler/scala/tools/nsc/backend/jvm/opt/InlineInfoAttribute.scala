@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.asm._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
@@ -107,7 +108,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       val hasSelf           = (flags & 2) != 0
       val hasSam            = (flags & 4) != 0
 
-      if (hasSelf) nextUTF8() // no longer used
+      if (hasSelf) nextUTF8(): @nowarn("cat=w-flag-value-discard") // no longer used
 
       val sam = if (!hasSam) None else {
         val name = nextUTF8()

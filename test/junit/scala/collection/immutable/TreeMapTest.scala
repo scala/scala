@@ -258,7 +258,6 @@ class TreeMapTest extends AllocationTest {
   @Test def removeNonContent(): Unit = {
     val src: Map[Int, String] = TreeMap(Range(0, 100, 2).map((_, "")) :_*)
     for (i <- Range(-1, 101, 2)) {
-      src - i
       assertSame(i.toString, src, nonAllocating(src - i, text = i.toString))
     }
   }

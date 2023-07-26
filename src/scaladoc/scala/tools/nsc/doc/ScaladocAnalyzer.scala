@@ -13,11 +13,12 @@
 package scala.tools.nsc
 package doc
 
-import scala.tools.nsc.ast.parser.{BracePatch, SyntaxAnalyzer}
-import typechecker.Analyzer
+import scala.annotation.nowarn
 import scala.reflect.internal.util.{BatchSourceFile, Position}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.ast.parser.{BracePatch, SyntaxAnalyzer}
 import scala.tools.nsc.doc.base.{CommentFactoryBase, LinkTo, MemberLookupBase}
+import typechecker.Analyzer
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -93,7 +94,7 @@ trait ScaladocAnalyzer extends Analyzer {
 
       useCase.aliases = context.scope.toList
       namer.enterSyms(trees)
-      typedStats(trees, NoSymbol)
+      typedStats(trees, NoSymbol): @nowarn("cat=w-flag-value-discard")
       useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
 
       if (settings.isDebug)

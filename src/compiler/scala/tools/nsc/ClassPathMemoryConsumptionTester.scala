@@ -12,6 +12,7 @@
 
 package scala.tools.nsc
 
+import scala.annotation.nowarn
 import scala.io.StdIn.readLine
 
 /**
@@ -39,6 +40,7 @@ object ClassPathMemoryConsumptionTester {
     else doTest(args)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   private def doTest(args: Array[String]) = {
     val settings = loadSettings(args.toList)
 
@@ -50,7 +52,7 @@ object ClassPathMemoryConsumptionTester {
     println(s"Loading classpath ${settings.requiredInstances.value} times")
     val startTime = System.currentTimeMillis()
 
-    mains map (_.process(baseArgs))
+    mains.map(_.process(baseArgs))
 
     val elapsed = System.currentTimeMillis() - startTime
     println(s"Operation finished - elapsed $elapsed ms")
@@ -72,7 +74,7 @@ object ClassPathMemoryConsumptionTester {
 
   private def loadSettings(args: List[String]) = {
     val settings = new TestSettings()
-    settings.processArguments(args, processAll = true)
+    settings.processArguments(args, processAll = true): @nowarn("cat=w-flag-value-discard")
     if (settings.classpath.isDefault)
       settings.classpath.value = System.getProperty("java.class.path", ".")
     settings

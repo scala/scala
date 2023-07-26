@@ -48,8 +48,9 @@ class ProcessTest {
       }
     }
     withIn(inputStream) {
-      Process("echo -n").run(true).exitValue()
+      val x = Process("echo -n").run(true).exitValue()
       latch.countDown()
+      assertEquals(0, x)
     }
     assertNull(exception)
   }

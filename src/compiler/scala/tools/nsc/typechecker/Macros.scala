@@ -15,19 +15,20 @@ package typechecker
 
 import java.lang.Math.min
 
-import symtab.Flags._
-import scala.reflect.internal.util.ScalaClassLoader
+import scala.annotation.nowarn
 import scala.reflect.runtime.ReflectionUtils
-import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.TypesStats
-import scala.reflect.macros.util._
-import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
-import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
+import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.compiler.DefaultMacroCompiler
+import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
+import scala.reflect.macros.util._
 import scala.tools.reflect.FastTrack
+import scala.util.control.ControlThrowable
 import scala.util.control.NonFatal
 import Fingerprint._
+import symtab.Flags._
 
 /**
  *  Code to deal with macros, namely with:
@@ -608,7 +609,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
                 val expanded1 = try onSuccess(positionsToOffset(duplicateAndKeepPositions(expanded))) finally popMacroContext()
                 if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
                 if (settings.Ymacroexpand.value == settings.MacroExpand.Discard && !typer.context.isSearchingForImplicitParam) {
-                  suppressMacroExpansion(expandee)
+                  suppressMacroExpansion(expandee): @nowarn("cat=w-flag-value-discard")
                   expandee.setType(expanded1.tpe)
                 }
                 else expanded1
@@ -725,7 +726,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
         else {
           forced += delayed
-          typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
+          typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false): @nowarn("cat=w-flag-value-discard")
           macroExpand(typer, delayed, mode, outerPt)
         }
       } else delayed

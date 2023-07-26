@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.collection.AbstractIterator
 import scala.collection.mutable
@@ -39,7 +40,7 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   // Auxiliary constructor required for implementing `AliasingAnalyzer.newFrame`
   def this(src: Frame[_ <: V]) = {
     this(src.getLocals, src.getMaxStackSize)
-    init(src)
+    init(src): @nowarn("cat=w-flag-value-discard")
   }
 
   override def toString: String = super.toString + " - " + aliases.toList.filter(s => s != null && s.size > 1).map(_.toString).distinct.mkString(",")

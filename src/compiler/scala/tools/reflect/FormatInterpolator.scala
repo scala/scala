@@ -137,7 +137,7 @@ abstract class FormatInterpolator {
           def errorLeading(op: Conversion) = op.errorAt(Spec)(s"conversions must follow a splice; ${Conversion.literalHelp}")
           def accept(op: Conversion): Unit = {
             if (!op.isLeading) errorLeading(op)
-            op.accepts(argType(n-1, op.acceptableVariants: _*))
+            if (op.accepts(argType(n-1, op.acceptableVariants: _*))) ()
             amended += part
           }
 

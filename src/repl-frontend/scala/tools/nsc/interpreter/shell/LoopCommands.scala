@@ -53,7 +53,7 @@ trait LoopCommands {
 
     // called if no args are given
     def showUsage(): Result = {
-      "usage is " + usageMsg
+      //"usage is " + usageMsg // what?
       Result(keepRunning = true, None)
     }
 

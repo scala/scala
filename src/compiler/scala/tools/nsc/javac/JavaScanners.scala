@@ -23,6 +23,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.JavaCharArrayReader
 
 // Todo merge these better with Scanners
+@nowarn("cat=w-flag-value-discard")
 trait JavaScanners extends ast.parser.ScannersCommon {
   val global : Global
   import global._

@@ -2603,7 +2603,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Remove any access boundary and clear flags PROTECTED | PRIVATE.
      */
-    def makePublic: this.type = this setPrivateWithin NoSymbol resetFlag AccessFlags
+    def makePublic: this.type = this.setPrivateWithin(NoSymbol).resetFlag(AccessFlags)
 
     /** The first parameter to the first argument list of this method,
      *  or NoSymbol if inapplicable.

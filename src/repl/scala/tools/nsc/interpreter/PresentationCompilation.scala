@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.interpreter
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.util.{Position, RangePosition}
 import scala.tools.nsc.ast.parser.Tokens
@@ -89,7 +90,7 @@ trait PresentationCompilation { self: IMain =>
   def newPresentationCompiler(): interactive.Global = {
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
-      s.processArguments(global.settings.recreateArgs, processAll = false)
+      s.processArguments(global.settings.recreateArgs, processAll = false): @nowarn("cat=w-flag-value-discard")
       s.YpresentationAnyThread.value = true
       s
     }

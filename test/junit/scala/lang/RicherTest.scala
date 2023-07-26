@@ -2,6 +2,7 @@
 package scala
 
 import org.junit.{Assert, Test}
+import scala.annotation.nowarn
 import scala.util.chaining._
 
 class RicherTest {
@@ -95,6 +96,7 @@ class RicherTest {
               |xyz"""
   val s5 = """abc
               #xyz"""
+  @nowarn("cat=w-flag-value-discard")
   @Test def `linesIterator iterates lines`(): Unit = {
     assertEqualTo(1)(s1.linesIterator.length)
     assertEqualTo(s1)(s1.linesIterator.next())

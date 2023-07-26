@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -696,7 +697,7 @@ abstract class Inliner {
     //   def g = f; println() // println is unreachable after inlining f
     // If we have an inline request for a call to g, and f has been already inlined into g, we
     // need to run DCE on g's body before inlining g.
-    localOpt.minimalRemoveUnreachableCode(callee, calleeDeclarationClass.internalName)
+    localOpt.minimalRemoveUnreachableCode(callee, calleeDeclarationClass.internalName): @nowarn("cat=w-flag-value-discard")
 
     // If the callsite was eliminated by DCE, do nothing.
     if (!callGraph.containsCallsite(callsite)) return Map.empty
@@ -974,7 +975,7 @@ abstract class Inliner {
           callsiteLambdaBodyMethods(clonedIndy) = handle
         case _ =>
       }
-    })
+    }).getOrElse(())
 
     // Don't remove the inlined instruction from callsitePositions, inlineAnnotatedCallsites so that
     // the information is still there in case the method is rolled back (UndoLog).
@@ -1213,14 +1214,14 @@ abstract class Inliner {
           res                             <- memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass, destinationClass)
         } yield {
           // ensure the result ClassBType is cached (for stack map frame calculation)
-          if (res) bTypeForDescriptorFromClassfile(fi.desc)
+          if (res) bTypeForDescriptorFromClassfile(fi.desc): @nowarn("cat=w-flag-value-discard")
           res
         }
 
       case mi: MethodInsnNode =>
         if (mi.owner.charAt(0) == '[') {
           // ensure the result ClassBType is cached (for stack map frame calculation)
-          if (mi.name == "getClass") bTypeForDescriptorFromClassfile("Ljava/lang/Class;")
+          if (mi.name == "getClass") bTypeForDescriptorFromClassfile("Ljava/lang/Class;"): @nowarn("cat=w-flag-value-discard")
           // array methods are accessible
           Right(true)
         } else {
@@ -1243,7 +1244,7 @@ abstract class Inliner {
             res                               <- canInlineCall(mi.getOpcode, methodNode.access, methodDeclClass, methodRefClass)
           } yield {
             // ensure the result ClassBType is cached (for stack map frame calculation)
-            if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(mi.desc).getDescriptor)
+            if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(mi.desc).getDescriptor): @nowarn("cat=w-flag-value-discard")
             res
           }
         }
@@ -1308,7 +1309,7 @@ abstract class Inliner {
           res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
         } yield {
           // ensure the result ClassBType is cached (for stack map frame calculation)
-          if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(indy.desc).getDescriptor)
+          if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(indy.desc).getDescriptor): @nowarn("cat=w-flag-value-discard")
           res
         }
 

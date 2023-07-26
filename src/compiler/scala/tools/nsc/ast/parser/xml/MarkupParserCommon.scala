@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.ast.parser.xml
 
+import scala.annotation.nowarn
 import scala.collection.BufferedIterator
 
 /** This is not a public trait - it contains common code shared
@@ -64,7 +65,7 @@ private[scala] trait MarkupParserCommon {
       else if (ch == SU) truncatedError("")
       else buf append ch_returning_nextch
     }
-    ch_returning_nextch
+    ch_returning_nextch: @nowarn("cat=w-flag-value-discard")
     // @todo: normalize attribute value
     buf.toString
   }

@@ -18,13 +18,13 @@ import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
 import java.util.Arrays.fill
 
+import scala.annotation.{nowarn, tailrec}
+import scala.collection.mutable
 import scala.io.Codec
 import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
 import scala.reflect.internal.util.shortClassOfInstance
-import scala.collection.mutable
 import PickleFormat._
 import Flags._
-import scala.annotation.{nowarn, tailrec}
 
 /**
  * Serialize a top-level module and/or class.
@@ -33,6 +33,7 @@ import scala.annotation.{nowarn, tailrec}
  *
  * @author Martin Odersky
  */
+@nowarn("cat=w-flag-value-discard")
 abstract class Pickler extends SubComponent {
   import global._
 

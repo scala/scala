@@ -3,6 +3,7 @@ package scala.collection
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.collection.mutable.Buffer
 import scala.reflect.ClassTag
 
@@ -64,6 +65,7 @@ class CollectionConversionsTest {
     }
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def t11976(): Unit = {
     import scala.jdk.CollectionConverters._
@@ -75,6 +77,7 @@ class CollectionConversionsTest {
     }
     assertEquals(1, x)
   }
+  @nowarn("cat=w-flag-value-discard")
   @Test def `t11976 head-scratcher`: Unit = {
     import scala.jdk.CollectionConverters._
     val myProps = new java.util.Properties

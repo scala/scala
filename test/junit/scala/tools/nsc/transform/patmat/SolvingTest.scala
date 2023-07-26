@@ -3,6 +3,7 @@ package scala.tools.nsc.transform.patmat
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.transform.patmat.Logic.LogicLinkedHashSet
@@ -13,7 +14,7 @@ object TestSolver extends Logic with Solving {
   val global: Global = new Global(new Settings())
 
   // disable max recursion depth in order to get all solutions
-  global.settings.YpatmatExhaustdepth.tryToSet("off" :: Nil)
+  global.settings.YpatmatExhaustdepth.tryToSet("off" :: Nil): @nowarn("cat=w-flag-value-discard")
 
   object TestSolver extends Solver {
 

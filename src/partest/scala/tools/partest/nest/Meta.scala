@@ -12,6 +12,7 @@
 
 package scala.tools.partest.nest
 
+import scala.annotation.nowarn
 import scala.tools.nsc.io.File
 import Interpolation._
 
@@ -19,6 +20,7 @@ import Interpolation._
  *  of additional goodness here, but for now it's completion and script
  *  generation.  See Demo for example usage.
  */
+@nowarn("cat=w-flag-value-discard")
 object Meta {
   trait Opt {
     def name: String
@@ -60,6 +62,7 @@ object Meta {
      *
      *  and it will overwrite itself with the current version.
      */
+    @nowarn("cat=w-flag-value-discard")
     object SelfUpdate extends Opt {
       val name    = "self-update"
       val action  = () => {

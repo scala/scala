@@ -230,7 +230,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             nextWrapperModuleName(), NoPosition, NoFlags)
 
           val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
-          obj.moduleClass setInfo minfo
+          val moduleClass = obj.moduleClass
+          moduleClass.setInfo(minfo)
           obj setInfo obj.moduleClass.tpe
 
           val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))

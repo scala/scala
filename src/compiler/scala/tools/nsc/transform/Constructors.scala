@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
@@ -366,7 +367,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       def rewriteUnspecialized(assignee: Symbol, stat: Tree): Tree = {
         assert(ctorParams(genericClazz).length == primaryConstrParams.length, "Bad param len")
         // this is just to make private fields public
-        (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat)
+        (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat): @nowarn("cat=w-flag-value-discard")
         // also make assigned fields mutable so they don't end up final in bytecode
         // and mark the specialized class constructor for a release fence addition
         if (assignee.isField)
@@ -753,7 +754,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) {
           remainingConstrStats foreach {
             case Assign(lhs, _ ) =>
-              lhs.symbol.setFlag(MUTABLE) // delayed init fields cannot be final, scala/bug#11412
+              val lhsSymbol = lhs.symbol
+              lhsSymbol.setFlag(MUTABLE) // delayed init fields cannot be final, scala/bug#11412
               needFenceForDelayedInit = true
             case _ =>
           }

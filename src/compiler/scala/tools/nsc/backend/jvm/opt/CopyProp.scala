@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
@@ -249,7 +249,7 @@ abstract class CopyProp {
         while (css.nonEmpty) {
           val cs = css.head
           css = css.tail
-          inliner.inlineCallsite(cs, None, updateCallGraph = css.isEmpty)
+          inliner.inlineCallsite(cs, None, updateCallGraph = css.isEmpty): @nowarn("cat=w-flag-value-discard")
         }
       }
 
@@ -397,7 +397,7 @@ abstract class CopyProp {
       /* Eliminate LMF `indy` and its inputs. */
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
         toRemove += indy
-        callGraph.removeClosureInstantiation(indy, method)
+        callGraph.removeClosureInstantiation(indy, method): @nowarn("cat=w-flag-value-discard")
         removeIndyLambdaImplMethod(owner, method, indy)
         handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
       }
@@ -449,7 +449,7 @@ abstract class CopyProp {
             val methodInsn = prod.asInstanceOf[MethodInsnNode]
             if (isSideEffectFreeCall(methodInsn)) {
               toRemove += prod
-              callGraph.removeCallsite(methodInsn, method)
+              callGraph.removeCallsite(methodInsn, method): @nowarn("cat=w-flag-value-discard")
               val receiver = if (methodInsn.getOpcode == INVOKESTATIC) 0 else 1
               handleInputs(prod, Type.getArgumentTypes(methodInsn.desc).length + receiver)
             } else if (isScalaUnbox(methodInsn)) {
@@ -457,7 +457,7 @@ abstract class CopyProp {
               val boxTp = bTypes.coreBTypes.boxedClassOfPrimitive(tp)
               toInsertBefore(methodInsn) = List(new TypeInsnNode(CHECKCAST, boxTp.internalName), new InsnNode(POP))
               toRemove += prod
-              callGraph.removeCallsite(methodInsn, method)
+              callGraph.removeCallsite(methodInsn, method): @nowarn("cat=w-flag-value-discard")
               castAdded = true
             } else if (isJavaUnbox(methodInsn)) {
               val nullCheck = mutable.ListBuffer.empty[AbstractInsnNode]
@@ -468,7 +468,7 @@ abstract class CopyProp {
               nullCheck += nonNullLabel
               toInsertBefore(methodInsn) = nullCheck.toList
               toRemove += prod
-              callGraph.removeCallsite(methodInsn, method)
+              callGraph.removeCallsite(methodInsn, method): @nowarn("cat=w-flag-value-discard")
               method.maxStack = math.max(BackendUtils.maxStack(method), prodCons.frameAt(methodInsn).getStackSize + 1)
               nullCheckAdded = true
             } else
@@ -511,7 +511,7 @@ abstract class CopyProp {
 
         def removeConstructorCall(mi: MethodInsnNode): Unit = {
           toRemove += mi
-          callGraph.removeCallsite(mi, method)
+          callGraph.removeCallsite(mi, method): @nowarn("cat=w-flag-value-discard")
           sideEffectFreeConstructorCalls -= mi
           changed = true
         }
@@ -667,7 +667,7 @@ abstract class CopyProp {
           if (pairStartStack.nonEmpty) {
             (pairStartStack.top, top) match {
               case ((ldNull: InsnNode, depends), store: VarInsnNode) if ldNull.getOpcode == ACONST_NULL && store.getOpcode == ASTORE =>
-                pairStartStack.pop()
+                pairStartStack.pop(): @nowarn("cat=w-flag-value-discard")
                 addDepends(mkRemovePair(store, ldNull, depends.toList))
                 // example: store; (null; store;) (store; load;) load
                 //                         s1^     ^^^^^p1^^^^^        // p1 is added to s1's depends

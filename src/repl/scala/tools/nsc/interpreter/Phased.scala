@@ -77,13 +77,13 @@ trait Phased {
 
   def at[T](ph: PhaseName)(body: => T): T = {
     val saved = get
-    set(ph)
+    set(ph): @nowarn("cat=w-flag-value-discard")
     try atCurrent(body)
     finally set(saved): @nowarn("cat=w-flag-value-discard")
   }
   def atMulti[T](phs: Seq[PhaseName])(body: => T): Seq[T] = {
     val saved = multi
-    setMulti(phs)
+    setMulti(phs): @nowarn("cat=w-flag-value-discard")
     try multi(body)
     finally setMulti(saved): @nowarn("cat=w-flag-value-discard")
   }

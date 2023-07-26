@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.backend.jvm.analysis
 
+import scala.annotation.nowarn
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -24,12 +25,12 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  */
 abstract class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V]) {
   computeMaxLocalsMaxStack(methodNode)
-  try {
+  (try {
     analyzer.analyze(classInternalName, methodNode)
   } catch {
     case ae: AnalyzerException =>
       throw new AnalyzerException(null, "While processing " + classInternalName + "." + methodNode.name, ae)
-  }
+  }): @nowarn("cat=w-flag-value-discard")
   def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
 }
 

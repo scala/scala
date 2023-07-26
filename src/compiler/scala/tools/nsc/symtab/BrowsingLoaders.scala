@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package symtab
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
 
@@ -97,7 +98,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
 
         case ClassDef(_, name, _, _) =>
           if (packagePrefix == root.fullName) {
-            enterClass(root, name.toString, new SourcefileLoader(src))
+            enterClass(root, name.toString, new SourcefileLoader(src)): @nowarn("cat=w-flag-value-discard")
             entered += 1
           } else log("prefixes differ: "+packagePrefix+","+root.fullName)
         case ModuleDef(_, name, _) =>

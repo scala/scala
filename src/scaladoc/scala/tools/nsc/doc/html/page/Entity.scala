@@ -735,7 +735,7 @@ trait EntityPage extends HtmlPage {
 
         def transitive(dtpl: DocTemplateEntity): Unit = {
           for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
-            subs add sub
+            subs.addOne(sub)
             transitive(sub)
           }
         }

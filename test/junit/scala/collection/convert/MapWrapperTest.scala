@@ -7,11 +7,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.tools.testkit.AssertUtil.{assertSucceeds, assertThrows}
 import scala.util.chaining._
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 class MapWrapperTest {
 
   /* Test for scala/bug#7883 */

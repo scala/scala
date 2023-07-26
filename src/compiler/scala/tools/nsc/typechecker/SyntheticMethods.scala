@@ -378,10 +378,13 @@ trait SyntheticMethods extends ast.TreeDSL {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
               // Without a means to suppress this warning, I've thought better of it.
               if (settings.warnValueOverrides.value) {
-                 (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                   typer.context.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics", WarningCategory.Other /* settings.warnValueOverrides is not exposed as compiler flag */)
-                 }
-               }
+                val actual = clazz.info.nonPrivateMember(m.name).filter(x => x.owner != AnyClass && x.owner != clazz && !x.isDeferred)
+                actual.andAlso(x =>
+                  typer.context.warning(clazz.pos,
+                    s"Implementation of ${x.name} inherited from ${x.owner} overridden in $clazz to enforce value class semantics",
+                    WarningCategory.Other) // settings.warnValueOverrides is not exposed as compiler flag
+                )
+              }
               true
             }
           }

@@ -57,6 +57,7 @@ import scala.util.chaining._
  *
  *     Above, `A\$mcI\$sp` cannot access `d`, so the method cannot be typechecked.
  */
+@nowarn("cat=w-flag-value-discard")
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
   import definitions._

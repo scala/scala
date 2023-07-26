@@ -5,11 +5,13 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.ref.WeakReference
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 @deprecated("Tests deprecated Stream", since="2.13")
 class StreamTest {
 

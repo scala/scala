@@ -3,6 +3,7 @@ package scala.tools.nsc.backend.jvm
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Handle
 import scala.tools.asm.tree.InvokeDynamicInsnNode
@@ -10,6 +11,9 @@ import scala.tools.testkit.BytecodeTesting
 
 class IndyLambdaTest extends BytecodeTesting {
   import compiler._
+
+  @nowarn("cat=w-flag-value-discard")
+  private def kompileToBytes(code: String): Unit = compileToBytes(code)
 
   @Test def boxingBridgeMethodUsedSelectively(): Unit = {
     def implMethodDescriptorFor(code: String): String = {
@@ -46,17 +50,17 @@ class IndyLambdaTest extends BytecodeTesting {
     assertEquals("(I)I", implMethodDescriptorFor("(x: Int) => x"))
 
     // non-builtin sams are like specialized functions
-    compileToBytes("class VC(private val i: Int) extends AnyVal; trait FunVC { def apply(a: VC): VC }")
+    kompileToBytes("class VC(private val i: Int) extends AnyVal; trait FunVC { def apply(a: VC): VC }")
     assertEquals("(I)I", implMethodDescriptorFor("((x: VC) => x): FunVC"))
 
-    compileToBytes("trait Fun1[T, U] { def apply(a: T): U }")
+    kompileToBytes("trait Fun1[T, U] { def apply(a: T): U }")
     assertEquals(s"($obj)$str", implMethodDescriptorFor("(x => x.toString): Fun1[Int, String]"))
     assertEquals(s"($obj)$obj", implMethodDescriptorFor("(x => println(x)): Fun1[Int, Unit]"))
     assertEquals(s"($obj)$str", implMethodDescriptorFor("((x: VC) => \"\") : Fun1[VC, String]"))
     assertEquals(s"($str)$obj", implMethodDescriptorFor("((x: String) => new VC(0)) : Fun1[String, VC]"))
 
-    compileToBytes("trait Coll[A, Repr] extends Any")
-    compileToBytes("final class ofInt(val repr: Array[Int]) extends AnyVal with Coll[Int, Array[Int]]")
+    kompileToBytes("trait Coll[A, Repr] extends Any")
+    kompileToBytes("final class ofInt(val repr: Array[Int]) extends AnyVal with Coll[Int, Array[Int]]")
 
     assertEquals(s"([I)$obj", implMethodDescriptorFor("((xs: Array[Int]) => new ofInt(xs)): Array[Int] => Coll[Int, Array[Int]]"))
   }

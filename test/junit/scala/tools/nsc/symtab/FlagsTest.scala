@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
@@ -114,7 +115,7 @@ class FlagsTest extends BytecodeTesting {
       """.stripMargin
     val javaI1 = "package p; interface I1 { int m(); }"
     val javaI2 = "package p; interface I2 { default int m() { return 1; } }"
-    compiler.compileClasses(code = scalaCode, javaCode = (javaI1, "I1.java") :: (javaI2, "I2.java") :: Nil)
+    compiler.compileClasses(code = scalaCode, javaCode = (javaI1, "I1.java") :: (javaI2, "I2.java") :: Nil): @nowarn("cat=w-flag-value-discard")
     import compiler.global.rootMirror._
     assertTrue( getRequiredClass("p.T1").isInterface)
     assertFalse(getRequiredClass("p.T2").isInterface)

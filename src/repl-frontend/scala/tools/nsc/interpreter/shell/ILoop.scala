@@ -44,6 +44,7 @@ import scala.util.chaining._
   * it should all go through the `intp` reference to the interpreter,
   * or maybe eventually even over the wire to a remote compiler.
   */
+@nowarn("cat=w-flag-value-discard")
 class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
             protected val out: PrintWriter = new PrintWriter(Console.out, true)) extends LoopCommands {
   import config._
@@ -935,6 +936,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   /** Actions to cram in parallel while collecting first user input at prompt.
     * Run with output muted both from ILoop and from the intp reporter.
     */
+  @nowarn("cat=w-flag-value-discard")
   private def interpretPreamble() = {
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
@@ -971,7 +973,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     in = defaultIn
 
     intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
-      intp.initializeCompiler()
+      intp.initializeCompiler(): @nowarn("cat=w-flag-value-discard")
       interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
       if (intp.reporter.hasErrors) {

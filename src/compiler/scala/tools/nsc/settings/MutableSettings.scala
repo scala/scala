@@ -94,7 +94,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
    */
   def copy(): Settings = {
     val s = new Settings()
-    s.processArguments(recreateArgs, processAll = true)
+    s.processArguments(recreateArgs, processAll = true): @nowarn("cat=w-flag-value-discard")
     s
   }
 
@@ -162,7 +162,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
         // Internally we use Option[List[String]] to discover error,
         // but the outside expects our arguments back unchanged on failure
         val prefix = prefixSettings.find(_ respondsTo arg)
-        prefix.map { setting => setting.tryToSet(args); rest }
+        prefix.map { setting => setting.tryToSet(args): @nowarn("cat=w-flag-value-discard"); rest }
         .orElse {
           if (arg contains ":") parseColonArg(arg).map(_ => rest)
           else parseNormalArg(arg, rest)

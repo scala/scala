@@ -243,7 +243,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      withoutReporting(sym.info)
+      withoutReporting(sym.info): @nowarn("cat=w-flag-value-discard")
       sym.isErroneous
     }
 
@@ -818,7 +818,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         case (idx, (p, tp)) =>
           mirrorMethod.visitLocalVariable(p.name.encoded, tp.descriptor, null, codeStart, codeEnd, idx)
           idx + tp.size
-      }
+      }: @nowarn("cat=w-flag-value-discard")
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       mirrorMethod.visitEnd()
@@ -944,7 +944,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       mirrorClass.visitEnd()
 
-      ("" + moduleClass.name) // this side-effect is necessary, really.
+      ("" + moduleClass.name): @nowarn("cat=w-flag-value-discard") // this side-effect is necessary, really.
 
       mirrorClass
     }

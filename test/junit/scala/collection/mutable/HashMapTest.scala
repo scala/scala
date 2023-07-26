@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertSucceeds
 
 @RunWith(classOf[JUnit4])
@@ -19,7 +20,7 @@ class HashMapTest {
     hm.getOrElseUpdate("0", {
       add()
       ""
-    })
+    }): @nowarn("cat=w-flag-value-discard")
     assertEquals(Some(""), hm.get("0"))
   }
 
@@ -27,17 +28,19 @@ class HashMapTest {
   def getOrElseUpdate_evalOnce(): Unit = {
     var i = 0
     val hm = new mutable.HashMap[Int, Int]()
-    hm.getOrElseUpdate(0, {i += 1; i})
+    hm.getOrElseUpdate(0, {i += 1; i}): @nowarn("cat=w-flag-value-discard")
     assertEquals(1, hm(0))
   }
 
   @Test
   def getOrElseUpdate_noEval(): Unit = {
     val hm = new mutable.HashMap[Int, Int]()
-    hm.put(0, 0)
+    hm.update(0, 0)
     assertSucceeds(hm.getOrElseUpdate(0, throw new AssertionError()))
   }
 
+  @nowarn("cat=w-flag-value-discard")
+  @Test
   def getOrElseUpdate_keyIdempotence(): Unit = {
     val map = mutable.HashMap[String, String]()
 

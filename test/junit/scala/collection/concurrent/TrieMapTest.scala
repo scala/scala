@@ -13,7 +13,7 @@ class TrieMapTest {
   private def check[T](result2: List[Any])(f: TrieMap[String, String] => IterableOnce[Any]) = {
     val m = TrieMap[String, String]()
     val values = f(m)
-    m.put("k", "v")
+    m.update("k", "v")
     assertEquals(Nil, values.iterator.to(List))
     assertEquals(result2, f(m).iterator.to(List))
   }
@@ -73,10 +73,10 @@ class TrieMapTest {
     val h = new Hashing[Int] { def hash(i: Int) = i % 4 }
     val e = new Equiv[Int] { def equiv(x: Int, y: Int) = (x % 8) == (y % 8) }
     val xs = new TrieMap[Int, String](h, e)
-    xs.put(0, "zero")
+    xs.update(0, "zero")
     assertEquals(Some("zero"), xs.get(0))
     assertEquals(Some("zero"), xs.get(8)) // 8 and 0 are equivalent keys according to our custom equiv
-    xs.put(4, "four") // 4 and 0 have the same hash according to our custom hashing, but they
+    xs.update(4, "four") // 4 and 0 have the same hash according to our custom hashing, but they
     // are different keys (collision)
     assertEquals(Some("zero"), xs.get(8))
     assertEquals(Some("four"), xs.get(4))

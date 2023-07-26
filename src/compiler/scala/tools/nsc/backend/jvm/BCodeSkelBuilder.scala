@@ -14,11 +14,12 @@ package scala.tools.nsc
 package backend
 package jvm
 
+import scala.annotation.nowarn
 import scala.collection.{immutable, mutable}
 import scala.tools.nsc.symtab._
 import scala.tools.asm
-import GenBCode._
 import BackendReporting._
+import GenBCode._
 
 /*
  *  @author  Miguel Garcia, https://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
@@ -414,7 +415,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
        */
       def makeLocal(tk: BType, name: String): Symbol = {
         val locSym = methSymbol.newVariable(cunit.freshTermName(name), NoPosition, Flags.SYNTHETIC) // setInfo tpe
-        makeLocal(locSym, tk)
+        makeLocal(locSym, tk): @nowarn("cat=w-flag-value-discard")
         locSym
       }
 
@@ -546,7 +547,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
             } else {
               val forwarderDefDef = {
                 val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), newTermName(traitSuperAccessorName(sym)), _.cloneSymbol.withoutAnnotations)
-                dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
+                val sym1 = dd1.symbol
+                sym1.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
                 val selfParam :: realParams = dd1.vparamss.head.map(_.symbol): @unchecked
                 deriveDefDef(dd1)(_ =>
                   atPos(dd1.pos)(

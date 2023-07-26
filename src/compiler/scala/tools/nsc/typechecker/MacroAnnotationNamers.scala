@@ -16,6 +16,7 @@ import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 
 // imported from scalamacros/paradise
+@nowarn("cat=w-flag-value-discard")
 trait MacroAnnotationNamers { self: Analyzer =>
   import global._
   import scala.reflect.internal.Flags._

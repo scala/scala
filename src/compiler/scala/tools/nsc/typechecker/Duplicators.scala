@@ -243,8 +243,10 @@ abstract class Duplicators extends Analyzer {
           val result = super.typed(ddef.clearType(), mode, pt)
           // TODO this is a hack, we really need a cleaner way to transport symbol attachments to duplicated methods
           // bodies in specialized subclasses.
-          if (ddef.hasAttachment[DelambdafyTarget.type])
-            result.symbol.updateAttachment(DelambdafyTarget)
+          if (ddef.hasAttachment[DelambdafyTarget.type]) {
+            val sym = result.symbol
+            sym.updateAttachment(DelambdafyTarget)
+          }
           result
 
         case vdef @ ValDef(mods, name, tpt, rhs) =>

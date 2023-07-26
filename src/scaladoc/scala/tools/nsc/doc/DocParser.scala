@@ -14,6 +14,7 @@ package scala.tools
 package nsc
 package doc
 
+import scala.annotation.nowarn
 import scala.reflect.internal.util._
 import scala.tools.nsc.doc.DocParser.Parsed
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
@@ -27,7 +28,7 @@ class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(setti
   def this() = this(new Settings(Console println _))
 
   // the usual global initialization
-  locally { new Run() }
+  locally { new Run() }: @nowarn("cat=w-flag-value-discard")
 
   override protected def computeInternalPhases(): Unit = phasesSet += syntaxAnalyzer
 

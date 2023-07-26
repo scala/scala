@@ -22,6 +22,7 @@ import java.util
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.{CRC32, Deflater, ZipEntry, ZipOutputStream}
 
+import scala.annotation.nowarn
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.Global
@@ -288,7 +289,8 @@ abstract class ClassfileWriters {
         } else FileChannel.open(path, fallbackOpenOptions)
 
         try {
-          os.write(ByteBuffer.wrap(bytes), 0L)
+          os.write(ByteBuffer.wrap(bytes), 0L): @nowarn("cat=w-flag-value-discard")
+          ()
         } catch {
           case ex: ClosedByInterruptException =>
             try {

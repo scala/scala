@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.tools.nsc.tasty.{SafeEq, TastyUniverse, ForceKinds, TastyModes}, TastyModes._, ForceKinds._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
@@ -95,7 +96,7 @@ trait SymbolOps { self: TastyUniverse =>
       val raw = sym.rawInfo
       if (raw.isInstanceOf[u.LazyType]) {
         ctx.trace(traceForceInfo(sym, forceKinds)) {
-          sym.info
+          sym.info: @nowarn("cat=w-flag-value-discard")
           sym.annotations.foreach(_.completeInfo())
         }
       } else {

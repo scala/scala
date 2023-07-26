@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.nowarn
 import scala.annotation.switch
 import scala.collection.immutable.IntMap
 import scala.collection.mutable
@@ -113,7 +114,7 @@ abstract class ClosureOptimizer {
         val ownerClass = closureInitsBeforeDCE.head._2.ownerClass.internalName
 
         // Advanced ProdCons queries (initialProducersForValueAt) expect no unreachable code.
-        localOpt.minimalRemoveUnreachableCode(method, ownerClass)
+        localOpt.minimalRemoveUnreachableCode(method, ownerClass): @nowarn("cat=w-flag-value-discard")
 
         if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
           case Some(closureInits) =>

@@ -607,7 +607,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     def durationMs: Double = {
       val result = (endNanos - startNanos).toDouble / 1000 / 1000
       if (result < 0)
-        getClass
+        getClass: @nowarn("cat=w-flag-value-discard")
       result
     }
     def startMicros: Double = startNanos.toDouble / 1000d

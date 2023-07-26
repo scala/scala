@@ -96,7 +96,8 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         assert(getter.hasFlag(PARAMACCESSOR), s"missing implementation for non-paramaccessor $setter in $clazz")
         // scala-dev#408: fields for locals captured in a trait are non-final. The lambdalift phase adds the
         // ConstructorNeedsFence attachment to the primary constructor of the class to ensure safe publication.
-        setter.accessed.setFlag(MUTABLE)
+        val accessed = setter.accessed
+        accessed.setFlag(MUTABLE)
         Assign(fieldAccess(setter), Ident(setter.firstParam))
       }
 

@@ -23,6 +23,8 @@ import org.jline.terminal.Terminal
 import java.io.{ByteArrayInputStream, File}
 import java.net.{MalformedURLException, URI, URL}
 import java.util.{List => JList}
+
+import scala.annotation.nowarn
 import scala.io.Source
 import scala.reflect.internal.Chars
 import scala.tools.nsc.interpreter.shell.{Accumulator, ShellConfig}
@@ -58,6 +60,7 @@ class Reader private (
   }
 }
 
+@nowarn("cat=w-flag-value-discard")
 object Reader {
   import org.jline.reader.LineReaderBuilder
   import org.jline.reader.impl.history.DefaultHistory

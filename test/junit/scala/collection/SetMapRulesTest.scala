@@ -17,6 +17,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.collection.{mutable, immutable, concurrent}
 import scala.jdk.CollectionConverters._
@@ -55,7 +56,7 @@ class SetMapRulesTest {
       case Some(v) => v
       case None =>
         val v = new Value(id, extra)
-        cache.put((id, extra), v)
+        cache.update((id, extra), v)
         v
     }
   }
@@ -127,6 +128,7 @@ class SetMapRulesTest {
     checkDiscardsKeyIdentities(gen, "flatMap")(_.flatMap { case (k, v) => Seq((k + 1, v))})
   }
 
+  @nowarn("cat=w-flag-value-discard")
   private def checkMutableMap(gen: () => mutable.Map[Value, Value]): Unit = {
     checkMap(gen)
     checkUnique(gen, "map")(_.map { case (k, v) => (k, v + 1) })
@@ -180,6 +182,7 @@ class SetMapRulesTest {
     checkDiscardsIdentities(gen, "flatMap")(_.flatMap(k => Seq(k + 1)))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   private def checkMutableSet(gen: () => mutable.Set[Value]): Unit = {
     checkSet(gen)
     checkUnique(gen, "map (identity)")(_.map(identity))

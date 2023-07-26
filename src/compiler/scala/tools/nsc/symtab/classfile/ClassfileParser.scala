@@ -530,8 +530,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       clazz setInfo completer
       clazz setFlag sflags
-      moduleClass setInfo staticInfo
-      moduleClass setFlag JAVA
+      val mc = moduleClass
+      mc.setInfo(staticInfo)
+      mc.setFlag(JAVA)
       staticModule setInfo moduleClass.tpe
       staticModule setFlag JAVA
 
@@ -768,7 +769,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         val tpname = newTypeName(subName(':'.==))
         val s = sym.newTypeParameter(tpname)
         tparams = tparams + (tpname -> s)
-        sig2typeBounds(tparams, skiptvs = true)
+        sig2typeBounds(tparams, skiptvs = true): @nowarn("cat=w-flag-value-discard")
         newTParams += s
       }
       index = start
@@ -1039,7 +1040,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         val completer = new loaders.ClassfileLoader(file, cls, mod)
         cls setInfo completer
         mod setInfo completer
-        mod.moduleClass setInfo loaders.moduleClassLoader
+        mod.moduleClass.setInfo(loaders.moduleClassLoader): @nowarn("cat=w-flag-value-discard")
         cls.associatedFile = file
         mod.moduleClass.associatedFile = file
 
@@ -1519,7 +1520,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         else sym.addAnnotation(annot)
       }
       if (symbol == clazz)
-        ensureDepr(staticModule)
+        ensureDepr(staticModule): @nowarn("cat=w-flag-value-discard")
       ensureDepr(symbol)
     }
     else symbol.addAnnotation(annot)

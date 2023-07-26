@@ -248,8 +248,8 @@ trait MemberHandlers {
     lazy val importableSymbolsWithRenames = {
       val selectorRenameMap: mutable.HashMap[Name, Name] = mutable.HashMap.empty[Name, Name]
       individualSelectors foreach { x =>
-        selectorRenameMap.put(x.name.toTermName, x.rename.toTermName)
-        selectorRenameMap.put(x.name.toTypeName, x.rename.toTypeName)
+        selectorRenameMap.update(x.name.toTermName, x.rename.toTermName)
+        selectorRenameMap.update(x.name.toTypeName, x.rename.toTypeName)
       }
       importableTargetMembers flatMap (m => selectorRenameMap.get(m.name) map (m -> _))
     }

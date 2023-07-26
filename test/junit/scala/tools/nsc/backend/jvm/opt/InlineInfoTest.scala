@@ -7,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
 import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
@@ -56,6 +57,7 @@ class InlineInfoTest extends BytecodeTesting {
     assert(fromSyms == fromAttrs)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test // scala-dev#20
   def javaStaticMethodsInlineInfoInMixedCompilation(): Unit = {
     val jCode =
@@ -72,6 +74,7 @@ class InlineInfoTest extends BytecodeTesting {
       ("baz", "()I")    -> MethodInlineInfo(true,false,false)))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def sd402(): Unit = {
     val jCode =

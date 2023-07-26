@@ -13,6 +13,8 @@
 package scala.reflect.reify
 package codegen
 
+import scala.annotation.nowarn
+
 trait GenTypes {
   self: Reifier =>
 
@@ -187,13 +189,13 @@ trait GenTypes {
 
     tpe match {
       case tpe @ RefinedType(parents, decls) =>
-        reifySymDef(tpe.typeSymbol)
+        reifySymDef(tpe.typeSymbol): @nowarn("cat=w-flag-value-discard")
         mirrorBuildCall(nme.RefinedType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case tpe @ ExistentialType(tparams, underlying) =>
         tparams foreach reifySymDef
         reifyBuildCall(nme.ExistentialType, tparams, underlying)
       case tpe @ ClassInfoType(parents, decls, clazz) =>
-        reifySymDef(clazz)
+        reifySymDef(clazz): @nowarn("cat=w-flag-value-discard")
         mirrorBuildCall(nme.ClassInfoType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case tpe @ MethodType(params, restpe) =>
         params foreach reifySymDef

@@ -50,7 +50,7 @@ class PipedProcessTest {
     }
 
     //p.exitValue()
-    p.callRunAndExitValue(source, sink)
+    p.callRunAndExitValue(source, sink).foreach(assertEquals(0, _))
 
     assertFalse("Source is alive", source.isAlive)
   }

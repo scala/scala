@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.interpreter
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Settings
 
 object ImportContextPreamble {
@@ -55,7 +56,7 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
         (s"val $$INSTANCE = new ${req.lineRep.readPath}" :: (defines map (d =>
             s"val `$d` = $$INSTANCE${req.accessPath}.`$d`"))).mkString(";")
       ).toOption.get
-      newReq.compile
+      newReq.compile: @nowarn("cat=w-flag-value-discard")
       Right(newReq)
     }
   }

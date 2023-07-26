@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
+
 /**
  *  @author Lukas Rytz
  */
@@ -438,11 +440,13 @@ trait AnalyzerPlugins { self: Analyzer with splain.SplainData =>
             case s @ Some(custom) =>
               if (result.isDefined) {
                 typer.context.error(op.position, s"both $resultPlugin and $plugin want to ${op.description}")
-                op.default
+                op.default: @nowarn("cat=w-flag-value-discard")
+                ()
               } else {
                 result = s
                 resultPlugin = plugin
               }
+              ()
           }
         }
         plugins = plugins.tail

@@ -3,6 +3,8 @@ package scala.math
 import org.junit.Test
 import org.junit.Assert.{assertEquals, assertNotEquals, assertNull, assertTrue}
 import java.math.{BigDecimal => BD, MathContext => MC}
+
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.{assertEqualsAny, assertNotEqualsAny}
 
 /* Tests various maps by making sure they all agree on the same answers. */
@@ -65,6 +67,7 @@ class BigDecimalTest {
   }
   
   // Motivated by scala/bug#6456: scala.math.BigDecimal should not accept a null value
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def refusesNullTest(): Unit = {
     def isIAE[A](a: => A) = try { a; false } catch { case iae: IllegalArgumentException => true }
@@ -252,6 +255,7 @@ class BigDecimalTest {
   // Motivated by scala/bug#10882: Operators for BigDecimal don't use value of mc (MathContext)
   @Test
   def testUsesMathContextInOperators(): Unit = {
+    @nowarn("cat=w-flag-value-discard")
     def isAE[A](a: => A): Boolean = try { a; false } catch { case e: ArithmeticException => true }
 
     val bd128 = BigDecimal("4.2e1000", MC.DECIMAL128)

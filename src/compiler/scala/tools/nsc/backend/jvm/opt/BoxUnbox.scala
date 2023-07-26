@@ -567,7 +567,7 @@ abstract class BoxUnbox {
       if (queue.nonEmpty) {
         val h = queue.front
         if (visited(h) || boxConsumingOps(h)) {
-          queue.dequeue()
+          queue.dequeue(): @nowarn("cat=w-flag-value-discard")
           advanceToNextCopyOp()
         }
       }

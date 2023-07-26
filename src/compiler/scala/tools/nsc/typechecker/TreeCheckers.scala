@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.reflect.internal.util.shortClassOfInstance
 import scala.reflect.internal.util.StringOps._
@@ -217,7 +218,7 @@ abstract class TreeCheckers extends Analyzer {
     val checker = new TreeChecker(context)
     runWithUnit(unit) {
       checker.precheck.traverse(unit.body)
-      checker.typed(unit.body)
+      checker.typed(unit.body): @nowarn("cat=w-flag-value-discard")
       checker.postcheck.traverse(unit.body)
     }
   }

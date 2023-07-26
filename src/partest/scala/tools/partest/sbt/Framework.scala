@@ -12,6 +12,7 @@
 
 package scala.tools.partest.sbt
 
+import scala.annotation.nowarn
 import scala.tools.partest.nest.RunnerSpec
 import _root_.sbt.testing._
 import java.net.URLClassLoader
@@ -43,6 +44,7 @@ case class PartestRunner(args: Array[String], remoteArgs: Array[String], testCla
   */
 case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   /** Executes this task, possibly returning to the client new tasks to execute. */
+  @nowarn("cat=w-flag-value-discard")
   def execute(eventHandler: EventHandler, loggers: Array[Logger]): Array[Task] = {
     val forkedCp    = scala.util.Properties.javaClassPath
     val classLoader = new URLClassLoader(forkedCp.split(java.io.File.pathSeparator).map(new File(_).toURI.toURL))

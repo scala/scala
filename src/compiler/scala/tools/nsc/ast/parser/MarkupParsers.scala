@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.BufferedIterator
@@ -318,7 +319,7 @@ trait MarkupParsers {
         debugLastStartElement.push((start, qname))
         val ts = content
         xEndTag(qname)
-        debugLastStartElement.pop()
+        debugLastStartElement.pop(): @nowarn("cat=w-flag-value-discard")
         val pos = r2p(start, start, curOffset)
         qname match {
           case "xml:group" => handle.group(pos, ts)
@@ -382,14 +383,14 @@ trait MarkupParsers {
 
         val ts = new ArrayBuffer[Tree]
         val start = curOffset - 1 // include <
-        content_LT(ts)
+        content_LT(ts): @nowarn("cat=w-flag-value-discard")
 
         // parse more XML?
         if (charComingAfter(xSpaceOpt()) == '<') {
           do {
             xSpaceOpt()
             nextch()
-            content_LT(ts)
+            content_LT(ts): @nowarn("cat=w-flag-value-discard")
           } while (charComingAfter(xSpaceOpt()) == '<')
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
@@ -484,7 +485,7 @@ trait MarkupParsers {
 
         while (doPattern) { }  // call until false
         xEndTag(qname)
-        debugLastStartElement.pop()
+        debugLastStartElement.pop(): @nowarn("cat=w-flag-value-discard")
       }
 
       handle.makeXMLpat(r2p(start, start, curOffset), qname, ts)

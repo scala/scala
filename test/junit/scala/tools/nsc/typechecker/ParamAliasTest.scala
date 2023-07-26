@@ -3,6 +3,7 @@ package scala.tools.nsc.typechecker
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+import scala.annotation.nowarn
 import scala.annotation.unused
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
@@ -32,7 +33,7 @@ class ParamAliasTest extends BytecodeTesting {
       val aliasInfoAfterCompilation = aliasNames(compiler1.global)
       val compiler2 = BytecodeTesting.newCompiler(extraArgs = compilerArgs)
       val out = compiler1.global.settings.outputDirs.getSingleOutput.get.asInstanceOf[VirtualDirectory]
-      compiler2.global.platform.classPath
+      compiler2.global.platform.classPath: @nowarn("cat=w-flag-value-discard")
       compiler2.global.platform.currentClassPath = Some(AggregateClassPath(new VirtualDirectoryClassPath(out) :: compiler2.global.platform.currentClassPath.get :: Nil))
       @unused val r2 = new compiler2.global.Run
       val aliasInfoUnpickled = aliasNames(compiler2.global)

@@ -78,7 +78,7 @@ abstract class Flatten extends InfoTransform {
           }
           else {
             val oldowner = clazz.owner
-            exitingFlatten { oldowner.info }
+            exitingFlatten { oldowner.info }: @nowarn("cat=w-flag-value-discard")
             parents1 = parents mapConserve (this)
 
             for (sym <- decls) {

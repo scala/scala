@@ -138,6 +138,7 @@ abstract class Reifier extends States
         if (reifyDebug) println("=============================")
       } else {
         reifyTrace("reification = ")(untyped)
+        ()
       }
 
       untyped

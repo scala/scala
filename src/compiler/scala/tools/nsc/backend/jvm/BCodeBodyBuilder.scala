@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Flags
 import scala.tools.asm
@@ -275,6 +275,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       genLoadTo(tree, expectedType, LoadDestination.FallThrough)
 
     /* Generate code for trees that produce values, sent to a given `LoadDestination`. */
+    @nowarn("cat=w-flag-value-discard") // big match side-effects but produces Any
     def genLoadTo(tree: Tree, expectedType: BType, dest: LoadDestination): Unit = {
       var generatedType = expectedType
       var generatedDest: LoadDestination = LoadDestination.FallThrough
@@ -399,8 +400,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = tree.symbol
           if (!sym.hasPackageFlag) {
             val tk = symInfoTK(sym)
-            if (sym.isModule) { genLoadModule(tree) }
-            else { locals.load(sym) }
+            if (sym.isModule) { genLoadModule(tree): @nowarn("cat=w-flag-value-discard"); () }
+            else locals.load(sym)
             generatedType = tk
           }
 
@@ -581,6 +582,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     } // end of genReturn()
 
+    @nowarn("cat=w-flag-value-discard") // big match side-effects but produces Any
     private def genApply(app: Apply, expectedType: BType): BType = {
       var generatedType = expectedType
       lineNumber(app)
@@ -1162,6 +1164,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * On JDK 8: create and append using `StringBuilder`
      * On JDK 9+: use `invokedynamic` with `StringConcatFactory`
      */
+    @nowarn("cat=w-flag-value-discard") // big match side-effects but produces Any
     def genStringConcat(tree: Tree): BType = {
       lineNumber(tree)
       liftStringConcat(tree) match {
@@ -1303,7 +1306,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         if (isTraitMethodOverridingObjectMember) methodOwner else receiver
       }
 
-      receiverClass.info // ensure types the type is up to date; erasure may add lateINTERFACE to traits
+      receiverClass.info: @nowarn("cat=w-flag-value-discard") // ensure types the type is up to date; erasure may add lateINTERFACE to traits
       val receiverBType = classBTypeFromSymbol(receiverClass)
       val receiverName = receiverBType.internalName
 
@@ -1317,7 +1320,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         if (receiverClass.isTrait && !method.isJavaDefined) {
           val args = new Array[BType](bmType.argumentTypes.length + 1)
           args(0) = typeToBType(method.owner.info)
-          bmType.argumentTypes.copyToArray(args, 1)
+          bmType.argumentTypes.copyToArray(args, 1): @nowarn("cat=w-flag-value-discard")
           val staticDesc = MethodBType(args, bmType.returnType).descriptor
           val staticName = traitSuperAccessorName(method)
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
@@ -1566,7 +1569,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         }
         genLoad(l, ObjectRef)
         genLoad(r, ObjectRef)
-        genCallMethod(equalsMethod, InvokeStyle.Static, pos)
+        genCallMethod(equalsMethod, InvokeStyle.Static, pos): @nowarn("cat=w-flag-value-discard")
         genCZJUMP(success, failure, TestOp.NE, BOOL, targetIfNoJump)
       } else {
         if (isNull(l)) {
@@ -1581,7 +1584,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           // scala/bug#7852 Avoid null check if L is statically non-null.
           genLoad(l, ObjectRef)
           genLoad(r, ObjectRef)
-          genCallMethod(Object_equals, InvokeStyle.Virtual, pos)
+          genCallMethod(Object_equals, InvokeStyle.Virtual, pos): @nowarn("cat=w-flag-value-discard")
           genCZJUMP(success, failure, TestOp.NE, BOOL, targetIfNoJump)
         } else {
           // l == r -> if (l eq null) r eq null else l.equals(r)
@@ -1602,7 +1605,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
           markProgramPoint(lNonNull)
           locals.load(eqEqTempLocal)
-          genCallMethod(Object_equals, InvokeStyle.Virtual, pos)
+          genCallMethod(Object_equals, InvokeStyle.Virtual, pos): @nowarn("cat=w-flag-value-discard")
           genCZJUMP(success, failure, TestOp.NE, BOOL, targetIfNoJump)
         }
       }

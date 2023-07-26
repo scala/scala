@@ -293,6 +293,7 @@ class VectorTest {
     assertEquals(Vector.from(1 to 100), Vector.from(1 to 7) concat Vector.from(8 to 100))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def copyToArray(): Unit = {
     val array = Array.fill(100)(2)
@@ -572,7 +573,7 @@ class VectorTest {
         while(j < size) {
           //println(s"--- $i, $j")
           //println(VectorUtils.toDebugString(coll))
-          coll.slice(i, j)
+          coll.slice(i, j): @nowarn("cat=w-flag-value-discard")
           j += inc
         }
         i += inc
@@ -662,6 +663,7 @@ class VectorTest {
   }
 }
 
+@nowarn("cat=w-flag-value-discard&msg=StringBuilder")
 object VectorUtils {
   import VectorInline._
 

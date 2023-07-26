@@ -12,17 +12,18 @@
 
 package scala.tools.nsc.fsc
 
-import scala.tools.nsc.Settings
-import scala.tools.nsc.util.ClassPath
+import scala.annotation.nowarn
 import scala.reflect.io.{AbstractFile, Path}
+import scala.tools.nsc.Settings
 import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
+import scala.tools.nsc.util.ClassPath
 
 class FscSettings(error: String => Unit, pathFactory: PathFactory = DefaultPathFactory) extends Settings(error, pathFactory) {
   outer =>
 
-  locally {
-    disable(prompt)
-    disable(resident)
+  locally[Unit] {
+    disable(prompt): @nowarn("cat=w-flag-value-discard")
+    disable(resident): @nowarn("cat=w-flag-value-discard")
   }
 
   val currentDir   = StringSetting ("-current-dir", "path", "Base directory for resolving relative paths", "").internalOnly() withAbbreviation "--current-directory"

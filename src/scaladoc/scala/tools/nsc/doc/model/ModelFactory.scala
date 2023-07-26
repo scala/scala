@@ -21,6 +21,7 @@ import diagram._
 import java.net.URI
 import java.nio.file.Paths
 
+import scala.annotation.nowarn
 import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.io._
 import scala.reflect.macros.internal.macroImpl
@@ -820,7 +821,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
-        docComments.put(bSym, DocComment(bComment, bPos)) // put the comment in the list, don't parse it yet, closes scala/bug#4898
+        docComments.update(bSym, DocComment(bComment, bPos)) // put the comment in the list, don't parse it yet, closes scala/bug#4898
         bSym
       }
 
@@ -834,7 +835,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def findMember(aSym: Symbol, inTpl: DocTemplateImpl): Option[MemberImpl] = {
-    normalizeTemplate(aSym.owner)
+    normalizeTemplate(aSym.owner): @nowarn("cat=w-flag-value-discard")
     inTpl.members.find(_.sym == aSym)
   }
 

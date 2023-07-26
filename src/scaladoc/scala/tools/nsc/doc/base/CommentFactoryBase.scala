@@ -27,6 +27,7 @@ import scala.util.matching.Regex.{quoteReplacement, Match}
   *
   * @author Manohar Jonnalagedda
   * @author Gilles Dubochet */
+@nowarn("cat=w-flag-value-discard")
 trait CommentFactoryBase { this: MemberLookupBase =>
 
   val global: Global
@@ -1031,7 +1032,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     def blockEnded(blockType: String): Unit = {
       if (char != endOfLine && char != endOfText) {
         reportError(pos, "no additional content on same line after " + blockType, site)
-        jumpUntil(endOfLine)
+        jumpUntil(endOfLine): @nowarn("cat=w-flag-value-discard")
+        ()
       }
       while (char == endOfLine)
         nextChar()
@@ -1201,9 +1203,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       count
     }
 
-    def jumpWhitespace() = jumpUntil(!isWhitespace(char))
+    @nowarn("cat=w-flag-value-discard")
+    def jumpWhitespace(): Unit = jumpUntil(!isWhitespace(char))
 
-    def jumpWhitespaceOrNewLine() = jumpUntil(!isWhitespaceOrNewLine(char))
+    @nowarn("cat=w-flag-value-discard")
+    def jumpWhitespaceOrNewLine(): Unit = jumpUntil(!isWhitespaceOrNewLine(char))
 
     /* READERS */
 

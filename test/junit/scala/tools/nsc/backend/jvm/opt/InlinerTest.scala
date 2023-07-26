@@ -7,6 +7,7 @@ import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.Opcodes._
@@ -18,6 +19,7 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
+@nowarn("cat=w-flag-value-discard")
 class InlinerTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}

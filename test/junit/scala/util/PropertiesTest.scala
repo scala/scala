@@ -15,6 +15,7 @@ class PropertiesTest {
     Properties.clearProp(TestProperty)
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def testPropOrNone(): Unit = {
     assertEquals(Properties.propOrNone(TestProperty), None)
@@ -24,6 +25,7 @@ class PropertiesTest {
     assertEquals(Properties.propOrNone(TestProperty), Some("foo"))
   }
 
+  @nowarn("cat=w-flag-value-discard")
   @Test
   def testPropOrElse(): Unit = {
     assertEquals(Properties.propOrElse(TestProperty, "bar"), "bar")

@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.testkit.AssertUtil.assertThrows
@@ -17,7 +18,7 @@ class BTypesTest extends BytecodeTesting {
   import compiler.global
   locally {
     new global.Run() // initializes some of the compiler
-  }
+  }: @nowarn("cat=w-flag-value-discard")
   import global.genBCode.bTypes._
 
   def duringBackend[T](f: => T) = global.exitingDelambdafy(f)
@@ -126,7 +127,7 @@ class BTypesTest extends BytecodeTesting {
     l.onForce(v => res append s"onF2:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
     assertEquals("", res.toString)
 
-    l.force
+    l.force: @nowarn("cat=w-flag-value-discard")
     assertEquals(s"forced:$withLock;onF2:VALUE:false;onF1:VALUE:false;", res.toString)
     l.onForce(v => res append s"onF3:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
     assertEquals(s"forced:$withLock;onF2:VALUE:false;onF1:VALUE:false;onF3:VALUE:false;", res.toString)
@@ -199,7 +200,7 @@ class BTypesTest extends BytecodeTesting {
     l.onForce(v => res append s"onF2:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
     assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;", res.toString)
 
-    l.force
+    l.force: @nowarn("cat=w-flag-value-discard")
     assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;", res.toString)
     l.onForce(v => res append s"onF3:$v:${Thread.holdsLock(frontendAccess.frontendLock)};")
     assertEquals("forced:false;onF1:VALUE:false;onF2:VALUE:false;onF3:VALUE:false;", res.toString)

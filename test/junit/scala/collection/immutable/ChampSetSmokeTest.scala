@@ -87,7 +87,7 @@ class ChampSetSmokeTest {
     todo.add(hash_p1073741824_obj2)
 
     val xs: Set[CustomHashInt] = setOf(hash_n2147483648_obj1, hash_p1073741824_obj2)
-    xs.forall(todo.remove)
+    xs.foreach(todo.remove)
 
     assertEquals(ju.Collections.EMPTY_SET, todo)
   }
@@ -126,7 +126,7 @@ class ChampSetSmokeTest {
     todo.add(hash98304_obj2)
 
     val xs: Set[CustomHashInt] = setOf(hash98304_obj1, hash98304_obj2)
-    xs.forall(todo.remove)
+    xs.foreach(todo.remove)
 
     assertEquals(ju.Collections.EMPTY_SET, todo)
   }

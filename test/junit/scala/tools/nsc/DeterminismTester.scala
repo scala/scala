@@ -5,6 +5,7 @@ import java.nio.charset.Charset
 import java.nio.file.{Files, Path, Paths}
 import javax.tools.ToolProvider
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.reflect.io.AbstractFile
@@ -46,7 +47,7 @@ class DeterminismTester {
       g.settings.classpath.value = output.toAbsolutePath.toString
       g.settings.outputDirs.setSingleOutput(output.toString)
       g.settings.async.value = true
-      g.settings.processArguments(scalacOptions, true)
+      g.settings.processArguments(scalacOptions, true): @nowarn("cat=w-flag-value-discard")
       val storeReporter = new StoreReporter(g.settings)
       g.reporter = storeReporter
       import g._

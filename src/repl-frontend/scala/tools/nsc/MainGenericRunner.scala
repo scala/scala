@@ -87,7 +87,7 @@ class MainGenericRunner {
             settings.feature.value = true
           }
           val config = ShellConfig(settings)
-          new ILoop(config).run(settings)
+          new ILoop(config).run(settings): @nowarn("cat=w-flag-value-discard")
           None
       }
 

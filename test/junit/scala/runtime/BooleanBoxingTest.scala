@@ -6,13 +6,12 @@ import org.junit.Assert._
 import scala.annotation.nowarn
 import scala.tools.testkit.AllocationTest
 
+@nowarn("cat=w-flag-value-discard")
 class BooleanBoxingTest extends SideEffectTest with AllocationTest {
   val value = true
 
-  @nowarn("cat=w-flag-value-discard")
   @Test def hash1(): Unit = nonAllocating(value.hashCode())
 
-  @nowarn("cat=w-flag-value-discard")
   @Test def hash2(): Unit = nonAllocating(value.##)
 
   @Test def str(): Unit = {

@@ -562,7 +562,10 @@ trait ContextOps { self: TastyUniverse =>
     final def enterRefinement[T](parent: Type)(op: Context => T): T = {
       val clazz = owner match {
         case enclosing: u.RefinementClassSymbol =>
-          if (!enclosing.hasRawInfo) mkRefinedTypeWith(parent :: Nil, enclosing, u.newScope)
+          if (!enclosing.hasRawInfo) {
+            mkRefinedTypeWith(parent :: Nil, enclosing, u.newScope): @nowarn("cat=w-flag-value-discard")
+            ()
+          }
           enclosing
         case _ => parent match {
           case nested: u.RefinedType => nested.typeSymbol

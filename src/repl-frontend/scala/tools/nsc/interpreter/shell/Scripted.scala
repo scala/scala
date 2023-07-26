@@ -26,6 +26,7 @@ import scala.tools.nsc.util.stringFromReader
 import scala.util.Properties.versionString
 
 /* A REPL adaptor for the javax.script API. */
+@nowarn("cat=w-flag-value-discard")
 class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: PrintWriter)
   extends AbstractScriptEngine with Compilable {
 

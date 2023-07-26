@@ -562,7 +562,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
                        |  def set(x: _root_.scala.Any) = value = x.asInstanceOf[$boundType]
                        |}
       """.stripMargin
-    )
+    ): @annotation.nowarn("cat=w-flag-value-discard")
     bindRep.callEither("set", value) match {
       case Left(ex) =>
         repldbg(s"Set failed in bind($name, $boundType, $value)")
@@ -591,7 +591,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val newType  = p.tpe
     val tempName = freshInternalVarName()
 
-    quietRun(s"val $tempName = $name")
+    quietRun(s"val $tempName = $name"): @annotation.nowarn("cat=w-flag-value-discard")
     quietRun(s"val $name = $tempName.asInstanceOf[$newType]")
   }
   override def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
@@ -652,7 +652,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
       val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
       withLastExceptionLock[String]({
-        directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
+        directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable]): @annotation.nowarn("cat=w-flag-value-discard")
         stackTrace
       }, stackTrace)
     }

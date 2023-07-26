@@ -12,10 +12,11 @@
 
 package scala.tools.nsc.fsc
 
+import scala.annotation.nowarn
+import scala.annotation.tailrec
 import scala.tools.util.SystemExit
 import java.io.{BufferedReader, PrintStream, PrintWriter}
 import java.net.{ServerSocket, SocketException, SocketTimeoutException}
-import scala.annotation.tailrec
 
 trait CompileOutputCommon {
   def verbose: Boolean
@@ -56,7 +57,7 @@ abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
     // update the timeout if it has changed
     if (savedTimeout != idleMinutes) {
       savedTimeout = idleMinutes
-      setTimeoutOnSocket(savedTimeout)
+      setTimeoutOnSocket(savedTimeout): @nowarn("cat=w-flag-value-discard")
     }
     new Socket(serverSocket.accept())
   })

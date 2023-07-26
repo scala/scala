@@ -14,7 +14,7 @@ package scala
 package tools
 package nsc
 
-import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter, Reader }
+import java.io.{OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter, Reader}
 import scala.collection.immutable.ArraySeq
 
 package object util {

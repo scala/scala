@@ -474,6 +474,7 @@ abstract class BackendUtils extends PerRunInit {
    * the methods are not necessarily defined within the `hostClass` (when an IndyLambda is inlined
    * into a different class).
    */
+  @nowarn("cat=w-flag-value-discard")
   def indyLambdaBodyMethods(hostClass: InternalName): mutable.SortedSet[Handle] = {
     val res = mutable.TreeSet.empty[Handle](handleOrdering)
     onIndyLambdaImplMethodIfPresent(hostClass)(methods => res addAll methods.valuesIterator.flatMap(_.valuesIterator))
