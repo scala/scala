@@ -242,7 +242,7 @@ object StringContext {
             val bump = ttl + h.length
             arr(bump) = i
             loop(rest, bump + 1, i + 1, arr)
-          case Seq() => Array.empty
+          case _ => Array.empty
         }
       loop(patternChunks, ttl = 0, i = 0, Array.fill(patternLength + 1)(-1))
     }
