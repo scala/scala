@@ -25,7 +25,15 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass, uncheckedStableClass, isBlackboxMacroBundleType, isWhiteboxContextType }
+  import definitions.{
+    isBlackboxMacroBundleType,
+    isCastSymbol,
+    isUniversalMember,
+    isVarArgsList,
+    isWhiteboxContextType,
+    ThrowableClass,
+    uncheckedStableClass,
+  }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -359,9 +367,9 @@ abstract class TreeInfo {
     case Applied(fun @ Select(receiver, op), _, argss) =>
       tree.tpe match {
         case ThisType(sym) =>
-          sym == receiver.symbol
+          sym == receiver.symbol || sym.alias == receiver.symbol
         case SingleType(_, sym) =>
-          def loopCore(t: Tree): Boolean = t.symbol == sym || {
+          def loopCore(t: Tree): Boolean = t.symbol == sym || t.symbol == sym.alias || {
             dissectCore(t) match {
               case Select(r, _) => loopCore(r)
               case _ => false
@@ -370,7 +378,7 @@ abstract class TreeInfo {
           loopCore(receiver) || argss.exists(_.exists(sym == _.symbol))
         case _ =>
           def checkSingle(sym: Symbol): Boolean =
-            (sym == receiver.symbol) || {
+            sym == receiver.symbol || sym.alias == receiver.symbol || {
               receiver match {
                 case Apply(_, _) => Precedence(op.decoded).level == 0         // xs(i) += x
                 case _ => receiver.symbol != null &&
@@ -392,6 +400,13 @@ abstract class TreeInfo {
     case _ =>
       tree.tpe.isInstanceOf[ThisType]
   }
+  // java lacks this.type idiom to distinguish side-effecting method, so ignore result of invoking java method.
+  def isJavaApplication(t: Tree): Boolean = t match {
+    case Apply(f, _) => f.symbol.isJavaDefined && !isUniversalMember(f.symbol)
+    case _ => false
+  }
+  // lazy val x and object x may entail a forcing reference x, a side-effecting operation that results in x.type
+  def isLazyMember(t: Tree): Boolean = t.symbol != null && (t.symbol.isLazy || t.symbol.isModule)
 
   /**
    * Named arguments can transform a constructor call into a block, e.g.
