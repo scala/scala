@@ -449,6 +449,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
+    private val topTypes: List[Symbol] = List(AnyClass, AnyValClass, ObjectClass)
+    private def checkedLub(tree: Tree, res: Type): res.type = {
+      if (settings.warnInferAny && topTypes.contains(res.typeSymbol))
+        context.warning(tree.pos, s"a type was inferred to be `${res.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
+      res
+    }
+
     def reenterValueParams(vparamss: List[List[ValDef]]): Unit = {
       for (vparams <- vparamss)
         for (vparam <- vparams)
@@ -2696,9 +2703,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
       else packedTypes(casesTyped) match {
-        case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
+        case packed if sameWeakLubAsLub(packed) => finish(casesTyped, checkedLub(tree, lub(packed)))
         case packed                             =>
-          val lub = weakLub(packed)
+          val lub = checkedLub(tree, weakLub(packed))
           finish(casesTyped map (adaptCase(_, mode, lub)), lub)
       }
     }
@@ -4811,9 +4818,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // Important to deconst, otherwise `if (???) 0 else 0` evaluates to 0 (scala/bug#6331)
         else thenp1.tpe.deconst :: elsep1.tpe.deconst :: Nil match {
           case tp :: _ if samePackedTypes     => finish(tp)
-          case tpes if sameWeakLubAsLub(tpes) => finish(lub(tpes))
+          case tpes if sameWeakLubAsLub(tpes) => finish(checkedLub(tree, lub(tpes)))
           case tpes                           =>
-            val lub = weakLub(tpes)
+            val lub = checkedLub(tree, weakLub(tpes))
             treeCopy.If(tree, cond1, adapt(thenp1, mode, lub), adapt(elsep1, mode, lub)) setType lub
         }
       }

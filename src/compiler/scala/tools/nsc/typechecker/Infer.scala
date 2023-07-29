@@ -599,7 +599,7 @@ trait Infer extends Checkable {
               if (!result && !seen(t)) t.dealiasWidenChain.foreach(saw)
             }
           }
-          @`inline` def containsAny(t: Type) = collector.collect(t)
+          @inline def containsAny(t: Type): Boolean = collector.collect(t)
           val hasAny = containsAny(pt) || containsAny(restpe) ||
             formals.exists(containsAny) ||
             argtpes.exists(containsAny) ||

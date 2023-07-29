@@ -1,0 +1,15 @@
+t12829.scala:6: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f(i: Int, t: Boolean) = if (t) b += i else 42
+                              ^
+t12829.scala:8: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def h(i: Int, t: Boolean) = g(if (t) b += i)
+                                ^
+t12829.scala:10: warning: a type was inferred to be `Any`; this may indicate a programming error.
+    t match {
+      ^
+t12829.scala:14: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def z = List(42, "hello")
+          ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

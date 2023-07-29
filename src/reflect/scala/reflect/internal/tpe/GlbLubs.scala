@@ -253,14 +253,14 @@ private[internal] trait GlbLubs {
 
   /** Does this set of types have the same weak lub as
    *  it does regular lub? This is exposed so lub callers
-   *  can discover whether the trees they are typing will
+   *  can discover whether the trees they are typing
    *  may require further adaptation. It may return false
    *  negatives, but it will not return false positives.
    */
   def sameWeakLubAsLub(tps: List[Type]) = tps match {
     case Nil       => true
     case tp :: Nil => tp.annotations.isEmpty
-    case tps       => tps.forall(_.annotations.isEmpty) && !(tps forall isNumericValueType)
+    case tps       => tps.forall(_.annotations.isEmpty) && !tps.forall(isNumericValueType)
   }
 
   /** If the arguments are all numeric value types, the numeric
