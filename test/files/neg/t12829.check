@@ -1,0 +1,15 @@
+t12829.scala:6: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f(i: Int, t: Boolean) = if (t) b += i else 42 // warn because if in expr position
+                              ^
+t12829.scala:11: warning: a type was inferred to be `Any`; this may indicate a programming error.
+    t match { // warn expr
+      ^
+t12829.scala:15: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def z = List(42, "hello") // warn type inference as usual
+          ^
+t12829.scala:23: warning: a type was inferred to be `Object`; this may indicate a programming error.
+    xs match { // warn because interesting type of arm
+       ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

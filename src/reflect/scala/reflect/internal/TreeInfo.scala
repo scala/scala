@@ -26,15 +26,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{
-    isBlackboxMacroBundleType,
-    isCastSymbol,
-    isUniversalMember,
-    isVarArgsList,
-    isWhiteboxContextType,
-    ThrowableClass,
-    uncheckedStableClass,
-  }
+  import definitions._
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -410,6 +402,51 @@ abstract class TreeInfo {
   }
   // lazy val x and object x may entail a forcing reference x, a side-effecting operation that results in x.type
   def isLazyMember(t: Tree): Boolean = t.symbol != null && (t.symbol.isLazy || t.symbol.isModule)
+
+  // For the purpose of warning about discarded values and expressions in statement position, is the tree interesting?
+  def isInterestingExpression(t: Tree): Boolean = {
+    def isUninterestingSymbol(sym: Symbol): Boolean =
+      sym != null && (
+        sym.isConstructor ||
+        sym.hasPackageFlag ||
+        sym.isPackageObjectOrClass ||
+        sym == BoxedUnitClass ||
+        sym == AnyClass ||
+        sym == AnyRefClass ||
+        sym == AnyValClass
+      )
+    def isUninterestingType(tpe: Type): Boolean =
+      tpe != null && (
+        isUnitType(tpe) ||
+        tpe.typeSymbol.isBottomClass ||
+        tpe =:= UnitTpe ||
+        tpe =:= BoxedUnitTpe ||
+        isTrivialTopType(tpe)
+      )
+    // tests for various flavors of blandness in expressions.
+    def checksForInterestingResult(t: Tree): Boolean = (
+         !t.isDef && !treeInfo.isPureDef(t)     // ignore defs
+      && !isUninterestingSymbol(t.symbol)       // ctors, package, Unit, Any
+      && !isUninterestingType(t.tpe)            // bottom types, Unit, Any
+      && !treeInfo.isThisTypeResult(t)          // buf += x
+      && !treeInfo.isSuperConstrCall(t)         // just a thing
+      && !treeInfo.hasExplicitUnit(t)           // suppressed by explicit expr: Unit or heuristic
+      && !treeInfo.isJavaApplication(t)         // Java methods are inherently side-effecting
+      && !treeInfo.isLazyMember(t)              // side effect forcing a lazy val
+    )
+    // The quirk of typechecking if is that the LUB often results in boring types.
+    // Parser adds suppressing attachment on `if (b) expr` when user has `-Wnonunit-if:false`.
+    def checkInterestingShapes(t: Tree): Boolean =
+      t match {
+        case If(_, thenpart, elsepart) => checkInterestingShapes(thenpart) || checkInterestingShapes(elsepart) // either or
+        //case Block(_, Apply(label, Nil)) if label.symbol != null && nme.isLoopHeaderLabel(label.symbol.name) => false
+        case Block(_, res) => checkInterestingShapes(res)
+        case Match(_, cases) => cases.exists(k => checkInterestingShapes(k.body))
+        case _ => checksForInterestingResult(t)
+      }
+    // begin isInterestingExpression
+    checkInterestingShapes(t)
+  }
 
   /**
    * Named arguments can transform a constructor call into a block, e.g.

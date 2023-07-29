@@ -1121,33 +1121,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           @inline def tpdPos(transformed: Tree) = typedPos(tree.pos, mode, pt)(transformed)
           @inline def tpd(transformed: Tree)    = typed(transformed, mode, pt)
 
-          def isUninterestingSymbol(sym: Symbol): Boolean =
-            sym != null && (
-              sym.isConstructor ||
-              sym.hasPackageFlag ||
-              sym.isPackageObjectOrClass ||
-              sym == BoxedUnitClass ||
-              sym == AnyClass ||
-              sym == AnyRefClass ||
-              sym == AnyValClass
-            )
-          def isUninterestingType(tpe: Type): Boolean =
-            tpe != null && (
-              isUnitType(tpe) ||
-              tpe.typeSymbol.isBottomClass ||
-              tpe =:= UnitTpe ||
-              tpe =:= BoxedUnitTpe ||
-              isTrivialTopType(tpe)
-            )
-          // true for a value that may be discarded without compunction
-          @inline def excludeValueDiscard(): Boolean =
-            isUninterestingSymbol(tree.symbol) || isUninterestingType(tree.tpe) || treeInfo.isThisTypeResult(tree) ||
-            treeInfo.hasExplicitUnit(tree) || treeInfo.isJavaApplication(tree) ||
-            treeInfo.isLazyMember(tree) /*|| tree.exists(treeInfo.hasExplicitUnit(_))*/
-          @inline def warnValueDiscard(): Unit =
-            if (!isPastTyper && settings.warnValueDiscard.value && !excludeValueDiscard())
+          def warnValueDiscard(): Unit =
+            if (!isPastTyper && settings.warnValueDiscard.value && treeInfo.isInterestingExpression(tree))
               context.warning(tree.pos, s"discarded non-Unit value of type ${tree.tpe}", WarningCategory.WFlagValueDiscard)
-          @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit = if (!isPastTyper) {
+          def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit = if (!isPastTyper) {
             val targetIsWide = ptSym == FloatClass || ptSym == DoubleClass
             val isInharmonic = {
               def intWidened = tpSym == IntClass && ptSym == FloatClass
@@ -2730,7 +2707,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
         case packed                             =>
           val lub = weakLub(packed)
-          finish(casesTyped map (adaptCase(_, mode, lub)), lub)
+          finish(casesTyped.map(adaptCase(_, mode, lub)), lub)
       }
     }
 

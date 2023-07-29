@@ -18,7 +18,6 @@ import scala.collection.mutable
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
-import scala.util.chaining._
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -1180,7 +1179,11 @@ trait Namers extends MethodSynthesis {
           }
           pt
         }
-        else legacy.tap(InferredImplicitError(tree, _, context))
+        else {
+          InferredImplicitError(tree, legacy, context)
+          context.unit.transformed.get(tree.rhs).foreach(rhs => checkLub(rhs, legacy))
+          legacy
+        }
       }.setPos(tree.pos.focus): @nowarn("cat=w-flag-value-discard")
       tree.tpt.tpe
     }
@@ -2123,6 +2126,23 @@ trait Namers extends MethodSynthesis {
       // checkNoConflict(ABSTRACT, FINAL)   // this one gives a bad error for non-@inline classes which extend AnyVal
       // @PP: I added this as a check because these flags are supposed to be converted to ABSOVERRIDE before arriving here.
       checkNoConflict(ABSTRACT, OVERRIDE)
+    }
+
+    private val topTypes: Set[Symbol] = Set(AnyClass, AnyValClass, ObjectClass)
+    // check whether the given type is an unhealthy lub of arms of if/else or match
+    def checkLub(tree: Tree, res: Type): res.type = {
+      if (settings.warnInferAny && topTypes(res.typeSymbol)) {
+        val dubious = tree match {
+          case If(_, thenp, elsep) => treeInfo.isInterestingExpression(thenp) || treeInfo.isInterestingExpression(elsep)
+          case Match(_, cases) => cases.exists(k => treeInfo.isInterestingExpression(k.body))
+          //case Block(_, res) => treeInfo.isInterestingExpression(res)
+          //case _ => treeInfo.isInterestingExpression(tree)
+          case _ => false
+        }
+        if (dubious)
+          context.warning(tree.pos, s"a type was inferred to be `${res.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
+      }
+      res
     }
   }
 

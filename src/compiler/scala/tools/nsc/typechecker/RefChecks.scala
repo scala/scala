@@ -1804,50 +1804,8 @@ abstract class RefChecks extends Transform {
 
     // if expression in statement position (of template or block)
     // looks like a useful value that should not be ignored, warn and return true
-    // User specifies that an expression is boring by ascribing `e: Unit`.
-    // The subtree `e` will bear an attachment, but may be wrapped in adaptations.
-    private def checkInterestingResultInStatement(t: Tree): Boolean = {
-      def isUninterestingSymbol(sym: Symbol): Boolean =
-        sym != null && (
-          sym.isConstructor ||
-          sym.hasPackageFlag ||
-          sym.isPackageObjectOrClass ||
-          sym == BoxedUnitClass ||
-          sym == AnyClass ||
-          sym == AnyRefClass ||
-          sym == AnyValClass
-        )
-      def isUninterestingType(tpe: Type): Boolean =
-        tpe != null && (
-          isUnitType(tpe) ||
-          tpe.typeSymbol.isBottomClass ||
-          tpe =:= UnitTpe ||
-          tpe =:= BoxedUnitTpe ||
-          isTrivialTopType(tpe)
-        )
-      // The quirk of typechecking if is that the LUB often results in boring types.
-      // Parser adds suppressing attachment on `if (b) expr` when user has `-Wnonunit-if:false`.
-      def checkInterestingShapes(t: Tree): Boolean =
-        t match {
-          case If(_, thenpart, elsepart) => checkInterestingShapes(thenpart) || checkInterestingShapes(elsepart) // either or
-          //case Block(_, Apply(label, Nil)) if label.symbol != null && nme.isLoopHeaderLabel(label.symbol.name) => false
-          case Block(_, res) => checkInterestingShapes(res)
-          case Match(_, cases) => cases.exists(k => checkInterestingShapes(k.body))
-          case _ => checksForInterestingResult(t)
-        }
-      // tests for various flavors of blandness in expressions.
-      def checksForInterestingResult(t: Tree): Boolean = (
-           !t.isDef && !treeInfo.isPureDef(t)     // ignore defs
-        && !isUninterestingSymbol(t.symbol)       // ctors, package, Unit, Any
-        && !isUninterestingType(t.tpe)            // bottom types, Unit, Any
-        && !treeInfo.isThisTypeResult(t)          // buf += x
-        && !treeInfo.isSuperConstrCall(t)         // just a thing
-        && !treeInfo.hasExplicitUnit(t)           // suppressed by explicit expr: Unit
-        && !treeInfo.isJavaApplication(t)         // Java methods are inherently side-effecting
-        && !treeInfo.isLazyMember(t)              // side effect forcing a lazy val
-      )
-      // begin checkInterestingResultInStatement
-      settings.warnNonUnitStatement.value && checkInterestingShapes(t) && {
+    private def checkInterestingResultInStatement(t: Tree): Boolean =
+      settings.warnNonUnitStatement.value && treeInfo.isInterestingExpression(t) && {
         val where = t match {
           case Block(_, res) => res
           case If(_, thenpart, Literal(Constant(()))) =>
@@ -1861,7 +1819,6 @@ abstract class RefChecks extends Transform {
         refchecksWarning(where.pos, msg, WarningCategory.WFlagValueDiscard)
         true
       }
-    } // end checkInterestingResultInStatement
 
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
