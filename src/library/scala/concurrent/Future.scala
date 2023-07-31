@@ -12,16 +12,15 @@
 
 package scala.concurrent
 
+import java.util.{Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
-
-import scala.util.control.{NonFatal, NoStackTrace}
+import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 import scala.collection.BuildFrom
-import scala.collection.mutable.{Builder, ArrayBuffer}
+import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.reflect.ClassTag
-
 import scala.concurrent.ExecutionContext.parasitic
 
 /** A `Future` represents a value which may or may not be currently available,
@@ -665,6 +664,45 @@ object Future {
    *  @return         the newly created `Future` instance
    */
   final def fromTry[T](result: Try[T]): Future[T] = Promise.fromTry(result).future
+
+  /**
+   * Performs an asynchronous computation and returns a `Future` instance with the result of that computation within the timeout.
+   * @param body the Future[T] that we want to compute in a timeout time
+   * @param timeout the FiniteDuration that represents the max amount of time that we want to spend to compute the Future
+   * @return the Future[T] successfully if the future compute in timeout time, otherwise a Future.failed(TimeoutException) that means that the Future has not been computed in that amount of time.
+   */
+  final def withTimeout[T](body: => Future[T], timeout: FiniteDuration)(implicit executor: ExecutionContext): Future[T] = {
+    // Promise will be fulfilled with either the callers Future or the timer task if it times out
+    val p = Promise[T]
+    val timer = new Timer(true)
+
+
+    // and a Timer task to handle timing out
+    val timerTask = new TimerTask() {
+      def run(): Unit = {
+        p.tryFailure(new TimeoutException())
+      }
+    }
+
+    // Set the timeout to check in the future
+    timer.schedule(timerTask, timeout.toMillis)
+
+    body
+      .map { a =>
+        if (p.trySuccess(a)) {
+          timerTask.cancel()
+        }
+      }
+      .recover {
+        case e =>
+          if (p.tryFailure(e)) {
+            timerTask.cancel()
+          }
+      }
+
+    p.future
+
+  }
 
   /** Starts an asynchronous computation and returns a `Future` instance with the result of that computation.
   *
