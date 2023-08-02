@@ -740,6 +740,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       case f => Files.readAllLines(f.toPath).asScala.mkString("\n")
     } getOrElse intp.power.banner
 
+  @nowarn("cat=w-flag-value-discard")
   private def unleashAndSetPhase() =
     if (isReplPower) {
       intp.power.unleash()
@@ -752,6 +753,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
         phaseCommand("typer") // Set the phase to "typer"
       }
+      ()
     }
 
   def asyncEcho(async: Boolean, msg: => String): Unit = {
@@ -810,7 +812,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         text
       }
     }
-    def interpretCode(code: String) =
+    @nowarn("cat=w-flag-value-discard")
+    def interpretCode(code: String): Unit =
       if (intp.withLabel(label)(intp.interpret(code)) == Incomplete)
         paste.incomplete("The pasted code is incomplete!\n", label, code)
     def compileCode(code: String) = paste.compilePaste(label = label, code = code)

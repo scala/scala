@@ -64,7 +64,6 @@ trait ParsersCommon extends ScannersCommon {
      *  Skip trailing comma is pushed down to scanner because this abstract parser
      *  doesn't have token info.
      */
-    @nowarn("cat=w-flag-value-discard")
     @inline final def inGroupers[T](left: Token)(body: => T): T = {
       accept(left)
       try body

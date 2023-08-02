@@ -310,7 +310,7 @@ abstract class NodePrinters {
         case Super(qual, mix) =>
           printMultiline(tree) {
             traverse(qual)
-            println(showName(mix))
+            showName(mix): @nowarn("cat=w-flag-value-discard")
           }
         case Template(parents, self, body) =>
           printMultiline(tree) {

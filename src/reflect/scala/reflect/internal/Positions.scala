@@ -143,7 +143,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
   }
 
   private[this] def reportTree(prefix: String, tree: Tree): Unit = {
-    val source = if (tree.pos.isDefined) tree.pos.source else ""
+    val source = if (tree.pos.isDefined) tree.pos.source.file.name else ""
     inform("== " + prefix + " tree [" + tree.id + "] of type " + tree.productPrefix + " at " + tree.pos.show + source)
     inform("")
     inform(treeStatus(tree))

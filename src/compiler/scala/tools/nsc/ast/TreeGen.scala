@@ -13,7 +13,6 @@
 package scala.tools.nsc
 package ast
 
-import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.FreshNameCreator
@@ -383,7 +382,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     defineOriginalOwner(anonClass, fun.symbol.originalOwner)
 
     val samDef = mkMethodFromFunction(localTyper)(anonClass, fun)
-    anonClass.info.decls.enter(samDef.symbol): @nowarn("cat=w-flag-value-discard")
+    val samDefSym = samDef.symbol
+    anonClass.info.decls.enter(samDefSym)
 
     localTyper.typedPos(fun.pos) {
       Block(

@@ -1077,7 +1077,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def tryLiteral(negate: Boolean = false): Option[Constant] = {
-      val l = in.token match {
+      val l: Any = in.token match {
         case TRUE      => !negate
         case FALSE     => negate
         case CHARLIT   => in.name.charAt(0)

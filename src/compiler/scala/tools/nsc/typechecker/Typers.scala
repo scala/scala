@@ -730,7 +730,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  @return if feature check is run immediately: true if feature is enabled, false otherwise
      *          if feature check is delayed or suppressed because we are past typer: true
      */
-    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = "", immediate: Boolean = false): Boolean =
+    def checkFeature(pos: Position, featureTrait: Symbol, immediate: true): Boolean =
+      checkFeature0(pos, featureTrait, construct = "", immediate = immediate)
+    @nowarn("cat=w-flag-value-discard")
+    def checkFeature(pos: Position, featureTrait: Symbol, construct: => String = ""): Unit =
+      checkFeature0(pos, featureTrait, construct, immediate = false)
+    def checkFeature0(pos: Position, featureTrait: Symbol, construct: => String, immediate: Boolean): Boolean =
       isPastTyper || {
         val featureName = {
           val nestedOwners = featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
@@ -753,7 +758,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-    def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String) = tpe match {
+    @nowarn("cat=w-flag-value-discard")
+    def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String): Unit = tpe match {
       case extp: ExistentialType if !extp.isRepresentableWithWildcards && !tpe.isError =>
         checkFeature(pos, currentRun.runDefinitions.ExistentialsFeature, prefix+" "+tpe)
       case _ =>
@@ -3707,10 +3713,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def tryNamesDefaults: Tree = {
             val lencmp = compareLengths(args, formals)
 
-            def checkNotMacro() = {
+            @nowarn("cat=w-flag-value-discard")
+            def checkNotMacro(): Unit =
               if (treeInfo.isMacroApplication(fun))
                 tryTupleApply orElse duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
-            }
 
             if (mt.isErroneous) duplErrTree
             else if (mode.inPatternMode) {
@@ -5524,10 +5530,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val tree1 = typedSelect(tree, qualTyped, name)
 
             if (tree.hasAttachment[PostfixAttachment.type])
-              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode): @nowarn("cat=w-flag-value-discard")
+              checkFeature(tree.pos, currentRun.runDefinitions.PostfixOpsFeature, name.decode)
             val sym = tree1.symbol
             if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
-              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString): @nowarn("cat=w-flag-value-discard")
+              checkFeature(tree1.pos, currentRun.runDefinitions.ReflectiveCallsFeature, sym.toString)
 
             qualTyped.symbol match {
               case s: Symbol if s.isRootPackage => treeCopy.Ident(tree1, name)

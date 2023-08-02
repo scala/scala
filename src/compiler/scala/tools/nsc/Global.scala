@@ -1693,7 +1693,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase[Unit](firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
-        ()
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }

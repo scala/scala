@@ -204,7 +204,7 @@ case class ClassFile(
   def superClass = constant(header.superClassIndex)
   def interfaces = header.interfaces.map(constant)
 
-  def constant(index: Int) = header.constants(index) match {
+  def constant(index: Int): Any = header.constants(index) match {
     case StringBytesPair(str, _) => str
     case z => z
   }

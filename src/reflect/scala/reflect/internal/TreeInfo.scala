@@ -352,11 +352,12 @@ abstract class TreeInfo {
    *  Accept `b.addOne(x)` and also `xs(i) += x`
    *  where the op is an assignment operator.
    */
+  //def isThisTypeResult(tree: Tree): Boolean = tree match {
   def isThisTypeResult(tree: Tree): Boolean = tree match {
     case Applied(fun @ Select(receiver, op), _, argss) =>
       tree.tpe match {
         case ThisType(sym) =>
-          sym == receiver.symbol || sym.alias == receiver.symbol
+          sym == receiver.symbol || sym.alias == receiver.symbol || argss.exists(_.exists(arg => arg.symbol == sym))
         case SingleType(_, sym) =>
           def loopCore(t: Tree): Boolean = t.symbol == sym || t.symbol == sym.alias || {
             dissectCore(t) match {
@@ -364,7 +365,7 @@ abstract class TreeInfo {
               case _ => false
             }
           }
-          loopCore(receiver) || argss.exists(_.exists(sym == _.symbol))
+          loopCore(receiver) || argss.exists(_.exists(arg => arg.symbol == sym))
         case _ =>
           def checkSingle(sym: Symbol): Boolean =
             sym == receiver.symbol || sym.alias == receiver.symbol || {
@@ -388,8 +389,8 @@ abstract class TreeInfo {
       }
     case Applied(_, _, argss) =>
       tree.tpe match {
-        case SingleType(_, sym) =>
-          argss.exists(_.exists(sym == _.symbol))
+        case ThisType(sym) => false
+        case SingleType(_, sym) => argss.exists(_.exists(sym == _.symbol))
         case _ => false
       }
     case _ =>

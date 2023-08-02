@@ -83,7 +83,8 @@ abstract class DefaultMacroCompiler extends Resolvers
       if (vanillaResult.isSuccess && bundleResult.isSuccess) MacroImplAmbiguousError()
     }
 
-    def reportMostAppropriateFailure() = {
+    @nowarn("cat=w-flag-value-discard")
+    def reportMostAppropriateFailure(): Unit = {
       typer.silent(_.typedTypeConstructor(maybeBundleRef)) match {
         case SilentResultValue(result) if looksLikeMacroBundleType(result.tpe) =>
           val bundle = result.tpe.typeSymbol
@@ -100,10 +101,7 @@ abstract class DefaultMacroCompiler extends Resolvers
 
     try {
       if (vanillaResult.isSuccess || bundleResult.isSuccess) ensureUnambiguousSuccess()
-      if (vanillaResult.isFailure && bundleResult.isFailure) {
-        reportMostAppropriateFailure(): @nowarn("cat=w-flag-value-discard")
-        ()
-      }
+      if (vanillaResult.isFailure && bundleResult.isFailure) reportMostAppropriateFailure()
       vanillaResult.orElse(bundleResult).get
     } catch {
       case MacroImplResolutionException(pos, msg) =>

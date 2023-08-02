@@ -215,11 +215,13 @@ class `singleton use of parameter` {
   }
 }
 
-class `passing this` {
-  def b = true
+trait `passing this` {
   def f(x: Any): x.type = x
-  def g = {
-    if (b) f(this)
-    42
+  class C {
+    def b = true
+    def g = {
+      if (b) f(this)
+      42
+    }
   }
 }

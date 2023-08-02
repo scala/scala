@@ -152,6 +152,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         else if (node.isTraitNode) " trait"
         else if (node.isObjectNode) " object"
         else if (node.isTypeNode) " type"
+        else ""
 
       val cls =
         if (node.isImplicitNode && incomingImplicits.contains(node)) "implicit-incoming" + baseClass

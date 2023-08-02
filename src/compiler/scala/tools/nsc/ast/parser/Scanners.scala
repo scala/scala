@@ -76,8 +76,8 @@ trait ScannersCommon {
     def warning(off: Offset, msg: String, category: WarningCategory): Unit
     def deprecationWarning(off: Offset, msg: String, since: String, actions: List[CodeAction] = Nil): Unit
 
-    // advance past COMMA NEWLINE RBRACE (to whichever token is the matching close bracket)
-    def skipTrailingComma(right: Token): Boolean = false
+    // optionally advance past COMMA NEWLINE RBRACE (to whichever token is the matching close bracket)
+    def skipTrailingComma(right: Token): Unit = ()
   }
 
   // Hooks for ScaladocUnitScanner and ScaladocJavaUnitScanner
@@ -382,15 +382,17 @@ trait Scanners extends ScannersCommon {
     def isTrailingComma(right: Token): Boolean =
       token == COMMA && lookingAhead(afterLineEnd() && token == right || token == EOF)
 
-    override def skipTrailingComma(right: Token): Boolean =
+    // SIP-27 Trailing Comma (multi-line only) support
+    // If a comma is followed by a new line & then a closing paren, bracket or brace
+    // then it is a trailing comma and is ignored
+    override def skipTrailingComma(right: Token) =
       if (token == COMMA) {
-        // SIP-27 Trailing Comma (multi-line only) support
-        // If a comma is followed by a new line & then a closing paren, bracket or brace
-        // then it is a trailing comma and is ignored
         val saved = new ScannerData {} copyFrom this
         fetchToken()
-        (afterLineEnd() && token == right || token == EOF) || { copyFrom(saved) ; false }
-      } else false
+        val wasTrailingComma = afterLineEnd() && token == right || token == EOF // see isTrailingComma
+        if (!wasTrailingComma)
+          copyFrom(saved)
+      }
 
     /** Allow an otherwise deprecated ident here */
     private var allowIdent: Name = nme.EMPTY

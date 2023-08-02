@@ -162,7 +162,6 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   run / fork := true,
   run / connectInput := true,
   // uncomment for ease of development while breaking things
-  Compile / scalacOptions ++= Seq("-Xmaxerrs", "500", "-Xmaxwarns", "500"),
   //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   // work around https://github.com/scala/bug/issues/11534
   Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
