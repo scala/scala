@@ -208,12 +208,16 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     private def siteName(sym: Symbol) = if (sym.exists) {
+      def skipAnon(s: Symbol, res: Symbol): Symbol =
+        if (s.isRootSymbol || s == NoSymbol) res
+        else if (s.isAnonymousClass || s.isLocalDummy) skipAnon(s.effectiveOwner, s.effectiveOwner)
+        else skipAnon(s.effectiveOwner, res)
       // Similar to fullNameString, but don't jump to enclosing class. Keep full chain of symbols.
       def impl(s: Symbol): String =
         if (s.isRootSymbol || s == NoSymbol) s.nameString
         else if (s.owner.isEffectiveRoot) s.nameString
         else impl(s.effectiveOwner) + "." + s.nameString
-      impl(sym)
+      impl(skipAnon(sym, sym))
     } else ""
 
     override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction] = Nil): Unit =
