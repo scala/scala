@@ -1,16 +1,15 @@
 package scala.tools.xsbt
 
-import xsbti.{AnalysisCallback, UseScope, VirtualFile, VirtualFileRef}
+import xsbti.api.{ClassLike, DependencyContext}
+import xsbti.{Action, AnalysisCallback2, DiagnosticCode, DiagnosticRelatedInformation, Position, Severity, UseScope, VirtualFile, VirtualFileRef}
 
 import java.io.File
 import java.nio.file.Path
 import java.util
 import java.util.Optional
-import xsbti.api.{ClassLike, DependencyContext}
-
 import scala.collection.mutable.ArrayBuffer
 
-class TestCallback extends AnalysisCallback {
+class TestCallback extends AnalysisCallback2 {
   case class TestUsedName(name: String, scopes: util.EnumSet[UseScope])
 
   val classDependencies = new ArrayBuffer[(String, String, DependencyContext)]
@@ -122,6 +121,16 @@ class TestCallback extends AnalysisCallback {
                reported: Boolean
              ): Unit = ()
 
+  override def problem2(what: String,
+                        pos: Position,
+                        msg: String,
+                        severity: Severity,
+                        reported: Boolean,
+                        rendered: Optional[String],
+                        diagnosticCode: Optional[DiagnosticCode],
+                        diagnosticRelatedInformation: util.List[DiagnosticRelatedInformation],
+                        actions: util.List[Action]): Unit = ()
+
   override def dependencyPhaseCompleted(): Unit = {}
 
   override def apiPhaseCompleted(): Unit = {}
@@ -153,7 +162,7 @@ object TestCallback {
     }
 
     private def pairsToMultiMap[A, B](pairs: Seq[(A, B)]): Map[A, Set[B]] = {
-      import scala.collection.{ mutable => m }
+      import scala.collection.{mutable => m}
       val emptyMultiMap = new m.HashMap[A, m.Set[B]]
       val multiMap = pairs.foldLeft(emptyMultiMap) {
         case (acc, (key, value)) => acc.get(key) match {

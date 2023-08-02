@@ -15,14 +15,16 @@
 package scala.tools
 package xsbt
 
-import xsbti.{ AnalysisCallback, Logger, Problem, Reporter, VirtualFile }
+import xsbti.{AnalysisCallback, AnalysisCallback2, Logger, Problem, Reporter, VirtualFile}
 import xsbti.compile._
+
 import scala.tools.nsc.Settings
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.CompilerCommand
 import Log.debug
 import java.io.File
+import java.util.{Collections, Optional}
 
 /**
  * This is the entry point for the compiler bridge (implementation of CompilerInterface)
@@ -154,6 +156,14 @@ private final class CachedCompiler0(
       compileProgress: CompileProgress
   ): Unit = {
 
+    lazy val callback2 =
+      try callback.asInstanceOf[AnalysisCallback2]
+      catch { case _: NoClassDefFoundError => null}
+
+    def callbackProblem(p: Problem) =
+      if (callback2 != null) callback2.problem2(p.category, p.position, p.message, p.severity, true, p.rendered, p.diagnosticCode, p.diagnosticRelatedInformation, p.actions)
+      else callback.problem(p.category, p.position, p.message, p.severity, true)
+
     if (command.shouldStopWithInfo) {
       underlyingReporter.info(null, command.getInfoMessage(compiler), true)
       throw new InterfaceCompileFailed(args, Array(), StopInfoError)
@@ -165,10 +175,7 @@ private final class CachedCompiler0(
       val run = new compiler.ZincRun(compileProgress)
 
       run.compileFiles(sources)
-      processUnreportedWarnings(run)
-      underlyingReporter.problems.foreach(p =>
-        callback.problem(p.category, p.position, p.message, p.severity, true)
-      )
+      underlyingReporter.problems.foreach(callbackProblem)
     }
 
     underlyingReporter.printSummary()
@@ -191,19 +198,5 @@ private final class CachedCompiler0(
     assert(dreporter.cancelled, "We should get here only if when compilation got cancelled")
     debug(log, "Compilation cancelled (CompilerInterface)")
     throw new InterfaceCompileCancelled(args, "Compilation has been cancelled")
-  }
-
-  def processUnreportedWarnings(run: compiler.Run): Unit = {
-    // allConditionalWarnings and the ConditionalWarning class are only in 2.10+
-    final class CondWarnCompat(
-        val what: String,
-        val warnings: mutable.ListBuffer[(compiler.Position, String)]
-    )
-    implicit def compat(run: AnyRef): Compat = new Compat
-    final class Compat { def allConditionalWarnings = List[CondWarnCompat]() }
-
-    val warnings = run.allConditionalWarnings
-    if (warnings.nonEmpty)
-      compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/, cw.warnings.toList)))
   }
 }
