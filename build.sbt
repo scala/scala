@@ -618,6 +618,7 @@ lazy val scaladoc = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
+// dependencies on compiler and compiler-interface are "provided" to align with scala3-sbt-bridge
 lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.sbtbridge"))
@@ -625,7 +626,7 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
   .settings(
     name := "scala2-sbt-bridge",
     description := "sbt compiler bridge for Scala 2",
-    libraryDependencies += compilerInterfaceDep,
+    libraryDependencies += compilerInterfaceDep % Provided,
     generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
     generateServiceProviderResources("xsbti.compile.ConsoleInterface1"  -> "scala.tools.xsbt.ConsoleBridge"),
     generateServiceProviderResources("xsbti.compile.ScaladocInterface2" -> "scala.tools.xsbt.ScaladocBridge"),
@@ -651,7 +652,7 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
          |additional information regarding copyright ownership.
          |""".stripMargin)),
   )
-  .dependsOn(compiler, replFrontend, scaladoc)
+  .dependsOn(compiler % Provided, replFrontend, scaladoc)
 
 lazy val scalap = configureAsSubproject(project)
   .settings(fatalWarningsSettings)
@@ -819,7 +820,7 @@ lazy val junit = project.in(file("test") / "junit")
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
-    libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
+    libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep, compilerInterfaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value),
