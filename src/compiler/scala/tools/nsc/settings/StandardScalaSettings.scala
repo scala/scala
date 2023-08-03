@@ -51,6 +51,21 @@ trait StandardScalaSettings { _: MutableSettings =>
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s.value) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
+  val quickfix =       MultiStringSetting(
+    "-quickfix",
+    "filters",
+    "Apply quick fixes provided by the compiler for warnings and errors to source files",
+    helpText = Some(
+      """Apply quick fixes provided by the compiler for warnings and errors to source files.
+        |Syntax: -quickfix:<filter>,...,<filter>
+        |
+        |<filter> syntax is the same as for configurable warnings, see `-Wconf:help`. Examples:
+        |  -quickfix:any                    apply all available quick fixes
+        |  -quickfix:msg=Auto-application   apply quick fixes where the message contains "Auto-application"
+        |
+        |Use `-Wconf:any:warning-verbose` to display applicable message filters with each warning.
+        |""".stripMargin),
+    prepend = true)
   val release =
     ChoiceSetting("-release", "release", "Compile for a version of the Java API and target class file.", AllTargetVersions, normalizeTarget(javaSpecVersion))
       .withPostSetHook { setting =>

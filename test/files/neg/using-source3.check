@@ -1,4 +1,4 @@
-using-source3.scala:14: error: reference to f is ambiguous;
+using-source3.scala:14: error: [quick fix available] reference to f is ambiguous;
 it is both defined in the enclosing class D and inherited in the enclosing class E as method f (defined in class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.f`.

@@ -26,7 +26,7 @@ t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to th
 Write foo() to invoke method foo, or change the expected type.
   val t1b: () => Any = foo   // eta-expansion, but lint warning
                        ^
-t7187.scala:13: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method foo,
+t7187.scala:13: warning: [quick fix available] Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method foo,
 or remove the empty argument list from its definition (Java-defined methods are exempt).
 In Scala 3, an unapplied method like this will be eta-expanded into a function.
   val t1c: () => Any = { val t = foo; t } // `()`-insertion because no expected type

@@ -3,7 +3,7 @@ t11921.scala:6: error: type mismatch;
  required: B => B
       def iterator = coll.iterator.map(f)    // coll is ambiguous
                                        ^
-t11921.scala:6: error: reference to coll is ambiguous;
+t11921.scala:6: error: [quick fix available] reference to coll is ambiguous;
 it is both defined in the enclosing method lazyMap and inherited in the enclosing anonymous class as method coll (defined in trait Iterable)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.coll`.
