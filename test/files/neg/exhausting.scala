@@ -60,4 +60,14 @@ object Test {
     case (Bar2, Bar3) => ()
     case (Bar3, _) => ()
   }
+
+  // fails for: None
+  def fail6 = {
+    val map = Map(5 -> 2)
+    List(1).collect (i => 
+      map.get(i) match {
+        case Some(x) => x
+      }
+    )
+  }
 }

@@ -3119,8 +3119,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else if (numVparams == 1 && pt.typeSymbol == PartialFunctionClass) { // dodge auto-tupling with the == 1
             // translate `x => x match { <cases> }` : PartialFunction to
             // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
+            val p = vparams.head
             val funBody = fun.body match {
-              case Match(sel, _) if sel ne EmptyTree => fun.body
+              case Match(sel, _) if sel.symbol == p => fun.body
               case funBody                           =>
                 atPos(funBody.pos.makeTransparent) {
                   Match(EmptyTree, List(CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), funBody)))
@@ -3130,7 +3131,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // thus, its symbol, which serves as the current context.owner, is not the right owner
             // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
             val outerTyper = newTyper(context.outer)
-            val p = vparams.head
             if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
 
             outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, funBody, mode, pt)
