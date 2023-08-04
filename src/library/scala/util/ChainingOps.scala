@@ -72,8 +72,10 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *                `f` to this value.
     */
   def pipe[B](f: A => B): B = f(self)
-  
-  def pipeIf[B](cond: Boolean)(fTrue: A => B, fFalse: A => B = identity _): B = if (cond) fTrue(self) else fFalse(self)
+
+  // https://users.scala-lang.org/t/multiple-overloaded-alternatives-and-default-arguments/2209/2
+  // https://stackoverflow.com/questions/4652095/why-does-the-scala-compiler-disallow-overloaded-methods-with-default-arguments
+  //def pipeIf[B](cond: Boolean)(fTrue: A => B, fFalse: A => B = identity _): B = if (cond) fTrue(self) else fFalse(self)
   
   def pipeIf[B](cond: A => Boolean)(fTrue: A => B, fFalse: A => B = identity _): B = if (cond(self)) fTrue(self) else fFalse(self)
 }
