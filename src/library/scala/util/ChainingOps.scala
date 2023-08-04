@@ -41,6 +41,16 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     self
   }
 
+  def tapIf[U](cond: Boolean)(f: A => U): A = {
+    if (cond) f(self)
+    self
+  }
+
+  def tapIf[U](cond: A => Boolean)(f: A => U): A = {
+    if (cond(self)) f(self)
+    self
+  }
+
   /** Converts the value by applying the function `f`.
     *
     * {{{
@@ -62,4 +72,8 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *                `f` to this value.
     */
   def pipe[B](f: A => B): B = f(self)
+  
+  def pipeIf[B](cond: Boolean)(fTrue: A => B, fFalse: A => B = identity): B = if (cond) fTrue(self) else fFalse(self)
+  
+  def pipeIf[B](cond: A => Boolean)(fTrue: A => B, fFalse: A => B = identity): B = if (cond(self)) fTrue(self) else fFalse(repr)
 }
