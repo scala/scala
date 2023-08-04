@@ -3,10 +3,10 @@ t729.scala:20: error: type mismatch;
  required: ScalaParserAutoEdit.this.NodeImpl(in trait ScalaParserAutoEdit)
       val yyy : NodeImpl = link.from;
                                 ^
-t729.scala:3: warning: Implicit definition should have explicit type (inferred Parser.this.Node)
+t729.scala:3: warning: [quick fix available] Implicit definition should have explicit type (inferred Parser.this.Node)
   implicit def coerce(n : NodeImpl) = n.self;
                ^
-t729.scala:14: warning: Implicit definition should have explicit type (inferred ScalaParserAutoEdit.this.Node)
+t729.scala:14: warning: [quick fix available] Implicit definition should have explicit type (inferred ScalaParserAutoEdit.this.Node)
   implicit def coerce(node : NodeImpl) = node.self;
                ^
 2 warnings

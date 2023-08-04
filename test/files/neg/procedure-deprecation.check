@@ -10,7 +10,7 @@ procedure-deprecation.scala:6: warning: [quick fix available] procedure syntax i
 procedure-deprecation.scala:7: warning: [quick fix available] procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `boz`'s return type
   def boz(i: Int, l: Long) {}
                            ^
-procedure-deprecation.scala:8: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition
+procedure-deprecation.scala:8: warning: [quick fix available] procedure syntax is deprecated for constructors: add `=`, as in method definition
   def this(i: Int) { this() } // Don't complain here! or maybe do complain
                   ^
 error: No warnings can be incurred under -Werror.

@@ -1,7 +1,7 @@
-prefix-unary-nilary-removal.scala:4: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_~ : Foo = this`
+prefix-unary-nilary-removal.scala:4: warning: [quick fix available] unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_~ : Foo = this`
   def unary_~() : Foo = this
       ^
-prefix-unary-nilary-removal.scala:5: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_-(implicit pos: Long) = this`
+prefix-unary-nilary-removal.scala:5: warning: [quick fix available] unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_-(implicit pos: Long) = this`
   def unary_-()(implicit pos: Long) = this
       ^
 prefix-unary-nilary-removal.scala:12: warning: [quick fix available] Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method unary_~,

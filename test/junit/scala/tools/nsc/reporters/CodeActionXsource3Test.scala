@@ -6,10 +6,10 @@ import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
 class CodeActionXsource3Test extends AbstractCodeActionTest {
-  override def compilerArgs: String = "-Ystop-after:typer -Yvalidate-pos:typer -Yrangepos -deprecation -Xsource:3"
+  override def compilerArgs: String = "-Ystop-after:refchecks -deprecation -Xlint -Xsource:3"
 
   @Test
-  def testLambdaParameterList(): Unit =
+  def lambdaParameterParens(): Unit =
     assertCodeSuggestion(
       """trait Test {
         |  def foo: Any = {
@@ -36,4 +36,32 @@ class CodeActionXsource3Test extends AbstractCodeActionTest {
         |}
       """.stripMargin,
     )
+
+  @Test
+  def qmark(): Unit = {
+    assertCodeSuggestion("class C[?]", "class C[`?`]")
+  }
+
+  @Test
+  def scala3Keyword(): Unit = {
+    assertCodeSuggestion("class C { val export = 1 }", "class C { val `export` = 1 }")
+  }
+
+  @Test
+  def infixTypeArg(): Unit = {
+    assertCodeSuggestion("class C { List apply[Int] 1 }", "class C { List.apply[Int](1) }")
+    assertCodeSuggestion("class C { List apply 1 map[Int] identity }", "class C { (List apply 1).map[Int](identity) }")
+    assertCodeSuggestion("class C { List apply 1 map[Int] (_ + 1) }", "class C { (List apply 1).map[Int](_ + 1) }")
+  }
+
+  @Test
+  def overrideInferredType(): Unit = {
+    assertCodeSuggestion(
+      """trait T { def f: Object }
+        |class C extends T { def f = "" }
+        |""".stripMargin,
+      """trait T { def f: Object }
+        |class C extends T { def f: String = "" }
+        |""".stripMargin)
+  }
 }

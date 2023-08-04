@@ -29,6 +29,16 @@ package util
  */
 case class CodeAction(title: String, description: Option[String], edits: List[TextEdit])
 
+object CodeAction {
+  def apply(title: String, pos: Position, newText: String, desc: String, check: => Boolean = true): List[CodeAction] =
+    if (check) List(CodeAction(title, Some(desc), List(TextEdit(pos, newText))))
+    else Nil
+
+  private lazy val parens = raw"\(.*\)".r
+  def maybeWrapInParens(s: String) = if (s.contains(" ") && !parens.matches(s)) s"($s)" else s
+  def wrapInParens(s: String) = if (!parens.matches(s)) s"($s)" else s
+}
+
 /**
  *  <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
