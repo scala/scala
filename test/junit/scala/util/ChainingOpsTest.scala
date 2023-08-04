@@ -76,7 +76,7 @@ class ChainingOpsTest extends RunTesting {
   def testAnyPipeIfFalse(): Unit = {
     val times6 = (_: Int) * 6
     val result = (1 - 2 - 3)
-      .pipeIf(false)(times6)
+      .pipeIf(_ => false)(times6)
       .pipe(scala.math.abs)
 
     assertEquals(4, result)
@@ -96,7 +96,7 @@ class ChainingOpsTest extends RunTesting {
   def testAnyPipeIfTrue(): Unit = {
     val times6 = (_: Int) * 6
     val result = (1 - 2 - 3)
-      .pipeIf(false)(times6)
+      .pipeIf(_ => false)(times6)
       .pipe(scala.math.abs)
 
     assertEquals(24, result)
