@@ -1,0 +1,12 @@
+t4940.scala:3: warning: a type was inferred to be `Any` when constructing a PartialFunction
+  val f: PartialFunction[String, Int] = (x: Int) => x match { case "x" => 3 }   // error
+                                          ^
+t4940.scala:5: warning: a type was inferred to be `Object` when constructing a PartialFunction
+  val g: PartialFunction[String, Int] = (x: X) => x match { case "x" => 3 }     // error
+                                          ^
+t4940.scala:7: warning: a type was inferred to be `AnyVal` when constructing a PartialFunction
+  val m: PartialFunction[Int, Int] = (x: Double) => x match { case 3.14 => 3 }  // error
+                                       ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error
