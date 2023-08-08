@@ -75,7 +75,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         lastSeenContext = analyzer.NoContext
       }
 
-      def verify(expr: Tree): Tree = {
+      def verify(expr: Tree): expr.type = {
         // Previously toolboxes used to typecheck their inputs before compiling.
         // Actually, the initial demo by Martin first typechecked the reified tree,
         // then ran it, which typechecked it again, and only then launched the

@@ -231,7 +231,7 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Fully initialize the symbol, type, or scope.
      */
-    def fullyInitializeSymbol(sym: Symbol): Symbol = {
+    def fullyInitializeSymbol(sym: Symbol): sym.type = {
       sym.initialize
       // Watch out for those darn raw types on method parameters
       if (sym.owner.initialize.isJavaDefined)
@@ -241,17 +241,17 @@ trait Definitions extends api.StandardDefinitions {
       fullyInitializeType(sym.tpe_*)
       sym
     }
-    def fullyInitializeType(tp: Type): Type = {
+    def fullyInitializeType(tp: Type): tp.type = {
       tp.typeParams foreach fullyInitializeSymbol
       mforeach(tp.paramss)(fullyInitializeSymbol)
       tp
     }
-    def fullyInitializeScope(scope: Scope): Scope = {
+    def fullyInitializeScope(scope: Scope): scope.type = {
       scope.sorted foreach fullyInitializeSymbol
       scope
     }
     /** Is this symbol a member of Object or Any? */
-    def isUniversalMember(sym: Symbol) =
+    def isUniversalMember(sym: Symbol): Boolean =
       if (sym.isOverloaded) sym.alternatives.exists(alt => ObjectClass.isSubClass(alt.owner))
       else ObjectClass.isSubClass(sym.owner)
 

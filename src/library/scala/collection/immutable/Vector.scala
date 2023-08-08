@@ -47,11 +47,13 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
               as.unsafeArray.asInstanceOf[Arr1]
             case it: Iterable[E] =>
               val a1 = new Arr1(knownSize)
-              it.copyToArray(a1.asInstanceOf[Array[Any]])
+              val copied = it.copyToArray(a1.asInstanceOf[Array[Any]])
+              assert(copied == knownSize)
               a1
             case _ =>
               val a1 = new Arr1(knownSize)
-              it.iterator.copyToArray(a1.asInstanceOf[Array[Any]])
+              val copied = it.iterator.copyToArray(a1.asInstanceOf[Array[Any]])
+              assert(copied == knownSize)
               a1.asInstanceOf[Arr1]
           }
           new Vector1[E](a1)
@@ -2192,7 +2194,8 @@ private object VectorStatics {
           case s =>
             val prefix1b = new Arr1(prefix1.length + s)
             System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
-            it.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+            val copied = it.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+            assert(copied == s)
             prefix1b
         }
       } else null
@@ -2201,7 +2204,8 @@ private object VectorStatics {
       if(s > 0 && s <= WIDTH-prefix1.length) {
         val prefix1b = new Arr1(prefix1.length + s)
         System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
-        it.iterator.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+        val copied = it.iterator.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+        assert(copied == s)
         prefix1b
       } else null
   }
@@ -2214,7 +2218,8 @@ private object VectorStatics {
           case 1 => copyAppend(suffix1, it.head.asInstanceOf[AnyRef])
           case s =>
             val suffix1b = copyOf(suffix1, suffix1.length + s)
-            it.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+            val copied = it.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+            assert(copied == s)
             suffix1b
         }
       } else null
@@ -2222,7 +2227,8 @@ private object VectorStatics {
       val s = it.knownSize
       if(s > 0 && s <= WIDTH-suffix1.length) {
         val suffix1b = copyOf(suffix1, suffix1.length + s)
-        it.iterator.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+        val copied = it.iterator.copyToArray(suffix1b.asInstanceOf[Array[Any]], suffix1.length)
+        assert(copied == s)
         suffix1b
       } else null
   }

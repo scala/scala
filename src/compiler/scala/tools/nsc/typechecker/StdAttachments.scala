@@ -88,11 +88,11 @@ trait StdAttachments {
 
   /** Suppresses macro expansion of the tree by putting SuppressMacroExpansionAttachment on it.
    */
-  def suppressMacroExpansion(tree: Tree) = tree.updateAttachment(SuppressMacroExpansionAttachment)
+  def suppressMacroExpansion(tree: Tree): tree.type = tree.updateAttachment(SuppressMacroExpansionAttachment)
 
   /** Unsuppresses macro expansion of the tree by removing SuppressMacroExpansionAttachment from it and its children.
    */
-  def unsuppressMacroExpansion(tree: Tree): Tree = {
+  def unsuppressMacroExpansion(tree: Tree): tree.type = {
     tree.removeAttachment[SuppressMacroExpansionAttachment.type]
     tree match {
       // see the comment to `isMacroExpansionSuppressed` to learn why we need

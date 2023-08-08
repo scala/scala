@@ -145,7 +145,7 @@ trait Namers extends MethodSynthesis {
       vd.mods.hasAllFlags(JAVA_ENUM | STABLE | STATIC) && ownerHasEnumFlag
     }
 
-    def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
+    def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): sym.type =
       if (sym.isPrivateLocal) sym
       else {
         val qualClass = if (mods.hasAccessBoundary)
@@ -155,7 +155,7 @@ trait Namers extends MethodSynthesis {
         sym setPrivateWithin qualClass
       }
 
-    def setPrivateWithin(tree: MemberDef, sym: Symbol): Symbol =
+    def setPrivateWithin(tree: MemberDef, sym: Symbol): sym.type =
       setPrivateWithin(tree, sym, tree.mods)
 
     def inConstructorFlag: Long = {
@@ -174,7 +174,7 @@ trait Namers extends MethodSynthesis {
     def moduleClassFlags(moduleFlags: Long) =
       (moduleFlags & ModuleToClassFlags) | inConstructorFlag
 
-    def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
+    def updatePosFlags(sym: Symbol, pos: Position, flags: Long): sym.type = {
       debuglog("[overwrite] " + sym)
       val newFlags = (sym.flags & LOCKED) | flags
       // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
@@ -235,10 +235,10 @@ trait Namers extends MethodSynthesis {
     }
 
     /** Enter symbol into context's scope and return symbol itself */
-    def enterInScope(sym: Symbol): Symbol = enterInScope(sym, context.scope)
+    def enterInScope(sym: Symbol): sym.type = enterInScope(sym, context.scope)
 
     /** Enter symbol into given scope and return symbol itself */
-    def enterInScope(sym: Symbol, scope: Scope): Symbol = {
+    def enterInScope(sym: Symbol, scope: Scope): sym.type = {
       // FIXME - this is broken in a number of ways.
       //
       // 1) If "sym" allows overloading, that is not itself sufficient to skip
@@ -451,12 +451,11 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    def enterModuleDef(tree: ModuleDef) = {
+    def enterModuleDef(tree: ModuleDef): Unit = {
       val sym = enterModuleSymbol(tree)
       sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
       sym setInfo completerOf(tree)
       validateCompanionDefs(tree)
-      sym
     }
 
     /** Enter a module symbol.
@@ -489,7 +488,7 @@ trait Namers extends MethodSynthesis {
       m
     }
 
-    def enterSyms(trees: List[Tree]): Namer =
+    def enterSyms(trees: List[Tree]): Unit =
       trees.foldLeft(this: Namer) { (namer, t) =>
         val ctx = namer enterSym t
         // for Import trees, enterSym returns a changed context, so we need a new namer
@@ -693,7 +692,7 @@ trait Namers extends MethodSynthesis {
             // There are two ways in which we exclude the symbol from being added in typedStats::addSynthetics,
             // because we don't know when the completer runs with respect to this loop in addSynthetics
             //  for (sym <- scope)
-            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+            //    for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym))
             //      if (!sym.initialize.hasFlag(IS_ERROR))
             //        newStats += typedStat(tree)
             // If we're already in the loop, set the IS_ERROR flag and trigger the condition `sym.initialize.hasFlag(IS_ERROR)`
@@ -730,7 +729,7 @@ trait Namers extends MethodSynthesis {
         /* @M! TypeDef's type params are handled differently, e.g., in `type T[A[x <: B], B]`, A and B are entered
          * first as both are in scope in the definition of x. x is only in scope in `A[x <: B]`.
          * No symbols are created for the abstract type's params at this point, i.e. the following assertion holds:
-         *     !tree.symbol.isAbstractType || { tparams.forall(_.symbol == NoSymbol)
+         *     !tree.symbol.isAbstractType || tparams.forall(_.symbol == NoSymbol)
          * (tested with the above example, `trait C { type T[A[X <: B], B] }`). See also comment in PolyTypeCompleter.
          */
         if (!tree.symbol.isAbstractType) //@M TODO: change to isTypeMember ?
@@ -767,7 +766,7 @@ trait Namers extends MethodSynthesis {
       tree.symbol = sym
     }
 
-    def enterTypeDef(tree: TypeDef) = assignAndEnterFinishedSymbol(tree)
+    def enterTypeDef(tree: TypeDef): Unit = assignAndEnterFinishedSymbol(tree)
 
     def enterDefDef(tree: DefDef): Unit = {
       tree match {

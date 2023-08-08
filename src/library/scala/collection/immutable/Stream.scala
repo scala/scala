@@ -242,7 +242,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     sb
   }
 
-  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
+  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): b.type = {
     b.append(start)
     if (nonEmpty) {
       b.append(head)
@@ -311,6 +311,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
       }
     }
     b.append(end)
+    b
   }
 
   /**

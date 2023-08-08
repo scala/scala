@@ -162,7 +162,8 @@ trait Contexts { self: Analyzer =>
             // force package objects in prefixes
             def force(pkg: String, next: String): String = {
               val full = if (pkg.isEmpty) next else s"$pkg.$next"
-              getPackageIfDefined(full).tap(sym => if (sym != NoSymbol) openPackageModule(sym, force = true))
+              val sym = getPackageIfDefined(full)
+              if (sym != NoSymbol) openPackageModule(sym, force = true)
               full
             }
             name.split('.').toList.init.foldLeft("")(force)
@@ -420,9 +421,9 @@ trait Contexts { self: Analyzer =>
           val dictClass = {
             class DictionarySubstituter extends TreeSymSubstituter(preSyms, postSyms) {
               override def transform(tree: Tree): Tree = {
-                if(tree.hasExistingSymbol) {
+                if (tree.hasExistingSymbol) {
                   val sym = tree.symbol
-                  symMap.get(sym.owner).map(sym.owner = _)
+                  symMap.get(sym.owner).foreach(sym.owner = _)
                 }
                 super.transform(tree)
               }

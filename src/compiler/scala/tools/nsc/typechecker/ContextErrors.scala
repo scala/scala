@@ -216,7 +216,7 @@ trait ContextErrors extends splain.SplainErrors {
     object TyperErrorGen {
       implicit val contextTyperErrorGen: Context = infer.getContext
 
-      def UnstableTreeError(tree: Tree) = {
+      def UnstableTreeError(tree: Tree): tree.type = {
         def addendum = {
           "\n Note that "+tree.symbol+" is not stable because its type, "+tree.tpe+", is volatile."
         }
@@ -502,7 +502,7 @@ trait ContextErrors extends splain.SplainErrors {
         //setError(sel)
       }
 
-      def SelectWithUnderlyingError(sel: Tree, err: AbsTypeError) = {
+      def SelectWithUnderlyingError(sel: Tree, err: AbsTypeError): sel.type = {
         // if there's no position, this is likely the result of a MissingRequirementError
         // use the position of the selection we failed to type check to report the original message
         if (err.errPos == NoPosition) issueNormalTypeError(sel, err.errMsg)
@@ -754,12 +754,12 @@ trait ContextErrors extends splain.SplainErrors {
       }
 
       //checkClassType
-      def TypeNotAStablePrefixError(tpt: Tree, pre: Type) = {
+      def TypeNotAStablePrefixError(tpt: Tree, pre: Type): tpt.type = {
         issueNormalTypeError(tpt, "type "+pre+" is not a stable prefix")
         setError(tpt)
       }
 
-      def ClassTypeRequiredError(tree: Tree, found: AnyRef) = {
+      def ClassTypeRequiredError(tree: Tree, found: AnyRef): tree.type = {
         issueNormalTypeError(tree, "class type required but "+found+" found")
         setError(tree)
       }
@@ -1168,7 +1168,7 @@ trait ContextErrors extends splain.SplainErrors {
           "\n --- because ---\n" + msg)
 
       // TODO: no test case
-      def NoConstructorInstanceError(tree: Tree, restpe: Type, pt: Type, msg: String) = {
+      def NoConstructorInstanceError(tree: Tree, restpe: Type, pt: Type, msg: String): Unit = {
         issueNormalTypeError(tree,
           "constructor of type " + restpe +
           " cannot be uniquely instantiated to expected type " + pt +

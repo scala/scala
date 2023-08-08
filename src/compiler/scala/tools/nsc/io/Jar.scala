@@ -64,9 +64,9 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
       jarFile getEntry name match {
         case null   => f(None)
         case entry  =>
-          val in = Some(jarFile getInputStream entry)
+          val in = Some(jarFile.getInputStream(entry))
           try f(in)
-          finally in map (_.close())
+          finally in.foreach(_.close())
       }
     try apply() finally jarFile.close()
   }

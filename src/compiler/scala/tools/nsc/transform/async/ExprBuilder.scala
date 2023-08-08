@@ -198,7 +198,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
 
     addStats()
 
-    private def addState(state: AsyncState): AsyncState = {
+    private def addState(state: AsyncState): state.type = {
       assert(building, "must be building to add state")
       assert(!statesMap.contains(state.state), "Duplicate state: " + state)
       statesMap(state.state) = state
@@ -490,7 +490,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         val (initial :: Nil, rest) = all.partition(_.state == blockBuilder.startState): @unchecked
         val map = all.iterator.map(x => (x.state, x)).toMap
         val seen = mutable.HashSet[Int]()
-        seen.add(all.last.state)
+        seen.addOne(all.last.state)
         def followEmptyState(state: AsyncState): AsyncState = if (state.isEmpty && state.nextStates.size == 1) {
           val next = state.nextStates(0)
           if (next == blockBuilder.endState) state
@@ -506,7 +506,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         }
         def loop(state: AsyncState): Unit = {
           if (!emptyReplacements.contains(state.state))
-            seen.add(state.state)
+            seen.addOne(state.state)
           for (i <- state.nextStates if !seen.contains(i) && i != StateAssigner.Terminal) {
             loop(map(i))
           }

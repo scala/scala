@@ -43,7 +43,7 @@ class WorkScheduler {
   }
 
   def dequeueAllInterrupts(f: InterruptReq => Unit): Unit = synchronized {
-    interruptReqs.dequeueAll { iq => f(iq); true }
+    interruptReqs.removeAll().foreach(f)
   }
 
   /** Called from server: return optional exception posted by client

@@ -853,7 +853,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     sb
   }
 
-  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
+  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): b.type = {
     b.append(start)
     if (!stateDefined) b.append("<not computed>")
     else if (!isEmpty) {
@@ -917,6 +917,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       }
     }
     b.append(end)
+    b
   }
 
   /** $preservesLaziness

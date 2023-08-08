@@ -241,7 +241,7 @@ trait PatternExpansion {
       val offeringString = if (isErroneous) "<error>" else productTypes match {
         case tps if isSeq => (tps.map(_.toString) :+ s"${elementType}*").mkString("(", ", ", ")")
         case Nil       => "Boolean"
-        case tp :: Nil => tp
+        case tp :: Nil => tp.toString
         case tps       => tps.mkString("(", ", ", ")")
       }
       val offerString = if (isErroneous) "" else s" offering $offeringString"

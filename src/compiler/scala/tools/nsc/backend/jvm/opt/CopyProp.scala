@@ -629,11 +629,11 @@ abstract class CopyProp {
 
     val pairStartStack = new mutable.Stack[(AbstractInsnNode, mutable.ListBuffer[RemovePairDependency])]
 
-    def push(insn: AbstractInsnNode) = {
+    def push(insn: AbstractInsnNode): Unit = {
       pairStartStack push ((insn, mutable.ListBuffer.empty))
     }
 
-    def addDepends(dependency: RemovePairDependency) = if (pairStartStack.nonEmpty) {
+    def addDepends(dependency: RemovePairDependency): Unit = if (pairStartStack.nonEmpty) {
       val (_, depends) = pairStartStack.top
       depends += dependency
     }
