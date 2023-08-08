@@ -75,5 +75,5 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
 
   def pipeIf[B](cond: Boolean)(f: A => B, fElse: A => B): B = if (cond) f(self) else fElse(self)
   
-  def pipeIf[B](cond: A => Boolean)(f: A => B, fFalse: A => B): B = if (cond(self)) f(self) else fElse(self)
+  def pipeIf[B](cond: A => Boolean)(f: A => B, fElse: A => B): B = if (cond(self)) f(self) else fElse(self)
 }
