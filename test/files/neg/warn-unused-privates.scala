@@ -1,5 +1,5 @@
 //
-// scalac: -deprecation -Ywarn-unused:privates -Xfatal-warnings
+// scalac: -deprecation -Wunused:privates -Xfatal-warnings
 //
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
@@ -259,4 +259,8 @@ trait `short comings` {
     val x = 42
     17
   }
+}
+
+class `issue 12600 ignore abstract types` {
+  type Abs
 }

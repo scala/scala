@@ -5460,7 +5460,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
                 treeCopy.SelectFromTypeTree(
                   result,
-                  TypeTreeWithDeferredRefCheck() { () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
+                  TypeTreeWithDeferredRefCheck(qual) { () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
                     // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
                     checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
                     qual // you only get to see the wrapped tree after running this check :-p
@@ -5698,7 +5698,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal original
             val isPoly = tpt1.tpe.isInstanceOf[PolyType]
             if (isPoly) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
-              TypeTreeWithDeferredRefCheck() { () =>
+              TypeTreeWithDeferredRefCheck(result) { () =>
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
                 // we can't simply use original in refchecks because it does not contains types
                 // (and the only typed trees we have been mangled so they're not quite the original tree anymore)
@@ -6036,7 +6036,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case tree: SelectFromTypeTree           => typedSelect(tree, typedType(tree.qualifier, mode), tree.name)
         case tree: CompoundTypeTree             => typedCompoundTypeTree(tree)
         case tree: ExistentialTypeTree          => typedExistentialTypeTree(tree)
-        case tree: TypeTreeWithDeferredRefCheck => tree // TODO: retype the wrapped tree? TTWDRC would have to change to hold the wrapped tree (not a closure)
+        case tree: TypeTreeWithDeferredRefCheck => tree // TODO: retype the wrapped tree?
         case _                                  => abort(s"unexpected type-representing tree: ${tree.getClass}\n$tree")
       }
 

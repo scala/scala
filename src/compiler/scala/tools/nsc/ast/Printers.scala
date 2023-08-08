@@ -63,7 +63,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
       treePrinter.println()
       treePrinter.print(definition)
 
-    case TypeTreeWithDeferredRefCheck() =>
+    case _: TypeTreeWithDeferredRefCheck =>
       treePrinter.print("<tree with deferred refcheck>")
 
     case SelectFromArray(qualifier, name, _) =>
