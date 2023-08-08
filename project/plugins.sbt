@@ -6,7 +6,7 @@ scalacOptions ++= Seq(
   "-Werror",
   "-Wconf:msg=IntegrationTest .* is deprecated:s,msg=itSettings .* is deprecated:s")
 
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.13.0"
 
 libraryDependencies += "biz.aQute.bnd" % "biz.aQute.bndlib" % "6.1.0"
 
@@ -22,7 +22,7 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.2")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.1.3")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.11.9.201909030838-r",
