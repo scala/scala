@@ -99,7 +99,11 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
   private val resarr = new ResizableArrayAccess[A]
 
-  resarr.p_size0 += 1                  // we do not use array(0) TODO: explain -- what is the first element even for?
+  // we do not use array(0)
+  // storing the root of the heap at array(1) simplifies the calculations for
+  // parent and child indices: for a given index k, the parent of k is k / 2,
+  // the left child is k * 2, and the right child is k * 2 + 1
+  resarr.p_size0 += 1
   def length: Int = resarr.length - 1  // adjust length accordingly
   override def size: Int = length
   override def knownSize: Int = length
