@@ -203,7 +203,7 @@ class FactoriesTest {
       im.Set(1),
       im.HashSet("a", "b", "c"),
       im.ListSet('c', 'd'),
-      //im.Map("a" -> 1, "b" -> 1, "c" -> 1).keySet,      // MapOps$ImmutableKeySet
+      im.Map("a" -> 1, "b" -> 1, "c" -> 1).keySet,      // MapOps$ImmutableKeySet
       im.HashMap("a" -> 1, "b" -> 1, "c" -> 1).keySet,  // HashKeySet
     )
 

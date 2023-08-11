@@ -106,8 +106,8 @@ object Set extends IterableFactory[Set] {
       case s: Set2[E]    => s
       case s: Set3[E]    => s
       case s: Set4[E]    => s
-      //case s: MapOps[E @unchecked, _, _, _]#ImmutableKeySet => s
       case s: HashMap[E @unchecked, _]#HashKeySet => s
+      case s: MapOps[E, Any, Map, Map[E, Any]]#ImmutableKeySet @unchecked => s
       // We also want `SortedSet` (and subclasses, such as `BitSet`)
       // to rebuild themselves, to avoid element type widening issues.
       case _ => newBuilder[E].addAll(it).result()

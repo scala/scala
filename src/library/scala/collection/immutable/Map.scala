@@ -142,7 +142,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
-  protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
+  protected[immutable] class ImmutableKeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
     def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
     def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
   }

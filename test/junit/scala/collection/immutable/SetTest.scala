@@ -73,9 +73,9 @@ class SetTest {
     assertEquals(WeekDay.values, valuesa)
 
     // Make sure regular Map keySets do not rebuild themselves on widening with toSet
-    //val mapset = Map(1 -> "cod", 2 -> "herring").keySet
-    //val mapseta = any(mapset)
-    //assertSame(mapset, mapseta) // WIP see Set.from
+    val mapset = Map(1 -> "cod", 2 -> "herring").keySet
+    val mapseta = any(mapset)
+    assertSame(mapset, mapseta) // WIP see Set.from
   }
 
   @deprecated("Uses deprecated API", since="2.13")
