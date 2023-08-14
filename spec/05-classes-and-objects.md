@@ -900,9 +900,10 @@ The name of the `unapply` method is changed to `unapplySeq` if the first
 parameter section ´\mathit{ps}_1´ of ´c´ ends in a
 [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters).
 
-A method named `copy` is implicitly added to every case class unless the
-class already has a member (directly defined or inherited) with that name, or the
-class has a repeated parameter. The method is defined as follows:
+A method named `copy` is implicitly added to every case class, unless the
+class already has a member with that name, whether directly defined or inherited.
+The `copy` method is also omitted if the class is abstract, or if the class has
+a repeated parameter. The method is defined as follows:
 
 ```scala
 def copy[´\mathit{tps}\,´](´\mathit{ps}'_1\,´)´\ldots´(´\mathit{ps}'_n´): ´c´[´\mathit{tps}\,´] = new ´c´[´\mathit{Ts}\,´](´\mathit{xs}_1\,´)´\ldots´(´\mathit{xs}_n´)
