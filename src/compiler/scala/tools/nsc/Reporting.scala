@@ -26,6 +26,7 @@ import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, ReplBatc
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
 import scala.tools.nsc.settings.NoScalaVersion
+import scala.util.Using
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
@@ -206,7 +207,8 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           "\nScala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings."
         else ""
       def helpMsg(kind: String, isError: Boolean = false) =
-        s"$quickfixed${scala3migration(isError)}\nApplicable -Wconf / @nowarn filters for this $kind: $filterHelp"
+        sm"""|${quickfixed}${scala3migration(isError)}
+             |Applicable -Wconf / @nowarn filters for this $kind: $filterHelp"""
 
       action match {
         case Action.Error => reporter.error(warning.pos, helpMsg("fatal warning", isError = true), warning.actions)
@@ -444,15 +446,12 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           Some(Paths.get(path))
         } else
           Option(source.file.file).map(_.toPath)
-        val r = p.filter(Files.exists(_))
-        if (r.isEmpty)
-          issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes, file does not exist: ${source.file}", WarningCategory.Other, "", Nil))
-        r
+        p.filter(Files.exists(_))
       }
 
       val encoding = Charset.forName(settings.encoding.value)
 
-      def insertEdits(sourceChars: Array[Char], edits: List[TextEdit], file: Path): Array[Byte] = {
+      def applyEdits(sourceChars: Array[Char], edits: List[TextEdit], file: Path): Array[Byte] = {
         val patchedChars = new Array[Char](sourceChars.length + edits.iterator.map(_.delta).sum)
         @tailrec def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
           def copy(upTo: Int): Int = {
@@ -471,22 +470,26 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
                 issueWarning(Message.Plain(NoPosition, s"Unexpected content length when applying quick fixes; verify the changes to ${file.toFile.getAbsolutePath}", WarningCategory.Other, "", Nil))
           }
         }
-
         loop(edits, 0, 0)
         new String(patchedChars).getBytes(encoding)
       }
 
       def apply(edits: mutable.Set[TextEdit]): Unit = {
-        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start))) {
-          if (checkNoOverlap(edits, source)) {
-            underlyingFile(source) foreach { file =>
-              val sourceChars = new String(Files.readAllBytes(file), encoding).toCharArray
-              try Files.write(file, insertEdits(sourceChars, edits, file))
+        def editsOrdered = edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start))
+        for ((source, edits) <- editsOrdered if checkNoOverlap(edits, source)) {
+          val sourceChars = source.content
+          val amended = applyEdits(sourceChars, edits, Paths.get(source.file.path))
+          underlyingFile(source) match {
+            case Some(file) =>
+              try Files.write(file, amended)
               catch {
                 case e: IOException =>
                   issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes to ${file.toFile.getAbsolutePath}\n${e.getMessage}", WarningCategory.Other, "", Nil))
               }
-            }
+            case _ if source.file.isVirtual =>
+              Using(source.file.output)(_.write(amended))
+            case _ =>
+              issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes, file does not exist: ${source.file}", WarningCategory.Other, "", Nil))
           }
         }
       }

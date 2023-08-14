@@ -89,6 +89,8 @@ class Bar
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
                     ^
        warning: Implicit definition should have explicit type (inferred Bar) [quickfixable]
+
+fixed> implicit def foo2bar(foo: Foo): Bar = Bar(foo.n) // insert explicit type
 warning: 1 feature warning; for details, enable `:setting -feature` or `:replay -feature`
 def foo2bar(foo: Foo): Bar
 

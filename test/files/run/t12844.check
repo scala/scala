@@ -1,0 +1,31 @@
+
+scala> def f() = 42
+def f(): Int
+
+scala> f
+       ^
+       warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method f,
+       or remove the empty argument list from its definition (Java-defined methods are exempt).
+       In Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]
+
+fixed> f() // add `()`
+val res0: Int = 42
+
+scala> def g { println }
+             ^
+       warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `g`'s return type [quickfixable]
+
+fixed> def g: Unit = { println } // replace procedure syntax
+               ^
+       warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method println,
+       or remove the empty argument list from its definition (Java-defined methods are exempt).
+       In Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]
+
+fixed> def g { println() } // add `()`
+           ^
+       warning: side-effecting nullary methods are discouraged: suggest defining as `def g()` instead [quickfixable]
+
+fixed> def g() { println } // add empty parameter list
+def g: Unit
+
+scala> :quit

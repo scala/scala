@@ -6,6 +6,8 @@ scala> '\060'
 scala> def foo() { }
                  ^
        warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `foo`'s return type [quickfixable]
+
+fixed> def foo(): Unit = { } // replace procedure syntax
 def foo(): Unit
 
 scala> @annotation.nowarn def sshhh() { }

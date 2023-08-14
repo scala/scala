@@ -14,7 +14,7 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
 import scala.reflect.internal
-import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, StringOps}
+import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, StringOps, TextEdit}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.FilteringReporter
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
@@ -87,20 +87,19 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   /** The maximum length of toString to use when printing the result
-    *  of an evaluation.  0 means no maximum.  If a printout requires
-    *  more than this number of characters, then the printout is
-    *  truncated.
-    */
+   *  of an evaluation.  0 means no maximum.  If a printout requires
+   *  more than this number of characters, then the printout is truncated.
+   */
   var maxPrintString = config.maxPrintString.option getOrElse 800
 
   /** Whether very long lines can be truncated.  This exists so important
-    *  debugging information (like printing the classpath) is not rendered
-    *  invisible due to the max message length.
-    */
+   *  debugging information (like printing the classpath) is not rendered
+   *  invisible due to the max message length.
+   */
   var truncationOK: Boolean = !settings.verbose.value
 
   def truncate(str: String): String =
-    if (truncationOK && (maxPrintString != 0 && str.length > maxPrintString)) (str take maxPrintString - 3) + "..."
+    if (truncationOK && maxPrintString != 0 && str.length > maxPrintString) s"${str.take(maxPrintString - 3)}..."
     else str
 
   def withoutTruncating[T](body: => T): T = {
@@ -154,15 +153,32 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
       if (colorOk) severityColor(severity) + clabel(severity) + RESET
       else clabel(severity)
 
-    printMessageAt(pos, prefix + msg)
+    val amended = {
+      val line0 = pos.lineContent
+      var line = line0
+      if (line.nonEmpty && line.indexOf('\n') == -1 && actions.nonEmpty) {
+        val comment = new StringBuilder
+        for (CodeAction(title, description, edits) <- actions; TextEdit(editPos, editText) <- edits)
+          if (pos.line == editPos.line) {
+            line = line.patch(editPos.start, editText, editPos.end - editPos.start)
+            if (comment.nonEmpty) comment.append("; ")
+            comment.append(title)
+          }
+        if (line == line0) ""
+        else if (comment.isEmpty) line
+        else s"$line // $comment" // sb.append(s"$patched // ${description.getOrElse(title)}")
+      }
+      else ""
+    }
+    printMessageAt(pos, prefix + msg, amended)
   }
 
   // indent errors, error message uses the caret to point at the line already on the screen instead of repeating it
-  // TODO: can we splice the error into the code the user typed when multiple lines were entered?
+  // can we splice the error into the code the user typed when multiple lines were entered?
   // (should also comment out the error to keep multi-line copy/pastable)
-  // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
-  // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpreter (plusOne))
-  def printMessageAt(posIn: Position, msg: String): Unit = {
+  // multiple errors are not very intuitive (should the second error for same line repeat the line?)
+  // the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpreter (plusOne))
+  def printMessageAt(posIn: Position, msg: String, amended: String): Unit = {
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
     else if (posIn.source.file.name == "<console>" && posIn.line == 1) {
       // If there's only one line of input, and it's already printed on the console (as indicated by the position's source file name),
@@ -199,6 +215,10 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
       }
 
       if (isSynthetic) printMessage("\n(To diagnose errors in synthetic code, try adding `// show` to the end of your input.)")
+    }
+    amended match {
+      case null | "" =>
+      case fixup => printMessage(/*config.promptText*/ s"\nfixed> $fixup")
     }
     if (settings.prompt.value) displayPrompt()
   }

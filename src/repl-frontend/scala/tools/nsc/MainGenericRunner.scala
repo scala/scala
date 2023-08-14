@@ -84,6 +84,8 @@ class MainGenericRunner {
             settings.deprecation.value = true
             settings.feature.value = true
           }
+          if (settings.quickfix.isDefault)
+            settings.quickfix.value = List("any")
           val config = ShellConfig(settings)
           new ILoop(config).run(settings)
           None

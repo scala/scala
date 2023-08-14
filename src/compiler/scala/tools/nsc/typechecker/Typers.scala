@@ -976,12 +976,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // > // Add a () parameter section if this overrides some method with () parameters
         // > val vparamSymssOrEmptyParamsFromOverride =
         // This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
-        def checkCanAutoApply(): Boolean = {
+        def checkCanAutoApply(): true = {
           if (!isPastTyper && !matchNullaryLoosely) {
             val msg =
-              s"""Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},
-                 |or remove the empty argument list from its definition (Java-defined methods are exempt).
-                 |In Scala 3, an unapplied method like this will be eta-expanded into a function.""".stripMargin
+              sm"""|Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},
+                   |or remove the empty argument list from its definition (Java-defined methods are exempt).
+                   |In Scala 3, an unapplied method like this will be eta-expanded into a function."""
             val action = runReporting.codeAction("add `()`", tree.pos.focusEnd, "()", msg)
             context.deprecationWarning(tree.pos, NoSymbol, msg, "2.13.3", action)
           }

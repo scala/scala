@@ -7,6 +7,8 @@ scala> def f { }
        error: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `f`'s return type [quickfixable]
        Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=deprecation, version=2.13.0
 
+fixed> def f: Unit = { } // replace procedure syntax
+
 scala> @annotation.nowarn def f { }
 def f: Unit
 
