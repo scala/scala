@@ -14,12 +14,15 @@ package scala
 package tools
 package nsc
 
+import java.io.IOException
+import java.nio.charset.Charset
+import java.nio.file.{Files, Path, Paths}
 import java.util.regex.PatternSyntaxException
-import scala.annotation.nowarn
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, SourceFile}
+import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, SourceFile, TextEdit}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
 import scala.tools.nsc.settings.NoScalaVersion
@@ -62,12 +65,49 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         else conf
     }
 
+    private lazy val quickfixFilters = {
+      if (settings.quickfix.isSetByUser && settings.quickfix.value.isEmpty) {
+        globalError(s"Missing message filter for `-quickfix`; see `-quickfix:help` or use `-quickfix:any` to apply all available quick fixes.")
+        Nil
+      } else {
+        val parsed = settings.quickfix.value.map(WConf.parseFilter(_, rootDirPrefix))
+        val msgs = parsed.collect { case Left(msg) => msg }
+        if (msgs.nonEmpty) {
+          globalError(s"Failed to parse `-quickfix` filters: ${settings.quickfix.value.mkString(",")}\n${msgs.mkString("\n")}")
+          Nil
+        } else parsed.collect { case Right(f) => f }
+      }
+    }
+
+    private val skipRewriteAction = Set(Action.WarningSummary, Action.InfoSummary, Action.Silent)
+
+    private def registerTextEdit(m: Message): Boolean =
+      if (quickfixFilters.exists(f => f.matches(m))) {
+        textEdits.addAll(m.actions.flatMap(_.edits))
+        true
+      }
+      else false
+
+    private def registerErrorTextEdit(pos: Position, msg: String, actions: List[CodeAction]): Boolean = {
+      val matches = quickfixFilters.exists({
+        case MessageFilter.Any => true
+        case mp: MessageFilter.MessagePattern => mp.check(msg)
+        case sp: MessageFilter.SourcePattern => sp.check(pos)
+        case _ => false
+      })
+      if (matches)
+        textEdits.addAll(actions.flatMap(_.edits))
+      matches
+    }
+
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
     private val summarizedInfos: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
 
     private val suppressions: mutable.LinkedHashMap[SourceFile, mutable.ListBuffer[Suppression]] = mutable.LinkedHashMap.empty
     private val suppressionsComplete: mutable.Set[SourceFile] = mutable.Set.empty
     private val suspendedMessages: mutable.LinkedHashMap[SourceFile, mutable.LinkedHashSet[Message]] = mutable.LinkedHashMap.empty
+
+    private val textEdits: mutable.Set[TextEdit] = mutable.Set.empty
 
     // Used in REPL. The old run is used for parsing. Don't discard its suspended warnings.
     def initFrom(old: PerRunReporting): Unit = {
@@ -100,6 +140,10 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           sups   <- suppressions.remove(source)
           sup    <- sups.reverse
         } if (!sup.used && !sup.synthetic) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, "", Nil))
+
+      // apply quick fixes
+      quickfix(textEdits)
+      textEdits.clear()
     }
 
     def reportSuspendedMessages(unit: CompilationUnit): Unit = {
@@ -119,6 +163,14 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     private def issueWarning(warning: Message): Unit = {
+      val action = wconf.action(warning)
+
+      val quickfixed = {
+        if (!skipRewriteAction(action) && registerTextEdit(warning)) s"[rewritten by -quickfix] ${warning.msg}"
+        else if (warning.actions.exists(_.edits.nonEmpty)) s"[quick fix available] ${warning.msg}"
+        else warning.msg
+      }
+
       def ifNonEmpty(kind: String, filter: String) = if (filter.nonEmpty) s", $kind=$filter" else ""
       def filterHelp =
         s"msg=<part of the message>, cat=${warning.category.name}" +
@@ -133,12 +185,13 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           "\nScala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings."
         else ""
       def helpMsg(kind: String, isError: Boolean = false) =
-        s"${warning.msg}${scala3migration(isError)}\nApplicable -Wconf / @nowarn filters for this $kind: $filterHelp"
-      wconf.action(warning) match {
+        s"$quickfixed${scala3migration(isError)}\nApplicable -Wconf / @nowarn filters for this $kind: $filterHelp"
+
+      action match {
         case Action.Error => reporter.error(warning.pos, helpMsg("fatal warning", isError = true), warning.actions)
-        case Action.Warning => reporter.warning(warning.pos, warning.msg, warning.actions)
+        case Action.Warning => reporter.warning(warning.pos, quickfixed, warning.actions)
         case Action.WarningVerbose => reporter.warning(warning.pos, helpMsg("warning"), warning.actions)
-        case Action.Info => reporter.echo(warning.pos, warning.msg, warning.actions)
+        case Action.Info => reporter.echo(warning.pos, quickfixed, warning.actions)
         case Action.InfoVerbose => reporter.echo(warning.pos, helpMsg("message"), warning.actions)
         case a @ (Action.WarningSummary | Action.InfoSummary) =>
           val m = summaryMap(a, warning.category.summaryCategory)
@@ -299,6 +352,16 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
       issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
 
+    // Remember CodeActions that match `-quickfix` and report the error through the reporter
+    def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
+      val quickfixed = {
+        if (registerErrorTextEdit(pos, msg, actions)) s"[rewritten by -quickfix] $msg"
+        else if (actions.exists(_.edits.nonEmpty)) s"[quick fix available] $msg"
+        else msg
+      }
+      reporter.error(pos, quickfixed, actions)
+    }
+
     // used by Global.deprecationWarnings, which is used by sbt
     def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
     def uncheckedWarnings: List[(Position, String)]   = summaryMap(Action.WarningSummary, WarningCategory.Unchecked).toList.map(p => (p._1, p._2.msg))
@@ -329,6 +392,91 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       if (settings.fatalWarnings.value && reporter.hasWarnings)
         reporter.error(NoPosition, "No warnings can be incurred under -Werror.")
+    }
+
+    private object quickfix {
+      /** Source code at a position. Either a line with caret (offset), else the code at the range position. */
+      def codeOf(pos: Position, source: SourceFile): String =
+        if (pos.start < pos.end) new String(source.content.slice(pos.start, pos.end))
+        else {
+          val line = source.offsetToLine(pos.point)
+          val code = source.lines(line).next()
+          val caret = " " * (pos.point - source.lineToOffset(line)) + "^"
+          s"$code\n$caret"
+        }
+
+
+      def checkNoOverlap(patches: List[TextEdit], source: SourceFile): Boolean = {
+        var ok = true
+        for (List(p1, p2) <- patches.sliding(2) if p1.position.end > p2.position.start) {
+          ok = false
+          val msg =
+            s"""overlapping quick fixes in ${source.file.file.getAbsolutePath}:
+               |
+               |add `${p1.newText}` at
+               |${codeOf(p1.position, source)}
+               |
+               |add `${p2.newText}` at
+               |${codeOf(p2.position, source)}""".stripMargin.trim
+          issueWarning(Message.Plain(p1.position, msg, WarningCategory.Other, "", Nil))
+        }
+        ok
+      }
+
+      def underlyingFile(source: SourceFile): Option[Path] = {
+        val fileClass = source.file.getClass.getName
+        val p = if (fileClass.endsWith("xsbt.ZincVirtualFile")) {
+          import scala.language.reflectiveCalls
+          val path = source.file.asInstanceOf[ {def underlying(): {def id(): String}}].underlying().id()
+          Some(Paths.get(path))
+        } else
+          Option(source.file.file).map(_.toPath)
+        val r = p.filter(Files.exists(_))
+        if (r.isEmpty)
+          issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes, file does not exist: ${source.file}", WarningCategory.Other, "", Nil))
+        r
+      }
+
+      val encoding = Charset.forName(settings.encoding.value)
+
+      def insertEdits(sourceChars: Array[Char], edits: List[TextEdit], file: Path): Array[Byte] = {
+        val patchedChars = new Array[Char](sourceChars.length + edits.iterator.map(_.delta).sum)
+        @tailrec def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
+          def copy(upTo: Int): Int = {
+            val untouched = upTo - inIdx
+            System.arraycopy(sourceChars, inIdx, patchedChars, outIdx, untouched)
+            outIdx + untouched
+          }
+          edits match {
+            case e :: es =>
+              val outNew = copy(e.position.start)
+              e.newText.copyToArray(patchedChars, outNew)
+              loop(es, e.position.end, outNew + e.newText.length)
+            case _ =>
+              val outNew = copy(sourceChars.length)
+              if (outNew != patchedChars.length)
+                issueWarning(Message.Plain(NoPosition, s"Unexpected content length when applying quick fixes; verify the changes to ${file.toFile.getAbsolutePath}", WarningCategory.Other, "", Nil))
+          }
+        }
+
+        loop(edits, 0, 0)
+        new String(patchedChars).getBytes(encoding)
+      }
+
+      def apply(edits: mutable.Set[TextEdit]): Unit = {
+        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start))) {
+          if (checkNoOverlap(edits, source)) {
+            underlyingFile(source) foreach { file =>
+              val sourceChars = new String(Files.readAllBytes(file), encoding).toCharArray
+              try Files.write(file, insertEdits(sourceChars, edits, file))
+              catch {
+                case e: IOException =>
+                  issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes to ${file.toFile.getAbsolutePath}\n${e.getMessage}", WarningCategory.Other, "", Nil))
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -532,7 +680,8 @@ object Reporting {
     }
 
     final case class MessagePattern(pattern: Regex) extends MessageFilter {
-      def matches(message: Message): Boolean = pattern.findFirstIn(message.msg).nonEmpty
+      def check(msg: String) = pattern.findFirstIn(msg).nonEmpty
+      def matches(message: Message): Boolean = check(message.msg)
     }
 
     final case class SitePattern(pattern: Regex) extends MessageFilter {
@@ -542,10 +691,11 @@ object Reporting {
     final case class SourcePattern(pattern: Regex) extends MessageFilter {
       private[this] val cache = mutable.Map.empty[SourceFile, Boolean]
 
-      def matches(message: Message): Boolean = cache.getOrElseUpdate(message.pos.source, {
-        val sourcePath = message.pos.source.file.canonicalPath.replace("\\", "/")
+      def check(pos: Position) = cache.getOrElseUpdate(pos.source, {
+        val sourcePath = pos.source.file.canonicalPath.replace("\\", "/")
         pattern.findFirstIn(sourcePath).nonEmpty
       })
+      def matches(message: Message): Boolean = check(message.pos)
     }
 
     final case class DeprecatedOrigin(pattern: Regex) extends MessageFilter {

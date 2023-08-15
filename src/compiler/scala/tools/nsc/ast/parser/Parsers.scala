@@ -251,11 +251,11 @@ self =>
     val syntaxErrors = new ListBuffer[(Int, String, List[CodeAction])]
     def showSyntaxErrors() =
       for ((offset, msg, actions) <- syntaxErrors)
-        reporter.error(o2p(offset), msg, actions)
+        runReporting.error(o2p(offset), msg, actions)
 
     override def syntaxError(offset: Offset, msg: String, actions: List[CodeAction]): Unit = {
       if (smartParsing) syntaxErrors += ((offset, msg, actions))
-      else reporter.error(o2p(offset), msg, actions)
+      else runReporting.error(o2p(offset), msg, actions)
     }
 
     override def incompleteInputError(msg: String, actions: List[CodeAction]): Unit = {

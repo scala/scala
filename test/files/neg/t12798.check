@@ -19,17 +19,17 @@ Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def this(s: String) { this() }
                      ^
-t12798.scala:34: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
+t12798.scala:34: error: [quick fix available] procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f() { println() }
           ^
-t12798.scala:35: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
+t12798.scala:35: error: [quick fix available] procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def g()
          ^
-t12798.scala:39: error: parentheses are required around the parameter of a lambda
+t12798.scala:39: error: [quick fix available] parentheses are required around the parameter of a lambda
 Use '-Wconf:msg=lambda-parens:s' to silence this warning.
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration

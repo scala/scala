@@ -1,31 +1,31 @@
-for-comprehension-val.scala:6: error: `val` keyword in for comprehension is unsupported: just remove `val`
+for-comprehension-val.scala:6: error: [quick fix available] `val` keyword in for comprehension is unsupported: just remove `val`
   for (val x <- 1 to 5 ; y = x) yield x+y       // fail
              ^
-for-comprehension-val.scala:7: error: `val` keyword in for comprehension is unsupported: just remove `val`
+for-comprehension-val.scala:7: error: [quick fix available] `val` keyword in for comprehension is unsupported: just remove `val`
   for (val x <- 1 to 5 ; val y = x) yield x+y   // fail
              ^
-for-comprehension-val.scala:11: error: `val` keyword in for comprehension is unsupported: just remove `val`
+for-comprehension-val.scala:11: error: [quick fix available] `val` keyword in for comprehension is unsupported: just remove `val`
   for (z <- 1 to 2 ; val x <- 1 to 5 ; y = x) yield x+y       // fail
                            ^
-for-comprehension-val.scala:12: error: `val` keyword in for comprehension is unsupported: just remove `val`
+for-comprehension-val.scala:12: error: [quick fix available] `val` keyword in for comprehension is unsupported: just remove `val`
   for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
                            ^
-for-comprehension-val.scala:5: error: `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
+for-comprehension-val.scala:5: error: [quick fix available] `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   for (x <- 1 to 5 ; val y = x) yield x+y       // fail
                            ^
-for-comprehension-val.scala:7: error: `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
+for-comprehension-val.scala:7: error: [quick fix available] `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   for (val x <- 1 to 5 ; val y = x) yield x+y   // fail
                                ^
-for-comprehension-val.scala:10: error: `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
+for-comprehension-val.scala:10: error: [quick fix available] `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   for (z <- 1 to 2 ; x <- 1 to 5 ; val y = x) yield x+y       // fail
                                          ^
-for-comprehension-val.scala:12: error: `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
+for-comprehension-val.scala:12: error: [quick fix available] `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail

@@ -36,4 +36,6 @@ case class CodeAction(title: String, description: Option[String], edits: List[Te
  *  @groupname Common   Commonly used methods
  *  @group ReflectionAPI
  */
-case class TextEdit(position: Position, newText: String)
+case class TextEdit(position: Position, newText: String) {
+  def delta: Int = newText.length - (position.end - position.start)
+}

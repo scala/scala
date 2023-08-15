@@ -13,13 +13,13 @@ package object tester extends Runnable {
 t12798-migration.scala:33: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition
   def this(s: String) { this() }
                      ^
-t12798-migration.scala:34: warning: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
+t12798-migration.scala:34: warning: [quick fix available] procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
   def f() { println() }
           ^
-t12798-migration.scala:35: warning: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
+t12798-migration.scala:35: warning: [quick fix available] procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
   def g()
          ^
-t12798-migration.scala:39: warning: parentheses are required around the parameter of a lambda
+t12798-migration.scala:39: warning: [quick fix available] parentheses are required around the parameter of a lambda
 Use '-Wconf:msg=lambda-parens:s' to silence this warning.
   def f = List(42).map { x: Int => x + 1 }
                           ^
