@@ -45,6 +45,7 @@ val jnaDep            = "net.java.dev.jna"               % "jna"                
 val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.12"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.9.3"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
@@ -275,8 +276,26 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
   ) ++ extra) }
 }
 
+def ivyDependencyFilter(deps: Seq[(String, String)], scalaBinaryVersion: String) = {
+  import scala.xml._
+  import scala.xml.transform._
+  new RuleTransformer(new RewriteRule {
+    override def transform(node: Node) = node match {
+      case e: Elem if e.label == "dependency" && {
+        val org = e.attribute("org").getOrElse("").toString
+        val name = e.attribute("name").getOrElse("").toString
+        deps.exists { case (g, a) =>
+          org == g && (name == a || name == (a + "_" + scalaBinaryVersion))
+        }
+      } => Seq.empty
+      case n => n
+    }
+  })
+}
+
 val pomDependencyExclusions =
   settingKey[Seq[(String, String)]]("List of (groupId, artifactId) pairs to exclude from the POM and ivy.xml")
+lazy val fixCsrIvy = taskKey[Unit]("Apply pomDependencyExclusions to coursier ivy")
 
 Global / pomDependencyExclusions := Nil
 
@@ -294,27 +313,47 @@ lazy val removePomDependencies: Seq[Setting[_]] = Seq(
               e.child.contains(<groupId>{g}</groupId>) &&
                 (e.child.contains(<artifactId>{a}</artifactId>) || e.child.contains(<artifactId>{a + "_" + scalaBinaryVersion.value}</artifactId>))
             } => Seq.empty
-        case n => Seq(n)
+        case n => n
       }
     }).transform(Seq(n2)).head
   },
-  deliverLocal := {
+  fixCsrIvy := {
+    //  - coursier makes target/sbt-bridge/resolution-cache/org.scala-lang/scala2-sbt-bridge/2.13.12-bin-SNAPSHOT/resolved.xml.xml
+    //  - copied to target/sbt-bridge//ivy-2.13.12-bin-SNAPSHOT.xml
+    //  - copied to ~/.ivy2/local/org.scala-lang/scala2-sbt-bridge/2.13.12-bin-SNAPSHOT/ivys/ivy.xml
+    import scala.jdk.CollectionConverters._
     import scala.xml._
-    import scala.xml.transform._
+    val currentProject = csrProject.value
+    val ivyModule = org.apache.ivy.core.module.id.ModuleRevisionId.newInstance(
+      currentProject.module.organization.value,
+      currentProject.module.name.value,
+      currentProject.version,
+      currentProject.module.attributes.asJava)
+    val ivyFile = ivySbt.value.withIvy(streams.value.log)(_.getResolutionCacheManager).getResolvedIvyFileInCache(ivyModule)
+    val e = ivyDependencyFilter(pomDependencyExclusions.value, scalaBinaryVersion.value)
+      .transform(Seq(XML.loadFile(ivyFile))).head
+    XML.save(ivyFile.getAbsolutePath, e, xmlDecl = true)
+  },
+  publishConfiguration := Def.taskDyn {
+    val pc = publishConfiguration.value
+    Def.task {
+      fixCsrIvy.value
+      pc
+    }
+  }.value,
+  publishLocalConfiguration := Def.taskDyn {
+    val pc = publishLocalConfiguration.value
+    Def.task {
+      fixCsrIvy.value
+      pc
+    }
+  }.value,
+  deliverLocal := {
+    // this doesn't seem to do anything currently, it probably worked before sbt used coursier
+    import scala.xml._
     val f = deliverLocal.value
-    val deps = pomDependencyExclusions.value
-    val e = new RuleTransformer(new RewriteRule {
-      override def transform(node: Node) = node match {
-        case e: Elem if e.label == "dependency" && {
-          val org = e.attribute("org").getOrElse("").toString
-          val name = e.attribute("name").getOrElse("").toString
-          deps.exists { case (g, a) =>
-             org == g && (name == a || name == (a + "_" + scalaBinaryVersion.value))
-          }
-        } => Seq.empty
-        case n => Seq(n)
-      }
-    }).transform(Seq(XML.loadFile(f))).head
+    val e = ivyDependencyFilter(pomDependencyExclusions.value, scalaBinaryVersion.value)
+      .transform(Seq(XML.loadFile(f))).head
     XML.save(f.getAbsolutePath, e, xmlDecl = true)
     f
   }
@@ -579,6 +618,42 @@ lazy val scaladoc = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
+// dependencies on compiler and compiler-interface are "provided" to align with scala3-sbt-bridge
+lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.sbtbridge"))
+  //.settings(fatalWarningsSettings)
+  .settings(
+    name := "scala2-sbt-bridge",
+    description := "sbt compiler bridge for Scala 2",
+    libraryDependencies += compilerInterfaceDep % Provided,
+    generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
+    generateServiceProviderResources("xsbti.compile.ConsoleInterface1"  -> "scala.tools.xsbt.ConsoleBridge"),
+    generateServiceProviderResources("xsbti.compile.ScaladocInterface2" -> "scala.tools.xsbt.ScaladocBridge"),
+    generateServiceProviderResources("xsbti.InteractiveConsoleFactory"  -> "scala.tools.xsbt.InteractiveConsoleBridgeFactory"),
+    Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
+    fixPom(
+      "/project/name" -> <name>Scala 2 sbt Bridge</name>,
+      "/project/description" -> <description>sbt compiler bridge for Scala 2</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    ),
+    headerLicense := Some(HeaderLicense.Custom(
+      s"""Zinc - The incremental compiler for Scala.
+         |Copyright Scala Center, Lightbend, and Mark Harrah
+         |
+         |Scala (${(ThisBuild/homepage).value.get})
+         |Copyright EPFL and Lightbend, Inc.
+         |
+         |Licensed under Apache License 2.0
+         |(http://www.apache.org/licenses/LICENSE-2.0).
+         |
+         |See the NOTICE file distributed with this work for
+         |additional information regarding copyright ownership.
+         |""".stripMargin)),
+  )
+  .dependsOn(compiler % Provided, replFrontend, scaladoc)
+
 lazy val scalap = configureAsSubproject(project)
   .settings(fatalWarningsSettings)
   .settings(
@@ -727,7 +802,7 @@ val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jd
   Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(testkit, compiler, replFrontend, scaladoc)
+  .dependsOn(testkit, compiler, replFrontend, scaladoc, sbtBridge)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
@@ -745,7 +820,7 @@ lazy val junit = project.in(file("test") / "junit")
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
     ),
     Compile / javacOptions ++= Seq("-Xlint"),
-    libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
+    libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep, compilerInterfaceDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-s"),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value),
@@ -1048,7 +1123,7 @@ lazy val root: Project = (project in file("."))
 
     setIncOptions
   )
-  .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
+  .aggregate(library, reflect, compiler, interactive, repl, replFrontend, sbtBridge,
     scaladoc, scalap, testkit, partest, junit, scalacheck, tasty, tastytest, scalaDist).settings(
     Compile / sources := Seq.empty,
     onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
