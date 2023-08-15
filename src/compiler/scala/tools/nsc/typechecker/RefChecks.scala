@@ -1606,7 +1606,7 @@ abstract class RefChecks extends Transform {
         case tpt@TypeTree() =>
           if (tpt.original != null)
             tpt.original.foreach {
-              case dc@TypeTreeWithDeferredRefCheck() =>
+              case dc: TypeTreeWithDeferredRefCheck =>
                 applyRefchecksToAnnotations(dc.check()) // #2416
               case _ =>
             }
@@ -1880,11 +1880,11 @@ abstract class RefChecks extends Transform {
               currentOwner.primaryConstructor makeNotPrivate NoSymbol // scala/bug#6601, must be done *after* pickler!
             if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
-          case dc@TypeTreeWithDeferredRefCheck() => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
+          case _: TypeTreeWithDeferredRefCheck => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
           case tpt@TypeTree() =>
             if(tpt.original != null) {
               tpt.original foreach {
-                case dc@TypeTreeWithDeferredRefCheck() =>
+                case dc: TypeTreeWithDeferredRefCheck =>
                   transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
                   // tpt has the right type if the deferred checks are ok
                 case _ =>
