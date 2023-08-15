@@ -1,9 +1,7 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertSame, assertTrue}
 import org.junit.Test
-
-import scala.annotation.nowarn
 
 class MapTest {
 
@@ -144,10 +142,17 @@ class MapTest {
     }
   }
 
-  @Test @nowarn("cat=deprecation")
+  @Test @deprecated("Tests deprecated API", since="2.13.11")
   def t12699(): Unit = {
     val m1: HashMap[Int, Int] = HashMap(1 -> 1)
-    assertEquals(7, m1.+(elem1 = 2 -> 2, elem2 = 3 -> 3, elems = List( 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7): _*).size)
+    assertEquals(7, m1.+(elem1 = 2 -> 2, elem2 = 3 -> 3, elems = List(4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7): _*).size)
     assertEquals(7, m1.+(2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6, 7 -> 7).size)
+  }
+
+  @Test def `t10496 unsound toMap`: Unit = {
+    val t = Map(42 -> 27)
+    assertSame(t, t.toMap[Any, Any])
+    assertTrue(t.toMap[Any, Any].get("hi").isEmpty)
+    assertTrue(TreeMap((1, 2)).toMap[Any, Any].get("hi").isEmpty) // was: CCE
   }
 }

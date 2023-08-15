@@ -1,9 +1,9 @@
 package scala.collection
 
-import org.junit.Assert.{assertEquals, assertSame, assertTrue}
+import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
+import org.junit.Test
 
 import scala.collection.mutable.ArrayBuffer
-import org.junit.{Assert, Test}
 
 import scala.collection.{immutable => im}
 
@@ -16,7 +16,7 @@ class FactoriesTest {
     def cloneCollection[A, C](xs: Iterable[A])(implicit bf: BuildFrom[xs.type, A, C]): C =
       bf.fromSpecific(xs)(xs)
 
-    Assert.assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
+    assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
   }
 
   @Test def factoryIgnoresSourceCollectionFactory(): Unit = {
@@ -24,7 +24,7 @@ class FactoriesTest {
     def cloneElements[A, C](xs: Iterable[A])(cb: Factory[A, C]): C =
       cb.fromSpecific(xs)
 
-    Assert.assertEquals("List", cloneElements(seq)(Seq).collectionClassName)
+    assertEquals("List", cloneElements(seq)(Seq).collectionClassName)
   }
 
   def apply(factory: IterableFactory[Iterable]): Unit = {
@@ -203,8 +203,8 @@ class FactoriesTest {
       im.Set(1),
       im.HashSet("a", "b", "c"),
       im.ListSet('c', 'd'),
-      im.Map("a" -> 1, "b" -> 1, "c" -> 1).keySet,
-      im.HashMap("a" -> 1, "b" -> 1, "c" -> 1).keySet,
+      im.Map("a" -> 1, "b" -> 1, "c" -> 1).keySet,      // MapOps$ImmutableKeySet
+      im.HashMap("a" -> 1, "b" -> 1, "c" -> 1).keySet,  // HashKeySet
     )
 
     sortedFactoryFromIterableOnceReturnsSameReference(SortedSet, im.SortedSet)(
@@ -225,8 +225,9 @@ class FactoriesTest {
 
     mapFactoryFromIterableOnceReturnsSameReference(Map, im.Map)(im.Map(1 -> 2), im.HashMap(1 -> 2))
     mapFactoryFromIterableOnceReturnsSameReference(im.HashMap)(im.HashMap(1 -> 2))
-    mapFactoryFromIterableOnceReturnsSameReference(Map, im.Map)(im.IntMap(1 -> 2))
-    mapFactoryFromIterableOnceReturnsSameReference(Map, im.Map)(im.LongMap(1L -> 2))
+    // unsound due to widening, scala/bug#12745
+    //mapFactoryFromIterableOnceReturnsSameReference(Map, im.Map)(im.IntMap(1 -> 2))
+    //mapFactoryFromIterableOnceReturnsSameReference(Map, im.Map)(im.LongMap(1L -> 2))
 
     mapFactoryFromIterableOnceReturnsSameReference(im.SeqMap, Map, im.Map)(
       im.ListMap(1 -> 2),
@@ -291,6 +292,74 @@ class FactoriesTest {
 
   }
 
+  @Test def `custom set requires rebuild`: Unit = {
+    import scala.collection.immutable.{Set, SortedSet}
+    def testSame(xs: Set[Int], ys: Set[Any]): Boolean = {
+      assertFalse(ys("oops"))
+      assertFalse(ys.contains("oops"))
+      xs.eq(ys)
+    }
+    val s1 = Set(42)
+    assertTrue(testSame(s1, Set.from(s1)))
+    val ss = SortedSet(42)
+    assertFalse(testSame(ss, Set.from(ss)))
+
+    class Custom extends Set[Int] {
+      // Members declared in scala.collection.IterableOnce
+      def iterator: Iterator[Int] = Iterator.empty // implements `def iterator: Iterator[A]`
+
+      // Members declared in scala.collection.SetOps
+      def contains(elem: Int): Boolean = ??? // implements `def contains(elem: A): Boolean`
+
+      // Members declared in scala.collection.immutable.SetOps
+      def excl(elem: Int): scala.collection.immutable.Set[Int] = ??? // implements `def excl(elem: A): C`
+      def incl(elem: Int): scala.collection.immutable.Set[Int] = ??? // implements `def incl(elem: A): C`
+    }
+    val custom = new Custom
+    assertFalse(testSame(custom, Set.from(custom)))
+  }
+
+  @Test def `select maps do not require rebuild`: Unit = {
+    import scala.collection.immutable.{IntMap, ListMap, SeqMap, SortedMap, TreeSeqMap, VectorMap}
+
+    object X {
+      val iter: Iterable[(Any, String)] = List(1, 2, 3, 4, 5).map(i => i -> i.toString).to(SortedMap.sortedMapFactory)
+      val set: Map[Any, String] = Map.from(iter)
+    }
+
+    // where ys is constructed from(xs), verify no CEE, return true if same
+    def testSame(xs: Map[Int, String], ys: Map[Any, String]): Boolean = {
+      assertTrue(ys.get("oops").isEmpty)
+      assertFalse(ys.contains("oops"))
+      xs.eq(ys)
+    }
+    assertFalse(X.set.contains("oops")) // was CCE
+    // exercise small Maps
+    1.to(5).foreach { n =>
+      val m = Map(1.to(n).map(i => i -> i.toString): _*)
+      assertTrue(testSame(m, Map.from(m)))
+    }
+    // other Maps that don't require rebuilding
+    val listMap = ListMap(42 -> "four two")
+    assertTrue(testSame(listMap, Map.from(listMap)))
+    val treeSeqMap = TreeSeqMap(42 -> "four two")
+    assertTrue(testSame(treeSeqMap, Map.from(treeSeqMap)))
+    val vectorMap = VectorMap(42 -> "four two")
+    assertTrue(testSame(vectorMap, Map.from(vectorMap)))
+    val seqMap = SeqMap.empty[Int, String] + (42 -> "four two")
+    assertTrue(testSame(seqMap, Map.from(seqMap)))
+    // require rebuilding
+    val sordid = SortedMap(42 -> "four two")
+    assertFalse(testSame(sordid, Map.from(sordid)))
+    val defaulted = listMap.withDefault(_.toString * 2)
+    assertFalse(testSame(defaulted, Map.from(defaulted)))   // deoptimized, see desorted
+    val desorted = sordid.withDefault(_.toString * 2)
+    assertFalse(testSame(desorted, Map.from(desorted)))
+
+    assertTrue(Map.from(IntMap(42 -> "once", 27 -> "upon"): Iterable[(Any, String)]).get("a time").isEmpty)
+  }
+
+// java.lang.ClassCastException: class java.lang.String cannot be cast to class java.lang.Integer
 
   implicitly[Factory[Char, String]]
   implicitly[Factory[Char, Array[Char]]]
