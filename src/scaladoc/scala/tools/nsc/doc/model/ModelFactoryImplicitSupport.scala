@@ -15,7 +15,6 @@ package doc
 package model
 
 import scala.annotation.nowarn
-import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
 
 /**
@@ -440,7 +439,7 @@ trait ModelFactoryImplicitSupport {
                          inTpl: DocTemplateImpl): Map[MemberEntity, ImplicitMemberShadowing] = {
     assert(modelFinished, "cannot make shadowing table before model is finished")
 
-    val shadowingTable = mutable.Map[MemberEntity, ImplicitMemberShadowing]()
+    val shadowingTable = Map.newBuilder[MemberEntity, ImplicitMemberShadowing]
     val membersByName: Map[Name, List[MemberImpl]] = members.groupBy(_.sym.name)
     val convsByMember = convs.foldLeft(Map.empty[MemberImpl, ImplicitConversionImpl]){
       case (map, conv) => map ++ conv.memberImpls.map (_ -> conv)
@@ -471,12 +470,12 @@ trait ModelFactoryImplicitSupport {
             def ambiguatingMembers: List[MemberEntity] = ambiguous
           }
 
-          shadowingTable += (member -> shadowing)
+          shadowingTable.addOne(member -> shadowing)
         }
       }
     }
 
-    shadowingTable.toMap
+    shadowingTable.result()
   }
 
 

@@ -14,8 +14,7 @@ package scala.tools.partest
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.{ILoop, ShellConfig}
-import scala.util.matching.Regex
-import scala.util.matching.Regex.Match
+import scala.util.matching.Regex.{quoteReplacement, Match}
 
 /** Test code or commands in a REPL.
  *
@@ -76,7 +75,7 @@ trait Lambdaless extends ReplTest {
 }
 object Lambdaless {
   private val lambdaless = """\$Lambda(?:\$\d+)?/(?:0x[a-f0-9]{16}|\d+)(?:@[a-fA-F0-9]+)?""".r
-  private def stripLambdaClassName(s: String): String = lambdaless.replaceAllIn(s, Regex.quoteReplacement("<function>"))
+  private def stripLambdaClassName(s: String): String = lambdaless.replaceAllIn(s, quoteReplacement("<function>"))
 }
 
 /** Normalize a REPL stack trace by stripping line numbers and count of elided frames. */
@@ -132,7 +131,7 @@ abstract class SessionTest extends ReplTest  {
   override final def code = pasted.findAllMatchIn(expected.mkString("", "\n", "\n")).map {
     case pasted(null, null, prompted) =>
       def continued(m: Match): Option[String] = m match {
-        case margin(text) => Some(Regex.quoteReplacement(text))
+        case margin(text) => Some(quoteReplacement(text))
         case _            => None
       }
       margin.replaceSomeIn(prompted, continued)
