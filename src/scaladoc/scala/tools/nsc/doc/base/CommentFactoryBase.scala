@@ -16,7 +16,7 @@ package base
 
 import base.comment._
 import scala.annotation.{nowarn, tailrec}
-import scala.collection._
+import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.matching.Regex.{quoteReplacement, Match}
@@ -239,7 +239,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
     def parse0 (
       docBody: StringBuilder,
-      tags: immutable.Map[TagKey, List[String]],
+      tags: Map[TagKey, List[String]],
       lastTagKey: Option[TagKey],
       remaining: List[String],
       inCodeBlock: Boolean
@@ -414,7 +414,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         com
     }
 
-    parse0(new StringBuilder(comment.length), immutable.Map.empty, None, clean(comment), inCodeBlock = false)
+    parse0(new StringBuilder(comment.length), Map.empty, None, clean(comment), inCodeBlock = false)
 
   }
 
@@ -503,14 +503,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       /** Consumes all list item blocks (possibly with nested lists) of the
         * same list and returns the list block. */
       def listLevel(indent: Int, style: String): Block = {
-        val lines = mutable.ListBuffer.empty[Block]
+        val lines = ListBuffer.empty[Block]
         var line: Option[Block] = listLine(indent, style)
         while (line.isDefined) {
           lines += line.get
           line = listLine(indent, style)
         }
         val constructor = listStyles(style)
-        constructor(lines)
+        constructor(lines.toList)
       }
 
       val indent = countWhitespace

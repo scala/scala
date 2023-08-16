@@ -15,7 +15,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection._
+import scala.collection.mutable
 
 /**
   * This transformer is responsible for preparing Function nodes for runtime,
@@ -68,7 +68,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     // we need to know which methods refer to the 'this' reference so that we can determine which lambdas need access to it
     // TODO: this looks expensive, so I made it a lazy val. Can we make it more pay-as-you-go / optimize for common shapes?
-    private[this] lazy val methodReferencesThis: Set[Symbol] =
+    private[this] lazy val methodReferencesThis: collection.Set[Symbol] =
       (new ThisReferringMethodsTraverser).methodReferencesThisIn(unit.body)
 
     private def mkLambdaMetaFactoryCall(fun: Function, target: Symbol, functionalInterface: Symbol, samUserDefined: Symbol, userSamCls: Symbol, isSpecialized: Boolean): Tree = {
@@ -360,12 +360,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   // finds all methods that reference 'this'
   class ThisReferringMethodsTraverser extends InternalTraverser {
     // the set of methods that refer to this
-    private val thisReferringMethods = mutable.Set[Symbol]()
+    private val thisReferringMethods = mutable.Set.empty[Symbol]
 
     // the set of lifted lambda body methods that each method refers to
-    private val liftedMethodReferences = mutable.Map[Symbol, mutable.Set[Symbol]]()
+    private val liftedMethodReferences = mutable.Map.empty[Symbol, mutable.Set[Symbol]]
 
-    def methodReferencesThisIn(tree: Tree) = {
+    def methodReferencesThisIn(tree: Tree): collection.Set[Symbol] = {
       traverse(tree)
       liftedMethodReferences.keys foreach refersToThis
 

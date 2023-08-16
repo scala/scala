@@ -17,7 +17,7 @@ package html
 import model._
 import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
-import scala.collection._
+import scala.collection.mutable
 import page.diagram._
 import scala.reflect.internal.Reporter
 
