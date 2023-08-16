@@ -1,10 +1,10 @@
-newSource:10: warning: [quick fix available] Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.T)
+newSource:10: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.T) [quick fix available]
       object E { implicit def eToT(e: E) = new T }
                               ^
-newSource:18: warning: [quick fix available] Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.E)
+newSource:18: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.E) [quick fix available]
       object X { implicit def xToE(x: X) = new E}
                               ^
-newSource:21: warning: [quick fix available] Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.E)
+newSource:21: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.E) [quick fix available]
       object Z { implicit def zToE(z: Z) = new E}
                               ^
 Done.

@@ -320,7 +320,7 @@ abstract class RefChecks extends Transform {
           infoStringWithLocation(other) + (if (msg.isEmpty) "" else s"\n$indent") + msg + addendum
         }
         def emitOverrideError(fullmsg: String, actions: List[CodeAction] = Nil): Unit = {
-          if (memberClass == clazz) reporter.error(member.pos, fullmsg, actions)
+          if (memberClass == clazz) runReporting.error(member.pos, fullmsg, actions)
           else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
         }
 

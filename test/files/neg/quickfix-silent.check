@@ -1,0 +1,11 @@
+quickfix-silent.scala:4: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `f`'s return type
+  def f { println }
+        ^
+quickfix-silent.scala:4: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method println,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  def f { println }
+          ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

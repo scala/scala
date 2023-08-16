@@ -1,55 +1,55 @@
-deprecated_widening.scala:5: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:5: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
     val i_f: Float = i  // deprecated
                      ^
-deprecated_widening.scala:7: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:7: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
     val l_f: Float = l  // deprecated
                      ^
-deprecated_widening.scala:8: warning: [quick fix available] Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead.
+deprecated_widening.scala:8: warning: Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead. [quick fix available]
     val l_d: Double = l // deprecated
                       ^
-deprecated_widening.scala:23: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:23: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   val truncatedPosFloat:Float = 16777217L  // deprecated
                                 ^
-deprecated_widening.scala:26: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:26: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   val truncatedNegFloat: Float = - 16777217L // deprecated
                                  ^
-deprecated_widening.scala:30: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:30: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   val truncatedPosFloatI:Float = 16777217  // deprecated
                                  ^
-deprecated_widening.scala:33: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:33: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   val truncatedNegFloatI: Float = - 16777217 // deprecated
                                   ^
-deprecated_widening.scala:37: warning: [quick fix available] Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead.
+deprecated_widening.scala:37: warning: Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead. [quick fix available]
   val truncatedPosDouble:Double = 18014398509481985L // deprecated
                                   ^
-deprecated_widening.scala:40: warning: [quick fix available] Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead.
+deprecated_widening.scala:40: warning: Widening conversion from Long to Double is deprecated because it loses precision. Write `.toDouble` instead. [quick fix available]
   val truncatedNegDouble: Double = - 18014398509481985L // deprecated
                                    ^
-deprecated_widening.scala:47: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:47: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
                              ^
-deprecated_widening.scala:47: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:47: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
                                          ^
-deprecated_widening.scala:47: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:47: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
                                                      ^
-deprecated_widening.scala:48: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:48: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
                              ^
-deprecated_widening.scala:48: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:48: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
                                           ^
-deprecated_widening.scala:48: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:48: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
                                                        ^
-deprecated_widening.scala:48: warning: [quick fix available] Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:48: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
                                                                     ^
-deprecated_widening.scala:50: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:50: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def `pick one` = Set[Float](0x1000003, 0x1000004, 0x1000005)
                               ^
-deprecated_widening.scala:50: warning: [quick fix available] Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+deprecated_widening.scala:50: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quick fix available]
   def `pick one` = Set[Float](0x1000003, 0x1000004, 0x1000005)
                                                     ^
 deprecated_widening.scala:12: warning: method int2float in object Int is deprecated (since 2.13.1): Implicit conversion from Int to Float is dangerous because it loses precision. Write `.toFloat` instead.

@@ -16,10 +16,10 @@ t8035-removed.scala:11: error: adaptation of an empty argument list by inserting
 t8035-removed.scala:4: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
   List(1,2,3).toSet()
               ^
-t8035-removed.scala:14: warning: [quick fix available] adapted the argument list to the expected 2-tuple: add additional parens instead
+t8035-removed.scala:14: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: List.::[B >: A](elem: B): List[B]
   given arguments: 42, 27
- after adaptation: List.::((42, 27): (Int, Int))
+ after adaptation: List.::((42, 27): (Int, Int)) [quick fix available]
   Nil.::(42, 27)      // yeswarn
         ^
 2 warnings

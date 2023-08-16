@@ -10,22 +10,22 @@ S.scala:5: warning: adaptation of an empty argument list by inserting () is depr
  after adaptation: new J((): Unit)
   val x2 = new J()
            ^
-S.scala:6: warning: [quick fix available] adapted the argument list to the expected 5-tuple: add additional parens instead
+S.scala:6: warning: adapted the argument list to the expected 5-tuple: add additional parens instead
         signature: J(x: Object): J
   given arguments: 1, 2, 3, 4, 5
- after adaptation: new J((1, 2, 3, 4, 5): (Int, Int, Int, Int, Int))
+ after adaptation: new J((1, 2, 3, 4, 5): (Int, Int, Int, Int, Int)) [quick fix available]
   val x3 = new J(1, 2, 3, 4, 5)
            ^
-S.scala:8: warning: [quick fix available] adapted the argument list to the expected 3-tuple: add additional parens instead
+S.scala:8: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Some.apply[A](value: A): Some[A]
   given arguments: 1, 2, 3
- after adaptation: Some((1, 2, 3): (Int, Int, Int))
+ after adaptation: Some((1, 2, 3): (Int, Int, Int)) [quick fix available]
   val y1 = Some(1, 2, 3)
                ^
-S.scala:9: warning: [quick fix available] adapted the argument list to the expected 3-tuple: add additional parens instead
+S.scala:9: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Some(value: A): Some[A]
   given arguments: 1, 2, 3
- after adaptation: new Some((1, 2, 3): (Int, Int, Int))
+ after adaptation: new Some((1, 2, 3): (Int, Int, Int)) [quick fix available]
   val y2 = new Some(1, 2, 3)
            ^
 S.scala:11: warning: adaptation of an empty argument list by inserting () is deprecated: this is unlikely to be what you want
@@ -40,10 +40,10 @@ S.scala:12: warning: adaptation of an empty argument list by inserting () is dep
  after adaptation: new J2((): Unit)
   val z2 = new J2()
            ^
-S.scala:16: warning: [quick fix available] adapted the argument list to the expected 3-tuple: add additional parens instead
+S.scala:16: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Test.anyId(a: Any): Any
   given arguments: 1, 2, 3
- after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int))
+ after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int)) [quick fix available]
   val w1 = anyId(1, 2 ,3)
                 ^
 error: No warnings can be incurred under -Werror.
