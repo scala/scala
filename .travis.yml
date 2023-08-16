@@ -127,8 +127,7 @@ jobs:
     - stage: build
       if: type = pull_request OR type = push
       name: language spec
-      # wkhtmltopdf requires libssl1.1, which we can't install on xenial
-      dist: bionic
+      dist: focal
       language: ruby
       install:
         - ruby -v
