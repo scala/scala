@@ -64,7 +64,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   }
 
   /** A default Scope iterator, that retrieves elements in the order given by ScopeEntry. */
-  private[Scopes] class ScopeIterator(owner: Scope) extends Iterator[Symbol] {
+  private[Scopes] class ScopeIterator(owner: Scope) extends AbstractIterator[Symbol] {
     private[this] var elem: ScopeEntry = owner.elems
 
     def hasNext: Boolean = (elem ne null) && (elem.owner == this.owner)

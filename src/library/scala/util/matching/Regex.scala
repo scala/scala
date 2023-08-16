@@ -803,7 +803,7 @@ object Regex {
    *  @see [[java.util.regex.Matcher]]
    */
   class MatchIterator(val source: CharSequence, val regex: Regex, private[Regex] val _groupNames: Seq[String])
-  extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
+  extends AbstractIterator[String] with MatchData { self =>
 
     @deprecated("groupNames does not include inline group names, and should not be used anymore", "2.13.7")
     val groupNames: Seq[String] = _groupNames

@@ -41,6 +41,19 @@ object MimaFilters extends AutoPlugin {
 
     // PR 10406
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse#PerRunReporting.deprecationWarning"),
+
+    // extend AbstractIterator
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleHashIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleReverseIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator.next"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapValueIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.NewVectorIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetHashIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetReverseIterator"),
   )
 
   override val buildSettings = Seq(
