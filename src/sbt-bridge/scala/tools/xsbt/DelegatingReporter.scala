@@ -19,9 +19,11 @@ import java.io.File
 import java.{ util => ju }
 import ju.Optional
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.{ CodeAction, FakePos, NoPosition, Position }
-import scala.collection.JavaConverters._
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.Settings
+import scala.tools.nsc.reporters.FilteringReporter
 import xsbti.{
   Action,
   DiagnosticCode => XDiagnosticCode,
@@ -42,8 +44,8 @@ import xsbti.{
  * Zinc in the Scala version Zinc uses.
  */
 private object DelegatingReporter {
-  def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
-    new DelegatingReporter(settings.fatalWarnings.value, settings.nowarn.value, delegate)
+  def apply(settings: Settings, delegate: xsbti.Reporter): DelegatingReporter =
+    new DelegatingReporter(settings, delegate)
 
   class PositionImpl(
       sourcePath0: Option[String],
@@ -194,11 +196,13 @@ private object DelegatingReporter {
 // Original author: Martin Odersky
 // Based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 private final class DelegatingReporter(
-    warnFatal: Boolean,
-    noWarn: Boolean,
+    val settings: Settings,
     private[this] var delegate: xsbti.Reporter
-) extends scala.tools.nsc.reporters.Reporter {
+) extends FilteringReporter {
   import DelegatingReporter._
+
+  private val Werror: Boolean = settings.fatalWarnings.value
+  private val noWarn: Boolean = settings.nowarn.value
 
   def dropDelegate(): Unit = { delegate = ReporterSink }
   def error(msg: String): Unit = error(FakePos("scalac"), msg)
@@ -217,7 +221,7 @@ private final class DelegatingReporter(
   override def doReport(pos: Position, msg: String, rawSeverity: Severity, actions: List[CodeAction]): Unit = {
     val skip = rawSeverity == WARNING && noWarn
     if (!skip) {
-      val severity = if (warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
+      val severity = if (Werror && rawSeverity == WARNING) ERROR else rawSeverity
       val pos1 = DelegatingReporter.convert(pos)
       delegate.log(new CompileProblem(
         pos = pos1,
@@ -231,8 +235,7 @@ private final class DelegatingReporter(
     }
   }
 
-  protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean): Unit =
-    doReport(pos, msg, rawSeverity, Nil)
+  //protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean): Unit = doReport(pos, msg, rawSeverity, Nil)
 
   import xsbti.Severity.{ Info, Warn, Error }
   private[this] def convert(sev: Severity): xsbti.Severity = sev match {

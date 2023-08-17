@@ -113,7 +113,7 @@ trait GlobalHelpers { self: Compat =>
 
           case RefinedType(parents, decls) =>
             parents.foreach(traverse)
-            decls.toIterator.foreach { decl =>
+            decls.iterator.foreach { decl =>
               if (decl.isType) addTypeSymbolDependency(decl)
               else addDependency(decl)
             }

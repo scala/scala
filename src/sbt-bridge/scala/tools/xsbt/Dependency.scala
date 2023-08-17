@@ -86,7 +86,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       }
     }
 
-    private val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf }
+    private val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf case x => throw new MatchError(x) }
     private val responsibleOfImports = firstClassOrModuleClass(unit.body)
     private var orphanImportsReported = false
 

@@ -99,9 +99,5 @@ object InteractiveMakeSettings {
     compilerSettings
   }
 
-  def sync(options: List[String], onError: String => Unit): Settings = {
-    val settings = apply(options, onError)
-    settings.Yreplsync.value = true
-    settings
-  }
+  def sync(options: List[String], onError: String => Unit): Settings = apply(options, onError)
 }

@@ -63,8 +63,8 @@ private class Runner(
 
         // 2.8 source compatibility
         class DefaultDocDriver {
-          assert(false)
-          def process(units: Iterator[CompilationUnit]) = error("for 2.8 compatibility only")
+          assert(false, "2.8 compatibility")
+          def process(units: Iterator[CompilationUnit]) = globalError("for 2.8 compatibility only")
         }
       }
       def document(ignore: Seq[String]): Unit = {

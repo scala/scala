@@ -15,6 +15,7 @@
 package scala.tools
 package xsbt
 
+import scala.language.implicitConversions
 import Compat._
 import xsbti.InteractiveConsoleResult
 

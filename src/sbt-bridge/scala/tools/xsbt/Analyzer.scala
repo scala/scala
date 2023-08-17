@@ -19,7 +19,7 @@ import java.nio.file.Path
 import java.io.File
 import xsbti.VirtualFile
 import scala.tools.nsc.Phase
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Analyzer {
   def name = "xsbt-analyzer"
@@ -54,7 +54,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
-        val sourceFile0: AbstractZincFile = unit.source.file match { case v: AbstractZincFile => v }
+        val sourceFile0: AbstractZincFile = unit.source.file match { case v: AbstractZincFile => v case x => throw new MatchError(x) }
         val sourceFile: VirtualFile = sourceFile0.underlying
         lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile0).file
         for (iclass <- unit.icode) {
@@ -77,7 +77,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
             }
           }
 
-          if (sym.isModuleClass && !sym.isImplClass) {
+          if (sym.isModuleClass) {
             if (isTopLevelModule(sym) && sym.companionClass == NoSymbol)
               addGenerated(false)
             addGenerated(true)

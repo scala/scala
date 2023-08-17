@@ -55,7 +55,6 @@ class ConsoleBridge extends xsbti.compile.ConsoleInterface1 {
               if (loader eq null) super.parentClassLoader
               else loader
           }
-          intp.setContextClassLoader()
         } else
           super.createInterpreter(interpreterSettings)
 
@@ -106,9 +105,5 @@ object MakeSettings {
     compilerSettings
   }
 
-  def sync(options: List[String], log: Logger): Settings = {
-    val settings = apply(options, log)
-    settings.Yreplsync.value = true
-    settings
-  }
+  def sync(options: List[String], log: Logger): Settings = apply(options, log)
 }
