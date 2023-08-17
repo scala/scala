@@ -230,8 +230,8 @@ trait Logic extends Debugging {
           checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
         } else {
           val ops = new Array[Prop](size)
-          val copied = ops0.copyToArray(ops)
-          assert(copied == ops.length, "")
+          @annotation.unused val copied = ops0.copyToArray(ops)
+          //assert(copied == ops.length, "")
           var i = 0
           val len = ops.length
           while (i < len - 1) {

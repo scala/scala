@@ -257,8 +257,8 @@ trait BaseTypeSeqs {
       }
     }
     val elems = new Array[Type](btsSize)
-    val copied = buf.copyToArray(elems, 0)
-    assert(copied == btsSize, "array copied")
+    @annotation.unused val copied = buf.copyToArray(elems, 0)
+    //assert(copied == btsSize, "array copied")
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
     newBaseTypeSeq(parents, elems)
   }

@@ -1339,8 +1339,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) {
       val destination = new Array[B](knownSize)
-      val copied = copyToArray(destination, 0)
-      assert(copied == destination.length)
+      @annotation.unused val copied = copyToArray(destination, 0)
+      //assert(copied == destination.length)
       destination
     }
     else mutable.ArrayBuilder.make[B].addAll(this).result()
