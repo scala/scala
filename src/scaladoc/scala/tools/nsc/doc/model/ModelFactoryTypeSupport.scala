@@ -17,7 +17,7 @@ package model
 import base._
 import diagram._
 import scala.annotation.nowarn
-import scala.collection._
+import scala.collection.{immutable, mutable}
 
 /** This trait extracts all required information for documentation from compilation units */
 trait ModelFactoryTypeSupport {

@@ -14,7 +14,7 @@ package scala.tools.nsc
 package doc
 package model
 
-import scala.collection._
+import scala.collection.immutable
 import scala.reflect.internal.util.{RangePosition, SourceFile}
 
 /** The goal of this trait is, using makeTree,

@@ -32,7 +32,7 @@ import scala.util.{Failure, Success, Try, Using}
 import scala.util.Properties.isJavaAtLeast
 import scala.util.chaining._
 import scala.util.control.{ControlThrowable, NonFatal}
-import scala.util.matching.Regex
+import scala.util.matching.Regex.quoteReplacement
 import ClassPath.join
 import FileManager.{compareContents, joinPaths, withTempFile}
 import TestState.{Crash, Fail, Pass, Skip, Updated}
@@ -367,7 +367,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     def canonicalize: String => String = {
       val hiders = toolArgs(ToolName.hide).map(_.r)
       (s: String) => {
-        val pathless = pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m.group(1))))
+        val pathless = pathFinder.replaceAllIn(s, m => quoteReplacement(ellipsis + squashSlashes(m.group(1))))
         if (hiders.isEmpty) pathless
         else hiders.foldLeft(pathless)((s, r) => r.replaceAllIn(s, m => "***"))
       }

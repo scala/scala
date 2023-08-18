@@ -16,10 +16,10 @@ package base
 
 import base.comment._
 import scala.annotation.{nowarn, tailrec}
-import scala.collection._
-import scala.util.matching.Regex
+import scala.collection.mutable, mutable.ListBuffer
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.matching.Regex.{quoteReplacement, Match}
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
@@ -121,16 +121,16 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   /** The body of a line, dropping the (optional) start star-marker,
     * one leading whitespace and all trailing whitespace. */
   private val CleanCommentLine =
-    new Regex("""(?:\s*\*\s?)?(.*)""")
+    raw"(?:\s*\*\s?)?(.*)".r
 
   /** Dangerous HTML tags that should be replaced by something safer,
     * such as wiki syntax, or that should be dropped. */
   private val DangerousTags =
-    new Regex("""<(/?(div|ol|ul|li|h[1-6]|p))( [^>]*)?/?>|<!--.*-->""")
+    raw"<(/?(div|ol|ul|li|h[1-6]|p))( [^>]*)?/?>|<!--.*-->".r
 
   /** Maps a dangerous HTML tag to a safe wiki replacement, or an empty string
     * if it cannot be salvaged. */
-  private def htmlReplacement(mtch: Regex.Match): String = mtch.group(1) match {
+  private def htmlReplacement(mtch: Match): String = mtch.group(1) match {
     case "p" | "div" => "\n\n"
     case "h1"  => "\n= "
     case "/h1" => " =\n"
@@ -147,10 +147,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   /** Javadoc tags that should be replaced by something useful, such as wiki
     * syntax, or that should be dropped. */
   private val JavadocTags =
-    new Regex("""\{\@(code|docRoot|linkplain|link|literal|value)\p{Zs}*([^}]*)\}""")
+    raw"\{\@(code|docRoot|linkplain|link|literal|value)\p{Zs}*([^}]*)\}".r
 
   /** Maps a javadoc tag to a useful wiki replacement, or an empty string if it cannot be salvaged. */
-  private def javadocReplacement(mtch: Regex.Match): String = {
+  private def javadocReplacement(mtch: Match): String = {
     mtch.group(1) match {
       case "code" => "<code>" + mtch.group(2) + "</code>"
       case "docRoot"  => ""
@@ -164,30 +164,30 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   /** Safe HTML tags that can be kept. */
   private val SafeTags =
-    new Regex("""((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
+    raw"((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))".r
 
   private val safeTagMarker = '\u000E'  // control-N
 
   /** A Scaladoc tag not linked to a symbol and not followed by text */
   private val SingleTagRegex =
-    new Regex("""\s*@(\S+)\s*""")
+    raw"\s*@(\S+)\s*".r
 
   /** A Scaladoc tag not linked to a symbol. Returns the name of the tag, and the rest of the line. */
   private val SimpleTagRegex =
-    new Regex("""\s*@(\S+)\s+(.*)""")
+    raw"\s*@(\S+)\s+(.*)".r
 
   /** A Scaladoc tag linked to a symbol. Returns the name of the tag, the name
     * of the symbol, and the rest of the line. */
   private val SymbolTagRegex =
-    new Regex("""\s*@(param|tparam|throws|groupdesc|groupname|groupprio)\s+(\S*)\s*(.*)""")
+    raw"\s*@(param|tparam|throws|groupdesc|groupname|groupprio)\s+(\S*)\s*(.*)".r
 
   /** The start of a Scaladoc code block */
   private val CodeBlockStartRegex =
-    new Regex(s"""(.*?)((?:\\{\\{\\{)|(?:$safeTagMarker<pre(?: [^>]*)?>$safeTagMarker))(.*)""")
+    raw"(.*?)((?:\{\{\{)|(?:$safeTagMarker<pre(?: [^>]*)?>$safeTagMarker))(.*)".r
 
   /** The end of a Scaladoc code block */
   private val CodeBlockEndRegex =
-    new Regex(s"""(.*?)((?:\\}\\}\\})|(?:$safeTagMarker</pre>$safeTagMarker))(.*)""")
+    raw"(.*?)((?:\}\}\})|(?:$safeTagMarker</pre>$safeTagMarker))(.*)".r
 
   /** A key used for a tag map. The key is built from the name of the tag and
     * from the linked symbol if the tag has one.
@@ -221,7 +221,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val javadoclessComment = JavadocTags.replaceAllIn(safeComment, { javadocReplacement(_) })
       val markedTagComment =
         SafeTags.replaceAllIn(javadoclessComment, { mtch =>
-          java.util.regex.Matcher.quoteReplacement(s"$safeTagMarker${mtch.matched}$safeTagMarker")
+          quoteReplacement(s"$safeTagMarker${mtch.matched}$safeTagMarker")
         })
       markedTagComment.linesIterator.toList map cleanLine
     }
@@ -239,7 +239,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
     def parse0 (
       docBody: StringBuilder,
-      tags: immutable.Map[TagKey, List[String]],
+      tags: Map[TagKey, List[String]],
       lastTagKey: Option[TagKey],
       remaining: List[String],
       inCodeBlock: Boolean
@@ -414,7 +414,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         com
     }
 
-    parse0(new StringBuilder(comment.length), immutable.Map.empty, None, clean(comment), inCodeBlock = false)
+    parse0(new StringBuilder(comment.length), Map.empty, None, clean(comment), inCodeBlock = false)
 
   }
 
@@ -503,14 +503,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       /** Consumes all list item blocks (possibly with nested lists) of the
         * same list and returns the list block. */
       def listLevel(indent: Int, style: String): Block = {
-        val lines = mutable.ListBuffer.empty[Block]
+        val lines = ListBuffer.empty[Block]
         var line: Option[Block] = listLine(indent, style)
         while (line.isDefined) {
           lines += line.get
           line = listLine(indent, style)
         }
         val constructor = listStyles(style)
-        constructor(lines)
+        constructor(lines.toList)
       }
 
       val indent = countWhitespace

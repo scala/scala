@@ -14,8 +14,7 @@ package scala.tools.nsc
 package doc
 package model
 
-import scala.collection._
-
+import scala.collection.immutable.SortedMap
 
 /** A fragment of code. */
 abstract class TreeEntity {

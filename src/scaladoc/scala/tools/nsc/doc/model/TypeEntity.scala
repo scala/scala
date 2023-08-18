@@ -14,7 +14,7 @@ package scala.tools.nsc
 package doc
 package model
 
-import scala.collection._
+import scala.collection.immutable.SortedMap
 
 /** A type. Note that types and templates contain the same information only for the simplest types. For example, a type
   * defines how a template's type parameters are instantiated (as in `List[Cow]`), what the template's prefix is

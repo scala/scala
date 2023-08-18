@@ -15,7 +15,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection._
+import scala.collection.mutable, mutable.{Buffer, ListBuffer}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
 
@@ -35,8 +35,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     new CleanUpTransformer(unit)
 
   class CleanUpTransformer(unit: CompilationUnit) extends StaticsTransformer {
-    private val newStaticMembers      = mutable.Buffer.empty[Tree]
-    private val newStaticInits        = mutable.Buffer.empty[Tree]
+    private val newStaticMembers      = Buffer.empty[Tree]
+    private val newStaticInits        = Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
     private var transformListApplyLimit = 8
     private def reducingTransformListApply[A](depth: Int)(body: => A): A = {
@@ -438,7 +438,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
          * resulting switch may need to correspond to a single case body.
          */
 
-        val labels = mutable.ListBuffer.empty[LabelDef]
+        val labels = ListBuffer.empty[LabelDef]
         var defaultCaseBody = Throw(New(MatchErrorClass.tpe_*, selArg)): Tree
 
         def LABEL(name: String) = currentOwner.newLabel(unit.freshTermName(name), swPos).setFlag(SYNTH_CASE_FLAGS)
@@ -523,7 +523,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               gen.evalOnce(classTagEvidence, currentOwner, unit) { ev =>
                 val arr = typedWithPos(tree.pos)(gen.mkMethodCall(classTagEvidence, definitions.ClassTagClass.info.decl(nme.newArray), Nil, Literal(Constant(elems.size)) :: Nil))
                 gen.evalOnce(arr, currentOwner, unit) { arr =>
-                  val stats = mutable.ListBuffer[Tree]()
+                  val stats = ListBuffer[Tree]()
                   foreachWithIndex(elems) { (elem, i) =>
                     stats += gen.mkMethodCall(gen.mkAttributedRef(definitions.ScalaRunTimeModule), currentRun.runDefinitions.arrayUpdateMethod,
                                               Nil, arr() :: Literal(Constant(i)) :: elem :: Nil)

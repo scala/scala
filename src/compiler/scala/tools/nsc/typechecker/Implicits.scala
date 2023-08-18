@@ -25,7 +25,6 @@ import scala.language.implicitConversions
 import scala.reflect.internal.util.{ReusableInstance, Statistics, TriState}
 import scala.reflect.internal.TypesStats
 import scala.tools.nsc.Reporting.WarningCategory
-import scala.util.matching.Regex
 import symtab.Flags._
 
 /** This trait provides methods to find various kinds of implicits.
@@ -40,6 +39,7 @@ trait Implicits extends splain.SplainData {
   import statistics._
   import typingStack.printTyping
   import typeDebug._
+  import scala.util.matching.Regex.Match
 
   // standard usage
   def inferImplicitFor(pt: Type, tree: Tree, context: Context, reportAmbiguous: Boolean = true): SearchResult =
@@ -1828,14 +1828,15 @@ trait Implicits extends splain.SplainData {
   object ImplicitAmbiguousMsg extends ImplicitAnnotationMsg(_.implicitAmbiguousMsg, ImplicitAmbiguousClass, "implicitAmbiguous")
 
   class Message(sym: Symbol, msg: String, annotationName: String) {
+    import scala.util.matching.Regex.{quoteReplacement, Groups}
     // https://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
     private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
     private def interpolate(text: String, vars: Map[String, String]) =
-      Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-        case Regex.Groups(v) => Regex.quoteReplacement(vars.getOrElse(v, ""))
+      Intersobralator.replaceAllIn(text, (_: Match) match {
+        case Groups(v) => quoteReplacement(vars.getOrElse(v, ""))
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
-        case x               => throw new MatchError(x)
+        case x         => throw new MatchError(x)
       })
 
     def referencedTypeParams: List[String] = Intersobralator.findAllMatchIn(msg).map(_.group(1)).distinct.toList
