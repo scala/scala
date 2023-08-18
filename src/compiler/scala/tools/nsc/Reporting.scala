@@ -169,7 +169,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       val quickfixed = {
         if (!skipRewriteAction(action) && registerTextEdit(warning)) s"[rewritten by -quickfix] ${warning.msg}"
-        else if (warning.actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"${warning.msg} [quick fix available]"
+        else if (warning.actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"${warning.msg} [quickfixable]"
         else warning.msg
       }
 
@@ -361,7 +361,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
       val quickfixed = {
         if (registerErrorTextEdit(pos, msg, actions)) s"[rewritten by -quickfix] $msg"
-        else if (actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"$msg [quick fix available]"
+        else if (actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"$msg [quickfixable]"
         else msg
       }
       reporter.error(pos, quickfixed, actions)

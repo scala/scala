@@ -1,25 +1,25 @@
-procedure-removal.scala:4: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `bar`'s return type [quick fix available]
+procedure-removal.scala:4: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `bar`'s return type [quickfixable]
   def bar {}
           ^
-procedure-removal.scala:5: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `baz`'s return type [quick fix available]
+procedure-removal.scala:5: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `baz`'s return type [quickfixable]
   def baz
          ^
-procedure-removal.scala:6: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `boo`'s return type [quick fix available]
+procedure-removal.scala:6: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `boo`'s return type [quickfixable]
   def boo(i: Int, l: Long)
                           ^
-procedure-removal.scala:7: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `boz`'s return type [quick fix available]
+procedure-removal.scala:7: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `boz`'s return type [quickfixable]
   def boz(i: Int, l: Long) {}
                            ^
-procedure-removal.scala:8: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition [quick fix available]
+procedure-removal.scala:8: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition [quickfixable]
   def this(i: Int) { this() } // Don't complain here! Just slap them with an error.
                   ^
-procedure-removal.scala:4: warning: side-effecting nullary methods are discouraged: suggest defining as `def bar()` instead [quick fix available]
+procedure-removal.scala:4: warning: side-effecting nullary methods are discouraged: suggest defining as `def bar()` instead [quickfixable]
   def bar {}
       ^
-procedure-removal.scala:5: warning: side-effecting nullary methods are discouraged: suggest defining as `def baz()` instead [quick fix available]
+procedure-removal.scala:5: warning: side-effecting nullary methods are discouraged: suggest defining as `def baz()` instead [quickfixable]
   def baz
       ^
-procedure-removal.scala:9: warning: side-effecting nullary methods are discouraged: suggest defining as `def foz()` instead [quick fix available]
+procedure-removal.scala:9: warning: side-effecting nullary methods are discouraged: suggest defining as `def foz()` instead [quickfixable]
   def foz: Unit               // Don't complain here!
       ^
 error: No warnings can be incurred under -Werror.

@@ -65,7 +65,7 @@ trait StandardScalaSettings { _: MutableSettings =>
         |
         |Use `-Wconf:any:warning-verbose` to display applicable message filters with each warning.
         |
-        |Use `-quickfix:silent` to omit the `[quick fix available]` tag in compiler messages.
+        |Use `-quickfix:silent` to omit the `[quickfixable]` tag in compiler messages.
         |""".stripMargin),
     prepend = true)
   def quickFixSilent: Boolean = quickfix.value == List("silent")
