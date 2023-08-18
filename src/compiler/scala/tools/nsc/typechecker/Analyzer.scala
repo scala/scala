@@ -68,7 +68,7 @@ trait Analyzer extends AnyRef
           case ModuleDef(_, _, _) =>
             if (tree.symbol.name == nme.PACKAGEkw) {
               // we've actually got a source file
-              deferredOpen.remove(tree.symbol.owner)
+              deferredOpen.subtractOne(tree.symbol.owner)
 
               openPackageModule(tree.symbol, tree.symbol.owner)
             }

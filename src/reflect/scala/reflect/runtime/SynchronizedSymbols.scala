@@ -32,7 +32,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
   override def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable.set(value)
 
   // Set the fields which point companions at one another.  Returns the module.
-  override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
+  override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): m.type =
     gilSynchronized { super.connectModuleToClass(m, moduleClass) }
 
   override def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =

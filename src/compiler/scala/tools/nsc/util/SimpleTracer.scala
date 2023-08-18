@@ -22,7 +22,7 @@ import java.io.PrintStream
  *  @param enabled A condition that must be true for trace info to be produced.
  */
 class SimpleTracer(out: PrintStream, enabled: Boolean = true) {
-  def apply[T](msg: => String)(value: T): T = {
+  def apply[T](msg: => String)(value: T): value.type = {
     if (enabled) out.println(msg+value)
     value
   }

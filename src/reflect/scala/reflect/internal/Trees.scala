@@ -235,7 +235,7 @@ trait Trees extends api.Trees {
     /** Sets the tree's type to the result of the given function.
      *  If the type is null, it remains null - the function is not called.
      */
-    def modifyType(f: Type => Type): Tree =
+    def modifyType(f: Type => Type): this.type =
       if (tpe eq null) this
       else this setType f(tpe)
 
@@ -246,14 +246,15 @@ trait Trees extends api.Trees {
       new ForeachPartialTreeTraverser(pf).traverse(this)
     }
 
-    def changeOwner(pairs: (Symbol, Symbol)*): Tree = {
-      pairs.foldLeft(this) { case (t, (oldOwner, newOwner)) =>
-        new ChangeOwnerTraverser(oldOwner, newOwner) apply t
+    def changeOwner(pairs: (Symbol, Symbol)*): this.type = {
+      pairs.foreach {
+        case (oldOwner, newOwner) => changeOwner(oldOwner, newOwner)
       }
+      this
     }
 
-    def changeOwner(from: Symbol, to: Symbol): Tree =
-      new ChangeOwnerTraverser(from, to) apply this
+    def changeOwner(from: Symbol, to: Symbol): this.type =
+      new ChangeOwnerTraverser(from, to).apply(this)
 
     def shallowDuplicate: Tree = new ShallowDuplicator(this) transform this
     def shortClass: String = (getClass.getName split "[.$]").last
@@ -1489,6 +1490,7 @@ trait Trees extends api.Trees {
   }
   class InternalTraverser extends Traverser {
     override def traverse(tree: Tree): Unit = tree.traverse(this)
+    override def apply[T <: Tree](tree: T): tree.type = super.apply(tree)
   }
 
   def newValDef(sym: Symbol, rhs: Tree)(
@@ -1635,7 +1637,7 @@ trait Trees extends api.Trees {
       }
     }
 
-    override def apply[T <: Tree](tree: T): T = {
+    override def apply[T <: Tree](tree: T): tree.type = {
       traverse(tree)
       if (changedSymbols.nonEmpty)
         new InvalidateTypeCaches(changedSymbols).invalidate(treeTypes)
@@ -1750,7 +1752,7 @@ trait Trees extends api.Trees {
 
       tree.traverse(this)
     }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+    override def apply[T <: Tree](tree: T): tree.type = super.apply(tree.duplicate)
   }
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends TypeMapTreeSubstituter(new SubstTypeMap(from, to)) {

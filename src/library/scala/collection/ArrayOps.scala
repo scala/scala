@@ -1478,7 +1478,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   /** Create a copy of this array with the specified element type. */
   def toArray[B >: A: ClassTag]: Array[B] = {
     val destination = new Array[B](xs.length)
-    copyToArray(destination, 0)
+    @annotation.unused val copied = copyToArray(destination, 0)
+    //assert(copied == xs.length)
     destination
   }
 

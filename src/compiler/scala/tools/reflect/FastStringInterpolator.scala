@@ -74,7 +74,7 @@ trait FastStringInterpolator extends FormatInterpolator {
         val it1 = treated.iterator
         val it2 = args.iterator
         val res = new StringBuilder
-        def add(t: Tree) = res.append(t.asInstanceOf[Literal].value.value)
+        def add(t: Tree): Unit = res.append(t.asInstanceOf[Literal].value.value)
         add(it1.next())
         while (it2.hasNext) {
           add(it2.next())

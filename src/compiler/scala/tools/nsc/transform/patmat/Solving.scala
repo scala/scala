@@ -356,7 +356,8 @@ trait Solving extends Logic {
           // scala/bug#6942:
           // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
           val cnfs = new Array[Solvable](props.size)
-          props.iterator.map(x => cnfFor(x)).copyToArray(cnfs)
+          @annotation.unused val copied = props.iterator.map(x => cnfFor(x)).copyToArray(cnfs)
+          //assert(copied == cnfs.length, "")
           new Solvable(cnfs.flatten[Clause](_.cnf, reflect.classTag[Clause]), cnfs.head.symbolMapping)
         case p          =>
           cnfFor(p)

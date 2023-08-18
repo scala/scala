@@ -520,7 +520,7 @@ object Reporting {
     private val insertDash = "(?=[A-Z][a-z])".r
 
     val all: mutable.Map[String, WarningCategory] = mutable.Map.empty
-    private def add(c: WarningCategory): Unit = all.put(c.name, c).ensuring(_.isEmpty, s"lint '${c.name}' added twice")
+    private def add(c: WarningCategory): Unit = all.put(c.name, c).foreach(_ => assert(false, s"lint '${c.name}' added twice"))
 
     object Deprecation extends WarningCategory; add(Deprecation)
 

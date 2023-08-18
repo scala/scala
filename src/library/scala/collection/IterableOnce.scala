@@ -1328,9 +1328,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
   @deprecated("Use .to(LazyList) instead of .toStream", "2.13.0")
-  @`inline` final def toStream: immutable.Stream[A] = to(immutable.Stream)
+  @inline final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
-  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
+  @inline final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
 
   /** Convert collection to array.
     *
@@ -1339,7 +1339,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) {
       val destination = new Array[B](knownSize)
-      copyToArray(destination, 0)
+      @annotation.unused val copied = copyToArray(destination, 0)
+      //assert(copied == destination.length)
       destination
     }
     else mutable.ArrayBuilder.make[B].addAll(this).result()

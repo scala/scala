@@ -279,12 +279,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
       override def traverse(tree: Tree) = {
         tree match {
-         case _: DefTree | Function(_, _) | Template(_, _, _) =>
-           markLocal(tree)
-         case _ =>
-           tree
+          case _: DefTree | Function(_, _) | Template(_, _, _) => markLocal(tree)
+          case _ =>
         }
-
         tree.traverse(this)
       }
     }

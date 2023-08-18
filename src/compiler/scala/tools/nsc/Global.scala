@@ -82,8 +82,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
 
   override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
-    if (force || isPast(currentRun.namerPhase)) super.openPackageModule(pkgClass, true)
-    else analyzer.packageObjects.deferredOpen.add(pkgClass)
+    if (force || isPast(currentRun.namerPhase)) super.openPackageModule(pkgClass, force = true)
+    else analyzer.packageObjects.deferredOpen.addOne(pkgClass)
   }
 
   // alternate constructors ------------------------------------------
@@ -976,7 +976,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       cp.packages(parent).exists(_.name == fullPackageName)
     }
 
-    def invalidateOrRemove(pkg: ClassSymbol) = {
+    def invalidateOrRemove(pkg: ClassSymbol): Unit = {
       if (packageExists(fullClasspath))
         pkg setInfo new loaders.PackageLoader(fullPackageName, fullClasspath)
       else
@@ -1192,7 +1192,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]
       def size = synchronized { underlying.size }
-      def +=(cu: CompilationUnit): this.type = { synchronized { underlying += cu }; this }
+      def +=(cu: CompilationUnit): this.type = synchronized { underlying += cu; this }
       def head: CompilationUnit = synchronized { underlying.head }
       def apply(i: Int): CompilationUnit = synchronized { underlying(i) }
       def iterator: Iterator[CompilationUnit] = new collection.AbstractIterator[CompilationUnit] {
@@ -1691,7 +1691,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
      */
     @tailrec
     private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
-      enteringPhase(firstPhase) {
+      enteringPhase[Unit](firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
       }
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)

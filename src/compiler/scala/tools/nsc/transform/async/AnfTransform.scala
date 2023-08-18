@@ -269,7 +269,8 @@ private[async] trait AnfTransform extends TransformUtils {
           onTail(ts)
         case i =>
           val group = new Array[T](i + 1)
-          ts.copyToArray(group)
+          @annotation.unused val copied = ts.copyToArray(group)
+          //assert(copied == group.length, s"$copied != ${group.length}")
           onGroup(group)
           foreachGroupsEndingWith(ts.drop(i + 1))(isGroupEnd, onGroup, onTail)
       }

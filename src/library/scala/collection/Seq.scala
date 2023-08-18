@@ -723,7 +723,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else if (len > 1) {
       b.sizeHint(len)
       val arr = new Array[Any](len)
-      copyToArray(arr)
+      @annotation.unused val copied = copyToArray(arr)
+      //assert(copied == len)
       java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
       var i = 0
       while (i < len) {

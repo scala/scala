@@ -359,7 +359,7 @@ abstract class Inliner {
             state.illegalAccessInstructions += instructionMap(ins)
           }
           val callInsn = r.callsite.callsiteInstruction
-          state.illegalAccessInstructions.remove(callInsn)
+          state.illegalAccessInstructions.subtractOne(callInsn)
           if (state.illegalAccessInstructions.isEmpty)
             state.undoLog = NoUndoLogging
           state.inlineLog.logSuccess(r, sizeBefore, method.instructions.size, state.outerCallsite(r.callsite.callsiteInstruction))
@@ -664,7 +664,7 @@ abstract class Inliner {
         BackendUtils.clearDceDone(methodNode)
         callGraph.refresh(methodNode, ownerClass)
 
-        onIndyLambdaImplMethodIfPresent(ownerClass.internalName)(_.remove(methodNode))
+        onIndyLambdaImplMethodIfPresent(ownerClass.internalName)(_.subtractOne(methodNode))
         if (currentIndyLambdaBodyMethods.nonEmpty)
           onIndyLambdaImplMethod(ownerClass.internalName)(ms => ms(methodNode) = mutable.Map.empty ++= currentIndyLambdaBodyMethods)
       }

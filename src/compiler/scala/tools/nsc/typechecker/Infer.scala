@@ -212,7 +212,7 @@ trait Infer extends Checkable {
     import InferErrorGen._
 
     /* -- Error Messages --------------------------------------------------- */
-    def setError[T <: Tree](tree: T): T = {
+    def setError[T <: Tree](tree: T): tree.type = {
       // scala/bug#7388, one can incur a cycle calling sym.toString
       // (but it'd be nicer if that weren't so)
       def name = {
@@ -599,7 +599,7 @@ trait Infer extends Checkable {
               if (!result && !seen(t)) t.dealiasWidenChain.foreach(saw)
             }
           }
-          @`inline` def containsAny(t: Type) = collector.collect(t)
+          @inline def containsAny(t: Type): Boolean = collector.collect(t)
           val hasAny = containsAny(pt) || containsAny(restpe) ||
             formals.exists(containsAny) ||
             argtpes.exists(containsAny) ||
@@ -1564,7 +1564,7 @@ trait Infer extends Checkable {
       def fail() = PolyAlternativeError(tree, argtypes, matchingLength, errorKind)
       def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
       // Alternatives which conform to bounds
-      def checkWithinBounds(sym: Symbol) = sym.alternatives match {
+      def checkWithinBounds(sym: Symbol): Unit = sym.alternatives match {
         case Nil if argtypes.exists(_.isErroneous) =>
         case Nil                                   => fail()
         case alt :: Nil                            => finish(alt, pre memberType alt)

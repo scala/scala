@@ -112,7 +112,8 @@ class ArrayDeque[A] protected (
         case srcLength if mustGrow(srcLength + n) =>
           val finalLength = srcLength + n
           val array2 = ArrayDeque.alloc(finalLength)
-          it.copyToArray(array2.asInstanceOf[Array[A]])
+          @annotation.unused val copied = it.copyToArray(array2.asInstanceOf[Array[A]])
+          //assert(copied == srcLength)
           copySliceToArray(srcStart = 0, dest = array2, destStart = srcLength, maxItems = n)
           reset(array = array2, start = 0, end = finalLength)
 
@@ -199,7 +200,8 @@ class ArrayDeque[A] protected (
         if (mustGrow(finalLength)) {
           val array2 = ArrayDeque.alloc(finalLength)
           copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
-          it.copyToArray(array2.asInstanceOf[Array[A]], idx)
+          @annotation.unused val copied = it.copyToArray(array2.asInstanceOf[Array[A]], idx)
+          //assert(copied == srcLength)
           copySliceToArray(srcStart = idx, dest = array2, destStart = idx + srcLength, maxItems = n)
           reset(array = array2, start = 0, end = finalLength)
         } else if (2*idx >= n) { // Cheaper to shift the suffix right

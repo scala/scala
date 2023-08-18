@@ -521,9 +521,9 @@ class Flags extends ModifierFlags {
         if ((flags & mask) != 0L) {
           val s = flagToString(mask)
           if (s.length > 0) {
-            if (sb eq null) sb = new StringBuilder append s
-            else if (sb.length == 0) sb append s
-            else sb append " " append s
+            if (sb eq null) sb = new StringBuilder
+            else if (!sb.isEmpty) sb.append(" ")
+            sb.append(s)
           }
         }
         i += 1

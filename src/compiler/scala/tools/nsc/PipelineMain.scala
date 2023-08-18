@@ -48,7 +48,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     val validRootPathComponent = root.toString.replace("/", "").replace(":", "")
     val result = changeExtension(pickleCache.resolve(validRootPathComponent).resolve(root.relativize(file)).normalize(), newExtension)
     if (useJars) Files.createDirectories(result.getParent)
-    strippedAndExportedClassPath.put(file.toRealPath().normalize(), result)
+    strippedAndExportedClassPath.update(file.toRealPath().normalize(), result)
     result
   }
 
@@ -176,7 +176,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       val awaitAllFutures: Future[_] = sequenceFailSlow(allFutures)
       var lastNumCompleted = allFutures.count(_.isCompleted)
       while (true) try {
-        Await.result(awaitAllFutures, Duration(60, "s"))
+        Await.ready(awaitAllFutures, Duration(60, "s"))
         timer.stop()
         val numCompleted = allFutures.count(_.isCompleted)
         reporterEcho(s"PROGRESS: $numCompleted / $numAllFutures")

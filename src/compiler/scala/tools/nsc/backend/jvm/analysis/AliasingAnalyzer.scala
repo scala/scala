@@ -492,7 +492,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
   }
 
   override def clone(): AliasSet = {
-    val resSet = (set: @unchecked) match {
+    val resSet: Object = (set: @unchecked) match {
       case s: SmallBitSet => new SmallBitSet(s.a, s.b, s.c, s.d)
       case bits: Array[Long] => bits.clone()
     }

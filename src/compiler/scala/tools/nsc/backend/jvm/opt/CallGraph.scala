@@ -96,7 +96,7 @@ abstract class CallGraph {
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
     val methodCallsites = callsites(methodNode)
     val newCallsites = methodCallsites - invocation
-    if (newCallsites.isEmpty) callsites.remove(methodNode)
+    if (newCallsites.isEmpty) callsites.subtractOne(methodNode)
     else callsites(methodNode) = newCallsites
     methodCallsites.get(invocation)
   }
@@ -111,7 +111,7 @@ abstract class CallGraph {
   def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
     val methodClosureInits = closureInstantiations(methodNode)
     val newClosureInits = methodClosureInits - indy
-    if (newClosureInits.isEmpty) closureInstantiations.remove(methodNode)
+    if (newClosureInits.isEmpty) closureInstantiations.subtractOne(methodNode)
     else closureInstantiations(methodNode) = newClosureInits
     methodClosureInits.get(indy)
   }
@@ -122,8 +122,8 @@ abstract class CallGraph {
   }
 
   def refresh(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    callsites.remove(methodNode)
-    closureInstantiations.remove(methodNode)
+    callsites.subtractOne(methodNode)
+    closureInstantiations.subtractOne(methodNode)
     // callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites, staticallyResolvedInvokespecial
     // are left unchanged. They contain individual instructions, the state for those remains valid in case
     // the inliner performs a rollback.

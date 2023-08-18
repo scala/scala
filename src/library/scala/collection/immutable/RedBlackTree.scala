@@ -567,8 +567,8 @@ private[collection] object RedBlackTree {
     override def toString: String = s"${if(isRed) "RedTree" else "BlackTree"}($key, $value, $left, $right)"
 
     //mutable APIs
-    private[RedBlackTree] def makeImmutable: Tree[A, B] = {
-      def makeImmutableImpl() = {
+    private[RedBlackTree] def makeImmutable: this.type = {
+      def makeImmutableImpl(): Unit = {
         if (isMutable) {
           var size = 1
           if (_left ne null) {
@@ -581,7 +581,6 @@ private[collection] object RedBlackTree {
           }
           _count |= size //retains colour
         }
-        this
       }
       makeImmutableImpl()
       this

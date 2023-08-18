@@ -369,7 +369,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     private val savedName = sym.name
     private var postQualifiedWith: List[Symbol] = Nil
     def restoreName()     = sym.name = savedName
-    def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
+    def modifyName(f: String => String): Unit = sym setName newTypeName(f(sym.name.toString))
 
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
@@ -773,7 +773,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.nameString} of type ${s.tpe}"
             else s"parameter ${s.nameString}"
           val where =
-            if (s.owner.isAnonymousFunction) "anonymous function" else s.owner
+            if (s.owner.isAnonymousFunction) "anonymous function" else s.owner.toString
           emitUnusedWarning(s.pos, s"$what in $where is never used", WarningCategory.UnusedParams, s)
         }
       }

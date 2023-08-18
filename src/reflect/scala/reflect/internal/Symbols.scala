@@ -54,7 +54,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   protected def freshExistentialName(suffix: String, id: Int): TypeName = newTypeName("_" + id + suffix)
 
   // Set the fields which point companions at one another.  Returns the module.
-  def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol = {
+  def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): m.type = {
     moduleClass.sourceModule = m
     m setModuleClass moduleClass
     m
@@ -1614,7 +1614,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Set new info valid from start of this phase. */
-    def updateInfo(info: Type): Symbol = {
+    def updateInfo(info: Type): this.type = {
       val pid = phaseId(infos.validFrom)
       assert(pid <= phase.id, (pid, phase.id))
       if (pid == phase.id) infos = infos.prev
@@ -1915,6 +1915,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def filterAnnotations(p: AnnotationInfo => Boolean): this.type =
       setAnnotations(annotations filter p)
+
+    override def removeAnnotation(sym: Symbol): this.type = filterAnnotations(!_.matches(sym))
 
     def addAnnotation(annot: AnnotationInfo): this.type = setAnnotations(annotations.appended(annot))
 
@@ -2607,7 +2609,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Remove any access boundary and clear flags PROTECTED | PRIVATE.
      */
-    def makePublic = this setPrivateWithin NoSymbol resetFlag AccessFlags
+    def makePublic: this.type = this setPrivateWithin NoSymbol resetFlag AccessFlags
 
     /** The first parameter to the first argument list of this method,
      *  or NoSymbol if inapplicable.
@@ -2647,7 +2649,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def sealedDescendants: Set[Symbol] = if (!isSealed) Set(this) else children.flatMap(_.sealedDescendants) + this
 
     @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
-    @inline final def andAlso(f: Symbol => Unit): Symbol = { if (this ne NoSymbol) f(this) ; this }
+    @inline final def andAlso(f: Symbol => Unit): this.type = { if (this ne NoSymbol) f(this) ; this }
     @inline final def fold[T](none: => T)(f: Symbol => T): T = if (this ne NoSymbol) f(this) else none
     @inline final def map(f: Symbol => Symbol): Symbol = if (this eq NoSymbol) this else f(this)
 
@@ -2986,7 +2988,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (unexpandedName endsWith (nme.OUTER)) initialize.referenced
       else NoSymbol
 
-    def setModuleClass(clazz: Symbol): TermSymbol = {
+    def setModuleClass(clazz: Symbol): this.type = {
       assert(isModule, this)
       referenced = clazz
       this

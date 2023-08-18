@@ -409,7 +409,7 @@ abstract class SymbolTable extends macros.Universe
     private[this] var caches = List[WeakReference[Clearable]]()
     private[this] var javaCaches = List[JavaClearable[_]]()
 
-    def recordCache[T <: Clearable](cache: T): T = {
+    def recordCache[T <: Clearable](cache: T): cache.type = {
       cache match {
         case jc: JavaClearable[_] =>
           javaCaches ::= jc
@@ -420,7 +420,7 @@ abstract class SymbolTable extends macros.Universe
     }
 
     /** Closes the provided classloader at the conclusion of this Run */
-    final def recordClassloader(loader: ClassLoader): ClassLoader = {
+    final def recordClassloader(loader: ClassLoader): loader.type = {
       def attemptClose(loader: ClassLoader): Unit = {
         loader match {
           case u: URLClassLoader => debuglog("Closing classloader " + u); u.close()
@@ -448,7 +448,7 @@ abstract class SymbolTable extends macros.Universe
       }
     }
 
-    def clearAll() = {
+    def clearAll(): Unit = {
       debuglog("Clearing " + (caches.size + javaCaches.size) + " caches.")
       caches foreach (ref => Option(ref.get).foreach(_.clear()))
       caches = caches.filterNot(_.get == null)

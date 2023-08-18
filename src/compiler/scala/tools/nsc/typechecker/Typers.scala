@@ -1611,9 +1611,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // we'll have to check the probe for isTypeMacro anyways.
       // therefore I think it's reasonable to trade a more specific "inherits itself" error
       // for a generic, yet understandable "cyclic reference" error
-      var probe = typedTypeConstructor(core.duplicate).tpe.typeSymbol
-      if (probe == null) probe = NoSymbol
-      probe.initialize
+      val probe = {
+        val p = typedTypeConstructor(core.duplicate).tpe.typeSymbol
+        if (p == null) NoSymbol
+        else p.initialize
+      }
 
       def cookIfNeeded(tpt: Tree) = if (context.unit.isJava) tpt modifyType rawToExistential else tpt
       cookIfNeeded(if (probe.isTrait || inMixinPosition) {
@@ -2311,10 +2313,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Nil => ""
         case xs  => xs.map(_.nameString).mkString(" (of ", " with ", ")")
       }
-      def fail(pos: Position, msg: String): Boolean = {
-        context.error(pos, msg)
-        false
-      }
       /* Have to examine all parameters in all lists.
        */
       def paramssTypes(tp: Type): List[List[Type]] = tp match {
@@ -2326,8 +2324,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def nthParamPos(n1: Int, n2: Int) =
         try ddef.vparamss(n1)(n2).pos catch { case _: IndexOutOfBoundsException => meth.pos }
 
-      def failStruct(pos: Position, what: String, where: String = "Parameter type") =
-        fail(pos, s"$where in structural refinement may not refer to $what")
+      def failStruct(pos: Position, member: String, referTo: String): Unit =
+        context.error(pos, s"$member in structural refinement may not refer to $referTo")
+      def failStructAbstractType(pos: Position, member: String): false = {
+        failStruct(pos, member, referTo="an abstract type defined outside that refinement")
+        false
+      }
+      def failStructTypeMember(pos: Position, member: String): false = {
+        failStruct(pos, member, referTo="a type member of that refinement")
+        false
+      }
 
       foreachWithIndex(paramssTypes(meth.tpe)) { (paramList, listIdx) =>
         foreachWithIndex(paramList) { (paramType, paramIdx) =>
@@ -2342,8 +2348,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def checkAbstract(tp0: Type, what: String): Boolean = {
             def check(sym: Symbol): Boolean = !sym.isAbstractType || {
               log(s"""checking $tp0 in refinement$parentString at ${meth.owner.owner.fullLocationString}""")
-              (    (!sym.hasTransOwner(meth.owner) && failStruct(paramPos, "an abstract type defined outside that refinement", what))
-                || (!sym.hasTransOwner(meth) && failStruct(paramPos, "a type member of that refinement", what))
+              (    (!sym.hasTransOwner(meth.owner) && failStructAbstractType(paramPos, what))
+                || (!sym.hasTransOwner(meth) && failStructTypeMember(paramPos, what))
                 || checkAbstract(sym.info.upperBound, "Type bound")
               )
             }
@@ -2352,13 +2358,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           checkAbstract(paramType, "Parameter type")
 
           if (sym.isDerivedValueClass)
-            failStruct(paramPos, "a user-defined value class")
+            failStruct(paramPos, member="Parameter type", referTo="a user-defined value class")
           if (paramType.isInstanceOf[ThisType] && sym == meth.owner)
-            failStruct(paramPos, "the type of that refinement (self type)")
+            failStruct(paramPos, member="Parameter type", referTo="the type of that refinement (self type)")
         }
       }
       if (resultType.typeSymbol.isDerivedValueClass)
-        failStruct(ddef.tpt.pos, "a user-defined value class", where = "Result type")
+        failStruct(ddef.tpt.pos, member="Result type", referTo="a user-defined value class")
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
@@ -3837,7 +3843,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     lit.attachments.get[OriginalTreeAttachment] match {
                       case Some(OriginalTreeAttachment(id: Ident)) if rightAssocValDefs.contains(id.symbol) =>
                         inlinedRightAssocValDefs += id.symbol
-                        rightAssocValDefs.remove(id.symbol)
+                        rightAssocValDefs.subtractOne(id.symbol)
                       case _ =>
                     }
 
