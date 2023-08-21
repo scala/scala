@@ -14,7 +14,7 @@ class LazyListLazinessTest {
   @Test
   def opLazinessChecker_correctness(): Unit = {
     val checker = new OpLazinessChecker
-    val illegalState = (s: String) => new IllegalStateException("sanity check failed: " + s)
+    val illegalState = (s: String) => new IllegalStateException("correctness check failed: " + s)
 
     // check that none start evaluated
     checker.assertAll(evaluated = false, illegalState)
