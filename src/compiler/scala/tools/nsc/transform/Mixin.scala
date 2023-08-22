@@ -395,21 +395,21 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       }
     }
 
-    if (clazz.isJavaDefined || treatedClassInfos(clazz) == clazz.info)
-      return
+    if (!clazz.isJavaDefined && treatedClassInfos(clazz) != clazz.info) {
 
-    treatedClassInfos(clazz) = clazz.info
-    assert(!clazz.isTrait && clazz.info.parents.nonEmpty, clazz)
+      treatedClassInfos(clazz) = clazz.info
+      assert(!clazz.isTrait && clazz.info.parents.nonEmpty, clazz)
 
-    // first complete the superclass with mixed in members
-    addMixedinMembers(clazz.superClass, unit)
+      // first complete the superclass with mixed in members
+      addMixedinMembers(clazz.superClass, unit)
 
-    for (mc <- clazz.mixinClasses ; if mc.isTrait) {
-      // @SEAN: adding trait tracking so we don't have to recompile transitive closures
-      unit.registerDependency(mc)
-      publicizeTraitMethods(mc)
-      mixinTraitMembers(mc)
-      mixinTraitForwarders(mc)
+      for (mc <- clazz.mixinClasses if mc.isTrait) {
+        // @SEAN: adding trait tracking so we don't have to recompile transitive closures
+        unit.registerDependency(mc)
+        publicizeTraitMethods(mc)
+        mixinTraitMembers(mc)
+        mixinTraitForwarders(mc)
+      }
     }
   }
 
