@@ -5284,27 +5284,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case This(_) => qual1.symbol
           case _ => qual1.tpe.typeSymbol
         }
-        def findMixinSuper(site: Type): Type = {
-          var ps = site.parents filter (_.typeSymbol.name == mix)
-          if (ps.isEmpty)
-            ps = site.parents filter (_.typeSymbol.name == mix)
-          if (ps.isEmpty) {
-            debuglog("Fatal: couldn't find site " + site + " in " + site.parents.map(_.typeSymbol.name))
-            if (phase.erasedTypes && context.enclClass.owner.isTrait) {
-              // the reference to super class got lost during erasure
-              restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
+        def findMixinSuper(site: Type): Type =
+          site.parents.filter(_.typeSymbol.name == mix) match {
+            case p :: Nil => p
+            case Nil =>
+              debuglog(s"Fatal: couldn't find site $site member $mix in ${site.parents.map(_.typeSymbol.name)}")
+              if (phase.erasedTypes && context.enclClass.owner.isTrait)
+                // the reference to super class got lost during erasure
+                restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
+              else
+                MixinMissingParentClassNameError(tree, mix, clazz)
               ErrorType
-            } else {
-              MixinMissingParentClassNameError(tree, mix, clazz)
+            case _ =>
+              AmbiguousParentClassError(tree)
               ErrorType
-            }
-          } else if (!ps.tail.isEmpty) {
-            AmbiguousParentClassError(tree)
-            ErrorType
-          } else {
-            ps.head
           }
-        }
 
         val owntype =
           if (!mix.isEmpty) findMixinSuper(clazz.tpe)

@@ -773,8 +773,8 @@ abstract class RefChecks extends Transform {
             if (decl.isDeferred && !ignoreDeferred(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
               if (impl == NoSymbol || decl.owner.isSubClass(impl.owner))
-                abstractClassError(s"No implementation found in a subclass for deferred declaration\n" +
-                                          s"${infoString(decl)}${analyzer.abstractVarMessage(decl)}")
+                abstractClassError(sm"""|No implementation found in a subclass for deferred declaration
+                                        |${infoString(decl)}${analyzer.abstractVarMessage(decl)}""")
             }
           }
           if (bc.superClass hasFlag ABSTRACT)

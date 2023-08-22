@@ -166,7 +166,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     // a static trait impl method. We remove this from the new symbol created for the method
     // mixed into the subclass.
     member.removeAttachment[NeedStaticImpl.type]
-    clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
+    clazz.info.decls.enter(member).setFlag(MIXEDIN).resetFlag(JAVA_DEFAULTMETHOD)
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
     addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz))
@@ -343,10 +343,9 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
     /* Mix in members of trait mixinClass into class clazz.
      */
-    def mixinTraitMembers(mixinClass: Symbol): Unit = {
-      // For all members of a trait's interface do:
-      for (mixinMember <- mixinClass.info.decls) {
-        if (mixinMember.hasFlag(SUPERACCESSOR)) { // mixin super accessors
+    def mixinTraitMembers(mixinClass: Symbol): Unit =
+      for (mixinMember <- mixinClass.info.decls)
+        if (mixinMember.hasFlag(SUPERACCESSOR)) {
           val superAccessor = addMember(clazz, mixinMember.cloneSymbol(clazz)) setPos clazz.pos
           assert(superAccessor.alias != NoSymbol, superAccessor)
 
@@ -387,8 +386,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
             addMember(clazz, sym.setFlag(newFlags).setAnnotations(accessed.annotations))
           }
         }
-      }
-    }
 
     if (!clazz.isJavaDefined && treatedClassInfos(clazz) != clazz.info) {
 
@@ -544,13 +541,13 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       import accessorSynth._
 
       // for all symbols `sym` in the class definition, which are mixed in by mixinTraitMembers
-      for (sym <- clazz.info.decls ; if sym hasFlag MIXEDIN) {
+      for (sym <- clazz.info.decls if sym.hasFlag(MIXEDIN))
         // if current class is a trait, add an abstract method for accessor `sym`
         // ditto for a super accessor (will get an RHS in completeSuperAccessor)
         if (clazz.isTrait || sym.isSuperAccessor) addDefDef(sym)
         // implement methods mixed in from a supertrait (the symbols were created by mixinTraitMembers)
-        else if (sym.hasFlag(ACCESSOR) && !sym.hasFlag(DEFERRED)) {
-          assert(sym hasFlag (PARAMACCESSOR), s"mixed in $sym from $clazz is not param?!?")
+        else if (sym.hasFlag(ACCESSOR) && sym.hasNoFlags(DEFERRED|LAZY)) {
+          assert(sym.hasFlag(PARAMACCESSOR), s"mixed in $sym from $clazz is not param")
 
           // add accessor definitions
           addDefDef(sym, accessorBody(sym))
@@ -561,7 +558,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
           // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
           addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
         }
-      }
 
       val implementedAccessors = implementWithNewDefs(stats)
 
