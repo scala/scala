@@ -352,8 +352,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
           rebindSuper(clazz, mixinMember.alias, mixinClass) match {
             case NoSymbol =>
-              reporter.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
-                mixinMember.alias, mixinClass))
+              reporter.error(clazz.pos, s"Member ${mixinMember.alias} of mixin $mixinClass is missing a concrete super implementation.")
             case alias1 =>
               registerRequiredDirectInterface(alias1, clazz, parent =>
                 s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $parent is directly extended by $clazz.")
@@ -381,15 +380,11 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
               // so we have a type history entry before erasure
               clazz.newValue(mixinMember.localName, mixinMember.pos).setInfo(mixinMember.tpe.resultType)
             }
-            sym updateInfo mixinMember.tpe.resultType // info at current phase
+            sym.updateInfo(mixinMember.tpe.resultType) // info at current phase
 
-            val newFlags = (
-              (PrivateLocal)
-              | (mixinMember getFlag MUTABLE)
-              | (if (mixinMember.hasStableFlag) 0 else MUTABLE)
-              )
+            val newFlags = PrivateLocal | mixinMember.getFlag(MUTABLE) | (if (mixinMember.hasStableFlag) 0 else MUTABLE)
 
-            addMember(clazz, sym setFlag newFlags setAnnotations accessed.annotations)
+            addMember(clazz, sym.setFlag(newFlags).setAnnotations(accessed.annotations))
           }
         }
       }
