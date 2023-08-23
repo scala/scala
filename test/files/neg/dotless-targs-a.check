@@ -1,14 +1,14 @@
-dotless-targs-a.scala:4: error: type application is not allowed for infix operators
+dotless-targs-a.scala:4: error: type application is not allowed for infix operators [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def fn2 = List apply[Int] 2
                  ^
-dotless-targs-a.scala:9: error: type application is not allowed for infix operators
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
                 ^
-dotless-targs-a.scala:9: error: type application is not allowed for infix operators
+dotless-targs-a.scala:9: error: type application is not allowed for infix operators [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)

@@ -1,25 +1,25 @@
-qmark-deprecated.scala:4: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:4: error: using `?` as a type name requires backticks. [quickfixable]
 class Foo[?] // error
           ^
-qmark-deprecated.scala:6: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:6: error: using `?` as a type name requires backticks. [quickfixable]
 class Bar[M[?] <: List[?]] // error on the definition
             ^
-qmark-deprecated.scala:10: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:10: error: using `?` as a type name requires backticks. [quickfixable]
   class ? { val x = 1 } // error
         ^
-qmark-deprecated.scala:16: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:16: error: using `?` as a type name requires backticks. [quickfixable]
   trait ? // error
         ^
-qmark-deprecated.scala:22: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:22: error: using `?` as a type name requires backticks. [quickfixable]
   type ? = Int // error
        ^
-qmark-deprecated.scala:33: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:33: error: using `?` as a type name requires backticks. [quickfixable]
   def bar1[?] = {} // error
            ^
-qmark-deprecated.scala:35: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:35: error: using `?` as a type name requires backticks. [quickfixable]
   def bar3[M[?]] = {} // error
              ^
-qmark-deprecated.scala:38: error: using `?` as a type name requires backticks.
+qmark-deprecated.scala:38: error: using `?` as a type name requires backticks. [quickfixable]
   type A[?] = Int // error
          ^
 8 errors

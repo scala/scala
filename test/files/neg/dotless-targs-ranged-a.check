@@ -1,16 +1,16 @@
-dotless-targs-ranged-a.scala:4: warning: type application is not allowed for infix operators
+dotless-targs-ranged-a.scala:4: warning: type application is not allowed for infix operators [quickfixable]
   def fn2 = List apply[Int] 2
                  ^
-dotless-targs-ranged-a.scala:9: warning: type application is not allowed for infix operators
+dotless-targs-ranged-a.scala:9: warning: type application is not allowed for infix operators [quickfixable]
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
                 ^
-dotless-targs-ranged-a.scala:9: warning: type application is not allowed for infix operators
+dotless-targs-ranged-a.scala:9: warning: type application is not allowed for infix operators [quickfixable]
   def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
                                                     ^
-dotless-targs-ranged-a.scala:13: warning: type application is not allowed for infix operators
+dotless-targs-ranged-a.scala:13: warning: type application is not allowed for infix operators [quickfixable]
   def eval = 1 ->[Int] 2
                ^
-dotless-targs-ranged-a.scala:14: warning: type application is not allowed for infix operators
+dotless-targs-ranged-a.scala:14: warning: type application is not allowed for infix operators [quickfixable]
   def evil = new A() op  [Int,   String     ]  42
                      ^
 dotless-targs-ranged-a.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated

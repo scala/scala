@@ -13,10 +13,10 @@ t8322.scala:19: error: type mismatch;
  required: scala.util.Either[?,?]
   Right(0).right.flatMap(_ => new String())
                               ^
-t8322.scala:15: warning: Implicit definition should have explicit type (inferred Writes[Seq[E]])
+t8322.scala:15: warning: Implicit definition should have explicit type (inferred Writes[Seq[E]]) [quickfixable]
   implicit def rw[E] = Writes[Seq[E]] { _ => "" }
                ^
-t8322.scala:17: warning: Implicit definition should have explicit type
+t8322.scala:17: warning: Implicit definition should have explicit type [quickfixable]
   implicit def wr[E] = jw(implicitly, implicitly)
                ^
 2 warnings

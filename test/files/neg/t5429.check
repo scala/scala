@@ -115,7 +115,7 @@ t5429.scala:73: error: stable, immutable value required to override:
 lazy val lazyvalue: Any (defined in class A0)
   override def lazyvalue = 2  // fail
                ^
-t5429.scala:75: warning: method without a parameter list overrides a method with a single empty one
+t5429.scala:75: warning: method without a parameter list overrides a method with a single empty one [quickfixable]
   override def emptyArg = 10  // override
                ^
 t5429.scala:76: error: method oneArg overrides nothing.

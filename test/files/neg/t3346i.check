@@ -4,19 +4,19 @@ t3346i.scala:28: error: value a is not a member of Test.A[T]
 t3346i.scala:29: error: value a is not a member of Test.A[Nothing]
   (new A[Nothing]).a
                    ^
-t3346i.scala:16: warning: Implicit definition should have explicit type (inferred Implicit1[T])
+t3346i.scala:16: warning: Implicit definition should have explicit type (inferred Implicit1[T]) [quickfixable]
   implicit def implicit1[T <: Intermediate[_, _]](implicit b: Implicit2[T])                = new Implicit1[T](b)
                ^
-t3346i.scala:18: warning: Implicit definition should have explicit type (inferred Implicit2[T])
+t3346i.scala:18: warning: Implicit definition should have explicit type (inferred Implicit2[T]) [quickfixable]
   implicit def implicit2alt1[T <: Intermediate[_ <: String, _]](implicit c: Implicit3[T])  = new Implicit2[T](c)
                ^
-t3346i.scala:19: warning: Implicit definition should have explicit type (inferred Implicit2[T])
+t3346i.scala:19: warning: Implicit definition should have explicit type (inferred Implicit2[T]) [quickfixable]
   implicit def implicit2alt2[T <: Intermediate[_ <: Double, _]](implicit c: Implicit3[T])  = new Implicit2[T](c)
                ^
-t3346i.scala:21: warning: Implicit definition should have explicit type (inferred Implicit3[T])
+t3346i.scala:21: warning: Implicit definition should have explicit type (inferred Implicit3[T]) [quickfixable]
   implicit def implicit3alt1[T <: Intermediate[_, _ <: Int]]                               = new Implicit3[T]()
                ^
-t3346i.scala:22: warning: Implicit definition should have explicit type (inferred Implicit3[T])
+t3346i.scala:22: warning: Implicit definition should have explicit type (inferred Implicit3[T]) [quickfixable]
   implicit def implicit3alt2[T <: Intermediate[_ <: Double, _ <: AnyRef],X]                = new Implicit3[T]()
                ^
 5 warnings

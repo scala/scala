@@ -59,7 +59,7 @@ trait ContextErrors extends splain.SplainErrors {
     def errPos = underlyingTree.pos
   }
 
-  case class NormalTypeError(underlyingTree: Tree, errMsg: String)
+  case class NormalTypeError(underlyingTree: Tree, errMsg: String, override val actions: List[CodeAction] = Nil)
     extends TreeTypeError
 
   case class AccessTypeError(underlyingTree: Tree, errMsg: String)
@@ -104,8 +104,8 @@ trait ContextErrors extends splain.SplainErrors {
     extends AbsTypeError
 
   object ErrorUtils {
-    def issueNormalTypeError(tree: Tree, msg: String)(implicit context: Context): Unit = {
-      issueTypeError(NormalTypeError(tree, msg))
+    def issueNormalTypeError(tree: Tree, msg: String, actions: List[CodeAction] = Nil)(implicit context: Context): Unit = {
+      issueTypeError(NormalTypeError(tree, msg, actions))
     }
 
     def issueSymbolTypeError(sym: Symbol, msg: String)(implicit context: Context): Unit = {
@@ -196,8 +196,14 @@ trait ContextErrors extends splain.SplainErrors {
         s"Implicit definition ${if (currentRun.isScala3) "must" else "should"} have explicit type${
           if (!inferred.isErroneous) s" (inferred $inferred)" else ""
         }"
-      if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration)
-      else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType)
+      // Assumption: tree.pos.focus points to the beginning of the name.
+      // DefTree doesn't give the name position; also it can be a synthetic accessor DefDef with only offset pos.
+      val namePos = tree.pos.focus.withEnd(tree.pos.point + tree.symbol.decodedName.length)
+      val action =
+        if (currentUnit.sourceAt(namePos) == tree.symbol.decodedName) runReporting.codeAction("insert explicit type", namePos.focusEnd, s": $inferred", msg)
+        else Nil
+      if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration, action)
+      else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType, action)
     }
     val sym = tree.symbol
     // Defer warning field of class until typing getter (which is marked implicit)
@@ -533,8 +539,8 @@ trait ContextErrors extends splain.SplainErrors {
       final val UnderscoreNullaryEtaWarnMsg  = mkUnderscoreNullaryEtaMessage("no longer")
       final val UnderscoreNullaryEtaErrorMsg = mkUnderscoreNullaryEtaMessage("not")
 
-      def UnderscoreNullaryEtaError(tree: Tree) = {
-        issueNormalTypeError(tree, UnderscoreNullaryEtaErrorMsg)
+      def UnderscoreNullaryEtaError(tree: Tree, actions: List[CodeAction]) = {
+        issueNormalTypeError(tree, UnderscoreNullaryEtaErrorMsg, actions)
         setError(tree)
       }
 

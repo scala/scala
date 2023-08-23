@@ -69,6 +69,8 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       if (settings.quickfix.isSetByUser && settings.quickfix.value.isEmpty) {
         globalError(s"Missing message filter for `-quickfix`; see `-quickfix:help` or use `-quickfix:any` to apply all available quick fixes.")
         Nil
+      } else if (settings.quickFixSilent) {
+        Nil
       } else {
         val parsed = settings.quickfix.value.map(WConf.parseFilter(_, rootDirPrefix))
         val msgs = parsed.collect { case Left(msg) => msg }
@@ -167,7 +169,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       val quickfixed = {
         if (!skipRewriteAction(action) && registerTextEdit(warning)) s"[rewritten by -quickfix] ${warning.msg}"
-        else if (warning.actions.exists(_.edits.nonEmpty)) s"[quick fix available] ${warning.msg}"
+        else if (warning.actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"${warning.msg} [quickfixable]"
         else warning.msg
       }
 
@@ -352,11 +354,14 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
       issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
 
+    def codeAction(title: String, pos: Position, newText: String, desc: String, expected: Option[(String, CompilationUnit)] = None) =
+      CodeAction(title, pos, newText, desc, expected.forall(e => e._1 == e._2.sourceAt(pos)))
+
     // Remember CodeActions that match `-quickfix` and report the error through the reporter
     def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
       val quickfixed = {
         if (registerErrorTextEdit(pos, msg, actions)) s"[rewritten by -quickfix] $msg"
-        else if (actions.exists(_.edits.nonEmpty)) s"[quick fix available] $msg"
+        else if (actions.exists(_.edits.nonEmpty) && !settings.quickFixSilent) s"$msg [quickfixable]"
         else msg
       }
       reporter.error(pos, quickfixed, actions)

@@ -15,16 +15,10 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.{tailrec, unused}
-import scala.collection.mutable, mutable.ListBuffer
+import scala.collection.mutable
+import mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
-import scala.reflect.internal.util.{
-  CodeAction,
-  FreshNameCreator,
-  ListOfNil,
-  Statistics,
-  StringContextStripMarginOps,
-  TextEdit,
-}
+import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
 import symtab.Flags._
@@ -971,15 +965,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
           if (!isPastTyper && !matchNullaryLoosely) {
-            val description =
+            val msg =
               s"""Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},
                  |or remove the empty argument list from its definition (Java-defined methods are exempt).
                  |In Scala 3, an unapplied method like this will be eta-expanded into a function.""".stripMargin
-            val actions = if (tree.pos.isRange)
-                List(CodeAction("auto-application of empty-paren methods", Some(description),
-                  List(TextEdit(tree.pos.focusEnd, "()"))))
-              else Nil
-            context.deprecationWarning(tree.pos, NoSymbol, description, "2.13.3", actions)
+            val action = runReporting.codeAction("add `()`", tree.pos.focusEnd, "()", msg)
+            context.deprecationWarning(tree.pos, NoSymbol, msg, "2.13.3", action)
           }
           true
         }
@@ -1142,15 +1133,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               def longWidened = tpSym == LongClass && targetIsWide
               intWidened || longWidened
             }
-            if (isInharmonic)
+            if (isInharmonic) {
               // not `context.deprecationWarning` because they are not buffered in silent mode
-              context.warning(tree.pos, s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead.", WarningCategory.Deprecation)
-            else {
+              val msg = s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead."
+              val orig = currentUnit.sourceAt(tree.pos)
+              context.warning(tree.pos, msg, WarningCategory.Deprecation,
+                runReporting.codeAction("add conversion", tree.pos, s"${CodeAction.maybeWrapInParens(orig)}.to${ptSym.name}", msg))
+            } else {
               object warnIntDiv extends Traverser {
                 def isInt(t: Tree) = ScalaIntegralValueClasses(t.tpe.typeSymbol)
                 override def traverse(tree: Tree): Unit = tree match {
                   case Apply(Select(q, nme.DIV), _) if isInt(q) =>
-                    context.warning(tree.pos, s"integral division is implicitly converted (widened) to floating point. Add an explicit `.to${ptSym.name}`.", WarningCategory.LintIntDivToFloat)
+                    val msg = s"integral division is implicitly converted (widened) to floating point. Add an explicit `.to${ptSym.name}`."
+                    context.warning(tree.pos, msg, WarningCategory.LintIntDivToFloat,
+                      runReporting.codeAction("add conversion", tree.pos, s"(${currentUnit.sourceAt(tree.pos)}).to${ptSym.name}", msg))
                   case Apply(Select(a1, _), List(a2)) if isInt(tree) && isInt(a1) && isInt(a2) => traverse(a1); traverse(a2)
                   case Select(q, _) if isInt(tree) && isInt(q) => traverse(q)
                   case _ =>
@@ -4974,10 +4970,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val result = typed(Function(Nil, methodValue) setSymbol funSym setPos pos, mode, pt)
 
+          val action = {
+            val etaPos = pos.withEnd(pos.end + 2)
+            if (currentUnit.sourceAt(etaPos).endsWith(" _"))
+              runReporting.codeAction("replace by function literal", etaPos, s"() => ${currentUnit.sourceAt(pos)}", UnderscoreNullaryEtaWarnMsg)
+            else Nil
+          }
+
           if (currentRun.isScala3) {
-            UnderscoreNullaryEtaError(methodValue)
+            UnderscoreNullaryEtaError(methodValue, action)
           } else {
-            context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2")
+            context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2", action)
             result
           }
 
@@ -5576,7 +5579,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupSucceeded(qual, sym)   =>
             sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w => {
               val cat = if (currentRun.isScala3) WarningCategory.Scala3Migration else WarningCategory.Other
-              val fix = List(CodeAction("ambiguous reference", Some(w.msg), List(TextEdit(tree.pos.focusStart, w.fix))))
+              val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
             (// this -> Foo.this

@@ -3,27 +3,27 @@ Note that assignments in argument position are no longer allowed since Scala 2.1
 To express the assignment expression, wrap it in brackets, e.g., `{ z = ... }`.
     f(42, z = 27)
             ^
-t12798-migration.scala:25: warning: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_- = -42`
+t12798-migration.scala:25: warning: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_- = -42` [quickfixable]
   def unary_-() = -42
       ^
 t12798-migration.scala:28: warning: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
 drop the `extends` clause or use a regular object instead
 package object tester extends Runnable {
                       ^
-t12798-migration.scala:33: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition
+t12798-migration.scala:33: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition [quickfixable]
   def this(s: String) { this() }
                      ^
-t12798-migration.scala:34: warning: [quick fix available] procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type
+t12798-migration.scala:34: warning: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `f`'s return type [quickfixable]
   def f() { println() }
           ^
-t12798-migration.scala:35: warning: [quick fix available] procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type
+t12798-migration.scala:35: warning: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `g`'s return type [quickfixable]
   def g()
          ^
-t12798-migration.scala:39: warning: [quick fix available] parentheses are required around the parameter of a lambda
-Use '-Wconf:msg=lambda-parens:s' to silence this warning.
+t12798-migration.scala:39: warning: parentheses are required around the parameter of a lambda
+Use '-Wconf:msg=lambda-parens:s' to silence this warning. [quickfixable]
   def f = List(42).map { x: Int => x + 1 }
                           ^
-t12798-migration.scala:43: warning: type application is not allowed for infix operators
+t12798-migration.scala:43: warning: type application is not allowed for infix operators [quickfixable]
   def f = List(42) map [Int] (_ + 1)
                    ^
 t12798-migration.scala:46: warning: Top-level wildcard is not allowed
@@ -41,7 +41,7 @@ t12798-migration.scala:18: warning: Unicode escapes in raw interpolations are ig
 t12798-migration.scala:50: warning: constructor modifiers are assumed by synthetic `copy` method
 case class `case mods propagate` private (s: String)
            ^
-t12798-migration.scala:60: warning: under -Xsource:3, inferred Option[Int] instead of Some[Int]
+t12798-migration.scala:60: warning: under -Xsource:3, inferred Option[Int] instead of Some[Int] [quickfixable]
   override def f = Some(27)
                ^
 t12798-migration.scala:50: warning: constructor modifiers are assumed by synthetic `apply` method

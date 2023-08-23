@@ -1,10 +1,10 @@
 t712.scala:10: error: overloaded method coerce needs result type
   implicit def coerce(p : ParentImpl) = p.self;
                                           ^
-t712.scala:3: warning: Implicit definition should have explicit type (inferred A.this.Node)
+t712.scala:3: warning: Implicit definition should have explicit type (inferred A.this.Node) [quickfixable]
   implicit def coerce(n : NodeImpl) = n.self;
                ^
-t712.scala:10: warning: Implicit definition should have explicit type
+t712.scala:10: warning: Implicit definition should have explicit type [quickfixable]
   implicit def coerce(p : ParentImpl) = p.self;
                ^
 2 warnings

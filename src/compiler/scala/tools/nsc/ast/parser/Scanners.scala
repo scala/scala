@@ -167,6 +167,8 @@ trait Scanners extends ScannersCommon {
   }
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon with DocScanner {
+    def unit: CompilationUnit
+
     /** A switch whether operators at the start of lines can be infix operators. */
     private var allowLeadingInfixOperators = true
 
@@ -817,10 +819,14 @@ trait Scanners extends ScannersCommon {
         case _ =>
           def fetchOther() = {
             if (ch == '\u21D2') {
-              deprecationWarning("The unicode arrow `⇒` is deprecated, use `=>` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
+              val msg = "The unicode arrow `⇒` is deprecated, use `=>` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code."
+              deprecationWarning(msg, "2.13.0",
+                runReporting.codeAction("replace unicode arrow", unit.position(offset).withEnd(offset + 1), "=>", msg, expected = Some(("⇒", unit))))
               nextChar(); token = ARROW
             } else if (ch == '\u2190') {
-              deprecationWarning("The unicode arrow `←` is deprecated, use `<-` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
+              val msg = "The unicode arrow `←` is deprecated, use `<-` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code."
+              deprecationWarning(msg, "2.13.0",
+                runReporting.codeAction("replace unicode arrow", unit.position(offset).withEnd(offset + 1), "<-", msg, expected = Some(("←", unit))))
               nextChar(); token = LARROW
             } else if (isUnicodeIdentifierStart(ch)) {
               putChar(ch)
@@ -1370,7 +1376,9 @@ trait Scanners extends ScannersCommon {
       // 1l is an acknowledged bad practice
       def lintel(): Unit = {
         val msg = "Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead"
-        if (ch == 'l') deprecationWarning(numberOffset + cbuf.length, msg, since="2.13.0")
+        val o = numberOffset + cbuf.length
+        if (ch == 'l') deprecationWarning(o, msg, since="2.13.0",
+          runReporting.codeAction("use uppercase L", unit.position(o).withEnd(o + 1), "L", msg, expected = Some(("l", unit))))
       }
       // after int: 5e7f, 42L, 42.toDouble but not 42b.
       def restOfNumber(): Unit = {
@@ -1573,6 +1581,8 @@ trait Scanners extends ScannersCommon {
    *  Useful for looking inside source files that are not currently compiled to see what's there
    */
   class SourceFileScanner(val source: SourceFile) extends Scanner {
+    def unit = global.currentUnit
+
     val buf = source.content
 
     // suppress warnings, throw exception on errors
@@ -1584,7 +1594,7 @@ trait Scanners extends ScannersCommon {
 
   /** A scanner over a given compilation unit
    */
-  class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
+  class UnitScanner(override val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
     override def warning(off: Offset, msg: String, category: WarningCategory): Unit =

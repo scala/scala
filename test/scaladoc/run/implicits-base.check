@@ -1,19 +1,19 @@
-newSource:36: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.EnrichedA[V])
+newSource:36: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.EnrichedA[V]) [quickfixable]
   implicit def enrichA0[V](a: A[V]) = new EnrichedA(a)
                ^
-newSource:37: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.NumericA[ZBUR])
+newSource:37: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.NumericA[ZBUR]) [quickfixable]
   implicit def enrichA1[ZBUR: Numeric](a: A[ZBUR]) = new NumericA[ZBUR](a)
                ^
-newSource:38: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.IntA)
+newSource:38: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.IntA) [quickfixable]
   implicit def enrichA2(a: A[Int]) = new IntA(a)
                ^
-newSource:39: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.GtColonDoubleA)
+newSource:39: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.GtColonDoubleA) [quickfixable]
   implicit def enrichA3(a: A[T] forSome { type T <: Double }) = new GtColonDoubleA(a)
                ^
-newSource:42: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.MyNumericA[Z])
+newSource:42: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.MyNumericA[Z]) [quickfixable]
   implicit def enrichA6[Z: MyNumeric](a: A[Z]) = new MyNumericA[Z](a)
                ^
-newSource:44: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.ManifestA[H] with scala.test.scaladoc.implicits.base.MyTraversableOps[H])
+newSource:44: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.base.ManifestA[H] with scala.test.scaladoc.implicits.base.MyTraversableOps[H]) [quickfixable]
   implicit def enrichA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
                ^
 Done.

@@ -19,7 +19,7 @@ t8035-removed.scala:4: warning: a type was inferred to be `AnyVal`; this may ind
 t8035-removed.scala:14: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: List.::[B >: A](elem: B): List[B]
   given arguments: 42, 27
- after adaptation: List.::((42, 27): (Int, Int))
+ after adaptation: List.::((42, 27): (Int, Int)) [quickfixable]
   Nil.::(42, 27)      // yeswarn
         ^
 2 warnings

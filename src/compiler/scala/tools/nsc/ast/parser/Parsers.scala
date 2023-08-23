@@ -17,18 +17,12 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.annotation.tailrec
-import scala.collection.mutable, mutable.ListBuffer
-import scala.reflect.internal.{ModifierFlags => Flags, Precedence}
-import scala.reflect.internal.util.{
-  CodeAction,
-  FreshNameCreator,
-  ListOfNil,
-  Position,
-  SourceFile,
-  TextEdit,
-}
-import Tokens._
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Position, SourceFile}
+import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.ast.parser.Tokens._
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -329,7 +323,7 @@ self =>
       def source = parser.source
     }
     val treeBuilder = new ParserTreeBuilder
-    import treeBuilder.{global => _, unit => _, source => _, fresh => _, _}
+    import treeBuilder.{fresh => _, global => _, source => _, unit => _, _}
 
     implicit def fresh: FreshNameCreator = unit.fresh
 
@@ -633,11 +627,11 @@ self =>
       else deprecationWarning(offset, msg, since, actions)
 
     // deprecation or migration under -Xsource:3, with different messages
-    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String, actions: List[CodeAction]): Unit =
-      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration, actions)
-      else deprecationWarning(offset, depr, since, actions)
+    def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String, actions: String => List[CodeAction]): Unit =
+      if (currentRun.isScala3) warning(offset, migr, WarningCategory.Scala3Migration, actions(migr))
+      else deprecationWarning(offset, depr, since, actions(depr))
     def hardMigrationWarning(offset: Offset, depr: => String, migr: => String, since: String): Unit =
-      hardMigrationWarning(offset, depr, migr, since, Nil)
+      hardMigrationWarning(offset, depr, migr, since, _ => Nil)
 
     def expectedMsgTemplate(exp: String, fnd: String) = s"$exp expected but $fnd found."
     def expectedMsg(token: Token): String =
@@ -748,12 +742,18 @@ self =>
     def isWildcardType = in.token == USCORE || isScala3WildcardType
     def isScala3WildcardType = isRawIdent && in.name == raw.QMARK
     def checkQMarkDefinition() =
-      if (isScala3WildcardType)
-        syntaxError(in.offset, "using `?` as a type name requires backticks.")
+      if (isScala3WildcardType) {
+        val msg = "using `?` as a type name requires backticks."
+        syntaxError(in.offset, msg,
+          runReporting.codeAction("add backticks", r2p(in.offset, in.offset, in.offset + 1), "`?`", msg, expected = Some(("?", unit))))
+      }
+
     def checkKeywordDefinition() =
-      if (isRawIdent && scala3Keywords.contains(in.name))
-        deprecationWarning(in.offset,
-          s"Wrap `${in.name}` in backticks to use it as an identifier, it will become a keyword in Scala 3.", "2.13.7")
+      if (isRawIdent && scala3Keywords.contains(in.name)) {
+        val msg = s"Wrap `${in.name}` in backticks to use it as an identifier, it will become a keyword in Scala 3."
+        deprecationWarning(in.offset, msg, "2.13.7",
+          runReporting.codeAction("add backticks", r2p(in.offset, in.offset, in.offset + in.name.length), s"`${in.name}`", msg, expected = Some((in.name.toString, unit))))
+      }
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -816,8 +816,7 @@ self =>
         val wrn = sm"""|$msg
                        |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
         def actions =
-          if (tree.pos.isRange)
-            List(CodeAction("lambda parameter", Some(msg), List(TextEdit(tree.pos, s"(${unit.sourceAt(tree.pos)})"))))
+          if (tree.pos.isRange) runReporting.codeAction("add parentheses", tree.pos, s"(${unit.sourceAt(tree.pos)})", msg)
           else Nil
         migrationWarning(tree.pos.point, wrn, "2.13.11", actions)
         List(convertToParam(tree))
@@ -1029,11 +1028,17 @@ self =>
 
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
       import opinfo._
-      if (targs.nonEmpty)
-        migrationWarning(offset, "type application is not allowed for infix operators", "2.13.11")
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
       val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
+      if (targs.nonEmpty) {
+        val qual = unit.sourceAt(lhs.pos)
+        val fun = s"${CodeAction.maybeWrapInParens(qual)}.${unit.sourceAt(operatorPos.withEnd(rhs.pos.start))}".trim
+        val fix = s"$fun${CodeAction.wrapInParens(unit.sourceAt(rhs.pos))}"
+        val msg = "type application is not allowed for infix operators"
+        migrationWarning(offset, msg, "2.13.11",
+          runReporting.codeAction("use selection", pos, fix, msg))
+      }
       atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, targs))
     }
 
@@ -1090,7 +1095,9 @@ self =>
         if (in.token == ARROW)
           atPos(start, in.skipToken()) { makeSafeFunctionType(ts, typ()) }
         else if (ts.isEmpty) {
-          syntaxError(start, "Illegal literal type (), use Unit instead")
+          val msg = "Illegal literal type (), use Unit instead"
+          syntaxError(start, msg,
+            runReporting.codeAction("use `Unit`", r2p(start, start, start + 2), "Unit", msg, expected = Some(("()", unit))))
           EmptyTree
         }
         else {
@@ -1174,7 +1181,9 @@ self =>
               if (lookingAhead(in.token == RPAREN)) {
                 in.nextToken()
                 in.nextToken()
-                syntaxError(start, "Illegal literal type (), use Unit instead")
+                val msg = "Illegal literal type (), use Unit instead"
+                syntaxError(start, msg,
+                  runReporting.codeAction("use `Unit`", r2p(start, start, start + 2), "Unit", msg, expected = Some(("()", unit))))
                 EmptyTree
               }
               else
@@ -1475,9 +1484,9 @@ self =>
         else withPlaceholders(interpolatedString(inPattern), isAny = true) // interpolator params are Any* by definition
       }
       else if (in.token == SYMBOLLIT) {
-        def msg(what: String) =
-          s"""symbol literal is $what; use Symbol("${in.strVal}") instead"""
-        deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
+        val msg = s"""symbol literal is deprecated; use Symbol("${in.strVal}") instead"""
+        deprecationWarning(in.offset, msg, "2.13.0",
+          runReporting.codeAction("replace symbol literal", r2p(in.offset, in.offset, in.offset + 1 + in.strVal.length), s"""Symbol("${in.strVal}")""", msg, expected = Some((s"'${in.strVal}", unit))))
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       }
       else finish(in.token match {
@@ -2095,17 +2104,15 @@ self =>
       val hasEq = in.token == EQUALS
 
       if (hasVal) {
-        def actions = {
-          val pos = r2p(valOffset, valOffset, valOffset + 4)
-          if (unit.sourceAt(pos) != "val ") Nil else
-            List(CodeAction("val in for comprehension", None, List(TextEdit(pos, ""))))
-        }
+        def actions(msg: String) = runReporting.codeAction("remove `val` keyword", r2p(valOffset, valOffset, valOffset + 4), "", msg, expected = Some(("val ", unit)))
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
           hardMigrationWarning(in.offset, msg("deprecated", without), msg("unsupported", without), "2.10.0", actions)
+        } else {
+          val m = msg("unsupported", "just remove `val`")
+          syntaxError(in.offset, m, actions(m))
         }
-        else syntaxError(in.offset, msg("unsupported", "just remove `val`"), actions)
       }
 
       if (hasEq && eqOK && !hasCase) in.nextToken()
@@ -2969,7 +2976,11 @@ self =>
     def funDefOrDcl(start: Int, mods: Modifiers): Tree = {
       in.nextToken()
       if (in.token == THIS) {
-        def missingEquals() = hardMigrationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
+        def missingEquals() = {
+          val msg = "procedure syntax is deprecated for constructors: add `=`, as in method definition"
+          hardMigrationWarning(in.lastOffset, msg, "2.13.2",
+            runReporting.codeAction("replace procedure syntax", o2p(in.lastOffset), " =", msg))
+        }
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
@@ -3006,8 +3017,8 @@ self =>
         var restype = fromWithinReturnType(typedOpt())
         def msg(what: String, instead: String) =
           s"procedure syntax is $what: instead, add `$instead` to explicitly declare `$name`'s return type"
-        def declActions = List(CodeAction("procedure syntax (decl)", None, List(TextEdit(o2p(in.lastOffset), ": Unit"))))
-        def defnActions = List(CodeAction("procedure syntax (defn)", None, List(TextEdit(o2p(in.lastOffset), ": Unit ="))))
+        def declActions(msg: String) = runReporting.codeAction("add result type", o2p(in.lastOffset), ": Unit", msg)
+        def defnActions(msg: String) = runReporting.codeAction("replace procedure syntax", o2p(in.lastOffset), ": Unit =", msg)
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
@@ -3035,7 +3046,11 @@ self =>
         if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
           def instead = DefDef(newmods, name.toTermName.decodedName, tparams, vparamss.drop(1), restype, rhs)
           def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `$instead`"
-          def warnNilary() = hardMigrationWarning(nameOffset, unaryMsg("deprecated"), unaryMsg("unsupported"), "2.13.4")
+          def action(msg: String) = {
+            val o = nameOffset + name.decode.length
+            runReporting.codeAction("remove ()", r2p(o, o, o + 2), "", msg, expected = Some(("()", unit)))
+          }
+          def warnNilary() = hardMigrationWarning(nameOffset, unaryMsg("deprecated"), unaryMsg("unsupported"), "2.13.4", action)
           vparamss match {
             case List(List())                               => warnNilary()
             case List(List(), x :: xs) if x.mods.isImplicit => warnNilary()
@@ -3313,7 +3328,9 @@ self =>
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Offset): Template = {
       def deprecatedUsage(): Boolean = {
-        deprecationWarning(in.offset, "Using `<:` for `extends` is deprecated", since = "2.12.5")
+        val msg = "Using `<:` for `extends` is deprecated"
+        deprecationWarning(in.offset, msg, since = "2.12.5",
+          runReporting.codeAction("use `extends`", r2p(in.offset, in.offset, in.offset + 2), "extends", msg, expected = Some(("<:", unit))))
         true
       }
       val (parents, self, body) =

@@ -4,19 +4,19 @@ and  method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAm
 match argument types (Float)
     val x = aFunc(4F)
             ^
-t4457_1.scala:11: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.NE[Float])
+t4457_1.scala:11: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.NE[Float]) [quickfixable]
   implicit def conv1(i: Float) = new NE[Float]
                ^
-t4457_1.scala:12: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[java.util.TooManyListenersException])
+t4457_1.scala:12: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[java.util.TooManyListenersException]) [quickfixable]
   implicit def conv3(op: AA[java.util.TooManyListenersException]) = new N[java.util.TooManyListenersException]
                ^
-t4457_1.scala:13: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[Float])
+t4457_1.scala:13: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[Float]) [quickfixable]
   implicit def conv4(op: AA[Float]) = new N[Float]
                ^
-t4457_1.scala:14: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.NZ[Float])
+t4457_1.scala:14: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.NZ[Float]) [quickfixable]
   implicit def conv7(i: Float) = new NZ[Float]
                ^
-t4457_1.scala:15: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[java.util.GregorianCalendar])
+t4457_1.scala:15: warning: Implicit definition should have explicit type (inferred ImplicitConvAmbiguity2.N[java.util.GregorianCalendar]) [quickfixable]
   implicit def conv5(e: BB[java.util.GregorianCalendar]) = new N[java.util.GregorianCalendar]
                ^
 5 warnings

@@ -7,10 +7,10 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from StringContext to ?{def q: ?}
   println(StringContext("a").q())
                        ^
-t6436b.scala:2: warning: Implicit definition should have explicit type (inferred AnyRef{def q: Nothing})
+t6436b.scala:2: warning: Implicit definition should have explicit type (inferred AnyRef{def q: Nothing}) [quickfixable]
   implicit def foo1(ctx: StringContext) = new { def q = ??? }
                ^
-t6436b.scala:3: warning: Implicit definition should have explicit type (inferred AnyRef{def q: Nothing})
+t6436b.scala:3: warning: Implicit definition should have explicit type (inferred AnyRef{def q: Nothing}) [quickfixable]
   implicit def foo2(ctx: StringContext) = new { def q = ??? }
                ^
 2 warnings

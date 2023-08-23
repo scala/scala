@@ -64,8 +64,11 @@ trait StandardScalaSettings { _: MutableSettings =>
         |  -quickfix:msg=Auto-application   apply quick fixes where the message contains "Auto-application"
         |
         |Use `-Wconf:any:warning-verbose` to display applicable message filters with each warning.
+        |
+        |Use `-quickfix:silent` to omit the `[quickfixable]` tag in compiler messages.
         |""".stripMargin),
     prepend = true)
+  def quickFixSilent: Boolean = quickfix.value == List("silent")
   val release =
     ChoiceSetting("-release", "release", "Compile for a version of the Java API and target class file.", AllTargetVersions, normalizeTarget(javaSpecVersion))
       .withPostSetHook { setting =>

@@ -1,4 +1,4 @@
-newSource:63: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.shadowing.Z[T])
+newSource:63: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.shadowing.Z[T]) [quickfixable]
   implicit def AtoZ[T](a: A[T]) = new Z[T]
                ^
 Done.

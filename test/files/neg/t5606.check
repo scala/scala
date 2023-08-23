@@ -1,7 +1,7 @@
-t5606.scala:5: error: using `?` as a type name requires backticks.
+t5606.scala:5: error: using `?` as a type name requires backticks. [quickfixable]
 case class CaseTest_?[?](someData: String)
                       ^
-t5606.scala:23: error: using `?` as a type name requires backticks.
+t5606.scala:23: error: using `?` as a type name requires backticks. [quickfixable]
   def regress_?[F[?]]   = 2
                   ^
 t5606.scala:3: error: Top-level wildcard is not allowed

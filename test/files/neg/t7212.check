@@ -13,13 +13,13 @@ t7212.scala:21: error: type mismatch;
  required: String
   val s: String = w.f
                     ^
-t7212.scala:5: warning: under -Xsource:3, inferred Object instead of String
+t7212.scala:5: warning: under -Xsource:3, inferred Object instead of String [quickfixable]
 class K extends T { def f = "" }
                         ^
-t7212.scala:11: warning: under -Xsource:3, inferred Object instead of String
+t7212.scala:11: warning: under -Xsource:3, inferred Object instead of String [quickfixable]
 class F extends T { val f = "" }
                         ^
-t7212.scala:17: warning: under -Xsource:3, inferred Object instead of String
+t7212.scala:17: warning: under -Xsource:3, inferred Object instead of String [quickfixable]
 trait V extends T { var f = "" }
                         ^
 3 warnings

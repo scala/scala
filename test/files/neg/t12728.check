@@ -22,97 +22,97 @@ t12728.scala:16: warning: dubious usage of method isInstanceOf with unit value
 t12728.scala:17: warning: dubious usage of method toString with unit value
   println(u.toString)
             ^
-t12728.scala:20: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:20: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isNaN)
           ^
 t12728.scala:20: warning: dubious usage of method isNaN with integer value
   println(i.isNaN)
             ^
-t12728.scala:21: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:21: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isInfinity)
           ^
 t12728.scala:21: warning: dubious usage of method isInfinity with integer value
   println(i.isInfinity)
             ^
-t12728.scala:22: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:22: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isInfinite)
           ^
 t12728.scala:22: warning: dubious usage of method isInfinite with integer value
   println(i.isInfinite)
             ^
-t12728.scala:23: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:23: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isFinite)
           ^
 t12728.scala:23: warning: dubious usage of method isFinite with integer value
   println(i.isFinite)
             ^
-t12728.scala:24: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:24: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isPosInfinity)
           ^
 t12728.scala:24: warning: dubious usage of method isPosInfinity with integer value
   println(i.isPosInfinity)
             ^
-t12728.scala:25: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:25: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.isNegInfinity)
           ^
 t12728.scala:25: warning: dubious usage of method isNegInfinity with integer value
   println(i.isNegInfinity)
             ^
-t12728.scala:27: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:27: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.ceil)
           ^
 t12728.scala:27: warning: dubious usage of method ceil with integer value
   println(i.ceil)
             ^
-t12728.scala:28: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:28: warning: Widening conversion from Int to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(i.floor)
           ^
 t12728.scala:28: warning: dubious usage of method floor with integer value
   println(i.floor)
             ^
-t12728.scala:30: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:30: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isNaN)
           ^
 t12728.scala:30: warning: dubious usage of method isNaN with integer value
   println(l.isNaN)
             ^
-t12728.scala:31: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:31: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isInfinity)
           ^
 t12728.scala:31: warning: dubious usage of method isInfinity with integer value
   println(l.isInfinity)
             ^
-t12728.scala:32: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:32: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isInfinite)
           ^
 t12728.scala:32: warning: dubious usage of method isInfinite with integer value
   println(l.isInfinite)
             ^
-t12728.scala:33: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:33: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isFinite)
           ^
 t12728.scala:33: warning: dubious usage of method isFinite with integer value
   println(l.isFinite)
             ^
-t12728.scala:34: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:34: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isPosInfinity)
           ^
 t12728.scala:34: warning: dubious usage of method isPosInfinity with integer value
   println(l.isPosInfinity)
             ^
-t12728.scala:35: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:35: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.isNegInfinity)
           ^
 t12728.scala:35: warning: dubious usage of method isNegInfinity with integer value
   println(l.isNegInfinity)
             ^
-t12728.scala:37: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:37: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.ceil)
           ^
 t12728.scala:37: warning: dubious usage of method ceil with integer value
   println(l.ceil)
             ^
-t12728.scala:38: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead.
+t12728.scala:38: warning: Widening conversion from Long to Float is deprecated because it loses precision. Write `.toFloat` instead. [quickfixable]
   println(l.floor)
           ^
 t12728.scala:38: warning: dubious usage of method floor with integer value

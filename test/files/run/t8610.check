@@ -1,7 +1,7 @@
 t8610.scala:8: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: X.f(p: (Int, Int)): Int
   given arguments: 3, 4
- after adaptation: X.f((3, 4): (Int, Int))
+ after adaptation: X.f((3, 4): (Int, Int)) [quickfixable]
   def g = f(3, 4)       // adapted
            ^
 Hi, $name

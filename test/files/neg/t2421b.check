@@ -1,7 +1,7 @@
 t2421b.scala:12: error: could not find implicit value for parameter aa: Test.F[Test.A]
   f
   ^
-t2421b.scala:10: warning: Implicit definition should have explicit type (inferred Test.F[X])
+t2421b.scala:10: warning: Implicit definition should have explicit type (inferred Test.F[X]) [quickfixable]
   implicit def b[X <: B] = new F[X]()
                ^
 1 warning

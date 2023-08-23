@@ -2,7 +2,7 @@ t2206.scala:10: error: value f is not a member of o.A
  Note: implicit method ax is not applicable here because it comes after the application point and it lacks an explicit result type.
   a.f()
     ^
-t2206.scala:13: warning: Implicit definition should have explicit type (inferred o.AX)
+t2206.scala:13: warning: Implicit definition should have explicit type (inferred o.AX) [quickfixable]
       implicit def ax(a: A) = new AX
                    ^
 1 warning

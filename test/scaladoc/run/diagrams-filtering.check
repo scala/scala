@@ -1,7 +1,7 @@
-newSource:30: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.T)
+newSource:30: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.T) [quickfixable]
             implicit def eToT(e: E) = new T
                          ^
-newSource:31: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.A)
+newSource:31: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.diagrams.A) [quickfixable]
             implicit def eToA(e: E) = new A { }
                          ^
 Done.

@@ -1,35 +1,35 @@
-t11921-alias.scala:18: error: [quick fix available] reference to TT is ambiguous;
+t11921-alias.scala:18: error: reference to TT is ambiguous;
 it is both defined in the enclosing object O and inherited in the enclosing class D as type TT (defined in class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.TT`.
-Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t2.O.D.n.x
       def n(x: TT) = x // ambiguous
                ^
-t11921-alias.scala:38: error: [quick fix available] reference to c is ambiguous;
+t11921-alias.scala:38: error: reference to c is ambiguous;
 it is both defined in the enclosing class B and inherited in the enclosing anonymous class as value c (defined in class A)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.c`.
-Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t4.B.a
       def n = c // ambiguous
               ^
-t11921-alias.scala:57: error: [quick fix available] reference to name is ambiguous;
+t11921-alias.scala:57: error: reference to name is ambiguous;
 it is both defined in the enclosing method m and inherited in the enclosing anonymous class as value name (defined in class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
-Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t6.Test.m
       println(name)
               ^
-t11921-alias.scala:67: error: [quick fix available] reference to name is ambiguous;
+t11921-alias.scala:67: error: reference to name is ambiguous;
 it is both defined in the enclosing method m and inherited in the enclosing anonymous class as value name (defined in class A, inherited through parent class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
-Or use `-Wconf:msg=legacy-binding:s` to silence this warning.
+Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t7.Test.m
       println(name)

@@ -6,7 +6,7 @@ scala> def f = {
 }
          val x = 'abc
                  ^
-On line 2: warning: symbol literal is deprecated; use Symbol("abc") instead
+On line 2: warning: symbol literal is deprecated; use Symbol("abc") instead [quickfixable]
 def f: String
 
 scala> :quit

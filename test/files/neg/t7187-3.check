@@ -13,7 +13,7 @@ t7187-3.scala:16: error: type mismatch;
  required: SamZero
   val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types
                        ^
-t7187-3.scala:27: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead
+t7187-3.scala:27: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead [quickfixable]
   val t7 = m1 _ // error: eta-expanding a nullary method
            ^
 t7187-3.scala:14: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.

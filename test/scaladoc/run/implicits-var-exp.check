@@ -1,7 +1,7 @@
-newSource:8: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.variable.expansion.C)
+newSource:8: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.variable.expansion.C) [quickfixable]
             implicit def aToC(a: A) = new C
                          ^
-newSource:9: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.variable.expansion.E with scala.test.scaladoc.variable.expansion.F)
+newSource:9: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.variable.expansion.E with scala.test.scaladoc.variable.expansion.F) [quickfixable]
             implicit def aToE(a: A) = new E with F
                          ^
 Done.

@@ -1,16 +1,16 @@
-newSource:22: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit1[T])
+newSource:22: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit1[T]) [quickfixable]
     implicit def implicit1[T <: Intermediate[_, _]](implicit b: Implicit2[T])                = new Implicit1[T](b)
                  ^
-newSource:24: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit2[T])
+newSource:24: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit2[T]) [quickfixable]
     implicit def implicit2alt1[T <: Intermediate[_ <: String, _]](implicit c: Implicit3[T])  = new Implicit2[T](c)
                  ^
-newSource:25: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit2[T])
+newSource:25: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit2[T]) [quickfixable]
     implicit def implicit2alt2[T <: Intermediate[_ <: Double, _]](implicit c: Implicit3[T])  = new Implicit2[T](c)
                  ^
-newSource:27: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit3[T])
+newSource:27: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit3[T]) [quickfixable]
     implicit def implicit3alt1[T <: Intermediate[_, _ <: Int]]                               = new Implicit3[T]()
                  ^
-newSource:28: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit3[T])
+newSource:28: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.Implicit3[T]) [quickfixable]
     implicit def implicit3alt2[T <: Intermediate[_ <: Double, _ <: AnyRef],X]                = new Implicit3[T]()
                  ^
 Done.

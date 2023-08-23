@@ -1,7 +1,7 @@
-t11962.scala:3: warning: side-effecting nullary methods are discouraged: suggest defining as `def f()` instead
+t11962.scala:3: warning: side-effecting nullary methods are discouraged: suggest defining as `def f()` instead [quickfixable]
   def f = println()
       ^
-t11962.scala:7: warning: side-effecting nullary methods are discouraged: suggest defining as `def f()` instead
+t11962.scala:7: warning: side-effecting nullary methods are discouraged: suggest defining as `def f()` instead [quickfixable]
   override def f = super.f
                ^
 error: No warnings can be incurred under -Werror.

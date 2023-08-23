@@ -9,22 +9,22 @@ t4271.scala:11: error: value -> is not a member of Int
 did you mean >>?
   3 -> 5
     ^
-t4271.scala:3: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:3: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def Ensuring[A](x: A) = Donotuseme
                ^
-t4271.scala:4: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:4: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def doubleWrapper(x: Int) = Donotuseme
                ^
-t4271.scala:5: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:5: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def floatWrapper(x: Int) = Donotuseme
                ^
-t4271.scala:6: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:6: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def intWrapper(x: Int) = Donotuseme
                ^
-t4271.scala:7: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:7: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def longWrapper(x: Int) = Donotuseme
                ^
-t4271.scala:8: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type)
+t4271.scala:8: warning: Implicit definition should have explicit type (inferred foo.Donotuseme.type) [quickfixable]
   implicit def ArrowAssoc[A](x: A) = Donotuseme
                ^
 6 warnings

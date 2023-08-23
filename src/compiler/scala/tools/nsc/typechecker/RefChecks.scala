@@ -15,6 +15,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.CodeAction
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.settings.NoScalaVersion
@@ -103,8 +104,8 @@ abstract class RefChecks extends Transform {
       !seen
     }
 
-    private def refchecksWarning(pos: Position, msg: String, cat: WarningCategory): Unit =
-      runReporting.warning(pos, msg, cat, currentOwner)
+    private def refchecksWarning(pos: Position, msg: String, cat: WarningCategory, actions: List[CodeAction] = Nil): Unit =
+      runReporting.warning(pos, msg, cat, currentOwner, actions)
 
     // only one overloaded alternative is allowed to define default arguments
     private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
@@ -318,13 +319,13 @@ abstract class RefChecks extends Transform {
 
           infoStringWithLocation(other) + (if (msg.isEmpty) "" else s"\n$indent") + msg + addendum
         }
-        def emitOverrideError(fullmsg: String): Unit = {
-          if (memberClass == clazz) reporter.error(member.pos, fullmsg)
+        def emitOverrideError(fullmsg: String, actions: List[CodeAction] = Nil): Unit = {
+          if (memberClass == clazz) runReporting.error(member.pos, fullmsg, actions)
           else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
         }
 
-        def overrideErrorWithMemberInfo(msg: String): Unit =
-          if (noErrorType) emitOverrideError(msg + "\n" + overriddenWithAddendum(if (member.owner == clazz) "" else s"with ${infoString(member)}"))
+        def overrideErrorWithMemberInfo(msg: String, actions: List[CodeAction] = Nil): Unit =
+          if (noErrorType) emitOverrideError(msg + "\n" + overriddenWithAddendum(if (member.owner == clazz) "" else s"with ${infoString(member)}"), actions)
 
         def overrideError(msg: String): Unit =
           if (noErrorType) emitOverrideError(msg)
@@ -445,22 +446,33 @@ abstract class RefChecks extends Transform {
               def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
               if (member.hasAttachment[NullaryOverrideAdapted.type]) {
                 def exempt() = member.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))
-                val msg = "method without a parameter list overrides a method with a single empty one"
-                if (!exempt())
+                if (!exempt()) {
+                  val msg = "method without a parameter list overrides a method with a single empty one"
+                  val namePos = member.pos.focus.withEnd(member.pos.point + member.decodedName.length)
+                  val action =
+                    if (currentUnit.sourceAt(namePos) == member.decodedName)
+                      runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
+                    else Nil
                   if (currentRun.isScala3)
-                    overrideErrorWithMemberInfo(msg)
+                    overrideErrorWithMemberInfo(msg, action)
                   else
-                    refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
+                    refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride, action)
+                }
               }
               else if (other.paramss.isEmpty && !member.paramss.isEmpty &&
                 !javaDetermined(member) && !member.overrides.exists(javaDetermined) &&
                 !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr)
               ) {
                 val msg = "method with a single empty parameter list overrides method without any parameter list"
+                val namePos = member.pos.focus.withEnd(member.pos.point + member.decodedName.length)
+                val action =
+                  if (currentUnit.sourceAt(namePos) == member.decodedName)
+                    runReporting.codeAction("remove empty parameter list", namePos.focusEnd.withEnd(namePos.end + 2), "", msg, expected = Some(("()", currentUnit)))
+                  else Nil
                 if (currentRun.isScala3)
-                  overrideErrorWithMemberInfo(msg)
+                  overrideErrorWithMemberInfo(msg, action)
                 else
-                  refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride)
+                  refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride, action)
               }
             }
           }
@@ -1741,8 +1753,15 @@ abstract class RefChecks extends Transform {
           || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
           || sym.isArtifact
         )
-        if (!isOk)
-          refchecksWarning(sym.pos, s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead", WarningCategory.LintNullaryUnit)
+        if (!isOk) {
+          val msg = s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead"
+          val namePos = sym.pos.focus.withEnd(sym.pos.point + sym.decodedName.length)
+          val action =
+            if (currentUnit.sourceAt(namePos) == sym.decodedName)
+              runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
+            else Nil
+          refchecksWarning(sym.pos, msg, WarningCategory.LintNullaryUnit, action)
+        }
       case _ => ()
     }
 

@@ -1,16 +1,16 @@
-t5265a.scala:7: warning: Implicit definition should have explicit type (inferred T[String])
+t5265a.scala:7: warning: Implicit definition should have explicit type (inferred T[String]) [quickfixable]
   implicit val tsMissing = new T[String] {}   // warn val in trait
                ^
-t5265a.scala:20: warning: Implicit definition should have explicit type (inferred T[String])
+t5265a.scala:20: warning: Implicit definition should have explicit type (inferred T[String]) [quickfixable]
   implicit val tsChild = new T[String] {}     // warn because inferred from RHS
                ^
-t5265a.scala:22: warning: Implicit definition should have explicit type (inferred Int)
+t5265a.scala:22: warning: Implicit definition should have explicit type (inferred Int) [quickfixable]
   implicit private[this] val pChild = 42      // also warn
                              ^
-t5265a.scala:27: warning: Implicit definition should have explicit type (inferred Int)
+t5265a.scala:27: warning: Implicit definition should have explicit type (inferred Int) [quickfixable]
   implicit private[this] val y = 42           // also warn
                              ^
-t5265a.scala:25: warning: Implicit definition should have explicit type (inferred T[String])
+t5265a.scala:25: warning: Implicit definition should have explicit type (inferred T[String]) [quickfixable]
   implicit val tsD = new T[String] {}         // warn val in class
                ^
 error: No warnings can be incurred under -Werror.

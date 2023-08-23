@@ -1,7 +1,7 @@
-t12815.scala:22: warning: method with a single empty parameter list overrides method without any parameter list
+t12815.scala:22: warning: method with a single empty parameter list overrides method without any parameter list [quickfixable]
   def e(): Int = 1 // warn
       ^
-t12815.scala:23: warning: method without a parameter list overrides a method with a single empty one
+t12815.scala:23: warning: method without a parameter list overrides a method with a single empty one [quickfixable]
   def f: Int = 1   // warn
       ^
 error: No warnings can be incurred under -Werror.

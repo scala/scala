@@ -1,7 +1,7 @@
 t4889.scala:19: error: could not find implicit value for parameter ma1: t4889.MatrixAdder[Int,[S]t4889.SparseMatrix[S]]
   m1.foo
      ^
-t4889.scala:14: warning: Implicit definition should have explicit type (inferred t4889.MatrixAdder[S,R])
+t4889.scala:14: warning: Implicit definition should have explicit type (inferred t4889.MatrixAdder[S,R]) [quickfixable]
   implicit def adderImplicit[S, R[s] <: Matrix[s, R]] = new MatrixAdder[S, R] {
                ^
 1 warning

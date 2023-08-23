@@ -10,7 +10,7 @@ t6667.scala:9: error: ambiguous implicit values:
  match expected type C
   implicitly[C]       // ambiguity reported, rather than falling back to C.companion
             ^
-t6667.scala:3: warning: Implicit definition should have explicit type (inferred C)
+t6667.scala:3: warning: Implicit definition should have explicit type (inferred C) [quickfixable]
   implicit def companion = new C
                ^
 1 warning

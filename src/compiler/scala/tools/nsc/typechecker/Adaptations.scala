@@ -98,9 +98,13 @@ trait Adaptations {
         if (settings.lintArgDiscard && discardedArgs) context.warning(t.pos, adaptWarningMessage(
           s"adapted the argument list to expected Unit type: arguments will be discarded"),
           WarningCategory.LintAdaptedArgs)
-        else if (settings.warnAdaptedArgs && !isInfix) context.warning(t.pos, adaptWarningMessage(
-          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"),
-          WarningCategory.LintAdaptedArgs)
+        else if (settings.warnAdaptedArgs && !isInfix) {
+          val msg = adaptWarningMessage(
+            s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead")
+          val pos = wrappingPos(args)
+          context.warning(t.pos, msg, WarningCategory.LintAdaptedArgs,
+            runReporting.codeAction("add wrapping parentheses", pos, s"(${currentUnit.sourceAt(pos)})", msg))
+        }
         true // keep adaptation
       }
       if (args.nonEmpty)

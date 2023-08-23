@@ -1,49 +1,49 @@
-newSource:13: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Numeric[T]])
+newSource:13: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Numeric[T]]) [quickfixable]
     implicit def convertNumeric       [T: Numeric]       (a: A[T]) = new B(implicitly[Numeric[T]])
                  ^
-newSource:14: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Integral[T]])
+newSource:14: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Integral[T]]) [quickfixable]
     implicit def convertIntegral      [T: Integral]      (a: A[T]) = new B(implicitly[Integral[T]])
                  ^
-newSource:15: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Fractional[T]])
+newSource:15: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Fractional[T]]) [quickfixable]
     implicit def convertFractional    [T: Fractional]    (a: A[T]) = new B(implicitly[Fractional[T]])
                  ^
-newSource:16: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Manifest[T]])
+newSource:16: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[Manifest[T]]) [quickfixable]
     implicit def convertManifest      [T: Manifest]      (a: A[T]) = new B(implicitly[Manifest[T]])
                  ^
-newSource:17: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[reflect.ClassManifest[T]])
+newSource:17: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[reflect.ClassManifest[T]]) [quickfixable]
     implicit def convertClassManifest [T: ClassManifest] (a: A[T]) = new B(implicitly[ClassManifest[T]])
                  ^
-newSource:18: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[OptManifest[T]])
+newSource:18: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[OptManifest[T]]) [quickfixable]
     implicit def convertOptManifest   [T: OptManifest]   (a: A[T]) = new B(implicitly[OptManifest[T]])
                  ^
-newSource:19: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.reflect.ClassTag[T]])
+newSource:19: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.reflect.ClassTag[T]]) [quickfixable]
     implicit def convertClassTag      [T: ClassTag]      (a: A[T]) = new B(implicitly[ClassTag[T]])
                  ^
-newSource:20: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[reflect.runtime.universe.TypeTag[T]])
+newSource:20: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[reflect.runtime.universe.TypeTag[T]]) [quickfixable]
     implicit def convertTypeTag       [T: TypeTag]       (a: A[T]) = new B(implicitly[TypeTag[T]])
                  ^
-newSource:29: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.K[T]])
+newSource:29: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.K[T]]) [quickfixable]
     implicit def convertK [T: K] (a: A[T]) = new B(implicitly[K[T]])
                  ^
-newSource:30: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.L[T]])
+newSource:30: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.L[T]]) [quickfixable]
     implicit def convertL [T: L] (a: A[T]) = new B(implicitly[L[T]])
                  ^
-newSource:31: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.M[T]])
+newSource:31: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.M[T]]) [quickfixable]
     implicit def convertM [T: M] (a: A[T]) = new B(implicitly[M[T]])
                  ^
-newSource:32: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.N[T]])
+newSource:32: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.N[T]]) [quickfixable]
     implicit def convertN [T: N] (a: A[T]) = new B(implicitly[N[T]])
                  ^
-newSource:33: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.O[T]])
+newSource:33: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.O[T]]) [quickfixable]
     implicit def convertO [T: O] (a: A[T]) = new B(implicitly[O[T]])
                  ^
-newSource:34: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.P[T]])
+newSource:34: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.P[T]]) [quickfixable]
     implicit def convertP [T: P] (a: A[T]) = new B(implicitly[P[T]])
                  ^
-newSource:35: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.Q[T]])
+newSource:35: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.Q[T]]) [quickfixable]
     implicit def convertQ [T: Q] (a: A[T]) = new B(implicitly[Q[T]])
                  ^
-newSource:36: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.R[T]])
+newSource:36: warning: Implicit definition should have explicit type (inferred scala.test.scaladoc.implicits.typeclasses.B[scala.test.scaladoc.implicits.typeclasses.A.R[T]]) [quickfixable]
     implicit def convertR [T: R] (a: A[T]) = new B(implicitly[R[T]])
                  ^
 Done.

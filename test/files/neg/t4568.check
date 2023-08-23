@@ -1,7 +1,7 @@
 t4568.scala:8: error: recursive method isSubListOf needs result type
         case h :: t => y.contains(h) && (t.isSubListOf(y.drop(y.indexOf(h) + 1)))
                                            ^
-t4568.scala:2: warning: Implicit definition should have explicit type (inferred SubList.SubListable[A])
+t4568.scala:2: warning: Implicit definition should have explicit type (inferred SubList.SubListable[A]) [quickfixable]
   implicit def sublistable[A](x: List[A]) = new SubListable(x)
                ^
 1 warning

@@ -1,4 +1,4 @@
-override-final-implicit.scala:6: warning: Implicit definition should have explicit type (inferred Test.this.FooExtender)
+override-final-implicit.scala:6: warning: Implicit definition should have explicit type (inferred Test.this.FooExtender) [quickfixable]
   override implicit def FooExtender(foo: String) = super.FooExtender(foo)
                         ^
 override-final-implicit.scala:6: error: cannot override final member:

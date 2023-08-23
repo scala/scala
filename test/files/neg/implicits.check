@@ -16,10 +16,10 @@ implicits.scala:47: error: type mismatch;
 implicits.scala:59: error: could not find implicit value for parameter x: Nothing
   foo {
       ^
-implicits.scala:34: warning: Implicit definition should have explicit type (inferred T)
+implicits.scala:34: warning: Implicit definition should have explicit type (inferred T) [quickfixable]
   implicit def select[T](t: HSome[T,_]) = t.head
                ^
-implicits.scala:35: warning: Implicit definition should have explicit type (inferred L)
+implicits.scala:35: warning: Implicit definition should have explicit type (inferred L) [quickfixable]
   implicit def selectTail[L](t: HSome[_,L]) = t.tail
                ^
 2 warnings

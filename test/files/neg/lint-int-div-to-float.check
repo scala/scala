@@ -1,16 +1,16 @@
-lint-int-div-to-float.scala:6: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`.
+lint-int-div-to-float.scala:6: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`. [quickfixable]
   def w1: Double = f / 2
                      ^
-lint-int-div-to-float.scala:7: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`.
+lint-int-div-to-float.scala:7: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`. [quickfixable]
   def w2: Double = (f / 2) * 3
                       ^
-lint-int-div-to-float.scala:8: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`.
+lint-int-div-to-float.scala:8: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`. [quickfixable]
   def w3: Double = -(f / 2)
                        ^
-lint-int-div-to-float.scala:9: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`.
+lint-int-div-to-float.scala:9: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`. [quickfixable]
   def w4: Double = (new C).f / (new C).f * 3
                              ^
-lint-int-div-to-float.scala:10: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`.
+lint-int-div-to-float.scala:10: warning: integral division is implicitly converted (widened) to floating point. Add an explicit `.toDouble`. [quickfixable]
   def w5: Double = f - f.abs / 2
                              ^
 error: No warnings can be incurred under -Werror.

@@ -1,9 +1,9 @@
-t5265b.scala:7: error: Implicit definition must have explicit type (inferred T[String])
+t5265b.scala:7: error: Implicit definition must have explicit type (inferred T[String]) [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Missing.tsMissing
   implicit val tsMissing = new T[String] {}   // warn val in trait
                ^
-t5265b.scala:20: error: under -Xsource:3, inferred T[String]
+t5265b.scala:20: error: under -Xsource:3, inferred T[String] [quickfixable]
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Child.tsChild
   implicit val tsChild = new T[String] {}     // nowarn because inferred from overridden

@@ -1,4 +1,4 @@
-t6567.scala:8: warning: Implicit definition should have explicit type (inferred B)
+t6567.scala:8: warning: Implicit definition should have explicit type (inferred B) [quickfixable]
   implicit def a2b(a: A) = new B
                ^
 t6567.scala:10: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
