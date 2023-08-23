@@ -99,7 +99,7 @@ trait ClassName extends Compat {
 
   protected def isTopLevelModule(sym: Symbol): Boolean =
     enteringPhase(currentRun.picklerPhase.next) {
-      sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
+      sym.isModuleClass && !sym.isNestedClass
     }
 
   protected def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =

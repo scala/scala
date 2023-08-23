@@ -627,6 +627,11 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
     name := "scala2-sbt-bridge",
     description := "sbt compiler bridge for Scala 2",
     libraryDependencies += compilerInterfaceDep % Provided,
+    Compile / scalacOptions ++= Seq(
+      "-Xlint",
+      "-feature",
+      "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+    ),
     generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
     generateServiceProviderResources("xsbti.compile.ConsoleInterface1"  -> "scala.tools.xsbt.ConsoleBridge"),
     generateServiceProviderResources("xsbti.compile.ScaladocInterface2" -> "scala.tools.xsbt.ScaladocBridge"),

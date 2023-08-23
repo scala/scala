@@ -46,7 +46,8 @@ sealed abstract class CallbackGlobal(
       case single: SingleOutput => List(single.getOutputDirectoryAsPath)
       // Use Stream instead of List because Analyzer maps intensively over the directories
       case multi: MultipleOutput =>
-        multi.getOutputGroups.toIterator.map(_.getOutputDirectoryAsPath).toSeq
+        multi.getOutputGroups.iterator.map(_.getOutputDirectoryAsPath).toSeq
+      case x => throw new MatchError(x)
     }
   }
 
@@ -227,28 +228,27 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
       suffix: CharSequence,
       includePackageObjectClassNames: Boolean
   ): String = {
-    var b: java.lang.StringBuffer = null
-    def loop(size: Int, sym: Symbol): Unit = {
+    def loop(sb: StringBuilder, size: Int, sym: Symbol): StringBuilder = {
       val symName = sym.name
       // Use of encoded to produce correct paths for names that have symbols
       val encodedName = symName.encode
       val nSize = encodedName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
-      if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
-        val capacity = size + nSize
-        b = new java.lang.StringBuffer(capacity)
-        b.append(chrs, encodedName.start, nSize)
-      } else {
-        val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
-        loop(size + nSize + 1, next)
-        // Addition to normal `fullName` to produce correct names for nested non-local classes
-        if (sym.isNestedClass) b.append(nme.MODULE_SUFFIX_STRING) else b.append(separator)
-        b.append(chrs, encodedName.start, nSize)
-      }
-      ()
+      val sb1 =
+        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
+          val capacity = size + nSize
+          new StringBuilder(capacity)
+        } else {
+          val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
+          // Addition to normal `fullName` to produce correct names for nested non-local classes
+          val sep = if (sym.isNestedClass) nme.MODULE_SUFFIX_STRING else separator
+          loop(sb, size + nSize + 1, next)
+            .append(sep)
+        }
+      encodedName.appendTo(sb1, 0, nSize)
     }
-    loop(suffix.length(), symbol)
-    b.append(suffix)
-    b.toString
+    loop(sb = null, suffix.length(), symbol)
+      .append(suffix)
+      .toString
   }
 
   private[this] var callback0: AnalysisCallback = null

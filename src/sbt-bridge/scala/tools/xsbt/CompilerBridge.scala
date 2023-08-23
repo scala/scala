@@ -18,13 +18,11 @@ package xsbt
 import xsbti.{AnalysisCallback, AnalysisCallback2, Logger, Problem, Reporter, VirtualFile}
 import xsbti.compile._
 
-import scala.tools.nsc.Settings
-import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.CompilerCommand
+import scala.tools.nsc.{CompilerCommand, Settings}
 import Log.debug
+
 import java.io.File
-import java.util.{Collections, Optional}
 
 /**
  * This is the entry point for the compiler bridge (implementation of CompilerInterface)
@@ -94,6 +92,7 @@ private final class CachedCompiler0(
     case single: SingleOutput =>
       val outputFilepath = single.getOutputDirectoryAsPath.toAbsolutePath
       settings.outputDirs.setSingleOutput(outputFilepath.toString)
+    case x => throw new MatchError(x)
   }
 
   val command = new CompilerCommand(args.toList, settings)
@@ -165,7 +164,7 @@ private final class CachedCompiler0(
       else callback.problem(p.category, p.position, p.message, p.severity, true)
 
     if (command.shouldStopWithInfo) {
-      underlyingReporter.info(null, command.getInfoMessage(compiler), true)
+      underlyingReporter.echo(command.getInfoMessage(compiler))
       throw new InterfaceCompileFailed(args, Array(), StopInfoError)
     }
 

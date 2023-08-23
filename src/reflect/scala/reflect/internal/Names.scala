@@ -546,6 +546,8 @@ trait Names extends api.Names {
     override final def toString: String = if (cachedString == null) new String(_chrs, index, len) else cachedString
     final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit =
       buffer.append(_chrs, this.start + start, length)
+    final def appendTo(sb: StringBuilder, start: Int, length: Int): sb.type =
+      sb.appendAll(_chrs, this.start + start, length)
   }
 
   implicit val NameTag: ClassTag[Name] = ClassTag[Name](classOf[Name])

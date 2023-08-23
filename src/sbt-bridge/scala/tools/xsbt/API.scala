@@ -63,7 +63,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     }
 
     private def processScalaUnit(unit: CompilationUnit): Unit = {
-      val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf }
+      val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf case x => throw new MatchError(x) }
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
@@ -213,7 +213,6 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     def isTopLevel(sym: Symbol): Boolean = {
       !ignoredSymbol(sym) &&
       sym.isStatic &&
-      !sym.isImplClass &&
       (!sym.hasFlag(Flags.JAVA) || global.callback.isPickleJava) &&
       !sym.isNestedClass
     }
