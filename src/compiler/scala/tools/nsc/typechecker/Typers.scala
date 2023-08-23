@@ -4015,6 +4015,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
         return finish(ErroneousAnnotation)
       }
+      if (currentRun.isScala3 && (/*annTypeSym.eq(SpecializedClass) ||*/ annTypeSym.eq(ElidableMethodClass)))
+        context.deprecationWarning(ann.pos, annTypeSym, s"@${annTypeSym.fullNameString} is ignored in Scala 3", "2.13.12")
 
       /* Calling constfold right here is necessary because some trees (negated
        * floats and literals in particular) are not yet folded.

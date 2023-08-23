@@ -1,0 +1,6 @@
+deprecated-annots.scala:9: warning: @scala.annotation.elidable is ignored in Scala 3
+  @annotation.elidable(42)
+   ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
