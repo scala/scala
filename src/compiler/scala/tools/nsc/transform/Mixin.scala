@@ -88,7 +88,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     && notDeferred(sym)
     && sym.owner.isTrait
     && (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED))
-    && (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || (sym hasFlag LAZY))
+    && (!sym.hasFlag(ACCESSOR | SUPERACCESSOR) || sym.hasFlag(LAZY))
     && !sym.isPrivate
     && !sym.hasAllFlags(LIFTED | MODULE | METHOD)
     && !sym.isConstructor
@@ -144,17 +144,19 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = beforeOwnPhase {
-    def hasOverridingAccessor(clazz: Symbol) = {
-      clazz.info.nonPrivateDecl(member.name).alternatives.exists(
+    def hasOverridingAccessor(clazz: Symbol) =
+      clazz.info.nonPrivateDecl(member.name).alternatives.exists {
         sym =>
           sym.hasFlag(ACCESSOR) &&
           !sym.hasFlag(MIXEDIN) &&
           notDeferred(sym) &&
-          matchesType(sym.tpe, member.tpe, alwaysMatchSimple = true))
-    }
-    (    bcs.head != member.owner
-      && (hasOverridingAccessor(bcs.head) || isOverriddenAccessor(member, bcs.tail))
-    )
+          matchesType(sym.tpe, member.tpe, alwaysMatchSimple = true)
+      }
+    def loop(bcs: List[Symbol]): Boolean =
+      (    bcs.head != member.owner
+        && (hasOverridingAccessor(bcs.head) || loop(bcs.tail))
+      )
+    loop(bcs)
   }
 
 
@@ -555,7 +557,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
         else if (!sym.isMethod) addValDef(sym) // field
         else if (!sym.isMacro) { // forwarder
           assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
-          // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
+          //debuglog(s"New forwarder: ${sym.defString} => ${sym.alias.defString}")
           addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
         }
 
