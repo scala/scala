@@ -6,6 +6,7 @@ object Test extends SessionTest {
 s"""|
     |scala> :paste $pastie
     |Pasting file $pastie...
+    |// Exiting paste mode... now interpreting.
     |class Foo
     |object Foo
     |

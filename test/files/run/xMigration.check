@@ -3,9 +3,7 @@ scala> :paste -raw
 // Entering paste mode (ctrl-D to finish)
 
 package scala { object T { @scala.annotation.migration("text", "2.8.0") def muh: String = "muuh" } }
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now compiling with scalac.
 
 scala> 
 

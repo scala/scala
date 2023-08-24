@@ -31,9 +31,7 @@ object Y {
   def f[A](a: =>  A) = 1
   def f[A](a: => Either[Exception, A]) = 2
 }
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 
   def f[A](a: => Either[Exception, A]) = 2
       ^

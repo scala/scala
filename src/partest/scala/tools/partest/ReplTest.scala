@@ -153,7 +153,7 @@ abstract class SessionTest extends ReplTest  {
 }
 object SessionTest {
   // \R for line break since Java 8
-  private def input(prompt: String) = raw"""(?m)^$prompt(:pa.*\R)// Entering paste mode.*\R\R((?:.*\R)*)\R// Exiting paste mode.*\R|^scala> (.*\R(?:\s*\| .*\R)*)""".r
+  private def input(prompt: String) = raw"""(?m)^$prompt(:pa.*\R)// Entering paste mode.*\R\R((?:.*\R)*)// Exiting paste mode.*\R|^scala> (.*\R(?:\s*\| .*\R)*)""".r
 
   private val margin = """(?m)^\s*\| (.*)$""".r
 }

@@ -6,6 +6,7 @@ object Test extends SessionTest {
 s"""|
     |scala> :paste $pastie
     |Pasting file $pastie...
+    |// Exiting paste mode... now compiling with scalac.
     |
     |scala> val favoriteThing = brown_paper.Gift(true)
     |val favoriteThing: brown_paper.Gift = Gift(true)

@@ -7,9 +7,7 @@ scala> :paste <| EOF
     |// comment 2
     |val y = 4
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 val x: Int = 3
 val y: Int = 4
 

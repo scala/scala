@@ -7,9 +7,7 @@ def f(): Unit = {
   42
 }
 END
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 
   "hello"
   ^

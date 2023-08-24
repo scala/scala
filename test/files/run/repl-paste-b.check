@@ -4,9 +4,7 @@ scala> :paste < EOF
 
 object X
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 object X
 
 scala> assert(X.getClass.getName.contains("line"))

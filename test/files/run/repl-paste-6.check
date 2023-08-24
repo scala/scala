@@ -5,9 +5,7 @@ scala> :paste < EOF
 case class C(i: Int)
 val c = C(42)
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class C
 val c: C = C(42)
 

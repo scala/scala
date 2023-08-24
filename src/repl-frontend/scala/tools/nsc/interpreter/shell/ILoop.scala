@@ -782,8 +782,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     var label = "<pastie>"
     def result = Result(keepRunning = true, shouldReplay)
     val (flags, args) = tokenize(arg).span(_.startsWith("-"))
-    def raw  = flags.contains("-raw")
-    def java = flags.contains("-java")
+    val raw  = flags.contains("-raw")
+    val java = flags.contains("-java")
+    val badFlags = flags.filterNot(List("-raw", "-java").contains)
     def usage() = echo("usage: :paste [-raw | -java] file | < EOF")
     def pasteFile(name: String): String = {
       label = name
@@ -798,20 +799,22 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         val delimiter = eof.orElse(config.pasteDelimiter.option)
         def atEOF(s: String) = delimiter.map(_ == s).getOrElse(false)
         val input = readWhile(s => !atEOF(s)).mkString("\n")
-        val text =
-          margin match {
-            case ""  => input.trim
-            case "-" => input.linesIterator.map(_.trim).mkString("\n")
-            case _   => input.stripMargin(margin.head).trim
-          }
-        echo(if (text.isEmpty) "\n// Nothing pasted, nothing gained.\n" else "\n// Exiting paste mode, now interpreting.\n")
-        text
+        margin match {
+          case ""  => input.trim
+          case "-" => input.linesIterator.map(_.trim).mkString("\n")
+          case _   => input.stripMargin(margin.head).trim
+        }
       }
     }
-    def interpretCode(code: String) =
+    def interpretCode(code: String) = {
+      echo("// Exiting paste mode... now interpreting.")
       if (intp.withLabel(label)(intp.interpret(code)) == Incomplete)
-        paste.incomplete("The pasted code is incomplete!\n", label, code)
-    def compileCode(code: String) = paste.compilePaste(label = label, code = code)
+        paste.incomplete("The pasted code is incomplete!", label, code)
+    }
+    def compileCode(code: String) = {
+      echo("// Exiting paste mode... now compiling with scalac.")
+      paste.compilePaste(label = label, code = code)
+    }
     def compileJava(code: String): Unit = {
       def pickLabel() = {
         val gstable = global
@@ -821,6 +824,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         }
         result.headOption
       }
+      echo("// Exiting paste mode... now compiling with javac.")
       pickLabel() match {
         case Some(className) =>
           label = s"${className.decoded}"
@@ -834,18 +838,21 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       }
     }
     def dispatch(code: String): Unit =
-      if (code.nonEmpty)
+      if (code.isEmpty)
+        echo("// Exiting paste mode... nothing to compile.")
+      else
         intp.reporter.indenting(0) {
           if (java) compileJava(code)
           else if (raw || paste.isPackaged(code)) compileCode(code)
           else interpretCode(code)
         }
     args match {
+      case _ if badFlags.nonEmpty                     => usage()
       case name :: Nil if !name.startsWith("<")       => dispatch(pasteFile(name))
       case Nil                                        => dispatch(pasteWith("", None))
       case here :: Nil                                => dispatch(pasteWith(here.slice(1, 2), None))
       case here :: eof :: Nil if here.startsWith("<") => dispatch(pasteWith(here.slice(1, 2), Some(eof)))
-      case _ => usage()
+      case _                                          => usage()
     }
     result
   }

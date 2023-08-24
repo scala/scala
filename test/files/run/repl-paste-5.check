@@ -4,9 +4,7 @@ scala> :paste < EOF
 
 class C { def c = 42 }
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class C
 
 scala> new C().c
@@ -17,9 +15,7 @@ scala> :paste <| EOF
 
   |class D { def d = 42 }
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class D
 
 scala> new D().d

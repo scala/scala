@@ -6,6 +6,7 @@ object Test extends SessionTest {
 s"""|
     |scala> :paste -raw $pastie
     |Pasting file $pastie...
+    |// Exiting paste mode... now compiling with scalac.
     |
     |val nope = 42
     |^
