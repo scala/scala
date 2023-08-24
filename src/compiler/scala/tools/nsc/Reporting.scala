@@ -321,18 +321,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain".replace("#", construct)
-      // maybe pos.source.file.file.getParentFile.getName or Path(source.file.file).parent.name
-      def parentFileName(source: internal.util.SourceFile) =
-        Option(java.nio.file.Paths.get(source.path).getParent).map(_.getFileName.toString)
-      // don't error on postfix in pre-0.13.18 xsbt/Compat.scala
-      def isSbtCompat = (featureName == "postfixOps"
-        && pos.source.file.name == "Compat.scala"
-        && parentFileName(pos.source).getOrElse("") == "xsbt"
-        && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt."))
-      )
       // on postfix error, include interesting infix warning
       def isXfix = featureName == "postfixOps" && suspendedMessages.get(pos.source).map(_.exists(w => pos.includes(w.pos))).getOrElse(false)
-      if (required && !isSbtCompat) {
+      if (required) {
         val amended = if (isXfix) s"$msg\n${suspendedMessages(pos.source).filter(pos includes _.pos).map(_.msg).mkString("\n")}" else msg
         reporter.error(pos, amended)
       } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
