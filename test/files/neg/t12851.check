@@ -1,0 +1,6 @@
+C_2.scala:2: warning: method (method f in trait T2) with a single empty parameter list overrides method without any parameter list
+class C extends T2
+      ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
