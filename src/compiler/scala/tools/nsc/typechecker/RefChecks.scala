@@ -341,8 +341,10 @@ abstract class RefChecks extends Transform {
         def overrideErrorOrNullaryWarning(msg: String, actions: List[CodeAction]): Unit =
           if (currentRun.isScala3)
             overrideErrorWithMemberInfo(msg, actions)
-          else
+          else if (isMemberClass)
             refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride, actions)
+          else
+            refchecksWarning(clazz.pos, msg, WarningCategory.OtherNullaryOverride, actions)
 
         def overrideTypeError(): Unit =
           if (member.isModule && other.isModule)
@@ -455,9 +457,9 @@ abstract class RefChecks extends Transform {
               if (member.hasAttachment[NullaryOverrideAdapted.type]) {
                 if (!member.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))) {
                   val msg = "method without a parameter list overrides a method with a single empty one"
-                  val namePos = member.pos.focus.withEnd(member.pos.point + member.decodedName.length)
+                  val namePos = member.pos
                   val action =
-                    if (currentUnit.sourceAt(namePos) == member.decodedName)
+                    if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
                       runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
                     else Nil
                   overrideErrorOrNullaryWarning(msg, action)
@@ -465,13 +467,12 @@ abstract class RefChecks extends Transform {
               }
               else if (other.paramss.isEmpty && !member.paramss.isEmpty &&
                 !javaDetermined(member) && !member.overrides.exists(javaDetermined) &&
-                !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr) &&
-                member.pos.isDefined  // scala/bug#12851
-              ) {
-                val msg = "method with a single empty parameter list overrides method without any parameter list"
-                val namePos = member.pos.focus.withEnd(member.pos.point + member.decodedName.length)
+                !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr)) {
+                val named = if (isMemberClass) "" else s" (${member.fullLocationString})"
+                val msg = s"method$named with a single empty parameter list overrides method without any parameter list"
+                val namePos = member.pos
                 val action =
-                  if (currentUnit.sourceAt(namePos) == member.decodedName)
+                  if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
                     runReporting.codeAction("remove empty parameter list", namePos.focusEnd.withEnd(namePos.end + 2), "", msg, expected = Some(("()", currentUnit)))
                   else Nil
                 overrideErrorOrNullaryWarning(msg, action)
