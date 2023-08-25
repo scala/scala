@@ -143,3 +143,19 @@ package scala {
     def t = new Option[String] {} // OK, competing scala.Option is not defined in the same compilation unit
   }
 }
+
+trait t12850 {
+  def pm(x: Int) = 1
+  def pm(x: String) = 2
+}
+package object pt12850 extends t12850 {
+  def t = pm(1) // no error
+}
+
+trait t12850b {
+  def pm(x: Int) = 1
+  def pm(x: String) = 2
+  object O extends t12850b {
+    def t = pm(1) // no error
+  }
+}

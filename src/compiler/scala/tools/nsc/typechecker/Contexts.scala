@@ -1637,7 +1637,11 @@ trait Contexts { self: Analyzer =>
           done = (cx eq NoContext) || foundCompetingSymbol()
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
-        if (defSym.exists && (defSym ne defSym0)) {
+        val nonOverlapping = defSym.exists && {
+          if (defSym.isOverloaded || defSym0.isOverloaded) !defSym.alternatives.exists(defSym0.alternatives.contains)
+          else defSym ne defSym0
+        }
+        if (nonOverlapping) {
           val ambiguity =
             if (preferDef) ambiguousDefinitions(defSym, defSym0, wasFoundInSuper, cx0.enclClass.owner, thisContext.enclClass.owner)
             else Some(ambiguousDefnAndImport(owner = defSym.owner, imp1))
