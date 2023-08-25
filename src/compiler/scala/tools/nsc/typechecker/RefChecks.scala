@@ -253,21 +253,27 @@ abstract class RefChecks extends Transform {
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false): Unit = {
       val self = clazz.thisType
 
-      case class MixinOverrideError(member: Symbol, msg: String)
+      case class MixinOverrideError(member: Symbol, msg: String, actions: List[CodeAction], s3Migration: Boolean)
 
       val mixinOverrideErrors = new ListBuffer[MixinOverrideError]()
+
+      def issue(pos: Position, msg: String, actions: List[CodeAction], s3Migration: Boolean) =
+        if (s3Migration) runReporting.warning(pos, msg, WarningCategory.Scala3Migration, currentOwner, actions)
+        else runReporting.error(pos, msg, actions)
 
       def printMixinOverrideErrors(): Unit = {
         mixinOverrideErrors.toList match {
           case List() =>
-          case List(MixinOverrideError(_, msg)) =>
-            reporter.error(clazz.pos, msg)
-          case MixinOverrideError(member, msg) :: others =>
+          case List(MixinOverrideError(_, msg, actions, s3Migration)) =>
+            issue(clazz.pos, msg, actions, s3Migration)
+          case MixinOverrideError(member, msg, actions, s3Migration) :: others =>
             val others1 = others.map(_.member.name.decode).filter(member.name.decode != _).distinct
-            reporter.error(
+            issue(
               clazz.pos,
-              msg+(if (others1.isEmpty) ""
-                   else ";\n other members with override errors are: "+(others1 mkString ", ")))
+              if (others1.isEmpty) msg
+              else s"$msg;\n other members with override errors are: ${others1.mkString(", ")}",
+              actions,
+              s3Migration)
         }
       }
 
@@ -308,9 +314,9 @@ abstract class RefChecks extends Transform {
         /** Emit an error if member is owned by current class, using the member position.
          *  Otherwise, accumulate the error, to be emitted after other messages, using the class position.
          */
-        def emitOverrideError(fullmsg: String, actions: List[CodeAction] = Nil): Unit =
-          if (isMemberClass) runReporting.error(member.pos, fullmsg, actions)
-          else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
+        def emitOverrideError(fullmsg: String, actions: List[CodeAction] = Nil, s3Migration: Boolean = false): Unit =
+          if (isMemberClass) issue(member.pos, fullmsg, actions, s3Migration)
+          else mixinOverrideErrors += MixinOverrideError(member, fullmsg, actions, s3Migration)
 
         def overriddenWithAddendum(msg: String, foundReq: Boolean = settings.isDebug): String = {
           val isConcreteOverAbstract =
@@ -335,12 +341,12 @@ abstract class RefChecks extends Transform {
 
         def getWithIt = if (isMemberClass) "" else s"with ${infoString(member)}"
 
-        def overrideErrorWithMemberInfo(msg: String, actions: List[CodeAction] = Nil): Unit =
-          if (noErrorType) emitOverrideError(s"${msg}\n${overriddenWithAddendum(getWithIt)}", actions)
+        def overrideErrorWithMemberInfo(msg: String, actions: List[CodeAction] = Nil, s3Migration: Boolean = false): Unit =
+          if (noErrorType) emitOverrideError(s"${msg}\n${overriddenWithAddendum(getWithIt)}", actions, s3Migration)
 
         def overrideErrorOrNullaryWarning(msg: String, actions: List[CodeAction]): Unit = if (isMemberClass || !member.owner.isSubClass(other.owner))
           if (currentRun.isScala3)
-            overrideErrorWithMemberInfo(msg, actions)
+            overrideErrorWithMemberInfo(msg, actions, s3Migration = true)
           else if (isMemberClass)
             refchecksWarning(member.pos, msg, WarningCategory.OtherNullaryOverride, actions)
           else

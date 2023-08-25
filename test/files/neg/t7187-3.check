@@ -13,12 +13,14 @@ t7187-3.scala:16: error: type mismatch;
  required: SamZero
   val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types
                        ^
-t7187-3.scala:27: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead [quickfixable]
-  val t7 = m1 _ // error: eta-expanding a nullary method
-           ^
 t7187-3.scala:14: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write m2() to invoke method m2, or change the expected type.
   val t2: () => Any  = m2   // eta-expanded with lint warning
                        ^
+t7187-3.scala:27: error: Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, write a function literal `() => m` instead [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=EtaExpand214.t7
+  val t7 = m1 _ // error: eta-expanding a nullary method
+           ^
 1 warning
 4 errors

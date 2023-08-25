@@ -531,19 +531,6 @@ trait ContextErrors extends splain.SplainErrors {
         setError(tree)
       }
 
-      //typedEta
-      private def mkUnderscoreNullaryEtaMessage(what: String) =
-        s"Methods without a parameter list and by-name params can $what be converted to functions as `m _`, " +
-          "write a function literal `() => m` instead"
-
-      final val UnderscoreNullaryEtaWarnMsg  = mkUnderscoreNullaryEtaMessage("no longer")
-      final val UnderscoreNullaryEtaErrorMsg = mkUnderscoreNullaryEtaMessage("not")
-
-      def UnderscoreNullaryEtaError(tree: Tree, actions: List[CodeAction]) = {
-        issueNormalTypeError(tree, UnderscoreNullaryEtaErrorMsg, actions)
-        setError(tree)
-      }
-
       def UnderscoreEtaError(tree: Tree) = {
         issueNormalTypeError(tree, "_ must follow method; cannot follow " + tree.tpe)
         setError(tree)
