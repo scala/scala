@@ -157,8 +157,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  definitions) have to be lazy (#1782)
    */
   class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
-    private[this] var forced = false
-    private lazy val forcedInfo = try lazyInfo finally forced = true
+    private[this] var _forced = false
+    protected def forced = _forced
+    private lazy val forcedInfo = try lazyInfo finally _forced = true
 
     def atp: Type                               = forcedInfo.atp
     def args: List[Tree]                        = forcedInfo.args
@@ -167,16 +168,17 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def setOriginal(t: Tree): this.type         = { forcedInfo.setOriginal(t); this }
 
     // We should always be able to print things without forcing them.
-    override def toString = if (forced) forcedInfo.toString else "@<?>"
+    override def toString = if (_forced) forcedInfo.toString else "@<?>"
 
-    override def pos: Position = if (forced) forcedInfo.pos else NoPosition
+    override def pos: Position = if (_forced) forcedInfo.pos else NoPosition
 
     override def completeInfo(): Unit = forcedInfo
   }
 
   final class ExtraLazyAnnotationInfo(sym: => Symbol, lazyInfo: => AnnotationInfo) extends LazyAnnotationInfo(lazyInfo) {
     private[this] lazy val typeSymbol = sym
-    override def symbol: Symbol = typeSymbol
+    // If `forced` to UnmappableAnnotation, ensure to return NoSymbol, otherwise `ann.matches(annCls)` can be incorrect
+    override def symbol: Symbol = if (forced) super.symbol else typeSymbol
   }
 
   /** Typed information about an annotation. It can be attached to either
