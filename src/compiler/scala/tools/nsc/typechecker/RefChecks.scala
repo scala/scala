@@ -461,7 +461,8 @@ abstract class RefChecks extends Transform {
               }
               else if (other.paramss.isEmpty && !member.paramss.isEmpty &&
                 !javaDetermined(member) && !member.overrides.exists(javaDetermined) &&
-                !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr)
+                !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr) &&
+                member.pos.isDefined  // scala/bug#12851
               ) {
                 val msg = "method with a single empty parameter list overrides method without any parameter list"
                 val namePos = member.pos.focus.withEnd(member.pos.point + member.decodedName.length)
