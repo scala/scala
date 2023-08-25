@@ -338,7 +338,7 @@ abstract class RefChecks extends Transform {
         def overrideErrorWithMemberInfo(msg: String, actions: List[CodeAction] = Nil): Unit =
           if (noErrorType) emitOverrideError(s"${msg}\n${overriddenWithAddendum(getWithIt)}", actions)
 
-        def overrideErrorOrNullaryWarning(msg: String, actions: List[CodeAction]): Unit =
+        def overrideErrorOrNullaryWarning(msg: String, actions: List[CodeAction]): Unit = if (isMemberClass || !member.owner.isSubClass(other.owner))
           if (currentRun.isScala3)
             overrideErrorWithMemberInfo(msg, actions)
           else if (isMemberClass)
