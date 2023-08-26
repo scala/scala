@@ -729,8 +729,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
-          val why = if (defn.symbol.isPrivate) "private" else "local"
-          emitUnusedWarning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used", wcat(defn.symbol), defn.symbol)
+          val sym = defn.symbol
+          val why = if (sym.isPrivate) "private" else "local"
+          val pos = if (sym.pos.isDefined) sym.pos else defn.pos
+          emitUnusedWarning(pos, s"$why ${sym.fullLocationString} is never used", wcat(sym), sym)
         }
 
         for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }

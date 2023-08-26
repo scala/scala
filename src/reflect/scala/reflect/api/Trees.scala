@@ -255,6 +255,9 @@ trait Trees { self: Universe =>
      *  For example, the `List` part of `Ident(TermName("List"))`.
      */
     def name: Name
+
+    /** Position of the subtree bearing the name. */
+    def namePos: Position
   }
 
   /** A tree which references a symbol-carrying entity.

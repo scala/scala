@@ -454,20 +454,19 @@ abstract class RefChecks extends Transform {
               // Only warn for the pair that has one leg in `clazz`.
               if (isMemberClass) checkOverrideDeprecated()
               def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
-              if (member.hasAttachment[NullaryOverrideAdapted.type]) {
-                if (!member.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))) {
-                  val msg = "method without a parameter list overrides a method with a single empty one"
-                  val namePos = member.pos
-                  val action =
-                    if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
-                      runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
-                    else Nil
-                  overrideErrorOrNullaryWarning(msg, action)
-                }
+              def exempted = javaDetermined(member) || member.overrides.exists(javaDetermined)
+              // warn that nilary member matched nullary other, so either it was adapted by namer or will be silently mixed in by mixin
+              def warnAdaptedNullaryOverride(): Unit = {
+                val named = if (isMemberClass) "" else s" (${member.fullLocationString})"
+                val msg = s"method$named without a parameter list overrides a method with a single empty one"
+                val namePos = member.pos
+                val action =
+                  if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
+                    runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
+                  else Nil
+                overrideErrorOrNullaryWarning(msg, action)
               }
-              else if (other.paramss.isEmpty && !member.paramss.isEmpty &&
-                       !javaDetermined(member) && !member.overrides.exists(javaDetermined) &&
-                       !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr)) {
+              def warnExtraParens(): Unit = {
                 val named = if (isMemberClass) "" else s" (${member.fullLocationString})"
                 val msg = s"method$named with a single empty parameter list overrides method without any parameter list"
                 val namePos = member.pos
@@ -476,6 +475,18 @@ abstract class RefChecks extends Transform {
                     runReporting.codeAction("remove empty parameter list", namePos.focusEnd.withEnd(namePos.end + 2), "", msg, expected = Some(("()", currentUnit)))
                   else Nil
                 overrideErrorOrNullaryWarning(msg, action)
+              }
+              if (member.hasAttachment[NullaryOverrideAdapted.type]) {
+                if (!exempted)
+                  warnAdaptedNullaryOverride()
+              }
+              else if (member.paramLists.isEmpty) {
+                if (!member.isStable && other.paramLists.nonEmpty && !exempted && !other.isJavaDefined)
+                  warnAdaptedNullaryOverride()
+              }
+              else if (other.paramLists.isEmpty) {
+                if (!exempted && !member.hasAnnotation(BeanPropertyAttr) && !member.hasAnnotation(BooleanBeanPropertyAttr))
+                  warnExtraParens()
               }
             }
           }

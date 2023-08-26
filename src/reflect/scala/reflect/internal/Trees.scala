@@ -1510,6 +1510,14 @@ trait Trees extends api.Trees {
   ): DefDef = (
     atPos(sym.pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)) setSymbol sym
   )
+  def newDefDefAt(pos: Position)(sym: Symbol, rhs: Tree)(
+    mods: Modifiers              = Modifiers(sym.flags),
+    name: TermName               = sym.name.toTermName,
+    tparams: List[TypeDef]       = sym.typeParams map TypeDef.apply,
+    vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef.apply),
+    tpt: Tree                    = TypeTreeMemberType(sym)
+  ): DefDef =
+    atPos(pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)).setSymbol(sym)
 
   def newTypeDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers        = Modifiers(sym.flags),
