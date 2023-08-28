@@ -900,7 +900,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @tailrec
     final def isStrictFP: Boolean    = this != NoSymbol && !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
-    def isDeprecated           = hasAnnotation(DeprecatedAttr) || (isJava && hasAnnotation(JavaDeprecatedAttr))
+    def isDeprecated           = hasAnnotation(DeprecatedAttr) || hasAnnotation(JavaDeprecatedAttr)
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion     = getAnnotation(DeprecatedAttr).flatMap(_.stringArg(1)) match {
                                    case v @ Some(_) => v

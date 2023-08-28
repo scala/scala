@@ -1,4 +1,5 @@
 #partest java8
+warning: 1 deprecation; re-run with -deprecation for details
 A: List()
 B: List(@java.lang.Deprecated())
 C: List(@anns.Ann_0(name=C, value=see))
@@ -16,6 +17,7 @@ u: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=u, value=you), @anns.Ann_0
 List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=<init>, value=constructor), @anns.Ann_0(name=<init>, value=initializer)]))
 
 #partest java11
+warning: 1 deprecation; re-run with -deprecation for details
 A: List()
 B: List(@java.lang.Deprecated(forRemoval=false, since=""))
 C: List(@anns.Ann_0(name="C", value="see"))
@@ -33,6 +35,7 @@ u: List(@anns.Ann_0$Container(value={@anns.Ann_0(name="u", value="you"), @anns.A
 List(@anns.Ann_0$Container(value={@anns.Ann_0(name="<init>", value="constructor"), @anns.Ann_0(name="<init>", value="initializer")}))
 
 #partest java17
+warning: 1 deprecation; re-run with -deprecation for details
 A: List()
 B: List(@java.lang.Deprecated(forRemoval=false, since=""))
 C: List(@anns.Ann_0(name="C", value="see"))
@@ -50,6 +53,7 @@ u: List(@anns.Ann_0$Container({@anns.Ann_0(name="u", value="you"), @anns.Ann_0(n
 List(@anns.Ann_0$Container({@anns.Ann_0(name="<init>", value="constructor"), @anns.Ann_0(name="<init>", value="initializer")}))
 
 #partest java20+
+warning: 1 deprecation; re-run with -deprecation for details
 A: List()
 B: List(@java.lang.Deprecated(forRemoval=false, since=""))
 C: List(@anns.Ann_0(name="C", value="see"))
