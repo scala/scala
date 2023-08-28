@@ -585,6 +585,12 @@ class VectorTest {
     assertTrue("slice max to min should be empty", Vector(42).slice(Int.MaxValue, Int.MinValue).isEmpty)
   }
 
+  @Test def `test Vector#iterator slice to MinValue`: Unit = {
+    assertTrue(Vector(1, 2).iterator.slice(1, Int.MinValue).isEmpty)
+    assertTrue("slice almost max to min should be empty", Vector(1, 2).iterator.slice(Int.MaxValue - 1, Int.MinValue).isEmpty)
+    assertTrue("slice max to min should be empty", Vector(1, 2).iterator.slice(Int.MaxValue, Int.MinValue).isEmpty)
+  }
+
   @Test
   def testTail(): Unit = for(size <- verySmallSizes) {
     var i = 0
