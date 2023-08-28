@@ -613,9 +613,20 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       for (p <- params) locals.makeLocal(p.symbol)
       // debug assert((params.map(p => locals(p.symbol).tk)) == asmMethodType(methSymbol).getArgumentTypes.toList, "debug")
 
-      if (params.size > MaximumJvmParameters) {
-        // scala/bug#7324
-        reporter.error(methSymbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters.")
+      // scala/bug#7324
+      // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.3
+      // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.11
+      // https://docs.oracle.com/javase/specs/jvms/se20/html/jvms-4.html#jvms-4.11
+      val paramsLength = params.foldLeft(0) { (sum, p) =>
+        val i = p.symbol.info.typeSymbol match {
+          case definitions.LongClass | definitions.DoubleClass => 2
+          case _ => 1
+        }
+        sum + i
+      }
+      if (paramsLength > MaximumJvmParameters) {
+        val info = if (paramsLength == params.length) "" else " (Long and Double count as 2)"
+        reporter.error(methSymbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters$info.")
         return
       }
 

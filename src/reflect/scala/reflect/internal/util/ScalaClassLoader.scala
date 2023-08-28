@@ -43,7 +43,7 @@ final class RichClassLoader(private val self: JClassLoader) extends AnyVal {
   def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = true)
 
   private def tryClass[T <: AnyRef](path: String, initialize: Boolean): Option[Class[T]] =
-    catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
+    catching(classOf[ClassFormatError], classOf[ClassNotFoundException], classOf[SecurityException]) opt
       Class.forName(path, initialize, self).asInstanceOf[Class[T]]
 
   /** Create an instance of a class with this classloader */
