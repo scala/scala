@@ -124,10 +124,15 @@ abstract class FilteringReporter extends Reporter {
       }
       if (show) {
         positions(fpos) = severity
-        messages(fpos) ::= msg
+        messages(fpos) ::= stripQuickfixable(msg)
       }
       show
     }
+  }
+
+  private def stripQuickfixable(msg: String): String = {
+    val i = msg.indexOf(" [quickfixable]")
+    if (i > 0) msg.substring(0, i) else msg
   }
 
   override def reset(): Unit = {
