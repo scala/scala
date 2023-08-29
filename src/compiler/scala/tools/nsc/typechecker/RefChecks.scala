@@ -454,11 +454,11 @@ abstract class RefChecks extends Transform {
               // Only warn for the pair that has one leg in `clazz`.
               if (isMemberClass) checkOverrideDeprecated()
               def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
-              def exempted = javaDetermined(member) || member.overrides.exists(javaDetermined)
+              def exempted = javaDetermined(member) || javaDetermined(other) || member.overrides.exists(javaDetermined)
               // warn that nilary member matched nullary other, so either it was adapted by namer or will be silently mixed in by mixin
               def warnAdaptedNullaryOverride(): Unit = {
-                val named = if (isMemberClass) "" else s" (${member.fullLocationString})"
-                val msg = s"method$named without a parameter list overrides a method with a single empty one"
+                val mbr = if (isMemberClass) "method" else s"${member.fullLocationString} defined"
+                val msg = s"$mbr without a parameter list overrides ${other.fullLocationString} defined with a single empty parameter list"
                 val namePos = member.pos
                 val action =
                   if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
@@ -467,8 +467,8 @@ abstract class RefChecks extends Transform {
                 overrideErrorOrNullaryWarning(msg, action)
               }
               def warnExtraParens(): Unit = {
-                val named = if (isMemberClass) "" else s" (${member.fullLocationString})"
-                val msg = s"method$named with a single empty parameter list overrides method without any parameter list"
+                val mbr = if (isMemberClass) "method" else s"${member.fullLocationString} defined"
+                val msg = s"$mbr with a single empty parameter list overrides ${other.fullLocationString} defined without a parameter list"
                 val namePos = member.pos
                 val action =
                   if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
@@ -483,7 +483,7 @@ abstract class RefChecks extends Transform {
               else if (member.paramLists.isEmpty) {
                 // NullaryOverrideAdapted is only added to symbols being compiled, so check for a mismatch
                 // if both symbols are mixed in from the classpath
-                if (!member.isStable && other.paramLists.nonEmpty && !exempted && !other.isJavaDefined)
+                if (!member.isStable && other.paramLists.nonEmpty && !exempted)
                   warnAdaptedNullaryOverride()
               }
               else if (other.paramLists.isEmpty) {
