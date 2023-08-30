@@ -1,18 +1,24 @@
-nullary-override.scala:4: warning: method with a single empty parameter list overrides method without any parameter list [quickfixable]
+nullary-override.scala:4: warning: method with a single empty parameter list overrides method x in class A defined without a parameter list [quickfixable]
 class B extends A { override def x(): Int = 4 }
                                  ^
-nullary-override.scala:15: warning: method without a parameter list overrides a method with a single empty one [quickfixable]
+nullary-override.scala:15: warning: method without a parameter list overrides method x in class P defined with a single empty parameter list [quickfixable]
 class Q extends P { override def x: Int = 4 }
                                  ^
-nullary-override.scala:36: warning: method without a parameter list overrides a method with a single empty one [quickfixable]
+nullary-override.scala:36: warning: method without a parameter list overrides method x in trait T2 defined with a single empty parameter list [quickfixable]
 class Mix12a extends T1 with T2 { override def x   = "12a" }
                                                ^
-nullary-override.scala:37: warning: method with a single empty parameter list overrides method without any parameter list [quickfixable]
+nullary-override.scala:36: warning: method without a parameter list overrides method x in trait T1 defined with a single empty parameter list [quickfixable]
+class Mix12a extends T1 with T2 { override def x   = "12a" }
+                                               ^
+nullary-override.scala:37: warning: method with a single empty parameter list overrides method x in trait T1 defined without a parameter list [quickfixable]
 class Mix12b extends T1 with T2 { override def x() = "12b" }
                                                ^
-nullary-override.scala:40: warning: method with a single empty parameter list overrides method without any parameter list [quickfixable]
+nullary-override.scala:39: warning: method without a parameter list overrides method x in trait T2 defined with a single empty parameter list [quickfixable]
+class Mix21a extends T2 with T1 { override def x   = "21a" }
+                                               ^
+nullary-override.scala:40: warning: method with a single empty parameter list overrides method x in trait T1 defined without a parameter list [quickfixable]
 class Mix21b extends T2 with T1 { override def x() = "21b" }
                                                ^
 error: No warnings can be incurred under -Werror.
-5 warnings
+7 warnings
 1 error
