@@ -1,6 +1,6 @@
 {
   class C extends AnyRef {
-    @new inline @beanGetter() @new BeanProperty() <paramaccessor> val x: Int = _;
+    @new BeanProperty() @new inline @beanGetter() @new BeanProperty() <paramaccessor> val x: Int = _;
     def <init>(x: Int) = {
       super.<init>();
       ()
@@ -10,13 +10,13 @@
 }
 {
   class C extends AnyRef {
-    @scala.beans.BeanProperty <paramaccessor> private[this] val x: Int = _;
+    @scala.beans.BeanProperty @scala.beans.BeanProperty <paramaccessor> private[this] val x: Int = _;
     <stable> <accessor> <paramaccessor> def x: Int = C.this.x;
     def <init>(x: Int): C = {
       C.super.<init>();
       ()
     };
-    @inline @scala.annotation.meta.beanGetter @<notype> def getX(): Int = C.this.x
+    @scala.beans.BeanProperty @inline @scala.annotation.meta.beanGetter @scala.beans.BeanProperty def getX(): Int = C.this.x
   };
   ()
 }
