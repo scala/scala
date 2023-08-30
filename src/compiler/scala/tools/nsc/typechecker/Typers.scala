@@ -4016,7 +4016,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         return finish(ErroneousAnnotation)
       }
       if (currentRun.isScala3 && (/*annTypeSym.eq(SpecializedClass) ||*/ annTypeSym.eq(ElidableMethodClass)))
-        context.deprecationWarning(ann.pos, annTypeSym, s"@${annTypeSym.fullNameString} is ignored in Scala 3", "2.13.12")
+        context.warning(ann.pos, s"@${annTypeSym.fullNameString} is ignored in Scala 3", WarningCategory.Scala3Migration)
 
       /* Calling constfold right here is necessary because some trees (negated
        * floats and literals in particular) are not yet folded.
@@ -4972,19 +4972,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val result = typed(Function(Nil, methodValue) setSymbol funSym setPos pos, mode, pt)
 
+          val msg = "Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, " +
+            "write a function literal `() => m` instead"
+
           val action = {
             val etaPos = pos.withEnd(pos.end + 2)
             if (currentUnit.sourceAt(etaPos).endsWith(" _"))
-              runReporting.codeAction("replace by function literal", etaPos, s"() => ${currentUnit.sourceAt(pos)}", UnderscoreNullaryEtaWarnMsg)
+              runReporting.codeAction("replace by function literal", etaPos, s"() => ${currentUnit.sourceAt(pos)}", msg)
             else Nil
           }
 
-          if (currentRun.isScala3) {
-            UnderscoreNullaryEtaError(methodValue, action)
-          } else {
-            context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2", action)
-            result
-          }
+          if (currentRun.isScala3)
+            context.warning(pos, msg, WarningCategory.Scala3Migration, action)
+          else
+            context.deprecationWarning(pos, NoSymbol, msg, "2.13.2", action)
+
+          result
 
         case ErrorType =>
           methodValue
