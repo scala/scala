@@ -27,10 +27,7 @@ class PositionFilterTest {
   def `filters split messages`(): Unit = {
     val filter = createFilter
     val msg = "This is an important warning."
-    val longMessage = s"""$msg
-          |----
-          |Here is some fine print.
-          |Be sure to read it carefully.""".stripMargin
+    val longMessage = s"$msg [quickfixable]"
     filter.warning(pos, longMessage)
     filter.warning(pos, msg)
     assertEquals(1, store.infos.size)

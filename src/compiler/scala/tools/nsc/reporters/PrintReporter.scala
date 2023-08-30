@@ -54,18 +54,12 @@ trait PrintReporter extends internal.Reporter {
 
   /** Format a message and emit it. */
   protected def display(pos: Position, msg: String, severity: Severity): Unit = {
-    val text = formatMessage(pos, s"${clabel(severity)}${postProcess(msg)}", shortname)
+    val text = formatMessage(pos, s"${clabel(severity)}${msg}", shortname)
     severity match {
       case internal.Reporter.INFO => echoMessage(text)
       case _                      => printMessage(text)
     }
   }
-
-  /** Postprocess a message string for reporting.
-   *
-   *  The default implementation uses `Reporter.explanation` to include the explanatory addendum.
-   */
-  protected def postProcess(msg: String): String = Reporter.explanation(msg)
 
   def displayPrompt(): Unit = {
     writer.println()

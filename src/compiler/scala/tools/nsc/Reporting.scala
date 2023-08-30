@@ -310,16 +310,14 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean, site: Symbol): Unit = {
       val req     = if (required) "needs to" else "should"
-      val fqname  = "scala.language." + featureName
-      val explain = (
-        if (reportedFeature contains featureTrait) "" else
-          s"""
-             |----
-             |This can be achieved by adding the import clause 'import $fqname'
-             |or by setting the compiler option -language:$featureName.
-             |See the Scaladoc for value $fqname for a discussion
-             |why the feature $req be explicitly enabled.""".stripMargin
-        )
+      val fqname  = s"scala.language.$featureName"
+      val explain =
+        if (reportedFeature contains featureTrait) ""
+        else sm"""|
+                  |This can be achieved by adding the import clause 'import $fqname'
+                  |or by setting the compiler option -language:$featureName.
+                  |See the Scaladoc for value $fqname for a discussion
+                  |why the feature $req be explicitly enabled."""
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain".replace("#", construct)

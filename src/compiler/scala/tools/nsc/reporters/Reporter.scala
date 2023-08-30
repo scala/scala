@@ -55,32 +55,6 @@ object Reporter {
     val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
     loader.create[FilteringReporter](settings.reporter.value, settings.errorFn)(settings)
   }
-
-  /** Take the message with its explanation, if it has one, but stripping the separator line.
-   */
-  def explanation(msg: String): String =
-    if (msg == null) {
-      msg
-    } else {
-      val marker = msg.indexOf("\n----\n")
-      if (marker > 0) msg.substring(0, marker + 1) + msg.substring(marker + 6) else msg
-    }
-
-  /** Drop any explanation from the message, including the newline between the message and separator line.
-   */
-  def stripExplanation(msg: String): String =
-    if (msg == null) {
-      msg
-    } else {
-      val marker = msg.indexOf("\n----\n")
-      if (marker > 0) msg.substring(0, marker) else msg
-    }
-
-  /** Split the message into main message and explanation, as iterators of the text. */
-  def splitExplanation(msg: String): (Iterator[String], Iterator[String]) = {
-    val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
-    (err, exp.drop(1))
-  }
 }
 
 /** The reporter used in a Global instance.
@@ -150,10 +124,15 @@ abstract class FilteringReporter extends Reporter {
       }
       if (show) {
         positions(fpos) = severity
-        messages(fpos) ::= Reporter.stripExplanation(msg) // ignore explanatory suffix for suppressing duplicates
+        messages(fpos) ::= stripQuickfixable(msg)
       }
       show
     }
+  }
+
+  private def stripQuickfixable(msg: String): String = {
+    val i = msg.indexOf(" [quickfixable]")
+    if (i > 0) msg.substring(0, i) else msg
   }
 
   override def reset(): Unit = {
