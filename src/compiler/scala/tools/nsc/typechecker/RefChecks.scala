@@ -487,9 +487,9 @@ abstract class RefChecks extends Transform {
                   warnAdaptedNullaryOverride()
               }
               else if (member.paramLists.isEmpty) {
-                // NullaryOverrideAdapted is only added to symbols being compiled, so check for a mismatch
-                // if both symbols are mixed in from the classpath
-                if (!member.isStable && other.paramLists.nonEmpty && !exempted)
+                // Definitions that directly override get a parameter list and a `NullaryOverrideAdapted` attachment
+                // in Namers. Here we also warn when there's a mismatch between two mixed-in members.
+                if (!member.isStable && other.paramLists.nonEmpty && !exempted && !other.overrides.exists(javaDetermined))
                   warnAdaptedNullaryOverride()
               }
               else if (other.paramLists.isEmpty) {
