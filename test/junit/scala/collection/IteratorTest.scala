@@ -213,6 +213,16 @@ class IteratorTest {
     assertEquals(it.drop(1).next(), it.drop(1).drop(1).next())
   }
 
+  @Test def dropDoesNotOverflow(): Unit = {
+    assertEquals(List(1, 2, 3).iterator.drop(1).drop(Int.MaxValue).drop(1).toList.isEmpty, true)
+    assertEquals(List(1, 2, 3).iterator.drop(1).drop(Int.MaxValue).toList.isEmpty, true)
+    assertEquals(List(1, 2, 3).iterator.drop(Int.MaxValue).drop(1).toList.isEmpty, true)
+    assertEquals(List(1, 2, 3).reverseIterator.drop(1).drop(Int.MaxValue).toList.isEmpty, true)
+    assertEquals(List(1, 2, 3).reverseIterator.drop(1).drop(Int.MaxValue).drop(1).toList.isEmpty, true)
+    assertEquals(List(1, 2, 3).reverseIterator.drop(1).drop(Int.MaxValue).drop(1).toList.isEmpty, true)
+    assertSameElements(List(3) ++ List(1, 2, 3).reverseIterator.drop(1), List(3, 2, 1))
+  }
+
   @Test def dropIsChainable(): Unit = {
     assertSameElements(1 to 4, Iterator from 0 take 5 drop 1)
     assertSameElements(3 to 4, Iterator from 0 take 5 drop 3)

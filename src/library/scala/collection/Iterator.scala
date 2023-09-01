@@ -1259,7 +1259,10 @@ object Iterator extends IterableFactory[Iterator] {
         else adjustedBound min (until - lo)   // keep lesser bound
       if (rest == 0) empty
       else {
-        dropping += lo
+        dropping = {
+          val sum = dropping + lo
+          if (sum < 0) Int.MaxValue else sum
+        }
         remaining = rest
         this
       }
