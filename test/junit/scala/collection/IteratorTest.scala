@@ -213,6 +213,16 @@ class IteratorTest {
     assertEquals(it.drop(1).next(), it.drop(1).drop(1).next())
   }
 
+  @Test def dropNegativeReturnsSelf():Unit= {
+    val iterator = List(1).iterator
+    assertSame(iterator.drop(Int.MinValue), iterator)
+  }
+
+  @Test def dropMaxValueReturnsEmpty() :Unit = {
+    val iterator = List(1).iterator
+    assertSame(iterator.drop(Int.MaxValue), Iterator.empty)
+  }
+
   @Test def dropIsChainable(): Unit = {
     assertSameElements(1 to 4, Iterator from 0 take 5 drop 1)
     assertSameElements(3 to 4, Iterator from 0 take 5 drop 3)
@@ -331,6 +341,17 @@ class IteratorTest {
   @Test def take(): Unit = {
     assertEquals(10, (Iterator from 0 take 10).size)
   }
+
+  @Test def takeNegativeReturnsEmpty(): Unit = {
+    val iterator = List(1).iterator
+    assertSame(iterator.take(Int.MinValue), Iterator.empty)
+  }
+
+  @Test def takeMaxValueReturnsSelf(): Unit = {
+    val iterator = List(1).iterator
+    assertSame(iterator.take(Int.MaxValue), iterator)
+  }
+
   @Test def foreach(): Unit = {
     val it1 = Iterator.from(0) take 20
     var n = 0

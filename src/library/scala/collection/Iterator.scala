@@ -626,7 +626,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   @`inline` final def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
-  def take(n: Int): Iterator[A] = sliceIterator(0, n max 0)
+  def take(n: Int): Iterator[A] = if (n <= 0) Iterator.empty else if (n == Int.MaxValue) this else sliceIterator(0, n max 0)
 
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     private[this] var hd: A = _
@@ -642,7 +642,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() = if (hasNext) { hdDefined = false; hd } else Iterator.empty.next()
   }
 
-  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
+  def drop(n: Int): Iterator[A] = if (n <= 0) this else if (n == Int.MaxValue) Iterator.empty else sliceIterator(n, -1)
 
   def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
