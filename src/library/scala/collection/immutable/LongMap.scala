@@ -40,7 +40,7 @@ private[immutable] object LongMapUtils extends BitOperations.Long {
   }
 }
 
-import LongMapUtils._
+import LongMapUtils.{Long => _, _}
 
 /** A companion object for long maps.
   *

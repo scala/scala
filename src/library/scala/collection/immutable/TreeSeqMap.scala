@@ -362,7 +362,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
 
   /* The ordering implementation below is an adapted version of immutable.IntMap. */
   private[immutable] object Ordering {
-    import scala.collection.generic.BitOperations.Int._
+    import scala.collection.generic.BitOperations.Int.{Int => _, _}
 
     @inline private[immutable] def toBinaryString(i: Int): String = s"$i/${i.toBinaryString}"
 
