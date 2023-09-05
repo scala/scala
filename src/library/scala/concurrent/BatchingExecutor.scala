@@ -60,7 +60,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
           parentBlockContext = prevBlockContext
 
           @tailrec def processBatch(batch: List[Runnable]): Unit = batch match {
-            case Nil => ()
+            case null | Nil => ()
             case head :: tail =>
               _tasksLocal set tail
               try {
@@ -91,7 +91,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
       // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
       {
         val tasks = _tasksLocal.get
-        _tasksLocal set Nil
+        _tasksLocal set null
         if ((tasks ne null) && tasks.nonEmpty)
           unbatchedExecute(new Batch(tasks))
       }
