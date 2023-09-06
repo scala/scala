@@ -705,6 +705,47 @@ trait BlockContexts extends TestBase {
   testPopCustom()
 }
 
+package scala {
+  package concurrent {
+
+    object Access {
+      def internal: ExecutionContext = Future.InternalCallbackExecutor
+    }
+  }
+}
+
+trait BlockContexts_t9304 extends TestBase {
+  // Important not to import `Implicits.global` for this test, so it lives it its own trait.
+  def testTaskUsingBlockingMultipleTimes(): Unit = {
+    implicit val executionContext: ExecutionContext = scala.concurrent.Access.internal
+
+    import scala.concurrent.duration._
+
+    val f = Future(()).flatMap { _ =>
+      // this needs to be within an OnCompleteRunnable so that things are added to the batch
+      val p = Future.successful(42)
+      // we need the callback list to be non-empty when the blocking{} call is executing
+      p.onComplete { _ => () }
+      val r = p.map { _ =>
+        // trigger the resubmitUnbatched() call
+        blocking {
+          ()
+        }
+        // make sure that the other task runs to completion before continuing
+        Thread.sleep(500)
+        // now try again to blockOn()
+        blocking {
+          ()
+        }
+      }
+      p.onComplete { _ => () }
+      r
+    }
+    Await.result(f, 3.seconds)
+  }
+  testTaskUsingBlockingMultipleTimes()
+}
+
 @nowarn("cat=deprecation")
 trait Promises extends TestBase {
   import ExecutionContext.Implicits._
@@ -973,11 +1014,8 @@ with FutureCombinators
 with FutureProjections
 with Promises
 with BlockContexts
+with BlockContexts_t9304
 with Exceptions
 with GlobalExecutionContext
 with CustomExecutionContext
 with ExecutionContextPrepare
-{
-  System.exit(0)
-}
-

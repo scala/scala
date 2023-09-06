@@ -1,7 +1,9 @@
 
 package scala.concurrent
 
-import org.junit.Assert.assertTrue
+import java.util.concurrent.atomic.AtomicInteger
+
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -36,5 +38,22 @@ class FutureTest {
       p.complete(Try(s))
     }
     */
+  }
+
+  // refactor for scala/bug#9304
+  @Test def invariantsOfBatchingExecutor(): Unit = {
+    val count = new AtomicInteger
+    val be = new BatchingExecutor {
+      def unbatchedExecute(r: Runnable): Unit = {
+        r.run()
+      }
+      protected def resubmitOnBlock: Boolean = false
+    }
+    def test(): Unit = {
+      val n = count.incrementAndGet()
+      assertEquals(1, n)
+    }
+    be.execute(() => test())
+    assertEquals(1, count.get)
   }
 }
