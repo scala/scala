@@ -5,17 +5,13 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.tools.testing.AssertUtil._
-import scala.util.Try
+import scala.util.{Success, Try}
 
-
-@RunWith(classOf[JUnit4])
 class FutureTest {
   @Test
-  def `bug/issues#10513 firstCompletedOf must not leak references`(): Unit = {
+  def `scala/bug#10513 firstCompletedOf must not leak references`: Unit = {
     val unfulfilled = Promise[AnyRef]()
     val quick       = Promise[AnyRef]()
     val result      = new AnyRef
@@ -55,5 +51,38 @@ class FutureTest {
     }
     be.execute(() => test())
     assertEquals(1, count.get)
+  }
+
+  @Test def `scala/bug#9304 batching executor failure when blocking`: Unit = {
+    implicit val directExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(_.run())
+
+    val p = Promise[Int]()
+    val p0 = Promise[Int]()
+    val p1 = Promise[Int]()
+
+    val f =
+      p0.future.flatMap { _ =>
+        val g = p.future.flatMap { _ =>
+          Future.successful(42)
+        }
+        // At this point scala.concurrent.Future.InternalCallbackExecutor has 1 runnable in _tasksLocal
+        // (flatMap from the previous line)
+
+        // blocking sets _tasksLocal to Nil (instead of null). Next it calls Batch.run, which checks
+        // that _tasksLocal must be null, throws exception and all tasks are lost.
+        // ... Because blocking throws an exception, we need to swallow it to demonstrate that Future `f` is not
+        // completed.
+        Try(blocking { 27 })
+        g
+      }
+
+    p.completeWith(p1.future.map(_ + 1))
+    p0.complete(Success(17))
+    p1.complete(Success(5))
+
+    assertTrue("p.future.isCompleted", p.future.isCompleted)
+    assertEquals(Some(Success(5+1)), p.future.value)
+    assertTrue("f.isCompleted", f.isCompleted)
+    assertEquals(Some(Success(42)), f.value)
   }
 }
