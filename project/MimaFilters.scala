@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.11"),
+    mimaReferenceVersion := Some("2.13.12"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -39,21 +39,6 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
-    // PR 10406
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse#PerRunReporting.deprecationWarning"),
-
-    // extend AbstractIterator
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleHashIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapKeyValueTupleReverseIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator.next"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.MapValueIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.NewVectorIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetHashIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetIterator"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.SetReverseIterator"),
   )
 
   override val buildSettings = Seq(
