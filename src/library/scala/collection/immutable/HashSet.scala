@@ -1970,7 +1970,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
 
   private def isAliased: Boolean = aliased != null
 
-  /** The root node of the partially build hashmap */
+  /** The root node of the partially built hashmap. */
   private var rootNode: BitmapIndexedSetNode[A] = newEmptyRootNode
 
   /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
