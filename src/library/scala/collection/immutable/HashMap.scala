@@ -2228,7 +2228,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
 
   private def isAliased: Boolean = aliased != null
 
-  /** The root node of the partially build hashmap */
+  /** The root node of the partially built hashmap. */
   private var rootNode: BitmapIndexedMapNode[K, V] = newEmptyRootNode
 
   private[immutable] def getOrElse[V0 >: V](key: K, value: V0): V0 =
