@@ -43,14 +43,14 @@ package object scala {
   }
 
   @deprecated("Use IterableOnce instead of TraversableOnce", "2.13.0")
-  type TraversableOnce[+A] = scala.collection.IterableOnce[A]
+  type IterableOnce[+A] = scala.collection.IterableOnce[A]
 
   type IterableOnce[+A] = scala.collection.IterableOnce[A]
 
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
-  type Traversable[+A] = scala.collection.Iterable[A]
+  type Iterable[+A] = scala.collection.Iterable[A]
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
-  val Traversable = scala.collection.Iterable
+  val Iterable = scala.collection.Iterable
 
   type Iterable[+A] = scala.collection.Iterable[A]
   val Iterable = scala.collection.Iterable

@@ -20,6 +20,7 @@ import scala.language.implicitConversions
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 import scala.runtime.{AbstractFunction1, AbstractFunction2}
+import scala.collection.Iterable
 
 /**
   * A template trait for collections which can be traversed either once only
@@ -174,7 +175,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @`inline` def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
 
   @deprecated("Use .iterator.to(Iterable) instead", "2.13.0")
-  @`inline` final def toTraversable: Traversable[A] = toIterable
+  @`inline` final def toTraversable: Iterable[A] = toIterable
 
   @deprecated("Use .iterator.to(Iterable) instead", "2.13.0")
   @`inline` final def toIterable: Iterable[A] = Iterable.from(it)

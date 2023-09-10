@@ -14,13 +14,13 @@ package scala
 
 package object collection {
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
-  type Traversable[+X] = Iterable[X]
+  type Iterable[+X] = Iterable[X]
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
-  val Traversable = Iterable
+  val Iterable = Iterable
   @deprecated("Use IterableOnce instead of TraversableOnce", "2.13.0")
-  type TraversableOnce[+X] = IterableOnce[X]
+  type IterableOnce[+X] = IterableOnce[X]
   @deprecated("Use IterableOnce instead of TraversableOnce", "2.13.0")
-  val TraversableOnce = IterableOnce
+  val IterableOnce = IterableOnce
   @deprecated("Use SeqOps instead of SeqLike", "2.13.0")
   type SeqLike[A, T] = SeqOps[A, Seq, T]
   @deprecated("Use SeqOps (for the methods) or IndexedSeqOps (for fast indexed access) instead of ArrayLike", "2.13.0")

@@ -17,6 +17,7 @@ import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
+import scala.collection.Iterable
 
 /** Base trait for generic collections.
   *
@@ -144,7 +145,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return An Iterable containing all elements of this $coll.
     */
   @deprecated("toTraversable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.0")
-  final def toTraversable: Traversable[A] = toIterable
+  final def toTraversable: Iterable[A] = toIterable
 
   override def isTraversableAgain: Boolean = true
 
