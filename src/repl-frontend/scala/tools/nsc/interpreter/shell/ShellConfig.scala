@@ -15,18 +15,21 @@ package scala.tools.nsc.interpreter.shell
 import java.io.File
 import java.util.{Formattable, FormattableFlags, Formatter}
 
+import scala.annotation.nowarn
 import scala.sys.{BooleanProp, Prop}
 import scala.sys.Prop._
 
-import scala.tools.nsc.{Properties, GenericRunnerSettings, Settings}
-import scala.tools.nsc.Properties._
-
+import scala.tools.nsc.{GenericRunnerSettings, Settings}
+import scala.tools.nsc.Properties.{
+  coloredOutputEnabled, envOrNone, javaVersion, javaVmName,
+  shellBannerString, shellInterruptedString, shellPromptString, shellWelcomeString,
+  userHome, versionString, versionNumberString,
+}
 
 object ShellConfig {
-  import scala.tools.nsc.Properties
-
-  val EDITOR = Properties.envOrNone("EDITOR")
-  val InterruptedString = Properties.shellInterruptedString
+  val EDITOR = envOrNone("EDITOR")
+  // how to say we :quit
+  val InterruptedString = shellInterruptedString
 
   def apply(settings: Settings) = settings match {
     case settings: GenericRunnerSettings => new ShellConfig {
@@ -37,6 +40,7 @@ object ShellConfig {
       val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
+      @nowarn def xsource: String = if (settings.isScala3.value) settings.source.value.versionString else ""
     }
     case _ => new ShellConfig {
       val filesToPaste: List[String] = Nil
@@ -46,6 +50,7 @@ object ShellConfig {
       val doCompletion: Boolean = !settings.noCompletion.value
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
+      @nowarn def xsource: String = if (settings.isScala3.value) settings.source.value.versionString else ""
     }
   }
 }
@@ -59,11 +64,14 @@ trait ShellConfig {
   def haveInteractiveConsole: Boolean
   def viMode: Boolean = envOrNone("SHELLOPTS").map(_.split(":").contains("vi")).getOrElse(false)
 
+  // source compatibility, i.e., -Xsource
+  def xsource: String
+
   private def bool(name: String) = BooleanProp.keyExists(name)
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
-  val colorOk = Properties.coloredOutputEnabled
+  val colorOk = coloredOutputEnabled
 
   val historyFile = s"$userHome/.scala_history_jline3"
 
@@ -81,7 +89,9 @@ trait ShellConfig {
         val w       = if (width >= 0) s"$width" else ""
         val p       = if (precision >= 0) s".$precision" else ""
         val fmt     = s"%${left}${w}${p}s"
-        formatter.format(fmt, version)
+
+        val xversion = if (xsource.isEmpty) version else s"$version -Xsource:$xsource"
+        formatter.format(fmt, xversion)
       }
     }
     s.format(v, javaVersion, javaVmName)
