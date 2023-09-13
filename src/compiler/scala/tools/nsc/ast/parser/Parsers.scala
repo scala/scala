@@ -816,7 +816,7 @@ self =>
         val wrn = sm"""|$msg
                        |Use '-Wconf:msg=lambda-parens:s' to silence this warning."""
         def actions =
-          if (tree.pos.isRange) runReporting.codeAction("add parentheses", tree.pos, s"(${unit.sourceAt(tree.pos)})", msg)
+          if (tree.pos.isRange) runReporting.codeAction("add parentheses", tree.pos, s"(${unit.source.sourceAt(tree.pos)})", msg)
           else Nil
         migrationWarning(tree.pos.point, wrn, "2.13.11", actions)
         List(convertToParam(tree))
@@ -1032,9 +1032,9 @@ self =>
       val pos                   = lhs.pos.union(rhs.pos).union(operatorPos).withEnd(in.lastOffset).withPoint(offset)
 
       if (targs.nonEmpty) {
-        val qual = unit.sourceAt(lhs.pos)
-        val fun = s"${CodeAction.maybeWrapInParens(qual)}.${unit.sourceAt(operatorPos.withEnd(rhs.pos.start))}".trim
-        val fix = s"$fun${CodeAction.wrapInParens(unit.sourceAt(rhs.pos))}"
+        val qual = unit.source.sourceAt(lhs.pos)
+        val fun = s"${CodeAction.maybeWrapInParens(qual)}.${unit.source.sourceAt(operatorPos.withEnd(rhs.pos.start))}".trim
+        val fix = s"$fun${CodeAction.wrapInParens(unit.source.sourceAt(rhs.pos))}"
         val msg = "type application is not allowed for infix operators"
         migrationWarning(offset, msg, "2.13.11",
           runReporting.codeAction("use selection", pos, fix, msg))

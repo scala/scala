@@ -344,7 +344,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
 
     def codeAction(title: String, pos: Position, newText: String, desc: String, expected: Option[(String, CompilationUnit)] = None) =
-      CodeAction(title, pos, newText, desc, expected.forall(e => e._1 == e._2.sourceAt(pos)))
+      CodeAction(title, pos, newText, desc, expected.forall(e => e._1 == e._2.source.sourceAt(pos)))
 
     // Remember CodeActions that match `-quickfix` and report the error through the reporter
     def error(pos: Position, msg: String, actions: List[CodeAction]): Unit = {
