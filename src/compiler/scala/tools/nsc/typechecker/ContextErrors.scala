@@ -200,7 +200,7 @@ trait ContextErrors extends splain.SplainErrors {
       // DefTree doesn't give the name position; also it can be a synthetic accessor DefDef with only offset pos.
       val namePos = tree.pos.focus.withEnd(tree.pos.point + tree.symbol.decodedName.length)
       val action =
-        if (currentUnit.sourceAt(namePos) == tree.symbol.decodedName) runReporting.codeAction("insert explicit type", namePos.focusEnd, s": $inferred", msg)
+        if (namePos.source.sourceAt(namePos) == tree.symbol.decodedName) runReporting.codeAction("insert explicit type", namePos.focusEnd, s": $inferred", msg)
         else Nil
       if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration, action)
       else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType, action)

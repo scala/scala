@@ -467,7 +467,7 @@ abstract class RefChecks extends Transform {
                 val msg = s"$mbr without a parameter list overrides ${other.fullLocationString} defined with a single empty parameter list"
                 val namePos = member.pos
                 val action =
-                  if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
+                  if (namePos.isDefined && currentUnit.source.sourceAt(namePos) == member.decodedName)
                     runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
                   else Nil
                 overrideErrorOrNullaryWarning(msg, action)
@@ -477,7 +477,7 @@ abstract class RefChecks extends Transform {
                 val msg = s"$mbr with a single empty parameter list overrides ${other.fullLocationString} defined without a parameter list"
                 val namePos = member.pos
                 val action =
-                  if (namePos.isDefined && currentUnit.sourceAt(namePos) == member.decodedName)
+                  if (namePos.isDefined && currentUnit.source.sourceAt(namePos) == member.decodedName)
                     runReporting.codeAction("remove empty parameter list", namePos.focusEnd.withEnd(namePos.end + 2), "", msg, expected = Some(("()", currentUnit)))
                   else Nil
                 overrideErrorOrNullaryWarning(msg, action)
@@ -1779,7 +1779,7 @@ abstract class RefChecks extends Transform {
           val msg = s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead"
           val namePos = sym.pos.focus.withEnd(sym.pos.point + sym.decodedName.length)
           val action =
-            if (currentUnit.sourceAt(namePos) == sym.decodedName)
+            if (currentUnit.source.sourceAt(namePos) == sym.decodedName)
               runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)
             else Nil
           refchecksWarning(sym.pos, msg, WarningCategory.LintNullaryUnit, action)

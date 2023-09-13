@@ -1155,10 +1155,13 @@ trait Namers extends MethodSynthesis {
             val leg = legacy.toString
             val help = if (pts != leg) s" instead of $leg" else ""
             val msg = s"under -Xsource:3, inferred $pts$help"
-            val namePos = tree.pos.focus.withEnd(tree.pos.point + tree.symbol.decodedName.length)
-            val action =
-              if (currentUnit.sourceAt(namePos) == tree.symbol.decodedName) runReporting.codeAction("add explicit type", namePos.focusEnd, s": $leg", msg)
-              else Nil
+            val src = currentUnit.source
+            val pos = {
+              val eql = src.indexWhere(_ == '=', start = tree.rhs.pos.start, step = -1)
+              val declEnd = src.indexWhere(!_.isWhitespace, start = eql - 1, step = -1) + 1
+              Some(declEnd).filter(_ > 0).map(src.position)
+            }
+            val action = pos.map(p => runReporting.codeAction("add explicit type", p.focus, s": $leg", msg)).getOrElse(Nil)
             runReporting.warning(tree.pos, msg, WarningCategory.Scala3Migration, tree.symbol, action)
           }
           pt
