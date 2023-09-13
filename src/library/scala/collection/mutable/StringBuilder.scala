@@ -17,6 +17,7 @@ package mutable
 import java.lang.{ StringBuilder => JavaStringBuilder }
 import scala.annotation.migration
 import immutable.StringLike
+import scala.collection.IterableOnce
 
 /** A builder for mutable sequence of characters.  This class provides an API
  *  mostly compatible with `java.lang.StringBuilder`, except where there are
@@ -229,7 +230,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @param  xs  the characters to be appended.
    *  @return     this StringBuilder.
    */
-  def appendAll(xs: TraversableOnce[Char]): StringBuilder = appendAll(xs.toArray)
+  def appendAll(xs: IterableOnceIterableOnce[Char]): StringBuilder = appendAll(xs.toArray)
 
   /** Appends all the Chars in the given Array[Char] to this sequence.
    *
@@ -343,7 +344,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @return       this StringBuilder.
    *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
    */
-  def insertAll(index: Int, xs: TraversableOnce[Char]): StringBuilder = insertAll(index, xs.toArray)
+  def insertAll(index: Int, xs: IterableOnceIterableOnce[Char]): StringBuilder = insertAll(index, xs.toArray)
 
   /** Inserts the given Array[Char] into this sequence at the given index.
    *

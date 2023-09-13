@@ -17,13 +17,14 @@ package generic
 import mutable.Builder
 import scala.language.higherKinds
 import scala.reflect.ClassTag
+import scala.collection.Iterable
 
 /** This class represents companions of classes which require ClassTags
  *  for their element types.
  *
  *  @author Aleksandar Prokopec
  */
-abstract class GenericClassTagCompanion[+CC[X] <: Traversable[X]] {
+abstract class GenericClassTagCompanion[+CC[X] <: Iterable[X]] {
   protected[this] type Coll = CC[_]
 
   def newBuilder[A](implicit ord: ClassTag[A]): Builder[A, CC[A]]

@@ -20,6 +20,7 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.io.File
 import scala.tools.nsc.settings.FscSettings
 import scala.reflect.internal.util.ScalaClassLoader
+import scala.Iterable
 
 /** An Ant task to compile with the fast Scala compiler (`fsc`).
  *
@@ -173,7 +174,7 @@ class FastScalac extends Scalac {
     java.createArg() setValue "scala.tools.nsc.CompileClient"
 
     // Encode scalac/javac args for use in a file to be read back via "@file.txt"
-    def encodeScalacArgsFile(t: Traversable[String]) = t map { s =>
+    def encodeScalacArgsFile(t: Iterable[String]) = t map { s =>
       if(s.find(c => c <= ' ' || "\"'\\".contains(c)).isDefined)
         "\"" + s.flatMap(c => (if(c == '"' || c == '\\') "\\" else "") + c ) + "\""
       else s

@@ -15,6 +15,7 @@ package collection
 
 import generic._
 import mutable.Builder
+import scala.collection.Iterable
 
 /** A base trait for non-strict views of traversable collections.
  *  $traversableViewInfo
@@ -31,9 +32,9 @@ object TraversableView {
     def result() = throw new UnsupportedOperationException("TraversableView.Builder.result")
     def clear() {}
   }
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] =
-    new CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] {
+  type Coll = TraversableView[_, C] forSome {type C <: Iterable[_]}
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, TraversableView[A, Iterable[_]]] =
+    new CanBuildFrom[Coll, A, TraversableView[A, Iterable[_]]] {
       def apply(from: Coll) = new NoBuilder
       def apply() = new NoBuilder
     }

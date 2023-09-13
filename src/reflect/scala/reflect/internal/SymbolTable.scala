@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 import scala.reflect.internal.settings.MutableSettings
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 import scala.reflect.io.AbstractFile
+import scala.IterableOnce
 
 abstract class SymbolTable extends macros.Universe
                               with Collections
@@ -186,7 +187,7 @@ abstract class SymbolTable extends macros.Universe
   private[internal] def throwRequirementError(msg: Any): Nothing =
     throw new java.lang.IllegalArgumentException(s"requirement failed: ${supplementErrorMessage(String valueOf msg)}")
 
-  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+  @inline final def findSymbol(xs: IterableOnceIterableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
     xs find p getOrElse NoSymbol
   }
 

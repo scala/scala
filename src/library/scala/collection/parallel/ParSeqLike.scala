@@ -16,7 +16,6 @@ package collection.parallel
 import scala.collection.{ SeqLike, GenSeq, GenIterable, Iterator }
 import scala.collection.generic.DefaultSignalling
 import scala.collection.generic.AtomicIndexFlag
-import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.VolatileAbort
 
 import scala.collection.parallel.ParallelCollectionImplicits._
@@ -154,9 +153,9 @@ self =>
     tasksupport.executeAndWaitResult(new Reverse(() => newCombiner, splitter) mapResult { _.resultWithTaskSupport })
   }
 
-  def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
+  def reverseMap[S, That](f: T => S)(implicit bf: BuildFrom[Repr, S, That]): That = if (bf.newBuilder(repr).isCombiner) {
     tasksupport.executeAndWaitResult(
-      new ReverseMap[S, That](f, () => bf(repr).asCombiner, splitter) mapResult { _.resultWithTaskSupport }
+      new ReverseMap[S, That](f, () => bf.newBuilder(repr).asCombiner, splitter) mapResult { _.resultWithTaskSupport }
     )
   } else setTaskSupport(seq.reverseMap(f)(bf2seq(bf)), tasksupport)
   /*bf ifParallel { pbf =>
@@ -187,7 +186,7 @@ self =>
   override def sameElements[U >: T](that: GenIterable[U]): Boolean = that ifParSeq { pthat =>
     val ctx = new DefaultSignalling with VolatileAbort
     length == pthat.length && tasksupport.executeAndWaitResult(new SameElements(splitter assign ctx, pthat.splitter))
-  } otherwise seq.sameElements(that)
+  } otherwise seq.iterator.sameElements(that)
 
   /** Tests whether this $coll ends with the given parallel sequence.
    *
@@ -207,12 +206,12 @@ self =>
     }
   } otherwise seq.endsWith(that)
 
-  def patch[U >: T, That](from: Int, patch: GenSeq[U], replaced: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  def patch[U >: T, That](from: Int, patch: GenSeq[U], replaced: Int)(implicit bf: BuildFrom[Repr, U, That]): That = {
     val realreplaced = replaced min (length - from)
-    if (patch.isParSeq && bf(repr).isCombiner && (size - realreplaced + patch.size) > MIN_FOR_COPY) {
+    if (patch.isParSeq && bf.newBuilder(repr).isCombiner && (size - realreplaced + patch.size) > MIN_FOR_COPY) {
       val that = patch.asParSeq
       val pits = splitter.psplitWithSignalling(from, replaced, length - from - realreplaced)
-      val cfactory = combinerFactory(() => bf(repr).asCombiner)
+      val cfactory = combinerFactory(() => bf.newBuilder(repr).asCombiner)
       val copystart = new Copy[U, That](cfactory, pits(0))
       val copymiddle = wrap {
         val tsk = new that.Copy[U, That](cfactory, that.splitter)
@@ -225,9 +224,9 @@ self =>
     } else patch_sequential(from, patch.seq, replaced)
   }
 
-  private def patch_sequential[U >: T, That](fromarg: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  private def patch_sequential[U >: T, That](fromarg: Int, patch: Seq[U], r: Int)(implicit bf: BuildFrom[Repr, U, That]): That = {
     val from = 0 max fromarg
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     val repl = (r min (length - from)) max 0
     val pits = splitter.psplitWithSignalling(from, repl, length - from - repl)
     b ++= pits(0)
@@ -236,9 +235,9 @@ self =>
     setTaskSupport(b.result(), tasksupport)
   }
 
-  def updated[U >: T, That](index: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (bf(repr).isCombiner) {
+  def updated[U >: T, That](index: Int, elem: U)(implicit bf: BuildFrom[Repr, U, That]): That = if (bf.newBuilder(repr).isCombiner) {
     tasksupport.executeAndWaitResult(
-      new Updated(index, elem, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult {
+      new Updated(index, elem, combinerFactory(() => bf.newBuilder(repr).asCombiner), splitter) mapResult {
         _.resultWithTaskSupport
       }
     )
@@ -247,22 +246,22 @@ self =>
     tasksupport.executeAndWaitResult(new Updated(index, elem, pbf, splitter) mapResult { _.result })
   } otherwise seq.updated(index, elem)(bf2seq(bf))*/
 
-  def +:[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  def +:[U >: T, That](elem: U)(implicit bf: BuildFrom[Repr, U, That]): That = {
     patch(0, mutable.ParArray(elem), 0)
   }
 
-  def :+[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  def :+[U >: T, That](elem: U)(implicit bf: BuildFrom[Repr, U, That]): That = {
     patch(length, mutable.ParArray(elem), 0)
   }
 
-  def padTo[U >: T, That](len: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (length < len) {
+  def padTo[U >: T, That](len: Int, elem: U)(implicit bf: BuildFrom[Repr, U, That]): That = if (length < len) {
     patch(length, new immutable.Repetition(elem, len - length), 0)
   } else patch(length, Nil, 0)
 
-  override def zip[U >: T, S, That](that: GenIterable[S])(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf(repr).isCombiner && that.isParSeq) {
+  override def zip[U >: T, S, That](that: GenIterable[S])(implicit bf: BuildFrom[Repr, (U, S), That]): That = if (bf.newBuilder(repr).isCombiner && that.isParSeq) {
     val thatseq = that.asParSeq
     tasksupport.executeAndWaitResult(
-      new Zip(length min thatseq.length, combinerFactory(() => bf(repr).asCombiner), splitter, thatseq.splitter) mapResult {
+      new Zip(length min thatseq.length, combinerFactory(() => bf.newBuilder(repr).asCombiner), splitter, thatseq.splitter) mapResult {
         _.resultWithTaskSupport
       }
     )

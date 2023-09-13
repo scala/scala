@@ -16,11 +16,12 @@ package mutable
 
 import generic._
 import parallel.mutable.ParIterable
+import scala.collection.mutable.Iterable
 
 /** A base trait for iterable collections that can be mutated.
  *  $iterableInfo
  */
-trait Iterable[A] extends Traversable[A]
+trait Iterable[A] extends Iterable[A]
 //                     with GenIterable[A]
                      with scala.collection.Iterable[A]
                      with GenericTraversableTemplate[A, Iterable]

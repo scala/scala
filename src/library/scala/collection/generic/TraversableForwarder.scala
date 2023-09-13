@@ -18,6 +18,7 @@ import scala.collection._
 import mutable.{ Buffer, StringBuilder }
 import immutable.{ List, Stream }
 import scala.reflect.ClassTag
+import scala.collection.Iterable
 
 /** This trait implements a forwarder for traversable objects. It forwards
  *  all calls to a different traversable, except for:
@@ -31,9 +32,9 @@ import scala.reflect.ClassTag
  *  @since   2.8
  */
 @deprecated("forwarding is inherently unreliable since it is not automated and new methods can be forgotten", "2.11.0")
-trait TraversableForwarder[+A] extends Traversable[A] {
+trait TraversableForwarder[+A] extends Iterable[A] {
   /** The traversable object to which calls are forwarded. */
-  protected def underlying: Traversable[A]
+  protected def underlying: Iterable[A]
 
   override def foreach[U](f: A => U): Unit = underlying foreach f
   override def isEmpty: Boolean = underlying.isEmpty
@@ -60,7 +61,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def headOption: Option[A] = underlying.headOption
   override def last: A = underlying.last
   override def lastOption: Option[A] = underlying.lastOption
-  override def copyToBuffer[B >: A](dest: Buffer[B]) = underlying.copyToBuffer(dest)
+  override def copyToBuffer[B >: A](dest: Buffer[B]) = dest ++= underlying
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = underlying.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = underlying.copyToArray(xs, start)
   override def copyToArray[B >: A](xs: Array[B]) = underlying.copyToArray(xs)

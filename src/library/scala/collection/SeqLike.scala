@@ -286,11 +286,11 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     b.result()
   }
 
-  def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def reverseMap[B, That](f: A => B)(implicit bf: BuildFrom[Repr, B, That]): That = {
     var xs: List[A] = List()
     for (x <- this)
       xs = x :: xs
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     for (x <- xs)
       b += f(x)
 
@@ -428,7 +428,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *    @return       a new $coll which contains all elements of this $coll
    *                  followed by all elements of `that`.
    */
-  override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
+  override def union[B >: A, That](that: GenSeq[B])(implicit bf: BuildFrom[Repr, B, That]): That =
     this ++ that
 
   /** Computes the multiset difference between this $coll and another sequence.
@@ -522,8 +522,8 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     }
   }
 
-  def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     var i = 0
     val it = this.iterator
     while (i < from && it.hasNext) {
@@ -540,9 +540,9 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     b.result()
   }
 
-  def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: BuildFrom[Repr, B, That]): That = {
     if (index < 0) throw new IndexOutOfBoundsException(index.toString)
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     var i = 0
     val it = this.iterator
     while (i < index && it.hasNext) {
@@ -556,22 +556,22 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     b.result()
   }
 
-  def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def +:[B >: A, That](elem: B)(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     b += elem
     b ++= thisCollection
     b.result()
   }
 
-  def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def :+[B >: A, That](elem: B)(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     b ++= thisCollection
     b += elem
     b.result()
   }
 
-  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     val L = length
     b.sizeHint(math.max(L, len))
     var diff = len - L

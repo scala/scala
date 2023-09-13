@@ -14,6 +14,7 @@ package scala
 package reflect
 package internal.util
 
+import scala.IterableOnce
 object HashSet {
   def apply[T >: Null <: AnyRef](initialCapacity: Int): HashSet[T] = this("No Label", initialCapacity)
   def apply[T >: Null <: AnyRef](label: String, initialCapacity: Int): HashSet[T] =
@@ -69,7 +70,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     used += 1
     if (used > (table.length >> 2)) growTable()
   }
-  def addEntries(xs: TraversableOnce[T]) {
+  def addEntries(xs: IterableOnceIterableOnce[T]) {
     xs foreach addEntry
   }
 

@@ -15,6 +15,7 @@ package collection
 
 import generic._
 import TraversableView.NoBuilder
+import scala.collection.Iterable
 
 /** A base trait for non-strict views of sequences.
  *  $seqViewInfo
@@ -25,7 +26,7 @@ trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
  *  `SeqView`s work. Its definitions are generally not accessed directly by clients.
  */
 object SeqView {
-  type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
+  type Coll = TraversableView[_, C] forSome {type C <: Iterable[_]}
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] =
     new CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] {
       def apply(from: Coll) = new NoBuilder

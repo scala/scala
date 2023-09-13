@@ -21,6 +21,7 @@ import parallel.ParIterable
 import scala.collection.immutable.{::, List, Nil}
 import scala.language.higherKinds
 import scala.runtime.AbstractFunction0
+import scala.collection.{ Iterable, IterableOnce }
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *
@@ -74,13 +75,13 @@ import scala.runtime.AbstractFunction0
 trait TraversableLike[+A, +Repr] extends Any
                                     with HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]
-                                    with TraversableOnce[A]
+                                    with IterableOnceIterableOnce[A]
                                     with GenTraversableLike[A, Repr]
                                     with Parallelizable[A, ParIterable[A]]
 {
   self =>
 
-  import Traversable.breaks._
+  import Iterable.breaks._
 
   /** The type implementing this traversable */
   protected[this] type Self = Repr
@@ -97,12 +98,12 @@ trait TraversableLike[+A, +Repr] extends Any
    *  By default this is implemented as the current collection object itself,
    *  but this can be overridden.
    */
-  protected[this] def thisCollection: Traversable[A] = this.asInstanceOf[Traversable[A]]
+  protected[this] def thisCollection: Iterable[A] = this.asInstanceOf[Iterable[A]]
 
   /** A conversion from collections of type `Repr` to `$Coll` objects.
    *  By default this is implemented as just a cast, but this can be overridden.
    */
-  protected[this] def toCollection(repr: Repr): Traversable[A] = repr.asInstanceOf[Traversable[A]]
+  protected[this] def toCollection(repr: Repr): Iterable[A] = repr.asInstanceOf[Iterable[A]]
 
   /** Creates a new builder for this collection type.
    */
@@ -145,9 +146,9 @@ trait TraversableLike[+A, +Repr] extends Any
 
   def hasDefiniteSize = true
 
-  def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     def defaultPlusPlus: That = {
-      val b = bf(repr)
+      val b = bf.newBuilder(repr)
       if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.seq.size)
       b ++= thisCollection
       b ++= that.seq
@@ -209,9 +210,9 @@ trait TraversableLike[+A, +Repr] extends Any
    *    @return       a new $coll which contains all elements of this $coll
    *                  followed by all elements of `that`.
    */
-  def ++:[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def ++:[B >: A, That](that: IterableOnceIterableOnce[B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     def defaultPlusPlus: That = {
-      val b = bf(repr)
+      val b = bf.newBuilder(repr)
       if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
       b ++= that
       b ++= thisCollection
@@ -273,12 +274,12 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return       a new collection of type `That` which contains all elements
    *                of this $coll followed by all elements of `that`.
    */
-  def ++:[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
-    (that ++ seq)(breakOut)
+  def ++:[B >: A, That](that: Iterable[B])(implicit bf: BuildFrom[Repr, B, That]): That =
+    (that.iterator ++ seq)(breakOut)
 
-  def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def map[B, That](f: A => B)(implicit bf: BuildFrom[Repr, B, That]): That = {
     def builder = { // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
-      val b = bf(repr)
+      val b = bf.newBuilder(repr)
       b.sizeHint(this)
       b
     }
@@ -287,8 +288,8 @@ trait TraversableLike[+A, +Repr] extends Any
     b.result
   }
 
-  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    def builder = bf(repr) // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: BuildFrom[Repr, B, That]): That = {
+    def builder = bf.newBuilder(repr) // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
     val b = builder
     for (x <- this) b ++= f(x).seq
     b.result
@@ -402,8 +403,8 @@ trait TraversableLike[+A, +Repr] extends Any
    */
   def filterNot(p: A => Boolean): Repr = filterImpl(p, isFlipped = true)
 
-  def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def collect[B, That](pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     foreach(pf.runWith(b += _))
     b.result
   }
@@ -560,10 +561,10 @@ trait TraversableLike[+A, +Repr] extends Any
     result
   }
 
-  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]): That = scanLeft(z)(op)
+  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: BuildFrom[Repr, B, That]): That = scanLeft(z)(op)
 
-  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
+  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: BuildFrom[Repr, B, That]): That = {
+    val b = bf.newBuilder(repr)
     b.sizeHint(this, 1)
     var acc = z
     b += acc
@@ -572,14 +573,14 @@ trait TraversableLike[+A, +Repr] extends Any
   }
 
   @migration("The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.", "2.9.0")
-  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: BuildFrom[Repr, B, That]): That = {
     var scanned = List(z)
     var acc = z
     for (x <- reversed) {
       acc = op(x, acc)
       scanned ::= acc
     }
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     for (elem <- scanned) b += elem
     b.result
   }
@@ -775,13 +776,13 @@ trait TraversableLike[+A, +Repr] extends Any
   }
 
   @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
-  def toTraversable: Traversable[A] = thisCollection
+  def toTraversable: Iterable[A] = thisCollection
 
-  def toIterator: Iterator[A] = toStream.iterator
+  def iterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
   // Override to provide size hint.
-  override def to[Col[_]](implicit cbf: CanBuildFrom[Nothing, A, Col[A @uV]]): Col[A @uV] = {
-    val b = cbf()
+  override def to[Col[_]](implicit cbf: Factory[A, Col[A @uV]]): Col[A @uV] = {
+    val b = cbf.newBuilder
     b.sizeHint(this)
     b ++= thisCollection
     b.result
@@ -929,8 +930,8 @@ trait TraversableLike[+A, +Repr] extends Any
      *                  `f` to each element of the outer $coll that satisfies
      *                  predicate `p` and collecting the results.
      */
-    def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-      val b = bf(repr)
+    def map[B, That](f: A => B)(implicit bf: BuildFrom[Repr, B, That]): That = {
+      val b = bf.newBuilder(repr)
       for (x <- self)
         if (p(x)) b += f(x)
       b.result
@@ -960,8 +961,8 @@ trait TraversableLike[+A, +Repr] extends Any
      *                  outer $coll that satisfies predicate `p` and concatenating
      *                  the results.
      */
-    def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-      val b = bf(repr)
+    def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: BuildFrom[Repr, B, That]): That = {
+      val b = bf.newBuilder(repr)
       for (x <- self)
         if (p(x)) b ++= f(x).seq
       b.result
@@ -997,7 +998,7 @@ trait TraversableLike[+A, +Repr] extends Any
   }
 
   // A helper for tails and inits.
-  private def iterateUntilEmpty(f: Traversable[A @uV] => Traversable[A @uV]): Iterator[Repr] = {
+  private def iterateUntilEmpty(f: Iterable[A @uV] => Iterable[A @uV]): Iterator[Repr] = {
     val it = Iterator.iterate(thisCollection)(f) takeWhile (x => !x.isEmpty)
     it ++ Iterator(Nil) map (x => (newBuilder ++= x).result)
   }

@@ -87,12 +87,11 @@ package scala
  * and `asJava` methods.
  */
 package object collection {
-  import scala.collection.generic.CanBuildFrom
 
   /** Provides a CanBuildFrom instance that builds a specific target collection (`To')
    *  irrespective of the original collection (`From').
    */
-  def breakOut[From, T, To](implicit b: CanBuildFrom[Nothing, T, To]): CanBuildFrom[From, T, To] =
+  def breakOut[From, T, To](implicit b: Factory[T, To]): CanBuildFrom[From, T, To] =
     // can't just return b because the argument to apply could be cast to From in b
     new WrappedCanBuildFrom[From, T, To](b)
 

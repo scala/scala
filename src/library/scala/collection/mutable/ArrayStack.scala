@@ -16,6 +16,7 @@ package mutable
 
 import generic._
 import scala.reflect.ClassTag
+import scala.collection.IterableOnce
 
 /** Factory object for the `ArrayStack` class.
  *
@@ -28,7 +29,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
   def apply[A: ClassTag](elems: A*): ArrayStack[A] = {
-    val els: Array[AnyRef] = elems.reverseMap(_.asInstanceOf[AnyRef])(breakOut)
+    val els: Array[AnyRef] = elems.reverseIterator.map(_.asInstanceOf[AnyRef]).to(scala.Array)
     if (els.length == 0) new ArrayStack()
     else new ArrayStack[A](els, els.length)
   }
@@ -162,7 +163,7 @@ extends AbstractSeq[T]
    *  @param xs The source of elements to push.
    *  @return   A reference to this stack.
    */
-  override def ++=(xs: TraversableOnce[T]): this.type = { xs foreach += ; this }
+  override def ++=(xs: IterableOnceIterableOnce[T]): this.type = { xs foreach += ; this }
 
   /** Does the same as `push`, but returns the updated stack.
    *

@@ -32,7 +32,7 @@ import mutable.Builder
 trait BitSetFactory[Coll <: BitSet with BitSetLike[Coll]] {
   def empty: Coll
   def newBuilder: Builder[Int, Coll]
-  def apply(elems: Int*): Coll = (empty /: elems) (_ + _)
+  def apply(elems: Int*): Coll = (elems.foldLeft(empty)) (_ + _)
   def bitsetCanBuildFrom = new CanBuildFrom[Coll, Int, Coll] {
     def apply(from: Coll) = newBuilder
     def apply() = newBuilder

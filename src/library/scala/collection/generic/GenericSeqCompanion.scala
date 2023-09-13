@@ -15,6 +15,7 @@ package collection
 package generic
 
 import scala.language.higherKinds
+import scala.collection.Iterable
 
-trait GenericSeqCompanion[CC[X] <: Traversable[X]]
+trait GenericSeqCompanion[CC[X] <: Iterable[X]]
   extends GenericCompanion[CC]

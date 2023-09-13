@@ -102,7 +102,7 @@ self =>
   // which I hope to turn into an Xlint style warning as the migration aspect
   // is not central to its importance.
   @migration("Set.map now returns a Set, so it will discard duplicate values.", "2.8.0")
-  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = super.map(f)(bf)
+  override def map[B, That](f: A => B)(implicit bf: BuildFrom[This, B, That]): That = super.map(f)(bf)
 
   /** Tests if some element is contained in this set.
    *
@@ -166,24 +166,24 @@ self =>
           case hs: Set4[A] => hs.asInstanceOf[This]
           case _  =>
             if (elems.isEmpty) this.asInstanceOf[This]
-            else (repr /: elems.seq) (_ + _)
+            else (elems.seq.foldLeft(repr)) (_ + _)
         }
       case hs: immutable.HashSet[A] =>
         elems match {
           case that: GenSet[A] =>
             hs.union(that).asInstanceOf[This]
           case _ =>
-            (repr /: elems.seq) (_ + _)
+            (elems.seq.foldLeft(repr)) (_ + _)
         }
       case ts1: TreeSet[A] =>
         elems match {
           case ts2: TreeSet[A] if ts1.ordering == ts2.ordering  =>
             ts1.addAllTreeSetImpl(ts2).asInstanceOf[This]
           case _ =>
-            (repr /: elems.seq) (_ + _)
+            (elems.seq.foldLeft(repr)) (_ + _)
         }
       case _ =>
-        (repr /: elems.seq) (_ + _)
+        (elems.seq.foldLeft(repr)) (_ + _)
 
     }
   }

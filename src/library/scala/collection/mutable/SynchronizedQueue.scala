@@ -15,6 +15,7 @@ package collection
 package mutable
 
 
+import scala.collection.IterableOnce
 /** This is a synchronized version of the `Queue[T]` class. It
  *  implements a data structure that allows one to insert and retrieve
  *  elements in a first-in-first-out (FIFO) manner.
@@ -46,7 +47,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @param  xs        a traversable object
    */
-  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.++=(xs) }
+  override def ++=(xs: IterableOnceIterableOnce[A]): this.type = synchronized[this.type] { super.++=(xs) }
 
   /** Adds all elements to the queue.
    *

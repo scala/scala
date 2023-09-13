@@ -37,10 +37,10 @@ package object scala {
     override def toString = "object AnyRef"
   }
 
-  type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
+  type IterableOnce[+A] = IterableOncescalacollectionIterableOnce[A]
 
-  type Traversable[+A] = scala.collection.Traversable[A]
-  val Traversable = scala.collection.Traversable
+  type Iterable[+A] = scala.collection.Iterable[A]
+  val Iterable = scala.collection.Iterable
 
   type Iterable[+A] = scala.collection.Iterable[A]
   val Iterable = scala.collection.Iterable
