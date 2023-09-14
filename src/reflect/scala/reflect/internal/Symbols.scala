@@ -2035,7 +2035,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ overloaded alternatives ------------------------------------------------------
 
     def alternatives: List[Symbol] =
-      if (isOverloaded) info.asInstanceOf[OverloadedType].alternatives
+      if (isOverloaded) info match {
+        case OverloadedType(pre, alternatives) => alternatives
+        case PolyType(typeParams, OverloadedType(AntiPolyType(pre, targs), alternatives)) => alternatives
+        case _ => this :: Nil
+      }
       else this :: Nil
 
     def filter(cond: Symbol => Boolean): Symbol =

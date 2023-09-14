@@ -1537,36 +1537,37 @@ trait Infer extends Checkable {
     def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = {
       val OverloadedType(pre, alts) = tree.tpe: @unchecked
       // Alternatives with a matching length type parameter list
-      val matchingLength   = tree.symbol filter (alt => sameLength(alt.typeParams, argtypes))
-      def allMonoAlts      = alts forall (_.typeParams.isEmpty)
-      def errorKind        = matchingLength match {
+      val matchingLength = tree.symbol.filter(alt => sameLength(alt.typeParams, argtypes))
+      def allMonoAlts    = alts.forall(_.typeParams.isEmpty)
+      def errorKind      = matchingLength match {
         case NoSymbol if allMonoAlts => PolyAlternativeErrorKind.NoParams          // no polymorphic method alternative
         case NoSymbol                => PolyAlternativeErrorKind.WrongNumber       // wrong number of tparams
         case _                       => PolyAlternativeErrorKind.ArgsDoNotConform  // didn't conform to bounds
       }
       def fail() = PolyAlternativeError(tree, argtypes, matchingLength, errorKind)
-      def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
+      def finish(sym: Symbol, tpe: Type) = tree.setSymbol(sym).setType(tpe)
       // Alternatives which conform to bounds
       def checkWithinBounds(sym: Symbol): Unit = sym.alternatives match {
         case Nil            => if (!argtypes.exists(_.isErroneous)) fail()
-        case alt :: Nil     => finish(alt, pre memberType alt)
+        case alt :: Nil     => finish(alt, pre.memberType(alt))
         case alts @ hd :: _ =>
           log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
           // Multiple alternatives which are within bounds; spin up an
           // overloaded type which carries an "AntiPolyType" as a prefix.
-          val tparams = new AsSeenFromMap(pre, hd.owner) mapOver hd.typeParams
-          val bounds  = tparams map (_.tpeHK) // see e.g., #1236
+          val tparams = new AsSeenFromMap(pre, hd.owner).mapOver(hd.typeParams)
+          val bounds  = tparams.map(_.tpeHK) // scala/bug#1236
           val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), alts))
-          finish(sym setInfo tpe, tpe)
+          finish(sym.setInfo(tpe), tpe)
       }
       matchingLength.alternatives match {
         case Nil        => fail()
-        case alt :: Nil => finish(alt, pre memberType alt)
+        case alt :: Nil => finish(alt, pre.memberType(alt))
         case _ =>
-          checkWithinBounds(matchingLength.filter { alt =>
+          val conforming = matchingLength.filter { alt =>
             isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) &&
               kindsConform(alt.typeParams, argtypes, pre, alt.owner)
-          })
+          }
+          checkWithinBounds(conforming)
       }
     }
   }

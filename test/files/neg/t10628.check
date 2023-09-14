@@ -1,0 +1,7 @@
+t10628.scala:8: error: overloaded method a with alternatives:
+  Int <and>
+  Int
+ cannot be applied to (Int)
+  def f  = A.a[Int][String](0)
+                   ^
+1 error

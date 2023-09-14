@@ -71,7 +71,7 @@ import TypeConstants._
     // [tparams]result where result is a (Nullary)MethodType or ClassInfoType
 
   // The remaining types are not used after phase `typer`.
-  case OverloadedType(pre, tparams, alts) =>
+  case OverloadedType(pre, alternatives) =>
     // all alternatives of an overloaded ident
   case AntiPolyType(pre, targs) =>
     // rarely used, disappears when combined with a PolyType
@@ -2936,8 +2936,7 @@ trait Types
 
   object MethodType extends MethodTypeExtractor
 
-  // TODO: rename so it's more appropriate for the type that is for a method without argument lists
-  // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
+  // Nullary not nilary, i.e., parameterlistless not merely parameterless
   case class NullaryMethodType(override val resultType: Type) extends Type with NullaryMethodTypeApi {
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
@@ -4162,6 +4161,8 @@ trait Types
       case TypeRef(pre, sym, Nil)                         => copyTypeRef(tycon, pre, sym, args)
       case TypeRef(pre, sym, bogons)                      => devWarning(s"Dropping $bogons from $tycon in appliedType.") ; copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
+      case MethodType(params, resultType)                 => resultType
+      case NullaryMethodType(resultType)                  => resultType
       case ExistentialType(tparams, restpe)               => newExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case RefinedType(parents, decls)                    => RefinedType(parents map (appliedType(_, args)), decls)   // @PP: Can this be right?

@@ -4515,7 +4515,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val isClassOf = fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol)
           if (isJava && fun.symbol.isTerm) args.foreach(_.modifyType(rawToExistential)) // e.g. List.class, parsed as classOf[List]
           val targs = mapList(args)(_.tpe)
-          checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
+          checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, prefix = "")
           if (isClassOf)
             typedClassOf(tree, args.head, noGen = true)
           else {
