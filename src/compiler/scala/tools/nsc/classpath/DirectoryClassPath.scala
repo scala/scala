@@ -14,14 +14,17 @@ package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
 import java.net.{URI, URL}
+import java.nio.file._
 
-import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
-import FileUtils._
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.JDK9Reflectors
+import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
 import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.PackageNameUtils.{packageContains, separatePkgAndClassNames}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
+import scala.util.Properties.{isJavaAtLeast, javaHome}
+import scala.util.control.NonFatal
+import FileUtils._
 
 /**
  * A trait allowing to look for classpath entries in directories. It provides common logic for
@@ -129,12 +132,10 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 }
 
 object JrtClassPath {
-  import java.nio.file._, java.net.URI
   private val jrtClassPathCache = new FileBasedCache[Unit, JrtClassPath]()
   private val ctSymClassPathCache = new FileBasedCache[String, CtSymClassPath]()
-  def apply(release: Option[String], closeableRegistry: CloseableRegistry): Option[ClassPath] = {
-    import scala.util.Properties._
-    if (!isJavaAtLeast("9")) None
+  def apply(release: Option[String], unsafe: Option[List[String]], closeableRegistry: CloseableRegistry): List[ClassPath] =
+    if (!isJavaAtLeast("9")) Nil
     else {
       // TODO escalate errors once we're sure they are fatal
       // I'm hesitant to do this immediately, because -release will still work for multi-release JARs
@@ -145,28 +146,52 @@ object JrtClassPath {
 
       val currentMajorVersion: Int = JDK9Reflectors.runtimeVersionMajor(JDK9Reflectors.runtimeVersion()).intValue()
       release match {
-        case Some(v) if v.toInt < currentMajorVersion =>
-          try {
-            val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
-            if (Files.notExists(ctSym)) None
-            else {
-              val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, checkStamps = true)
-              Some(classPath)
-            }
-          } catch {
-            case _: Throwable => None
+        case Some(version) if version.toInt < currentMajorVersion =>
+          val ct = createCt(version, closeableRegistry)
+          unsafe match {
+            case Some(pkgs) if pkgs.nonEmpty =>
+              createJrt(closeableRegistry) match {
+                case Nil  => ct
+                case jrts => ct.appended(new FilteringJrtClassPath(jrts.head, pkgs: _*))
+              }
+            case _ => ct
           }
         case _ =>
-          try {
-            val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-            val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, checkStamps = false)
-            Some(classPath)
-          } catch {
-            case _: ProviderNotFoundException | _: FileSystemNotFoundException => None
-          }
+          createJrt(closeableRegistry)
       }
     }
-  }
+  private def createCt(v: String, closeableRegistry: CloseableRegistry): List[ClassPath] =
+    try {
+      val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
+      if (Files.notExists(ctSym)) Nil
+      else {
+        val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, checkStamps = true)
+        List(classPath)
+      }
+    } catch {
+      case NonFatal(_) => Nil
+    }
+  private def createJrt(closeableRegistry: CloseableRegistry): List[JrtClassPath] =
+    try {
+      val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
+      val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, checkStamps = false)
+      List(classPath)
+    } catch {
+      case _: ProviderNotFoundException | _: FileSystemNotFoundException => Nil
+    }
+}
+
+final class FilteringJrtClassPath(delegate: JrtClassPath, allowed: String*) extends ClassPath with NoSourcePaths {
+  private val allowedPackages = allowed
+  private def packagePrefix(p: String, q: String) = p.startsWith(q) && (p.length == q.length || p.charAt(q.length) == '.')
+  private def ok(pkg: PackageName) = pkg.dottedString.isEmpty || allowedPackages.exists(packagePrefix(_, pkg.dottedString))
+  def asClassPathStrings: Seq[String] = delegate.asClassPathStrings
+  def asURLs: Seq[java.net.URL] = delegate.asURLs
+  private[nsc] def classes(inPackage: PackageName) = if (ok(inPackage)) delegate.classes(inPackage) else Nil
+  def findClassFile(className: String) = if (ok(PackageName(separatePkgAndClassNames(className)._1))) delegate.findClassFile(className) else None
+  private[nsc] def hasPackage(pkg: PackageName) = ok(pkg) && delegate.hasPackage(pkg)
+  private[nsc] def list(inPackage: PackageName) = if (ok(inPackage)) delegate.list(inPackage) else ClassPathEntries(Nil, Nil)
+  private[nsc] def packages(inPackage: PackageName) = if (ok(inPackage)) delegate.packages(inPackage) else Nil
 }
 
 /**
@@ -177,8 +202,7 @@ object JrtClassPath {
   *
   * The implementation assumes that no classes exist in the empty package.
   */
-final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with NoSourcePaths {
-  import java.nio.file.Path, java.nio.file._
+final class JrtClassPath(fs: FileSystem) extends ClassPath with NoSourcePaths {
   type F = Path
   private val dir: Path = fs.getPath("/packages")
 
@@ -246,7 +270,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   // e.g. "java.lang" -> Seq(/876/java/lang, /87/java/lang, /8/java/lang))
   private val packageIndex: scala.collection.Map[String, scala.collection.Seq[Path]] = {
     val index = collection.mutable.AnyRefMap[String, collection.mutable.ListBuffer[Path]]()
-    val isJava12OrHigher = scala.util.Properties.isJavaAtLeast("12")
+    val isJava12OrHigher = isJavaAtLeast("12")
     rootsForRelease.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach { p =>
       val moduleNamePathElementCount = if (isJava12OrHigher) 1 else 0
       if (p.getNameCount > root.getNameCount + moduleNamePathElementCount) {

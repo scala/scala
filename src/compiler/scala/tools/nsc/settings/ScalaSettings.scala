@@ -264,6 +264,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
 
   val Youtline        = BooleanSetting    ("-Youtline", "Don't compile method bodies. Use together with `-Ystop-after:pickler` to generate the pickled signatures for all source files.").internalOnly()
 
+  val unsafe = MultiStringSetting("-Yrelease", "packages", "Expose platform packages hidden under --release")
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
