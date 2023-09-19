@@ -1221,8 +1221,17 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case Some(jar: ZipArchive) => // We are in a jar
           val cl = new URLClassLoader(Array(jar.toURL), /*parent =*/ null)
           val path = file.path.stripSuffix(".class") + ".tasty"
-          val stream = cl.getResourceAsStream(path)
-          if (stream != null) {
+          val tastyUrl = cl.getResource(path)
+          if (tastyUrl != null) {
+            // Disable caching, so we get a fresh version of the tasty file each time.
+            // This becomes relevant if multiple compilations happen in the same JVM.
+            // With caching enabled, you can get a stale version of the tasty file, which
+            // can lead to erroneous errors about tasty files being out of sync with class
+            // files.
+            val tastyConnection = tastyUrl.openConnection()
+            tastyConnection.setUseCaches(false)
+            val stream = tastyConnection.getInputStream()
+
             val tastyOutStream = new ByteArrayOutputStream()
             val buffer = new Array[Byte](1024)
             var read = stream.read(buffer, 0, buffer.length)
