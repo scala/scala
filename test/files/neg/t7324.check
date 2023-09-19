@@ -1,4 +1,0 @@
-t7324.scala:2: error: Platform restriction: a parameter list's length cannot exceed 254.
-class Bar(
-         ^
-1 error
