@@ -29,6 +29,13 @@ object Test extends App {
   println("====")
   println(valueOf[TextBlocks.XY.type])
   println("====")
-  println(valueOf[TextBlocks.Octal.type])
+  import scala.tools.testkit.AssertUtil.hexdump
+  println(hexdump(valueOf[TextBlocks.Octal.type]).mkString)
+  println("====")
+  println(hexdump(valueOf[TextBlocks.Zero.type].toString).mkString)
+  println("====")
+  println(hexdump(valueOf[TextBlocks.Magic.type].toString).mkString)
+  println("====")
+  println(hexdump(valueOf[TextBlocks.Maxie.type].toString).mkString)
   println("====")
 }
