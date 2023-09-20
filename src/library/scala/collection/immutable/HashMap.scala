@@ -2181,7 +2181,7 @@ private final class MapNodeRemoveAllSetNodeIterator[K](rootSetNode: SetNode[K]) 
     curr
   }
 
-  override def next() = Iterator.empty.next()
+  override def next(): K = Iterator.empty.next()
 }
 
 /**

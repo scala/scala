@@ -39,6 +39,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
+    // 2.13.13; it's okay because the class is private
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator.next"),
   )
 
   override val buildSettings = Seq(
