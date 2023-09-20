@@ -179,7 +179,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-doc-version", versionProperties.value.canonicalVersion,
     "-doc-title", description.value,
     "-sourcepath", (ThisBuild / baseDirectory).value.toString,
-    "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
+    "-doc-source-url", s"https://github.com/scala/scala/blob/${versionProperties.value.githubTree}/€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
   //maxErrors := 10,
   setIncOptions,
