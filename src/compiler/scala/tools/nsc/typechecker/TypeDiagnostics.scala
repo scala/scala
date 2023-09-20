@@ -745,15 +745,20 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars, v)
       }
       if (settings.warnUnusedParams) {
-        def isImplementation(m: Symbol): Boolean = {
+        // don't warn unused args of overriding methods (or methods matching in self-type)
+        def isImplementation(m: Symbol): Boolean = m.isMethod && {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.PairsCursor(classOf(m)) {
-            override protected def bases: List[Symbol] = self.baseClasses
-            override protected def exclude(sym: Symbol) = super.exclude(sym) || sym.name != m.name || sym.paramLists.isEmpty || sym.paramLists.head.isEmpty
+          val classOfM = classOf(m)
+          if (classOfM.hasSelfType) {
+            val opc = new overridingPairs.PairsCursor(classOfM) {
+              override protected def bases: List[Symbol] = self.baseClasses
+            }
+            opc.iterator.exists(pair => pair.low == m || pair.high == m)
+          } else {
+            val opc = new overridingPairs.PairsCursor(classOfM)
+            opc.iterator.exists(_.low == m)
           }
-          opc.iterator.exists(pair => pair.low == m || pair.high == m)
         }
-        import PartialFunction._
         def isConvention(p: Symbol): Boolean = (
             p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
           ||
