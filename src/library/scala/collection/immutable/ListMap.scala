@@ -14,7 +14,7 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
@@ -70,6 +70,7 @@ sealed class ListMap[K, +V]
     res.iterator
   }
 
+  @nowarn("msg=overriding method keys")
   override def keys: Iterable[K] = {
     var curr: ListMap[K, V] = this
     var res: List[K] = Nil
