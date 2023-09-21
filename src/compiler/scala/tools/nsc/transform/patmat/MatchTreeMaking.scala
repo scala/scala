@@ -91,6 +91,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       protected val localSubstitution: Substitution = EmptySubstitution
     }
 
+    /** A dummy tree maker used to mark wildcard patterns.
+     * This is later used to back off from exhaustivity checking.
+     */
+    case object DummyTreeMaker extends TreeMaker with NoNewBinders {
+      def pos = EmptyTree.pos
+
+      def chainBefore(next: Tree)(casegen: Casegen): Tree = next
+    }
+
     case class TrivialTreeMaker(tree: Tree) extends TreeMaker with NoNewBinders {
       def pos = tree.pos
 
@@ -601,16 +610,17 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
 
     def removeSubstOnly(makers: List[TreeMaker]) = makers filterNot (_.isInstanceOf[SubstOnlyTreeMaker])
+    def removeDummy(makers: List[TreeMaker]) = makers filterNot (_ == DummyTreeMaker)
 
     // a foldLeft to accumulate the localSubstitution left-to-right
     // it drops SubstOnly tree makers, since their only goal in life is to propagate substitutions to the next tree maker, which is fulfilled by propagateSubstitution
     def propagateSubstitution(treeMakers: List[TreeMaker], initial: Substitution): List[TreeMaker] = {
       var accumSubst: Substitution = initial
-      treeMakers foreach { maker =>
+      removeDummy(treeMakers) foreach { maker =>
         maker incorporateOuterSubstitution accumSubst
         accumSubst = maker.substitution
       }
-      removeSubstOnly(treeMakers)
+      removeSubstOnly(removeDummy(treeMakers))
     }
 
     def getSuppression(scrut: Tree): Suppression =
