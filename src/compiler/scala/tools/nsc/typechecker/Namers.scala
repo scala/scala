@@ -750,6 +750,8 @@ trait Namers extends MethodSynthesis {
       else assignAndEnterFinishedSymbol(tree)
 
       if (isEnumConstant(tree)) {
+        val annots = annotSig(tree.mods.annotations, tree, _ => true)
+        if (annots.nonEmpty) annotate(tree.symbol, annots)
         tree.symbol setInfo ConstantType(Constant(tree.symbol))
         tree.symbol.owner.linkedClassOfClass addChild tree.symbol
       }
