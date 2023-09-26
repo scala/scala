@@ -191,21 +191,28 @@ trait ContextErrors extends splain.SplainErrors {
   }
 
   private def InferredImplicitErrorImpl(tree: Tree, inferred: Type, cx: Context, isTyper: Boolean): Unit = {
+    val sym = tree.symbol
     def err(): Unit = {
       val msg =
         s"Implicit definition ${if (currentRun.isScala3) "must" else "should"} have explicit type${
           if (!inferred.isErroneous) s" (inferred $inferred)" else ""
         }"
-      // Assumption: tree.pos.focus points to the beginning of the name.
-      // DefTree doesn't give the name position; also it can be a synthetic accessor DefDef with only offset pos.
-      val namePos = tree.pos.focus.withEnd(tree.pos.point + tree.symbol.decodedName.length)
-      val action =
-        if (namePos.source.sourceAt(namePos) == tree.symbol.decodedName) runReporting.codeAction("insert explicit type", namePos.focusEnd, s": $inferred", msg)
-        else Nil
+      val namePos = if (sym.isAccessor && sym.accessed.pos.isDefined) sym.accessed.pos else sym.pos  //tree.asInstanceOf[NameTree].namePos
+      val src = namePos.source
+      val pos = if (src.sourceAt(namePos) != tree.symbol.decodedName) None else {
+        val declEnd =
+          if (sym.isAccessor) namePos.end
+          else {
+            val vdd = tree.asInstanceOf[ValOrDefDef]
+            val eql = src.indexWhere(_ == '=', start = vdd.rhs.pos.start, step = -1)
+            src.indexWhere(!_.isWhitespace, start = eql - 1, step = -1) + 1
+          }
+        Some(declEnd).filter(_ > 0).map(src.position(_))
+      }
+      val action = pos.map(p => runReporting.codeAction("insert explicit type", p, s": $inferred", msg)).getOrElse(Nil)
       if (currentRun.isScala3) cx.warning(tree.pos, msg, WarningCategory.Scala3Migration, action)
       else cx.warning(tree.pos, msg, WarningCategory.OtherImplicitType, action)
     }
-    val sym = tree.symbol
     // Defer warning field of class until typing getter (which is marked implicit)
     if (sym.isImplicit) {
       if (!sym.isLocalToBlock) err()

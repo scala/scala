@@ -147,7 +147,7 @@ abstract class AbstractCodeActionTest extends BytecodeTesting {
 
   @Test
   def explicitImplicit(): Unit = {
-    assertCodeSuggestion("class C { implicit val x = 1 }", "class C { implicit val x: Int = 1 }")
+    assertCodeSuggestion("class C { implicit val xample = 1 }", "class C { implicit val xample: Int = 1 }")
   }
 
   @Test
@@ -172,7 +172,7 @@ abstract class AbstractCodeActionTest extends BytecodeTesting {
     assertCodeSuggestion("class C { def f: Unit = println() }", "class C { def f(): Unit = println() }")
   }
 
-  def assertCodeSuggestion(original: String, expected: String, comp: Compiler = compiler): Unit = {
+  protected def assertCodeSuggestion(original: String, expected: String, comp: Compiler = compiler): Unit = {
     val run = comp.newRun()
     run.compileSources(comp.global.newSourceFile(original) :: Nil)
     val reporter = comp.global.reporter.asInstanceOf[StoreReporter]

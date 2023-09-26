@@ -50,6 +50,22 @@ class CodeActionXsource3Test extends AbstractCodeActionTest {
         |""".stripMargin)
   }
 
+  @Test def t12882(): Unit = {
+    assertCodeSuggestion(
+      """|class Holiday(date: java.time.LocalDate)
+         |
+         |object HolidayConversion {
+         |  implicit def dateToHoliday(date: java.time.LocalDate) = new Holiday(date)
+         |}
+         |""".stripMargin,
+      """|class Holiday(date: java.time.LocalDate)
+         |
+         |object HolidayConversion {
+         |  implicit def dateToHoliday(date: java.time.LocalDate): Holiday = new Holiday(date)
+         |}
+         |""".stripMargin)
+  }
+
   @Test
   def lambdaParameterParens(): Unit =
     assertCodeSuggestion(
