@@ -2389,12 +2389,14 @@ private final class NewVectorIterator[A](v: Vector[A], private[this] var totalLe
   }
 
   override def slice(from: Int, until: Int): Iterator[A] = {
-    val _until =
+    val _until = mmax(until, 0)
+
+    val n =
       if(from > 0) {
         drop(from)
-        until - from
-      } else until
-    take(_until)
+        _until - from
+      } else _until
+    take(n)
   }
 
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
