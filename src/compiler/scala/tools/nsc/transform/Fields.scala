@@ -122,13 +122,18 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   private def setMixedinAccessorFlags(orig: Symbol, cloneInSubclass: Symbol): Unit =
     cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
 
-  private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit =
-    fieldInSubclass setFlag (NEEDS_TREES |
-                             PrivateLocal
-                             | (accessor getFlag MUTABLE | LAZY | DEFAULTINIT)
-                             | (if (accessor hasFlag STABLE) 0 else MUTABLE)
-      )
-
+  private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit = {
+    // Since initialization is performed (lexically) outside of the constructor (in the trait setter),
+    // we have to make the field mutable starting with classfile format 53
+    // (it was never allowed, but the verifier enforces this now).
+    fieldInSubclass.setFlag(NEEDS_TREES | PrivateLocal | MUTABLE | accessor.getFlag(LAZY | DEFAULTINIT))
+    if (accessor.hasFlag(STABLE)) {
+      // If the field is for an immutable val, make sure it's safely published
+      val isInStaticModule = fieldInSubclass.owner.isModuleClass && fieldInSubclass.owner.sourceModule.isStaticModule
+      if (!isInStaticModule) // the <clinit> lock is enough.
+        fieldInSubclass.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
+    }
+  }
 
   def checkAndClearOverriddenTraitSetter(setter: Symbol) = checkAndClear(OVERRIDDEN_TRAIT_SETTER)(setter)
   def checkAndClearNeedsTrees(setter: Symbol) = checkAndClear(NEEDS_TREES)(setter)
@@ -675,22 +680,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         // trait val/var setter mixed into class
         else fieldAccess(setter) match {
           case NoSymbol => EmptyTree
-          case fieldSel =>
-            if (!fieldSel.hasFlag(MUTABLE)) {
-              // If the field is mutable, it won't be final, so we can write to it in a setter.
-              // If it's not, we still need to initialize it, and make sure it's safely published.
-              // Since initialization is performed (lexically) outside of the constructor (in the trait setter),
-              // we have to make the field mutable starting with classfile format 53
-              // (it was never allowed, but the verifier enforces this now).
-              fieldSel.setFlag(MUTABLE)
-              val isInStaticModule = fieldSel.owner.isModuleClass && fieldSel.owner.sourceModule.isStaticModule
-              if (!isInStaticModule) // the <clinit> lock is enough.
-                fieldSel.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
-            }
-
-            afterOwnPhase { // the assign only type checks after our phase (assignment to val)
-              mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), castHack(Ident(setter.firstParam), fieldSel.info)))
-            }
+          case fieldSel => afterOwnPhase { // the assign only type checks after our phase (assignment to val)
+            mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), castHack(Ident(setter.firstParam), fieldSel.info)))
+          }
         }
 
       def moduleAccessorBody(module: Symbol): Tree =
