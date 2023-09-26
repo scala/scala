@@ -2894,7 +2894,15 @@ self =>
       var newmods = mods
       in.nextToken()
       checkKeywordDefinition()
-      val lhs = commaSeparated(stripParens(noSeq.pattern2()))
+      val lhs = commaSeparated {
+        val start = in.offset
+        noSeq.pattern2() match {
+          case t @ Ident(_) =>
+            val namePos = NamePos(r2p(start, start))
+            stripParens(t).updateAttachment(namePos)
+          case t => stripParens(t)
+        }
+      }
       val tp = typedOpt()
       val (rhs, rhsPos) =
         if (!tp.isEmpty && in.token != EQUALS) {
@@ -2918,7 +2926,15 @@ self =>
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
         val trees = {
           val pat = if (tp.isEmpty) p else Typed(p, tp) setPos (p.pos union tp.pos)
-          makePatDef(newmods, pat, rhs, rhsPos)
+          val ts = makePatDef(newmods, pat, rhs, rhsPos)
+          val positioned = pat match {
+            case id @ Ident(_) => id
+            case Typed(id @ Ident(_), _) => id
+            case _ => EmptyTree
+          }
+          if (!positioned.isEmpty && ts.lengthCompare(1) == 0)
+            positioned.getAndRemoveAttachment[NamePos].foreach(att => ts.head.updateAttachment[NamePos](att))
+          ts
         }
         if (newmods.isDeferred) {
           trees match {
@@ -2929,7 +2945,7 @@ self =>
         }
         trees
       }
-      val trees = (lhs.toList.init flatMap (mkDefs(_, tp.duplicate, rhs.duplicate))) ::: mkDefs(lhs.last, tp, rhs)
+      val trees = lhs.toList.init.flatMap(mkDefs(_, tp.duplicate, rhs.duplicate)) ::: mkDefs(lhs.last, tp, rhs)
       val hd = trees.head
       hd setPos hd.pos.withStart(pos)
       ensureNonOverlapping(hd, trees.tail)
@@ -3111,9 +3127,11 @@ self =>
     def typeDefOrDcl(start: Offset, mods: Modifiers): Tree = {
       in.nextToken()
       newLinesOpt()
-      atPos(start, in.offset) {
-        checkKeywordDefinition()
-        val name = identForType()
+      checkKeywordDefinition()
+      val nameOffset = in.offset
+      val name = identForType()
+      val namePos = NamePos(r2p(nameOffset, nameOffset))
+      atPos(start, nameOffset) {
         // @M! a type alias as well as an abstract type may declare type parameters
         val tparams = typeParamClauseOpt(name, null, ParamOwner.Type)
         in.token match {
@@ -3128,7 +3146,7 @@ self =>
               TypeDef(mods, tpnme.ERROR, Nil, EmptyTree)
             )
         }
-      }
+      }.updateAttachment(namePos)
     }
 
     /** Hook for IDE, for top-level classes/objects. */
