@@ -45,6 +45,15 @@ object AssertUtil {
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)
 
+  private val Bail = new ControlThrowable {}
+
+  def bail(): Nothing = throw Bail
+
+  // maybe there is a way to communicate that the test was skipped
+  def bailable(name: String)(test: => Unit): Unit =
+    try test
+    catch { case _: Bail.type => println(s"$name skipped bail!") }
+
   private val printable = raw"\p{Print}".r
 
   def hexdump(s: String): Iterator[String] = {

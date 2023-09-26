@@ -1,16 +1,14 @@
 package scala.collection
 
-import org.junit.Assert.{assertThrows => _, _}
+import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.util.chaining._
 import scala.tools.testkit.AssertUtil._
+import scala.util.chaining._
 
 import java.lang.ref._
-
-import Seq.empty
 
 @RunWith(classOf[JUnit4])
 class IteratorTest {
@@ -216,8 +214,8 @@ class IteratorTest {
   @Test def dropIsChainable(): Unit = {
     assertSameElements(1 to 4, Iterator from 0 take 5 drop 1)
     assertSameElements(3 to 4, Iterator from 0 take 5 drop 3)
-    assertSameElements(empty,  Iterator from 0 take 5 drop 5)
-    assertSameElements(empty,  Iterator from 0 take 5 drop 10)
+    assertSameElements(Nil, Iterator from 0 take 5 drop 5)
+    assertSameElements(Nil, Iterator from 0 take 5 drop 10)
     assertSameElements(0 to 4, Iterator from 0 take 5 drop 0)
     assertSameElements(0 to 4, Iterator from 0 take 5 drop -1)
     assertSameElements(2 to 8 by 2, Iterator from 0 take 5 drop 1 map (2 * _))
@@ -228,9 +226,9 @@ class IteratorTest {
 
   @Test def sliceIsChainable(): Unit = {
     assertSameElements(3 to 6, from0.slice(3, 7))
-    assertSameElements(empty,  from0.slice(3, 3))
+    assertSameElements(Nil, from0.slice(3, 3))
     assertSameElements(0 to 2, from0.slice(-1, 3))
-    assertSameElements(empty,  from0.slice(3, -1))
+    assertSameElements(Nil, from0.slice(3, -1))
     assertSameElements(6 to 12 by 2, from0.slice(3, 7).map(2 * _))
     assertSameElements(6 to 12 by 2, from0.map(2 * _).slice(3, 7))
     assertSameElements(4 to 6, from0.slice(3, 7).drop(1))
@@ -807,7 +805,7 @@ class IteratorTest {
     assertTrue(executed)
   }
 
-  @Test def `flatMap is memory efficient in previous element`(): Unit = {
+  @Test def `flatMap is memory efficient in previous element`: Unit = bailable("flatMap") {
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
     class C extends Iterable[String] {
@@ -827,16 +825,21 @@ class IteratorTest {
     val seq2 = List("third")
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
-      case 1 => Option(seq1.get).getOrElse(Nil)
+      case 1 => getOrBail
       case 2 => check(); seq2
-      case _ => ???
+      case _ => fail("bad iterator state")
+    }
+
+    def getOrBail: C = seq1.get match {
+      case null => bail()
+      case c => c
     }
 
     def noop(): Unit = ()
 
-    def check(): Unit = assertNotReachable(seq1.get, it)(noop())
+    def check(): Unit = assertNotReachable(getOrBail, it)(noop())
 
-    def checkHasElement(): Unit = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(noop())
+    def checkHasElement(): Unit = assertNotReachable(getOrBail.apply(1), it)(noop())
 
     assert(it.hasNext)
     assertEquals("first", it.next())
@@ -848,7 +851,7 @@ class IteratorTest {
     assertEquals("second", it.next())
 
     assert(it.hasNext)
-    assertNotReachable(seq1.get, it) {
+    assertNotReachable(getOrBail, it) {
       assertEquals("third", it.next())
     }
     assert(!it.hasNext)
