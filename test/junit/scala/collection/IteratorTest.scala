@@ -8,7 +8,7 @@ import org.junit.runners.JUnit4
 import scala.tools.testkit.AssertUtil._
 import scala.util.chaining._
 
-import java.lang.ref._
+import java.lang.ref.SoftReference
 
 @RunWith(classOf[JUnit4])
 class IteratorTest {
@@ -172,7 +172,7 @@ class IteratorTest {
   }
   @Test def `grouped does not hold elements`: Unit = {
     val thing = new Object
-    val ref = new WeakReference(thing)
+    val ref = new SoftReference(thing)
     locally {
       val it = Iterator(thing).grouped(1)
       assertEquals(List(thing), it.next())
@@ -184,7 +184,7 @@ class IteratorTest {
   }
   @Test def `sliding must hold elements`: Unit = {
     val thing = new Object
-    val ref = new WeakReference(thing)
+    val ref = new SoftReference(thing)
     val it = Iterator.continually(ref.get()).sliding(2,1)
     assertFails(_.contains("Root <iterator> held reference")) { assertNotReachable(thing, it)(it.next()) }
   }
@@ -821,7 +821,7 @@ class IteratorTest {
 
       def apply(i: Int) = ss(i)
     }
-    val seq1 = new WeakReference(new C)
+    val seq1 = new SoftReference(new C)
     val seq2 = List("third")
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
