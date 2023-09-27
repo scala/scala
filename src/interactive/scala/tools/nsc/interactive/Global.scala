@@ -1278,7 +1278,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val source = pos.source
 
         val nameStart: Int = (focus1.pos.end - 1 to effectiveQualEnd by -1).find(p =>
-          source.identifier(source.position(p)).exists(_.length == 0)
+          source.identFrom(source.position(p)).exists(_.length == 0)
         ).map(_ + 1).getOrElse(fallback)
         typeCompletions(sel, qual, nameStart, name)
       case Ident(name) =>

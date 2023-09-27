@@ -103,7 +103,7 @@ trait Adaptations {
             s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead")
           val pos = wrappingPos(args)
           context.warning(t.pos, msg, WarningCategory.LintAdaptedArgs,
-            runReporting.codeAction("add wrapping parentheses", pos, s"(${currentUnit.sourceAt(pos)})", msg))
+            runReporting.codeAction("add wrapping parentheses", pos, s"(${currentUnit.source.sourceAt(pos)})", msg))
         }
         true // keep adaptation
       }

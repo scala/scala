@@ -56,7 +56,23 @@ abstract class SourceFile {
   final def skipWhitespace(offset: Int): Int =
     if (content(offset).isWhitespace) skipWhitespace(offset + 1) else offset
 
-  def identifier(pos: Position): Option[String] = None
+  def identFrom(pos: Position): Option[String] =
+    Option.when(pos.isDefined && pos.source == this && pos.point != -1) {
+      def isOK(c: Char) = isIdentifierPart(c) || isOperatorPart(c)
+      new String(content drop pos.point takeWhile isOK)
+    }
+
+  def sourceAt(pos: Position): String =
+    if (pos.start < pos.end) new String(content.slice(pos.start, pos.end)) else ""
+
+  def indexWhere(p: Char => Boolean, start: Int, step: Int = 1): Int = {
+    var i = start
+    while (i >= 0 && i < content.length) {
+      if (p(content(i))) return i
+      i += step
+    }
+    -1
+  }
 
   /** An iterator over the lines between `start` and `end`.
     *
@@ -144,14 +160,6 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
   def lineCount = lineIndices.length - 1
   def start = 0
   def isSelfContained = true
-
-  override def identifier(pos: Position) =
-    if (pos.isDefined && pos.source == this && pos.point != -1) {
-      def isOK(c: Char) = isIdentifierPart(c) || isOperatorPart(c)
-      Some(new String(content drop pos.point takeWhile isOK))
-    } else {
-      super.identifier(pos)
-    }
 
   private def charAtIsEOL(idx: Int)(p: Char => Boolean) = {
     // don't identify the CR in CR LF as a line break, since LF will do.

@@ -47,9 +47,6 @@ trait CompilationUnits { global: Global =>
     def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX) = global.freshTermName(prefix)
     def freshTypeName(prefix: String)                              = global.freshTypeName(prefix)
 
-    def sourceAt(pos: Position): String =
-      if (pos.start < pos.end) new String(source.content.slice(pos.start, pos.end)) else ""
-
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
 

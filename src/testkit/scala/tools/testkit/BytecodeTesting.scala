@@ -13,7 +13,7 @@
 package scala.tools.testkit
 
 import junit.framework.AssertionFailedError
-import org.junit.Assert._
+import org.junit.Assert.assertTrue
 
 import scala.collection.mutable.{Clearable, ListBuffer}
 import scala.jdk.CollectionConverters._
