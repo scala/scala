@@ -1,0 +1,12 @@
+# Tests if dependencies on implicit scope are tracked properly
+$ copy-file changes/A1.scala A.scala
+$ copy-file changes/B.scala B.scala
+$ copy-file changes/M.scala M.scala
+$ copy-file changes/C.scala C.scala
+> compile
+
+$ copy-file changes/A2.scala A.scala
+-> compile
+
+> clean
+-> compile

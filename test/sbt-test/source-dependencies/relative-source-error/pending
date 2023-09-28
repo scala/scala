@@ -1,0 +1,7 @@
+$ copy-file changes/relative.sbt build.sbt
+> reload
+-> compile
+
+$ copy-file changes/absolute.sbt build.sbt
+> reload
+> compile

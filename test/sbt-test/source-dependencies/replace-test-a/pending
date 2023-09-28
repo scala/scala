@@ -1,0 +1,9 @@
+$ copy-file changes/first.scala src/main/scala/A.scala
+> compile
+> check-first
+-> check-second
+
+$ copy-file changes/second.scala src/main/scala/A.scala
+> compile
+-> check-first
+> check-second

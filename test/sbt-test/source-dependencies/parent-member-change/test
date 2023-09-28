@@ -1,0 +1,7 @@
+> compile
+
+# modify A.scala so that the signature of its method changes to be identical to
+# that of the method in its descendant in C.scala
+$ copy-file changes/A.scala A.scala
+# Should recompile C.scala and report this error, failing the compile
+-> compile

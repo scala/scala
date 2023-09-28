@@ -1,0 +1,9 @@
+# base-line
+> use/compile
+$ sleep 1000
+
+# 1. make dep recompile something other than A
+# 2. make use recompile, needing a pickle for A
+$ copy-file changes/Other.scala dep/Other.scala
+$ copy-file changes/B2.scala use/B.scala
+> use/compile

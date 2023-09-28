@@ -1,0 +1,42 @@
+# A is a basic Java file with no dependencies.  Just a basic check for Java compilation
+$ copy-file changes/A.java src/main/java/a/A.java
+> compile
+
+# A2 is a basic Java file with no dependencies.  This is added to verify
+# that classes are properly mapped back to their source.
+# (There are two files named A.java now, one in a/ and one in a/b)
+$ copy-file changes/A2.java src/main/java/a/b/A.java
+> compile
+
+# This adds B, another basic Java file with no dependencies
+$ copy-file changes/B1.java src/main/java/a/b/B.java
+> compile
+
+# Now, modify B so that it depends on a.A
+# This ensures that dependencies on a source not included in the compilation
+# (a/A.java has not changed) are tracked
+$ copy-file changes/B2.java src/main/java/a/b/B.java
+> compile
+
+# Remove a.b.A and there should be no problem compiling, since B should
+# have recorded a dependency on a.A and not a.b.A
+$ delete src/main/java/a/b/A.java
+> compile
+
+# Remove a.A and B should be recompiled if the dependency on a.A was properly
+# recorded.  This should be a compile error, since we haven't updated B to not
+# depend on A
+$ delete src/main/java/a/A.java
+-> compile
+
+# Replace B with a new B that doesn't depend on a.A and so it should compile
+# It shouldn't run though, because it doesn't have a main method
+$ copy-file changes/B1.java src/main/java/a/b/B.java
+> compile
+-> run
+
+
+# Replace B with a new B that has a main method and should therefore run
+# if the main method was properly detected
+$ copy-file changes/B3.java src/main/java/a/b/B.java
+> run

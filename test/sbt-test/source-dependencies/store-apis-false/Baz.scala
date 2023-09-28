@@ -1,0 +1,1 @@
+class Baz extends Foo

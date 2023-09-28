@@ -1,0 +1,12 @@
+# Tests if existential types are pickled correctly so they
+# do not introduce unnecessary compile iterations
+
+# introduces first compile iteration
+> compile
+# this change is local to a method and does not change the api so introduces
+# only one additional compile iteration
+$ copy-file changes/Foo1.scala src/main/scala/Foo.scala
+# second iteration
+> compile
+# check if there are only two compile iterations being performed
+> checkIterations 2

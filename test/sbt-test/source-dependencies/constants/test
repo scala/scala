@@ -1,0 +1,6 @@
+$ copy-file changes/B.scala B.scala
+
+$ copy-file changes/A1.scala A.scala
+> run 1
+$ copy-file changes/A2.scala A.scala
+> run 2

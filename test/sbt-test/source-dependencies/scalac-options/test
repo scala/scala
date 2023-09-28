@@ -1,0 +1,7 @@
+> compile
+
+$ copy-file changes/A.scala A.scala
+$ copy-file changes/incOptions.properties incOptions.properties
+
+> compile
+> checkRecompilations 1 A

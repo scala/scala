@@ -1,0 +1,7 @@
+> compile
+
+# change type alias
+$ copy-file changes/A.scala A.scala
+
+# Both A.scala and B.scala should be recompiled, producing a compile error
+-> compile

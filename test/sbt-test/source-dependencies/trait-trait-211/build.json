@@ -1,0 +1,8 @@
+{
+  "projects": [
+    {
+      "name": "mirtest",
+      "scalaVersion": "2.11.12"
+    }
+  ]
+}

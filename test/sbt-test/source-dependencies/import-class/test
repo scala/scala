@@ -1,0 +1,8 @@
+> compile
+
+# remove class a.A
+$ copy-file changes/A.scala A.scala
+
+# 'import a.A' should now fail in B.scala
+# succeeds because scalac doesn't track this dependency
+-> compile

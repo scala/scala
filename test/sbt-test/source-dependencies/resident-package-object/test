@@ -1,0 +1,11 @@
+$ copy-file changes/package.scala src/main/scala/example/package.scala
+> compile
+
+$ copy-file changes/A.scala src/main/scala/example/A.scala
+> compile
+
+$ copy-file changes/package2.scala src/main/scala/example/package.scala
+-> compile
+
+$ copy-file changes/package.scala src/main/scala/example/package.scala
+> compile

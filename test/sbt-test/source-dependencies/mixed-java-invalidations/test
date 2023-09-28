@@ -1,0 +1,10 @@
+> compile
+> checkIterations 1
+
+$ copy-file changes/A.scala src/main/scala/A.scala
+> compile
+> checkIterations 2
+
+$ copy-file changes/B.scala src/main/scala/B.scala
+> compile
+> checkIterations 3

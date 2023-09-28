@@ -1,0 +1,9 @@
+> compile
+
+# switch which 'x' method has a default for the second parameter in A
+#   this change is selected because of the encoding of default method names
+$ copy-file changes/A.scala A.scala
+
+# Both A.scala and B.scala need to be recompiled because the parameter needs to be explicitly provided
+# and it should be a compile error
+-> compile

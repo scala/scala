@@ -1,0 +1,7 @@
+# test case for dependency tracking in case given type (`B` in our case)
+# mentioned only in type ref (as a type argument)
+> compile
+
+$ delete B.scala
+
+-> compile

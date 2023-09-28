@@ -1,0 +1,28 @@
+# This test checks that when a source file included in a partial recompilation adds a dependency on
+# a file not included in the partial recompilation,  the dependency is properly recorded.
+
+# B and A are independent, so both should compile successfully
+$ copy-file changes/A1.scala src/main/scala/A.scala
+$ copy-file changes/B1.scala src/main/scala/B.scala
+> compile
+
+
+# A now depends on B and to check that it was recompiled, we mismatch the types, which should fail
+$ copy-file changes/A2.scala src/main/scala/A.scala
+-> compile
+
+
+# We now correct the type so that it compiles successfully and this should introduce a dependency from A to B
+$ copy-file changes/A3.scala src/main/scala/A.scala
+> compile
+
+
+# If the dependency from A to B was properly introduced, changing the type of B.y to Int should make
+# the following statement in A a compiler error:
+#   val x: String = B.y
+$ copy-file changes/B2.scala src/main/scala/B.scala
+-> compile
+
+# verify this was the correct result by doing a clean+compile
+> clean
+-> compile

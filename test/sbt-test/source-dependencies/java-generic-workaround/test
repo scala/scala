@@ -1,0 +1,3 @@
+# generic signatures fails to parse due to http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6476261
+# tests workaround for https://github.com/sbt/sbt/issues/1035
+> compile

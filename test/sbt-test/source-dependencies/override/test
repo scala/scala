@@ -1,0 +1,3 @@
+> compile
+$ copy-file changes/B2.scala B.scala
+-> compile

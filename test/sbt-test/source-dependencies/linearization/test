@@ -1,0 +1,13 @@
+> compile
+
+# the value of F.x should be 16
+> run 16
+
+# modify D.scala so that the linearization changes
+$ copy-file changes/D.scala D.scala
+# F.x becomes 11
+> compile
+
+# if F is recompiled, the value of x should be 11, otherwise it will still be 16
+# and this will fail
+> run 11

@@ -1,0 +1,15 @@
+# -Yspecialize is 2.8 only
+> compile
+
+# verify that erased A.x can be called normally and reflectively
+> run false
+
+# make A.x specialized
+$ copy-file changes/A.scala A.scala
+
+# B.scala needs recompiling so that B.y calls the specialized version of A.x
+> compile
+
+# verify that specialized A.x can be called normally and reflectively
+# NOTE: this test doesn't actually work correctly: have to check the output to see that B.scala was recompiled
+> run true

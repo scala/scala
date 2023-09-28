@@ -1,0 +1,24 @@
+# When a Java class is loaded from a class file and not parsed from a source file, scalac reports
+#    the statics as an object without a file and so the Analyzer must know to look for the
+#    object's linked class.
+# This test verifies this happens.
+# The test compiles a Java class with a static field. 
+# It then adds a Scala object that references the static field.  Because the object only depends on a
+#   static member and because the Java source is not included in the compilation (since it didn't change),
+#   this triggers the special case above.
+
+# add and compile the Java source
+$ copy-file changes/J1.java src/main/java/J.java
+> compile
+
+# add and compile the Scala source
+$ copy-file changes/S.scala src/main/scala/S.scala
+> compile
+
+# change the Java source so that a compile error should occur if S.scala is also recompiled (which will happen if the dependency was properly recorded)
+$ copy-file changes/J2.java src/main/java/J.java
+-> compile
+
+# verify it should have failed by doing a full recompilation
+> clean
+-> compile

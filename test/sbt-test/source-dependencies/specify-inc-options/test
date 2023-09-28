@@ -1,0 +1,4 @@
+# This test tests the scripted framework. It's just to make sure
+# it picks up the incOptions correctly.
+
+> compile

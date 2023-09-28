@@ -1,0 +1,10 @@
+$ copy-file changes/B0.scala B.scala
+> compile
+
+$ copy-file changes/A1.java src/main/java/example/A.java
+$ copy-file changes/B1.scala B.scala
+> compile
+
+$ copy-file changes/A2.java src/main/java/example/A.java
+$ copy-file changes/B2.scala B.scala
+> compile

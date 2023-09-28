@@ -1,0 +1,8 @@
+> compile
+
+# make implicit parameters in A.x be explicit
+$ copy-file changes/A.scala A.scala
+
+# Both A.scala and B.scala need to be recompiled because the parameter section is no longer implicit
+# and it should be a compile error
+-> compile

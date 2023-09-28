@@ -1,0 +1,11 @@
+# Test for class-based invalidation of dependencies by member reference
+# This test checks if name hashes are tracked at the class level so
+# only classes that depend on an API of a modified class are invalidated
+
+# introduces first compile iteration
+> compile
+$ copy-file changes/A1.scala src/main/scala/A.scala
+# second iteration
+> compile
+> checkRecompilations 0 B1 B2
+> checkRecompilations 1 A1 A2

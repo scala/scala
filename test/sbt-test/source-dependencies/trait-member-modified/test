@@ -1,0 +1,9 @@
+# Test if adding a member to a trait affects classes that refer to that trait
+# by a member reference
+> compile
+# add `foo` method to `A`
+$ copy-file changes/A1.scala src/main/scala/A.scala
+# only A.scala should be recompiled
+> compile
+# check if there are only two compile iterations performed
+> checkIterations 2

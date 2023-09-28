@@ -1,0 +1,14 @@
+# Test for separate compilation and proper value of
+# the OVERRIDE flag when abstract types, type alias
+# and structural type are involved
+# See https://github.com/sbt/sbt/issues/726 for details
+
+# introduces first compile iteration
+> compile
+# this change adds a comment and does not change api so introduces
+# only one additional compile iteration
+$ copy-file changes/Bar1.scala src/main/scala/Bar.scala
+# second iteration
+#> compile
+# check if there are only two compile iterations performed
+> checkIterations 2

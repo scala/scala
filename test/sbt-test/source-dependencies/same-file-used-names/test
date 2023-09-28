@@ -1,0 +1,7 @@
+> compile
+
+# uncomment definition of `x` that leads to ambiguity error in A
+$ copy-file changes/B.scala B.scala
+
+# Both A.scala and B.scala should be recompiled, producing a compile error
+-> compile

@@ -1,0 +1,1 @@
+//ThisBuild / logLevel         := Level.Debug

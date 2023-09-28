@@ -1,0 +1,6 @@
+> compile
+
+# replace val x with lazy val x
+$ copy-file changes/A.scala A.scala
+
+-> compile

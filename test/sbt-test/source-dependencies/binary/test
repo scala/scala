@@ -1,0 +1,12 @@
+> dep/package
+$ copy-file dep/target/dep.jar use/lib/dep.jar
+
+# done this way because last modified times often have ~1s resolution
+> use/compile
+$ sleep 2000
+
+$ copy-file changes/Break.scala dep/A.scala
+> dep/package
+$ copy-file dep/target/dep.jar use/lib/dep.jar
+
+-> use/compile

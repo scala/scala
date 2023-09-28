@@ -1,0 +1,9 @@
+# Marked as pending because name hashing doesn't support structural types
+# in some cases. See: https://github.com/sbt/sbt/issues/1545
+
+> compile
+
+# modify A.scala so that it does not conform to the structural type in B.scala
+$ copy-file changes/A.scala A.scala
+
+-> compile

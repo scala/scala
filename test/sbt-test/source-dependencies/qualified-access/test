@@ -1,0 +1,7 @@
+> compile
+
+# change access of A.x
+$ copy-file changes/A.scala A.scala
+
+# Should force recompilation of B.scala because access changed and B's access is now invalid.
+-> compile

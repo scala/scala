@@ -1,0 +1,16 @@
+# A.scala needs B.scala, it won't be in source list
+> ++2.11.4
+-> compile
+
+# A.scala needs B.scala, it would be in source list
+> ++2.10.4
+> compile
+
+# A.scala needs B.scala, it would be in source list
+> ++2.9.3
+> compile
+
+# Injecting the wrong B.scala in source list
+$ copy-file src/main/scala-2.10/B.scala src/main/scala-2.9.3/B.scala
+> ++2.9.3
+-> compile

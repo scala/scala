@@ -1,0 +1,4 @@
+> compile
+
+$ copy-file changes/A2.scala A.scala
+-> compile

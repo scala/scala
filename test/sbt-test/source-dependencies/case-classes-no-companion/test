@@ -1,0 +1,13 @@
+> compile
+$ copy-file changes/A.scala A.scala
+-> compile
+$ copy-file changes/UseSite.scala UseSite.scala
+> run
+$ copy-file changes/A2.scala A.scala
+> run
+$ copy-file changes/A3.scala A.scala
+> run
+$ copy-file changes/UseSite2.scala UseSite.scala
+> run
+$ copy-file changes/A4.scala A.scala
+-> compile

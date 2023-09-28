@@ -1,0 +1,2 @@
+> checkProducts main.scala: ${BASE}/target/classes/p1/p2/B$L$I.class ${BASE}/target/classes/p1/p2/B$L.class ${BASE}/target/classes/p1/p2/B.class ${BASE}/target/classes/p1/p2/D$$anon$1$i$.class ${BASE}/target/classes/p1/p2/D$$anon$1.class ${BASE}/target/classes/p1/p2/D.class ${BASE}/target/classes/p1/p2/G$$anon$2$i$.class ${BASE}/target/classes/p1/p2/G$$anon$2.class ${BASE}/target/classes/p1/p2/G.class
+> checkProductsExists main.scala

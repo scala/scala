@@ -1,0 +1,7 @@
+> compile
+
+# change => Int to Function0
+$ copy-file changes/A.scala A.scala
+
+# Both A.scala and B.scala need to be recompiled because the type has changed
+-> compile

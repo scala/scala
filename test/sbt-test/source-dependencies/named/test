@@ -1,0 +1,16 @@
+# named parameters are only in 2.8
+#> ++2.8.0
+
+> compile
+
+# result should be 1
+> run 1
+
+# change order of arguments in A.x
+$ copy-file changes/A.scala A.scala
+
+# Recompile
+> compile
+
+# Should still get 1 and not -1
+> run 1

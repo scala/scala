@@ -1,0 +1,4 @@
+> compile
+
+$ copy-file changes/A2.scala src/main/scala/A.scala
+-> compile

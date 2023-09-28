@@ -1,0 +1,7 @@
+> compile
+
+# modify V to no longer extend W
+$ copy-file changes/W.scala W.scala
+
+# Should recompile Y.scala and report an error: "value x is not a member of Z"
+-> compile

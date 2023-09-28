@@ -1,0 +1,9 @@
+# 1 iteration from initial full compile
+> run
+$ copy-file changes/A2.java A.java
+
+# 1 iteration for the initial changes
+# 1 iteration to recompile all descendents and direct dependencies
+# no further iteration, because APIs of directs don't change
+> run
+> checkIterations 3

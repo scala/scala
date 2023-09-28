@@ -1,0 +1,2 @@
+
+trait B extends A

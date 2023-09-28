@@ -1,0 +1,2 @@
+# This test doesn't check anything due to: https://github.com/sbt/zinc/issues/83
+> compile

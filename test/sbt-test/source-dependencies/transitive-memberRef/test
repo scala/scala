@@ -1,0 +1,13 @@
+# introduces first compile iteration
+> compile
+# adds a new method to A which will cause transitive invalidation
+# of all source files that inherit from it
+# also, all direct dependencies of files that inherit from A will
+# be invalidated (in our case that's X.scala)
+$ copy-file changes/A1.scala A.scala
+# second iteration
+> compile
+# check in which compile iteration given source file got recompiled
+> checkRecompilations 0 test.X test.Y
+> checkRecompilations 1 test.A
+> checkRecompilations 2 test.B test.C test.D

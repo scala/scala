@@ -1,0 +1,6 @@
+> compile
+> checkProducts A.java: ${BASE}/target/classes/A.class ${BASE}/target/classes/A$B.class
+> checkProducts C.java: ${BASE}/target/classes/C.class
+> checkDependencies A: A.B
+> checkDependencies A.B: A D
+> checkDependencies C: A A.B

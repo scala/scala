@@ -1,0 +1,7 @@
+> compile
+
+# change A.x to be implicit
+$ copy-file changes/A.scala A.scala
+
+# Both A.scala and B.scala need to be recompiled because a new implicit is available
+-> compile

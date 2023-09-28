@@ -1,0 +1,4 @@
+$ copy-file changes/S1.scala S.scala
+> compile
+$ copy-file changes/S2.scala S.scala
+-> compile

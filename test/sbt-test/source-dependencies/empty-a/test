@@ -1,0 +1,19 @@
+$ copy-file changes/A.scala src/main/scala/A.scala
+> compile
+
+$ copy-file changes/A2.scala src/main/scala/A.scala
+> compile
+
+$ copy-file changes/B.scala src/main/scala/B.scala
+-> compile
+
+$ copy-file changes/A.scala src/main/scala/A.scala
+> compile
+
+$ delete src/main/scala/B.scala
+$ copy-file changes/A2.scala src/main/scala/A.scala
+> compile
+
+$ copy-file changes/A.scala src/main/scala/A.scala
+$ copy-file changes/B.scala src/main/scala/B.scala
+> compile

@@ -1,0 +1,16 @@
+# Verifies if dependencies introduced by Java inheritance by local classes are handled correctly.
+# See sbt-test 'local-class-inheritance' for a similar test in Scala.
+
+> compile
+
+$ copy-file changes/A2.java A.java
+> compile
+# D should be compiled only at the beginning; it depends by inheritance only
+# on C and C's public interface is not affected by changes to A
+> checkRecompilations 0 D
+# A is explicitly changed
+> checkRecompilations 1 A
+# B is recompiled because it depends by inheritance on A
+# C is recompiled because it depends by local inheritance on B but its
+# dependencies (D) are not recompiled
+> checkRecompilations 2 B C

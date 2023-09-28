@@ -1,0 +1,4 @@
+> compile
+$ copy-file changes/A.scala A.scala
+# Compilation of B.scala should fail because type of A.m changed
+-> compile

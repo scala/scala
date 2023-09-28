@@ -1,0 +1,50 @@
+## Case 1: value class as parameter of method
+$ copy-file changes/A0.scala src/main/scala/A.scala
+$ copy-file changes/B0.scala src/main/scala/B.scala
+$ copy-file changes/C0.scala src/main/scala/C.scala
+
+# A is a normal class. B.foo accepts a parameter of type A. C calls B.foo, giving it `null`.
+> compile
+> run
+
+# Make A a value class.
+$ copy-file changes/A1.scala src/main/scala/A.scala
+
+# The code no longer compiles because B.foo no longer accepts `null` as an argument.
+# This means that we have invalidated C.scala, as expected!
+-> compile
+
+
+## Case 2: value class as return type of method with no parameter lists
+$ copy-file changes/A0.scala src/main/scala/A.scala
+$ copy-file changes/B1.scala src/main/scala/B.scala
+$ copy-file changes/C1.scala src/main/scala/C.scala
+
+# A is a normal class. B.bar takes no arguments and returns an instance of A. C calls B.bar.
+> compile
+> run
+
+# Make A a value class.
+$ copy-file changes/A1.scala src/main/scala/A.scala
+
+# The code compiles. It will run iff C is recompiled because the signature of B.bar has changed,
+# because A is now a value class.
+> run
+
+
+## Case 3: value class as return type of method with multiple parameter lists
+$ copy-file changes/A0.scala src/main/scala/A.scala
+$ copy-file changes/B2.scala src/main/scala/B.scala
+$ copy-file changes/C2.scala src/main/scala/C.scala
+
+# A is a normal class. B.bar takes two dummy arguments and returns an instance of A. C calls B.bar("")("").
+> compile
+> run
+
+# Make A a value class.
+$ copy-file changes/A1.scala src/main/scala/A.scala
+
+# The code compiles. It will run iff C is recompiled because the signature of B.bar has changed,
+# because A is now a value class.
+> run
+

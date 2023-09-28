@@ -1,0 +1,28 @@
+$ copy-file changes/A0.scala A.scala
+
+# compile and run for the first time to verify that everything works
+> run
+
+# introduce private var and refer to it in a trait that we inherit from
+# there'll be pair of getters and setters generated for private var that
+# has to be implemented by a class (where you can declare corresponding field)
+$ copy-file changes/A1.scala A.scala
+
+# If the introduction of a private var did not trigger the recompilation of B,
+# then this will fail with AbstractMethodError because the getters and setters
+# for the private var have not been generated.
+> run
+
+# Try again with a private val
+> clean
+
+$ copy-file changes/A0.scala A.scala
+
+# compile and run a clean project to verify that everything works
+> run
+
+# introduce a private val in the trait
+$ copy-file changes/A2.scala A.scala
+
+# Verify that B has been recompiled and that everything runs fine.
+> run

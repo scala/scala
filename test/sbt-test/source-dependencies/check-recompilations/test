@@ -1,0 +1,46 @@
+# this was the first checkRecompilations test ever written. it's a good
+# one for understanding how checkDependencies and checkRecompilations
+# are used.
+
+# the first compile command causes round 0 to happen
+
+> compile
+
+# every class gets compiled.
+
+> checkRecompilations 0 A B C D
+
+# now zinc knows the dependency relations between the classes:
+# ┌─┐┌─┐
+# │D││B│
+# └┬┘└┬┘
+# ┌▽┐ │
+# │C│ │
+# └┬┘ │
+# ┌▽──▽┐
+# │A   │
+# └────┘
+
+> checkDependencies A:
+> checkDependencies B: A
+> checkDependencies C: A
+> checkDependencies D: C
+
+# next, we swap in changed code
+
+$ copy-file changes/A.scala A.scala
+
+# the second compile command causes rounds 1, 2, and 3 to happen
+
+> compile
+
+# checkRecompilations only knows the *last* round in which something
+# got compiled. it doesn't know *all* the rounds when something got
+# compiled.  so that's why `checkRecompilations 0` is now empty.
+# after rounds 1, 2, and 3 have all finished, none of the classfiles
+# from round 0 are still extant.
+
+> checkRecompilations 0
+> checkRecompilations 1 A
+> checkRecompilations 2 B C
+> checkRecompilations 3 D

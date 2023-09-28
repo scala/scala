@@ -1,0 +1,23 @@
+$ copy-file changes/A1.scala A.scala
+$ copy-file changes/B.scala B.scala
+# B depends on A
+# 1 iteration
+> compile
+
+$ copy-file changes/A2.scala A.scala
+
+# will successfully compile A.scala in the first step but fail to compile B.scala in the second
+# because type of A.x changed.  The original classes should be restored after this failure.
+# 2 iterations, but none are recorded in the Analysis
+-> compile
+
+# the class file for C should be deleted:
+#  it was only added by A2, but compilation hasn't succeeded yet
+$ absent target/classes/C.class
+
+
+$ copy-file changes/A1.scala A.scala
+# if the classes were correctly restored, another compilation shouldn't be necessary
+> compile
+# so, there should only be the original 1 iteration recorded in the Analysis
+> checkIterations 1

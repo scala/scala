@@ -1,0 +1,10 @@
+# Compilation with warning should fail
+-> compile
+
+# Remove warning
+$ copy-file changed/Sealed1.scala src/main/scala/foo/Sealed.scala
+> compile
+
+# Add warning again without touching Child2 definition
+$ copy-file changed/Sealed2.scala src/main/scala/foo/Sealed.scala
+-> compile

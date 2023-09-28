@@ -1,0 +1,2 @@
+# We only want to make sure we can compile this without stack overflow
+> macro-client/compile

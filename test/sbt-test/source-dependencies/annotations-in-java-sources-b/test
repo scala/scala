@@ -1,0 +1,11 @@
+# Verifies that changes to annotations in upstream Java sources causes
+# recompilation downstream (sbt/zinc#630)
+
+> compile
+> checkDependencies test.Foo: test.Test
+> checkRecompilations 0 test.Test test.Foo
+
+$ copy-file changes/Test1.java Test.java
+> compile
+> checkRecompilations 1 test.Test
+> checkRecompilations 2 test.Foo

@@ -1,0 +1,5 @@
+> compile
+> checkRecompilations 0 Foo Baz
+$ copy-file Bar.scala2 Bar.scala
+> compile
+> checkRecompilations 1 Bar

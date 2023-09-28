@@ -1,0 +1,15 @@
+{
+  "projects": [
+    {
+      "name": "macro-client",
+      "dependsOn": [
+        "macro-provider"
+      ],
+      "scalaVersion": "2.13.12"
+    },
+    {
+      "name": "macro-provider",
+      "scalaVersion": "2.13.12"
+    }
+  ]
+}

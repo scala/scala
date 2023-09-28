@@ -1,0 +1,12 @@
+# done this way because last modified times often have ~1s resolution
+> use/compile
+$ sleep 1000
+
+# This tests no-op compilation of dep
+$ copy-file changes/B2.scala use/B.scala
+> use/compile
+$ sleep 1000
+
+$ copy-file changes/Break.scala dep/A.scala
+-> use/compile
+

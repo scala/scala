@@ -1,0 +1,6 @@
+> compile
+
+# replace var x with def x, def x_=
+$ copy-file changes/A.scala A.scala
+
+-> compile

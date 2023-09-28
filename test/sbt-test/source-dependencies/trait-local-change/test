@@ -1,0 +1,7 @@
+> pro/clean
+> pro/compile
+$ copy-file changes/A2.scala pro/A.scala
+# Second compilation round, there should be no third round (we don't need to recompile B.scala)
+> pro/compile
+# Check that there were only two rounds of compilation
+> pro/checkIterations 2

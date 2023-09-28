@@ -1,0 +1,14 @@
+> macro-client/compile
+
+# remove `Foo.str` which is an argument to a macro
+# (this macro itself that is an argument to another macro)
+$ copy-file macro-client/changes/Foo.scala macro-client/Foo.scala
+
+# we should recompile Foo.scala first and then fail to compile Client.scala due to missing
+# `Foo.str`
+-> macro-client/compile
+
+> macro-provider/clean
+> macro-client/clean
+
+-> macro-client/compile

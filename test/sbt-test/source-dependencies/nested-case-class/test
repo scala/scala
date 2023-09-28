@@ -1,0 +1,6 @@
+$ copy-file changes/A0.scala A.scala
+> run
+
+# The same test case, but involving value classes
+$ copy-file changes/A1.scala A.scala
+> run

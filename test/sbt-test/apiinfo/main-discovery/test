@@ -1,0 +1,4 @@
+> compile
+> checkMainClasses src/main/java/runjava/MainJava.java: runjava.MainJava runjava.MainJava.StaticInner
+> checkMainClasses src/main/java/runjava/oMainJava.java:
+> checkMainClasses src/main/scala/Hello.scala: runscala.MainScala runscala.MainScala.StaticInner

@@ -1,0 +1,7 @@
+> compile
+
+# remove type parameter from A
+$ copy-file changes/A.scala A.scala
+
+# should get compile error because B, C, D reference A without a type parameter
+-> compile

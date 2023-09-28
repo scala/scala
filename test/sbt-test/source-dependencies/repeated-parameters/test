@@ -1,0 +1,7 @@
+> compile
+
+# change repeated parameters to Seq
+$ copy-file changes/A.scala A.scala
+
+# B.scala needs recompiling because the type has changed
+-> compile

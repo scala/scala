@@ -1,0 +1,15 @@
+{
+  "projects": [
+    {
+      "name": "root",
+      "dependsOn": [
+        "core"
+      ],
+      "scalaVersion": "2.13.12"
+    },
+    {
+      "name": "core",
+      "scalaVersion": "2.13.12"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+> compile
+$ copy-file foo.scala2 foo.scala
+# clean compile fails correctly
+-> compile

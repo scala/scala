@@ -1,0 +1,5 @@
+> run
+$ copy-file changes/Base.scala src/main/scala/foo/Base.scala
+> run
+# check if there are only two compile iterations performed
+> checkIterations 2

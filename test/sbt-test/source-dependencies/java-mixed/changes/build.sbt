@@ -1,0 +1,1 @@
+compileOrder := CompileOrder.ScalaThenJava

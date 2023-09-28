@@ -1,0 +1,24 @@
+# Test for class-based invalidation of dependencies
+# by inheritance. The source file A.scala defines
+# A and A2 classes. The B.scala inherits from A2 but
+# in the test api of A is modified. B.scala shouldn't
+# get invalidated if invalidation happens at
+# class level
+# this test case covers https://github.com/sbt/sbt/issues/2320
+
+# introduces first compile iteration
+> compile
+> checkRecompilations 0 A A2 B C
+$ copy-file changes/A1.scala src/main/scala/A.scala
+# second iteration and third iteration (due to invalidation of C)
+> compile
+> checkRecompilations 1 A A.AA A2
+> checkRecompilations 2 C
+$ copy-file changes/A2.scala src/main/scala/A.scala
+# fourth iteration
+> compile
+# check if there were exactly four compile iterations performed
+> checkRecompilations 0 B
+> checkRecompilations 1
+> checkRecompilations 2 C
+> checkRecompilations 3 A A2 A.AA

@@ -1,0 +1,8 @@
+> compile
+
+# shorten the package defined in A from 'a.b' to 'a'.
+$ copy-file changes/A.scala A.scala
+
+# 'import a.b' should now fail in B.scala
+# succeeds because scalac doesn't track this dependency
+-> compile

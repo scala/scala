@@ -1,0 +1,6 @@
+> compile
+
+# make T invariant
+$ copy-file changes/A.scala A.scala
+
+-> compile

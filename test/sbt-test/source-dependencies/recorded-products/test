@@ -1,0 +1,4 @@
+> compile
+> checkProducts DefaultPkg.scala: ${BASE}/target/classes/A.class ${BASE}/target/classes/B$.class ${BASE}/target/classes/B.class
+> checkProducts Nested.scala: ${BASE}/target/classes/foo/bar/Outer$InnerC$T.class ${BASE}/target/classes/foo/bar/Outer$InnerO$B$.class ${BASE}/target/classes/foo/bar/Outer$InnerO$.class ${BASE}/target/classes/foo/bar/Outer$X.class ${BASE}/target/classes/foo/bar/Outer$.class ${BASE}/target/classes/foo/bar/Outer.class ${BASE}/target/classes/foo/bar/Outer$InnerC.class ${BASE}/target/classes/foo/bar/Outer$X$Y$.class ${BASE}/target/classes/foo/bar/Outer$InnerO$A.class
+> checkProducts Local.scala: ${BASE}/target/classes/T.class ${BASE}/target/classes/Container.class ${BASE}/target/classes/Container$$anon$1.class ${BASE}/target/classes/Container$C$1.class

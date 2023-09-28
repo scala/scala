@@ -1,0 +1,8 @@
+> compile
+
+# have new class E extend A
+$ copy-file changes/A.scala A.scala
+
+# D.scala needs recompiling because the pattern match in D
+# is no longer exhaustive, which emits a warning
+-> compile

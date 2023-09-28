@@ -1,0 +1,15 @@
+# Here we have a package object (demo) that extends a class in a subpackage (demo.sub.A)
+#  demo.sub.A provides an implicit used by demo.D
+$ copy-file changes/package.scala src/main/scala/demo/package.scala
+$ copy-file changes/A1.scala src/main/scala/demo/sub/A.scala
+$ copy-file changes/B.scala src/main/scala/demo/B.scala
+$ copy-file changes/C.scala src/main/scala/demo/C.scala
+> compile
+
+# When recompiling A, we delete the class files for A
+# When the demo package object is loaded, scalac complains it can't
+#  find the class files for A.  Presumably this occurs because
+#  package object loading occurs early and doesn't see the new A
+#  from source.
+$ copy-file changes/A2.scala src/main/scala/demo/sub/A.scala
+> compile

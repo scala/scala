@@ -1,0 +1,1 @@
+classDirectory in Compile := file("classes")
