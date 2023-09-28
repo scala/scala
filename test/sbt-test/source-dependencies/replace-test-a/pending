@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/first.scala src/main/scala/A.scala
 > compile
 > check-first

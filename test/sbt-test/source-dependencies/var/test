@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # replace var x with def x, def x_=

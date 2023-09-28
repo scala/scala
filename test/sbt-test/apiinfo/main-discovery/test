@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 > checkMainClasses src/main/java/runjava/MainJava.java: runjava.MainJava runjava.MainJava.StaticInner
 > checkMainClasses src/main/java/runjava/oMainJava.java:

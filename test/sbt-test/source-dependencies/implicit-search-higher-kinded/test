@@ -1,3 +1,5 @@
+> setup; reload
+
 # Tests if dependencies on implicit scope are tracked properly
 # We use higher kinded types in order to make type checker to
 # infer more and thus obscure true dependencies

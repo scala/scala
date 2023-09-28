@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # modify A.scala so that the signature of its method changes to be identical to

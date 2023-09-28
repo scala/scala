@@ -1,8 +1,0 @@
-{
-  "projects": [
-    {
-      "name": "pro",
-      "scalaVersion": "2.13.12"
-    }
-  ]
-}

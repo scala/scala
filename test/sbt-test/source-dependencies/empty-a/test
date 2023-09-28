@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/A.scala src/main/scala/A.scala
 > compile
 

@@ -1,3 +1,5 @@
+> setup; reload
+
 > macro-client/compile
 
 # remove `Foo.str` which is an argument to a macro

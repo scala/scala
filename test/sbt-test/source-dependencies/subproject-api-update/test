@@ -1,3 +1,5 @@
+> setup; reload
+
 > checkNameExistsInClass core.A a
 
 $ copy-file changes/A.scala core/src/main/scala/A.scala

@@ -959,16 +959,16 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
 
     sbtTestDirectory := baseDirectory.value,
 
-    // execute each test in a clean new folder, prevent cross-talk
-    scriptedBatchExecution := false,
+    scriptedBatchExecution := true, // set to `false` to execute each test in a separate sbt instance
+    scriptedParallelInstances := 2, // default is 1
 
     // hide sbt output of scripted tests
     scriptedBufferLog := true,
 
     scriptedLaunchOpts ++= Seq(
       "-Dplugin.scalaVersion=" + version.value,
-      "-Dsbt.boot.directory=" + (target.value / ".sbt-scripted").getAbsolutePath // Workaround sbt/sbt#3469
-
+      "-Dsbt.boot.directory=" + (target.value / ".sbt-scripted").getAbsolutePath, // Workaround sbt/sbt#3469
+      "-Dscripted.common=" + (baseDirectory.value / "common.sbt.template").getAbsolutePath,
     ),
 
     // Pass along ivy home and repositories settings to sbt instances run from the tests

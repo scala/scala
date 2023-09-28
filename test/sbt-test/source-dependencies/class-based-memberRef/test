@@ -1,3 +1,5 @@
+> setup; reload
+
 # Test for class-based invalidation of dependencies by member reference
 # This test checks if name hashes are tracked at the class level so
 # only classes that depend on an API of a modified class are invalidated

@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # make implicit parameters in A.x be explicit

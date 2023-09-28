@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 $ copy-file changes/B2.scala B.scala
 # Compilation of D.scala should fail because B is no longer a subtype of A

@@ -1,3 +1,6 @@
+> setup; reload
+
+> set incOptions := incOptions.value.withStoreApis(false)
 > compile
 > checkRecompilations 0 Foo Baz
 $ copy-file Bar.scala2 Bar.scala

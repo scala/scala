@@ -1,3 +1,5 @@
+> setup; reload
+
 # named parameters are only in 2.8
 #> ++2.8.0
 

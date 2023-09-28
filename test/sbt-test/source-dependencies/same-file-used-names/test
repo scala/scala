@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # uncomment definition of `x` that leads to ambiguity error in A

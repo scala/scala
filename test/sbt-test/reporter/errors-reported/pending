@@ -1,3 +1,7 @@
+> setup; reload
+
+# this test was pending from the beginning; https://github.com/sbt/zinc/commit/80467a3c041484fa839cdb081c08e5e3d05eac8f
+
 -> compile
 
 > checkErrors 1

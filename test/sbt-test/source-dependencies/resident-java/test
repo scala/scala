@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/B0.scala B.scala
 > compile
 

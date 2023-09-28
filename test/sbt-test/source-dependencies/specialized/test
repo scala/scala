@@ -1,3 +1,5 @@
+> setup; reload
+
 # -Yspecialize is 2.8 only
 > compile
 

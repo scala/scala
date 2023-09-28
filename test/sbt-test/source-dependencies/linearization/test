@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # the value of F.x should be 16

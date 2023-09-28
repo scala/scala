@@ -1,3 +1,5 @@
+> setup; reload
+
 # Test for separate compilation and proper value of
 # the OVERRIDE flag when abstract types, type alias
 # and structural type are involved

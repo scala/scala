@@ -1,3 +1,5 @@
+> setup; reload
+
 # Verifies if dependencies introduced by inheritance by local classes are handled correctly.
 # They are different from regular inheritance dependencies because they should not be
 # invalidated transitively, see: https://github.com/sbt/sbt/issues/1104#issuecomment-169146039

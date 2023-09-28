@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 $ copy-file changes/T.scala T.scala
 > compile

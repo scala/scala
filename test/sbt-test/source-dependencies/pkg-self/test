@@ -1,3 +1,5 @@
+> setup; reload
+
 # Here we have a package object (demo) that extends a class in a subpackage (demo.sub.A)
 #  demo.sub.A provides an implicit used by demo.D
 $ copy-file changes/package.scala src/main/scala/demo/package.scala

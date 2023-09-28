@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 $ copy-file changes/O1.scala O.scala
 > compile

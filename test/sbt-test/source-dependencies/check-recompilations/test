@@ -1,3 +1,5 @@
+> setup; reload
+
 # this was the first checkRecompilations test ever written. it's a good
 # one for understanding how checkDependencies and checkRecompilations
 # are used.

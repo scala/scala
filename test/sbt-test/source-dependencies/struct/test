@@ -1,3 +1,5 @@
+> setup; reload
+
 # Marked as pending because name hashing doesn't support structural types
 # in some cases. See: https://github.com/sbt/sbt/issues/1545
 

@@ -1,2 +1,4 @@
+> setup; reload
+
 # See https://github.com/sbt/zinc/issues/127
 > compile

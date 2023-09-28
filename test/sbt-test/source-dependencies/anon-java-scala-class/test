@@ -1,3 +1,5 @@
+> setup; reload
+
 # Verifies if dependencies introduced by Java inheritance by local classes are handled correctly.
 # See sbt-test 'local-class-inheritance' for a similar test in Scala.
 

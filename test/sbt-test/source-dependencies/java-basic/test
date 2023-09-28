@@ -1,3 +1,5 @@
+> setup; reload
+
 # A is a basic Java file with no dependencies.  Just a basic check for Java compilation
 $ copy-file changes/A.java src/main/java/a/A.java
 > compile

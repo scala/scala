@@ -1,2 +1,4 @@
+> setup; reload
+
 # test case for http://github.com/sbt/sbt/issues/676
 > compile

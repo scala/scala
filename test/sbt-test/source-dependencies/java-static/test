@@ -1,3 +1,5 @@
+> setup; reload
+
 # When a Java class is loaded from a class file and not parsed from a source file, scalac reports
 #    the statics as an object without a file and so the Analyzer must know to look for the
 #    object's linked class.

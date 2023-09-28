@@ -1,0 +1,121 @@
+incOptions := incOptions.value.withRecompileAllFraction(1.0)
+
+Compile / classDirectory := baseDirectory.value / "target/classes"
+Compile / classDirectory := baseDirectory.value / "target/classes"
+
+InputKey[Unit]("checkRecompilations") := {
+  val stepArg :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val step = stepArg.toInt
+  val a = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val allCompilations = a.compilations.allCompilations
+  val recompiledClasses: Seq[Set[String]] = allCompilations map { c =>
+    val recompiledClasses = a.apis.internal.collect {
+      case (className, api) if api.compilationTimestamp() == c.getStartTime => className
+    }
+    recompiledClasses.toSet
+  }
+
+  def recompiledClassesInIteration(iteration: Int, classNames: Set[String]) = {
+    assert(
+      recompiledClasses(iteration) == classNames,
+      s"""${recompiledClasses(iteration)} != $classNames
+         |allCompilations = ${allCompilations.mkString("\n  ")}""".stripMargin
+    )
+  }
+
+  assert(step < allCompilations.size)
+  recompiledClassesInIteration(step, expected.toSet)
+}
+
+InputKey[Unit]("checkDependencies") := {
+  val cls :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val className = cls.stripSuffix(":")
+  val a = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  def classDeps(cls: String): Set[String] = a.relations.internalClassDep.forward(cls)
+  def assertDependencies(expected: Set[String], actual: Set[String]) =
+    assert(expected == actual, s"Expected $expected dependencies, got $actual")
+  assertDependencies(expected.toSet, classDeps(className))
+}
+
+InputKey[Unit]("checkProducts") := {
+  val source :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val a = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val c = fileConverter.value
+  val products = a.relations.products(c.toVirtualFile(baseDirectory.value.toPath / source.stripSuffix(":")))
+  assert(expected.toSet == products.map(_.id), s"expected: ${expected.sorted.mkString("\n  ", "\n  ", "")}\nobtained: ${products.map(_.id).toList.sorted.mkString("\n  ", "\n  ", "")}")
+}
+
+InputKey[Unit]("checkProductsExists") := {
+  val List(source) = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val a = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val c = fileConverter.value
+  val missing = a.relations.products(c.toVirtualFile(baseDirectory.value.toPath / source)).filter(p =>
+    !java.nio.file.Files.exists(c.toPath(p)))
+  assert(missing.isEmpty, s"missing files: ${missing.map(_.id).toList.sorted.mkString("\n  ", "\n  ", "")}")
+}
+
+InputKey[Unit]("checkIterations") := {
+  val expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed.head.toInt
+  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val count = analysis.compilations.allCompilations.size
+  def msg = s"analysis.compilations.allCompilations.size = $count (expected $expected)"
+  assert(count == expected, msg)
+}
+
+InputKey[Unit]("checkMainClasses") := {
+  val source :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val c = fileConverter.value
+
+  def mainClasses(src: String): Set[String] =
+    analysis.infos.get(c.toVirtualFile(baseDirectory.value.toPath / src)).getMainClasses.toSet
+
+  def assertClasses(expected: Set[String], actual: Set[String]) = {
+    def msg = s"Expected $expected classes, got $actual\n\n" + analysis.infos.allInfos
+    assert(expected == actual, msg)
+  }
+
+  assertClasses(expected.toSet, mainClasses(source.stripSuffix(":")))
+}
+
+InputKey[Unit]("checkClasses") := {
+  val source :: expected = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val c = fileConverter.value
+
+  def classes(src: String): Set[String] =
+    analysis.relations.classNames(c.toVirtualFile(baseDirectory.value.toPath / src))
+  def assertClasses(expected: Set[String], actual: Set[String]) = {
+    def msg = s"Expected $expected classes, got $actual \n\n" + analysis.relations
+    assert(expected == actual, msg)
+  }
+  assertClasses(expected.toSet, classes(source.stripSuffix(":")))
+}
+
+def messages(analysis: sbt.internal.inc.Analysis, severity: xsbti.Severity) = {
+  val problems = analysis.infos.allInfos.values.toList.flatMap(i => i.getReportedProblems ++ i.getUnreportedProblems)
+  problems.filter(_.severity == severity)
+}
+
+InputKey[Unit]("checkWarnings") := {
+  val num = complete.DefaultParsers.spaceDelimited("<arg>").parsed.head.toInt
+  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val warnings = messages(analysis, xsbti.Severity.Warn)
+  def m =
+    s"""Expected $num warnings but ${warnings.length} found:
+       |${warnings mkString "\n"}""".stripMargin
+  assert(warnings.length == num, m)
+}
+
+InputKey[Unit]("checkWarning") := {
+  val num :: expected :: Nil = complete.DefaultParsers.spaceDelimited("<arg>").parsed
+  val analysis = (Compile / compile).value.asInstanceOf[sbt.internal.inc.Analysis]
+  val warning = messages(analysis, xsbti.Severity.Warn).apply(num.toInt)
+  assert(warning.message.contains(expected),
+    s"message does not contain expected ($expected):\n$warning")
+}
+
+InputKey[Unit]("checkNoClassFiles") := {
+  val classes = (baseDirectory.value / "target/classes" ** "*.class").get.toList.map(_.toString)
+  assert(classes.isEmpty, s"classes exist:${classes.mkString("\n * ", "\n * ", "")}")
+}

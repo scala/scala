@@ -1,3 +1,5 @@
+> setup; reload
+
 > run
 $ copy-file changes/Base.scala src/main/scala/foo/Base.scala
 > run

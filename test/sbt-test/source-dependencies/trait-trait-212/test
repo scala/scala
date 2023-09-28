@@ -1,5 +1,0 @@
-> mirtest/run
-
-## After copying the Good implementation, we should be able to run successfully.
-$ copy-file changes/A1.scala mirtest/A.scala
-> mirtest/run

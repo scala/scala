@@ -1,3 +1,5 @@
+> setup; reload
+
 # Tests if dependencies on implicit scope are tracked properly
 $ copy-file changes/A1.scala A.scala
 $ copy-file changes/B.scala B.scala

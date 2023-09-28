@@ -1,8 +1,12 @@
+> setup; reload
+
 > compile
 
 $ copy-file changes/Providers.scala Providers.scala
 $ copy-file changes/Bar.scala Bar.scala
 
--> compile # This should compile
+# This should compile
+-> compile
 > clean
-> compile # Make sure that clean compile is fine
+# Make sure that clean compile is fine
+> compile

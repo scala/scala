@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/A1.scala A.scala
 $ copy-file changes/B.scala B.scala
 # B depends on A

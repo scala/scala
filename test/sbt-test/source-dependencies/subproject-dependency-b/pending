@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 $ copy-file changes/A1.scala provider/A.scala

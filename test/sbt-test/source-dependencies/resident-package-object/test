@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/package.scala src/main/scala/example/package.scala
 > compile
 

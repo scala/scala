@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # shorten the package defined in A from 'a.b' to 'a'.

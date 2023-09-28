@@ -1,3 +1,5 @@
+> setup; reload
+
 > dep/package
 $ copy-file dep/target/dep.jar use/lib/dep.jar
 

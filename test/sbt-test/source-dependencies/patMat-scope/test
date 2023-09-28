@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 $ exists target/classes/foo/SealedUsedInPatMatScope.class
 $ exists target/classes/foo/SealedNameUsedInDefaultScope.class

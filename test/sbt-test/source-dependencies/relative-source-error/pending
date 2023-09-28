@@ -1,3 +1,5 @@
+> setup; reload
+
 $ copy-file changes/relative.sbt build.sbt
 > reload
 -> compile

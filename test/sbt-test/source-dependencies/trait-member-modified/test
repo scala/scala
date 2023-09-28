@@ -1,3 +1,5 @@
+> setup; reload
+
 # Test if adding a member to a trait affects classes that refer to that trait
 # by a member reference
 > compile

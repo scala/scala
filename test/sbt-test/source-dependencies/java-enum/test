@@ -1,2 +1,4 @@
+> setup; reload
+
 $ copy-file changes/SomeEnum.java src/main/java/pl/typosafe/SomeEnum.java
 > compile

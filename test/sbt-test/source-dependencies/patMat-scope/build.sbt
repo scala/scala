@@ -1,1 +1,2 @@
-classDirectory in Compile := file("classes")
+// logLevel := Level.Debug
+incOptions := incOptions.value.withUseOptimizedSealed(true)

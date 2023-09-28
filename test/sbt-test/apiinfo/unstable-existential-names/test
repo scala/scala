@@ -1,3 +1,5 @@
+> setup; reload
+
 # Tests if existential types are pickled correctly so they
 # do not introduce unnecessary compile iterations
 

@@ -1,3 +1,5 @@
+> setup; reload
+
 # Test for class-based invalidation of dependencies
 # by inheritance. The source file A.scala defines
 # A and A2 classes. The B.scala inherits from A2 but

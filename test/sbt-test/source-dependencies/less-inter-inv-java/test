@@ -1,3 +1,5 @@
+> setup; reload
+
 # 1 iteration from initial full compile
 > run
 $ copy-file changes/A2.java A.java

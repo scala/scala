@@ -1,3 +1,5 @@
+> setup; reload
+
 # This test checks that when a source file included in a partial recompilation adds a dependency on
 # a file not included in the partial recompilation,  the dependency is properly recorded.
 

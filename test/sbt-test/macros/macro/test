@@ -1,5 +1,4 @@
-# Marked as pending due to StackOverflow error, see
-# https://github.com/sbt/sbt/issues/1544 for details
+> setup; reload
 
 > macro-client/compile
 

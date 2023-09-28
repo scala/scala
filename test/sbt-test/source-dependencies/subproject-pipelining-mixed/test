@@ -1,3 +1,5 @@
+> setup; reload
+
 # base-line
 > use/compile
 $ sleep 1000

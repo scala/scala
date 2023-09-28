@@ -1,3 +1,5 @@
+> setup; reload
+
 # introduces first compile iteration
 > compile
 # adds a new method to A which will cause transitive invalidation

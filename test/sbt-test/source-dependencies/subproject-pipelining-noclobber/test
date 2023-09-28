@@ -1,3 +1,5 @@
+> setup; reload
+
 > dep/compile
 $ sleep 1000
 

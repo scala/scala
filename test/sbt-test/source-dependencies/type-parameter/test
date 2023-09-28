@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # remove type parameter from A

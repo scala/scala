@@ -1,3 +1,5 @@
+> setup; reload
+
 > compile
 
 # replace val x with lazy val x

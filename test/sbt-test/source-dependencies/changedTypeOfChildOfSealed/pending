@@ -1,3 +1,7 @@
+> setup; reload
+
+> set scalacOptions += "-Werror"
+
 # Compilation with warning should fail
 -> compile
 
