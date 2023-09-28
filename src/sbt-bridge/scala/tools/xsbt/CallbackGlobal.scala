@@ -15,13 +15,13 @@
 package scala.tools
 package xsbt
 
-import xsbti.{ AnalysisCallback, Severity }
+import xsbti.{AnalysisCallback, Severity}
 import xsbti.compile._
 
 import scala.tools.nsc._
 import io.AbstractFile
-import java.nio.file.{ Files, Path }
-
+import java.nio.file.{Files, Path}
+import scala.reflect.NameTransformer
 import scala.reflect.io.PlainFile
 
 /** Defines the interface of the incremental compiler hiding implementation details. */
@@ -203,6 +203,21 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     }
   }
 
+  private def flattenedOwner(g: Global)(sym: g.Symbol): g.Symbol = {
+    val chain = sym.owner.ownerChain.dropWhile(o => o.isClass && !o.hasPackageFlag)
+    if (chain.isEmpty) g.NoSymbol else chain.head
+  }
+
+  private def flattenedName(g: Global)(sym: g.Symbol): g.Name = {
+    val owner = sym.owner
+    val prefix =
+      if (owner.isRoot || owner == g.NoSymbol || owner.hasPackageFlag) ""
+      else "" + flattenedName(g)(owner) + NameTransformer.NAME_JOIN_STRING
+    val flat = prefix + sym.rawname
+    val nameString = if (owner.isJava) flat else ReflectAccess.compactifyName(g, flat)
+    if (sym.isType) g.newTypeNameCached(nameString) else g.newTermNameCached(nameString)
+  }
+
   /**
    * Replicate the behaviour of `fullName` with a few changes to the code to produce
    * correct file-system compatible full names for non-local classes. It mimics the
@@ -229,18 +244,18 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
       includePackageObjectClassNames: Boolean
   ): String = {
     def loop(sb: StringBuilder, size: Int, sym: Symbol): StringBuilder = {
-      val symName = sym.name
+      val symName = flattenedName(this)(sym)
       // Use of encoded to produce correct paths for names that have symbols
       val encodedName = symName.encode
       val nSize = encodedName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
+      val owner = flattenedOwner(this)(sym)
       val sb1 =
-        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
+        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || owner.isEffectiveRoot) {
           val capacity = size + nSize
           new StringBuilder(capacity)
         } else {
-          val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
-          // Addition to normal `fullName` to produce correct names for nested non-local classes
-          val sep = if (sym.isNestedClass) nme.MODULE_SUFFIX_STRING else separator
+          val next = if (owner.isPackageObjectClass) owner else owner.skipPackageObject
+          val sep = if (owner.isPackageObjectClass) nme.MODULE_SUFFIX_STRING else separator
           loop(sb, size + nSize + 1, next)
             .append(sep)
         }
