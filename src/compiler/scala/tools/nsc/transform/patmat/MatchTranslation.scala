@@ -96,7 +96,7 @@ trait MatchTranslation {
       private def typeTestStep(sub: Symbol, subPt: Type)     = step(TypeTestTreeMaker(sub, binder, subPt, subPt)(pos))()
       private def alternativesStep(alts: List[Tree])         = step(AlternativesTreeMaker(binder, translatedAlts(alts), alts.head.pos))()
       private def translatedAlts(alts: List[Tree])           = alts map (alt => rebindTo(alt).translate())
-      private def noStep()                                   = step()()
+      private def noStep()                                   = step(DummyTreeMaker)()
 
       private def unsupportedPatternMsg = sm"""
         |unsupported pattern: ${tree.shortClass} / $this (this is a scalac bug.)
