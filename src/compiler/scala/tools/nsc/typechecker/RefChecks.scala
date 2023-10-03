@@ -446,7 +446,7 @@ abstract class RefChecks extends Transform {
             else if (other.isStable && !member.isStable) // (1.4)
               overrideErrorWithMemberInfo("stable, immutable value required to override:")
             else if (member.isValue && member.isLazy &&
-                       other.isValue && other.hasFlag(STABLE) && !other.isDeferred && !other.isLazy)
+                       other.isValue && other.hasStableFlag && !other.isDeferred && !other.isLazy)
               overrideErrorWithMemberInfo("concrete non-lazy value cannot be overridden:")
             else if (other.isValue && other.isLazy && member.isValue && !member.isLazy)
               overrideErrorWithMemberInfo("value must be lazy when overriding concrete lazy value:")
@@ -1661,18 +1661,15 @@ abstract class RefChecks extends Transform {
         case TypeApply(fun, targs) =>
           isClassTypeAccessible(fun)
         case Select(module, apply) =>
-          ( // scala/bug#4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
-            //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
-            treeInfo.isQualifierSafeToElide(module) &&
-              // scala/bug#5626 Classes in refinement types cannot be constructed with `new`. In this case,
-              // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
-              module.symbol.companionClass.isClass
-            )
+          // scala/bug#4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
+          //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
+          treeInfo.isQualifierSafeToElide(module) &&
+          // scala/bug#5626 Classes in refinement types cannot be constructed with `new`.
+          !module.exists { case t @ Select(_, _) => t.symbol != null && t.symbol.isStructuralRefinementMember case _ => false }
         case x => throw new MatchError(x)
       }
-
       sym.name == nme.apply &&
-        !(sym hasFlag STABLE) && // ???
+        !sym.hasStableFlag && // ???
         sym.isCase &&
         isClassTypeAccessible(tree) &&
         !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
