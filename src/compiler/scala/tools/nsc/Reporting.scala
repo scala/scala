@@ -498,104 +498,139 @@ object Reporting {
   }
 
   sealed trait WarningCategory {
-    lazy val name: String = {
-      val objectName = this.getClass.getName.split('$').last
-      WarningCategory.insertDash.replaceAllIn(objectName, "-")
-        .stripPrefix("-")
-        .stripSuffix("-")
-        .toLowerCase
-    }
-
     def includes(o: WarningCategory): Boolean = this eq o
     def summaryCategory: WarningCategory = this
+    def name: String = WarningCategory.nameOf(this)
   }
 
   object WarningCategory {
-    private val insertDash = "(?=[A-Z][a-z])".r
+    private val camels = "(?=[A-Z][a-z])".r
+    private def hyphenated(s: String): String = camels.split(s).mkString("-").toLowerCase
 
-    val all: mutable.Map[String, WarningCategory] = mutable.Map.empty
-    private def add(c: WarningCategory): Unit = all.put(c.name, c).foreach(_ => assert(false, s"lint '${c.name}' added twice"))
+    private val _all: mutable.Map[String, WarningCategory] = mutable.Map.empty
+    def all: collection.Map[String, WarningCategory] = _all
 
-    object Deprecation extends WarningCategory; add(Deprecation)
+    // Add all WarningCategory members to all, by category name derived from field name.
+    private def adderall(): Unit =
+      for (f <- getClass.getDeclaredFields if classOf[WarningCategory].isAssignableFrom(f.getType))
+        _all.put(hyphenated(f.getName), f.get(this).asInstanceOf[WarningCategory])
+            .foreach(_ => throw new AssertionError(s"warning category '${f.getName}' added twice"))
 
-    object Unchecked extends WarningCategory; add(Unchecked)
+    private def nameOf(w: WarningCategory): String =
+      getClass.getDeclaredFields.find(_.get(this) eq w) match {
+        case Some(f) => hyphenated(f.getName)
+        case _ => hyphenated(w.getClass.getName).toLowerCase
+      }
 
-    object Optimizer extends WarningCategory; add(Optimizer)
+    private def apply(): WarningCategory = new WarningCategory {}
 
-    object Scaladoc extends WarningCategory; add(Scaladoc)
+    // "top-level" categories
+    val Deprecation, Unchecked, Optimizer, Scaladoc, JavaSource, Scala3Migration = WarningCategory()
 
-    object JavaSource extends WarningCategory; add(JavaSource)
+    // miscellaneous warnings that are grouped together in summaries
+    sealed trait Other extends WarningCategory {
+      override def summaryCategory: WarningCategory = Other
+    }
+    val Other = new Other {
+      override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other]
+    }
+    private def other(): Other = new Other {}
+    val OtherShadowing,
+        OtherPureStatement,
+        OtherMigration, // API annotation
+        OtherMatchAnalysis,
+        OtherDebug,
+        OtherNullaryOverride,
+        OtherNonCooperativeEquals,
+        OtherImplicitType
+      = other()
 
-    object Scala3Migration extends WarningCategory; add(Scala3Migration)
+    // categories corresponding to -W settings, such as -Wvalue-discard
+    sealed trait WFlag extends WarningCategory {
+      override def summaryCategory: WarningCategory = WFlag
+    }
+    val WFlag = new WFlag {
+      override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag]
+    }
+    private def wflag(): WFlag = new WFlag {}
+    val WFlagDeadCode,
+        WFlagExtraImplicit,
+        WFlagNumericWiden,
+        WFlagSelfImplicit,
+        WFlagValueDiscard
+      = wflag()
 
-    sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
-    object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)
-    object OtherShadowing extends Other; add(OtherShadowing)
-    object OtherPureStatement extends Other; add(OtherPureStatement)
-    object OtherMigration extends Other; add(OtherMigration) // API annotation
-    object OtherMatchAnalysis extends Other; add(OtherMatchAnalysis)
-    object OtherDebug extends Other; add(OtherDebug)
-    object OtherNullaryOverride extends Other; add(OtherNullaryOverride)
-    object OtherNonCooperativeEquals extends Other; add(OtherNonCooperativeEquals)
-    object OtherImplicitType extends Other; add(OtherImplicitType)
+    sealed trait Unused extends WarningCategory {
+      override def summaryCategory: WarningCategory = Unused
+    }
+    val Unused = new Unused {
+      override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Unused]
+    }
+    private def unused(): Unused = new Unused {}
+    val UnusedImports,
+        UnusedPatVars,
+        UnusedPrivates,
+        UnusedLocals,
+        UnusedParams,
+        UnusedNowarn
+      = unused()
 
-    sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
-    object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
-    object WFlagDeadCode extends WFlag; add(WFlagDeadCode)
-    object WFlagExtraImplicit extends WFlag; add(WFlagExtraImplicit)
-    object WFlagNumericWiden extends WFlag; add(WFlagNumericWiden)
-    object WFlagSelfImplicit extends WFlag; add(WFlagSelfImplicit)
-    object WFlagValueDiscard extends WFlag; add(WFlagValueDiscard)
+    sealed trait Lint extends WarningCategory {
+      override def summaryCategory: WarningCategory = Lint
+    }
+    val Lint = new Lint {
+      override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint]
+    }
+    private def lint(): Lint = new Lint {}
+    val LintAdaptedArgs,
+        LintNullaryUnit,
+        LintInaccessible,
+        LintInferAny,
+        LintMissingInterpolator,
+        LintDocDetached,
+        LintPrivateShadow,
+        LintTypeParameterShadow,
+        LintPolyImplicitOverload,
+        LintOptionImplicit,
+        LintDelayedinitSelect,
+        LintPackageObjectClasses,
+        LintStarsAlign,
+        LintConstant,
+        LintNonlocalReturn,
+        LintImplicitNotFound,
+        LintSerial,
+        LintEtaZero,
+        LintEtaSam,
+        LintDeprecation,
+        LintBynameImplicit,
+        LintRecurseWithDefault,
+        LintUnitSpecialization,
+        LintMultiargInfix,
+        LintPerformance,
+        LintIntDivToFloat,
+        LintUniversalMethods,
+        LintNumericMethods
+      = lint()
 
-    sealed trait Unused extends WarningCategory { override def summaryCategory: WarningCategory = Unused }
-    object Unused extends Unused { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Unused] }; add(Unused)
-    object UnusedImports extends Unused; add(UnusedImports)
-    object UnusedPatVars extends Unused; add(UnusedPatVars)
-    object UnusedPrivates extends Unused; add(UnusedPrivates)
-    object UnusedLocals extends Unused; add(UnusedLocals)
-    object UnusedParams extends Unused; add(UnusedParams)
-    object UnusedNowarn extends Unused; add(UnusedNowarn)
+    sealed trait Feature extends WarningCategory {
+      override def summaryCategory: WarningCategory = Feature
+    }
+    val Feature = new Feature {
+      override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature]
+    }
+    private def feature(): Feature = new Feature {}
+    val FeatureDynamics,
+        FeatureExistentials,
+        FeatureHigherKinds,
+        FeatureImplicitConversions,
+        FeaturePostfixOps,
+        FeatureReflectiveCalls,
+        FeatureMacros
+      = feature()
 
-    sealed trait Lint extends WarningCategory { override def summaryCategory: WarningCategory = Lint }
-    object Lint extends Lint { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint] }; add(Lint)
-    object LintAdaptedArgs extends Lint; add(LintAdaptedArgs)
-    object LintNullaryUnit extends Lint; add(LintNullaryUnit)
-    object LintInaccessible extends Lint; add(LintInaccessible)
-    object LintInferAny extends Lint; add(LintInferAny)
-    object LintMissingInterpolator extends Lint; add(LintMissingInterpolator)
-    object LintDocDetached extends Lint; add(LintDocDetached)
-    object LintPrivateShadow extends Lint; add(LintPrivateShadow)
-    object LintTypeParameterShadow extends Lint; add(LintTypeParameterShadow)
-    object LintPolyImplicitOverload extends Lint; add(LintPolyImplicitOverload)
-    object LintOptionImplicit extends Lint; add(LintOptionImplicit)
-    object LintDelayedinitSelect extends Lint; add(LintDelayedinitSelect)
-    object LintPackageObjectClasses extends Lint; add(LintPackageObjectClasses)
-    object LintStarsAlign extends Lint; add(LintStarsAlign)
-    object LintConstant extends Lint; add(LintConstant)
-    object LintNonlocalReturn extends Lint; add(LintNonlocalReturn)
-    object LintImplicitNotFound extends Lint; add(LintImplicitNotFound)
-    object LintSerial extends Lint; add(LintSerial)
-    object LintEtaZero extends Lint; add(LintEtaZero)
-    object LintEtaSam extends Lint; add(LintEtaSam)
-    object LintDeprecation extends Lint; add(LintDeprecation)
-    object LintBynameImplicit extends Lint; add(LintBynameImplicit)
-    object LintRecurseWithDefault extends Lint; add(LintRecurseWithDefault)
-    object LintUnitSpecialization extends Lint; add(LintUnitSpecialization)
-    object LintMultiargInfix extends Lint; add(LintMultiargInfix)
-    object LintPerformance extends Lint; add(LintPerformance)
-    object LintIntDivToFloat extends Lint; add(LintIntDivToFloat)
-    object LintUniversalMethods extends Lint; add(LintUniversalMethods)
-    object LintNumericMethods extends Lint; add(LintNumericMethods)
-
-    sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
-    object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)
-    object FeatureDynamics extends Feature; add(FeatureDynamics)
-    object FeatureExistentials extends Feature; add(FeatureExistentials)
-    object FeatureHigherKinds extends Feature; add(FeatureHigherKinds)
-    object FeatureImplicitConversions extends Feature; add(FeatureImplicitConversions)
-    object FeaturePostfixOps extends Feature; add(FeaturePostfixOps)
-    object FeatureReflectiveCalls extends Feature; add(FeatureReflectiveCalls)
-    object FeatureMacros extends Feature; add(FeatureMacros)
+    locally {
+      adderall()
+    }
   }
 
   sealed trait Version {
