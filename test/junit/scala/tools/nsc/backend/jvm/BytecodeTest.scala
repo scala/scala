@@ -425,6 +425,26 @@ class BytecodeTest extends BytecodeTesting {
     assertInvoke(getMethod(cAnon, "<init>"), "scala/runtime/Statics", "releaseFence")
   }
 
+    @Test
+    def t12881(): Unit = {
+      val code =
+        """trait T {
+          |  val foo = "foo"
+          |}
+          |
+          |class C {
+          |  def f: T = {
+          |    lazy val t = new T {}
+          |    t
+          |  }
+          |}
+          |""".stripMargin
+      val List(_, cAnon, _) = compileClasses(code)
+      // mixed-in field is not final
+      assertEquals(Opcodes.ACC_PRIVATE, cAnon.fields.asScala.find(_.name.startsWith("foo")).get.access)
+      assertInvoke(getMethod(cAnon, "<init>"), "scala/runtime/Statics", "releaseFence")
+    }
+
   @Test def tailrecControlFlow(): Unit = {
     // Without change of the `this` value
 

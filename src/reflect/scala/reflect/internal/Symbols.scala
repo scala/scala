@@ -1595,7 +1595,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Set initial info. */
     def setInfo(info: Type): this.type  = { info_=(info); this }
     /** Modifies this symbol's info in place. */
-    def modifyInfo(f: Type => Type): this.type = setInfo(f(info))
+    def modifyInfo(f: Type => Type): this.type = {
+      val i = info
+      val r = f(i)
+      if (r ne i)
+        setInfo(r)
+      this
+    }
     /** Substitute second list of symbols for first in current info.
       *
       * NOTE: this discards the type history (uses setInfo)
