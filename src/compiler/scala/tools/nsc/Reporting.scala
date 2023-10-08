@@ -497,10 +497,10 @@ object Reporting {
     }
   }
 
-  sealed trait WarningCategory {
+  sealed class WarningCategory {
     def includes(o: WarningCategory): Boolean = this eq o
     def summaryCategory: WarningCategory = this
-    def name: String = WarningCategory.nameOf(this)
+    lazy val name: String = WarningCategory.nameOf(this)
   }
 
   object WarningCategory {
@@ -522,19 +522,19 @@ object Reporting {
         case _ => hyphenated(w.getClass.getName).toLowerCase
       }
 
-    private def apply(): WarningCategory = new WarningCategory {}
+    private def apply(): WarningCategory = new WarningCategory
 
     // "top-level" categories
     val Deprecation, Unchecked, Optimizer, Scaladoc, JavaSource, Scala3Migration = WarningCategory()
 
     // miscellaneous warnings that are grouped together in summaries
-    sealed trait Other extends WarningCategory {
+    sealed class Other extends WarningCategory {
       override def summaryCategory: WarningCategory = Other
     }
     val Other = new Other {
       override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other]
     }
-    private def other(): Other = new Other {}
+    private def other(): Other = new Other
     val OtherShadowing,
         OtherPureStatement,
         OtherMigration, // API annotation
@@ -546,13 +546,13 @@ object Reporting {
       = other()
 
     // categories corresponding to -W settings, such as -Wvalue-discard
-    sealed trait WFlag extends WarningCategory {
+    sealed class WFlag extends WarningCategory {
       override def summaryCategory: WarningCategory = WFlag
     }
     val WFlag = new WFlag {
       override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag]
     }
-    private def wflag(): WFlag = new WFlag {}
+    private def wflag(): WFlag = new WFlag
     val WFlagDeadCode,
         WFlagExtraImplicit,
         WFlagNumericWiden,
@@ -560,13 +560,13 @@ object Reporting {
         WFlagValueDiscard
       = wflag()
 
-    sealed trait Unused extends WarningCategory {
+    sealed class Unused extends WarningCategory {
       override def summaryCategory: WarningCategory = Unused
     }
     val Unused = new Unused {
       override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Unused]
     }
-    private def unused(): Unused = new Unused {}
+    private def unused(): Unused = new Unused
     val UnusedImports,
         UnusedPatVars,
         UnusedPrivates,
@@ -575,13 +575,13 @@ object Reporting {
         UnusedNowarn
       = unused()
 
-    sealed trait Lint extends WarningCategory {
+    sealed class Lint extends WarningCategory {
       override def summaryCategory: WarningCategory = Lint
     }
     val Lint = new Lint {
       override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint]
     }
-    private def lint(): Lint = new Lint {}
+    private def lint(): Lint = new Lint
     val LintAdaptedArgs,
         LintNullaryUnit,
         LintInaccessible,
@@ -612,13 +612,13 @@ object Reporting {
         LintNumericMethods
       = lint()
 
-    sealed trait Feature extends WarningCategory {
+    sealed class Feature extends WarningCategory {
       override def summaryCategory: WarningCategory = Feature
     }
     val Feature = new Feature {
       override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature]
     }
-    private def feature(): Feature = new Feature {}
+    private def feature(): Feature = new Feature
     val FeatureDynamics,
         FeatureExistentials,
         FeatureHigherKinds,
