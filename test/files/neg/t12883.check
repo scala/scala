@@ -1,0 +1,6 @@
+t12883.scala:3: error: access modifiers for `apply` method are copied from the case class constructor
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C.apply
+case class C private (c: Int) {
+           ^
+1 error
