@@ -279,6 +279,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
   val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.", default = true)
   val Yscala3ImplicitResolution = BooleanSetting("-Yscala3-implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see https://github.com/scala/bug/issues/12437).", default = false)
+  val YlegacySymbolPos = BooleanSetting("-Ylegacy-symbol-pos", "Use definition tree for symbol position.", default = false)
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {

@@ -342,7 +342,7 @@ trait Namers extends MethodSynthesis {
      *  the flags to keep.
      */
     def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
-      val pos         = tree.namePos
+      val pos         = if (settings.YlegacySymbolPos.value) tree.pos else tree.namePos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
 

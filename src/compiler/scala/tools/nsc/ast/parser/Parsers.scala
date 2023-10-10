@@ -3238,7 +3238,7 @@ self =>
           val (constrMods, vparamss) =
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))
-          val template = templateOpt(mods, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
+          val template = templateOpt(mods, name, constrMods.withAnnotations(constrAnnots), vparamss, tstart)
           val result = gen.mkClassDef(mods, name, tparams, template).updateAttachment(namePos)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap

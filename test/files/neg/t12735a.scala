@@ -1,4 +1,4 @@
-// scalac: -Xreporter:scala.tools.partest.nest.PlainReporter
+//> using options -Xreporter:scala.tools.partest.nest.PlainReporter
 
 trait A {
   def x: String

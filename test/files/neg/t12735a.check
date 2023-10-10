@@ -1,6 +1,6 @@
-[ERROR] [RangePosition(t12735a.scala, 97, 97, 98)]: class B needs to be abstract.
+[ERROR] [RangePosition(t12735a.scala, 104, 104, 105)]: class B needs to be abstract.
 Missing implementation for member of trait A:
   def x: String = ???
 
-[ERROR] [RangePosition(t12735a.scala, 123, 123, 127)]: covariant type T occurs in contravariant position in type T of value t
+[ERROR] [RangePosition(t12735a.scala, 130, 130, 134)]: covariant type T occurs in contravariant position in type T of value t
 2 errors
