@@ -31,14 +31,18 @@ class ScalaVersionTest {
     assertEquals(V(2,11,7,Development("maybegood")), ScalaVersion("2.11.7-maybegood"))
     assertEquals(V(2,11,7,Development("RCCola")), ScalaVersion("2.11.7-RCCola"))
     assertEquals(V(2,11,7,Development("RC1.5")), ScalaVersion("2.11.7-RC1.5"))
-    assertEquals(V(2,11,7,Development("")), ScalaVersion("2.11.7-"))
+    assertEquals(V(2,11,0,Development("Z")), ScalaVersion("2.11-Z"))
     assertEquals(V(2,11,7,Development("0.5")), ScalaVersion("2.11.7-0.5"))
     assertEquals(V(2,11,7,Development("devbuild\nt9167")), ScalaVersion("2.11.7-devbuild\nt9167"))
     assertEquals(V(2,11,7,Development("final")), ScalaVersion("2.11.7-final"))
 
     // oh really
     assertEquals(NoScalaVersion, ScalaVersion("none"))
+    assertSame(NoScalaVersion, ScalaVersion("none"))
+    assertEquals(Scala3Cross, ScalaVersion("3-cross"))
+    assertSame(Scala3Cross, ScalaVersion("3-cross"))
     assertEquals(AnyScalaVersion, ScalaVersion("any"))
+    assertSame(AnyScalaVersion, ScalaVersion("any"))
 
     assertThrows[NumberFormatException] { ScalaVersion("2.11.7.2") }
     assertThrows[NumberFormatException] { ScalaVersion("2.11.7.beta") }
@@ -50,11 +54,14 @@ class ScalaVersionTest {
     assertThrows[NumberFormatException] { ScalaVersion("2..") }
     assertThrows[NumberFormatException] { ScalaVersion("2...") }
     assertThrows[NumberFormatException] { ScalaVersion("2-") }
-    assertThrows[NumberFormatException] { ScalaVersion("2-.") } // scalacheck territory
+    //assertThrows[NumberFormatException] { ScalaVersion("2-.") } // scalacheck territory
+    assertEquals(V(2,0,0,Development(".")), ScalaVersion("2-."))  // build labels are arbitrary text
+    assertEquals(V(2,11,0,Development("ok")), ScalaVersion("2.11-ok"))  // build labels are arbitrary text
+    assertThrows[NumberFormatException] { ScalaVersion("2.11.7-") }
     assertThrows[NumberFormatException] { ScalaVersion("any.7") }
 
-    assertThrows[NumberFormatException] ( ScalaVersion("2.11-ok"), _ ==
-      "Bad version (2.11-ok) not major[.minor[.revision[-suffix]]]" )
+    assertThrows[NumberFormatException] ( ScalaVersion("2.11-"), _ ==
+      "Bad version (2.11-) not major[.minor[.revision]][-suffix]" )
 
   }
 

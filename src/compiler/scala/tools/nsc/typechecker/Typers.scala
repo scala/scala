@@ -3441,18 +3441,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           for (sym <- scope)  context.unit.synthetics.get(sym) match {
             // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
             case Some(tree) if shouldAdd(sym) =>
-              def isSyntheticCaseApplyTweaked = tree match {
-                case DefDef(mods, nme.apply, _, _, _, _) =>
-                  sym.owner.sourceModule.companionSymbol.isCaseClass && {
-                    mods.hasFlag(PRIVATE) || mods.privateWithin != tpnme.EMPTY
-                  }
-                case _ => false
-              }
               // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
               if (!sym.initialize.hasFlag(IS_ERROR)) {
                 newStats += typedStat(tree) // might add even more synthetics to the scope
-                if (currentRun.isScala3 && !sym.owner.isCaseClass && isSyntheticCaseApplyTweaked)
-                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", Scala3Migration, sym)
+                tree.getAndRemoveAttachment[CaseApplyInheritAccess.type].foreach(_ =>
+                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", Scala3Migration, sym))
               }
               context.unit.synthetics -= sym
             case _ => ()
@@ -5621,6 +5614,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
+            if (currentRun.isScala3) {
+              tree.getAndRemoveAttachment[VirtualStringContext.type].foreach(_ =>
+                if (symbol != definitions.StringContextModule)
+                  runReporting.warning(
+                    tree.pos,
+                    s"String interpolations always use scala.StringContext in Scala 3 (${symbol.fullNameString} is used here)",
+                    Scala3Migration,
+                    context.owner))
+            }
             (// this -> Foo.this
             if (symbol.isThisSym)
               typed1(This(symbol.owner) setPos tree.pos, mode, pt)

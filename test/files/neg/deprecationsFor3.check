@@ -1,0 +1,33 @@
+deprecationsFor3.scala:4: warning: Unicode escapes in triple quoted strings are deprecated; use the literal character instead
+  def inTripleQuoted = """\u0041""" // deprecation
+                          ^
+deprecationsFor3.scala:16: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    `x` (42) // migration
+    ^
+deprecationsFor3.scala:5: warning: Unicode escapes in raw interpolations are deprecated; use literal characters instead
+  def inRawInterpolation = raw"\u0041" // deprecation
+                               ^
+deprecationsFor3.scala:6: warning: Unicode escapes in raw interpolations are deprecated; use literal characters instead
+  def inRawTripleQuoted = raw"""\u0041""" // deprecation
+                                ^
+deprecationsFor3.scala:29: warning: Implicit definition should have explicit type (inferred String => Option[Int]) [quickfixable]
+  implicit def b = _.toIntOption // error
+               ^
+deprecationsFor3.scala:31: warning: Implicit definition should have explicit type (inferred String) [quickfixable]
+  implicit def s = "" // error
+               ^
+deprecationsFor3.scala:30: warning: Implicit definition should have explicit type (inferred Int) [quickfixable]
+  implicit val i = 0 // error
+               ^
+deprecationsFor3.scala:34: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
+object AnyPlus { def f(xs: List[Int]) = xs + ";" }
+                                        ^
+deprecationsFor3.scala:38: warning: shadowing a nested class of a parent is deprecated but class X shadows class X defined in class A; rename the class to something else
+  class B extends A { class X; def f = new X }
+                            ^
+error: No warnings can be incurred under -Werror.
+9 warnings
+1 error

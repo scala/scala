@@ -17,7 +17,7 @@ import scala.annotation.{switch, tailrec}
 import scala.collection.mutable, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.Chars._
 import scala.reflect.internal.util._
-import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.Reporting.WarningCategory, WarningCategory.Scala3Migration
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.util.{CharArrayReader, CharArrayReaderData}
@@ -528,12 +528,13 @@ trait Scanners extends ScannersCommon {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         if (pastBlankLine()) insertNL(NEWLINES)
         else if (!isLeadingInfixOperator) insertNL(NEWLINE)
-        else if (!currentRun.isScala3) {
+        else if (!currentRun.isScala3Cross) {
           val msg = """|Line starts with an operator that in future
                        |will be taken as an infix expression continued from the previous line.
                        |To force the previous interpretation as a separate statement,
                        |add an explicit `;`, add an empty line, or remove spaces after the operator."""
-          if (infixMigration) deprecationWarning(msg.stripMargin, "2.13.2")
+          if (currentRun.isScala3) warning(offset, msg.stripMargin, Scala3Migration)
+          else if (infixMigration) deprecationWarning(msg.stripMargin, "2.13.2")
           insertNL(NEWLINE)
         }
       }
@@ -965,19 +966,19 @@ trait Scanners extends ScannersCommon {
       if (strVal != null)
         try {
           val processed = StringContext.processUnicode(strVal)
-          if (processed != strVal) {
-            val diffPosition = processed.zip(strVal).zipWithIndex.collectFirst{ case ((r, o), i) if r != o => i}.getOrElse(processed.length - 1)
+          if (processed != strVal && !currentRun.isScala3Cross) {
+            val diffPosition = processed.zip(strVal).zipWithIndex.collectFirst { case ((r, o), i) if r != o => i }.getOrElse(processed.length - 1)
             val pos = offset + 3 + diffPosition
             def msg(what: String) = s"Unicode escapes in triple quoted strings are $what; use the literal character instead"
-            if (!currentRun.isScala3) {
+            if (currentRun.isScala3)
+              warning(pos, msg("ignored in Scala 3"), WarningCategory.Scala3Migration)
+            else
               deprecationWarning(pos, msg("deprecated"), since="2.13.2")
-              strVal = processed
-            }
-            else warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Scala3Migration)
+            strVal = processed
           }
         } catch {
           case ue: StringContext.InvalidUnicodeEscapeException =>
-            if (!currentRun.isScala3)
+            if (!currentRun.isScala3Cross)
               syntaxError(offset + 3 + ue.index, ue.getMessage())
         }
 

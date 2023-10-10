@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Xmigration
+//> using options -Xmigration -Xsource:3-cross
 
 object Literals214 {
   def inTripleQuoted = """\u000A"""

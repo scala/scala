@@ -32,16 +32,16 @@ class `misuse of underscore`[_]
 t12798-migration.scala:48: warning: early initializers are deprecated; use trait parameters instead.
 class `early bird` extends { val x = "hello, world" } with Runnable { def run() = println(x) }
                            ^
-t12798-migration.scala:17: warning: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+t12798-migration.scala:17: warning: Unicode escapes in raw interpolations are ignored in Scala 3; use literal characters instead
   def f = raw"\u0043 is for $entry"
               ^
-t12798-migration.scala:18: warning: Unicode escapes in raw interpolations are ignored under -Xsource:3; use literal characters instead
+t12798-migration.scala:18: warning: Unicode escapes in raw interpolations are ignored in Scala 3; use literal characters instead
   def g = raw"""\u0043 is for Cat"""
                 ^
 t12798-migration.scala:50: warning: access modifiers for `copy` method are copied from the case class constructor
 case class `case mods propagate` private (s: String)
            ^
-t12798-migration.scala:60: warning: under -Xsource:3, inferred Option[Int] instead of Some[Int] [quickfixable]
+t12798-migration.scala:60: warning: under -Xsource:3-cross, the inferred type changes to Option[Int] instead of Some[Int] [quickfixable]
   override def f = Some(27)
                ^
 t12798-migration.scala:50: warning: access modifiers for `apply` method are copied from the case class constructor

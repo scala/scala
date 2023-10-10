@@ -152,6 +152,10 @@ trait StdAttachments {
 
   case object InterpolatedString extends PlainAttachment
 
+  case object VirtualStringContext extends PlainAttachment
+
+  case object CaseApplyInheritAccess extends PlainAttachment
+
   // Use of _root_ is in correct leading position of selection
   case object RootSelection extends PlainAttachment
 

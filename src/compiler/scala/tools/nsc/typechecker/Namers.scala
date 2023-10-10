@@ -1089,7 +1089,7 @@ trait Namers extends MethodSynthesis {
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.
      *
-     *  Under `-Xsource:3`, use `pt`, the type of the overridden member.
+     *  Under `-Xsource:3-cross`, use `pt`, the type of the overridden member.
      *  But preserve the precise type of a whitebox macro.
      *  For `def f = macro g`, here we see `def f = xp(g)` the expansion,
      *  not the `isMacro` case: `openMacros` will be nonEmpty.
@@ -1117,23 +1117,21 @@ trait Namers extends MethodSynthesis {
             }
           }
         val legacy = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
-        if (inferOverridden) {
-          if (!(legacy =:= pt) && currentRun.isScala3) {
-            val pts = pt.toString
-            val leg = legacy.toString
-            val help = if (pts != leg) s" instead of $leg" else ""
-            val msg = s"under -Xsource:3, inferred $pts$help"
-            val src = currentUnit.source
-            val pos = {
-              val eql = src.indexWhere(_ == '=', start = tree.rhs.pos.start, step = -1)
-              val declEnd = src.indexWhere(!_.isWhitespace, start = eql - 1, step = -1) + 1
-              Some(declEnd).filter(_ > 0).map(src.position)
-            }
-            val action = pos.map(p => runReporting.codeAction("add explicit type", p.focus, s": $leg", msg)).getOrElse(Nil)
-            runReporting.warning(tree.pos, msg, WarningCategory.Scala3Migration, tree.symbol, action)
+        if (inferOverridden && currentRun.isScala3 && !currentRun.isScala3Cross && !(legacy =:= pt)) {
+          val pts = pt.toString
+          val leg = legacy.toString
+          val help = if (pts != leg) s" instead of $leg" else ""
+          val msg = s"under -Xsource:3-cross, the inferred type changes to $pts$help"
+          val src = currentUnit.source
+          val pos = {
+            val eql = src.indexWhere(_ == '=', start = tree.rhs.pos.start, step = -1)
+            val declEnd = src.indexWhere(!_.isWhitespace, start = eql - 1, step = -1) + 1
+            Some(declEnd).filter(_ > 0).map(src.position)
           }
-          pt
+          val action = pos.map(p => runReporting.codeAction("add explicit type", p.focus, s": $leg", msg)).getOrElse(Nil)
+          runReporting.warning(tree.pos, msg, WarningCategory.Scala3Migration, tree.symbol, action)
         }
+        if (inferOverridden && currentRun.isScala3Cross) pt
         else legacy.tap(InferredImplicitError(tree, _, context))
       }.setPos(tree.pos.focus)
       tree.tpt.tpe
@@ -1455,7 +1453,7 @@ trait Namers extends MethodSynthesis {
 
       val resTp = {
         // When return type is inferred, we don't just use resTpFromOverride -- it must be packed and widened.
-        // Here, C.f has type String (unless -Xsource:3):
+        // Here, C.f has type String (unless -Xsource:3-cross):
         //   trait T { def f: Object }; class C extends T { def f = "" }
         // using resTpFromOverride as expected type allows for the following (C.f has type A):
         //   trait T { def f: A }; class C extends T { implicit def b2a(t: B): A = ???; def f = new B }

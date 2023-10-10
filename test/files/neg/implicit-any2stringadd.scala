@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Vimplicits
+// scalac: -Xsource:3-cross -Vimplicits
 //
 object Test {
   true + "what"

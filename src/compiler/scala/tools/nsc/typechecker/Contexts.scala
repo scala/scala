@@ -1075,7 +1075,7 @@ trait Contexts { self: Analyzer =>
       !(
         // [eed3si9n] ideally I'd like to do this: val fd = currentRun.isScala3 && sym.isDeprecated
         // but implicit caching currently does not report sym.isDeprecated correctly.
-        currentRun.isScala3 && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
+        currentRun.isScala3Cross && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
       ) &&
       !(imported && {
         val e = scope.lookupEntry(name)
@@ -1554,7 +1554,6 @@ trait Contexts { self: Analyzer =>
        *  1b) Definitions and declarations that are either inherited, or made
        *      available by a package clause and also defined in the same compilation unit
        *      as the reference to them, have the next highest precedence.
-       *      (Only in -Xsource:3, same precedence as 1 with a warning in Scala 2.)
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
        *  4) Bindings made available by a package clause,

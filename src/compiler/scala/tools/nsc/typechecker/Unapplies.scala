@@ -16,7 +16,7 @@ package typechecker
 import scala.annotation.tailrec
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
-import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.Reporting.WarningCategory.Scala3Migration
 import scala.util.chaining._
 
 /*
@@ -98,8 +98,16 @@ trait Unapplies extends ast.TreeDSL {
     }
   }
 
-  private def applyShouldInheritAccess(mods: Modifiers) =
-    currentRun.isScala3 && (mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary))
+  sealed private trait ApplyAccess
+  private object Default extends ApplyAccess
+  private object Warn extends ApplyAccess
+  private object Inherit extends ApplyAccess
+  private def applyAccess(mods: Modifiers): ApplyAccess = {
+    val changeModsIn3 = mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary)
+    if (currentRun.isScala3Cross && changeModsIn3) Inherit
+    else if (currentRun.isScala3 && changeModsIn3) Warn
+    else Default
+  }
 
   /** The module corresponding to a case class; overrides toString to show the module's name
    */
@@ -108,7 +116,7 @@ trait Unapplies extends ast.TreeDSL {
     def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && (params match {
       case List(ps) if ps.length <= MaxFunctionArity => true
       case _ => false
-    }) && !applyShouldInheritAccess(constrMods(cdef))
+    }) && applyAccess(constrMods(cdef)) != Inherit
     def createFun = {
       def primaries = params.head map (_.tpt)
       gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
@@ -153,12 +161,12 @@ trait Unapplies extends ast.TreeDSL {
    */
   def caseModuleApplyMeth(cdef: ClassDef): DefDef = {
     val inheritedMods = constrMods(cdef)
+    val access = applyAccess(inheritedMods)
     val mods =
-      if (applyShouldInheritAccess(inheritedMods))
-        (caseMods | (inheritedMods.flags & PRIVATE)).copy(privateWithin = inheritedMods.privateWithin)
-      else
-        caseMods
-    factoryMeth(mods, nme.apply, cdef)
+      if (access == Inherit) (caseMods | (inheritedMods.flags & PRIVATE)).copy(privateWithin = inheritedMods.privateWithin)
+      else caseMods
+    factoryMeth(mods, nme.apply, cdef).tap(m =>
+      if (access == Warn) m.updateAttachment(CaseApplyInheritAccess))
   }
 
   /** The unapply method corresponding to a case class
@@ -272,16 +280,20 @@ trait Unapplies extends ast.TreeDSL {
       val classTpe = classType(cdef, tparams)
       val argss = mmap(paramss)(toIdent)
       val body: Tree = New(classTpe, argss)
+      val synth = Modifiers(SYNTHETIC)
       val copyMods =
         if (currentRun.isScala3) {
           val inheritedMods = constrMods(cdef)
-          Modifiers(SYNTHETIC | (inheritedMods.flags & AccessFlags), inheritedMods.privateWithin)
-            .tap { mods =>
-              if (currentRun.isScala3 && mods != Modifiers(SYNTHETIC))
-                runReporting.warning(cdef.pos, "access modifiers for `copy` method are copied from the case class constructor", WarningCategory.Scala3Migration, cdef.symbol)
-            }
+          val mods3 = Modifiers(SYNTHETIC | (inheritedMods.flags & AccessFlags), inheritedMods.privateWithin)
+          if (currentRun.isScala3Cross)
+            mods3
+          else {
+            if (mods3 != synth)
+              runReporting.warning(cdef.pos, "access modifiers for `copy` method are copied from the case class constructor", Scala3Migration, cdef.symbol)
+            synth
+          }
         }
-        else Modifiers(SYNTHETIC)
+        else synth
       val copyDefDef = atPos(cdef.pos.focus)(
         DefDef(copyMods, nme.copy, tparams, paramss, TypeTree(), body)
       )

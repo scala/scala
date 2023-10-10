@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xsource:3
+//> using options -Werror -Xlint -Xsource:3-cross
 
 class C {
   def `c c`(n: Int): Int = n + 1

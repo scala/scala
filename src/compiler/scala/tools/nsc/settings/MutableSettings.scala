@@ -217,8 +217,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   def OutputSetting(default: String) = add(new OutputSetting(default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
-  def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
-    add(new ScalaVersionSetting(name, arg, descr, initial, default))
+  def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None, helpText: Option[String] = None) =
+    add(new ScalaVersionSetting(name, arg, descr, initial, default, helpText))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
     val prepend = StringSetting(name + "/p", "", "", "").internalOnly()
     val append = StringSetting(name + "/a", "", "", "").internalOnly()
@@ -506,10 +506,12 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     val arg: String,
     descr: String,
     val initial: ScalaVersion,
-    default: Option[ScalaVersion])
+    default: Option[ScalaVersion],
+    helpText: Option[String])
   extends Setting(name, descr) {
     type T = ScalaVersion
     protected var v: T = initial
+    protected var sawHelp: Boolean = false
 
     // This method is invoked if there are no colonated args. In this case the default value is
     // used. No arguments are consumed.
@@ -522,11 +524,16 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     }
 
     def tryToSetColon(args: List[String]) = args match {
+      case "help" :: rest if helpText.nonEmpty => sawHelp = true; Some(rest)
       case x :: xs  => value = ScalaVersion(x, errorFn); Some(xs)
       case nil      => Some(nil)
     }
 
     def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
+
+    override def isHelping: Boolean = sawHelp
+
+    override def help = helpText.get
 
     withHelpSyntax(s"${name}:<${arg}>")
   }

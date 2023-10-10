@@ -13,7 +13,7 @@
 package scala.tools
 package reflect
 
-import nsc.Reporting.WarningCategory
+import nsc.Reporting.WarningCategory.Scala3Migration
 
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
@@ -46,9 +46,11 @@ trait FastStringInterpolator extends FormatInterpolator {
                     lit.pos.withShift(diffindex)
                   }
                   def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
-                  if (currentRun.isScala3) {
-                    runReporting.warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Scala3Migration, c.internal.enclosingOwner)
+                  if (currentRun.isScala3Cross)
                     stringVal
+                  else if (currentRun.isScala3) {
+                    runReporting.warning(pos, msg("ignored in Scala 3"), Scala3Migration, c.internal.enclosingOwner)
+                    processed
                   }
                   else {
                     runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")

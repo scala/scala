@@ -1182,7 +1182,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
     @nowarn("cat=deprecation")
-    val isScala3: Boolean = settings.isScala3.value
+    val isScala3: Boolean = settings.isScala3.value // reporting.isScala3
+    @nowarn("cat=deprecation")
+    val isScala3Cross: Boolean = settings.isScala3Cross.value // reporting.isScala3Cross
     val isScala3ImplicitResolution: Boolean = settings.Yscala3ImplicitResolution.value
 
     // used in sbt

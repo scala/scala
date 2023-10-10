@@ -1,0 +1,16 @@
+t7212b.scala:8: error: type mismatch;
+ found   : Object
+ required: String
+  val s: String = k.f
+                    ^
+t7212b.scala:14: error: type mismatch;
+ found   : Object
+ required: String
+  val s: String = f.f
+                    ^
+t7212b.scala:21: error: type mismatch;
+ found   : Object
+ required: String
+  val s: String = w.f
+                    ^
+3 errors

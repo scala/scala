@@ -77,16 +77,15 @@ trait Adaptations {
         )
       }
       @inline def msg(what: String): String = s"adaptation of an empty argument list by inserting () $what"
-      @inline def noAdaptation: false = {
-        context.error(t.pos, adaptWarningMessage(msg("has been removed"), showAdaptation = false))
-        false // drop adaptation
-      }
       @inline def deprecatedAdaptation: true = {
         val twist =
           if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
           else "this is unlikely to be what you want"
         val text = s"${msg("is deprecated")}: ${twist}"
-        context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(text), "2.11.0")
+        if (currentRun.isScala3)
+          currentRun.reporting.warning(t.pos, adaptWarningMessage(text), WarningCategory.Scala3Migration, t.symbol)
+        else
+          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(text), "2.11.0")
         true // keep adaptation
       }
       @inline def warnAdaptation: true = {
@@ -109,8 +108,6 @@ trait Adaptations {
       }
       if (args.nonEmpty)
         warnAdaptation
-      else if (currentRun.isScala3)
-        noAdaptation
       else
         deprecatedAdaptation
     }
