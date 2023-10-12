@@ -63,7 +63,8 @@ class DefaultScriptRunner(settings: GenericRunnerSettings) extends AbstractScrip
     val compiler = newGlobal(settings, reporter)
     if (settings.pastefiles.value.nonEmpty) new compiler.Run().compile(settings.pastefiles.value)
     // Setting settings.script.value informs the compiler this is not a self-contained compilation unit.
-    settings.script.value = mainClass
+    if (!settings.script.isSetByUser)
+      settings.script.value = null
     new compiler.Run().compile(scriptFile :: Nil)
     !reporter.hasErrors
   }

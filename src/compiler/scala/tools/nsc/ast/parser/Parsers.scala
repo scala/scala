@@ -372,85 +372,49 @@ self =>
     def parseStats(): List[Tree] = parseRule(_.templateStats())
     def parseStatsOrPackages(): List[Tree] = parseRule(_.templateOrTopStatSeq())
 
-    /** This is the parse entry point for code which is not self-contained, e.g.
-     *  a script which is a series of template statements.  They will be
-     *  swaddled in Trees until the AST is equivalent to the one returned
-     *  by compilationUnit().
+    /** This is the parse entry point for code which is not self-contained,
+     *  i.e., a script which is a series of template statements.
+     *  Parsed statements are optionally wrapped in a module in the empty package.
+     *
+     *  Either a main module already exists, or it will be created to wrap non-top-level statements.
+     *  It's an error if a main module exists but there are non-top-level statements.
+     *  It's an error if there are no non-top-level statements and no main module.
+     *  If the named module exists, the synthesized main method is added to it.
+     *  If the user did not specify a module name, either there must be exactly one main module,
+     *  or the default name "Main" will be used for the synthetic module.
      */
     def scriptBody(): Tree = {
-
-      // remain backwards-compatible if -Xscript was set but not reasonably
-      settings.script.value match {
-        case null | "" => settings.script.value = "Main"
-        case _ =>
-      }
+      import PartialFunction.cond
+      import scala.util.chaining._
 
       val stmts = parseStats()
 
-      /* If there is only a single object template in the file and it has a
-       * suitable main method, we will use it rather than building another object
-       * around it.  Since objects are loaded lazily the whole script would have
-       * been a no-op, so we're not taking much liberty.
-       */
-      def searchForMain(mainModuleName: Name): Tree = {
-        import PartialFunction.cond
+      // -Xscript may be empty or null to mean "search for the main module, or use Main as a name"
+      val targetName = settings.script.valueSetByUser.filter(v => v != null && !v.isEmpty)
+      // name of the module to synthesize if necessary
+      val moduleName = TermName(targetName.getOrElse("Main"))
 
-        /* Have to be fairly liberal about what constitutes a main method since
-         * nothing has been typed yet - for instance we can't assume the parameter
-         * type will look exactly like "Array[String]" as it could have been renamed
-         * via import, etc.
-         */
-        def isMainMethod(t: Tree) = t match {
-          case DefDef(_, nme.main, Nil, List(_), _, _)  => true
-          case _                                        => false
+      // if the target module is discovered, set the setting for the runner
+      def setUserTarget(t: Tree): Unit =
+        t match {
+          case ModuleDef(_, name, _) => settings.script.value = name.decoded
+          case _ =>
         }
-        def isApp(t: Tree) = t match {
-          case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
-          case _ => false
-        }
-        // We allow only one main module.
-        var seenModule = false
-        var disallowed = EmptyTree: Tree
-        val newStmts = stmts.map {
-          case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
-            seenModule = true
-            // If we detect a main module with an arbitrary name, rename it to the expected name.
-            if (name == mainModuleName) md
-            else treeCopy.ModuleDef(md, mods, mainModuleName, template)
-          case md @ ModuleDef(_, _, _)   => md
-          case cd @ ClassDef(_, _, _, _) => cd
-          case t  @ Import(_, _)         => t
-          case t =>
-            // If we see anything but the above, fail.
-            if (disallowed.isEmpty) disallowed = t
-            EmptyTree
-        }
-        if (seenModule && disallowed.isEmpty) makeEmptyPackage(0, newStmts)
-        else {
-          if (seenModule)
-            warning(disallowed.pos.point, "Script has a main object but statement is disallowed", WarningCategory.Other)
-          EmptyTree
-        }
-      }
 
-      // pick up object specified by `-Xscript Main`
-      def mainModule: Tree = settings.script.valueSetByUser.map(name => searchForMain(TermName(name))).getOrElse(EmptyTree)
-
-      /*  Here we are building an AST representing the following source fiction,
-       *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
-       *  the result of parsing the script file.
+      /*  Wrap top-level statements and "local" statements, where "local" means in constructor scope.
        *
        *  {{{
+       *  top-level-statements
        *  object moduleName {
        *    def main(args: Array[String]): Unit =
        *      new AnyRef {
-       *        stmts
+       *        local-statements
        *      }
        *  }
        *  }}}
        */
-      def repackaged: Tree = {
-        val emptyInit   = DefDef(
+      def repackage(tops: List[Tree], locals: List[Tree], target: Tree = EmptyTree): Tree = {
+        val emptyInit = DefDef(
           NoMods,
           nme.CONSTRUCTOR,
           Nil,
@@ -462,19 +426,92 @@ self =>
         // def main
         val mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
         val mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
-        val mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
+        val mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(locals))
+
+        def checkLocals(name: Name): Unit =
+          locals.filter(cond(_) { case ModuleDef(_, `name`, _) => true }).headOption
+            .foreach(t => warning(t.pos.point, s"Script statements include module `$name`; reorder with module first", WarningCategory.Other))
+
 
         // object Main
-        val moduleName  = TermName(settings.script.value)
-        val moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
-        val moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+        val packageLevel =
+          if (target.isEmpty) {
+            val moduleBody = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
+            checkLocals(moduleName)
+            tops :+ ModuleDef(NoMods, moduleName, moduleBody).tap(setUserTarget)
+          }
+          else
+            tops.map {
+              case md @ ModuleDef(mods, name, tmpl @ Template(parents, self, body)) if md eq target =>
+                checkLocals(name)
+                val newtmpl = treeCopy.Template(tmpl, parents, self, body :+ mainDef)
+                treeCopy.ModuleDef(md, mods, name, newtmpl)
+              case t => t
+            }
 
         // package <empty> { ... }
-        makeEmptyPackage(0, moduleDef :: Nil)
+        makeEmptyPackage(0, packageLevel)
       }
 
-      // either there is an entry point (a main method either detected or specified) or wrap it up
-      mainModule orElse repackaged
+      /* A main method is called "main" and has a single parameter.
+       */
+      def isMainMethod(t: Tree) = cond(t) {
+        case DefDef(_, nme.main, Nil, List(_), _, _)  => true
+      }
+      /* A parent named unqualfied "App" is taken to signify a `scala.App`.
+       */
+      def isApp(t: Tree) = cond(t) {
+        case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
+      }
+      /* A main module either extends "App" or has a main method.
+       */
+      def isMainModule(t: Tree) = cond(t) {
+        case ModuleDef(_, name, tmpl @ Template(_, _, tstats)) => isApp(tmpl) || tstats.exists(isMainMethod)
+      }
+      /* Top-level statements are (leading) objects, classes, and imports. These are normally package-owned symbols.
+       */
+      def isTopLevel(t: Tree) = cond(t) {
+        case _: ModuleDef | _: ClassDef | _: Import => true
+      }
+      /* Divide top-level statements from statements belonging in scope of main method.
+       */
+      val (tops, mainStmts) = stmts.span(isTopLevel)
+      /* Discover what module contains main.
+       */
+      val mainModules = tops.filter(isMainModule)
+      def modulesNamed(name: Name) = tops.filter(cond(_) { case ModuleDef(_, `name`, _) => true })
+      val targetModules = targetName.map(_ => modulesNamed(moduleName)).getOrElse(Nil)
+      val chosen =
+        targetName match {
+          case Some(name) =>
+            if (targetModules.length > 1)
+              warning(targetModules.last.pos.point, s"Script has multiple objects `$name`", WarningCategory.Other)
+            targetModules.headOption.filter(mainModules.contains).foreach { targeted =>
+              if (mainStmts.nonEmpty)
+                warning(targeted.pos.point, s"Script has statements outside module `$name`", WarningCategory.Other)
+            }
+            targetModules.headOption
+          case None =>
+            if (mainModules.length > 1)
+              warning(mainModules.last.pos.point, s"Script has multiple main modules", WarningCategory.Other)
+            mainModules.headOption
+              .orElse(modulesNamed(moduleName).headOption)
+              .tap(_.foreach(setUserTarget))
+        }
+      /* Either use an existing module or construct one from statements.
+       */
+      chosen match {
+        case Some(target) if mainModules.contains(target) =>
+          if (mainStmts.nonEmpty)
+            warning(target.pos.point, s"Using main `$target`, there should be no script statements.", WarningCategory.Other)
+          makeEmptyPackage(0, tops)
+        case Some(target) =>
+          if (mainStmts.isEmpty) warning(0, s"Script has no statements for module `$target`", WarningCategory.Other)
+          repackage(tops, mainStmts, target)
+        case None =>
+          if (mainStmts.isEmpty) warning(0, s"Script has no main module and no statements", WarningCategory.Other)
+          repackage(tops, mainStmts)
+      }
     }
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
@@ -3421,9 +3458,8 @@ self =>
       case x          => throw new MatchError(x)
     }
 
-    def makeEmptyPackage(start: Offset, stats: List[Tree]): PackageDef = (
+    def makeEmptyPackage(start: Offset, stats: List[Tree]): PackageDef =
       makePackaging(start, atPos(start, start, start)(Ident(nme.EMPTY_PACKAGE_NAME)), stats)
-    )
 
     def statSeq(stat: PartialFunction[Token, List[Tree]], errorMsg: String = "illegal start of definition"): List[Tree] = {
       val stats = new ListBuffer[Tree]
