@@ -546,9 +546,11 @@ trait Names extends api.Names {
     override final def toString: String = if (cachedString == null) new String(_chrs, index, len) else cachedString
     final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit =
       buffer.append(_chrs, this.start + start, length)
+    final def appendTo(sb: StringBuilder, start: Int, length: Int): sb.type =
+      sb.appendAll(_chrs, this.start + start, length)
   }
 
-  implicit val NameTag = ClassTag[Name](classOf[Name])
+  implicit val NameTag: ClassTag[Name] = ClassTag[Name](classOf[Name])
 
   /** A name that contains no operator chars nor dollar signs.
    *  TODO - see if it's any faster to do something along these lines.
@@ -600,7 +602,7 @@ trait Names extends api.Names {
     private def createCompanionName(next: TypeName): TypeName = new TypeName(index, len, next, cachedString)
   }
 
-  implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
+  implicit val TermNameTag: ClassTag[TermName] = ClassTag[TermName](classOf[TermName])
 
   object TermName extends TermNameExtractor {
     def apply(s: String) = newTermName(s)
@@ -636,7 +638,7 @@ trait Names extends api.Names {
     override def decode = if (nameDebug) super.decode + "!" else super.decode
   }
 
-  implicit val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
+  implicit val TypeNameTag: ClassTag[TypeName] = ClassTag[TypeName](classOf[TypeName])
 
   object TypeName extends TypeNameExtractor {
     def apply(s: String) = newTypeName(s)

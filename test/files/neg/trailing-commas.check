@@ -61,15 +61,9 @@ trait TypeArgs { def f: C[Int, String, ] }
 trailing-commas.scala:23: error: identifier expected but ']' found.
 trait TypeParamClause { type C[A, B, ] }
                                      ^
-trailing-commas.scala:23: error: ']' expected but '}' found.
-trait TypeParamClause { type C[A, B, ] }
-                                       ^
 trailing-commas.scala:24: error: identifier expected but ']' found.
 trait FunTypeParamClause { def f[A, B, ] }
                                        ^
-trailing-commas.scala:24: error: ']' expected but '}' found.
-trait FunTypeParamClause { def f[A, B, ] }
-                                         ^
 trailing-commas.scala:26: error: identifier expected but ')' found.
 trait SimpleType { def f: (Int, String, ) }
                                         ^
@@ -127,4 +121,4 @@ trait SimpleType2 { def f: (Int, ) }
 trailing-commas.scala:48: error: ')' expected but '}' found.
 trait SimpleType2 { def f: (Int, ) }
                                    ^
-43 errors
+41 errors

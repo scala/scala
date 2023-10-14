@@ -12,6 +12,8 @@
 
 package scala.beans
 
+import scala.annotation.meta.{beanGetter, beanSetter, field}
+
 /** When attached to a field, this annotation adds a setter and a getter
  *  method following the Java Bean convention. For example:
  *  {{{
@@ -26,6 +28,6 @@ package scala.beans
  *  For fields of type `Boolean`, if you need a getter named `isStatus`,
  *  use the `scala.beans.BooleanBeanProperty` annotation instead.
  */
-@scala.annotation.meta.field
+@field @beanGetter @beanSetter
 @deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class BeanProperty extends scala.annotation.StaticAnnotation

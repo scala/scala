@@ -163,7 +163,8 @@ object SeqView {
         else if (len == 1) List(underlying.head)
         else {
           val arr = new Array[Any](len) // Array[Any] =:= Array[AnyRef]
-          underlying.copyToArray(arr)
+          @annotation.unused val copied = underlying.copyToArray(arr)
+          //assert(copied == len)
           java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
           // casting the Array[AnyRef] to Array[A] and creating an ArraySeq from it
           // is safe because:

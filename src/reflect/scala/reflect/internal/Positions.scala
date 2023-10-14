@@ -36,7 +36,7 @@ import util._
 trait Positions extends api.Positions { self: SymbolTable =>
   type Position = scala.reflect.internal.util.Position
   val NoPosition = scala.reflect.internal.util.NoPosition
-  implicit val PositionTag = ClassTag[Position](classOf[Position])
+  implicit val PositionTag: ClassTag[Position] = ClassTag[Position](classOf[Position])
 
   def useOffsetPositions: Boolean = true
 
@@ -171,7 +171,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
   }
   def validatePositions(tree: Tree): Unit = if (!useOffsetPositions) {
     object worker {
-      val trace = settings.Yposdebug && settings.verbose
+      val trace = settings.Yposdebug.value && settings.verbose.value
       val topTree = tree
 
       object solidChildrenCollector extends ChildSolidDescendantsCollector {

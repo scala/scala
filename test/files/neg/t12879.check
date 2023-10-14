@@ -1,0 +1,6 @@
+Test.scala:3: warning: Java enum Foo in Java enum A is deprecated
+  val x: A = A.Foo
+               ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

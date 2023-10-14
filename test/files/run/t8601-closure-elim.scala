@@ -1,4 +1,4 @@
-// scalac: -Ydelambdafy:method -opt:l:inline -opt-inline-from:**
+// scalac: -Ydelambdafy:method -opt:inline:**
 //
 import scala.tools.partest.BytecodeTest
 import scala.tools.testkit.ASMConverters.instructionsFromMethod

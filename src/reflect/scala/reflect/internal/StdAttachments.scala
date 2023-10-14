@@ -73,6 +73,13 @@ trait StdAttachments {
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment
 
+  /** Indicates that a selection was postfix (on Select tree) */
+  case object PostfixAttachment extends PlainAttachment
+  /** Indicates that an application was infix (on Apply tree) */
+  case object InfixAttachment extends PlainAttachment
+  /** Indicates that an application to `()` was inserted by the compiler */
+  case object AutoApplicationAttachment extends PlainAttachment
+
   /** A pattern binding exempt from unused warning.
    *
    *  Its host `Ident` has been created from a pattern2 binding, `case x @ p`.
@@ -135,4 +142,22 @@ trait StdAttachments {
   case class ChangeOwnerAttachment(originalOwner: Symbol)
 
   case object InterpolatedString extends PlainAttachment
+
+  // Use of _root_ is in correct leading position of selection
+  case object RootSelection extends PlainAttachment
+
+  /** Marks a Typed tree with Unit tpt. */
+  case object TypedExpectingUnitAttachment
+  def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
+
+  /** For `val i = 42`, marks field as inferred so accessor (getter) can warn if implicit. */
+  case object FieldTypeInferred extends PlainAttachment
+
+  case class LookupAmbiguityWarning(msg: String, fix: String) extends PlainAttachment
+
+  /** Java sealed classes may be qualified with a permits clause specifying allowed subclasses. */
+  case class PermittedSubclasses(permits: List[Tree]) extends PlainAttachment
+  case class PermittedSubclassSymbols(permits: List[Symbol]) extends PlainAttachment
+
+  case class NamePos(pos: Position) extends PlainAttachment
 }

@@ -19,12 +19,12 @@ package settings
 
 import java.util.zip.Deflater
 
-import scala.language.existentials
-import scala.annotation.elidable
-import scala.tools.util.PathResolver.Defaults
+import scala.annotation.{elidable, nowarn}
 import scala.collection.mutable
+import scala.language.existentials
 import scala.reflect.internal.util.{ StatisticsStatics, StringContextStripMarginOps }
 import scala.tools.nsc.util.DefaultJarFactory
+import scala.tools.util.PathResolver.Defaults
 import scala.util.chaining._
 
 trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
@@ -39,7 +39,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.valuesIterator.exists(_.isHelping)
@@ -82,15 +82,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       domain  = languageFeatures
     ) withAbbreviation "--language"
   }
-  val release = StringSetting("-release", "release", "Compile for a specific version of the Java platform. Supported targets: 6, 7, 8, 9", "").withPostSetHook { (value: StringSetting) =>
-    if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
-      errorFn.apply("-release is only supported on Java 9 and higher")
-    } else {
-      // TODO validate numeric value
-      // TODO validate release <= java.specification.version
-    }
-  } withAbbreviation "--release"
-  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /**
    * -X "Advanced" settings
@@ -133,6 +124,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
+  @nowarn("cat=deprecation")
   val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = ScalaVersion("2.13")).withPostSetHook { s =>
     if (s.value >= ScalaVersion("3"))
       isScala3.value = true
@@ -141,6 +133,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     else if (s.value < ScalaVersion("2.13"))
       errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
   }
+  @deprecated("Use currentRun.isScala3 instead", since="2.13.9")
   val isScala3           = BooleanSetting      ("isScala3", "Is -Xsource Scala 3?").internalOnly()
   // The previous "-Xsource" option is intended to be used mainly though ^ helper
 
@@ -197,9 +190,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts.", List("package", "object", "error"), "error")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
-                       .withPostSetHook(bs => if (bs) imports.value = Nil)
+                       .withPostSetHook(bs => if (bs.value) imports.value = Nil)
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
-                       .withPostSetHook(bs => if (bs && !noimports) imports.value = "java.lang" :: "scala" :: Nil)
+                       .withPostSetHook(bs => if (bs.value && !noimports.value) imports.value = "java.lang" :: "scala" :: Nil)
   val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom root imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
   sm"""|Specify a list of packages and objects to import from as "root" imports.
        |Root imports form the root context in which all Scala source is evaluated.
@@ -227,15 +220,16 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       name = "-Yprint-trees",
       helpArg = "style",
       descr = "How to print trees when -Vprint is enabled.",
-      choices = List("text", "compact", "format", "text+format"),
+      choices = List("text", "compact", "format", "text+format", "diff"),
       default = "text"
     ).withPostSetHook(pt => pt.value match {
-      case "text"        =>
       case "compact"     => XshowtreesCompact.value = true
       case "format"      => Xshowtrees.value = true
       case "text+format" => XshowtreesStringified.value = true
+      case _             =>
     })
 
+  def showTreeDiff: Boolean = YprintTrees.value == "diff"
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Vprint:) Print detailed ASTs in formatted form.").internalOnly()
   val XshowtreesCompact
                       = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Vprint:) Print detailed ASTs in compact form.").internalOnly()
@@ -283,6 +277,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YpickleWrite = StringSetting("-Ypickle-write", "directory|jar", "destination for generated .sig files containing type signatures.", "", None).internalOnly()
   val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
   val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.", default = true)
+  val Yscala3ImplicitResolution = BooleanSetting("-Yscala3-implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see https://github.com/scala/bug/issues/12437).", default = false)
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {
@@ -307,30 +302,31 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val allowSkipCoreModuleInit = Choice("allow-skip-core-module-init", "Allow eliminating unused module loads for core modules of the standard library (e.g., Predef, ClassTag).")
     val assumeModulesNonNull    = Choice("assume-modules-non-null",     "Assume loading a module never results in null (happens if the module is accessed in its super constructor).")
     val allowSkipClassLoading   = Choice("allow-skip-class-loading",    "Allow optimizations that can skip or delay class loading.")
-    val inline                  = Choice("inline",                      "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
+    val ell                     = Choice("l",                           "Deprecated l:none, l:default, l:method, l:inline.")
 
-    // l:none is not an expanding option, unlike the other l: levels. But it is excluded from -opt:_ below.
-    val lNone = Choice("l:none",
-      "Disable optimizations. Takes precedence: `-opt:l:none,+box-unbox` / `-opt:l:none -opt:box-unbox` don't enable box-unbox.")
+    // none is not an expanding option. It is excluded from -opt:_ below.
+    val lNone = Choice("none", "Disable all optimizations, including explicit options.")
 
-    private val defaultChoices = List(unreachableCode)
+    val defaultOptimizations = List(unreachableCode)
     val lDefault = Choice(
-      "l:default",
-      "Enable default optimizations: " + defaultChoices.mkString("", ",", "."),
-      expandsTo = defaultChoices)
+      "default",
+      defaultOptimizations.mkString("Enable default optimizations: ", ",", "."),
+      expandsTo = defaultOptimizations)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
+    val localOptimizations = List(simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
     val lMethod = Choice(
-      "l:method",
-      "Enable intra-method optimizations: " + methodChoices.mkString("", ",", "."),
-      expandsTo = methodChoices)
+      "local",
+      (defaultOptimizations ::: localOptimizations).mkString("Enable intra-method optimizations: ", ",", "."),
+      expandsTo = defaultOptimizations ::: localOptimizations)
 
-    private val inlineChoices = List(lMethod, inline)
-    val lInline = Choice("l:inline",
-      "Enable cross-method optimizations (note: inlining requires -opt-inline-from): " + inlineChoices.mkString("", ",", "."),
-      expandsTo = inlineChoices)
+    val inlineFrom = Choice(
+      "inline",
+      s"Inline method invocations and enable all optimizations; specify where to inline from, as shown below. See also -Yopt-inline-heuristics.\n$inlineHelp",
+      expandsTo = defaultOptimizations ::: localOptimizations,
+      requiresSelections = true
+    )
 
-    // "l:none" is excluded from wildcard expansion so that -opt:_ does not disable all settings
+    // "none" is excluded from wildcard expansion so that -opt:_ does not disable all settings
     override def wildcardChoices = super.wildcardChoices.filter(_ ne lNone)
   }
 
@@ -340,16 +336,28 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val opt = MultiChoiceSetting(
     name = "-opt",
     helpArg = "optimization",
-    descr = "Enable optimizations, `help` for details.",
+    descr = "Enable optimizations: `-opt:local`, `-opt:inline:<pattern>`; `-opt:help` for details.",
     domain = optChoices,
-  )
+  ).withPostSetHook { ss =>
+    // kludge alert: will be invoked twice, with selections available 2nd time
+    // for -opt:l:method reset the ell selections then enable local
+    if (ss.contains(optChoices.ell) && optChoices.ell.selections.nonEmpty) {
+      val todo = optChoices.ell.selections.map {
+        case "none"    => "none"
+        case "default" => "default"
+        case "method"  => "local"
+        case "inline"  => "local"   // enable all except inline, see -opt-inline-from
+      }
+      optChoices.ell.selections = Nil
+      ss.tryToSetColon(todo)
+    }
+  }
 
-  private def optEnabled(choice: optChoices.Choice) = {
-    !opt.contains(optChoices.lNone) && {
+  private def optEnabled(choice: optChoices.Choice) =
+    !optNone && {
       opt.contains(choice) ||
       !opt.isSetByUser && optChoices.lDefault.expandsTo.contains(choice)
     }
-  }
 
   def optNone                    = opt.contains(optChoices.lNone)
   def optUnreachableCode         = optEnabled(optChoices.unreachableCode)
@@ -363,18 +371,18 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   def optAllowSkipCoreModuleInit = optEnabled(optChoices.allowSkipCoreModuleInit)
   def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
   def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
-  def optInlinerEnabled          = optEnabled(optChoices.inline)
+  def optInlinerEnabled          = !optInlineFrom.isEmpty && !optNone
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
   def optUseAnalyzerCache        = opt.isSetByUser && !optNone && (optBuildCallGraph || opt.value.size > 1)
 
-  val optInlineFrom = MultiStringSetting(
-    "-opt-inline-from",
-    "patterns",
-    "Patterns for classfile names from which to allow inlining, `help` for details.",
-    helpText = Some(
-      """Patterns for classfile names from which the inliner is allowed to pull in code.
+  def optInlineFrom: List[String] = optChoices.inlineFrom.selections
+
+  def inlineHelp =
+      """
+        |Inlining requires a list of patterns defining where code can be inlined from: `-opt:inline:p1,p2`.
+        |
         |  *              Matches classes in the empty package
         |  **             All classes
         |  a.C            Class a.C
@@ -387,13 +395,22 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
         |  <sources>      Classes defined in source files compiled in the current compilation, either
         |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
-        |The setting accepts a list of patterns: `-opt-inline-from:p1,p2`. The setting can be passed
-        |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.
-        |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
-        |For example, `a.**,!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |`-opt:inline:p` may be specified multiple times to extend the list of patterns.
+        |A leading `!` means exclude anything that matches the pattern. The last matching pattern wins.
+        |For example, `a.**,!a.b.**` includes classes in `a` and sub-packages, but not in `a.b` and sub-packages.
         |
-        |Note: on the command-line you might need to quote patterns containing `*` to prevent the shell
-        |from expanding it to a list of files in the current directory.""".stripMargin))
+        |When patterns are supplied on a command line, it is usually necessary to quote special shell characters
+        |such as `*`, `<`, `>`, and `$`: `'-opt:inline:p.*,!p.C$D' '-opt:inline:<sources>'`.
+        |Quoting may not be needed in a build file.""".stripMargin
+
+  @deprecated("Deprecated alias", since="2.13.8")
+  val xoptInlineFrom = MultiStringSetting(
+    "-opt-inline-from",
+    "patterns",
+    "Patterns for classfile names from which to allow inlining, `help` for details.",
+    helpText = Some(inlineHelp))
+      //.withDeprecationMessage("use -opt:inline:**")
+      .withPostSetHook(from => opt.add("inline", from.value))
 
   val YoptInlineHeuristics = ChoiceSetting(
     name = "-Yopt-inline-heuristics",
@@ -413,15 +430,26 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   }
 
   val optWarnings = MultiChoiceSetting(
-    name = "-opt-warnings",
+    name = "-Wopt",
     helpArg = "warning",
     descr = "Enable optimizer warnings, `help` for details.",
     domain = optWarningsChoices,
-    default = Some(List(optWarningsChoices.atInlineFailed.name))) withPostSetHook { _ =>
+    default = Some(List(optWarningsChoices.atInlineFailed.name))
+  ).withPostSetHook { _ =>
     // no need to set `Wconf` to `silent` if optWarnings is none, since no warnings are reported
     if (optWarningsSummaryOnly) Wconf.tryToSet(List(s"cat=optimizer:ws"))
     else Wconf.tryToSet(List(s"cat=optimizer:w"))
   }
+  @deprecated("Deprecated alias", since="2.13.8")
+  val xoptWarnings = MultiChoiceSetting(
+    name = "-opt-warnings",
+    helpArg = "warning",
+    descr = "Enable optimizer warnings, `help` for details.",
+    domain = optWarningsChoices,
+    default = Some(List(optWarningsChoices.atInlineFailed.name))
+  ).withPostSetHook { ow =>
+    optWarnings.value = ow.value
+  }//.withDeprecationMessage("Use -Wopt instead.")
 
   def optWarningsSummaryOnly: Boolean = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
 
@@ -454,10 +482,11 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
   val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
   val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug" withPostSetHook (s => if (s.value) StatisticsStatics.enableDebugAndDeoptimize())
-  val YdebugTasty      = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
-  val Ydocdebug          = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"
+  val YdebugTasty     = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
+  val VdebugTypeError = BooleanSetting("-Vdebug-type-error", "Print the stack trace when any error is caught.") withAbbreviation "-Ydebug-type-error"
+  val Ydocdebug       = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"
   val Yidedebug          = BooleanSetting("-Vide", "Generate, validate and output trees using the interactive compiler.") withAbbreviation "-Yide-debug"
-  val Yissuedebug        = BooleanSetting("-Vissue", "Print stack traces when a context issues an error.") withAbbreviation "-Yissue-debug"
+//  val Yissuedebug        = BooleanSetting("-Vissue", "Print stack traces when a context issues an error.") withAbbreviation "-Yissue-debug"
   val log                = PhasesSetting("-Vlog", "Log operations during") withAbbreviation "-Ylog"
   val Ylogcp             = BooleanSetting("-Vclasspath", "Output information about what classpath is being applied.") withAbbreviation "-Ylog-classpath"
   val YmacrodebugLite    = BooleanSetting("-Vmacro-lite", "Trace macro activities with less output.") withAbbreviation "-Ymacro-debug-lite"
@@ -470,7 +499,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val showPhases         = BooleanSetting("-Vphases", "Print a synopsis of compiler phases.")
     .withAbbreviation("-Xshow-phases")
   val Yposdebug          = BooleanSetting("-Vpos", "Trace position validation.") withAbbreviation "-Ypos-debug"
-  val Xprint             = PhasesSetting("-Vprint", "Print out program after")
+  val Xprint             = PhasesSetting("-Vprint", "Print out program after (or ~phase for before and after)", "typer")
     .withAbbreviation("-Xprint")
   val Xprintpos          = BooleanSetting("-Vprint-pos", "Print tree positions, as offsets.")
     .withAbbreviation("-Xprint-pos")
@@ -496,9 +525,9 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Ystatistics = PhasesSetting("-Vstatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
     .withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
     .withAbbreviation("-Ystatistics")
-  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s) StatisticsStatics.enableColdStatsAndDeoptimize())
+  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s.value) StatisticsStatics.enableColdStatsAndDeoptimize())
   val YhotStatisticsEnabled = BooleanSetting("-Vhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
-    .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize())
+    .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s.value && YstatisticsEnabled.value) StatisticsStatics.enableHotStatsAndDeoptimize())
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
   val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")
@@ -519,11 +548,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val future        = BooleanSetting("-Xfuture", "Replaced by -Xsource.").withDeprecationMessage("Not used since 2.13.")
   val optimise      = BooleanSetting("-optimize", "Enables optimizations.")
     .withAbbreviation("-optimise")
-    .withDeprecationMessage("Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.")
-    .withPostSetHook(_ => {
-      opt.enable(optChoices.lInline)
-      optInlineFrom.value = List("**")
-    })
+    .withDeprecationMessage("Since 2.12, enables -opt:inline:**. This can be dangerous.")
+    .withPostSetHook(_ => opt.add("inline", List("**")))
   val Xexperimental = BooleanSetting("-Xexperimental", "Former graveyard for language-forking extensions.")
     .withDeprecationMessage("Not used since 2.13.")
 

@@ -15,7 +15,7 @@ package scala.tools.nsc.backend.jvm
 import java.io.{DataOutputStream, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{ClosedByInterruptException, FileChannel}
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
 import java.util
@@ -29,6 +29,7 @@ import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.plugins.{OutputFileWriter, Plugin}
 import scala.tools.nsc.util.JarFactory
+import scala.util.chaining._
 
 abstract class ClassfileWriters {
   val postProcessor: PostProcessor
@@ -85,10 +86,12 @@ abstract class ClassfileWriters {
           }
       }
 
-      val withAdditionalFormats = if (settings.Ygenasmp.valueSetByUser.isEmpty && settings.Ydumpclasses.valueSetByUser.isEmpty) basicClassWriter else {
-        val asmp = settings.Ygenasmp.valueSetByUser map { dir: String => FileWriter(global, new PlainNioFile(getDirectory(dir)), None) }
-        val dump = settings.Ydumpclasses.valueSetByUser map { dir: String => FileWriter(global, new PlainNioFile(getDirectory(dir)), None) }
-        new DebugClassWriter(basicClassWriter, asmp, dump)
+      val withAdditionalFormats = {
+        def maybeDir(dir: Option[String]): Option[Path] = dir.map(getDirectory).filter(path => Files.exists(path).tap(ok => if (!ok) frontendAccess.backendReporting.error(NoPosition, s"Output dir does not exist: $path")))
+        def writer(out: Path) = FileWriter(global, new PlainNioFile(out), None)
+        val List(asmp, dump) = List(settings.Ygenasmp, settings.Ydumpclasses).map(s => maybeDir(s.valueSetByUser).map(writer)): @unchecked
+        if (asmp.isEmpty && dump.isEmpty) basicClassWriter
+        else new DebugClassWriter(basicClassWriter, asmp, dump)
       }
 
       val enableStats = settings.areStatisticsEnabled && settings.YaddBackendThreads.value == 1
@@ -130,7 +133,7 @@ abstract class ClassfileWriters {
       override def writeClass(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = {
         basic.writeClass(className, bytes, sourceFile)
         asmp.foreach { writer =>
-          val asmBytes = AsmUtils.textify(AsmUtils.readClass(bytes)).getBytes(StandardCharsets.UTF_8)
+          val asmBytes = AsmUtils.textify(AsmUtils.readClass(bytes)).getBytes(UTF_8)
           writer.writeFile(classRelativePath(className, ".asm"), asmBytes)
         }
         dump.foreach { writer =>
@@ -236,10 +239,18 @@ abstract class ClassfileWriters {
     val noAttributes = Array.empty[FileAttribute[_]]
     private val isWindows = scala.util.Properties.isWin
 
+    private def checkName(component: Path): Unit = if (isWindows) {
+      val specials = raw"(?i)CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]".r
+      val name = component.toString
+      def warnSpecial(): Unit = frontendAccess.backendReporting.warning(NoPosition, s"path component is special Windows device: ${name}")
+      specials.findPrefixOf(name).foreach(prefix => if (prefix.length == name.length || name(prefix.length) == '.') warnSpecial())
+    }
+
     def ensureDirForPath(baseDir: Path, filePath: Path): Unit = {
       import java.lang.Boolean.TRUE
       val parent = filePath.getParent
       if (!builtPaths.containsKey(parent)) {
+        parent.iterator.forEachRemaining(checkName)
         try Files.createDirectories(parent, noAttributes: _*)
         catch {
           case e: FileAlreadyExistsException =>
@@ -254,6 +265,7 @@ abstract class ClassfileWriters {
           current = current.getParent
         }
       }
+      checkName(filePath.getFileName())
     }
 
     // the common case is that we are are creating a new file, and on MS Windows the create and truncate is expensive

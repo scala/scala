@@ -1,17 +1,17 @@
 t11843.scala:6: error: value $isInstanceOf is not a member of String
-did you mean asInstanceOf or isInstanceOf?
+did you mean isInstanceOf? or perhaps asInstanceOf?
   "".$isInstanceOf[Int]
      ^
 t11843.scala:7: error: value $asInstanceOf is not a member of String
-did you mean asInstanceOf or isInstanceOf?
+did you mean asInstanceOf? or perhaps isInstanceOf?
   "".$asInstanceOf[Int]
      ^
 t11843.scala:10: error: value $isInstanceOf is not a member of Symbol
-did you mean asInstanceOf or isInstanceOf?
+did you mean isInstanceOf? or perhaps asInstanceOf?
   ss.$isInstanceOf[String]
      ^
 t11843.scala:11: error: value $asInstanceOf is not a member of Symbol
-did you mean asInstanceOf or isInstanceOf?
+did you mean asInstanceOf? or perhaps isInstanceOf?
   ss.$asInstanceOf[String]
      ^
 t11843.scala:8: warning: fruitless type test: a value of type Symbol cannot also be a String (the underlying of String)

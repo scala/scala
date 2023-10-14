@@ -1,0 +1,7 @@
+i10715b.scala:12: error: ambiguous reference to overloaded definition,
+both method f in class Sub of type (x: Int)(implicit s: String): Unit
+and  method f in class Sub of type (x: Int): Unit
+match argument types (Int)
+  def bad(c: Sub): Unit = c.f(1) // error: ambiguous overload
+                            ^
+1 error

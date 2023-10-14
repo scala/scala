@@ -561,7 +561,7 @@ trait Symbols { self: Universe =>
    *  $SYMACCESSORS
    *  @group API
    */
-  trait TermSymbolApi extends SymbolApi { this: TermSymbol =>
+  trait TermSymbolApi extends SymbolApi { this: TermSymbol with TermSymbolApi =>
     /** Term symbols have their names of type `TermName`.
      */
     final type NameType = TermName

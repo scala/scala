@@ -131,7 +131,7 @@ determined by evaluating `e == lit`.
 
 Literal types are available for all types for which there is dedicated syntax
 except `Unit`. This includes the numeric types (other than `Byte` and `Short`
-which don't currently have syntax), `Boolean`, `Char`, `String` and `Symbol`.
+which don't currently have syntax), `Boolean`, `Char` and `String`.
 
 ### Stable Types
 A _stable type_ is a singleton type, a literal type,
@@ -1025,7 +1025,7 @@ A value member of a volatile type cannot appear in a [path](#paths).
 A type is _volatile_ if it falls into one of four categories:
 
 A compound type `´T_1´ with … with ´T_n´ {´R\,´}`
-is volatile if one of the following two conditions hold.
+is volatile if one of the following three conditions hold.
 
 1. One of ´T_2 , \ldots , T_n´ is a type parameter or abstract type, or
 1. ´T_1´ is an abstract type and either the refinement ´R´

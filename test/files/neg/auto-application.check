@@ -9,7 +9,7 @@ auto-application.scala:6: error: Int does not take parameters
                  ^
 auto-application.scala:9: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method meth,
 or remove the empty argument list from its definition (Java-defined methods are exempt).
-In Scala 3, an unapplied method like this will be eta-expanded into a function.
+In Scala 3, an unapplied method like this will be eta-expanded into a function. [quickfixable]
   meth // warn, auto-application (of nilary methods) is deprecated
   ^
 1 warning

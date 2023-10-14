@@ -1,7 +1,13 @@
-nullary-override-3b.scala:6: error: method without a parameter list overrides a method with a single empty one
+nullary-override-3b.scala:6: error: method without a parameter list overrides method x in class P defined with a single empty parameter list
+def x(): Int (defined in class P) [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Q
 class Q extends P { override def x: Int = 4 }
                                  ^
-nullary-override-3b.scala:11: error: method without a parameter list overrides a method with a single empty one
+nullary-override-3b.scala:11: error: method without a parameter list overrides method x in trait T2 defined with a single empty parameter list
+def x(): String (defined in trait T2) [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Mix12a
 class Mix12a extends T1 with T2 { override def x   = "12a" }
                                                ^
 2 errors

@@ -12,7 +12,7 @@
 
 package scala.collection
 
-import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder}
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.runtime.Statics
@@ -146,133 +146,140 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   /** A flexible iterator for transforming an `Iterator[A]` into an
-   *  Iterator[Seq[A]], with configurable sequence size, step, and
-   *  strategy for dealing with elements which don't fit evenly.
+   *  `Iterator[Seq[A]]`, with configurable sequence size, step, and
+   *  strategy for dealing with remainder elements which don't fit evenly
+   *  into the last group.
    *
-   *  Typical uses can be achieved via methods `grouped` and `sliding`.
+   *  A `GroupedIterator` is yielded by `grouped` and by `sliding`,
+   *  where the `step` may differ from the group `size`.
    */
   class GroupedIterator[B >: A](self: Iterator[B], size: Int, step: Int) extends AbstractIterator[immutable.Seq[B]] {
 
     require(size >= 1 && step >= 1, f"size=$size%d and step=$step%d, but both must be positive")
 
-    private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
+    private[this] var buffer: Array[B] = null                 // current result
+    private[this] var prev: Array[B] = null                   // if sliding, overlap from previous result
+    private[this] var first = true                            // if !first, advancing may skip ahead
     private[this] var filled = false                          // whether the buffer is "hot"
-    private[this] var _partial = true                         // whether we deliver short sequences
-    private[this] var pad: Option[() => B] = None             // what to pad short sequences with
+    private[this] var partial = true                          // whether to emit partial sequence
+    private[this] var padding: () => B = null                 // what to pad short sequences with
+    private[this] def pad = padding != null                   // irrespective of partial flag
+    private[this] def newBuilder = {
+      val b = ArrayBuilder.make[Any]
+      val k = self.knownSize
+      if (k > 0) b.sizeHint(k min size)                       // if k < size && !partial, buffer will grow on padding
+      b
+    }
 
-    /** Public functions which can be used to configure the iterator before use.
+    /** Specifies a fill element used to pad a partial segment
+     *  so that all segments have the same size.
      *
-     *  Pads the last segment if necessary so that all segments will
-     *  have the same size.
+     *  Any previous setting of `withPartial` is ignored,
+     *  as the last group will always be padded to `size` elements.
+     *
+     *  The by-name argument is evaluated for each fill element.
      *
      *  @param x The element that will be appended to the last segment, if necessary.
      *  @return  The same iterator, and ''not'' a new iterator.
      *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
-     *  @note    This method is mutually exclusive with `withPartial(true)`.
+     *  @note    This method is mutually exclusive with `withPartial`.
+     *  @group Configuration
      */
     def withPadding(x: => B): this.type = {
-      pad = Some(() => x)
+      padding = () => x
+      partial = true        // redundant, as padding always results in complete segment
       this
     }
-    /** Public functions which can be used to configure the iterator before use.
+    /** Specify whether to drop the last segment if it has less than `size` elements.
      *
-     *  Select whether the last segment may be returned with less than `size`
-     *  elements. If not, some elements of the original iterator may not be
-     *  returned at all.
+     *  If this flag is `false`, elements of a partial segment at the end of the iterator
+     *  are not returned.
+     *
+     *  The flag defaults to `true`.
+     *
+     *  Any previous setting of `withPadding` is ignored,
+     *  as the last group will never be padded.
+     *  A partial segment is either retained or dropped, per the flag.
      *
      *  @param x `true` if partial segments may be returned, `false` otherwise.
      *  @return  The same iterator, and ''not'' a new iterator.
      *  @note    This method mutates the iterator it is called on, which can be safely used afterwards.
      *  @note    This method is mutually exclusive with `withPadding`.
+     *  @group Configuration
      */
     def withPartial(x: Boolean): this.type = {
-      _partial = x
-      if (_partial) // reset pad since otherwise it will take precedence
-        pad = None
-
+      partial = x
+      padding = null
       this
     }
 
-    /** For reasons which remain to be determined, calling
-     *  self.take(n).toSeq cause an infinite loop, so we have
-     *  a slight variation on take for local usage.
-     *  NB: self.take.toSeq is slice.toStream, lazily built on self,
-     *  so a subsequent self.hasNext would not test self after the
-     *  group was consumed.
+    /** Eagerly fetch `size` elements to buffer.
+     *
+     *  If buffer is dirty and stepping, copy prefix.
+     *  If skipping, skip ahead.
+     *  Fetch remaining elements.
+     *  If unable to deliver size, then pad if padding enabled, otherwise drop segment.
+     *  Returns true if successful in delivering `count` elements,
+     *  or padded segment, or partial segment.
      */
-    private def takeDestructively(size: Int): Seq[B] = {
-      val buf = new ArrayBuffer[B]
-      var i = 0
-      // The order of terms in the following condition is important
-      // here as self.hasNext could be blocking
-      while (i < size && self.hasNext) {
-        buf += self.next()
-        i += 1
+    private def fulfill(): Boolean = {
+      val builder = newBuilder
+      var done = false
+      // keep prefix of previous buffer if stepping
+      if (prev != null) builder.addAll(prev)
+      // skip ahead
+      if (!first && step > size) {
+        var dropping = step - size
+        while (dropping > 0 && self.hasNext) {
+          self.next(): Unit
+          dropping -= 1
+        }
+        done = dropping > 0   // skip failed
       }
-      buf
-    }
-
-    private def padding(x: Int) = immutable.ArraySeq.untagged.fill(x)(pad.get())
-    private def gap = (step - size) max 0
-
-    private def go(count: Int) = {
-      val prevSize = buffer.size
-      def isFirst = prevSize == 0
-      // If there is padding defined we insert it immediately
-      // so the rest of the code can be oblivious
-      val xs: Seq[B] = {
-        val res = takeDestructively(count)
-        // was: extra checks so we don't calculate length unless there's reason
-        // but since we took the group eagerly, just use the fast length
-        val shortBy = count - res.length
-        if (shortBy > 0 && pad.isDefined) res ++ padding(shortBy) else res
-      }
-      lazy val len = xs.length
-      lazy val incomplete = len < count
-
-      // if 0 elements are requested, or if the number of newly obtained
-      // elements is less than the gap between sequences, we are done.
-      def deliver(howMany: Int) = {
-        (howMany > 0 && (isFirst || len > gap)) && {
-          if (!isFirst)
-            buffer dropInPlace (step min prevSize)
-
-          val available =
-            if (isFirst) len
-            else howMany min (len - gap)
-
-          buffer ++= (xs takeRight available)
-          filled = true
-          true
+      var index = builder.length
+      if (!done) {
+        // advance to rest of segment if possible
+        while (index < size && self.hasNext) {
+          builder.addOne(self.next())
+          index += 1
+        }
+        // if unable to complete segment, pad if possible
+        if (index < size && pad) {
+          builder.sizeHint(size)
+          while (index < size) {
+            builder.addOne(padding())
+            index += 1
+          }
         }
       }
-
-      if (xs.isEmpty) false                         // self ran out of elements
-      else if (_partial) deliver(len min size)      // if _partial is true, we deliver regardless
-      else if (incomplete) false                    // !_partial && incomplete means no more seqs
-      else if (isFirst) deliver(len)                // first element
-      else deliver(step min size)                   // the typical case
+      // segment must have data, and must be complete unless they allow partial
+      val ok = index > 0 && (partial || index == size)
+      if (ok) buffer = builder.result().asInstanceOf[Array[B]]
+      else prev = null
+      ok
     }
 
     // fill() returns false if no more sequences can be produced
-    private def fill(): Boolean = {
-      if (!self.hasNext) false
-      // the first time we grab size, but after that we grab step
-      else if (buffer.isEmpty) go(size)
-      else go(step)
-    }
+    private def fill(): Boolean = filled || { filled = self.hasNext && fulfill() ; filled }
 
-    def hasNext = filled || fill()
+    def hasNext = fill()
+
     @throws[NoSuchElementException]
-    def next(): immutable.Seq[B] = {
-      if (!filled)
-        fill()
-
-      if (!filled)
-        throw new NoSuchElementException("next on empty iterator")
-      filled = false
-      immutable.ArraySeq.unsafeWrapArray(buffer.toArray[Any]).asInstanceOf[immutable.ArraySeq[B]]
-    }
+    def next(): immutable.Seq[B] =
+      if (!fill()) Iterator.empty.next()
+      else {
+        filled = false
+        // if stepping, retain overlap in prev
+        if (step < size) {
+          if (first) prev = buffer.drop(step)
+          else if (buffer.length == size) Array.copy(src = buffer, srcPos = step, dest = prev, destPos = 0, length = size - step)
+          else prev = null
+        }
+        val res = immutable.ArraySeq.unsafeWrapArray(buffer).asInstanceOf[immutable.ArraySeq[B]]
+        buffer = null
+        first = false
+        res
+      }
   }
 
   /** A copy of this $coll with an element value appended until a given target length is reached.
@@ -409,9 +416,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
-    drop(from)
-    while (hasNext) {
-      if (p(next())) return i
+    val dropped = drop(from)
+    while (dropped.hasNext) {
+      if (p(dropped.next())) return i
       i += 1
     }
     -1
@@ -635,14 +642,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() = if (hasNext) { hdDefined = false; hd } else Iterator.empty.next()
   }
 
-  def drop(n: Int): Iterator[A] = {
-    var i = 0
-    while (i < n && hasNext) {
-      next()
-      i += 1
-    }
-    this
-  }
+  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
 
   def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
@@ -907,31 +907,37 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] =
     new AbstractIterator[B] {
       private[this] var origElems = self
-      private[this] var i = if (from > 0) from else 0 // Counts down, switch to patch on 0, -1 means use patch first
-      def hasNext: Boolean = {
-        if (i == 0) {
+      // > 0  => that many more elems from `origElems` before switching to `patchElems`
+      //   0  => need to drop elems from `origElems` and start using `patchElems`
+      //  -1  => have dropped elems from `origElems`, will be using `patchElems` until it's empty
+      //         and then using what's left of `origElems` after the drop
+      private[this] var state = if (from > 0) from else 0
+
+      // checks state and handles 0 => -1
+      @inline private[this] def switchToPatchIfNeeded(): Unit =
+        if (state == 0) {
           origElems = origElems drop replaced
-          i = -1
+          state = -1
         }
+
+      def hasNext: Boolean = {
+        switchToPatchIfNeeded()
         origElems.hasNext || patchElems.hasNext
       }
 
       def next(): B = {
-        if (i == 0) {
-          origElems = origElems drop replaced
-          i = -1
-        }
-        if (i < 0) {
+        switchToPatchIfNeeded()
+        if (state < 0 /* == -1 */) {
           if (patchElems.hasNext) patchElems.next()
           else origElems.next()
         }
         else {
           if (origElems.hasNext) {
-            i -= 1
+            state -= 1
             origElems.next()
           }
           else {
-            i = -1
+            state = -1
             patchElems.next()
           }
         }
@@ -966,6 +972,7 @@ object Iterator extends IterableFactory[Iterator] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
     override def knownSize: Int = 0
+    override protected def sliceIterator(from: Int, until: Int): AbstractIterator[Nothing] = this
   }
 
   /** Creates a target $coll from an existing source collection
@@ -983,6 +990,9 @@ object Iterator extends IterableFactory[Iterator] {
     private[this] var consumed: Boolean = false
     def hasNext = !consumed
     def next() = if (consumed) empty.next() else { consumed = true; a }
+    override protected def sliceIterator(from: Int, until: Int) =
+      if (consumed || from > 0 || until == 0) empty
+      else this
   }
 
   override def apply[A](xs: A*): Iterator[A] = xs.iterator

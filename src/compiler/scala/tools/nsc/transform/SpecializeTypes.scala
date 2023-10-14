@@ -506,8 +506,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else if (!args.isEmpty)
         enteringTyper {
           foreach2(sym.typeParams, args) { (tp, arg) =>
-            if (tp.isSpecialized)
+            if (tp.isSpecialized) {
               specializedTypeVarsBuffer(arg, result)
+            } else if (sym == ValueOfClass) { // scala/bug#11489, we only update it for ValueOf 
+              arg.typeSymbol.annotations.foreach {
+                case lzai: LazyAnnotationInfo if lzai.symbol == SpecializedClass =>
+                  specializedTypeVarsBuffer(arg, result)
+                case _                                                           =>
+              }
+            }
           }
         }
     case PolyType(tparams, resTpe)   => specializedTypeVarsBuffer(resTpe, result);  tparams.foreach(sym => specializedTypeVarsBuffer(sym.info, result))
@@ -750,7 +757,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       for (m <- normMembers) {
         if (!needsSpecialization(fullEnv, m)) {
-          if (m.isValue && !m.isMutable && !m.isMethod && !m.isDeferred && !m.isLazy) {
+          if (m.isValue && !m.isMutable && !m.isMethod && !m.isDeferred && !m.isLazy && !m.isParamAccessor) {
             // non-specialized `val` fields are made mutable (in Constructors) and assigned from the
             // constructors of specialized subclasses. See PR scala/scala#9704.
             clazz.primaryConstructor.updateAttachment(ConstructorNeedsFence)
@@ -889,7 +896,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (ms.nonEmpty && clazz.isTrait && clazz.isInterface)
             clazz.resetFlag(INTERFACE)
 
-          if (normalizedMember.isMethod) {
+          if (normalizedMember.isMethod && !normalizedMember.isScala3Defined) {
             val newTpe = subst(outerEnv, normalizedMember.info)
             // only do it when necessary, otherwise the method type might be at a later phase already
             if (newTpe != normalizedMember.info) {
@@ -930,7 +937,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     sym :: (
-      if (!sym.isMethod || enteringTyper(sym.typeParams.isEmpty)) Nil
+      if (!sym.isMethod || sym.isScala3Defined || enteringTyper(sym.typeParams.isEmpty)) Nil
       else if (sym.hasDefault) {
         /* Specializing default getters is useless, also see scala/bug#7329 . */
         sym.resetFlag(SPECIALIZED)
@@ -1024,7 +1031,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specMember
     }
 
-    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym) || sym.isSuperAccessor) {
+    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym) || sym.isSuperAccessor
+      || sym.isScala3Defined) { // Scala 3 does not have specialised methods yet.
+    // ) {
       Nil
     } else {
       val stvars = specializedTypeVars(sym)
@@ -1123,7 +1132,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
           } else None
         case (overridden, env) =>
-          val om = specializedOverload(clazz, overridden, env)
+          val om = specializedOverload(clazz, overriding, env, overridden)
           clazz.info.decls.enter(om)
           foreachWithIndex(om.paramss) { (params, i) =>
             foreachWithIndex(params) { (param, j) =>
@@ -1292,7 +1301,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
-    if (settings.nospecialization && currentRun.compiles(sym)) {
+    if (settings.nospecialization.value && currentRun.compiles(sym)) {
       tpe
     } else tpe.resultType match {
       case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
@@ -1421,7 +1430,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def enterSyntheticSym(tree: Tree): Symbol = tree.symbol
     }
 
-    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
+    override protected def newBodyDuplicator(context: Context): SpecializeBodyDuplicator =
       new SpecializeBodyDuplicator(context)
 
     override def newNamer(context: Context): Namer =
@@ -1522,7 +1531,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   class SpecializationTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
-    override def transformUnit(unit: CompilationUnit): Unit = if (!settings.nospecialization) {
+    override def transformUnit(unit: CompilationUnit): Unit = if (!settings.nospecialization.value) {
       informProgress("specializing " + unit)
       try {
         exitingSpecialize(super.transformUnit(unit))

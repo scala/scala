@@ -103,10 +103,9 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
    *  @param acc        The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
    */
-  private def rebindSuper(base: Symbol, acc: Symbol, mixinClass: Symbol): Symbol = {
-    val site = base.thisType
-
+  private def rebindSuper(base: Symbol, acc: Symbol, mixinClass: Symbol): Symbol =
     exitingSpecialize {
+      val site = base.thisType
       // the specialized version T$sp of a trait T will have a super accessor that has the same alias
       // as the super accessor in trait T; we must rebind super
       // from the vantage point of the original trait T, not the specialized T$sp
@@ -138,7 +137,6 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
       sym
     }
-  }
 
 // --------- type transformation -----------------------------------------------
 
@@ -240,6 +238,17 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
       }
       debuglog("new defs of " + clazz + " = " + clazz.info.decls)
+    }
+  }
+
+  def registerRequiredDirectInterface(alias: Symbol, clazz: Symbol, msg: Type => String): Unit = {
+    val owner = alias.owner
+    if (owner.isJavaDefined && owner.isInterface) {
+      if (!clazz.parentSymbolsIterator.contains(owner)) {
+        val suggestedParent = exitingTyper(clazz.info.baseType(owner))
+        reporter.error(clazz.pos, msg(suggestedParent))
+      } else
+        erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += owner
     }
   }
 
@@ -346,13 +355,10 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
               reporter.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
                 mixinMember.alias, mixinClass))
             case alias1 =>
-              if (alias1.owner.isJavaDefined && alias1.owner.isInterface) {
-                if (!clazz.parentSymbolsIterator.contains(alias1.owner)) {
-                  val suggestedParent = exitingTyper(clazz.info.baseType(alias1.owner))
-                  reporter.error(clazz.pos, s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $suggestedParent is directly extended by $clazz.")
-                } else
-                  erasure.requiredDirectInterfaces.getOrElseUpdate(clazz, mutable.Set.empty) += alias1.owner
-              }
+              registerRequiredDirectInterface(alias1, clazz, parent =>
+                s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $parent is directly extended by $clazz.")
+              if (alias1.isValue && !alias1.isMethod || alias1.isAccessor)
+                reporter.error(clazz.pos, s"parent $mixinClass has a super call to method ${mixinMember.alias.fullNameString}, which binds to the value ${alias1.fullNameString}. Super calls can only target methods.")
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1
           }
         }
@@ -579,8 +585,11 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
          */
         def completeSuperAccessor(stat: Tree) = stat match {
           case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${stat.symbol.alias.owner} . ${stat.symbol.alias}")
-            val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
+            val alias = stat.symbol.alias
+            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${alias.owner} . ${alias}")
+            registerRequiredDirectInterface(alias, clazz, parent =>
+              s"Unable to implement a super accessor, $parent needs to be directly extended by $clazz.")
+            val body = atPos(stat.pos)(Apply(SuperSelect(clazz, alias), vparams map (v => Ident(v.symbol))))
             val pt   = stat.symbol.tpe.resultType
 
             copyDefDef(stat)(rhs = enteringMixin(transform(localTyper.typed(body, pt))))

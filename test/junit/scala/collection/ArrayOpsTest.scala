@@ -142,4 +142,27 @@ class ArrayOpsTest {
     assertEquals(classOf[Double], something.intersect(empty).getClass.getComponentType)
     assertTrue(something.intersect(empty).isEmpty)
   }
+
+  // discovered while working on scala/scala#9388
+  @Test
+  def iterator_drop(): Unit = {
+    val it = Array(1, 2, 3)
+      .iterator
+      .drop(Int.MaxValue)
+      .drop(Int.MaxValue)  // potential index overflow to negative
+    assertFalse(it.hasNext)// bug had index as negative and this returning true
+                           // even though the index is both out of bounds and should
+                           // always be between `0` and `Array#length`.
+  }
+
+  @Test def `array collect`: Unit = {
+    val vs = (1 to 10).toArray
+    val res = vs.collect { case n if n%2 == 0 => 10*n }
+    assertArrayEquals((2 to 10 by 2).map(_ * 10).toArray, res)
+  }
+  @Test def `array collect first`: Unit = {
+    val vs = (1 to 10).toArray
+    val res = vs.collectFirst { case n if n > 4 => 10*n }
+    assertEquals(Some(50), res)
+  }
 }

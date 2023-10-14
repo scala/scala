@@ -63,7 +63,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
       treePrinter.println()
       treePrinter.print(definition)
 
-    case TypeTreeWithDeferredRefCheck() =>
+    case _: TypeTreeWithDeferredRefCheck =>
       treePrinter.print("<tree with deferred refcheck>")
 
     case SelectFromArray(qualifier, name, _) =>
@@ -201,7 +201,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
   def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
 
   override def newTreePrinter(writer: PrintWriter): AstTreePrinter =
-    if (settings.Ycompacttrees) newCompactTreePrinter(writer)
+    if (settings.Ycompacttrees.value) newCompactTreePrinter(writer)
     else newStandardTreePrinter(writer)
   override def newTreePrinter(stream: OutputStream): AstTreePrinter = newTreePrinter(new PrintWriter(stream))
   override def newTreePrinter(): AstTreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))

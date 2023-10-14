@@ -7,6 +7,7 @@ import scala.annotation.unused
 import scala.reflect.ClassTag
 import scala.util.control.ControlThrowable
 
+@deprecated("ThreadDeath is deprecated on JDK 20", "")
 class UsingTest {
   import UsingTest._
 
@@ -744,6 +745,7 @@ class UsingTest {
   }
 }
 
+@deprecated("ThreadDeath is deprecated on JDK 20", "")
 object UsingTest {
   final class ClosingVMError(message: String) extends VirtualMachineError(message)
   final class UsingVMError(message: String) extends VirtualMachineError(message)

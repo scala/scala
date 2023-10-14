@@ -9,7 +9,7 @@ import scala.concurrent.{
   Awaitable,
   blocking
 }
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.concurrent.duration._
 import scala.reflect.{classTag, ClassTag}
 import scala.tools.testkit.AssertUtil.{Fast, Slow, assertThrows, waitFor, waitForIt}
@@ -145,7 +145,7 @@ class FutureCallbacks extends TestBase {
   test("testOnFailure")(testOnFailure())
   test("testOnFailureWhenSpecialThrowable")(testOnFailureWhenSpecialThrowable(5, new Error))
   // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
-  //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
+  //TODO: this test is currently problematic, because NonFatal does not catch InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
   test("testThatNestedCallbacksDoNotYieldStackOverflow")(testThatNestedCallbacksDoNotYieldStackOverflow())
   test("testOnFailureWhenTimeoutException")(testOnFailureWhenTimeoutException())
@@ -864,7 +864,8 @@ class Exceptions extends TestBase {
 
 class GlobalExecutionContext extends TestBase {
   import ExecutionContext.Implicits._
-  
+
+  @nowarn("cat=deprecation")  // Thread.getID is deprecated since JDK 19
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId
@@ -1055,7 +1056,7 @@ class ExecutionContextPrepare extends TestBase {
       delegate.reportFailure(t)
   }
 
-  implicit val ec = new PreparingExecutionContext
+  implicit val ec: ExecutionContext = new PreparingExecutionContext
 
   def testOnComplete(): Unit = once {
     done =>

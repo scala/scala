@@ -1,0 +1,4 @@
+f-interp-pos.scala:5: error: invalid string interpolation $<, expected: $$, $", $identifier or ${expression}
+  def oops = f"$s%s $<s"
+                    ^
+1 error

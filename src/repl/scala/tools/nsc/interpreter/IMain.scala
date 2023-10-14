@@ -347,14 +347,22 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def translateEnclosingClass(n: String): Option[String] = symbolOfTerm(n).enclClass.toOption map flatPath
 
   /** If unable to find a resource foo.class, try taking foo as a symbol in scope
-    *  and use its java class name as a resource to load.
-    *
-    *  \$intp.classLoader classBytes "Bippy" or \$intp.classLoader getResource "Bippy.class" just work.
-    */
+   *  and use its java class name as a resource to load.
+   *
+   *  \$intp.classLoader classBytes "Bippy" or \$intp.classLoader getResource "Bippy.class" just work.
+   */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
       case null if _initializeComplete => translateSimpleResource(name).map(super.findAbstractFile).orNull
       case file => file
+    }
+    // if the name was mapped by findAbstractFile, supply null name to avoid name check in defineClass
+    override protected def findClass(name: String): Class[_] = {
+      val bytes = classBytes(name)
+      if (bytes.length == 0)
+        throw new ClassNotFoundException(name)
+      else
+        defineClass(/*name=*/null, bytes, 0, bytes.length, protectionDomain)
     }
   }
   private def makeClassLoader(): AbstractFileClassLoader =
@@ -421,7 +429,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   private[nsc] def replwarn(msg: => String): Unit = {
-    if (!settings.nowarnings)
+    if (!settings.nowarnings.value)
       reporter.printMessage(msg)
   }
 
@@ -1177,7 +1185,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         runReporting.summarizeErrors()
       if (reporter.hasErrors) Left(Error)
       else if (isIncomplete) Left(Incomplete)
-      else if (reporter.hasWarnings && settings.fatalWarnings) Left(Error)
+      else if (reporter.hasWarnings && settings.fatalWarnings.value) Left(Error)
       else Right((trees, unit.firstXmlPos))
     }.tap(_ => if (!isIncomplete) reporter.reset())
   }
@@ -1234,7 +1242,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
             // This is really just trying to make the 100 or so implicits imported
             // by default into something readable.
             val memberGroups: List[List[Symbol]] = {
-              val groups = members groupBy (_.tpe.finalResultType) toList
+              val groups = members.groupBy(_.tpe.finalResultType).toList
               val (big, small) = groups partition (_._2.size > 3)
               val xss = (
                 (big sortBy (_._1.toString) map (_._2)) :+
@@ -1258,7 +1266,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     (implicits.toList,
       if (filtered.nonEmpty)
         "" // collected in implicits
-      else if (global.settings.nopredef || global.settings.noimports)
+      else if (global.settings.nopredef.value || global.settings.noimports.value)
         "No implicits have been imported."
       else
         "No implicits have been imported other than those in Predef."
@@ -1406,7 +1414,7 @@ object IMain {
    */
   private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
     import settings.{reporter => _, _}
-    val wasWarning = !nowarn
+    val wasWarning = !nowarn.value
     val oldMaxWarn = maxwarns.value
     val noisy = List(Xprint, Ytyperdebug, browse)
     val current = (Xprint.value, Ytyperdebug.value, browse.value)

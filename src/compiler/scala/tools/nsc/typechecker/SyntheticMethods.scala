@@ -24,7 +24,7 @@ import symtab.Flags._
  *    def productArity: Int
  *    def productElement(n: Int): Any
  *    def productPrefix: String
- *    def productIterator: Iterator[Any]
+ *    def productIterator: Iterator[Any]   // required for binary compatibility of value classes
  *
  *  Selectively added to case classes/objects, unless a non-default
  *  implementation already exists:
@@ -114,11 +114,10 @@ trait SyntheticMethods extends ast.TreeDSL {
         (m0 ne meth) && !m0.isDeferred && !m0.isSynthetic && (m0.owner != AnyValClass) && (typeInClazz(m0) matches typeInClazz(meth))
       }
     }
-    def productIteratorMethod = {
+    def productIteratorMethod =
       createMethod(nme.productIterator, iteratorOfType(AnyTpe))(_ =>
         gen.mkMethodCall(ScalaRunTimeModule, nme.typedProductIterator, List(AnyTpe), List(mkThis))
       )
-    }
 
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree = 
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
@@ -378,7 +377,7 @@ trait SyntheticMethods extends ast.TreeDSL {
           !hasOverridingImplementation(m) || {
             clazz.isDerivedValueClass && (m == Any_hashCode || m == Any_equals) && {
               // Without a means to suppress this warning, I've thought better of it.
-              if (settings.warnValueOverrides) {
+              if (settings.warnValueOverrides.value) {
                  (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
                    typer.context.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics", WarningCategory.Other /* settings.warnValueOverrides is not exposed as compiler flag */)
                  }

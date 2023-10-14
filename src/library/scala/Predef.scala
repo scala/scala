@@ -366,6 +366,7 @@ object Predef extends LowPriorityImplicits {
      *  Format strings are as for `String.format`
      *  (@see java.lang.String.format).
      */
+    @deprecated("Use `formatString.format(value)` instead of `value.formatted(formatString)`,\nor use the `f\"\"` string interpolator. In Java 15 and later, `formatted` resolves to the new method in String which has reversed parameters.", "2.12.16")
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
@@ -578,7 +579,7 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
 }
 
 private[scala] abstract class LowPriorityImplicits2 {
-  @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
+  @deprecated("implicit conversions from Array to immutable.IndexedSeq are implemented by copying; use `toIndexedSeq` explicitly if you want to copy, or use the more efficient non-copying ArraySeq.unsafeWrapArray", since="2.13.0")
   implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =
     if (xs eq null) null
     else new ArrayOps(xs).toIndexedSeq

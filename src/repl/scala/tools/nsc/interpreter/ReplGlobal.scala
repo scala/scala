@@ -98,12 +98,13 @@ trait ReplGlobal extends Global {
   }
 
   override def optimizerClassPath(base: ClassPath): ClassPath = {
+    val base1 = super.optimizerClassPath(base)
     settings.outputDirs.getSingleOutput match {
-      case None => base
+      case None => base1
       case Some(out) =>
         // Make bytecode of previous lines available to the inliner
         val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry)
-        AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
+        AggregateClassPath.createAggregate(base1, replOutClasspath)
     }
   }
 

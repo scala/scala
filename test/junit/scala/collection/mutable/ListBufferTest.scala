@@ -3,7 +3,7 @@ package scala.collection.mutable
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
-import scala.tools.testkit.AssertUtil.assertSameElements
+import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows}
 
 import scala.annotation.nowarn
 
@@ -274,5 +274,68 @@ class ListBufferTest {
     val b2 = ListBuffer(1, 2, 3)
     b2.patchInPlace(3, b2, 1)
     assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+  }
+
+  @Test def `refugee partest of Buffers`: Unit = {
+
+    def assertR[A](actual: A, expected: A, msg: String) = assertEquals(msg, expected, actual)
+
+    def test(x: Buffer[String]): Unit = {
+      // testing method +=
+      x += "one"
+      assertR(x(0), "one", "retrieving 'one'")
+      assertR(x.length, 1, "length A")
+      x += "two"
+      assertR(x(1), "two", "retrieving 'two'")
+      assertR(x.length, 2, "length B")
+
+      // testing method -= (removing last element)
+      x -=  "two"
+
+      assertR(x.length, 1, "length C")
+
+      assertThrows[IndexOutOfBoundsException](x(1))
+      assertThrows[IndexOutOfBoundsException](x.remove(1))
+
+      x += "two2"
+      assertR(x.length, 2, "length D")
+
+      // removing first element
+      x.remove(0)
+      assertR(x.length, 1, "length E")
+
+      // toList
+      assertR(x.toList, List("two2"), "toList")
+
+      // clear
+      x.clear()
+      assertR(x.length, 0, "length 0")
+      assertTrue("isEmpty", x.isEmpty)
+
+      // copyToBuffer
+      x += "a"
+      x += "b"
+      val dest = new ArrayBuffer[String]
+      dest ++= x
+      assertR(List("a", "b"), dest.toList, "dest")
+      assertR(List("a", "b"), x.toList, "source")
+    }
+    test(ArrayBuffer[String]())
+    test(ListBuffer[String]())
+  }
+
+  @Test
+  def t12796(): Unit = {
+    val b = ListBuffer(1).patchInPlace(1, List(2), 1)
+    assertEquals(2, b.last)
+    assertEquals(List(1, 2), b.toList)
+  }
+
+  @Test
+  def t12796b(): Unit = {
+    val b = ListBuffer(1, 2)
+    b.insertAll(2, List(3))
+    assertEquals(3, b.last)
+    assertEquals(List(1, 2, 3), b.toList)
   }
 }

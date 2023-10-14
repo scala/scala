@@ -16,7 +16,7 @@ package reflect.internal.util
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.io.AbstractFile
-import java.net.{URL, URLConnection, URLStreamHandler}
+import java.net.{URI, URL, URLConnection, URLStreamHandler}
 import java.security.cert.Certificate
 import java.security.{CodeSource, ProtectionDomain}
 import java.util.{Collections => JCollections, Enumeration => JEnumeration}
@@ -76,6 +76,10 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     else
       defineClass(name, bytes, 0, bytes.length, protectionDomain)
   }
+
+  // on JDK 20 the URL constructor we're using is deprecated, but the recommended
+  // replacement, URL.of, doesn't exist on JDK 8
+  @annotation.nowarn("cat=deprecation")
   override protected def findResource(name: String): URL = findAbstractFile(name) match {
     case null => null
     case file => new URL(null, s"memory:${file.path}", new URLStreamHandler {
@@ -85,6 +89,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
       }
     })
   }
+
   override protected def findResources(name: String): JEnumeration[URL] = findResource(name) match {
     case null => JCollections.enumeration(JCollections.emptyList[URL])  //JCollections.emptyEnumeration[URL]
     case url  => JCollections.enumeration(JCollections.singleton(url))
@@ -98,7 +103,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
       val n = s.lastIndexOf('!')
       if (n < 0) null else {
         val path = s.substring(0, n)
-        new ProtectionDomain(new CodeSource(new URL(path), null.asInstanceOf[Array[Certificate]]), null, this, null)
+        new ProtectionDomain(new CodeSource(new URI(path).toURL, null.asInstanceOf[Array[Certificate]]), null, this, null)
       }
     }
   }

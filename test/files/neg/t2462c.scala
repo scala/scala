@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Werror
 //
 
 import annotation._

@@ -29,7 +29,7 @@ class IndexScript(universe: doc.Universe) extends Page {
   }
 
   val packages = {
-    val pairs = allPackagesWithTemplates.toIterable.map(_ match {
+    val pairs = allPackagesWithTemplates.map(_ match {
       case (pack, templates) => {
         val merged = mergeByQualifiedName(templates)
 

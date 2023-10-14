@@ -64,7 +64,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   }
 
   /** A default Scope iterator, that retrieves elements in the order given by ScopeEntry. */
-  private[Scopes] class ScopeIterator(owner: Scope) extends Iterator[Symbol] {
+  private[Scopes] class ScopeIterator(owner: Scope) extends AbstractIterator[Symbol] {
     private[this] var elem: ScopeEntry = owner.elems
 
     def hasNext: Boolean = (elem ne null) && (elem.owner == this.owner)
@@ -153,12 +153,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a symbol
      */
-    def enter[T <: Symbol](sym: T): T = {
+    def enter[T <: Symbol](sym: T): sym.type = {
       enterEntry(newScopeEntry(sym, this))
       sym
     }
 
-    final def enterBefore(sym: Symbol, next: ScopeEntry): Symbol = {
+    final def enterBefore(sym: Symbol, next: ScopeEntry): sym.type = {
       assert(this != EmptyScope, sym)
       require(sym.name.hashCode() == next.sym.name.hashCode(), (sym, next.sym))
       require(sym != next.sym, (sym, next.sym))
@@ -469,17 +469,17 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
-    override def addString(sb: StringBuilder, start: String, sep: String, end: String) =
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type =
       toList.map(_.defString).addString(sb, start, sep, end)
 
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
   }
 
-  implicit val ScopeTag = ClassTag[Scope](classOf[Scope])
+  implicit val ScopeTag: ClassTag[Scope] = ClassTag[Scope](classOf[Scope])
 
   type MemberScope = Scope
 
-  implicit val MemberScopeTag = ClassTag[MemberScope](classOf[MemberScope])
+  implicit val MemberScopeTag: ClassTag[MemberScope] = ClassTag[MemberScope](classOf[MemberScope])
 
   /** Create a new scope */
   def newScope: Scope = new Scope()
@@ -529,7 +529,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   def newScopeWith(elems: Symbol*): Scope = {
     val startTime = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val scope = newScope
-    elems foreach scope.enter
+    elems.foreach(scope.enter(_))
     if (settings.areStatisticsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
     scope
   }

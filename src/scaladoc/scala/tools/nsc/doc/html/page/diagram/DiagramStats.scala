@@ -49,7 +49,7 @@ object DiagramStats {
   private[this] var fixedImages = 0
 
   def printStats(settings: Settings) = {
-    if (settings.docDiagramsDebug) {
+    if (settings.docDiagramsDebug.value) {
       settings.printMsg("\nDiagram generation running time breakdown:\n")
       filterTrack.printStats(settings.printMsg)
       modelTrack.printStats(settings.printMsg)

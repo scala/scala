@@ -23,8 +23,8 @@ object ParserUtil {
       val preFile               = if (prefixIsAbsolute) prefixFile else new File(base, prefix)
       val basePrefix            = if (prefixIsAbsolute) "" else ensureSuffix(base.getPath, "/")
       def relativize(p: String) = p.stripPrefix(basePrefix)
-      def pathOf(f: File)       = if (f.isDirectory() && !fileFilter.accept(f)) ensureSuffix(f.getPath, "/") else f.getPath
-      val finder = if (preFile.isDirectory()) {
+      def pathOf(f: File)       = if (f.isDirectory && !fileFilter.accept(f)) ensureSuffix(f.getPath, "/") else f.getPath
+      val finder = if (preFile.isDirectory) {
         preFile.glob(childFilter)
       } else if (preFile.exists()) {
         PathFinder(preFile).filter(fileFilter.accept)

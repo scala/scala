@@ -15,6 +15,6 @@ val res3: Option[Any] = Some(64)
 scala> $intp.valueOfTerm("i")
 val res4: Option[Any] = Some(17)
 
-scala> assert($intp.settings.Yreplclassbased)
+scala> assert($intp.settings.Yreplclassbased.value)
 
 scala> :quit

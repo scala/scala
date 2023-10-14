@@ -1,10 +1,10 @@
-package scala.tools.nsc.typechecker
+package scala.tools.nsc
+package typechecker
 
 import org.junit.Test
 import org.junit.Assert.assertTrue
 
 import scala.tools.testkit.BytecodeTesting
-
 
 class ConstantFolderTest extends BytecodeTesting {
   import compiler._
@@ -14,13 +14,10 @@ class ConstantFolderTest extends BytecodeTesting {
 
   def literalValDefAssert(tree: Tree, name: String, constant: Constant): Unit = {
     val valDef: ValDef = tree.collect {
-      case node @ ValDef(_, _, _, _) if node.name.decodedName.toString.trim == name =>
-        node
+      case node @ ValDef(_, nm, _, _) if nm.decoded.trim == name => node
     }.head
 
-    assertTrue {
-      valDef.collect { case node @ Literal(constant) => node }.nonEmpty
-    }
+    assertTrue(s"Expected val $name: $constant", valDef.collect { case node @ Literal(`constant`) => node }.nonEmpty)
   }
 
   @Test
@@ -48,6 +45,7 @@ class ConstantFolderTest extends BytecodeTesting {
         |  final val x5 = true || false
         |  final val x6 = false || true
         |  final val x7 = false || false
+        |  final val x8 = !x7
         |}
       """.stripMargin
     val run = compiler.newRun()
@@ -61,5 +59,23 @@ class ConstantFolderTest extends BytecodeTesting {
     literalValDefAssert(tree, "x5", Constant(true))
     literalValDefAssert(tree, "x6", Constant(true))
     literalValDefAssert(tree, "x7", Constant(false))
+    literalValDefAssert(tree, "x8", Constant(true))
+  }
+
+  @Test def `fold unary ops`: Unit = {
+    val code =
+      sm"""|object X {
+           |  final val x0 = 0xff
+           |  final val x1 = ~0xff
+           |  final val x2 = x0 & ~0xf
+           |  final val x3 = x0.toLong
+           |}"""
+    val run = compiler.newRun()
+    run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
+    val tree = run.units.next().body
+    literalValDefAssert(tree, "x0", Constant(0xff))
+    literalValDefAssert(tree, "x1", Constant(0xffffff00))
+    literalValDefAssert(tree, "x2", Constant(0xf0))
+    literalValDefAssert(tree, "x3", Constant(0xffL))
   }
 }

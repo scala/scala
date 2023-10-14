@@ -10,7 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.reflect
+package scala.tools
+package reflect
+
+import nsc.Reporting.WarningCategory
 
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
@@ -33,19 +36,29 @@ trait FastStringInterpolator extends FormatInterpolator {
         try
           parts.mapConserve {
             case lit @ Literal(Constant(stringVal: String)) =>
-              val value =
-                if (isRaw && currentRun.isScala3) stringVal
-                else if (isRaw) {
-                  val processed = StringContext.processUnicode(stringVal)
-                  if (processed != stringVal) {
+              def asRaw = {
+                val processed = StringContext.processUnicode(stringVal)
+                if (processed != stringVal) {
+                  val pos = {
                     val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
                       case ((p, o), i) if p != o => i
                     }.getOrElse(processed.length - 1)
-
-                    runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
+                    lit.pos.withShift(diffindex)
                   }
-                  processed
+                  def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
+                  if (currentRun.isScala3) {
+                    runReporting.warning(pos, msg("ignored under -Xsource:3"), WarningCategory.Scala3Migration, c.internal.enclosingOwner)
+                    stringVal
+                  }
+                  else {
+                    runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")
+                    processed
+                  }
                 }
+                else stringVal
+              }
+              val value =
+                if (isRaw) asRaw
                 else StringContext.processEscapes(stringVal)
               val k = Constant(value)
               // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
@@ -57,40 +70,20 @@ trait FastStringInterpolator extends FormatInterpolator {
           case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
         }
 
-      val argsIndexed = args.toVector
-      val concatArgs = collection.mutable.ListBuffer[Tree]()
-      val numLits = parts.length
-      foreachWithIndex(treated.tail) { (lit, i) =>
-        val treatedContents = lit.asInstanceOf[Literal].value.stringValue
-        val emptyLit = treatedContents.isEmpty
-        if (i < numLits - 1) {
-          concatArgs += argsIndexed(i)
-          if (!emptyLit) concatArgs += lit
-        } else if (!emptyLit) {
-          concatArgs += lit
+      if (args.forall(treeInfo.isLiteralString)) {
+        val it1 = treated.iterator
+        val it2 = args.iterator
+        val res = new StringBuilder
+        def add(t: Tree): Unit = res.append(t.asInstanceOf[Literal].value.value)
+        add(it1.next())
+        while (it2.hasNext) {
+          add(it2.next())
+          add(it1.next())
         }
+        val k = Constant(res.toString)
+        Literal(k).setType(ConstantType(k))
       }
-      def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
-        atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
-
-      var result: Tree = treated.head
-      val chunkSize = 32
-      if (concatArgs.lengthCompare(chunkSize) <= 0) {
-        concatArgs.foreach { t =>
-          result = mkConcat(t.pos, result, t)
-        }
-      } else {
-        concatArgs.toList.grouped(chunkSize).foreach {
-          case group =>
-            var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
-            group.foreach { t =>
-              chunkResult = mkConcat(t.pos, chunkResult, t)
-            }
-            result = mkConcat(chunkResult.pos, result, chunkResult)
-        }
-      }
-
-      result
+      else concatenate(treated, args)
 
     // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
     case t@Apply(Select(someStringContext, _interpol), args) =>
@@ -102,5 +95,42 @@ trait FastStringInterpolator extends FormatInterpolator {
           sc.parts)
       }"""
     case x => throw new MatchError(x)
+  }
+
+  def concatenate(parts: List[Tree], args: List[Tree]): Tree = {
+    val argsIndexed = args.toVector
+    val concatArgs = collection.mutable.ListBuffer[Tree]()
+    val numLits = parts.length
+    foreachWithIndex(parts.tail) { (lit, i) =>
+      val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+      val emptyLit = treatedContents.isEmpty
+      if (i < numLits - 1) {
+        concatArgs += argsIndexed(i)
+        if (!emptyLit) concatArgs += lit
+      } else if (!emptyLit) {
+        concatArgs += lit
+      }
+    }
+    def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
+      atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
+
+    var result: Tree = parts.head
+    val chunkSize = 32
+    if (concatArgs.lengthCompare(chunkSize) <= 0) {
+      concatArgs.foreach { t =>
+        result = mkConcat(t.pos, result, t)
+      }
+    } else {
+      concatArgs.toList.grouped(chunkSize).foreach {
+        case group =>
+          var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
+          group.foreach { t =>
+            chunkResult = mkConcat(t.pos, chunkResult, t)
+          }
+          result = mkConcat(chunkResult.pos, result, chunkResult)
+      }
+    }
+
+    result
   }
 }

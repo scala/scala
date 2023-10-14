@@ -12,7 +12,7 @@
 
 package scala.tools.partest
 
-import scala.tools.cmd.CommandLineParser
+import scala.sys.process.{Parser => CommandLineParser}
 import scala.tools.nsc._
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
@@ -72,7 +72,7 @@ abstract class ScaladocModelTest extends DirectTest {
 
     try {
       // 1 - compile with scaladoc and get the model out
-      val universe = model.getOrElse({sys.error("Scaladoc Model Test ERROR: No universe generated!")})
+      val universe = model.getOrElse { sys.error("Scaladoc Model Test ERROR: No universe generated!") }
       // 2 - check the model generated
       testModel(universe.rootPackage)
       println("Done.")

@@ -47,6 +47,7 @@ trait WrappedProperties extends PropertiesTrait {
 
 object WrappedProperties {
   object AccessControl extends WrappedProperties {
+    @annotation.nowarn("cat=deprecation") // AccessControlException is deprecated on JDK 17
     def wrap[T](body: => T) = try Some(body) catch { case _: AccessControlException => None }
   }
 }

@@ -1,0 +1,21 @@
+t12441.scala:7: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def g = Option.empty[String].contains(1234)
+                               ^
+t12441.scala:8: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def h() = k(Option.empty[String].contains(1234))
+                                   ^
+t12441.scala:10: warning: adaptation of an empty argument list by inserting () is deprecated: this is unlikely to be what you want
+        signature: SetOps.apply(elem: A): Boolean
+  given arguments: <none>
+ after adaptation: SetOps((): Unit)
+  def s0 = List(1, 2, 3).toSet()  // adapt mistaken arg () to apply and infer AnyVal
+                              ^
+t12441.scala:10: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  def s0 = List(1, 2, 3).toSet()  // adapt mistaken arg () to apply and infer AnyVal
+                         ^
+t12441.scala:14: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def peskier = p == (42, List(17, ""))
+                          ^
+error: No warnings can be incurred under -Werror.
+5 warnings
+1 error

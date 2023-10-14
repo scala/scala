@@ -14,7 +14,6 @@ package scala.tools.nsc
 package doc
 package model
 
-import scala.collection._
 import base.comment._
 import diagram._
 

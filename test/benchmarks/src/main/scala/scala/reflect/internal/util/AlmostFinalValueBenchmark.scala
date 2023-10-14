@@ -8,16 +8,16 @@ import org.openjdk.jmh.infra.Blackhole
 class AlmostFinalValueBenchSettings extends scala.reflect.runtime.Settings {
   val flag = new BooleanSetting(false)
 
-  @inline final def isTrue2: Boolean = AlmostFinalValueBenchmarkStatics.isTrue && flag
+  @inline final def isTrue2: Boolean = AlmostFinalValueBenchmarkStatics.isTrue && flag.value
 }
 
 object AlmostFinalValueBenchSettings {
   implicit class SettingsOps(private val settings: AlmostFinalValueBenchSettings) extends AnyVal {
-    @inline final def isTrue3: Boolean = AlmostFinalValueBenchmarkStatics.isTrue && settings.flag
+    @inline final def isTrue3: Boolean = AlmostFinalValueBenchmarkStatics.isTrue && settings.flag.value
   }
 
   @inline def isTrue4(settings: AlmostFinalValueBenchSettings): Boolean =
-    AlmostFinalValueBenchmarkStatics.isTrue && settings.flag
+    AlmostFinalValueBenchmarkStatics.isTrue && settings.flag.value
 }
 
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -33,10 +33,10 @@ class AlmostFinalValueBenchmark {
   private def pretendToWorkHard() = Blackhole.consumeCPU(3)
 
   @Benchmark def bench0_unit                  = ()
-  @Benchmark def bench0_usingStaticFinalFalse = if (STATIC_FINAL_FALSE && flag) pretendToWorkHard()
+  @Benchmark def bench0_usingStaticFinalFalse = if (STATIC_FINAL_FALSE && flag.value) pretendToWorkHard()
   @Benchmark def bench0_workingHard           = pretendToWorkHard()
 
-  @Benchmark def bench1_usingAlmostFinalFalse = if (AlmostFinalValueBenchmarkStatics.isTrue && flag) pretendToWorkHard()
+  @Benchmark def bench1_usingAlmostFinalFalse = if (AlmostFinalValueBenchmarkStatics.isTrue && flag.value) pretendToWorkHard()
   @Benchmark def bench2_usingInlineMethod     = if (settings.isTrue2) pretendToWorkHard()
   @Benchmark def bench3_usingExtMethod        = if (settings.isTrue3) pretendToWorkHard()
   @Benchmark def bench4_usingObjectMethod     = if (AlmostFinalValueBenchSettings.isTrue4(settings)) pretendToWorkHard()

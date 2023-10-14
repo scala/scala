@@ -6,6 +6,8 @@ scala> :replay -Xlint
 replay> locally { val x = 42 ; "$x" }
                                ^
         warning: possible missing interpolator: detected interpolated identifier `$x`
+                      ^
+        warning: local val x in value res0 is never used
 val res0: String = $x
 
 

@@ -1,0 +1,5 @@
+newSource1.scala:3: error: object dummy is not a member of package org
+  val a: org.dummy.Dummy = ???
+             ^
+java.lang.Exception: Stack trace
+java.lang.Exception: Stack trace

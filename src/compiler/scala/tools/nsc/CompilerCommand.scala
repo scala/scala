@@ -105,14 +105,14 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def getInfoMessage(global: Global): String = {
     import settings._
 
-    if (version)            Properties.versionFor(cmdDesc)
-    else if (help)          usageMsg + global.pluginOptionsHelp
-    else if (Vhelp)         vusageMsg
-    else if (Whelp)         wusageMsg
-    else if (Xhelp)         xusageMsg
-    else if (Yhelp)         yusageMsg
-    else if (showPlugins)   global.pluginDescriptions
-    else if (showPhases)    global.phaseDescriptions + (
+    if (version.value)            Properties.versionFor(cmdDesc)
+    else if (help.value)          usageMsg + global.pluginOptionsHelp
+    else if (Vhelp.value)         vusageMsg
+    else if (Whelp.value)         wusageMsg
+    else if (Xhelp.value)         xusageMsg
+    else if (Yhelp.value)         yusageMsg
+    else if (showPlugins.value)   global.pluginDescriptions
+    else if (showPhases.value)    global.phaseDescriptions + (
       if (settings.isDebug) "\n" + global.phaseFlagDescriptions else ""
     )
     else if (genPhaseGraph.isSetByUser) {
@@ -126,11 +126,12 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def expandArg(arg: String): List[String] = {
     import java.nio.file.{Files, Paths}
     import scala.jdk.CollectionConverters._
-    def stripComment(s: String) = s.takeWhile(_ != '#')
-    val file = Paths.get(arg stripPrefix "@")
+    def stripComment(s: String) = s.takeWhile(_ != '#').trim()
+    val file = Paths.get(arg.stripPrefix("@"))
     if (!Files.exists(file))
       throw new java.io.FileNotFoundException(s"argument file $file could not be found")
-    settings.splitParams(Files.readAllLines(file).asScala.map(stripComment).mkString(" "))
+    val lines = Files.readAllLines(file).asScala.map(stripComment).filterNot(_.isEmpty).toList
+    lines.flatMap(settings.splitParams)
   }
 
   // override this if you don't want arguments processed here

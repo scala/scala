@@ -584,7 +584,7 @@ abstract class LocalOpt {
     while (top != -1) {
       val insnIndex = deq()
       val insn = method.instructions.get(insnIndex)
-      visited.add(insnIndex)
+      visited.addOne(insnIndex)
 
       if (insn.getOpcode == -1) { // frames, labels, line numbers
         enqInsnIndex(insnIndex + 1)
@@ -1019,7 +1019,7 @@ object LocalOptImpls {
     }
 
     def removeJumpFromMap(jump: JumpInsnNode) = {
-      jumpInsns.remove(jump)
+      jumpInsns.subtractOne(jump)
       _jumpTargets = null
     }
 

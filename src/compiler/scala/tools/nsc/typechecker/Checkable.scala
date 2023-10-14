@@ -371,8 +371,10 @@ trait Checkable {
               def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
               val Xsym = X.typeSymbol
               val Psym = P.typeSymbol
-              if (isSealedOrFinal(Xsym) && isSealedOrFinal(Psym) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym)))
-                context.unit.toCheck += (() => recheckFruitless())
+              if (isSealedOrFinal(Xsym) && isSealedOrFinal(Psym) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym))) {
+                debuglog(s"deferred recheckFruitless($X, $P)")
+                context.unit.addPostTyperCheck(() => recheckFruitless())
+              }
             }
         }
       }

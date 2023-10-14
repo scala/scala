@@ -1,0 +1,10 @@
+Test_2.scala:7: warning: class B in package example is deprecated (since 1.0): beeless
+  val deprecatedMethod = classOf[B].getMethod("a")
+                                ^
+Test_2.scala:9: warning: method a in trait A is deprecated
+  println(new B().a)
+                  ^
+Test_2.scala:9: warning: class B in package example is deprecated (since 1.0): beeless
+  println(new B().a)
+              ^
+a

@@ -106,6 +106,12 @@ class StringContextTest {
     assertEquals(expected, res)
   }
 
+  @annotation.nowarn("msg=Boolean format is null test for non-Boolean")
+  @Test def `non booleans as boolean`(): Unit = {
+    assertEquals("false", f"${null}%b")
+    assertEquals("FALSE", f"${null}%B")
+  }
+
   @Test def `f interpolator baseline`(): Unit = {
 
     // ignore spurious warning scala/bug#11946
@@ -142,14 +148,12 @@ class StringContextTest {
       f"${b_false}%b" -> "false",
       f"${b_true}%b"  -> "true",
 
-      f"${null}%b"  -> "false",
       f"${false}%b" -> "false",
       f"${true}%b"  -> "true",
       f"${true && false}%b"                 -> "false",
       f"${java.lang.Boolean.valueOf(false)}%b"  -> "false",
       f"${java.lang.Boolean.valueOf(true)}%b"   -> "true",
 
-      f"${null}%B"  -> "FALSE",
       f"${false}%B" -> "FALSE",
       f"${true}%B"  -> "TRUE",
       f"${java.lang.Boolean.valueOf(false)}%B"  -> "FALSE",

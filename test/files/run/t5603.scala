@@ -1,7 +1,6 @@
 import scala.tools.partest._
 import java.io._
 import scala.tools.nsc._
-import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.ConsoleReporter
 
@@ -31,7 +30,7 @@ object Test extends DirectTest {
     val settings = new Settings()
     settings.Xprintpos.value = true
     settings.Yrangepos.value = true
-    val command = new CompilerCommand((CommandLineParser tokenize extraSettings) ++ args.toList, settings)
+    val command = new CompilerCommand(tokenize(extraSettings) ++ args.toList, settings)
     Global(command.settings, new ConsoleReporter(settings))
   }
 }

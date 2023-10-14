@@ -34,6 +34,15 @@ object FoundReq
 }
   """
 
+  final val foundReqSingleAbstractMethod = """
+object FoundReq extends App {
+  def f(x: AnyVal, f: Runnable) = 1
+  def f(x: Double, f: Runnable) = 2
+
+  f(3.0, () => println("work"))
+}
+  """
+
   def bounds: String = """
 object Bounds
 {
@@ -200,6 +209,25 @@ object SingleImp
   }
   """
 
+  def shorthandTypes: String = """
+object a {
+  type TypeA
+  object b {
+    type TypeB
+    object c {
+      type TypeC
+      object d {
+        type TypeD
+        implicitly[List[TypeA]]
+        implicitly[Seq[TypeB]]
+        implicitly[Traversable[TypeC]]
+        implicitly[Iterator[TypeD]]
+      }
+    }
+  }
+}
+"""
+
   def show(): Unit = {
     val global = newCompiler()
 
@@ -208,6 +236,7 @@ object SingleImp
 
     run(chain)
     run(foundReq)
+    run(foundReqSingleAbstractMethod)
     run(bounds)
     run(longAnnotationMessage)
     run(longInfix)
@@ -221,5 +250,6 @@ object SingleImp
     run(singleTypeInFunction)
     run(singleTypeWithFreeSymbol)
     run(parameterAnnotation)
+    run(shorthandTypes)
   }
 }

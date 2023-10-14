@@ -21,7 +21,7 @@ trait GenTrees {
 
   // unfortunately, these are necessary to reify AnnotatedTypes
   // I'd gladly get rid of them, but I don't fancy making a metaprogramming API that doesn't work with annotated types
-  // luckily for our sanity, these vars are mutated only within a very restricted code execution path
+  // luckily for our confidence, these vars are mutated only within a very restricted code execution path
   def reifyTreeSymbols: Boolean = state.reifyTreeSymbols
   def reifyTreeTypes: Boolean = state.reifyTreeTypes
 

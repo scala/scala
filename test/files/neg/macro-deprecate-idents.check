@@ -64,7 +64,7 @@ macro-deprecate-idents.scala:47: error: '{' expected but '}' found.
 macro-deprecate-idents.scala:54: error: ')' expected but '}' found.
 }
 ^
-macro-deprecate-idents.scala:57: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `<error>`'s return type
+macro-deprecate-idents.scala:57: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `<error>`'s return type [quickfixable]
   def macro = 2
                ^
 1 warning

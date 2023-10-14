@@ -23,11 +23,11 @@ final class MatchError(@transient obj: Any) extends RuntimeException {
   private[this] lazy val objString = {
     def ofClass = "of class " + obj.getClass.getName
     if (obj == null) "null"
-    else try {
-      obj.toString() + " (" + ofClass + ")"
-    } catch {
-      case _: Throwable => "an instance " + ofClass
-    }
+    else
+      try s"$obj ($ofClass)"
+      catch {
+        case _: Throwable => "an instance " + ofClass
+      }
   }
 
   @throws[java.io.ObjectStreamException]

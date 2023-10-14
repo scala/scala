@@ -15,12 +15,11 @@ package collection.concurrent
 
 import scala.annotation.tailrec
 
-
 /** A template trait for mutable maps that allow concurrent access.
   *
   *  $concurrentmapinfo
   *
-  *  @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
+  *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
   *  section on `Concurrent Maps` for more information.
   *
   *  @tparam K  the key type of the map
@@ -98,13 +97,50 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     case None =>
       val v = op
       putIfAbsent(key, v) match {
-        case Some(nv) => nv
+        case Some(ov) => ov
         case None => v
       }
   }
 
   /**
-   * Update a mapping for the specified key and its current optionally-mapped value
+   * Removes the entry for the specified key if it's currently mapped to the
+   * specified value. Comparison to the specified value is done using reference
+   * equality.
+   *
+   * Not all map implementations can support removal based on reference
+   * equality, and for those implementations, object equality is used instead.
+   *
+   * $atomicop
+   *
+   * @param k   key for which the entry should be removed
+   * @param v   value expected to be associated with the specified key if
+   *            the removal is to take place
+   * @return    `true` if the removal took place, `false` otherwise
+   */
+  // TODO: make part of the API in a future version
+  private[collection] def removeRefEq(k: K, v: V): Boolean = remove(k, v)
+
+  /**
+   * Replaces the entry for the given key only if it was previously mapped to
+   * a given value. Comparison to the specified value is done using reference
+   * equality.
+   *
+   * Not all map implementations can support replacement based on reference
+   * equality, and for those implementations, object equality is used instead.
+   *
+   * $atomicop
+   *
+   * @param k         key for which the entry should be replaced
+   * @param oldValue  value expected to be associated with the specified key
+   *                  if replacing is to happen
+   * @param newValue  value to be associated with the specified key
+   * @return          `true` if the entry was replaced, `false` otherwise
+   */
+  // TODO: make part of the API in a future version
+  private[collection] def replaceRefEq(k: K, oldValue: V, newValue: V): Boolean = replace(k, oldValue, newValue)
+
+  /**
+   * Update a mapping for the specified key and its current optionally mapped value
    * (`Some` if there is current mapping, `None` if not).
    *
    * If the remapping function returns `Some(v)`, the mapping is updated with the new value `v`.
@@ -114,21 +150,43 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
    * If the map is updated by another concurrent access, the remapping function will be retried until successfully updated.
    *
    * @param key the key value
-   * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
+   * @param remappingFunction a function that receives current optionally mapped value and return a new mapping
    * @return the new value associated with the specified key
    */
   override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = updateWithAux(key)(remappingFunction)
 
   @tailrec
   private def updateWithAux(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
-    val previousValue = this.get(key)
+    val previousValue = get(key)
     val nextValue = remappingFunction(previousValue)
-    (previousValue, nextValue) match {
-      case (None, None) => None
-      case (None, Some(next)) if this.putIfAbsent(key, next).isEmpty => nextValue
-      case (Some(prev), None) if this.remove(key, prev) => None
-      case (Some(prev), Some(next)) if this.replace(key, prev, next) => nextValue
-      case _ => this.updateWithAux(key)(remappingFunction)
+    previousValue match {
+      case Some(prev) => nextValue match {
+        case Some(next) => if (replaceRefEq(key, prev, next)) return nextValue
+        case _          => if (removeRefEq(key, prev)) return None
+      }
+      case _ => nextValue match {
+        case Some(next) => if (putIfAbsent(key, next).isEmpty) return nextValue
+        case _          => return None
+      }
     }
+    updateWithAux(key)(remappingFunction)
+  }
+
+  private[collection] def filterInPlaceImpl(p: (K, V) => Boolean): this.type = {
+    val it = iterator
+    while (it.hasNext) {
+      val (k, v) = it.next()
+      if (!p(k, v)) removeRefEq(k, v)
+    }
+    this
+  }
+
+  private[collection] def mapValuesInPlaceImpl(f: (K, V) => V): this.type = {
+    val it = iterator
+    while (it.hasNext) {
+      val (k, v) = it.next()
+      replaceRefEq(k, v, f(k, v))
+    }
+    this
   }
 }

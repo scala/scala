@@ -437,7 +437,7 @@ class Flags extends ModifierFlags {
     case               MACRO => "<macro>"                             // (1L << 15)
     case         BYNAMEPARAM => "<bynameparam/captured/covariant>"    // (1L << 16)
     case       CONTRAVARIANT => "<contravariant/inconstructor/label>" // (1L << 17)
-    case         ABSOVERRIDE => "absoverride"                         // (1L << 18)
+    case         ABSOVERRIDE => "abstract override"                   // (1L << 18)
     case               LOCAL => "<local>"                             // (1L << 19)
     case                JAVA => "<java>"                              // (1L << 20)
     case           SYNTHETIC => "<synthetic>"                         // (1L << 21)
@@ -521,9 +521,9 @@ class Flags extends ModifierFlags {
         if ((flags & mask) != 0L) {
           val s = flagToString(mask)
           if (s.length > 0) {
-            if (sb eq null) sb = new StringBuilder append s
-            else if (sb.length == 0) sb append s
-            else sb append " " append s
+            if (sb eq null) sb = new StringBuilder
+            else if (!sb.isEmpty) sb.append(" ")
+            sb.append(s)
           }
         }
         i += 1

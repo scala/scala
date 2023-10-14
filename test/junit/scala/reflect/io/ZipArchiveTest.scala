@@ -8,7 +8,6 @@ import java.util.jar.{Attributes, Manifest, JarEntry, JarOutputStream}
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.ForDeletion
 import scala.tools.testkit.Releasables._
@@ -50,12 +49,12 @@ class ZipArchiveTest {
     assertThrown[IOException](_.getMessage.contains(f.toString))(fza.iterator)
   }
 
-  private def manifestAt(location: URI): URL = ScalaClassLoader.fromURLs(List(location.toURL), null).getResource("META-INF/MANIFEST.MF");
+  private def manifestAt(location: Path): URL = URI.create(s"jar:file:${location.toUri.getPath}!/META-INF/MANIFEST.MF").toURL
 
   // ZipArchive.fromManifestURL(URL)
   @Test def `manifest resources just works`(): Unit = {
     val jar = createTestJar()
-    Using.resources(ForDeletion(jar), new ManifestResources(manifestAt(jar.toUri))) { (_, archive) =>
+    Using.resources(ForDeletion(jar), new ManifestResources(manifestAt(jar.toAbsolutePath))) { (_, archive) =>
       val it = archive.iterator
       assertTrue(it.hasNext)
       val f = it.next()

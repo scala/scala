@@ -68,9 +68,11 @@ trait Builder[-A, +To] extends Growable[A] { self =>
     *                       an IndexedSeqLike, then sizes larger
     *                       than collection's size are reduced.
     */
+  // should probably be `boundingColl: IterableOnce[_]`, but binary compatibility
   final def sizeHintBounded(size: Int, boundingColl: scala.collection.Iterable[_]): Unit = {
-    if (boundingColl.knownSize != -1) {
-      sizeHint(scala.math.min(boundingColl.knownSize, size))
+    val s = boundingColl.knownSize
+    if (s != -1) {
+      sizeHint(scala.math.min(s, size))
     }
   }
 

@@ -204,7 +204,10 @@ private[async] trait AnfTransform extends TransformUtils {
       if (isPatMatGeneratedJump(tree)) assignUnitType(tree)
 
       if (!needsResultVar || isUnitType(tree.tpe) || (tree.tpe =:= definitions.NothingTpe)) {
-        core(NoSymbol)
+        if (tree.tpe =:= definitions.BoxedUnitTpe) {
+          currentStats += assignUnitType(core(NoSymbol))
+          literalBoxedUnit
+        } else core(NoSymbol)
       } else {
         val varDef = defineVar(nameSource(), tree.tpe, tree.pos)
         currentStats += varDef
@@ -266,7 +269,8 @@ private[async] trait AnfTransform extends TransformUtils {
           onTail(ts)
         case i =>
           val group = new Array[T](i + 1)
-          ts.copyToArray(group)
+          @annotation.unused val copied = ts.copyToArray(group)
+          //assert(copied == group.length, s"$copied != ${group.length}")
           onGroup(group)
           foreachGroupsEndingWith(ts.drop(i + 1))(isGroupEnd, onGroup, onTail)
       }

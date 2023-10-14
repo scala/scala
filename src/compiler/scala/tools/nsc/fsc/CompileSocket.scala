@@ -13,6 +13,7 @@
 package scala.tools.nsc.fsc
 
 import java.math.BigInteger
+import java.nio.charset.StandardCharsets.UTF_8
 import java.security.SecureRandom
 
 import scala.annotation.tailrec
@@ -139,7 +140,7 @@ class CompileSocket extends CompileOutputCommon {
     val file = portFile(port)
     // 128 bits of delicious randomness, suitable for printing with println over a socket,
     // and storage in a file -- see getPassword
-    val secretDigits = new BigInteger(128, new SecureRandom()).toString.getBytes("UTF-8")
+    val secretDigits = new BigInteger(128, new SecureRandom()).toString.getBytes(UTF_8)
 
     try OwnerOnlyChmod.chmodFileAndWrite(file.jfile.toPath, secretDigits)
     catch chmodFailHandler(s"Cannot create file: ${file}")

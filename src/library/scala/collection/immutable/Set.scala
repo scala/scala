@@ -57,7 +57,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   @`inline` final override def - (elem: A): C = excl(elem)
 
   def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
+    foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
 
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.
@@ -96,12 +96,21 @@ object Set extends IterableFactory[Set] {
 
   def from[E](it: collection.IterableOnce[E]): Set[E] =
     it match {
-      // We want `SortedSet` (and subclasses, such as `BitSet`) to
-      // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E]         => (newBuilder[E] ++= it).result()
-      case _ if it.knownSize == 0  => empty[E]
-      case s: Set[E]               => s
-      case _                       => (newBuilder[E] ++= it).result()
+      case _ if it.knownSize == 0 => empty[E]
+      // Since IterableOnce[E] launders the variance of E,
+      // identify only our implementations which can be soundly substituted.
+      // It's not sufficient to match `SortedSet[E]` to rebuild and `Set[E]` to retain.
+      case s: HashSet[E] => s
+      case s: ListSet[E] => s
+      case s: Set1[E]    => s
+      case s: Set2[E]    => s
+      case s: Set3[E]    => s
+      case s: Set4[E]    => s
+      case s: HashMap[E @unchecked, _]#HashKeySet => s
+      case s: MapOps[E, Any, Map, Map[E, Any]]#ImmutableKeySet @unchecked => s
+      // We also want `SortedSet` (and subclasses, such as `BitSet`)
+      // to rebuild themselves, to avoid element type widening issues.
+      case _ => newBuilder[E].addAll(it).result()
     }
 
   def newBuilder[A]: Builder[A, Set[A]] = new SetBuilderImpl[A]

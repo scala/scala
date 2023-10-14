@@ -19,7 +19,8 @@ object Test extends BytecodeTest {
     test("string", expected = 0)
     test("module", expected = 0)
     test("moduleIndirect", expected = 2)
-    test("moduleViaPredefAlias", expected = 2)
+    test("nilModuleViaScalaPackageAlias", expected = 0)
+    test("moduleViaScalaPackageAlias", expected = 2)
   }
 
   def countNullChecks(insnList: asm.tree.InsnList): Int =
@@ -40,7 +41,11 @@ class Lean {
     n == (toString: Any) // still need null checks here.
   }
 
-  def moduleViaPredefAlias: Unit = {
+  def nilModuleViaScalaPackageAlias: Unit = {
     Nil == (toString: Any)
+  }
+
+  def moduleViaScalaPackageAlias: Unit = {
+    Right == (toString: Any)
   }
 }

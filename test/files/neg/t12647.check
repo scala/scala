@@ -1,0 +1,4 @@
+Test_3.scala:6: error: value value is not a member of Result
+  println(resolver.resolve.value)
+                           ^
+1 error

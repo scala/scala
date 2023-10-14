@@ -91,6 +91,15 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       protected val localSubstitution: Substitution = EmptySubstitution
     }
 
+    /** A dummy tree maker used to mark wildcard patterns.
+     * This is later used to back off from exhaustivity checking.
+     */
+    case object DummyTreeMaker extends TreeMaker with NoNewBinders {
+      def pos = EmptyTree.pos
+
+      def chainBefore(next: Tree)(casegen: Casegen): Tree = next
+    }
+
     case class TrivialTreeMaker(tree: Tree) extends TreeMaker with NoNewBinders {
       def pos = tree.pos
 
@@ -602,32 +611,35 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
 
     def removeSubstOnly(makers: List[TreeMaker]) = makers filterNot (_.isInstanceOf[SubstOnlyTreeMaker])
+    def removeDummy(makers: List[TreeMaker]) = makers filterNot (_ == DummyTreeMaker)
 
     // a foldLeft to accumulate the localSubstitution left-to-right
     // it drops SubstOnly tree makers, since their only goal in life is to propagate substitutions to the next tree maker, which is fulfilled by propagateSubstitution
     def propagateSubstitution(treeMakers: List[TreeMaker], initial: Substitution): List[TreeMaker] = {
       var accumSubst: Substitution = initial
-      treeMakers foreach { maker =>
+      removeDummy(treeMakers) foreach { maker =>
         maker incorporateOuterSubstitution accumSubst
         accumSubst = maker.substitution
       }
-      removeSubstOnly(treeMakers)
+      removeSubstOnly(removeDummy(treeMakers))
     }
 
-    def getSuppression(scrut: Tree): Suppression = scrut match {
-      case _ if settings.XnoPatmatAnalysis => Suppression.FullSuppression
-      case Typed(tree, tpt)                =>
-        val suppressExhaustive  = tpt.tpe.hasAnnotation(UncheckedClass)
-        val suppressUnreachable = tree match {
-          case Ident(name) => name.startsWith(nme.CHECK_IF_REFUTABLE_STRING) // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
-          case _           => false
-        }
-        Suppression(suppressExhaustive, suppressUnreachable)
-      case _                               => Suppression.NoSuppression
-    }
+    def getSuppression(scrut: Tree): Suppression =
+      if (settings.XnoPatmatAnalysis.value) Suppression.FullSuppression
+      else scrut match {
+        case Typed(tree, tpt) =>
+          val suppressExhaustive  = tpt.tpe.hasAnnotation(UncheckedClass)
+          val suppressUnreachable = tree match {
+            // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
+            case Ident(name) => name.startsWith(nme.CHECK_IF_REFUTABLE_STRING)
+            case _ => false
+          }
+          Suppression(suppressExhaustive, suppressUnreachable)
+        case _ => Suppression.NoSuppression
+      }
 
     def requiresSwitch(scrut: Tree, cases: List[List[TreeMaker]]): Boolean = {
-      if (settings.XnoPatmatAnalysis) false
+      if (settings.XnoPatmatAnalysis.value) false
       else scrut match {
         case Typed(tree, tpt) =>
           val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
@@ -639,13 +651,36 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               case a :: b :: c :: _ => 3
               case cases            => cases.map {
                 case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
-                case c                                      => 1
+                case _                                      => 1
               }.sum
             }
             lengthMax3(cases) > 2
           }
           hasSwitchAnnotation && exceedsTwoCasesOrAlts
         case _ => false
+      }
+    }
+
+    // See the use of RegularSwitchMaker by SwitchEmission#emitSwitch, which this code emulates or duplicates.
+    private object Switchable {
+      val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe, StringTpe)
+
+      def apply(scrutSym: Symbol, cases: List[List[TreeMaker]]): Boolean = switchableTpe(scrutSym.tpe.dealiasWiden) && {
+        def switchable(tms: List[TreeMaker]): Boolean =
+          tms.forall {
+            case EqualityTestTreeMaker(_, SwitchablePattern(), _) => true
+            case AlternativesTreeMaker(_, altss, _) => Switchable(scrutSym, altss)
+            case BodyTreeMaker(_, _) => true
+            case _ => false
+          }
+        cases.forall(switchable)
+      }
+
+      object SwitchablePattern {
+        def unapply(pat: Tree): Boolean = pat.tpe match {
+          case const: ConstantType => const.value.isIntRange || const.value.tag == StringTag || const.value.tag == NullTag
+          case _ => false
+        }
       }
     }
 
@@ -664,6 +699,12 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           if (requiresSwitch(scrut, cases))
             typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
+          // If cases are switchable, suppress warning for exhaustivity.
+          // The switch was not emitted, probably because there aren't enough cases.
+          val suppression1 =
+            if (Switchable(scrutSym, cases)) suppression.copy(suppressExhaustive = true)
+            else suppression
+
           if (!cases.isEmpty) {
             // before optimizing, check cases for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
@@ -676,7 +717,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               case _                              => matchFailGen
             }
 
-            analyzeCases(scrutSym, cases, pt, suppression)
+            analyzeCases(scrutSym, cases, pt, suppression1)
 
             val (optimizedCases, toHoist) = optimizeCases(scrutSym, cases, pt, selectorPos)
 

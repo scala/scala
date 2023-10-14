@@ -56,9 +56,8 @@ abstract class TreeBuilder {
     ValDef(Modifiers(PRIVATE), name, tpt, EmptyTree)
 
   /** Tree for `od op`, start is start0 if od.pos is borked. */
-  def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
-    val start = if (od.pos.isDefined) od.pos.start else start0
-    atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
+  def makePostfixSelect(start: Int, end: Int, od: Tree, op: Name): Tree = {
+    atPos(r2p(start, end, end + op.length)) { Select(od, op.encode) }.updateAttachment(PostfixAttachment)
   }
 
   /** Create tree representing a while loop */
@@ -155,11 +154,11 @@ abstract class TreeBuilder {
     if (contextBounds.isEmpty) vparamss
     else {
       val mods = Modifiers(if (owner.isTypeName) PARAMACCESSOR | LOCAL | PRIVATE else PARAM)
-      def makeEvidenceParam(tpt: Tree) = ValDef(mods | IMPLICIT | SYNTHETIC, freshTermName(nme.EVIDENCE_PARAM_PREFIX), tpt, EmptyTree)
-      val evidenceParams = contextBounds map makeEvidenceParam
+      def makeEvidenceParam(tpt: Tree) = atPos(tpt.pos)(ValDef(mods | IMPLICIT | SYNTHETIC, freshTermName(nme.EVIDENCE_PARAM_PREFIX), tpt, EmptyTree))
+      val evidenceParams = contextBounds.map(makeEvidenceParam)
 
-      val vparamssLast = if(vparamss.nonEmpty) vparamss.last else Nil
-      if(vparamssLast.nonEmpty && vparamssLast.head.mods.hasFlag(IMPLICIT))
+      val vparamssLast = if (vparamss.nonEmpty) vparamss.last else Nil
+      if (vparamssLast.nonEmpty && vparamssLast.head.mods.hasFlag(IMPLICIT))
         vparamss.init ::: List(evidenceParams ::: vparamssLast)
       else
         vparamss ::: List(evidenceParams)

@@ -49,10 +49,10 @@ literals.scala:26: warning: Decimal integer literals should not have a leading z
 literals.scala:28: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def zeroOfNine: Int    = 09            // line 28: no leading zero
                            ^
-literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead [quickfixable]
   def bad = 1l
              ^
-literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead [quickfixable]
   def worse = 123l
                  ^
 8 warnings

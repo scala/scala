@@ -38,7 +38,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with SortedMapFactoryDefaults[K, V, TreeMap, Iterable, Map]
     with DefaultSerializable {
 
-  override def sortedMapFactory = TreeMap
+  override def sortedMapFactory: TreeMap.type = TreeMap
 
   /**
     * Creates an empty `TreeMap`.

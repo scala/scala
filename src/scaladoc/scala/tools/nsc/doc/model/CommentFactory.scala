@@ -16,7 +16,7 @@ package model
 
 import base.comment._
 
-import scala.collection._
+import scala.collection.mutable
 import scala.reflect.internal.util.Position
 
 /** The comment parser transforms raw comment strings into `Comment` objects.

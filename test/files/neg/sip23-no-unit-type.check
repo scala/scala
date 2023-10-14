@@ -1,16 +1,16 @@
-sip23-no-unit-type.scala:6: error: Illegal literal type (), use Unit instead
+sip23-no-unit-type.scala:6: error: Illegal literal type (), use Unit instead [quickfixable]
     case _: ()      => "err"
             ^
-sip23-no-unit-type.scala:7: error: Illegal literal type (), use Unit instead
+sip23-no-unit-type.scala:7: error: Illegal literal type (), use Unit instead [quickfixable]
     case _: ().type => "err"
             ^
 sip23-no-unit-type.scala:7: error: '=>' expected but '.' found.
     case _: ().type => "err"
               ^
-sip23-no-unit-type.scala:10: error: Illegal literal type (), use Unit instead
+sip23-no-unit-type.scala:10: error: Illegal literal type (), use Unit instead [quickfixable]
   val younit: () = ()
               ^
-sip23-no-unit-type.scala:11: error: Illegal literal type (), use Unit instead
+sip23-no-unit-type.scala:11: error: Illegal literal type (), use Unit instead [quickfixable]
   val unit: ().type = ()
             ^
 sip23-no-unit-type.scala:11: error: '=' expected but '.' found.

@@ -77,11 +77,11 @@ trait Adaptations {
         )
       }
       @inline def msg(what: String): String = s"adaptation of an empty argument list by inserting () $what"
-      @inline def noAdaptation = {
+      @inline def noAdaptation: false = {
         context.error(t.pos, adaptWarningMessage(msg("has been removed"), showAdaptation = false))
         false // drop adaptation
       }
-      @inline def deprecatedAdaptation = {
+      @inline def deprecatedAdaptation: true = {
         val twist =
           if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
           else "this is unlikely to be what you want"
@@ -89,10 +89,22 @@ trait Adaptations {
         context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(text), "2.11.0")
         true // keep adaptation
       }
-      @inline def warnAdaptation = {
-        if (settings.warnAdaptedArgs && !isInfix) context.warning(t.pos, adaptWarningMessage(
-          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"),
+      @inline def warnAdaptation: true = {
+        def discardedArgs = t match {
+          case Apply(_, stat @ Block(Apply(TypeApply(Select(adapter, _), _), adapted) :: Nil, expr) :: Nil) =>
+            isTupleSymbol(adapter.symbol.companion) && expr.tpe == UnitTpe && adapted == args
+          case _ => false
+        }
+        if (settings.lintArgDiscard && discardedArgs) context.warning(t.pos, adaptWarningMessage(
+          s"adapted the argument list to expected Unit type: arguments will be discarded"),
           WarningCategory.LintAdaptedArgs)
+        else if (settings.warnAdaptedArgs && !isInfix) {
+          val msg = adaptWarningMessage(
+            s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead")
+          val pos = wrappingPos(args)
+          context.warning(t.pos, msg, WarningCategory.LintAdaptedArgs,
+            runReporting.codeAction("add wrapping parentheses", pos, s"(${currentUnit.source.sourceAt(pos)})", msg))
+        }
         true // keep adaptation
       }
       if (args.nonEmpty)

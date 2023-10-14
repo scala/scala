@@ -60,7 +60,7 @@ trait ReificationSupport { self: SymbolTable =>
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
-    def setInfo[S <: Symbol](sym: S, tpe: Type): S =
+    def setInfo[S <: Symbol](sym: S, tpe: Type): sym.type =
       sym.setInfo(tpe).markAllCompleted()
 
     def mkThis(sym: Symbol): Tree = self.This(sym)
@@ -124,7 +124,7 @@ trait ReificationSupport { self: SymbolTable =>
     def mkAnnotation(trees: List[Tree]): List[Tree] = trees.map(mkAnnotation)
 
     def mkParam(argss: List[List[Tree]], extraFlags: FlagSet = NoFlags, excludeFlags: FlagSet = DEFERRED): List[List[ValDef]] =
-      argss.map { args => args.map { mkParam(_, extraFlags, excludeFlags) } }
+      argss.map(_.map(mkParam(_, extraFlags, excludeFlags)))
 
     def mkParam(tree: Tree, extraFlags: FlagSet, excludeFlags: FlagSet): ValDef = tree match {
       case Typed(Ident(name: TermName), tpt) =>
@@ -344,8 +344,12 @@ trait ReificationSupport { self: SymbolTable =>
       def apply(mods: Modifiers, name: TypeName, tparams: List[Tree],
                 constrMods: Modifiers, vparamss: List[List[Tree]],
                 earlyDefs: List[Tree], parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef = {
-        val extraFlags = PARAMACCESSOR | (if (mods.isCase) CASEACCESSOR else 0L)
-        val vparamss0 = mkParam(vparamss, extraFlags, excludeFlags = DEFERRED | PARAM)
+        val extraCaseFlags = if (mods.isCase) CASEACCESSOR else 0L
+        val excludeFlags = DEFERRED | PARAM
+        val vparamss0 =
+          if (vparamss.isEmpty) vparamss.asInstanceOf[List[List[ValDef]]]
+          else mkParam(vparamss.head :: Nil, PARAMACCESSOR | extraCaseFlags, excludeFlags) ++
+               mkParam(vparamss.tail, PARAMACCESSOR, excludeFlags)
         val tparams0 = mkTparams(tparams)
         val parents0 = gen.mkParents(mods,
           if (mods.isCase) parents.filter {

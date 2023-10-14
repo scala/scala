@@ -1,7 +1,6 @@
 package scala.build
 
 import java.io.{File, PrintWriter, StringWriter}
-import java.util.concurrent.TimeUnit
 
 import sbt.testing.{SuiteSelector, TestSelector}
 import sbt.{JUnitXmlTestsListener, TestEvent, TestResult, TestsListener, _}
@@ -47,7 +46,7 @@ class PartestTestListener(target: File) extends TestsListener {
         e.fullyQualifiedName()
     }
 
-    for ((group, events) <- event.detail.groupBy(groupOf(_))) {
+    for ((group, events) <- event.detail.groupBy(groupOf)) {
       val statii = events.map(_.status())
       val errorCount = statii.count(errorStatus.contains)
       val failCount = statii.count(failStatus.contains)
@@ -95,7 +94,7 @@ class PartestTestListener(target: File) extends TestsListener {
         }}
       </testsuite>
       val partestTestReports = target / "test-reports" / "partest"
-      val xmlFile = (partestTestReports / (group + ".xml"))
+      val xmlFile = partestTestReports / (group + ".xml")
       xmlFile.getParentFile.mkdirs()
       scala.xml.XML.save(xmlFile.getAbsolutePath, xml, "UTF-8", true, null)
     }

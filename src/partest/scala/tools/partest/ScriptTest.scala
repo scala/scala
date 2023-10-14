@@ -24,7 +24,7 @@ abstract class ScriptTest extends DirectTest {
   def code = scriptPath.toFile.slurp()
   def argv = Seq.empty[String]
   def show() = {
-    compile()
+    assert(compile())
     ScalaClassLoader(getClass.getClassLoader).run(testmain, argv)
   }
 }

@@ -85,7 +85,7 @@ class PipelineMainTest {
     macroProject.withSource("m1/p1/Macro.scala")(
       """
         |package m1.p1
-        |import reflect.macros.blackbox.Context, language.experimental._
+        |import reflect.macros.blackbox.Context, language.experimental.macros
         |object Macro {
         |  def m: Unit = macro impl
         |  def impl(c: Context): c.Tree = {

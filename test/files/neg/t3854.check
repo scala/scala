@@ -1,6 +1,7 @@
-t3854.scala:1: error: class Bar needs to be abstract. Missing implementation for:
-  def foo[G[_]](implicit n: N[G,F]): X[F] // inherited from trait Foo
-(Note that N[G,F] does not match M[G])
+t3854.scala:1: error: class Bar needs to be abstract.
+Missing implementation for member of trait Foo:
+  def foo[G[_]](implicit n: N[G,F]): X[F] = ??? // N[G,F] does not match M[G] in `def foo[G[_[_], _]](implicit M: M[G]): X[[α]G[F,α]]`
+
 class Bar[F[_]] extends Foo[F] {
       ^
 1 error

@@ -1,0 +1,7 @@
+s.scala:5: error: illegal inheritance from sealed class H
+class S extends H {
+                ^
+s.scala:8: error: illegal inheritance from sealed trait I
+trait T extends I {
+                ^
+2 errors

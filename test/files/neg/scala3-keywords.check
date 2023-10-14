@@ -1,19 +1,19 @@
-scala3-keywords.scala:15: warning: Wrap `enum` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:15: warning: Wrap `enum` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
   val enum: Int = 1 // error
       ^
-scala3-keywords.scala:16: warning: Wrap `export` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:16: warning: Wrap `export` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
   val export: Int = 1 // error
       ^
-scala3-keywords.scala:17: warning: Wrap `given` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:17: warning: Wrap `given` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
   val given: Int = 1 // error
       ^
-scala3-keywords.scala:18: warning: Wrap `given` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:18: warning: Wrap `given` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
   def foo(given: Int) = {} // error
           ^
-scala3-keywords.scala:19: warning: Wrap `export` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:19: warning: Wrap `export` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
   def bla[export <: Int] = {} // error
           ^
-scala3-keywords.scala:21: warning: Wrap `enum` in backticks to use it as an identifier, it will become a keyword in Scala 3.
+scala3-keywords.scala:21: warning: Wrap `enum` in backticks to use it as an identifier, it will become a keyword in Scala 3. [quickfixable]
 class enum // error
       ^
 error: No warnings can be incurred under -Werror.

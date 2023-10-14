@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
@@ -29,6 +30,7 @@ trait Iterable[+A] extends IterableOnce[A]
   with IterableFactoryDefaults[A, Iterable] {
 
   // The collection itself
+  @deprecated("toIterable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.7")
   final def toIterable: this.type = this
 
   final protected def coll: this.type = this
@@ -133,13 +135,15 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
     */
+  // Should be `protected def asIterable`, or maybe removed altogether if it's not needed
+  @deprecated("toIterable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.7")
   def toIterable: Iterable[A]
 
   /** Converts this $coll to an unspecified Iterable.  Will return
     *  the same collection if this instance is already Iterable.
     *  @return An Iterable containing all elements of this $coll.
     */
-  @deprecated("Use toIterable instead", "2.13.0")
+  @deprecated("toTraversable is internal and will be made protected; its name is similar to `toList` or `toSeq`, but it doesn't copy non-immutable collections", "2.13.0")
   final def toTraversable: Traversable[A] = toIterable
 
   override def isTraversableAgain: Boolean = true
@@ -224,7 +228,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def headOption: Option[A] = {
     val it = iterator
-    if(it.hasNext) Some(it.next()) else None
+    if (it.hasNext) Some(it.next()) else None
   }
 
   /** Selects the last element.
@@ -593,11 +597,14 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B])
       bldr += f(elem)
     }
-    var result = immutable.Map.empty[K, CC[B]]
-    m.foreach { case (k, v) =>
-      result = result + ((k, v.result()))
+    class Result extends runtime.AbstractFunction1[(K, Builder[B, CC[B]]), Unit] {
+      var built = immutable.Map.empty[K, CC[B]]
+      def apply(kv: (K, Builder[B, CC[B]])) =
+        built = built.updated(kv._1, kv._2.result())
     }
-    result
+    val result = new Result
+    m.foreach(result)
+    result.built
   }
 
   /**
@@ -659,13 +666,17 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return        collection with intermediate results
     */
   def scanRight[B](z: B)(op: (A, B) => B): CC[B] = {
-    var scanned = z :: immutable.Nil
-    var acc = z
-    for (x <- reversed) {
-      acc = op(x, acc)
-      scanned ::= acc
+    class Scanner extends runtime.AbstractFunction1[A, Unit] {
+      var acc = z
+      var scanned = acc :: immutable.Nil
+      def apply(x: A) = {
+        acc = op(x, acc)
+        scanned ::= acc
+      }
     }
-    iterableFactory.from(scanned)
+    val scanner = new Scanner
+    reversed.foreach(scanner)
+    iterableFactory.from(scanner.scanned)
   }
 
   def map[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(this, f))
@@ -708,7 +719,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
     *
-    *  @param suffix   the traversable to append.
+    *  @param suffix   the iterable to append.
     *  @tparam B     the element type of the returned collection.
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
@@ -830,7 +841,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {
-    val it = Iterator.iterate(toIterable)(f).takeWhile(_.nonEmpty)
+    // toIterable ties the knot between `this: IterableOnceOps[A, CC, C]` and `this.tail: C`
+    // `this.tail.tail` doesn't compile as `C` is unbounded
+    // `Iterable.from(this)` would eagerly copy non-immutable collections
+    val it = Iterator.iterate(toIterable: @nowarn("cat=deprecation"))(f).takeWhile(_.nonEmpty)
     (it ++ Iterator.single(Iterable.empty)).map(fromSpecific)
   }
 
@@ -902,16 +916,16 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
     override def iterator = Iterator.single(a)
     override def knownSize = 1
     override def head = a
-    override def headOption = Some(a)
+    override def headOption: Some[A] = Some(a)
     override def last = a
-    override def lastOption = Some(a)
-    override def view = new View.Single(a)
+    override def lastOption: Some[A] = Some(a)
+    override def view: View.Single[A] = new View.Single(a)
     override def take(n: Int) = if (n > 0) this else Iterable.empty
     override def takeRight(n: Int) = if (n > 0) this else Iterable.empty
     override def drop(n: Int) = if (n > 0) Iterable.empty else this
     override def dropRight(n: Int) = if (n > 0) Iterable.empty else this
-    override def tail = Iterable.empty
-    override def init = Iterable.empty
+    override def tail: Iterable[Nothing] = Iterable.empty
+    override def init: Iterable[Nothing] = Iterable.empty
   }
 }
 

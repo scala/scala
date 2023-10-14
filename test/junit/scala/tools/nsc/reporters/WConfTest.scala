@@ -24,13 +24,14 @@ import scala.reflect.io.PlainFile
 import scala.tools.nsc.Reporting.{Version, WarningCategory}
 import scala.reflect.io.File
 import scala.tools.nsc.reporters.StoreReporter.Info
+import scala.tools.testkit.AssertUtil.fail
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 class WConfTest extends BytecodeTesting {
   import compiler._
 
-  override def compilerArgs: String = "-opt:l:inline -opt-inline-from:**"
+  override def compilerArgs: String = "-opt:inline:**"
 
   def Wconf = global.settings.Wconf
   val WconfDefault = cached("WConfDefault", () => Wconf.value)
@@ -108,6 +109,7 @@ class WConfTest extends BytecodeTesting {
   val s3 = (-1, "1 optimizer warning")
   val s4 = (-1, "2 unchecked warnings")
 
+  // check actual reports that line number matches and message contains the text
   def check(actual: List[Info], expected: List[(Int, String)]): Unit = {
     def m(a: Info, e: (Int, String)) = a != null && e != null && (if (a.pos.isDefined) a.pos.line else -1) == e._1 && a.msg.contains(e._2)
     val ok = actual.zipAll(expected, null, null) forall {
@@ -121,7 +123,7 @@ class WConfTest extends BytecodeTesting {
       expected
         .filterNot(e => actual.exists(a => m(a, e)))
         .foreach(e => msg += s"no actual for: $e")
-      assert(false, s"\n-----------------\nactual:\n${actual.mkString("\n")}\n-----------------\nexpected:\n${expected.mkString("\n")}\n-----------------\n${msg.mkString("\n")}")
+      fail(s"\n-----------------\nactual:\n${actual.mkString("\n")}\n-----------------\nexpected:\n${expected.mkString("\n")}\n-----------------\n${msg.mkString("\n")}")
     }
   }
 
@@ -138,17 +140,18 @@ class WConfTest extends BytecodeTesting {
   }
 
   @Test
-  def warnVerbose(): Unit = {
+  def warnVerbose: Unit =
     check(reports(code, "any:wv"), List(
-      l5a.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l5a._2),
-      l5b.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.g | version=1.2.3] " + l5b._2),
-      l7.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l7._2),
-      l9.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l9._2),
-      l11.copy(_2 = "[other @ A.fruitlessTypeTest] " + l11._2),
-      l13.copy(_2 = "[unchecked @ A.uncheckedTypeTest] " + l13._2),
-      l16.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l16._2),
-      l20.copy(_2 = "[optimizer @ A.optimizerWarning] " + l20._2)))
-  }
+      l5a.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=deprecation, site=A.invokeDeprecated, origin=A.f"),
+      l5b.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=deprecation, site=A.invokeDeprecated, origin=A.g, version=1.2.3"),
+      l7.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=feature-reflective-calls, site=A.featureReflectiveCalls"),
+      l9.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=A.pureExpressionAsStatement"),
+      l11.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other, site=A.fruitlessTypeTest"),
+      l13.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=unchecked, site=A.uncheckedTypeTest"),
+      l16.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=unchecked, site=A.Outer.UncheckedWarningSummarized.equals"),
+      l20.copy(_2 = "\nApplicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=optimizer, site=A.optimizerWarning"),
+      )
+    )
 
   @Test
   def silence(): Unit = {
@@ -230,7 +233,7 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def unusedSite(): Unit = {
-    check(infos(code, "cat=unused:iv", lint = true), (25, "[unused-locals @ A.unusedLocal.h] local val h in method unusedLocal is never used") :: Nil)
+    check(infos(code, "cat=unused:iv", lint = true), (25, "local val h in method unusedLocal is never used\nApplicable -Wconf / @nowarn filters for this message: msg=<part of the message>, cat=unused-locals, site=A.unusedLocal.h") :: Nil)
     check(errors(code, "site=A\\.unusedLocal\\..*:e", lint = true), l25 :: Nil)
   }
 
@@ -273,9 +276,8 @@ class WConfTest extends BytecodeTesting {
 
     val name = Map(s -> "!<", e -> "!=", g -> "!>", ns -> "<", ne -> "=", ng -> ">")
 
-    def check(a: Version.ParseableVersion, b: Version.ParseableVersion, op: (Version.ParseableVersion, Version.ParseableVersion) => Boolean): Unit ={
+    def check(a: Version.ParseableVersion, b: Version.ParseableVersion, op: (Version.ParseableVersion, Version.ParseableVersion) => Boolean): Unit =
       assertTrue(s"$a ${name(op)} $b", op(a, b))
-    }
 
     object v {
       def apply(maj: Int) = Version.ParseableVersion("", maj, None, None)
@@ -336,7 +338,8 @@ class WConfTest extends BytecodeTesting {
       }, Array().toIndexedSeq), 0),
       msg = "",
       WarningCategory.Other,
-      site = "")
+      site = "",
+      actions = Nil)
 
     val aTest = Reporting.WConf.parseFilter("src=a/.*Test.scala", rootDir = "").getOrElse(null)
     assertTrue(aTest.matches(m("/a/FooTest.scala")))

@@ -65,6 +65,8 @@ trait StringOps {
   def splitWhere(str: String, f: Char => Boolean, doDropIndex: Boolean = false): Option[(String, String)] =
     splitAt(str, str indexWhere f, doDropIndex)
 
+  def splitAround(str: String, idx: Int): Option[(String, String)] = splitAt(str, idx, doDropIndex = true)
+
   def splitAt(str: String, idx: Int, doDropIndex: Boolean = false): Option[(String, String)] =
     if (idx == -1) None
     else Some((str take idx, str drop (if (doDropIndex) idx + 1 else idx)))

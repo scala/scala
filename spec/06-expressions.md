@@ -240,6 +240,7 @@ depending on whether `B` is mixed in with class `Root` or `A`.
 ```ebnf
 SimpleExpr    ::=  SimpleExpr1 ArgumentExprs
 ArgumentExprs ::=  ‘(’ [Exprs] ‘)’
+                |  ‘(’ ‘using’ Exprs ‘)’
                 |  ‘(’ [Exprs ‘,’] PostfixExpr ‘:’ ‘_’ ‘*’ ‘)’
                 |  [nl] BlockExpr
 Exprs         ::=  Expr {‘,’ Expr}
@@ -328,6 +329,9 @@ sum(List(1, 2, 3, 4))
 
 would not typecheck.
 
+An argument list may begin with the soft keyword `using` to facilitate cross-compilation with Scala 3.
+The keyword is ignored.
+
 ### Named and Default Arguments
 
 If an application is to use named arguments ´p = e´ or default
@@ -412,9 +416,10 @@ Otherwise, `´U´` is the expected type at the call site. If the expected type i
 
 ###### Note
 
-On the Java platform version 11 and later, signature polymorphic methods are native,
-members of `java.lang.invoke.MethodHandle` or `java.lang.invoke.VarHandle`, and have a single
-repeated parameter of type `java.lang.Object*`.
+On the Java platform version 11 and later, a method is signature polymorphic if it is native,
+a member of `java.lang.invoke.MethodHandle` or `java.lang.invoke.VarHandle`, and has a single
+repeated parameter of type `java.lang.Object*`. (These requirements also work for Java 8,
+which had fewer such methods.)
 
 
 ## Method Values
@@ -595,7 +600,7 @@ Evaluation of the block entails evaluation of its
 statement sequence, followed by an evaluation of the final expression
 ´e´, which defines the result of the block.
 
-A block expression `{´c_1´; ´\ldots´; ´c_n´; ´}` where ´s_1 , \ldots , s_n´ are
+A block expression `{´c_1´; ´\ldots´; ´c_n´}` where ´s_1 , \ldots , s_n´ are
 case clauses forms a [pattern matching anonymous function](08-pattern-matching.html#pattern-matching-anonymous-functions).
 
 ###### Example
@@ -630,8 +635,9 @@ Expressions can be constructed from operands and operators.
 ### Prefix Operations
 
 A prefix operation ´\mathit{op};e´ consists of a prefix operator ´\mathit{op}´, which
-must be one of the identifiers ‘`+`’, ‘`-`’,
-‘`!`’ or ‘`~`’. The expression ´\mathit{op};e´ is
+must be one of the identifiers ‘`+`’, ‘`-`’, ‘`!`’ or ‘`~`’,
+which must not be enclosed in backquotes.
+The expression ´\mathit{op};e´ is
 equivalent to the postfix method application
 `e.unary_´\mathit{op}´`.
 
@@ -781,6 +787,7 @@ expression ´e´.
 
 ```ebnf
 Expr1        ::=  [SimpleExpr ‘.’] id ‘=’ Expr
+               |  PrefixOperator SimpleExpr ‘=’ Expr
                |  SimpleExpr1 ArgumentExprs ‘=’ Expr
 ```
 
@@ -795,6 +802,9 @@ setter method `´x´_=` as member, then the assignment
 `´x´_=(´e\,´)` of that setter method.  Analogously, an
 assignment `´f.x´ = ´e´` to a parameterless method ´x´
 is interpreted as the invocation `´f.x´_=(´e\,´)`.
+If ´x´ is an application of a unary operator, then the expression
+is interpreted as though it were written as the explicit application
+`´x´.unary_´\mathit{op}´`, namely, as `´x´.unary_´\mathit{op}´_=(´e\,´)`.
 
 An assignment `´f´(´\mathit{args}\,´) = ´e´` with a method application to the
 left of the ‘`=`’ operator is interpreted as
@@ -1172,8 +1182,8 @@ for  `try { try { ´b´ } catch ´e_1´ } finally ´e_2´`.
 ## Anonymous Functions
 
 ```ebnf
-Expr            ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
-ResultExpr      ::=  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
+Expr            ::=  (Bindings | [‘implicit’] (id | ‘_’)) ‘=>’ Expr
+ResultExpr      ::=  (Bindings | [‘implicit’] (id | ‘_’) [‘:’ CompoundType]) ‘=>’ Block
 Bindings        ::=  ‘(’ Binding {‘,’ Binding} ‘)’
 Binding         ::=  (id | ‘_’) [‘:’ Type]
 ```
@@ -1517,7 +1527,9 @@ question: given
 
 - A parameterized method ´m´ of type `(´p_1:T_1, \ldots , p_n:T_n´)´U´` is
   _as specific as_ some other member ´m'´ of type ´S´ if ´m'´ is [applicable](#function-applications)
-  to arguments `(´p_1 , \ldots , p_n´)` of types ´T_1 , \ldots , T_n´.
+  to arguments `(´p_1 , \ldots , p_n´)` of types ´T_1 , \ldots , T_last´;
+  if ´T_n´ denotes a repeated parameter (it has shape ´T*´), and so does ´m'´'s last parameter,
+  ´T_last´ is taken as ´T´, otherwise ´T_n´ is used directly.
 - A polymorphic method of type `[´a_1´ >: ´L_1´ <: ´U_1 , \ldots , a_n´ >: ´L_n´ <: ´U_n´]´T´` is
   as specific as some other member of type ´S´ if ´T´ is as specific as ´S´
   under the assumption that for ´i = 1 , \ldots , n´ each ´a_i´ is an abstract type name

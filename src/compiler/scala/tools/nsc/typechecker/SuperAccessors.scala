@@ -117,15 +117,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       atPos(sel.pos)(Select(gen.mkAttributedThis(clazz), superAcc) setType sel.tpe)
     }
 
-    private def transformArgs(params: List[Symbol], args: List[Tree]) = {
+    private def transformArgs(params: List[Symbol], args: List[Tree]) =
       treeInfo.mapMethodParamsAndArgs(params, args) { (param, arg) =>
         if (isByNameParamType(param.tpe))
           withInvalidOwner(transform(arg))
         else transform(arg)
       }
-    }
 
-    /** Check that a class and its companion object to not both define
+    /** Check that a class and its companion object do not both define
      *  a class or module with same name
      */
     private def checkCompanionNameClashes(sym: Symbol) =
@@ -136,9 +135,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (other == NoSymbol)
             other = linked.info.decl(sym.name.toTermName).filter(_.isModule)
           if (other != NoSymbol)
-            reporter.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
-                       "\nand its companion "+sym.owner.companionModule+" also defines "+
-                       other)
+            reporter.error(sym.pos,
+              sm"""|name clash: ${sym.owner} defines $sym
+                   |and its companion ${sym.owner.companionModule} also defines $other""")
         }
       }
 
@@ -240,13 +239,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             val decls = sym.info.decls
             for (s <- decls) {
               val privateWithin = s.privateWithin
-              if (privateWithin.isClass && !s.hasFlag(EXPANDEDNAME | PROTECTED) && !privateWithin.isModuleClass &&
-                  !s.isConstructor) {
+              def isPrivateWithinNonCompanionModule = privateWithin.isModuleClass
+              if (privateWithin.isClass && !s.hasFlag(EXPANDEDNAME | PROTECTED) && !isPrivateWithinNonCompanionModule && !s.isConstructor) {
                 val savedName = s.name
                 decls.unlink(s)
                 s.expandName(privateWithin)
                 decls.enter(s)
-                log("Expanded '%s' to '%s' in %s".format(savedName, s.name, sym))
+                log(s"Expanded '$savedName' to '${s.name}' in $sym")
               }
             }
             super.transform(tree)
@@ -303,23 +302,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                 // also exists in a superclass, because they may be surprised
                 // to find out that a constructor parameter will shadow a
                 // field. See scala/bug#4762.
-                if (settings.warnPrivateShadow) {
-                  if (sym.isPrivateLocal && sym.paramss.isEmpty) {
-                    qual.symbol.ancestors foreach { parent =>
-                      parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>
-                        if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
-                          runReporting.warning(sel.pos,
-                            sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
-                              + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
-                              + sym.owner + " - you may want to give them distinct names.",
-                            WarningCategory.LintPrivateShadow,
-                            currentOwner)
-                        }
-                      }
-                    }
-                  }
-                }
-
+                if (settings.warnPrivateShadow && sym.isPrivateLocal && sym.paramss.isEmpty)
+                  for (parent <- qual.symbol.ancestors)
+                    for (m2 <- parent.info.decls)
+                      if (!m2.isPrivate && !m2.isLocalToThis && sym.name == m2.name && m2.isGetter && m2.accessed.isMutable)
+                        runReporting.warning(sel.pos,
+                          sq"""${sym.accessString} ${sym.fullLocationString} shadows mutable ${m2.name} inherited from ${m2.owner}.
+                          > Changes to ${m2.name} will not be visible within ${sym.owner}; you may want to give them distinct names.""",
+                          WarningCategory.LintPrivateShadow,
+                          currentOwner)
 
                 def isAccessibleFromSuper(sym: Symbol) = {
                   val pre = SuperType(sym.owner.tpe, qual.tpe)

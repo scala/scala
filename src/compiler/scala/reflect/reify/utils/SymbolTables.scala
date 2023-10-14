@@ -13,7 +13,7 @@
 package scala.reflect.reify
 package utils
 
-import scala.collection._
+import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import java.lang.System.{lineSeparator => EOL}
 
 trait SymbolTables {
@@ -22,7 +22,7 @@ trait SymbolTables {
   import global._
 
   class SymbolTable private[SymbolTable] (
-    private[SymbolTable] val symtab: immutable.ListMap[Symbol, Tree] = immutable.ListMap[Symbol, Tree](),
+    private[SymbolTable] val symtab: immutable.ListMap[Symbol, Tree] = immutable.ListMap.empty[Symbol, Tree],
     private[SymbolTable] val aliases: List[(Symbol, TermName)] = List[(Symbol, TermName)](),
     private[SymbolTable] val original: Option[List[Tree]] = None) {
 
@@ -166,8 +166,8 @@ trait SymbolTables {
       reifier.state.symtab = symtab0.asInstanceOf[reifier.SymbolTable]
       def currtab = reifier.symtab.asInstanceOf[SymbolTable]
       try {
-        val cumulativeSymtab = mutable.ArrayBuffer[Tree](symtab0.symtab.values.toList: _*)
-        val cumulativeAliases = mutable.ArrayBuffer[(Symbol, TermName)](symtab0.aliases: _*)
+        val cumulativeSymtab = ArrayBuffer[Tree](symtab0.symtab.values.toList: _*)
+        val cumulativeAliases = ArrayBuffer[(Symbol, TermName)](symtab0.aliases: _*)
 
         def fillInSymbol(sym: Symbol): Tree = {
           if (reifyDebug) println("Filling in: %s (%s)".format(sym, sym.accurateKindString))
@@ -203,7 +203,7 @@ trait SymbolTables {
         }
 
         val withAliases = cumulativeSymtab flatMap (entry => {
-          val result = mutable.ListBuffer[Tree]()
+          val result = ListBuffer[Tree]()
           result += entry
           val sym = reifyBinding(entry).symbol
           if (sym != NoSymbol)

@@ -1,6 +1,3 @@
-t8685.scala:8: warning: constructor D in class D is deprecated (since now): ctor D is depr
-case class D @deprecated("ctor D is depr", since="now") (i: Int)
-           ^
 t8685.scala:37: warning: class C is deprecated (since now): class C is depr
   def f = C(42)
           ^
@@ -44,5 +41,5 @@ t8685.scala:55: warning: class K in object J is deprecated (since now): Inner K 
   def l = new J.K(42)
                 ^
 error: No warnings can be incurred under -Werror.
-15 warnings
+14 warnings
 1 error

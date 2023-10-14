@@ -236,13 +236,13 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): sb.type = {
     force
     addStringNoForce(sb.underlying, start, sep, end)
     sb
   }
 
-  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
+  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): b.type = {
     b.append(start)
     if (nonEmpty) {
       b.append(head)
@@ -311,6 +311,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
       }
     }
     b.append(end)
+    b
   }
 
   /**

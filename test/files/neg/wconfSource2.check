@@ -6,7 +6,8 @@ See the Scaladoc for value scala.language.reflectiveCalls for a discussion
 why the feature should be explicitly enabled.
   def v(a: { def f: Int }) = a.f
                                ^
-wconfSource2.scala:5: error: method dep in class C is deprecated:
+wconfSource2.scala:5: error: method dep in class C is deprecated
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=deprecation, site=C.t, origin=C.dep
   def t = dep
           ^
 wconfSource2.scala:6: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses

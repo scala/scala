@@ -1,6 +1,6 @@
 S_3.scala:1: error: class Sub needs to be abstract.
-Missing implementations for 2 members. Stub implementations follow:
-  def raw(x$1: M_1[_ <: String]): Unit = ???
+Missing implementations for 2 members of class Raw_2.
+  def raw(x$1: M_1[_ <: String]): Unit = ??? // implements `def raw(x$1: M_1): Unit`
   def raw(x$1: Object): Unit = ???
 
 class Sub extends Raw_2 { }

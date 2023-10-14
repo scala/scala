@@ -1,42 +1,48 @@
-warn-unused-params.scala:11: warning: parameter value b in method f is never used
+warn-unused-params.scala:13: warning: parameter b in method f is never used
         b: String,               // warn
         ^
-warn-unused-params.scala:34: warning: parameter value s in method i is never used
-  def i(implicit s: String) = 42           // yes, warn
+warn-unused-params.scala:36: warning: parameter s in method i is never used
+  def i(implicit s: String) = answer           // yes, warn
                  ^
-warn-unused-params.scala:51: warning: parameter value u in class Unusing is never used
+warn-unused-params.scala:53: warning: parameter u in class Unusing is never used
 class Unusing(u: Int) {       // warn
               ^
-warn-unused-params.scala:61: warning: parameter value s in class CaseyAtTheBat is never used
+warn-unused-params.scala:63: warning: parameter s in class CaseyAtTheBat is never used
 case class CaseyAtTheBat(k: Int)(s: String)        // warn
                                  ^
-warn-unused-params.scala:64: warning: parameter value readResolve in method f is never used
-  def f(readResolve: Int) = 42           // warn
+warn-unused-params.scala:66: warning: parameter readResolve in method f is never used
+  def f(readResolve: Int) = answer           // warn
         ^
-warn-unused-params.scala:79: warning: parameter value dummy in method g is never used
-  def g(dummy: DummyImplicit) = 42
+warn-unused-params.scala:81: warning: parameter dummy in method g is never used
+  def g(dummy: DummyImplicit) = answer
         ^
-warn-unused-params.scala:84: warning: parameter value ev in method f2 is never used
-  def f2[A, B](ev: A =:= B) = 42
+warn-unused-params.scala:86: warning: parameter ev in method f2 is never used
+  def f2[A, B](ev: A =:= B) = answer
                ^
-warn-unused-params.scala:85: warning: parameter value ev in method g2 is never used
-  def g2[A, B](ev: A <:< B) = 42
+warn-unused-params.scala:87: warning: parameter ev in method g2 is never used
+  def g2[A, B](ev: A <:< B) = answer
                ^
-warn-unused-params.scala:89: warning: parameter value i in anonymous function is never used
-  def f = (i: Int) => 42      // warn
+warn-unused-params.scala:91: warning: parameter i in anonymous function is never used
+  def f = (i: Int) => answer      // warn
             ^
-warn-unused-params.scala:95: warning: parameter value i in anonymous function is never used
-  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
+warn-unused-params.scala:97: warning: parameter i in anonymous function is never used
+  def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
                ^
-warn-unused-params.scala:99: warning: parameter value ctx in method f is never used
-  def f[A](implicit ctx: Context[A]) = 42
+warn-unused-params.scala:101: warning: parameter ctx in method f is never used
+  def f[A](implicit ctx: Context[A]) = answer
                     ^
-warn-unused-params.scala:100: warning: parameter value evidence$1 in method g is never used
-  def g[A: Context] = 42
-      ^
-warn-unused-params.scala:102: warning: parameter value evidence$2 in class Bound is never used
+warn-unused-params.scala:102: warning: evidence parameter evidence$1 of type Context[A] in method g is never used
+  def g[A: Context] = answer
+           ^
+warn-unused-params.scala:104: warning: evidence parameter evidence$2 of type Context[A] in class Bound is never used
 class Bound[A: Context]
-             ^
+               ^
+warn-unused-params.scala:111: warning: parameter b in method f is never used
+        b: String,               // warn
+        ^
+warn-unused-params.scala:134: warning: parameter s in method i is never used
+  def i(implicit s: String) = answer           // yes, warn
+                 ^
 error: No warnings can be incurred under -Werror.
-13 warnings
+15 warnings
 1 error

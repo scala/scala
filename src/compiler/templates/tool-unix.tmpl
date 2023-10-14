@@ -171,7 +171,7 @@ done
 # reset "$@@" to the remaining args
 set -- "${scala_args[@@]}"
 
-if [[ -n "$cygwin" ]]; then
+if [[ -n "$cygwin$mingw$msys" ]]; then
     if [[ "$OS" = "Windows_NT" ]] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
     else

@@ -4,7 +4,7 @@ class C <: T {
 t10678.scala:11: error: ';' expected but '<:' found.
 object O <: T {
          ^
-t10678.scala:6: warning: Using `<:` for `extends` is deprecated
+t10678.scala:6: warning: Using `<:` for `extends` is deprecated [quickfixable]
 trait U <: T
         ^
 1 warning

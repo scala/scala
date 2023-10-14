@@ -53,7 +53,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
   }
 
   property("notContainedAfterInsertRemove") = forAll { (input: HashSet[K], item: K) =>
-    (input + item - item).contains(item) == false
+    !(input + item - item).contains(item)
   }
 
   property("intersectIdentityReference") = forAll { (inputShared: HashSet[K]) =>

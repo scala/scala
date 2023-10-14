@@ -24,7 +24,7 @@ trait States {
    *  might cause subsequent reification (e.g. when filling in signatures and annotations for syms).
    *
    *  This is a mess in the face of nested reifications, splices and inlining of thereof,
-   *  so I made `SymbolTable` immutable, which brought a significant amount of sanity.
+   *  so I made `SymbolTable` immutable, which brought a significant amount of confidence.
    *
    *  However that wasn't enough. Sure, symbol table became immutable, but the reifier still needed
    *  to mutate its `symtab` field during reification. This caused nasty desyncs between the table being encoded

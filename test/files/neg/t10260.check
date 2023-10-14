@@ -1,21 +1,25 @@
-Test.scala:1: error: class IAImpl needs to be abstract. Missing implementation for:
-  def foo(a: A): Unit // inherited from trait IA
-(Note that A does not match A[_]. To implement this raw type, use A[T] forSome { type T <: A[T] })
+Test.scala:1: error: class IAImpl needs to be abstract.
+Missing implementation for member of trait IA:
+  def foo(a: A[T] forSome { type T <: A[T] }): Unit = ??? // implements `def foo(a: A): Unit`; A does not match A[_]. To implement this raw type, use A[T] forSome { type T <: A[T] }
+
 class IAImpl extends IA { def foo(a: A[_]) = ??? }
       ^
-Test.scala:2: error: class IBImpl needs to be abstract. Missing implementation for:
-  def foo(a: B): Unit // inherited from trait IB
-(Note that B does not match B[_, _]. To implement this raw type, use B[T,R] forSome { type T; type R <: java.util.List[_ >: T] })
+Test.scala:2: error: class IBImpl needs to be abstract.
+Missing implementation for member of trait IB:
+  def foo(a: B[T,R] forSome { type T; type R <: java.util.List[_ >: T] }): Unit = ??? // implements `def foo(a: B): Unit`; B does not match B[_, _]. To implement this raw type, use B[T,R] forSome { type T; type R <: java.util.List[_ >: T] }
+
 class IBImpl extends IB { def foo(a: B[_,_]) = ??? }
       ^
-Test.scala:3: error: class ICImpl needs to be abstract. Missing implementation for:
-  def foo(a: Int, b: C, c: String): C // inherited from trait IC
-(Note that C does not match C[_]. To implement this raw type, use C[_ <: String])
+Test.scala:3: error: class ICImpl needs to be abstract.
+Missing implementation for member of trait IC:
+  def foo(a: Int, b: C[_ <: String], c: String): C[_ <: String] = ??? // implements `def foo(a: Int, b: C, c: String): C`; C does not match C[_]. To implement this raw type, use C[_ <: String]
+
 class ICImpl extends IC { def foo(a: Int, b: C[_], c: String) = ??? }
       ^
-Test.scala:4: error: class IDImpl needs to be abstract. Missing implementation for:
-  def foo(a: D): Unit // inherited from trait ID
-(Note that D does not match D[_ <: String]. To implement this raw type, use D[_])
+Test.scala:4: error: class IDImpl needs to be abstract.
+Missing implementation for member of trait ID:
+  def foo(a: D[_]): Unit = ??? // implements `def foo(a: D): Unit`; D does not match D[_ <: String]. To implement this raw type, use D[_]
+
 class IDImpl extends ID { def foo(a: D[_ <: String]) = ??? }
       ^
 4 errors

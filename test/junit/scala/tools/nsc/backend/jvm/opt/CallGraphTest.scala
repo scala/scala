@@ -16,7 +16,7 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 class CallGraphTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:inline -opt-inline-from:** -opt-warnings"
+  override def compilerArgs = "-opt:inline:** -Wopt"
   import compiler._
   import global.genBCode.{bTypes, postProcessor}
   import postProcessor.{byteCodeRepository, callGraph}

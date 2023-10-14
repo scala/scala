@@ -98,7 +98,7 @@ trait Picklers { self: Global =>
     }
 
   implicit lazy val symPickler: Pickler[Symbol] = {
-    def ownerNames(sym: Symbol, buf: ListBuffer[Name]): ListBuffer[Name] = {
+    def ownerNames(sym: Symbol, buf: ListBuffer[Name]): buf.type = {
       if (!sym.isRoot) {
         ownerNames(sym.owner, buf)
         buf += (if (sym.isModuleClass) sym.sourceModule else sym).name

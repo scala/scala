@@ -14,12 +14,10 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.{Closeable, OutputStream, PrintWriter, Reader}
 import java.util.Arrays.asList
-
 import javax.script._
-
 import scala.beans.BeanProperty
 import scala.jdk.CollectionConverters._
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{CodeAction, Position}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.Results.Incomplete
 import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter, ScriptedRepl}
@@ -317,7 +315,7 @@ private class SaveFirstErrorReporter(settings: Settings, out: PrintWriter) exten
   private var _firstError: Option[(Position, String)] = None
   def firstError = _firstError
 
-  override def doReport(pos: Position, msg: String, severity: Severity): Unit =
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
     if (severity == ERROR && _firstError.isEmpty) _firstError = Some((pos, msg))
 
   override def reset() = { super.reset(); _firstError = None }

@@ -32,14 +32,14 @@ trait Placeholders { self: Quasiquotes =>
   lazy val code = {
     val sb = new StringBuilder()
 
-    def appendPart(value: String, pos: Position) = {
+    def appendPart(value: String, pos: Position): Unit = {
       val start = sb.length
       sb.append(value)
       val end = sb.length
       posMap += pos -> ((start, end))
     }
 
-    def appendHole(tree: Tree, rank: Rank) = {
+    def appendHole(tree: Tree, rank: Rank): Unit = {
       val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX))
       sb.append(placeholderName)
       val holeTree =
@@ -76,14 +76,13 @@ trait Placeholders { self: Quasiquotes =>
       accessed += skey
       value
     }
-    def update(key: Name, hole: Hole) =
+    def update(key: Name, hole: Hole): Unit =
       underlying += key.toString -> hole
     def get(key: Name): Option[Hole] = {
       val skey = key.toString
-      underlying.get(skey).map { v =>
-        accessed += skey
-        v
-      }
+      val res = underlying.get(skey)
+      res.foreach(_ => accessed += skey)
+      res
     }
     def keysIterator: Iterator[TermName] = underlying.keysIterator.map(TermName(_))
   }

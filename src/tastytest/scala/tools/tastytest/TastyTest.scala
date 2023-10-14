@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.tastytest
 
 import scala.collection.mutable
@@ -11,34 +23,65 @@ import java.{ util => ju }
 
 import SourceKind._
 import Files._
+import java.io.OutputStream
 
 object TastyTest {
 
   private[tastytest] val verbose = false
+  private[tastytest] val debug = false
 
   private def log(s: => String): Unit =
     if (verbose) println(s)
 
+  /**Simulates a Scala 2 application that depends on a Scala 3 library, where both may depend on a common prelude
+   * compiled by Scala 2.
+   *
+   * Steps:
+   *  1) compile all Scala files in `pre` with scala 2 to `out`
+   *  2) compile all Scala files in `src-3` with scala 3 to `out`, with `out` as the classpath
+   *  3) compile all Scala files in `src-2` with scala 2 to `out`, with `out` as the classpath
+   *  4) run the main method of all classes in `out/pkgName` that match a file in `src-2`.
+   *     e.g. `out/tastytest/TestFoo.class` should be compiled from a corresponding file
+   *          `src-2/tastytest/TestFoo.scala`.
+   */
   def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, testNames:_*)
   } yield ()
 
+  /**Simulates a Scala 2 application that depends on a Scala 3 library, where both may depend on a common prelude
+   * compiled by Scala 2 and Java. In this case the applications are not executed.
+   * Steps:
+   *  1) compile all Java files in `pre` with Java to `out`
+   *  2) compile all Scala files in `pre` with Scala 2 to `out`, with `out` as the classpath
+   *  3) compile all Scala files in `src-3` with scala 3 to `out`, with `out` as the classpath
+   *  4) compile all Scala files in `src-2` with scala 2 to `out`, with `out` as the classpath
+   */
   def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
     _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
+    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
+  /**Simulates a Scala 2 application that depends on a Scala 3 library, and is expected to fail compilation.
+   * Steps:
+   *  1) compile all Scala files in `src-3` with scala 3 to `out`
+   *  2) attempt to compile all Scala files in `src-2` with scala 2 to `out`, with `out` as the classpath.
+   *     - If a file matches `FOO_fail.scala`, then it is expected to fail compilation.
+   *     - For each `FOO_fail.scala`, if the file fails compilation, there is expected to be a corresponding `FOO.check` file, containing
+   *       the captured errors, or else a `FOO.skipcheck` file indicating to skip comparing errors.
+   *     - If `FOO_fail.scala` has a corresponding `FOO_pre.scala` file, then that is compiled first to `out`,
+   *       so that `FOO_fail.scala` may depend on its compilation results.
+   */
   def negSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3)      <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
@@ -46,15 +89,47 @@ object TastyTest {
     _                 <- scalacNeg(out, additionalSettings, src2:_*)
   } yield ()
 
+  /**Simulates a Scala 3 application that depends on a Scala 2 library, where the Scala 2
+   * library directly depends on an upstream Scala 3 library. The Scala 3 application is expected to fail compilation.
+   * Steps:
+   *  1) compile all Scala files in `src-3-upstream` with scala 3 to `out`
+   *  2) compile all Scala files in `src-2-downstream` with scala 2 to `out`, with `out` as the classpath.
+   *  3) attempt to compile all Scala files in `src-3-app` with scala 3 to `out`, with `out` as the classpath,
+   *     following the same steps as `negSuite` to check for errors in compilation.
+   */
+  def negFullCircleSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+    (src3u, src2d, src3a) <- getFullCircleSources(srcRoot/src, src3appFilters = Set(Scala, Check, SkipCheck))
+    out                   <- outDir.fold(tempDir(pkgName))(dir)
+    _                     <- dotcPos(out, sourceRoot=srcRoot/src/"src-3-upstream", additionalDottySettings, src3u:_*)
+    _                     <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"src-2-downstream", additionalSettings, src2d:_*)
+    _                     <- dotcNeg(out, additionalDottySettings, src3a:_*)
+  } yield ()
+
+  /**Same as `negSuite`, but introduces a dependency on a prelude by both the Scala 3 and Scala 2 libraries. In
+   * this case, they depend on binary incompatible versions of the same prelude (e.g. some definitions have moved
+   * between versions). Steps:
+   *  1) compile all Scala files in `pre-A` with scala 2 to `out1`.
+   *  2) compile all Scala files in `pre-B` with scala 2 to `out2`.
+   *  3) compile all Scala files in `src-3` with scala 3 to `out2`, with `out1` as the classpath.
+   *  4) attempt to compile all Scala files in `src-2` with scala 2 to `out2`, with `out2` as the classpath,
+   *     following the same steps as `negSuite` to check for errors in compilation.
+   */
   def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     (out1, out2)             <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
-    _                        <- scalacPos(out1, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
+    _                        <- scalacPos(out1, individualCapable=false, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
+    _                        <- scalacPos(out2, individualCapable=false, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
     _                        <- dotcPos(out2, out1, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
-    _                        <- scalacPos(out2, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
-    _                        <- scalacNeg(out2, additionalSettings, src2:_*)
+    _                        <- scalacNeg(out2,additionalSettings, src2:_*)
   } yield ()
 
+  /**Same as `negSuite`, but in addition, the Scala 3 library depends on another upstream Scala 3 library,
+   * which is missing from the classpath when compiling the Scala 2 library. Steps:
+   *  1) compile all Scala files in `src-3-A` with scala 3 to `out1`.
+   *  3) compile all Scala files in `src-3-B` with scala 3 to `out2`, with `out1:out2` as the classpath.
+   *  3) attempt to compile all Scala files in `src-2` with scala 2 to `out2`, with `out2` as the classpath,
+   *     following the same steps as `negSuite` to check for errors in compilation.
+   */
   def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     (out1, out2)         <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
@@ -68,45 +143,75 @@ object TastyTest {
     successWhen(Javac.javac(out, sources:_*))("javac failed to compile sources.")
   }
 
-  private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+  private def scalacPos(out: String, individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     log(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*))("scalac failed to compile sources.")
+    val res = {
+      if (debug && individualCapable) {
+        def compileIndividual(srcs: List[String]): Try[Boolean] = {
+          srcs match {
+            case Nil => Success(true)
+            case src :: rest =>
+              log(s"compiling source ${yellow(src)} with scalac.")
+              Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, src) match {
+                case Success(true) => compileIndividual(rest)
+                case err => err
+              }
+          }
+        }
+        compileIndividual(sources.toList)
+      }
+      else {
+        Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*)
+      }
+    }
+    successWhen(res)("scalac failed to compile sources.")
   }
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
+    def compile(source: String, writer: OutputStream) =
+      Scalac.scalac(writer, out, "-Ytasty-reader" +: additionalSettings, source)
+    negTestImpl(withCapture(_, compile, identity))(files:_*)
+  }
+
+  private def withCapture(source: String, compile: (String, OutputStream) => Try[Boolean], post: String => String): (String, Try[Boolean]) = {
+    val byteArrayStream = new ByteArrayOutputStream(50)
+    try {
+      val compiled = compile(source, byteArrayStream)
+      (post(byteArrayStream.toString), compiled)
+    } finally byteArrayStream.close()
+  }
+
+  private def negTestImpl(compile: String => (String, Try[Boolean]))(files: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
-    val failMap = {
+    val failMap: Map[String, (Option[String], Option[String])] = {
       val (sources, rest) = files.partition(ScalaFail.filter)
       sources.map({ s =>
-        val name  = s.stripSuffix(ScalaFail.name)
+        val name = s.stripSuffix(ScalaFail.name)
         val check = Check.fileOf(name)
-        val skip  = SkipCheck.fileOf(name)
-        val found = rest.find(n => n == check || n == skip)
-        s -> found
+        val skip = SkipCheck.fileOf(name)
+        val pre = ScalaPre.fileOf(name)
+        val foundCheck = rest.find(n => n == check || n == skip)
+        val foundPre   = rest.find(_ == pre)
+        s -> (foundCheck, foundPre)
       }).toMap
     }
     if (failMap.isEmpty) {
       printwarnln(s"Warning: there are no source files marked as fail tests. (**/*${ScalaFail.name})")
     }
-    for (source <- files.filter(Scala.filter)) {
-      val buf = new StringBuilder(50)
-      val compiled = {
-        val byteArrayStream = new ByteArrayOutputStream(50)
-        try {
-          if (ScalaFail.filter(source)) {
-            log(s"neg test ${cyan(source.stripSuffix(ScalaFail.name))} started")
+    def negCompile(source: String): Unit = {
+      val (output, compiled) = {
+        if (ScalaFail.filter(source)) {
+          val testName = source.stripSuffix(ScalaFail.name)
+          log(s"neg test ${cyan(testName)} started")
+          failMap(source) match {
+            case (_, Some(pre)) =>
+              log(s"  - compiling pre file...")
+              negCompile(pre)
+            case _ =>
           }
-          val compiled = Console.withErr(byteArrayStream) {
-            Console.withOut(byteArrayStream) {
-              Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, source)
-            }
-          }
-          byteArrayStream.flush()
-          buf.append(byteArrayStream.toString)
-          compiled
         }
-        finally byteArrayStream.close()
+        compile(source)
       }
       if (compiled.getOrElse(false)) {
         if (failMap.contains(source)) {
@@ -115,13 +220,12 @@ object TastyTest {
         }
       }
       else {
-        val output = buf.toString
         failMap.get(source) match {
           case None =>
             unexpectedFail += source
             System.err.println(output)
             printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
-          case Some(Some(checkFile)) if Check.filter(checkFile) =>
+          case Some((Some(checkFile), _)) if Check.filter(checkFile) =>
             processLines(checkFile) { stream =>
               val checkLines  = stream.iterator().asScala.toSeq
               val outputLines = Diff.splitIntoLines(output)
@@ -131,9 +235,9 @@ object TastyTest {
                 printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
               }
             }
-          case Some(Some(skipCheckFile)) =>
+          case Some((Some(skipCheckFile), _)) =>
             printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
-          case Some(None) =>
+          case Some((None, _)) =>
             if (output.nonEmpty) {
               errors += source
               val diff = Diff.compareContents(output, "")
@@ -142,6 +246,9 @@ object TastyTest {
         }
       }
     }
+
+    val sources = files.filter(Scala.filter).filterNot(ScalaPre.filter)
+    sources.foreach(negCompile)
     successWhen(errors.isEmpty && unexpectedFail.isEmpty) {
       if (unexpectedFail.nonEmpty) {
         val str = if (unexpectedFail.size == 1) "file" else "files"
@@ -160,6 +267,21 @@ object TastyTest {
     log(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
     val process = Dotc.dotc(out, classpath, additionalSettings, sources:_*)
     successWhen(process)("dotc failed to compile sources.")
+  }
+
+  private def dotcNeg(out: String, additionalSettings: Seq[String], files: String*)(implicit cl: Dotc.ClassLoader): Try[Unit] = {
+    def compile(source: String, writer: OutputStream) = {
+      Dotc.dotc(writer, out, out, additionalSettings, source)
+    }
+    def scrub(source: String, output: String): String = {
+      output.linesIterator.collect {
+        case header if header.contains(source) =>
+          val filePart = source.split(java.util.regex.Pattern.quote(Files.pathSep)).last
+          header.trim.replace(source, filePart)
+        case ok => ok
+      }.mkString(System.lineSeparator())
+    }
+    negTestImpl(src => withCapture(src, compile, scrub(src, _)))(files:_*)
   }
 
   private def getSourceAsName(path: String): String =
@@ -193,6 +315,21 @@ object TastyTest {
       src2 <- getFiles(root/"src-2")
       src3 <- getFiles(root/"src-3")
     } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3:_*))
+  }
+
+  private def getFullCircleSources(root: String, src3upFilters: Set[SourceKind] = Set(Scala),
+    src2downFilters: Set[SourceKind] = Set(Scala),
+    src3appFilters: Set[SourceKind]
+  ): Try[(Seq[String], Seq[String], Seq[String])] = {
+    for {
+      src3up <- getFiles(root/"src-3-upstream")
+      src2down <- getFiles(root/"src-2-downstream")
+      src3app <- getFiles(root/"src-3-app")
+    } yield (
+      filterByKind(src3upFilters, src3up:_*),
+      filterByKind(src2downFilters, src2down:_*),
+      filterByKind(src3appFilters, src3app:_*)
+    )
   }
 
   private def getPreChangeSources(root: String, preAFilters: Set[SourceKind] /*= Set(Scala)*/,

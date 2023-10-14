@@ -270,10 +270,10 @@ object PartialFunction {
       if (!fallbackOccurred(z)) z else f2.applyOrElse(x, default)
     }
 
-    override def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) =
+    override def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]): OrElse[A1, B1] =
       new OrElse[A1, B1] (f1, f2 orElse that)
 
-    override def andThen[C](k: B => C) =
+    override def andThen[C](k: B => C): OrElse[A, C] =
       new OrElse[A, C] (f1 andThen k, f2 andThen k)
   }
 
@@ -368,8 +368,8 @@ object PartialFunction {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new MatchError(x)
     override def orElse[A1, B1](that: PartialFunction[A1, B1]) = that
-    override def andThen[C](k: Nothing => C) = this
-    override val lift = (x: Any) => None
+    override def andThen[C](k: Nothing => C): PartialFunction[Any, Nothing] = this
+    override val lift: Any => None.type = (x: Any) => None
     override def runWith[U](action: Nothing => U) = constFalse
   }
 

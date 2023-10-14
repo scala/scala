@@ -94,8 +94,8 @@ abstract class Erasure extends InfoTransform
       if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
   }
 
-  override protected def verifyJavaErasure = settings.Xverify || settings.isDebug
-  private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
+  override protected def verifyJavaErasure = settings.Xverify.value || settings.isDebug
+  private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig.value && {
     def needs(tp: Type) = NeedsSigCollector(sym.isClassConstructor).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
   }
@@ -112,7 +112,7 @@ abstract class Erasure extends InfoTransform
     )
   )
 
-  /** This object is only used for sanity testing when -check:genjvm is set.
+  /** This object is only used for confidence checking when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
@@ -495,10 +495,22 @@ abstract class Erasure extends InfoTransform
     }
 
     /** Check that a bridge only overrides members that are also overridden by the original member.
-     *  This test is necessary only for members that have a value class in their type.
-     *  Such members are special because their types after erasure and after post-erasure differ/.
+     *
+     *  That is, check that the signature of the bridge method does not accidentally override some
+     *  other method, possibly written by the user or inherited.
+     *
+     *  As an optimization, only perform this check for susceptible bridges.
+     *
+     *  This test is necessary for members that have a value class in their type.
+     *  Such members are special because their types after erasure and after post-erasure differ.
      *  This means we generate them after erasure, but the post-erasure transform might introduce
      *  a name clash. The present method guards against these name clashes.
+     *
+     *  A bridge might also introduce a signature that accidentally matches an existing method.
+     *  In that case, it will have a parameter erased to the upper bound of a type parameter
+     *  in the signature of the member overridden by the original member. (That upper bound might
+     *  be `Object`.) By contrast, erasure of a parameter `List[A]` would already have induced an error
+     *  if there were a matching member.
      *
      *  @param  member   The original member
      *  @param  other    The overridden symbol for which the bridge was generated
@@ -519,7 +531,7 @@ abstract class Erasure extends InfoTransform
       }
       for (bc <- root.baseClasses) {
         if (settings.isDebug)
-          exitingPostErasure(println(
+          exitingPostErasure(debuglog(
             sm"""check bridge overrides in $bc
                 |${bc.info.nonPrivateDecl(bridge.name)}
                 |${site.memberType(bridge)}
@@ -552,54 +564,50 @@ abstract class Erasure extends InfoTransform
       val other  = high
       val otpe   = highErased
 
-      val bridgeNeeded = exitingErasure (
+      val bridgeNeeded = exitingErasure {
+        def hasBridge = {
+          var e = bridgesScope.lookupEntry(member.name)
+          while ((e ne null) && !(e.sym.tpe =:= otpe && bridgeTarget(e.sym) == member))
+            e = bridgesScope.lookupNextEntry(e)
+          e ne null
+        }
         !member.isMacro &&
         !(other.tpe =:= member.tpe) &&
         !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
-        { var e = bridgesScope.lookupEntry(member.name)
-          while ((e ne null) && !((e.sym.tpe =:= otpe) && (bridgeTarget(e.sym) == member)))
-            e = bridgesScope.lookupNextEntry(e)
-          (e eq null)
-        }
-      )
-      if (!bridgeNeeded)
-        return
-
-      var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY)
-      // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
-      // end up with two module symbols with the same name in the same scope, which is surprising
-      // when implementing later phases.
-      if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
-      val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
-
-      debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
-        other, flagsToString(newFlags),
-        otpe, other.locationString, member,
-        specialErasure(root)(member.tpe), member.locationString)
-      )
-
-      // the parameter symbols need to have the new owner
-      bridge setInfo (otpe cloneInfo bridge)
-      bridgeTarget(bridge) = member
-
-      def sigContainsValueClass = (member.tpe exists (_.typeSymbol.isDerivedValueClass))
-
-      val shouldAdd = (
-            !sigContainsValueClass
-        ||  (checkBridgeOverrides(member, other, bridge) match {
-              case Nil => true
-              case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
-              case es => for ((pos, msg) <- es) reporter.error(pos, msg); false
-            })
-      )
-
-      if (shouldAdd) {
-        exitingErasure(root.info.decls enter bridge)
-
-        bridgesScope enter bridge
-        addBridge(bridge, member, other)
-        //bridges ::= makeBridgeDefDef(bridge, member, other)
+        !hasBridge
       }
+      def addBridgeIfOK(): Unit = {
+        var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | FINAL)
+        // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
+        // end up with two module symbols with the same name in the same scope, which is surprising
+        // when implementing later phases.
+        if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
+        val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
+
+        debuglog(s"generating bridge from $other (${flagsToString(newFlags)}): ${otpe}${other.locationString} to $member: ${specialErasure(root)(member.tpe)}${member.locationString}")
+
+        // the parameter symbols need to have the new owner
+        bridge setInfo (otpe cloneInfo bridge)
+        bridgeTarget(bridge) = member
+
+        val shouldAdd = {
+          val sigContainsValueClass = member.tpe.exists(_.typeSymbol.isDerivedValueClass)
+          def bridgeMayClash = other.paramss.exists(_.exists(_.tpe match { case TypeRef(_, r, _) => r.isTypeParameter case _ => false }))
+          def bridgeIsAOK = checkBridgeOverrides(member, other, bridge) match {
+            case Nil => true
+            case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
+            case es => for ((pos, msg) <- es) reporter.error(pos, msg); false
+          }
+          !sigContainsValueClass && !bridgeMayClash || bridgeIsAOK
+        }
+        if (shouldAdd) {
+          exitingErasure(root.info.decls enter bridge)
+
+          bridgesScope enter bridge
+          addBridge(bridge, member, other) // GenerateBridges.addBridge bridges ::= makeBridgeDefDef(bridge, member, other)
+        }
+      }
+      if (bridgeNeeded) addBridgeIfOK()
     }
 
     protected def addBridge(bridge: Symbol, member: Symbol, other: Symbol): Unit = {} // hook for GenerateBridges
@@ -607,8 +615,8 @@ abstract class Erasure extends InfoTransform
 
   class GenerateBridges(unit: CompilationUnit, root: Symbol) extends EnterBridges(unit, root) {
 
-    var bridges      = List.empty[Tree]
-    var toBeRemoved  = immutable.Set.empty[Symbol]
+    var bridges     = List[Tree]()
+    var toBeRemoved = immutable.Set.empty[Symbol]
 
     def generate(): (List[Tree], immutable.Set[Symbol]) = {
       super.computeAndEnter()
@@ -659,7 +667,6 @@ abstract class Erasure extends InfoTransform
       }
       DefDef(bridge, rhs)
     }
-
   }
 
   /** The modifier typer which retypes with erased types. */
@@ -714,7 +721,7 @@ abstract class Erasure extends InfoTransform
             case ErasedValueType(clazz, _) => targ.setType(clazz.tpe)
             case _ =>
           }
-            tree
+          tree
         case Select(qual, name) =>
           if (tree.symbol == NoSymbol) {
             tree
@@ -728,14 +735,18 @@ abstract class Erasure extends InfoTransform
           else if (tree.symbol.owner == AnyClass)
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, tree.symbol.name))))
           else {
-            var qual1 = typedQualifier(qual)
-            if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
-                 isErasedValueType(qual1.tpe))
-              qual1 = box(qual1)
-            else if (!isPrimitiveValueType(qual1.tpe) && isPrimitiveValueMember(tree.symbol))
-              qual1 = unbox(qual1, tree.symbol.owner.tpe)
+            val qual1 = {
+              val qual0 = typedQualifier(qual)
+              val isPrimitive = isPrimitiveValueType(qual0.tpe)
+              if (isPrimitive && !isPrimitiveValueMember(tree.symbol) || isErasedValueType(qual0.tpe))
+                box(qual0)
+              else if (!isPrimitive && isPrimitiveValueMember(tree.symbol))
+                unbox(qual0, tree.symbol.owner.tpe)
+              else
+                qual0
+            }
 
-            def selectFrom(qual: Tree) = treeCopy.Select(tree, qual, name)
+            def selectFrom(fromQual: Tree) = treeCopy.Select(tree, fromQual, name)
 
             if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe)) {
               tree.symbol = NoSymbol
@@ -802,6 +813,10 @@ abstract class Erasure extends InfoTransform
                 return result setType ErasedValueType(tref.sym, result.tpe)
 
             }
+          case tree @ Block(_, _: LabelDef) =>
+            // Push adaptations out to the block to preserve patmat tree shapes.
+            // This helps the back-end to generate better code.
+            super.typed1(adaptMember(tree), mode, WildcardType)
           case _ =>
             super.typed1(adaptMember(tree), mode, pt)
         }
@@ -1107,8 +1122,8 @@ abstract class Erasure extends InfoTransform
       private def preEraseApply(tree: Apply) = {
         tree.fun match {
           case TypeApply(fun @ Select(qual, name), args @ List(arg))
-          if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
-              unboundedGenericArrayLevel(arg.tpe) > 0) => // !!! todo: simplify by having GenericArray also extract trees
+          if isTypeTestSymbol(fun.symbol) &&
+              unboundedGenericArrayLevel(arg.tpe) > 0 => // !!! todo: simplify by having GenericArray also extract trees
             val level = unboundedGenericArrayLevel(arg.tpe)
             def isArrayTest(arg: Tree) =
               gen.mkRuntimeCall(nme.isArray, List(arg, Literal(Constant(level))))
@@ -1297,7 +1312,6 @@ abstract class Erasure extends InfoTransform
           if (ct.tag == ClazzTag && ct.typeValue.typeSymbol != definitions.UnitClass) {
             val typeValue = ct.typeValue.dealiasWiden
             val erased = erasure(typeValue.typeSymbol) applyInArray typeValue
-
             treeCopy.Literal(cleanLiteral, Constant(erased))
           } else cleanLiteral
 

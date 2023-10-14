@@ -14,6 +14,7 @@ package scala
 package tools.nsc
 
 import scala.reflect.internal.Positions
+import scala.reflect.internal.util.CodeAction
 
 /** Similar to Reporting: gather global functionality specific to parsing.
  */
@@ -35,8 +36,8 @@ trait Parsing { self : Positions with Reporting =>
     }
 
     def incompleteHandled = incompleteHandler != null
-    def incompleteInputError(pos: Position, msg: String): Unit =
+    def incompleteInputError(pos: Position, msg: String, actions: List[CodeAction] = Nil): Unit =
       if (incompleteHandled) incompleteHandler(pos, msg)
-      else reporter.error(pos, msg)
+      else reporter.error(pos, msg, actions)
   }
 }

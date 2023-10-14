@@ -172,8 +172,8 @@ Any numeric value type ´T´ supports the following methods.
     operation type and performing the given arithmetic operation of that
     type.
   * Parameterless arithmetic methods identity (`+`) and negation
-    (`-`), with result type ´T´.  The first of these returns the
-    receiver unchanged, whereas the second returns its negation.
+    (`-`), with result type ´T´, or `Int` if ´T´ is a subrange type.
+    The first of these returns the receiver unchanged, whereas the second returns its negation.
   * Conversion methods `toByte`, `toShort`, `toChar`,
     `toInt`, `toLong`, `toFloat`, `toDouble` which
     convert the receiver object to the target type, using the rules of

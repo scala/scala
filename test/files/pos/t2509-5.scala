@@ -1,5 +1,5 @@
 // See https://github.com/lampepfl/dotty/issues/2974
-// scalac: -Xsource:3.0
+// scalac: -Yscala3-implicit-resolution
 
 trait Foo[-T]
 

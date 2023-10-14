@@ -1,0 +1,11 @@
+t12770.scala:12: warning: match may not be exhaustive.
+It would fail on the following input: B()
+  def control(input: T) = input match {
+                          ^
+t12770.scala:15: warning: match may not be exhaustive.
+It would fail on the following input: (x: Any forSome x not in ("a", "b", "c", 42))
+  def any(input: Any) = input match {
+                        ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

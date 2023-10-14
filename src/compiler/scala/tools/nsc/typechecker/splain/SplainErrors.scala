@@ -24,7 +24,7 @@ trait SplainErrors { self: Analyzer with SplainFormatting =>
     }
 
   def splainPushOrReportNotFound(tree: Tree, param: Symbol, annotationMsg: String): String =
-    if (settings.Vimplicits)
+    if (settings.Vimplicits.value)
       if (ImplicitErrors.nested) {
         splainPushNotFound(tree, param)
         ""
@@ -39,7 +39,7 @@ trait SplainErrors { self: Analyzer with SplainFormatting =>
     tparams: List[Symbol],
     originalError: Option[AbsTypeError],
   ): Unit = {
-    if (settings.Vimplicits) {
+    if (settings.Vimplicits.value) {
       val specifics = ImplicitErrorSpecifics.NonconformantBounds(targs, tparams, originalError)
       ImplicitErrors.push(ImplicitError(tpe, candidate, ImplicitErrors.nesting, specifics))
     }
@@ -53,7 +53,7 @@ trait SplainErrors { self: Analyzer with SplainFormatting =>
         case _ =>
       }
     }
-    if (settings.Vimplicits) {
+    if (settings.Vimplicits.value) {
       implicitTree match {
         case       TypeApply(fun, args)     => pushImpFailure(fun, args)
         case Apply(TypeApply(fun, args), _) => pushImpFailure(fun, args)

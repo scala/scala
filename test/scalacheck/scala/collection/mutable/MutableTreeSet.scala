@@ -117,7 +117,7 @@ object MutableTreeSetProperties extends Properties("mutable.TreeSet") {
 object MutableTreeSetProjectionProperties extends Properties("mutable.TreeSetProjection") {
   type K = String
 
-  implicit val ord = implicitly[Ordering[K]]
+  private val ord = implicitly[Ordering[K]]
 
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)

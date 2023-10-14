@@ -188,10 +188,10 @@ abstract class SymbolLoaders {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, nameOf(classRep)) =>
-        if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
+        if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
         enterToplevelsFromSource(owner, nameOf(classRep), src)
       case (None, Some(src)) =>
-        if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
+        if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
         enterToplevelsFromSource(owner, nameOf(classRep), src)
       case (Some(bin), _) =>
         enterClassAndModule(owner, nameOf(classRep), new ClassfileLoader(bin, _, _))

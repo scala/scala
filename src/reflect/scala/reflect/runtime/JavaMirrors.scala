@@ -14,31 +14,30 @@ package scala
 package reflect
 package runtime
 
-import scala.language.existentials
-
-import scala.ref.WeakReference
-import scala.collection.mutable.WeakHashMap
-import scala.collection.immutable.ArraySeq
-
+import java.io.IOException
 import java.lang.{ Class => jClass, Package => jPackage }
+import java.lang.annotation.{ Annotation => jAnnotation }
+import java.lang.ref.{ WeakReference => jWeakReference }
 import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable,
   Parameter => jParameter, GenericDeclaration, GenericArrayType,
   ParameterizedType, WildcardType, AnnotatedElement }
-import java.lang.annotation.{ Annotation => jAnnotation }
-import java.io.IOException
-import java.lang.ref.{ WeakReference => jWeakReference }
+import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.annotation.nowarn
+import scala.collection.immutable.ArraySeq
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.language.existentials
+import scala.ref.WeakReference
+import scala.reflect.api.TypeCreator
 import scala.reflect.internal.{ JavaAccFlags, MissingRequirementError }
+import scala.runtime.{BoxesRunTime, ClassValueCompat, ScalaRunTime}
+import internal.Flags._
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
-import scala.collection.mutable.ListBuffer
-import internal.Flags._
+import internal.util.StringContextStripMarginOps
 import ReflectionUtils._
-import scala.annotation.nowarn
-import scala.reflect.api.TypeCreator
-import scala.runtime.{ BoxesRunTime, ScalaRunTime }
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
@@ -120,7 +119,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private[this] val fieldCache       = new TwoWayCache[jField, TermSymbol]
     private[this] val tparamCache      = new TwoWayCache[jTypeVariable[_ <: GenericDeclaration], TypeSymbol]
 
-    private[this] object typeTagCache extends ClassValue[jWeakReference[TypeTag[_]]]() {
+    private[this] object typeTagCache extends ClassValueCompat[jWeakReference[TypeTag[_]]]() {
       val typeCreator = new ThreadLocal[TypeCreator]()
 
       override protected def computeValue(cls: jClass[_]): jWeakReference[TypeTag[_]] = {
@@ -353,9 +352,10 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     // because both AnyVal and its primitive descendants define their own getClass methods
     private def isGetClass(meth: MethodSymbol) = (meth.name string_== "getClass") && meth.paramss.flatten.isEmpty
     private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
-    lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
-    lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
-                                        Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
+    lazy val bytecodelessMethodOwners =
+      Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
+    lazy val bytecodefulObjectMethods =
+      Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString, Object_notify, Object_notifyAll) ++ Object_wait.alternatives
     private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
       if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == runDefinitions.Predef_classOf || meth.isMacro) return true
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
@@ -669,7 +669,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         loadBytes[String]("scala.reflect.ScalaSignature") match {
           case Some(ssig) =>
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
-            val bytes = ssig.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            val bytes = ssig.getBytes(UTF_8)
             val len = ByteCodecs.decode(bytes)
             assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
@@ -678,7 +678,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
                 info(s"unpickling Scala $clazz and $module with long Scala signature")
-                val encoded = slsig flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                val encoded = slsig.flatMap(_.getBytes(UTF_8))
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 assignAssociatedFile(clazz, module, jclazz)

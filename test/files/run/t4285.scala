@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:**
 //
 import scala.tools.partest.ReplTest
 object Test extends ReplTest {

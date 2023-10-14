@@ -2,6 +2,7 @@ import scala.tools.partest._
 import scala.tools.nsc._
 
 object Test extends DirectTest {
+  override def extraSettings: String = s"${super.extraSettings} '-Wconf:cat=deprecation&msg=early initializers:s'"
 
   def code = """
     class testAnn extends annotation.TypeConstraint

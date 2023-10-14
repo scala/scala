@@ -13,7 +13,7 @@
 package scala.tools.nsc.doc
 package doclet
 
-import scala.collection._
+import scala.collection.mutable
 
 /** Custom Scaladoc generators must implement the `Generator` class. A custom generator can be selected in Scaladoc
   * using the `-doc-generator` command line option.

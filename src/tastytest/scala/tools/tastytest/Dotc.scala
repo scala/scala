@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.tastytest
 
 import scala.util.{Try, Success, Failure}
@@ -8,6 +20,9 @@ import scala.reflect.runtime.ReflectionUtils
 import java.lang.reflect.{Modifier, Method}
 
 import ClasspathOps._
+import java.io.OutputStream
+import java.io.BufferedReader
+import java.io.PrintWriter
 
 object Dotc extends Script.Command {
 
@@ -15,6 +30,15 @@ object Dotc extends Script.Command {
 
   def initClassloader(): Try[Dotc.ClassLoader] =
     Try(Dotc.ClassLoader(ScalaClassLoader.fromURLs(Classpaths.dottyCompiler.asURLs)))
+
+  def processIn(op: Dotc.ClassLoader => Int): Int = {
+    Dotc.initClassloader() match {
+      case Success(cl) => op(cl)
+      case Failure(err) =>
+        println(red(s"could not initialise Scala 3 classpath: $err"))
+        1
+    }
+  }
 
   def loadClass(name: String)(implicit cl: Dotc.ClassLoader) =
     Class.forName(name, true, cl.parent)
@@ -24,27 +48,71 @@ object Dotc extends Script.Command {
     invoke(method, null, args)
   }
 
+  def invokeStatic(
+      className: String,
+      methodName: String,
+      args: Seq[(Class[_], Any)],
+  )(implicit cl: Dotc.ClassLoader): Try[Object] = {
+    val cls = loadClass(className)
+    val (tpes, provided) = args.unzip
+    val method = cls.getMethod(methodName, tpes:_*)
+    Try {
+      invokeStatic(method, provided)
+    }
+  }
+
   def invoke(method: Method, obj: AnyRef, args: Seq[Any])(implicit cl: Dotc.ClassLoader) = {
-    try cl.parent.asContext[AnyRef] {
+    inClassloader[AnyRef] {
       method.invoke(obj, args.toArray:_*)
+    }
+  }
+
+  def inClassloader[T](op: => T)(implicit cl: Dotc.ClassLoader): T = {
+    try cl.parent.asContext[T] {
+      op
     }
     catch {
       case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
     }
   }
 
-  private def dotcProcess(args: Seq[String])(implicit cl: Dotc.ClassLoader) = processMethod("dotty.tools.dotc.Main")(args)
+  def processMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    processMethodImpl(className)(args, None)
 
-  def processMethod(mainClassName: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
-    val mainClass = loadClass(mainClassName)
-    val reporterClass = loadClass("dotty.tools.dotc.reporting.Reporter")
-    val Main_process = mainClass.getMethod("process", classOf[Array[String]])
-    val Reporter_hasErrors = reporterClass.getMethod("hasErrors")
-    Try {
-      val reporter  = unlockExperimentalFeatures(invokeStatic(Main_process, Seq(args.toArray)))
+  private def makeConsoleReporter(stream: OutputStream)(implicit cl: Dotc.ClassLoader): Try[AnyRef] = Try {
+    val consoleReporterCls = loadClass("dotty.tools.dotc.reporting.ConsoleReporter")
+    val ctor = consoleReporterCls.getConstructor(classOf[BufferedReader], classOf[PrintWriter])
+    val pwriter = new PrintWriter(stream, true)
+    inClassloader[AnyRef] {
+      ctor.newInstance(Console.in, pwriter)
+    }
+  }
+
+  private def processMethodImpl(className: String)(args: Seq[String], writer: Option[OutputStream])(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
+    val reporterCls = loadClass("dotty.tools.dotc.reporting.Reporter")
+    val Reporter_hasErrors = reporterCls.getMethod("hasErrors")
+    val processArgs: Try[Seq[(Class[_], Any)]] = {
+      writer match {
+        case Some(stream) =>
+          val callbackCls = loadClass("dotty.tools.dotc.interfaces.CompilerCallback")
+          for (myReporter <- makeConsoleReporter(stream)) yield
+            Seq(classOf[Array[String]] -> args.toArray, reporterCls -> myReporter, callbackCls -> null)
+        case _ =>
+          Try(Seq(classOf[Array[String]] -> args.toArray))
+      }
+    }
+    for {
+      args <- processArgs
+      reporter <- invokeStatic(className, "process", args)
+    } yield {
       val hasErrors = invoke(Reporter_hasErrors, reporter, Seq.empty).asInstanceOf[Boolean]
       !hasErrors
     }
+  }
+
+  def mainMethod(className: String)(args: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = {
+    val mainArgs = Seq(classOf[Array[String]] -> args.toArray)
+    for (_ <- invokeStatic(className, "main", mainArgs)) yield ()
   }
 
   def dotcVersion(implicit cl: Dotc.ClassLoader): String = {
@@ -53,7 +121,13 @@ object Dotc extends Script.Command {
     invokeStatic(Properties_simpleVersionString, Seq.empty).asInstanceOf[String]
   }
 
-  def dotc(out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
+  def dotc(out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    dotcImpl(None, out, classpath, additionalSettings, sources:_*)
+
+  def dotc(writer: OutputStream, out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] =
+    dotcImpl(Some(writer), out, classpath, additionalSettings, sources:_*)
+
+  def dotcImpl(writer: Option[OutputStream], out: String, classpath: String, additionalSettings: Seq[String], sources: String*)(implicit cl: Dotc.ClassLoader): Try[Boolean] = {
     if (sources.isEmpty) {
       Success(true)
     }
@@ -64,11 +138,12 @@ object Dotc extends Script.Command {
         "-classpath", libraryDeps.mkString(classpath + Files.classpathSep, Files.classpathSep, ""),
         "-deprecation",
         "-Xfatal-warnings",
+        "-color:never",
       ) ++ additionalSettings ++ sources
       if (TastyTest.verbose) {
         println(yellow(s"Invoking dotc (version $dotcVersion) with args: $args"))
       }
-      dotcProcess(args)
+      processMethodImpl("dotty.tools.dotc.Main")(args, writer)
     }
   }
 
@@ -81,14 +156,10 @@ object Dotc extends Script.Command {
       return 1
     }
     val Seq(out, src, additional @ _*) = args: @unchecked
-    implicit val scala3classloader: Dotc.ClassLoader = initClassloader() match {
-      case Success(cl) => cl
-      case Failure(err) =>
-        println(red(s"could not initialise Scala 3 classpath: $err"))
-        return 1
+    Dotc.processIn { implicit scala3classloader =>
+      val success = dotc(out, out, additional, src).get
+      if (success) 0 else 1
     }
-    val success = dotc(out, out, additional, src).get
-    if (success) 0 else 1
   }
 
 }

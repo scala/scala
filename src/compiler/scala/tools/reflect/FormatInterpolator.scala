@@ -13,30 +13,33 @@
 package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context
-import scala.collection.mutable.{ ListBuffer, Stack }
+import scala.collection.mutable.ListBuffer
 import scala.PartialFunction.cond
+import scala.util.chaining._
 import scala.util.matching.Regex.Match
 
 import java.util.Formattable
 
 abstract class FormatInterpolator {
+  import FormatInterpolator._
+  import SpecifierGroups.{Value => SpecGroup, _}
+
   val c: Context
   val global: c.universe.type = c.universe
 
-  import c.universe.{ Match => _, _ }
+  import c.universe.{Match => _, _}
   import definitions._
   import treeInfo.Applied
 
-  @inline private def truly(body: => Unit): Boolean = { body ; true }
-  @inline private def falsely(body: => Unit): Boolean = { body ; false }
-
   private def bail(msg: String) = global.abort(msg)
+
+  def concatenate(parts: List[Tree], args: List[Tree]): Tree
 
   def interpolateF: Tree = c.macroApplication match {
     //case q"$_(..$parts).f(..$args)" =>
     case Applied(Select(Apply(_, parts), _), _, argss) =>
       val args = argss.flatten
-      def badlyInvoked = (parts.lengthIs != (args.length + 1)) && truly {
+      def badlyInvoked = parts.lengthIs != args.length + 1 and {
         def because(s: String) = s"too $s arguments for interpolated string"
         val (p, msg) =
           if (parts.isEmpty) (c.prefix.tree.pos, "there are no parts")
@@ -71,124 +74,111 @@ abstract class FormatInterpolator {
    *  7) "...\${smth}[%illegalJavaConversion]" => error
    *  *Legal according to [[java.util.Formatter]]
    */
-  def interpolated(parts: List[Tree], args: List[Tree]) = {
-    val fstring  = new StringBuilder
-    val evals    = ListBuffer[ValDef]()
-    val ids      = ListBuffer[Ident]()
-    val argStack = Stack(args: _*)
+  def interpolated(parts: List[Tree], args: List[Tree]): Tree = {
+    val argTypes = args.map(_.tpe)
+    val argc = argTypes.length
+    // amended parts and actual args to use, in amended.mkString.format(actuals)
+    val amended = ListBuffer.empty[String]
+    val actuals = ListBuffer.empty[Tree]
+    val convert = ListBuffer.empty[Conversion]
 
-    // create a tmp val and add it to the ids passed to format
-    def defval(value: Tree, tpe: Type): Unit = {
-      val freshName = TermName(c.freshName("arg$"))
-      evals += ValDef(Modifiers(), freshName, TypeTree(tpe) setPos value.pos.focus, value) setPos value.pos
-      ids += Ident(freshName)
+    // whether this format does more than concatenate strings
+    var formatting = false
+
+    def argType(argi: Int, types: Type*): Type = {
+      val tpe = argTypes(argi)
+      types.find(t => argConformsTo(argi, tpe, t))
+        .orElse(types.find(t => argConvertsTo(argi, tpe, t)))
+        .getOrElse {
+          val msg = "type mismatch" + {
+            val req = raw"required: (.*)".r.unanchored
+            val all = types.map(req => global.analyzer.foundReqMsg(tpe, req))
+            if (all.isEmpty) ""
+            else if (all.length == 1) all.head
+            else all.head + all.tail.map { case req(what) => what case _ => "?" }.mkString(", ", ", ", "")
+          }
+          c.error(args(argi).pos, msg)
+          reported = true
+          actuals += args(argi)
+          types.head
+        }
     }
+    def argConformsTo(argi: Int, arg: Type, target: Type): Boolean = (arg <:< target).tap(if (_) actuals += args(argi))
+    def argConvertsTo(argi: Int, arg: Type, target: Type): Boolean =
+      c.inferImplicitView(args(argi), arg, target) match {
+        case EmptyTree  => false
+        case _ =>
+          // let the compiler figure out how to apply the conversion
+          val freshName = TermName(c.freshName("arg$"))
+          val value = args(argi)
+          val ValDef(_, _, _, rhs) = c.typecheck(ValDef(Modifiers(), freshName, TypeTree(target).setPos(value.pos.focus), value).setPos(value.pos)): @unchecked
+          actuals += rhs
+          true
+      }
+
     // Append the nth part to the string builder, possibly prepending an omitted %s first.
-    // Sanity-check the % fields in this part.
-    def copyPart(part: Tree, n: Int): Unit = {
-      import SpecifierGroups.{ Spec, Index }
-      val s0 = part match {
-        case Literal(Constant(x: String)) => x
-        case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
-      }
-      def escapeHatch: PartialFunction[Throwable, String] = {
-        // trailing backslash, octal escape, or other
-        case e: StringContext.InvalidEscapeException =>
-          def errPoint = part.pos withPoint (part.pos.point + e.index)
-          def octalOf(c: Char) = Character.digit(c, 8)
-          def alt = {
-            def altOf(i: Int) = i match {
-              case '\b' => "\\b"
-              case '\t' => "\\t"
-              case '\n' => "\\n"
-              case '\f' => "\\f"
-              case '\r' => "\\r"
-              case '\"' => "$" /* avoid lint warn */ +
-                "{'\"'} or a triple-quoted literal \"\"\"with embedded \" or \\u0022\"\"\""
-              case '\'' => "'"
-              case '\\' => """\\"""
-              case x    => "\\u%04x" format x
-            }
-            val suggest = {
-              val r = "([0-7]{1,3}).*".r
-              (s0 drop e.index + 1) match {
-                case r(n) => altOf { n.foldLeft(0){ case (a, o) => (8 * a) + (o - '0') } }
-                case _    => ""
-              }
-            }
-            val txt =
-              if ("" == suggest) ""
-              else s"use $suggest instead"
-            txt
+    // Check the % fields in this part.
+    def loop(remaining: List[Tree], n: Int): Unit =
+      remaining match {
+        case part0 :: more =>
+          val part1 = part0 match {
+            case Literal(Constant(x: String)) => x
+            case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
           }
-          def badOctal = {
-            c.error(errPoint, s"octal escape literals are unsupported: $alt")
-            s0
-          }
-          if (e.index == s0.length - 1) {
-            c.error(errPoint, """Trailing '\' escapes nothing.""")
-            s0
-          } else if (octalOf(s0(e.index + 1)) >= 0) {
-            badOctal
-          } else {
-            c.error(errPoint, e.getMessage)
-            s0
-          }
-      }
-      val s  = try StringContext.processEscapes(s0) catch escapeHatch
-      val ms = fpat findAllMatchIn s
+          val part = try StringContext.processEscapes(part1) catch escapeHatch(c)(part1, part0.pos)
+          val matches = formatPattern.findAllMatchIn(part)
 
-      def errorLeading(op: Conversion) = op.errorAt(Spec, s"conversions must follow a splice; ${Conversion.literalHelp}")
-
-      def first = n == 0
-      // a conversion for the arg is required
-      if (!first) {
-        val arg = argStack.pop()
-        def s_%() = {
-          fstring append "%s"
-          defval(arg, AnyTpe)
-        }
-        def accept(op: Conversion) = {
-          if (!op.isLeading) errorLeading(op)
-          op.accepts(arg) match {
-            case Some(tpe) => defval(arg, tpe)
-            case None      =>
+          def insertStringConversion(): Unit = {
+            amended += "%s" + part
+            convert += Conversion(formatPattern.findAllMatchIn("%s").next(), part0.pos, argc)  // improve
+            argType(n-1, AnyTpe)
           }
-        }
-        if (ms.hasNext) {
-          Conversion(ms.next(), part.pos, args.size) match {
-            case Some(op) if op.isLiteral => s_%()
-            case Some(op) if op.indexed =>
-              if (op.index map (_ == n) getOrElse true) accept(op)
+          def errorLeading(op: Conversion) = op.errorAt(Spec)(s"conversions must follow a splice; ${Conversion.literalHelp}")
+          def accept(op: Conversion): Unit = {
+            if (!op.isLeading) errorLeading(op)
+            op.accepts(argType(n-1, op.acceptableVariants: _*))
+            amended += part
+          }
+
+          if (n == 0) amended += part
+          else if (!matches.hasNext) insertStringConversion()
+          else {
+            val cv = Conversion(matches.next(), part0.pos, argc)
+            if (cv.kind != Kind.StringXn || cv.cc.isUpper || cv.width.nonEmpty || cv.flags.nonEmpty)
+              formatting = true
+            if (cv.isLiteral) insertStringConversion()
+            else if (cv.isIndexed) {
+              if (cv.index.getOrElse(-1) == n) accept(cv)
               else {
-                // either some other arg num, or '<'
-                c.warning(op.groupPos(Index), "Index is not this arg")
-                s_%()
+                // "$x$y%1" where "%1" follows a splice but does not apply to it
+                c.warning(cv.groupPosAt(Index, 0), "Index is not this arg")
+                insertStringConversion()
               }
-            case Some(op) => accept(op)
-            case None     =>
+            }
+            else if (!cv.isError) accept(cv)
           }
-        } else s_%()
+          // any remaining conversions in this part must be either literals or indexed
+          while (matches.hasNext) {
+            val cv = Conversion(matches.next(), part0.pos, argc)
+            if (n == 0 && cv.hasFlag('<')) cv.badFlag('<', "No last arg")
+            else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
+            formatting = true
+          }
+          loop(more, n = n + 1)
+        case Nil =>
       }
-      // any remaining conversions must be either literals or indexed
-      while (ms.hasNext) {
-        Conversion(ms.next(), part.pos, args.size) match {
-          case Some(op) if first && op.hasFlag('<')   => op.badFlag('<', "No last arg")
-          case Some(op) if op.isLiteral || op.indexed => // OK
-          case Some(op) => errorLeading(op)
-          case None     =>
-        }
-      }
-      fstring append s
-    }
+    loop(parts, n = 0)
 
-    parts.zipWithIndex foreach {
-      case (part, n) => copyPart(part, n)
+    def constantly(s: String) = {
+      val k = Constant(s)
+      Literal(k).setType(ConstantType(k))
     }
 
     //q"{..$evals; new StringOps(${fstring.toString}).format(..$ids)}"
-    val format = fstring.toString
-    if (ids.isEmpty && !format.contains("%")) Literal(Constant(format))
+    val format = amended.mkString
+    if (actuals.isEmpty && !formatting) constantly(format)
+    else if (!reported && actuals.forall(treeInfo.isLiteralString)) constantly(format.format(actuals.map(_.asInstanceOf[Literal].value.value).toIndexedSeq: _*))
+    else if (!formatting) concatenate(amended.map(p => constantly(p.stripPrefix("%s"))).toList, actuals.toList)
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(
@@ -196,198 +186,242 @@ abstract class FormatInterpolator {
           TermName("collection")), TermName("immutable")), TypeName("StringOps"))),
         termNames.CONSTRUCTOR
       )
-      val expr =
-        Apply(
-          Select(
-            Apply(
-              newStringOps,
-              List(Literal(Constant(format)))),
-            TermName("format")),
-          ids.toList
-        )
+      val expr = Apply(Select(Apply(newStringOps, List(Literal(Constant(format)))), TermName("format")), actuals.toList)
       val p = c.macroApplication.pos
-      Block(evals.toList, atPos(p.focus)(expr)) setPos p.makeTransparent
+      expr.setPos(p.makeTransparent)
     }
   }
 
-  val fpat = """%(?:(\d+)\$)?([-#+ 0,(\<]+)?(\d+)?(\.\d+)?([tT]?[%a-zA-Z])?""".r
-  object SpecifierGroups extends Enumeration { val Spec, Index, Flags, Width, Precision, CC = Value }
+  val BigDecimalTpe = typeTag[BigDecimal].tpe
+  val BigIntTpe = typeTag[BigInt].tpe
+  val CalendarTpe = typeTag[java.util.Calendar].tpe
+  val DateTpe = typeTag[java.util.Date].tpe
+  val FormattableTpe = typeTag[Formattable].tpe
 
-  val stdContextTags = new { val tc: c.type = c } with StdContextTags
-  import stdContextTags._
-  val tagOfFormattable = typeTag[Formattable]
+  object Kind extends Enumeration { val StringXn, HashXn, BooleanXn, CharacterXn, IntegralXn, FloatingPointXn, DateTimeXn, LiteralXn, ErrorXn = Value }
+  import Kind.{Value => KindOf, _}
 
-  /** A conversion specifier matched by `m` in the string part at `pos`,
-   *  with `argc` arguments to interpolate.
+  /** A conversion specifier matched in the argi'th string part, with `argc` arguments to interpolate.
    */
-  sealed trait Conversion {
-    def m: Match
-    def pos: Position
-    def argc: Int
+  final class Conversion(val descriptor: Match, pos: Position, val kind: KindOf, argc: Int) {
+    // the descriptor fields
+    val index: Option[Int]     = descriptor.intOf(Index)
+    val flags: String          = descriptor.stringOf(Flags)
+    val width: Option[Int]     = descriptor.intOf(Width)
+    val precision: Option[Int] = descriptor.group(Precision).map(_.drop(1).toInt)
+    val op: String             = descriptor.stringOf(CC)
 
-    import SpecifierGroups.{ Value => SpecGroup, _ }
-    private def maybeStr(g: SpecGroup) = Option(m group g.id)
-    private def maybeInt(g: SpecGroup) = maybeStr(g) map (_.toInt)
-    val index: Option[Int]     = maybeInt(Index)
-    val flags: Option[String]  = maybeStr(Flags)
-    val width: Option[Int]     = maybeInt(Width)
-    val precision: Option[Int] = maybeStr(Precision) map (_.drop(1).toInt)
-    val op: String             = maybeStr(CC) getOrElse ""
+    // the conversion char is the head of the op string (but see DateTimeXn)
+    val cc: Char =
+      kind match {
+        case ErrorXn if op.isEmpty       => '?'
+        case ErrorXn                     => op(0)
+        case DateTimeXn if op.length > 1 => op(1)
+        case DateTimeXn                  => '?'
+        case _ => op(0)
+      }
 
-    def cc: Char = if ("tT" contains op(0)) op(1) else op(0)
+    def isIndexed: Boolean = index.nonEmpty || hasFlag('<')
+    def isError: Boolean   = kind == ErrorXn
+    def isLiteral: Boolean = kind == LiteralXn
 
-    def indexed:   Boolean = index.nonEmpty || hasFlag('<')
-    def isLiteral: Boolean = false
-    def isLeading: Boolean = m.start(0) == 0
-    def verify:    Boolean = goodFlags && goodIndex
-    def accepts(arg: Tree): Option[Type]
+    // descriptor is at index 0 of the part string
+    def isLeading: Boolean = descriptor.at(Spec) == 0
 
-    val allFlags = "-#+ 0,(<"
-    def hasFlag(f: Char) = (flags getOrElse "") contains f
-    def hasAnyFlag(fs: String) = fs exists (hasFlag)
+    // true if passes.
+    def verify: Boolean = {
+      // various assertions
+      def goodies = goodFlags && goodIndex
+      def noFlags = flags.isEmpty or errorAt(Flags)("flags not allowed")
+      def noWidth = width.isEmpty or errorAt(Width)("width not allowed")
+      def noPrecision = precision.isEmpty or errorAt(Precision)("precision not allowed")
+      def only_-(msg: String) = {
+        val badFlags = flags.filterNot { case '-' | '<' => true case _ => false }
+        badFlags.isEmpty or badFlag(badFlags(0), s"Only '-' allowed for $msg")
+      }
+      def goodFlags = flags.isEmpty || {
+        for (dupe <- flags.diff(flags.distinct).distinct) errorAt(Flags, flags.lastIndexOf(dupe))(s"Duplicate flag '$dupe'")
+        val badFlags = flags.filterNot(okFlags.contains(_))
+        for (f <- badFlags) badFlag(f, s"Illegal flag '$f'")
+        badFlags.isEmpty
+      }
+      def goodIndex = !isIndexed || {
+        if (index.nonEmpty && hasFlag('<')) warningAt(Index)("Argument index ignored if '<' flag is present")
+        val okRange = index.map(i => i > 0 && i <= argc).getOrElse(true)
+        okRange || hasFlag('<') or errorAt(Index)("Argument index out of range")
+      }
+      // begin verify
+      kind match {
+        case StringXn        => goodies
+        case BooleanXn       => goodies
+        case HashXn          => goodies
+        case CharacterXn     => goodies && noPrecision && only_-("c conversion")
+        case IntegralXn      =>
+          def d_# = cc == 'd' && hasFlag('#') and badFlag('#', "# not allowed for d conversion")
+          def x_comma = cc != 'd' && hasFlag(',') and badFlag(',', "',' only allowed for d conversion of integral types")
+          goodies && noPrecision && !d_# && !x_comma
+        case FloatingPointXn =>
+          goodies && (cc match {
+            case 'a' | 'A' =>
+              val badFlags = ",(".filter(hasFlag)
+              noPrecision && badFlags.isEmpty or badFlags.foreach(badf => badFlag(badf, s"'$badf' not allowed for a, A"))
+            case _ => true
+          })
+        case DateTimeXn      =>
+          def hasCC = op.length == 2 or errorAt(CC)("Date/time conversion must have two characters")
+          def goodCC = "HIklMSLNpzZsQBbhAaCYyjmdeRTrDFc".contains(cc) or errorAt(CC, 1)(s"'$cc' doesn't seem to be a date or time conversion")
+          goodies && hasCC && goodCC && noPrecision && only_-("date/time conversions")
+        case LiteralXn       =>
+          op match {
+            case "%" => goodies && noPrecision and width.foreach(_ => warningAt(Width)("width ignored on literal"))
+            case "n" => noFlags && noWidth && noPrecision
+          }
+        case ErrorXn         =>
+          errorAt(CC)(s"illegal conversion character '$cc'")
+          false
+        case _               =>
+          errorAt(CC)(s"bad conversion '$kind' for '$cc'")
+          false
+      }
+    }
+
+    // is the specifier OK with the given arg
+    def accepts(arg: Type): Boolean =
+      kind match {
+        case BooleanXn  => arg == BooleanTpe orElse warningAt(CC)("Boolean format is null test for non-Boolean")
+        case IntegralXn =>
+          arg == BigIntTpe || !cond(cc) {
+            case 'o' | 'x' | 'X' if hasAnyFlag("+ (") => "+ (".filter(hasFlag).foreach(bad => badFlag(bad, s"only use '$bad' for BigInt conversions to o, x, X")) ; true
+          }
+        case _ => true
+      }
+
+    // what arg type if any does the conversion accept
+    def acceptableVariants: List[Type] =
+      kind match {
+        case StringXn if hasFlag('#') => FormattableTpe :: Nil
+        case StringXn                 => AnyTpe :: Nil
+        case BooleanXn                => BooleanTpe :: NullTpe :: Nil
+        case HashXn                   => AnyTpe :: Nil
+        case CharacterXn              => CharTpe :: ByteTpe :: ShortTpe :: IntTpe :: Nil
+        case IntegralXn               => IntTpe :: LongTpe :: ByteTpe :: ShortTpe :: BigIntTpe :: Nil
+        case FloatingPointXn          => DoubleTpe :: FloatTpe :: BigDecimalTpe :: Nil
+        case DateTimeXn               => LongTpe :: CalendarTpe :: DateTpe :: Nil
+        case LiteralXn                => Nil
+        case ErrorXn                  => Nil
+        case _                        => errorAt(CC)(s"bad conversion '$kind' for '$cc'") ; Nil
+      }
+
+    // what flags does the conversion accept?
+    private def okFlags: String =
+      kind match {
+        case StringXn           => "-#<"
+        case BooleanXn | HashXn => "-<"
+        case LiteralXn          => "-"
+        case _                  => "-#+ 0,(<"
+      }
+
+    def hasFlag(f: Char) = flags.contains(f)
+    def hasAnyFlag(fs: String) = fs.exists(hasFlag)
 
     def badFlag(f: Char, msg: String) = {
-      val i = flags map (_.indexOf(f)) filter (_ >= 0) getOrElse 0
-      errorAtOffset(Flags, i, msg)
+      val i = flags.indexOf(f) match { case -1 => 0 case j => j }
+      errorAt(Flags, i)(msg)
     }
-    def groupPos(g: SpecGroup) = groupPosAt(g, 0)
-    def groupPosAt(g: SpecGroup, i: Int) = pos withPoint (pos.point + m.start(g.id) + i)
-    def errorAt(g: SpecGroup, msg: String) = c.error(groupPos(g), msg)
-    def errorAtOffset(g: SpecGroup, i: Int, msg: String) = c.error(groupPosAt(g, i), msg)
 
-    def noFlags = flags.isEmpty || falsely { errorAt(Flags, "flags not allowed") }
-    def noWidth = width.isEmpty || falsely { errorAt(Width, "width not allowed") }
-    def noPrecision = precision.isEmpty || falsely { errorAt(Precision, "precision not allowed") }
-    def only_-(msg: String) = {
-      val badFlags = (flags getOrElse "") filterNot { case '-' | '<' => true case _ => false }
-      badFlags.isEmpty || falsely { badFlag(badFlags(0), s"Only '-' allowed for $msg") }
-    }
-    protected def okFlags: String = allFlags
-    def goodFlags = {
-      val badFlags = flags map (_ filterNot (okFlags contains _))
-      for (bf <- badFlags; f <- bf) badFlag(f, s"Illegal flag '$f'")
-      badFlags.getOrElse("").isEmpty
-    }
-    def goodIndex = {
-      if (index.nonEmpty && hasFlag('<'))
-        c.warning(groupPos(Index), "Argument index ignored if '<' flag is present")
-      val okRange = index map (i => i > 0 && i <= argc) getOrElse true
-      okRange || hasFlag('<') || falsely { errorAt(Index, "Argument index out of range") }
-    }
-    /** Pick the type of an arg to format from among the variants
-     *  supported by a conversion.  This is the type of the temporary,
-     *  so failure results in an erroneous assignment to the first variant.
-     *  A more complete message would be nice.
-     */
-    def pickAcceptable(arg: Tree, variants: Type*): Option[Type] =
-      variants find (arg.tpe <:< _) orElse (
-        variants find (c.inferImplicitView(arg, arg.tpe, _) != EmptyTree)
-      ) orElse Some(variants(0))
+    def groupPosAt(g: SpecGroup, i: Int) = pos.withPoint(pos.point + descriptor.offset(g, i))
+    def errorAt(g: SpecGroup, i: Int = 0)(msg: String)   = c.error(groupPosAt(g, i), msg).tap(_ => reported = true)
+    def warningAt(g: SpecGroup, i: Int = 0)(msg: String) = c.warning(groupPosAt(g, i), msg)
   }
+
   object Conversion {
-    import SpecifierGroups.{ Spec, CC }
-    def apply(m: Match, p: Position, n: Int): Option[Conversion] = {
-      def badCC(msg: String) = {
-        val dk = new ErrorXn(m, p)
-        val at = if (dk.op.isEmpty) Spec else CC
-        dk.errorAt(at, msg)
+    def apply(m: Match, p: Position, argc: Int): Conversion = {
+      def kindOf(cc: Char) = cc match {
+        case 's' | 'S' => StringXn
+        case 'h' | 'H' => HashXn
+        case 'b' | 'B' => BooleanXn
+        case 'c' | 'C' => CharacterXn
+        case 'd' | 'o' |
+             'x' | 'X' => IntegralXn
+        case 'e' | 'E' |
+             'f' |
+             'g' | 'G' |
+             'a' | 'A' => FloatingPointXn
+        case 't' | 'T' => DateTimeXn
+        case '%' | 'n' => LiteralXn
+        case _         => ErrorXn
       }
-      def cv(cc: Char) = cc match {
-        case 'b' | 'B' | 'h' | 'H' | 's' | 'S' =>
-          new GeneralXn(m, p, n)
-        case 'c' | 'C' =>
-          new CharacterXn(m, p, n)
-        case 'd' | 'o' | 'x' | 'X' =>
-          new IntegralXn(m, p, n)
-        case 'e' | 'E' | 'f' | 'g' | 'G' | 'a' | 'A' =>
-          new FloatingPointXn(m, p, n)
-        case 't' | 'T' =>
-          new DateTimeXn(m, p, n)
-        case '%' | 'n' =>
-          new LiteralXn(m, p, n)
-        case _ =>
-          badCC(s"illegal conversion character '$cc'")
-          null
-      }
-      Option(m group CC.id) map (cc => cv(cc(0))) match {
-        case Some(x) => Option(x) filter (_.verify)
-        case None    =>
-          badCC(s"Missing conversion operator in '${m.matched}'; $literalHelp")
-          None
+      m.group(CC) match {
+        case Some(cc) => new Conversion(m, p, kindOf(cc(0)), argc).tap(_.verify)
+        case None     => new Conversion(m, p, ErrorXn, argc).tap(_.errorAt(Spec)(s"Missing conversion operator in '${m.matched}'; $literalHelp"))
       }
     }
     val literalHelp = "use %% for literal %, %n for newline"
   }
-  class GeneralXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    def accepts(arg: Tree) = cc match {
-      case 's' | 'S' if hasFlag('#') => pickAcceptable(arg, tagOfFormattable.tpe)
-      case 'b' | 'B' => if (arg.tpe <:< NullTpe) Some(NullTpe) else Some(BooleanTpe)
-      case _         => Some(AnyTpe)
-    }
-    override protected def okFlags = cc match {
-      case 's' | 'S' => "-#<"
-      case _         => "-<"
-    }
+
+  var reported = false
+}
+object FormatInterpolator {
+  // match a conversion specifier
+  private val formatPattern = """%(?:(\d+)\$)?([-#+ 0,(<]+)?(\d+)?(\.\d+)?([tT]?[%a-zA-Z])?""".r
+  // ordinal is the regex group index in the format pattern
+  private object SpecifierGroups extends Enumeration { val Spec, Index, Flags, Width, Precision, CC = Value }
+  import SpecifierGroups.{Value => SpecGroup}
+  private implicit class `enumlike`(val value: SpecGroup) extends AnyVal {
+    def ordinal = value.id
   }
-  class LiteralXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    import SpecifierGroups.Width
-    override val isLiteral = true
-    override def verify = op match {
-      case "%" => super.verify && noPrecision && truly(width foreach (_ => c.warning(groupPos(Width), "width ignored on literal")))
-      case "n" => noFlags && noWidth && noPrecision
-    }
-    override protected val okFlags = "-"
-    def accepts(arg: Tree) = None
+
+  private implicit class `boolean whimsy`(val value: Boolean) extends AnyVal {
+    def or(body: => Unit): Boolean     = value || { body ; false }
+    def orElse(body: => Unit): Boolean = value || { body ; true }
+    def and(body: => Unit): Boolean    = value && { body ; true }
+    def but(body: => Unit): Boolean    = value && { body ; false }
   }
-  class CharacterXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    override def verify = super.verify && noPrecision && only_-("c conversion")
-    def accepts(arg: Tree) = pickAcceptable(arg, CharTpe, ByteTpe, ShortTpe, IntTpe)
+  private implicit class `match game`(val descriptor: Match) extends AnyVal {
+    def at(g: SpecGroup): Int                 = descriptor.start(g.ordinal)
+    def offset(g: SpecGroup, i: Int = 0): Int = at(g) + i
+    def group(g: SpecGroup): Option[String]   = Option(descriptor.group(g.ordinal))
+    def stringOf(g: SpecGroup): String        = group(g).getOrElse("")
+    def intOf(g: SpecGroup): Option[Int]      = group(g).map(_.toInt)
   }
-  class IntegralXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    override def verify = {
-      def d_# = (cc == 'd' && hasFlag('#') &&
-        truly { badFlag('#', "# not allowed for d conversion") }
-      )
-      def x_comma = (cc != 'd' && hasFlag(',') &&
-        truly { badFlag(',', "',' only allowed for d conversion of integral types") }
-      )
-      super.verify && noPrecision && !d_# && !x_comma
-    }
-    override def accepts(arg: Tree) = {
-      def isBigInt = arg.tpe <:< tagOfBigInt.tpe
-      val maybeOK = "+ ("
-      def bad_+ = cond(cc) {
-        case 'o' | 'x' | 'X' if hasAnyFlag(maybeOK) && !isBigInt =>
-          maybeOK filter hasFlag foreach (badf =>
-            badFlag(badf, s"only use '$badf' for BigInt conversions to o, x, X"))
-          true
-      }
-      if (bad_+) None else pickAcceptable(arg, IntTpe, LongTpe, ByteTpe, ShortTpe, tagOfBigInt.tpe)
-    }
-  }
-  class FloatingPointXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    override def verify = super.verify && (cc match {
-      case 'a' | 'A' =>
-        val badFlags = ",(" filter hasFlag
-        noPrecision && badFlags.isEmpty || falsely {
-          badFlags foreach (badf => badFlag(badf, s"'$badf' not allowed for a, A"))
+  private def escapeHatch(c: Context)(s0: String, pos: c.universe.Position): PartialFunction[Throwable, String] = {
+    // trailing backslash, octal escape, or other
+    case e: StringContext.InvalidEscapeException =>
+      def errPoint = pos.withPoint(pos.point + e.index)
+      def octalOf(c: Char) = Character.digit(c, 8)
+      def alt = {
+        def altOf(i: Int) = i match {
+          case '\b' => "\\b"
+          case '\t' => "\\t"
+          case '\n' => "\\n"
+          case '\f' => "\\f"
+          case '\r' => "\\r"
+          case '\"' => "$" /* avoid lint warn */ +
+            "{'\"'} or a triple-quoted literal \"\"\"with embedded \" or \\u0022\"\"\""
+          case '\'' => "'"
+          case '\\' => """\\"""
+          case x    => "\\u%04x" format x
         }
-      case _ => true
-    })
-    def accepts(arg: Tree) = pickAcceptable(arg, DoubleTpe, FloatTpe, tagOfBigDecimal.tpe)
-  }
-  class DateTimeXn(val m: Match, val pos: Position, val argc: Int) extends Conversion {
-    import SpecifierGroups.CC
-    def hasCC = (op.length == 2 ||
-      falsely { errorAt(CC, "Date/time conversion must have two characters") })
-    def goodCC = ("HIklMSLNpzZsQBbhAaCYyjmdeRTrDFc" contains cc) ||
-      falsely { errorAtOffset(CC, 1, s"'$cc' doesn't seem to be a date or time conversion") }
-    override def verify = super.verify && hasCC && goodCC && noPrecision && only_-("date/time conversions")
-    def accepts(arg: Tree) = pickAcceptable(arg, LongTpe, tagOfCalendar.tpe, tagOfDate.tpe)
-  }
-  class ErrorXn(val m: Match, val pos: Position) extends Conversion {
-    val argc = 0
-    override def verify = false
-    def accepts(arg: Tree) = None
+        val suggest = {
+          val r = "([0-7]{1,3}).*".r
+          s0.drop(e.index + 1) match {
+            case r(n) => altOf(n.foldLeft(0) { case (a, o) => (8 * a) + (o - '0') })
+            case _    => ""
+          }
+        }
+        if (suggest.isEmpty) ""
+        else s"use $suggest instead"
+      }
+      def control(ctl: Char, i: Int, name: String) =
+        c.error(errPoint, s"\\$ctl is not supported, but for $name use \\u${f"$i%04x"};\n${e.getMessage}")
+      if (e.index == s0.length - 1) c.error(errPoint, """Trailing '\' escapes nothing.""")
+      else s0(e.index + 1) match {
+        case 'a' => control('a', 0x7, "alert or BEL")
+        case 'v' => control('v', 0xB, "vertical tab")
+        case 'e' => control('e', 0x1B, "escape")
+        case i if octalOf(i) >= 0 => c.error(errPoint, s"octal escape literals are unsupported: $alt")
+        case _   => c.error(errPoint, e.getMessage)
+      }
+      s0
   }
 }

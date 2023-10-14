@@ -1,0 +1,6 @@
+t12110.scala:20: error: type mismatch;
+ found   : Unit
+ required: Int
+    case value unapplyer () => println(value)
+               ^
+1 error

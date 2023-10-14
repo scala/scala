@@ -24,17 +24,30 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
  //_
 }
 
-/** A builder for mutable sequence of characters.  This class provides an API
-  * mostly compatible with `java.lang.StringBuilder`, except where there are
-  * conflicts with the Scala collections API (such as the `reverse` method.)
-  *
-  * $multipleResults
-  *
-  * @define Coll `mutable.IndexedSeq`
-  * @define coll string builder
-  * @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]
-  * section on `StringBuilders` for more information.
-  */
+/** A builder of `String` which is also a mutable sequence of characters.
+ *
+ *  This class provides an API mostly compatible with `java.lang.StringBuilder`,
+ *  except where there are conflicts with the Scala collections API, such as the `reverse` method:
+ *  [[reverse]] produces a new `StringBuilder`, and [[reverseInPlace]] mutates this builder.
+ *
+ *  Mutating operations return either `this.type`, i.e., the current builder, or `Unit`.
+ *
+ *  Other methods extract data or information from the builder without mutating it.
+ *
+ *  The distinction is also reflected in naming conventions used by collections,
+ *  such as `append`, which mutates, and `appended`, which does not, or `reverse`,
+ *  which does not mutate, and `reverseInPlace`, which does.
+ *
+ *  The `String` result may be obtained using either `result()` or `toString`.
+ *
+ *  $multipleResults
+ *
+ *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]
+ *  section on `StringBuilders` for more information.
+ *
+ *  @define Coll `mutable.IndexedSeq`
+ *  @define coll string builder
+ */
 @SerialVersionUID(3L)
 final class StringBuilder(val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
   with ReusableBuilder[Char, String]
@@ -115,7 +128,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   // append* methods delegate to the underlying java.lang.StringBuilder:
 
-  def appendAll(xs: String): StringBuilder = {
+  def appendAll(xs: String): this.type = {
     underlying append xs
     this
   }
@@ -126,7 +139,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  x   an `Any` object.
     *  @return     this StringBuilder.
     */
-  def append(x: Any): StringBuilder = {
+  def append(x: Any): this.type = {
     underlying append String.valueOf(x)
     this
   }
@@ -136,7 +149,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  s   a String.
     *  @return     this StringBuilder.
     */
-  def append(s: String): StringBuilder = {
+  def append(s: String): this.type = {
     underlying append s
     this
   }
@@ -146,7 +159,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  cs   a CharSequence.
     *  @return     this StringBuilder.
     */
-  def append(cs: java.lang.CharSequence): StringBuilder = {
+  def append(cs: java.lang.CharSequence): this.type = {
     underlying.append(cs match {
       // Both cases call into append(<CharSequence>), but java SB
       // looks up type at runtime and has fast path for SB.
@@ -161,7 +174,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param s
     *  @return
     */
-  def append(s: StringBuilder): StringBuilder = {
+  def append(s: StringBuilder): this.type = {
     underlying append s.underlying
     this
   }
@@ -171,7 +184,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  xs  the characters to be appended.
     *  @return     this StringBuilder.
     */
-  def appendAll(xs: IterableOnce[Char]): StringBuilder = {
+  def appendAll(xs: IterableOnce[Char]): this.type = {
     xs match {
       case x: WrappedString => underlying append x.unwrap
       case x: ArraySeq.ofChar => underlying append x.array
@@ -193,7 +206,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  xs  the characters to be appended.
     *  @return     a reference to this object.
     */
-  def appendAll(xs: Array[Char]): StringBuilder = {
+  def appendAll(xs: Array[Char]): this.type = {
     underlying append xs
     this
   }
@@ -205,7 +218,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  len     the numbers of Chars to append.
     *  @return         this StringBuilder.
     */
-  def appendAll(xs: Array[Char], offset: Int, len: Int): StringBuilder = {
+  def appendAll(xs: Array[Char], offset: Int, len: Int): this.type = {
     underlying.append(xs, offset, len)
     this
   }
@@ -217,14 +230,14 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param   x  a primitive value
     *  @return     This StringBuilder.
     */
-  def append(x: Boolean): StringBuilder = { underlying append x ; this }
-  def append(x: Byte): StringBuilder = append(x.toInt)
-  def append(x: Short): StringBuilder = append(x.toInt)
-  def append(x: Int): StringBuilder = { underlying append x ; this }
-  def append(x: Long): StringBuilder = { underlying append x ; this }
-  def append(x: Float): StringBuilder = { underlying append x ; this }
-  def append(x: Double): StringBuilder = { underlying append x ; this }
-  def append(x: Char): StringBuilder = { underlying append x ; this }
+  def append(x: Boolean): this.type = { underlying append x ; this }
+  def append(x: Byte): this.type = append(x.toInt)
+  def append(x: Short): this.type = append(x.toInt)
+  def append(x: Int): this.type = { underlying append x ; this }
+  def append(x: Long): this.type = { underlying append x ; this }
+  def append(x: Float): this.type = { underlying append x ; this }
+  def append(x: Double): this.type = { underlying append x ; this }
+  def append(x: Char): this.type = { underlying append x ; this }
 
   /** Remove a subsequence of Chars from this sequence, starting at the
     *  given start index (inclusive) and extending to the end index (exclusive)
@@ -235,7 +248,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return        This StringBuilder.
     *  @throws StringIndexOutOfBoundsException   if start < 0 || start > end
     */
-  def delete(start: Int, end: Int): StringBuilder = {
+  def delete(start: Int, end: Int): this.type = {
     underlying.delete(start, end)
     this
   }
@@ -249,7 +262,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return        This StringBuilder.
     *  @throws StringIndexOutOfBoundsException if start < 0, start > length, or start > end
     */
-  def replace(start: Int, end: Int, str: String): StringBuilder = {
+  def replace(start: Int, end: Int, str: String): this.type = {
     underlying.replace(start, end, str)
     this
   }
@@ -266,7 +279,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     * @throws StringIndexOutOfBoundsException  if index < 0, index > length,
     *         offset < 0, len < 0, or (offset + len) > str.length.
     */
-  def insertAll(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
+  def insertAll(index: Int, str: Array[Char], offset: Int, len: Int): this.type = {
     underlying.insert(index, str, offset, len)
     this
   }
@@ -279,7 +292,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return         this StringBuilder.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
-  def insert(index: Int, x: Any): StringBuilder = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Any): this.type = insert(index, String.valueOf(x))
 
   /** Inserts the String into this character sequence.
     *
@@ -288,7 +301,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return       this StringBuilder.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
-  def insert(index: Int, x: String): StringBuilder = {
+  def insert(index: Int, x: String): this.type = {
     underlying.insert(index, x)
     this
   }
@@ -300,7 +313,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return       this StringBuilder.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
-  def insertAll(index: Int, xs: IterableOnce[Char]): StringBuilder =
+  def insertAll(index: Int, xs: IterableOnce[Char]): this.type =
     insertAll(index, (ArrayBuilder.make[Char] ++= xs).result())
 
   /** Inserts the given Array[Char] into this sequence at the given index.
@@ -310,7 +323,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return       this StringBuilder.
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
-  def insertAll(index: Int, xs: Array[Char]): StringBuilder = {
+  def insertAll(index: Int, xs: Array[Char]): this.type = {
     underlying.insert(index, xs)
     this
   }
@@ -322,14 +335,14 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  x     a primitive value.
     *  @return       this StringBuilder.
     */
-  def insert(index: Int, x: Boolean): StringBuilder = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Byte): StringBuilder    = insert(index, x.toInt)
-  def insert(index: Int, x: Short): StringBuilder   = insert(index, x.toInt)
-  def insert(index: Int, x: Int): StringBuilder     = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Long): StringBuilder    = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Float): StringBuilder   = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Double): StringBuilder  = insert(index, String.valueOf(x))
-  def insert(index: Int, x: Char): StringBuilder    = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Boolean): this.type = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Byte): this.type    = insert(index, x.toInt)
+  def insert(index: Int, x: Short): this.type   = insert(index, x.toInt)
+  def insert(index: Int, x: Int): this.type     = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Long): this.type    = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Float): this.type   = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Double): this.type  = insert(index, String.valueOf(x))
+  def insert(index: Int, x: Char): this.type    = insert(index, String.valueOf(x))
 
   /** Sets the length of the character sequence.  If the current sequence
     *  is shorter than the given length, it is padded with nulls; if it is

@@ -26,4 +26,9 @@ class SetBenchmark {
   @Benchmark def set4AddElement(bh: Blackhole): Unit = {
     bh.consume(base + "e")
   }
+
+  // benchmark for the optimized concat method
+  @Benchmark def set4Concat(bh: Blackhole): Unit = {
+    bh.consume(base concat base)
+  }
 }

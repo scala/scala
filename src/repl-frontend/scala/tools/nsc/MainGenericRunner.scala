@@ -21,7 +21,7 @@ object JarRunner extends CommonRunner {
     val jarURLs   = util.ClassPath expandManifestPath jarPath
     val urls      = if (jarURLs.isEmpty) io.File(jarPath).toURL +: settings.classpathURLs else jarURLs
 
-    if (settings.Ylogcp) {
+    if (settings.Ylogcp.value) {
       Console.err.println("Running jar with these URLs as the classpath:")
       urls foreach println
     }
@@ -44,6 +44,7 @@ class MainGenericRunner {
   def process(args: Array[String]): Boolean = {
     val command = new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
     import command.{settings, howToRun, thingToRun, shortUsageMsg}
+    import MainGenericRunner.CommandFailure
 
     // only created for info message
     def sampleCompiler = new Global(settings)
@@ -75,7 +76,7 @@ class MainGenericRunner {
         case AsJar    =>
           JarRunner.runJar(settings, thingToRun, command.arguments)
         case Error =>
-          None
+          Some(CommandFailure)
         case _  =>
           // We start the repl when no arguments are given.
           if (settings.Wconf.isDefault && settings.lint.isDefault) {
@@ -90,6 +91,7 @@ class MainGenericRunner {
 
       runTarget() match {
         case Some(ScriptCompileError) => false
+        case Some(CommandFailure) => false
         case e @ Some(ex) => errorFn("", e)
         case _            => true
       }
@@ -105,5 +107,8 @@ class MainGenericRunner {
 }
 
 object MainGenericRunner extends MainGenericRunner {
+  // control indicating command ran but non-zero exit
+  object CommandFailure extends scala.util.control.ControlThrowable("Command failed")
+
   def main(args: Array[String]): Unit = if (!process(args)) System.exit(1)
 }

@@ -43,19 +43,9 @@ trait MemberLookupBase {
   private def explanation: String =
     if (showExplanation) {
       showExplanation = false
-      """
-      |Quick crash course on using Scaladoc links
-      |==========================================
-      |Disambiguating terms and types: Suffix terms with '$' and types with '!' in case both names are in use:
-      | - [[scala.collection.immutable.List!.apply class List's apply method]] and
-      | - [[scala.collection.immutable.List$.apply object List's apply method]]
-      |Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:
-      | - [[[scala.collection.immutable.List$.fill[A](Int)(=> A):List[A]* Fill with a single parameter]]]
-      | - [[[scala.collection.immutable.List$.fill[A](Int, Int)(=> A):List[List[A]]* Fill with a two parameters]]]
-      |Notes:
-      | - you can use any number of matching square brackets to avoid interference with the signature
-      | - you can use \\. to escape dots in prefixes (don't forget to use * at the end to match the signature!)
-      | - you can use \\# to escape hashes, otherwise they will be considered as delimiters, like dots.""".stripMargin
+      """For an explanation of how to resolve ambiguous links,
+        |see "Resolving Ambiguous Links within Scaladoc Comments" in the Scaladoc for Library Authors guide
+        |(https://docs.scala-lang.org/overviews/scaladoc/for-library-authors.html)""".stripMargin
     } else ""
 
   def memberLookup(pos: Position, query: String, site: Symbol): LinkTo = {
@@ -146,8 +136,13 @@ trait MemberLookupBase {
     result
   }
 
+  private def removeBackticks(member: String): String =
+    if (member.matches("(`).+\\1"))
+      member.substring(1, member.length() - 1)
+    else member
+
   private def lookupInTemplate(pos: Position, member: String, container: Symbol, strategy: SearchStrategy): List[Symbol] = {
-    val name = member.stripSuffix("$").stripSuffix("!").stripSuffix("*")
+    val name = removeBackticks(member.stripSuffix("$").stripSuffix("!").stripSuffix("*"))
     def signatureMatch(sym: Symbol): Boolean = externalSignature(sym).startsWith(name)
 
     // We need to cleanup the bogus classes created by the .class file parser. For example, [[scala.Predef]] resolves

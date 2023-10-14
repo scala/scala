@@ -1,0 +1,4 @@
+predefer_2.scala:10: error: not found: value x
+    println((x,y))
+             ^
+1 error

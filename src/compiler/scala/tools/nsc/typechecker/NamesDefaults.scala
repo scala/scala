@@ -405,7 +405,7 @@ trait NamesDefaults { self: Analyzer =>
    */
   def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name]): (List[Symbol], Boolean) = {
     // The argument list contains first a mix of positional args and named args that are on the
-    // right parameter position, and then a number or named args on different positions.
+    // right parameter position, and then a number of named args on different positions.
 
     // collect all named arguments whose position does not match the parameter they define
     val namedArgsOnChangedPosition = args.zip(params) dropWhile {
@@ -413,9 +413,8 @@ trait NamesDefaults { self: Analyzer =>
         val n = argName(arg)
         // drop the argument if
         //  - it's not named, or
-        //  - it's named, but defines the parameter on its current position, or
-        //  - it's named, but none of the parameter names matches (treated as a positional argument, an assignment expression)
-        n.isEmpty || n.get == param.name || params.forall(_.name != n.get)
+        //  - it's named, but defines the parameter on its current position
+        n.isEmpty || n.get == param.name
     } map (_._1)
 
     val paramsWithoutPositionalArg = params.drop(args.length - namedArgsOnChangedPosition.length)
@@ -433,6 +432,8 @@ trait NamesDefaults { self: Analyzer =>
    * Extend the argument list `givenArgs` with default arguments. Defaults are added
    * as named arguments calling the corresponding default getter.
    *
+   * Returns the extended arg list and missing parameters if any.
+   *
    * Example: given
    *   def foo(x: Int = 2, y: String = "def")
    *   foo(y = "lt")
@@ -443,8 +444,8 @@ trait NamesDefaults { self: Analyzer =>
                   pos: scala.reflect.internal.util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params, nameOfNamedArg)
-      if (missing forall (_.hasDefault)) {
-        val defaultArgs = missing flatMap (p => {
+      if (missing.forall(_.hasDefault)) {
+        val defaultArgs = missing flatMap { p =>
           val defGetter = defaultGetter(p, context)
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
           if (defGetter == NoSymbol) None // prevent crash in erroneous trees, #3649
@@ -463,9 +464,9 @@ trait NamesDefaults { self: Analyzer =>
               else NamedArg(Ident(p.name), default2)
             })
           }
-        })
+        }
         (givenArgs ::: defaultArgs, Nil)
-      } else (givenArgs, missing filterNot (_.hasDefault))
+      } else (givenArgs, missing.filterNot(_.hasDefault))
     } else (givenArgs, Nil)
   }
 
@@ -523,7 +524,7 @@ trait NamesDefaults { self: Analyzer =>
    *  Verifies that names are not specified twice, and positional args don't appear after named ones.
    */
   def removeNames(typer: Typer)(args: List[Tree], params: List[Symbol]): (List[Tree], Array[Int]) = {
-    implicit val context0 = typer.context
+    implicit val context0: Context = typer.context
     def matchesName(param: Symbol, name: Name, argIndex: Int) = {
       def warn(msg: String, since: String) = context0.deprecationWarning(args(argIndex).pos, param, msg, since)
       def checkDeprecation(anonOK: Boolean) =
@@ -551,10 +552,9 @@ trait NamesDefaults { self: Analyzer =>
       var positionalAllowed = true
       def stripNamedArg(arg: NamedArg, argIndex: Int): Tree = {
         val NamedArg(Ident(name), rhs) = arg: @unchecked
-        params indexWhere (p => matchesName(p, name, argIndex)) match {
+        params.indexWhere(p => matchesName(p, name, argIndex)) match {
           case -1 =>
-            val warnVariableInScope = !currentRun.isScala3 && context0.lookupSymbol(name, _.isVariable).isSuccess
-            UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope)
+            UnknownParameterNameNamesDefaultError(arg, name, warnVariableInScope = context0.lookupSymbol(name, _.isVariable).isSuccess)
           case paramPos if argPos contains paramPos =>
             val existingArgIndex = argPos.indexWhere(_ == paramPos)
             val otherName = Some(args(paramPos)) collect {
@@ -573,12 +573,10 @@ trait NamesDefaults { self: Analyzer =>
           val t = stripNamedArg(arg, argIndex)
           if (!t.isErroneous && argPos(argIndex) < 0) argPos(argIndex) = argIndex
           t
-        case (arg, argIndex) =>
-          if (positionalAllowed) {
-            argPos(argIndex) = argIndex
-            arg
-          } else
-            PositionalAfterNamedNamesDefaultError(arg)
+        case (arg, argIndex) if positionalAllowed =>
+          argPos(argIndex) = argIndex
+          arg
+        case (arg, _) => PositionalAfterNamedNamesDefaultError(arg)
       }
     }
     (namelessArgs, argPos)

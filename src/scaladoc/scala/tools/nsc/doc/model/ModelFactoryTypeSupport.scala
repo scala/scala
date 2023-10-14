@@ -17,7 +17,7 @@ package model
 import base._
 import diagram._
 import scala.annotation.nowarn
-import scala.collection._
+import scala.collection.{immutable, mutable}
 
 /** This trait extracts all required information for documentation from compilation units */
 trait ModelFactoryTypeSupport {
@@ -45,7 +45,7 @@ trait ModelFactoryTypeSupport {
           appendType0(tp)
         case tp :: tps =>
           appendType0(tp)
-          nameBuffer append sep
+          nameBuffer.append(sep)
           appendTypes0(tps, sep)
       }
 
@@ -151,7 +151,7 @@ trait ModelFactoryTypeSupport {
           }
 
           val prefix =
-            if (!settings.docNoPrefixes && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
+            if (!settings.docNoPrefixes.value && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
               if (!owner.isRefinementClass) {
                 val qName = makeQualifiedName(owner, Some(inTpl.sym))
                 if (qName != "") qName + "." else ""
@@ -202,15 +202,16 @@ trait ModelFactoryTypeSupport {
         /* Polymorphic types */
         case PolyType(tparams, result) =>
           assert(tparams.nonEmpty, "polymorphic type must have at least one type parameter")
-          def typeParamsToString(tps: List[Symbol]): String = if (tps.isEmpty) "" else
-            tps.map{tparam =>
-              tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
-            }.mkString("[", ", ", "]")
-          nameBuffer append typeParamsToString(tparams)
+          def typeParamsToString(tps: List[Symbol]): String =
+            if (tps.isEmpty) ""
+            else
+              tps.map { tparam =>
+                tparam.varianceString + tparam.unexpandedName + typeParamsToString(tparam.typeParams)
+              }.mkString("[", ", ", "]")
+          nameBuffer.append(typeParamsToString(tparams))
           appendType0(result)
 
         case et@ExistentialType(quantified, underlying) =>
-
           def appendInfoStringReduced(sym: Symbol, tp: Type): Unit = {
             if (sym.isType && !sym.isAliasType && !sym.isClass) {
                 tp match {
@@ -320,7 +321,7 @@ trait ModelFactoryTypeSupport {
 
     // scala/bug#4360: Entity caching depends on both the type AND the template it's in, as the prefixes might change for the
     // same type based on the template the type is shown in.
-    if (settings.docNoPrefixes)
+    if (settings.docNoPrefixes.value)
       typeCache.getOrElseUpdate(aType, createTypeEntity)
     else createTypeEntity
   }

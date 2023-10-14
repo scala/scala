@@ -123,15 +123,21 @@ object ArrayOps {
   private[collection] final class ArrayIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = 0
     private[this] val len = xs.length
-    override def knownSize = len - pos
+    override def knownSize: Int = len - pos
     def hasNext: Boolean = pos < len
-    def next(): A = try {
+    def next(): A = {
+      if (pos >= xs.length) Iterator.empty.next()
       val r = xs(pos)
       pos += 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+    }
     override def drop(n: Int): Iterator[A] = {
-      if (n > 0) pos = Math.min(xs.length, pos + n)
+      if (n > 0) {
+        val newPos = pos + n
+        pos =
+          if (newPos < 0 /* overflow */) len
+          else Math.min(len, newPos)
+      }
       this
     }
   }
@@ -140,11 +146,12 @@ object ArrayOps {
   private final class ReverseIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
-    def next(): A = try {
+    def next(): A = {
+      if (pos < 0) Iterator.empty.next()
       val r = xs(pos)
       pos -= 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+    }
 
     override def drop(n: Int): Iterator[A] = {
       if (n > 0) pos = Math.max( -1, pos - n)
@@ -168,6 +175,9 @@ object ArrayOps {
     * an implementation that copies the data to a boxed representation for use with `Arrays.sort`.
     */
   private final val MaxStableSortLength = 300
+
+  /** Avoid an allocation in [[collect]]. */
+  private val fallback: Any => Any = _ => fallback
 }
 
 /** This class serves as a wrapper for `Array`s with many of the operations found in
@@ -219,14 +229,14 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return  the first element of this array.
     *  @throws NoSuchElementException if the array is empty.
     */
-  def head: A = try xs.apply(0) catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("head of empty array") }
+  def head: A = if (nonEmpty) xs.apply(0) else throw new NoSuchElementException("head of empty array")
 
   /** Selects the last element.
     *
     * @return The last element of this array.
     * @throws NoSuchElementException If the array is empty.
     */
-  def last: A = try xs.apply(xs.length-1) catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("last of empty array") }
+  def last: A = if (nonEmpty) xs.apply(xs.length-1) else throw new NoSuchElementException("last of empty array")
 
   /** Optionally selects the first element.
     *
@@ -492,7 +502,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this array to an [[scala.util.Either]]
     *
-    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]]. */
   def partitionMap[A1: ClassTag, A2: ClassTag](f: A => Either[A1, A2]): (Array[A1], Array[A2]) = {
     val res1 = ArrayBuilder.make[A1]
@@ -1005,18 +1015,13 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *                `pf` to each element on which it is defined and collecting the results.
     *                The order of the elements is preserved.
     */
-  def collect[B : ClassTag](pf: PartialFunction[A, B]): Array[B] = {
-    var i = 0
-    var matched = true
-    def d(x: A): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
+  def collect[B: ClassTag](pf: PartialFunction[A, B]): Array[B] = {
+    val fallback: Any => Any = ArrayOps.fallback
     val b = ArrayBuilder.make[B]
-    while(i < xs.length) {
-      matched = true
-      val v = pf.applyOrElse(xs(i), d)
-      if(matched) b += v
+    var i = 0
+    while (i < xs.length) {
+      val v = pf.applyOrElse(xs(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[B])
       i += 1
     }
     b.result()
@@ -1024,17 +1029,12 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   /** Finds the first element of the array for which the given partial function is defined, and applies the
     * partial function to it. */
-  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = {
+  def collectFirst[B](@deprecatedName("f","2.13.9") pf: PartialFunction[A, B]): Option[B] = {
+    val fallback: Any => Any = ArrayOps.fallback
     var i = 0
-    var matched = true
-    def d(x: A): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
-    while(i < xs.length) {
-      matched = true
-      val v = f.applyOrElse(xs(i), d)
-      if(matched) return Some(v)
+    while (i < xs.length) {
+      val v = pf.applyOrElse(xs(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) return Some(v.asInstanceOf[B])
       i += 1
     }
     None
@@ -1478,7 +1478,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   /** Create a copy of this array with the specified element type. */
   def toArray[B >: A: ClassTag]: Array[B] = {
     val destination = new Array[B](xs.length)
-    copyToArray(destination, 0)
+    @annotation.unused val copied = copyToArray(destination, 0)
+    //assert(copied == xs.length)
     destination
   }
 
@@ -1594,30 +1595,53 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     */
   def sliding(size: Int, step: Int = 1): Iterator[Array[A]] = mutable.ArraySeq.make(xs).sliding(size, step).map(_.toArray[A])
 
-  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original array, with the elements taken in order.  Thus, `Array("x", "y")` and `Array("y", "y")`
-    *  are both length-2 combinations of `Array("x", "y", "y")`, but `Array("y", "x")` is not.  If there is
-    *  more than one way to generate the same subsequence, only one will be returned.
-    *
-    *  For example, `Array("x", "y", "y", "y")` has three different ways to generate `Array("x", "y")` depending on
-    *  whether the first, second, or third `"y"` is selected.  However, since all are
-    *  identical, only one will be chosen.  Which of the three will be taken is an
-    *  implementation detail that is not defined.
-    *
-    *  @return   An Iterator which traverses the possible n-element combinations of this array.
-    *  @example  {{{
-    *  Array("a", "b", "b", "b", "c").combinations(2) == Iterator(Array(a, b), Array(a, c), Array(b, b), Array(b, c))
-    *  }}}
-    */
+  /** Iterates over combinations of elements.
+   *
+   *  A '''combination''' of length `n` is a sequence of `n` elements selected in order of their first index in this sequence.
+   *
+   *  For example, `"xyx"` has two combinations of length 2. The `x` is selected first: `"xx"`, `"xy"`.
+   *  The sequence `"yx"` is not returned as a combination because it is subsumed by `"xy"`.
+   *
+   *  If there is more than one way to generate the same combination, only one will be returned.
+   *
+   *  For example, the result `"xy"` arbitrarily selected one of the `x` elements.
+   *
+   *  As a further illustration, `"xyxx"` has three different ways to generate `"xy"` because there are three elements `x`
+   *  to choose from. Moreover, there are three unordered pairs `"xx"` but only one is returned.
+   *
+   *  It is not specified which of these equal combinations is returned. It is an implementation detail
+   *  that should not be relied on. For example, the combination `"xx"` does not necessarily contain
+   *  the first `x` in this sequence. This behavior is observable if the elements compare equal
+   *  but are not identical.
+   *
+   *  As a consequence, `"xyx".combinations(3).next()` is `"xxy"`: the combination does not reflect the order
+   *  of the original sequence, but the order in which elements were selected, by "first index";
+   *  the order of each `x` element is also arbitrary.
+   *
+   *  @return   An Iterator which traverses the n-element combinations of this array
+   *  @example {{{
+   *    Array('a', 'b', 'b', 'b', 'c').combinations(2).map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(a, b)
+   *    // Array(a, c)
+   *    // Array(b, b)
+   *    // Array(b, c)
+   *    Array('b', 'a', 'b').combinations(2).map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(b, b)
+   *    // Array(b, a)
+   *  }}}
+   */
   def combinations(n: Int): Iterator[Array[A]] = mutable.ArraySeq.make(xs).combinations(n).map(_.toArray[A])
 
-  /** Iterates over distinct permutations.
-    *
-    *  @return   An Iterator which traverses the distinct permutations of this array.
-    *  @example {{{
-    *  Array("a", "b", "b").permutations == Iterator(Array(a, b, b), Array(b, a, b), Array(b, b, a))
-    *  }}}
-    */
+  /** Iterates over distinct permutations of elements.
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this array.
+   *  @example {{{
+   *    Array('a', 'b', 'b').permutations.map(runtime.ScalaRunTime.stringOf).foreach(println)
+   *    // Array(a, b, b)
+   *    // Array(b, a, b)
+   *    // Array(b, b, a)
+   *  }}}
+   */
   def permutations: Iterator[Array[A]] = mutable.ArraySeq.make(xs).permutations.map(_.toArray[A])
 
   // we have another overload here, so we need to duplicate this method

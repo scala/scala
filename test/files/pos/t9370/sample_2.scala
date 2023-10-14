@@ -1,5 +1,5 @@
 
-// scalac: -Xplugin:/tmp -Xplugin:. -Xplugin-require:timebomb -Ystop-after:parser
+// scalac: -Xplugin:/tmp-fake -Xplugin:. -Xplugin-require:timebomb -Ystop-after:parser
 //
 package sample
 

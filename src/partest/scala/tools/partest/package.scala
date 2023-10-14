@@ -18,6 +18,7 @@ import java.util.concurrent.{Callable, ExecutorService}
 import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 import scala.tools.nsc.util.Exceptional
 
 package object partest {
@@ -57,6 +58,12 @@ package object partest {
 
   /** Sources have a numerical group, specified by name_7 and so on. */
   private val GroupPattern = """.*_(\d+)""".r
+  private object IntOf {
+    def unapply(ds: String): Some[Int] = Some {
+      try ds.toInt
+      catch { case _: NumberFormatException => -1 }
+    }
+  }
 
   implicit class `special string ops`(private val s: String) extends AnyVal {
     def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.linesIterator else Iterator.empty
@@ -84,11 +91,11 @@ package object partest {
     def hasExtension(ext: String) = sf hasExtension ext
     def changeExtension(ext: String): File = (sf changeExtension ext).jfile
 
-    /** The group number for this source file, or -1 for no group. */
+    /** The group number for this source file, or -1 for no group or out of range. */
     def group: Int =
       sf.stripExtension match {
-        case GroupPattern(g) if g.toInt >= 0 => g.toInt
-        case _                               => -1
+        case GroupPattern(IntOf(g)) => g
+        case _                      => -1
       }
 
     // Files.readString on jdk 11
@@ -122,8 +129,6 @@ package object partest {
 
   implicit def temporaryPath2File(x: Path): File = x.jfile
   implicit def stringPathToJavaFile(path: String): File = new File(path)
-
-  implicit lazy val implicitConversions = scala.language.implicitConversions
 
   def fileSeparator = java.io.File.separator
   def pathSeparator = java.io.File.pathSeparator

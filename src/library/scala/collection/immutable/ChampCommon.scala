@@ -12,7 +12,7 @@
 
 package scala.collection.immutable
 
-
+import scala.collection.AbstractIterator
 import java.lang.Integer.bitCount
 import java.lang.Math.ceil
 import java.lang.System.arraycopy
@@ -104,7 +104,7 @@ private[collection] abstract class Node[T <: Node[T]] {
   *
   * @tparam T the trie node type we are iterating over
   */
-private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
+private[immutable] abstract class ChampBaseIterator[A, T <: Node[T]] extends AbstractIterator[A] {
 
   import Node.MaxDepth
 
@@ -192,7 +192,7 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   *
   * @tparam T the trie node type we are iterating over
   */
-private[immutable] abstract class ChampBaseReverseIterator[T <: Node[T]] {
+private[immutable] abstract class ChampBaseReverseIterator[A, T <: Node[T]] extends AbstractIterator[A] {
 
   import Node.MaxDepth
 

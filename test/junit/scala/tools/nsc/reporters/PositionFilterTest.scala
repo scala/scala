@@ -19,17 +19,15 @@ class PositionFilterTest {
 
   def createFilter: FilteringReporter = new FilteringReporter {
     def settings: Settings = store.settings
-    def doReport(pos: Position, msg: String, severity: Severity): Unit = store.doReport(pos, msg, severity)
+    override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+      store.doReport(pos, msg, severity, actions)
   }
 
   @Test
   def `filters split messages`(): Unit = {
     val filter = createFilter
     val msg = "This is an important warning."
-    val longMessage = s"""$msg
-          |----
-          |Here is some fine print.
-          |Be sure to read it carefully.""".stripMargin
+    val longMessage = s"$msg [quickfixable]"
     filter.warning(pos, longMessage)
     filter.warning(pos, msg)
     assertEquals(1, store.infos.size)

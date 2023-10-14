@@ -209,7 +209,6 @@ trait StdNames {
     final val RETURNkw: TermName    = kw("return")
     final val SEALEDkw: TermName    = kw("sealed")
     final val SUPERkw: TermName     = kw("super")
-    final val THENkw: TermName      = kw("then")
     final val THISkw: TermName      = kw("this")
     final val THROWkw: TermName     = kw("throw")
     final val TRAITkw: TermName     = kw("trait")
@@ -321,6 +320,7 @@ trait StdNames {
     final val SignatureATTR: NameType              = nameType("Signature")
     final val SourceFileATTR: NameType             = nameType("SourceFile")
     final val SyntheticATTR: NameType              = nameType("Synthetic")
+    final val PermittedSubclassesATTR: NameType    = nameType("PermittedSubclasses")
 
     final val scala_ : NameType = nameType("scala")
 
@@ -473,6 +473,7 @@ trait StdNames {
     def unexpandedName(name: Name): Name =
       name.lastIndexOf("$$") match {
         case 0 | -1 => name
+        case 1 if name.charAt(0) == '_' => if (name.isTermName) nme.WILDCARD else tpnme.WILDCARD
         case idx0   =>
           // Sketchville - We've found $$ but if it's part of $$$ or $$$$
           // or something we need to keep the bonus dollars, so e.g. foo$$$outer
@@ -679,10 +680,12 @@ trait StdNames {
     val `enum`: NameType          = nameType("enum")
     val `export`: NameType        = nameType("export")
     val `given`: NameType         = nameType("given")
+    val `then`: NameType          = nameType("then")
 
     // Scala 3 soft keywords
     val infix: NameType           = nameType("infix")
     val open: NameType            = nameType("open")
+    val using: NameType           = nameType("using")
 
     // Compiler utilized names
 
@@ -1275,13 +1278,18 @@ trait StdNames {
     final val keywords = kw.result
   }
 
-  // "The identifiers var, yield, and record are restricted identifiers because they are not allowed in some contexts"
-  // A type identifier is an identifier that is not the character sequence var, yield, or record.
-  // An unqualified method identifier is an identifier that is not the character sequence yield.
+  // The identifiers non-sealed, permits, record, sealed, var, and yield are restricted identifiers
+  // because they are not allowed in some contexts.
+  // A type identifier is an identifier that is not the character sequence permits, record, sealed, var, or yield.
+  // An unqualified method identifier is an identifier that is not the character sequence yield. (JLS 3.8)
   class JavaRestrictedIdentifiers {
+    final val PERMITS: TermName = TermName("permits")
     final val RECORD: TermName = TermName("record")
-    final val VAR: TermName = TermName("var")
-    final val YIELD: TermName = TermName("yield")
+    final val SEALED: TermName = TermName("sealed")
+    final val UNSEALED: TermName = TermName("non-sealed")
+    final val NON: TermName = TermName("non")
+    final val VAR: TermName    = TermName("var")
+    final val YIELD: TermName  = TermName("yield")
   }
 
   sealed abstract class SymbolNames {

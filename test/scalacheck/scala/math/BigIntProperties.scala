@@ -5,6 +5,7 @@ import Arbitrary.arbitrary
 import org.scalacheck.Prop._
 import java.math.BigInteger
 import java.lang.Character
+import scala.annotation.nowarn
 import scala.util.Random
 
 object BigIntProperties extends Properties("BigInt") {
@@ -95,7 +96,7 @@ object BigIntProperties extends Properties("BigInt") {
   property("isValidLong") = forAll { (l: Long) => BigInt(l).isValidLong }
   property("isValidLong") = !BigInt("9223372036854775808").isValidLong
   property("isValidLong") = !BigInt("-9223372036854775809").isValidLong
-  property("isWhole") = forAll { (bi: BigInt) => bi.isWhole }
+  property("isWhole") = forAll { (bi: BigInt) => bi.isWhole: @nowarn }
   property("underlying") = forAll(bigInteger) { bi => BigInt(bi).underlying ?= bi }
   property("equals") = forAll(bigInteger, bigInteger) { (x, y) => (x == y) ?= (BigInt(x) equals BigInt(y)) }
   property("compare") = forAll(bigInteger, bigInteger) { (x, y) => x.compareTo(y) ?= BigInt(x).compare(y) }

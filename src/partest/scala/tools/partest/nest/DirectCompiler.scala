@@ -13,10 +13,9 @@
 package scala.tools.partest
 package nest
 
-import java.io.{FileWriter, PrintWriter}
-
+import java.io.{BufferedReader, FileWriter, PrintWriter}
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.NoPosition
+import scala.reflect.internal.util.{CodeAction, NoPosition, Position, ScalaClassLoader}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
@@ -24,15 +23,21 @@ import scala.util.chaining._
 import scala.sys.process._
 
 object ExtConsoleReporter {
-  def apply(settings: Settings, writer: PrintWriter) = new ConsoleReporter(settings, Console.in, writer, writer).tap(_.shortname = true)
+  def apply(settings: Settings, writer: PrintWriter) = {
+    val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
+    loader.create[ConsoleReporter](settings.reporter.value, settings.errorFn)(settings, Console.in, writer, writer).tap(_.shortname = true)
+  }
+}
+class PlainReporter(settings: Settings, reader: BufferedReader, writer: PrintWriter, echo: PrintWriter) extends ConsoleReporter(settings, reader, writer, echo) {
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = writer.println(s"[$severity] [$pos]: $msg")
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
   @deprecated("Use primary constructor", "1.0.12")
   def this(cp: String) = this(cp, _ => ())
-  nowarnings.value  = false
-  encoding.value    = "UTF-8"
-  classpath.value   = cp
+  nowarnings.value = false
+  encoding.value   = "UTF-8"
+  classpath.value  = cp
   //lint.add("_")
 }
 
@@ -50,10 +55,10 @@ class DirectCompiler(val runner: Runner) {
 
 
   /** Massage args to merge plugins and fix paths.
-    *  Plugin path can be relative to test root, or cwd is out.
-    *  While we're at it, mix in the baseline options, too.
-    *  That's how ant passes in the plugins dir.
-    */
+   *  Plugin path can be relative to test root, or cwd is out.
+   *  While we're at it, mix in the baseline options, too.
+   *  That's how ant passes in the plugins dir.
+   */
   private def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): Seq[String] = {
     val dir = runner.suiteRunner.pathSettings.testRoot
     // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
@@ -104,13 +109,13 @@ class DirectCompiler(val runner: Runner) {
     val testSettings = new TestSettings(FileManager.joinPaths(classPath), s => parseArgErrors += s)
     val logWriter    = new FileWriter(logFile)
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
-    val opts         = updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
+    val opts         = updatePluginPath(opts0, AbstractFile.getDirectory(outDir), AbstractFile.getDirectory(srcDir))
     val command      = new CompilerCommand(opts.toList, testSettings)
     val reporter     = ExtConsoleReporter(testSettings, new PrintWriter(logWriter, true))
     val global       = newGlobal(testSettings, reporter)
     def errorCount   = reporter.errorCount
 
-    testSettings.outputDirs setSingleOutput outDir.getPath
+    testSettings.outputDirs.setSingleOutput(outDir.getPath)
 
     def reportError(s: String): Unit = reporter.error(NoPosition, s)
 
@@ -122,7 +127,7 @@ class DirectCompiler(val runner: Runner) {
       if (command.files.nonEmpty) reportError(command.files.mkString("flags file may only contain compiler options, found: ", space, ""))
     }
 
-    suiteRunner.verbose(s"% compiling ${ sources.map(_.testIdent).mkString(space) }${ if (suiteRunner.debug) " -d " + outDir else ""}")
+    suiteRunner.verbose(sources.map(_.testIdent).mkString("% compiling ", space, if (suiteRunner.debug) s" -d $outDir" else ""))
 
     def execCompile() =
       if (command.shouldStopWithInfo) {
@@ -151,11 +156,10 @@ class DirectCompiler(val runner: Runner) {
       else runner.genFail(s"compilation failed")
     }
 
-    try {
+    try
       if (suiteRunner.config.optCompilerPath.isEmpty) execCompile()
       else execOtherCompiler()
-    }
-    catch   { case t: Throwable => reportError(t.getMessage) ; runner.genCrash(t) }
-    finally { logWriter.close() }
+    catch runner.crashHandler
+    finally logWriter.close()
   }
 }

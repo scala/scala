@@ -14,21 +14,23 @@ package scala
 package collection
 package immutable
 
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ReusableBuilder}
 
-/**
-  * A generic trait for ordered immutable maps. Concrete classes have to provide
-  * functionality for the abstract methods in `SeqMap`.
-  *
-  * Note that when checking for equality [[SeqMap]] does not take into account
-  * ordering.
-  *
-  * @tparam K      the type of the keys contained in this linked map.
-  * @tparam V      the type of the values associated with the keys in this linked map.
-  *
-  * @define coll immutable seq map
-  * @define Coll `immutable.SeqMap`
-  */
+/** A base trait for ordered, immutable maps.
+ *
+ *  Note that the [[equals]] method for [[SeqMap]] compares key-value pairs
+ *  without regard to ordering.
+ *
+ *  All behavior is defined in terms of the abstract methods in `SeqMap`.
+ *  It is sufficient for concrete subclasses to implement those methods.
+ *  Methods that return a new map, in particular [[removed]] and [[updated]], must preserve ordering.
+ *
+ *  @tparam K      the type of the keys contained in this linked map.
+ *  @tparam V      the type of the values associated with the keys in this linked map.
+ *
+ *  @define coll immutable seq map
+ *  @define Coll `immutable.SeqMap`
+ */
 
 trait SeqMap[K, +V]
   extends Map[K, V]
@@ -44,11 +46,19 @@ object SeqMap extends MapFactory[SeqMap] {
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): SeqMap[K, V] =
     it match {
-      case sm: SeqMap[K, V] => sm
+      //case sm: SeqMap[K, V] => sm
+      case m: ListMap[K, V]    => m
+      case m: TreeSeqMap[K, V] => m
+      case m: VectorMap[K, V]  => m
+      case m: SeqMap1[K, V]    => m
+      case m: SeqMap2[K, V]    => m
+      case m: SeqMap3[K, V]    => m
+      case m: SeqMap4[K, V]    => m
+      case it: Iterable[_] if it.isEmpty => empty[K, V]
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = VectorMap.newBuilder
+  def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = new SeqMapBuilderImpl
 
   @SerialVersionUID(3L)
   private object EmptySeqMap extends SeqMap[Any, Nothing] with Serializable {
@@ -64,7 +74,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  private final class SeqMap1[K, +V](key1: K, value1: V) extends SeqMap[K,V] with Serializable {
+  private[immutable] final class SeqMap1[K, +V](key1: K, value1: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -88,7 +98,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  private final class SeqMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends SeqMap[K,V] with Serializable {
+  private[immutable] final class SeqMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -123,7 +133,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  private class SeqMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends SeqMap[K,V] with Serializable {
+  private[immutable] class SeqMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -164,7 +174,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  private final class SeqMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends SeqMap[K,V] with Serializable {
+  private[immutable] final class SeqMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =
@@ -220,6 +230,55 @@ object SeqMap extends MapFactory[SeqMap] {
       f(key3, value3)
       f(key4, value4)
     }
-    hashCode
+
+    private[SeqMap] def buildTo[V1 >: V](builder: Builder[(K, V1), SeqMap[K, V1]]): builder.type =
+      builder.addOne((key1, value1)).addOne((key2, value2)).addOne((key3, value3)).addOne((key4, value4))
+  }
+
+  private final class SeqMapBuilderImpl[K, V] extends ReusableBuilder[(K, V), SeqMap[K, V]] {
+    private[this] var elems: SeqMap[K, V] = SeqMap.empty
+    private[this] var switchedToVectorMapBuilder: Boolean = false
+    private[this] var vectorMapBuilder: VectorMapBuilder[K, V] = _
+
+    override def clear(): Unit = {
+      elems = SeqMap.empty
+      if (vectorMapBuilder != null) {
+        vectorMapBuilder.clear()
+      }
+      switchedToVectorMapBuilder = false
+    }
+
+    override def result(): SeqMap[K, V] =
+      if (switchedToVectorMapBuilder) vectorMapBuilder.result() else elems
+
+    def addOne(elem: (K, V)) = {
+      if (switchedToVectorMapBuilder) {
+        vectorMapBuilder.addOne(elem)
+      } else if (elems.size < 4) {
+        elems = elems + elem
+      } else {
+        // assert(elems.size == 4)
+        if (elems.contains(elem._1)) {
+          elems = elems + elem // will not increase the size of the map
+        } else {
+          switchedToVectorMapBuilder = true
+          if (vectorMapBuilder == null) {
+            vectorMapBuilder = new VectorMapBuilder
+          }
+          elems.asInstanceOf[SeqMap4[K, V]].buildTo(vectorMapBuilder)
+          vectorMapBuilder.addOne(elem)
+        }
+      }
+
+      this
+    }
+
+    override def addAll(xs: IterableOnce[(K, V)]): this.type =
+      if (switchedToVectorMapBuilder) {
+        vectorMapBuilder.addAll(xs)
+        this
+      } else {
+        super.addAll(xs)
+      }
   }
 }

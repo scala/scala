@@ -67,15 +67,15 @@ trait Reifiers {
     def logFreeVars(symtab: SymbolTable): Unit =
       // logging free vars only when they are untyped prevents avalanches of duplicate messages
       symtab.syms map (sym => symtab.symDef(sym)) foreach {
-        case FreeTermDef(_, _, binding, _, origin) if universe.settings.logFreeTerms && binding.tpe == null =>
+        case FreeTermDef(_, _, binding, _, origin) if universe.settings.logFreeTerms.value && binding.tpe == null =>
           reporter.echo(position, s"free term: ${showRaw(binding)} $origin")
-        case FreeTypeDef(_, _, binding, _, origin) if universe.settings.logFreeTypes && binding.tpe == null =>
+        case FreeTypeDef(_, _, binding, _, origin) if universe.settings.logFreeTypes.value && binding.tpe == null =>
           reporter.echo(position, s"free type: ${showRaw(binding)} $origin")
         case _ =>
           // do nothing
       }
 
-    if (universe.settings.logFreeTerms || universe.settings.logFreeTypes)
+    if (universe.settings.logFreeTerms.value || universe.settings.logFreeTypes.value)
       (reification: @unchecked) match {
         case ReifiedTree(_, _, symtab, _, _, _, _) => logFreeVars(symtab)
         case ReifiedType(_, _, symtab, _, _, _)    => logFreeVars(symtab)

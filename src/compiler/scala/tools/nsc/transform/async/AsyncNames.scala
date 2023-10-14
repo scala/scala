@@ -70,7 +70,7 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
       if (seenPrefixes.contains(name)) {
         TermName(freshNameCreator.newName(name.toStringWithSuffix("$")))
       } else {
-        seenPrefixes.add(name)
+        seenPrefixes.addOne(name)
         name
       }
     }
@@ -78,7 +78,7 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
       if (seenPrefixes.contains(name)) {
         TypeName(freshNameCreator.newName(name.toStringWithSuffix("$")))
       } else {
-        seenPrefixes.add(name)
+        seenPrefixes.addOne(name)
         name
       }
     }

@@ -15,7 +15,7 @@ package doc
 package base
 package comment
 
-import scala.collection._
+import scala.collection.immutable.SortedMap
 
 /** A body of text. A comment has a single body, which is composed of
   * at least one block. Inside every body is exactly one summary.

@@ -279,8 +279,7 @@ trait Erasure {
       case TypeRef(pre, `clazz`, args) =>
         typeRef(pre, clazz, List())
       case tp =>
-        if (!(clazz == ArrayClass || tp.isError))
-          assert(clazz == ArrayClass || tp.isError, s"!!! unexpected constructor erasure $tp for $clazz")
+        assert(clazz == ArrayClass || tp.isError, s"unexpected constructor erasure $tp for $clazz")
         specialScalaErasureFor(clazz)(tp)
     }
   }

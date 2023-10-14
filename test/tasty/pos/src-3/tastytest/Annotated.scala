@@ -1,10 +1,13 @@
 package tastytest
 
-@symbolicAnnot(new tastytest_>>>.Member)
-trait Annotated
-
 @rootAnnot(1)
 trait RootAnnotated
+
+@overloadedAnnot(123)
+trait OverloadedAnnotated1
+
+@overloadedAnnot(false, "hello")
+trait OverloadedAnnotated2
 
 trait OuterClassAnnotated extends OuterClass {
   @basicAnnot(xyz)

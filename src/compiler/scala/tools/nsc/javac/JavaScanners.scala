@@ -682,24 +682,29 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       * @param scanOnly skip emitting errors or adding to the literal buffer
       * @param inTextBlock is this for a text block?
       */
-    protected def getlitch(scanOnly: Boolean = false, inTextBlock: Boolean = false): Unit = {
-      val c: Char = if (in.ch == '\\') {
+    protected def getlitch(scanOnly: Boolean = false, inTextBlock: Boolean = false): Unit =
+      getlitch(in = in, scanOnly = scanOnly, inTextBlock = inTextBlock)
+
+    private def getlitch(in: JavaCharArrayReader, scanOnly: Boolean, inTextBlock: Boolean): Unit = {
+      def octal: Char = {
+        val leadch: Char = in.ch
+        var oct: Int = digit2int(in.ch, 8)
         in.next()
         if ('0' <= in.ch && in.ch <= '7') {
-          val leadch: Char = in.ch
-          var oct: Int = digit2int(in.ch, 8)
+          oct = oct * 8 + digit2int(in.ch, 8)
           in.next()
-          if ('0' <= in.ch && in.ch <= '7') {
+          if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
             oct = oct * 8 + digit2int(in.ch, 8)
             in.next()
-            if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
-              oct = oct * 8 + digit2int(in.ch, 8)
-              in.next()
-            }
           }
-          oct.asInstanceOf[Char]
-        } else {
-          val c: Char = in.ch match {
+        }
+        oct.asInstanceOf[Char]
+      } // end octal
+      def greatEscape: Char = {
+        in.next()
+        if ('0' <= in.ch && in.ch <= '7') octal
+        else {
+          val x = in.ch match {
             case 'b'  => '\b'
             case 's'  => ' '
             case 't'  => '\t'
@@ -710,22 +715,26 @@ trait JavaScanners extends ast.parser.ScannersCommon {
             case '\'' => '\''
             case '\\' => '\\'
             case CR | LF if inTextBlock =>
-              in.next()
-              return
+              if (!scanOnly) in.next()
+              0.toChar
             case _    =>
               if (!scanOnly) syntaxError(in.cpos - 1, "invalid escape character")
               in.ch
           }
-          in.next()
-          c
+          if (x != 0) in.next()
+          x
         }
-      } else  {
-        val c = in.ch
-        in.next()
-        c
-      }
-      if (!scanOnly) putChar(c)
-    }
+      } // end greatEscape
+      // begin getlitch
+      val c: Char =
+        if (in.ch == '\\') greatEscape
+        else {
+          val res = in.ch
+          in.next()
+          res
+        }
+      if (c != 0 && !scanOnly) putChar(c)
+    } // end getlitch
 
     /** read a triple-quote delimited text block, starting after the first three
       * double quotes
@@ -747,19 +756,19 @@ trait JavaScanners extends ast.parser.ScannersCommon {
        */
       var commonWhiteSpacePrefix = Int.MaxValue
       var blockEndOffset = 0
-      val backtrackTo = in.copy
       var blockClosed = false
       var lineWhiteSpacePrefix = 0
       var lineIsOnlyWhitespace = true
-      while (!blockClosed && (in.isUnicode || in.ch != SU)) {
-        if (in.ch == '\"') { // Potential end of the block
-          in.next()
-          if (in.ch == '\"') {
-            in.next()
-            if (in.ch == '\"') {
+      val lookahead = in.lookahead
+      while (!blockClosed && (lookahead.isUnicode || lookahead.ch != SU)) {
+        if (lookahead.ch == '\"') { // Potential end of the block
+          lookahead.next()
+          if (lookahead.ch == '\"') {
+            lookahead.next()
+            if (lookahead.ch == '\"') {
               blockClosed = true
               commonWhiteSpacePrefix = commonWhiteSpacePrefix min lineWhiteSpacePrefix
-              blockEndOffset = in.cpos - 2
+              blockEndOffset = lookahead.cpos - 2
             }
           }
 
@@ -767,19 +776,19 @@ trait JavaScanners extends ast.parser.ScannersCommon {
           if (!blockClosed) {
             lineIsOnlyWhitespace = false
           }
-        } else if (in.ch == CR || in.ch == LF) { // new line in the block
-          in.next()
+        } else if (lookahead.ch == CR || lookahead.ch == LF) { // new line in the block
+          lookahead.next()
           if (!lineIsOnlyWhitespace) {
             commonWhiteSpacePrefix = commonWhiteSpacePrefix min lineWhiteSpacePrefix
           }
           lineWhiteSpacePrefix = 0
           lineIsOnlyWhitespace = true
-        } else if (lineIsOnlyWhitespace && Character.isWhitespace(in.ch)) { // extend white space prefix
-          in.next()
+        } else if (lineIsOnlyWhitespace && Character.isWhitespace(lookahead.ch)) { // extend white space prefix
+          lookahead.next()
           lineWhiteSpacePrefix += 1
         } else {
           lineIsOnlyWhitespace = false
-          getlitch(scanOnly = true, inTextBlock = true)
+          getlitch(lookahead, scanOnly = true, inTextBlock = true)
         }
       }
 
@@ -790,7 +799,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       }
 
       // Second pass: construct the literal string value this time
-      in = backtrackTo
       while (in.cpos < blockEndOffset) {
         // Drop the line's leading whitespace
         var remainingPrefix = commonWhiteSpacePrefix
@@ -1023,7 +1031,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)
     def warning(pos: Int, msg: String, category: WarningCategory) = runReporting.warning(pos, msg, category, site = "")
-    def deprecationWarning(pos: Int, msg: String, since: String) = runReporting.deprecationWarning(pos, msg, since, site = "", origin = "")
+    def deprecationWarning(pos: Int, msg: String, since: String, actions: List[CodeAction]) = runReporting.deprecationWarning(pos, msg, since, site = "", origin = "", actions)
     implicit def g2p(pos: Int): Position = Position.offset(unit.source, pos)
   }
 }

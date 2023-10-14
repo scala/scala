@@ -4,7 +4,7 @@ import scala.tools.reflect.Eval
 object Test extends App {
   reify {
     class C {
-      implicit lazy val x = 2
+      implicit lazy val x: Int = 2
       def y = implicitly[Int]
     }
 

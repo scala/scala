@@ -1,0 +1,9 @@
+t8650.scala:19: warning: method s in class C is deprecated (since MyLib 17): hello world
+  def t = s
+          ^
+t8650.scala:21: warning: method f in class C is deprecated (since MyLib 17): hello world
+  def g = f
+          ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

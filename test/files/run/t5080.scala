@@ -11,7 +11,7 @@ object Test extends App {
     override def toString = value.toString;
   }
 
-  implicit def conversions(x: Value) = new {
+  implicit def conversions(x: Value): AnyRef { def toInt: Int } = new {
     def toInt =
       x match {
         case Num(n) => n

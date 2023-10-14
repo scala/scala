@@ -1,9 +1,9 @@
 
 scala> List[Predef.type]()
-val res0: List[scala.Predef.type] = List()
+val res0: List[Predef.type] = List()
 
 scala> List[scala.`package`.type]()
-val res1: List[scala.type] = List()
+val res1: List[scala.package.type] = List()
 
 scala> List[List.type]()
 val res2: List[List.type] = List()

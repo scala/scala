@@ -94,7 +94,9 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
 
       protected def setterBody(setter: Symbol, getter: Symbol): Tree = {
         assert(getter.hasFlag(PARAMACCESSOR), s"missing implementation for non-paramaccessor $setter in $clazz")
-
+        // scala-dev#408: fields for locals captured in a trait are non-final. The lambdalift phase adds the
+        // ConstructorNeedsFence attachment to the primary constructor of the class to ensure safe publication.
+        setter.accessed.setFlag(MUTABLE)
         Assign(fieldAccess(setter), Ident(setter.firstParam))
       }
 
@@ -355,7 +357,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         else rhs
 
       private def mkCheckedAccessorRhs(retVal: Tree, pos: Position, bitmap: BitmapInfo): Tree = {
-        val msg = s"Uninitialized field: ${clazz.sourceFile}: ${pos.line}"
+        val msg = s"Uninitialized field: ${clazz.sourceFile.name}: ${pos.line}"
         val result =
           IF(mkTest(bitmap, equalToZero = false)).
             THEN(retVal).

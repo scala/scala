@@ -14,7 +14,7 @@ package scala.reflect.internal.util
 
 import java.io.{BufferedWriter, IOException, OutputStreamWriter, Writer}
 import java.nio.CharBuffer
-import java.nio.charset.{Charset, CharsetEncoder, StandardCharsets}
+import java.nio.charset.{Charset, CharsetEncoder, StandardCharsets}, StandardCharsets.UTF_8
 import java.nio.file.{Files, OpenOption, Path}
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -25,7 +25,7 @@ import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
 object FileUtils {
-  def newAsyncBufferedWriter(path: Path, charset: Charset = StandardCharsets.UTF_8, options: Array[OpenOption] = NO_OPTIONS, threadsafe: Boolean = false): LineWriter = {
+  def newAsyncBufferedWriter(path: Path, charset: Charset = UTF_8, options: Array[OpenOption] = NO_OPTIONS, threadsafe: Boolean = false): LineWriter = {
     val encoder: CharsetEncoder = charset.newEncoder
     val writer = new OutputStreamWriter(Files.newOutputStream(path, options: _*), encoder)
     newAsyncBufferedWriter(new BufferedWriter(writer), threadsafe)

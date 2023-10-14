@@ -132,6 +132,7 @@ trait AllocationTest {
   private[AllocationTest] def calcAllocationInfo[T](fn: => T, cost: Long, text: String, ignoreEqualCheck: Boolean)(implicit execution: AllocationExecution = AllocationExecution()): AllocationInfo[T] = {
     val expected  = fn
     val extraText = if (text.isEmpty) "" else s" -- $text"
+    @annotation.nowarn("cat=deprecation")
     val id        = Thread.currentThread().getId
     val counts    = new Array[Long](execution.executionCount)
 

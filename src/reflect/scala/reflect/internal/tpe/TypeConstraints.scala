@@ -24,8 +24,8 @@ private[internal] trait TypeConstraints {
   import definitions._
 
   /** A log of type variable with their original constraints. Used in order
-    *  to undo constraints in the case of isSubType/isSameType failure.
-    */
+   *  to undo constraints in the case of isSubType/isSameType failure.
+   */
   private lazy val _undoLog = new UndoLog
   def undoLog = _undoLog
 
@@ -54,9 +54,9 @@ private[internal] trait TypeConstraints {
     }
 
     /** No sync necessary, because record should only
-      *  be called from within an undo or undoUnless block,
-      *  which is already synchronized.
-      */
+     *  be called from within an undo or undoUnless block,
+     *  which is already synchronized.
+     */
     private[reflect] def record(tv: TypeVar) = {
       log ::= UndoPair(tv, tv.constr.cloneInternal)
     }
@@ -96,11 +96,11 @@ private[internal] trait TypeConstraints {
      */
 
     /** Guard these lists against AnyClass and NothingClass appearing,
-      *  else loBounds.isEmpty will have different results for an empty
-      *  constraint and one with Nothing as a lower bound.  [Actually
-      *  guarding addLoBound/addHiBound somehow broke raw types so it
-      *  only guards against being created with them.]
-      */
+     *  else loBounds.isEmpty will have different results for an empty
+     *  constraint and one with Nothing as a lower bound.  [Actually
+     *  guarding addLoBound/addHiBound somehow broke raw types so it
+     *  only guards against being created with them.]
+     */
     private[this] var lobounds = lo0 filterNot (_.isNothing)
     private[this] var hibounds = hi0 filterNot (_.isAny)
     private[this] var numlo = numlo0
@@ -124,7 +124,7 @@ private[internal] trait TypeConstraints {
       // See pos/t6367 and pos/t6499 for the competing test cases.
       val mustConsider = tp.typeSymbol match {
         case NothingClass => true
-        case _            => !(lobounds contains tp)
+        case _            => !lobounds.contains(tp)
       }
       if (mustConsider) {
         if (isNumericBound && isNumericValueType(tp)) {
@@ -222,7 +222,7 @@ private[internal] trait TypeConstraints {
 
     @inline def toBound(hi: Boolean, tparam: Symbol) = if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
-    def solveOne(tvar: TypeVar, isContravariant: Boolean): Unit = {
+    def solveOne(tvar: TypeVar, isContravariant: Boolean): Unit =
       if (tvar.constr.inst == NoType) {
         tvar.constr.inst = null // mark tvar as being solved
 
@@ -251,7 +251,6 @@ private[internal] trait TypeConstraints {
             solveOne(tvarOther, areContravariant(ix))
           }
         }
-
 
         if (!(otherTypeVarBeingSolved || containsSymbol(bound, tparam))) {
           val boundSym = bound.typeSymbol
@@ -284,7 +283,6 @@ private[internal] trait TypeConstraints {
         // debuglog(s"$tvar setInst $newInst")
         tvar setInst newInst
       }
-    }
 
     // println("solving "+tvars+"/"+tparams+"/"+(tparams map (_.info)))
     foreachWithIndex(tvars)((tvar, i) => solveOne(tvar, areContravariant(i)))

@@ -1,7 +1,7 @@
 // for 2.7.x compatibility
 
 object A {
-  implicit val one = 1
+  implicit val one: Int = 1
 }
 
 object Test {

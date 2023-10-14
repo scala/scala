@@ -14,6 +14,7 @@ package scala.tools.nsc
 
 import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Collections, Locale}
@@ -47,7 +48,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     val validRootPathComponent = root.toString.replace("/", "").replace(":", "")
     val result = changeExtension(pickleCache.resolve(validRootPathComponent).resolve(root.relativize(file)).normalize(), newExtension)
     if (useJars) Files.createDirectories(result.getParent)
-    strippedAndExportedClassPath.put(file.toRealPath().normalize(), result)
+    strippedAndExportedClassPath.update(file.toRealPath().normalize(), result)
     result
   }
 
@@ -76,7 +77,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
   }
 
-  implicit val executor = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
+  implicit val executor: ExecutionContext = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
   def changeExtension(p: Path, newExtension: String): Path = {
     val fileName = p.getFileName.toString
     val changedFileName = fileName.lastIndexOf('.') match {
@@ -101,7 +102,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
     builder.append("}\n")
     val path = logDir.resolve("projects.dot")
-    Files.write(path, builder.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+    Files.write(path, builder.toString.getBytes(UTF_8))
     reporterEcho("Wrote project dependency graph to: " + path.toAbsolutePath)
   }
 
@@ -175,7 +176,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       val awaitAllFutures: Future[_] = sequenceFailSlow(allFutures)
       var lastNumCompleted = allFutures.count(_.isCompleted)
       while (true) try {
-        Await.result(awaitAllFutures, Duration(60, "s"))
+        Await.ready(awaitAllFutures, Duration(60, "s"))
         timer.stop()
         val numCompleted = allFutures.count(_.isCompleted)
         reporterEcho(s"PROGRESS: $numCompleted / $numAllFutures")
@@ -324,6 +325,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     trace.append("""{"traceEvents": [""")
     val sb = new mutable.StringBuilder(trace)
 
+    @annotation.nowarn("cat=deprecation")
     def durationEvent(name: String, cat: String, t: Timer): String = {
       s"""{"name": "$name", "cat": "$cat", "ph": "X", "ts": ${(t.startMicros).toLong}, "dur": ${(t.durationMicros).toLong}, "pid": 0, "tid": ${t.thread.getId}}"""
     }
@@ -348,7 +350,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     projects.iterator.flatMap(projectEvents).addString(sb, ",\n")
     trace.append("]}")
     val traceFile = logDir.resolve(s"build-${label}.trace")
-    Files.write(traceFile, trace.toString.getBytes())
+    Files.write(traceFile, trace.toString.getBytes(UTF_8))
     reporterEcho("Chrome trace written to " + traceFile.toAbsolutePath)
   }
 

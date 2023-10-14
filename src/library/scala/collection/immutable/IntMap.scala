@@ -323,9 +323,9 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil => IntMap.Tip(key, value)
   }
 
-  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFrom(new View.Map(toIterable, f))
+  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFrom(new View.Map(this, f))
 
-  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFrom(new View.FlatMap(toIterable, f))
+  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFrom(new View.FlatMap(this, f))
 
   override def concat[V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] =
     super.concat(that).asInstanceOf[IntMap[V1]] // Already has correct type but not declared as such

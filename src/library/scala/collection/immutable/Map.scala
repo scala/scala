@@ -18,6 +18,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
+import SeqMap.{SeqMap1, SeqMap2, SeqMap3, SeqMap4}
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -28,7 +29,7 @@ trait Map[K, +V]
 
   override def mapFactory: scala.collection.MapFactory[Map] = Map
 
-  override final def toMap[K2, V2](implicit ev: (K, V) <:< (K2, V2)): Map[K2, V2] = this.asInstanceOf[Map[K2, V2]]
+  override final def toMap[K2, V2](implicit ev: (K, V) <:< (K2, V2)): Map[K2, V2] = Map.from(this.asInstanceOf[Map[K2, V2]])
 
   /** The same map with a given default function.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
@@ -92,17 +93,15 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   @`inline` final override def -- (keys: IterableOnce[K]): C = removedAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
-    *  @param    key the key
-    *  @param    value the value
-    *  @tparam   V1 the type of the added value
-    *  @return   A new map with the new key/value mapping added to this map.
-    *
-    *    @inheritdoc
-    */
+   *  @param    key the key
+   *  @param    value the value
+   *  @tparam   V1 the type of the added value
+   *  @return   A new map with the new key/value mapping added to this map.
+   */
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
   /**
-   * Update a mapping for the specified key and its current optionally-mapped value
+   * Update a mapping for the specified key and its current optionally mapped value
    * (`Some` if there is current mapping, `None` if not).
    *
    * If the remapping function returns `Some(v)`, the mapping is updated with the new value `v`.
@@ -110,16 +109,16 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
    * If the function itself throws an exception, the exception is rethrown, and the current mapping is left unchanged.
    *
    * @param key the key value
-   * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
+   * @param remappingFunction a function that receives current optionally mapped value and return a new mapping
    * @return A new map with the updated mapping with the key
    */
   def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K,V1] = {
     val previousValue = this.get(key)
-    val nextValue = remappingFunction(previousValue)
-    (previousValue, nextValue) match {
-      case (None, None) => coll
-      case (Some(_), None) => this.removed(key).coll
-      case (_, Some(v)) => this.updated(key, v)
+    remappingFunction(previousValue) match {
+      case None            => previousValue.fold(coll)(_ => this.removed(key).coll)
+      case Some(nextValue) =>
+        if (previousValue.exists(_.asInstanceOf[AnyRef] eq nextValue.asInstanceOf[AnyRef])) coll
+        else coll.updated(key, nextValue)
     }
   }
 
@@ -143,7 +142,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
-  protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
+  protected[immutable] class ImmutableKeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
     def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
     def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
   }
@@ -208,11 +207,30 @@ object Map extends MapFactory[Map] {
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
 
-  def from[K, V](it: collection.IterableOnce[(K, V)]): Map[K, V] =
+  def from[K, V](it: IterableOnce[(K, V)]): Map[K, V] =
     it match {
       case it: Iterable[_] if it.isEmpty => empty[K, V]
-      case m: Map[K, V] => m
-      case _ => (newBuilder[K, V] ++= it).result()
+      // Since IterableOnce[(K, V)] launders the variance of K,
+      // identify only our implementations which can be soundly substituted.
+      // For example, the ordering used by sorted maps would fail on widened key type. (scala/bug#12745)
+      // The following type test is not sufficient: case m: Map[K, V] => m
+      case m: HashMap[K, V]    => m
+      case m: Map1[K, V]       => m
+      case m: Map2[K, V]       => m
+      case m: Map3[K, V]       => m
+      case m: Map4[K, V]       => m
+      //case m: WithDefault[K, V] => m    // cf SortedMap.WithDefault
+      //case m: SeqMap[K, V]     => SeqMap.from(it) // inlined here to avoid hard dependency
+      case m: ListMap[K, V]    => m
+      case m: TreeSeqMap[K, V] => m
+      case m: VectorMap[K, V]  => m
+      case m: SeqMap1[K, V]    => m
+      case m: SeqMap2[K, V]    => m
+      case m: SeqMap3[K, V]    => m
+      case m: SeqMap4[K, V]    => m
+
+      // Maps with a reified key type must be rebuilt, such as `SortedMap` and `IntMap`.
+      case _ => newBuilder[K, V].addAll(it).result()
     }
 
   def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl

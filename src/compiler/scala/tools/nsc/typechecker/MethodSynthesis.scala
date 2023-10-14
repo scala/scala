@@ -138,9 +138,10 @@ trait MethodSynthesis {
     // populate synthetics for this unit with trees that will later be added by the typer
     // we get here when entering the symbol for the valdef, so its rhs has not yet been type checked
     def enterGetterSetter(tree: ValDef): Unit = {
+      val sympos = tree.namePos
       val fieldSym =
         if (noFieldFor(tree, owner)) NoSymbol
-        else owner.newValue(tree.name append NameTransformer.LOCAL_SUFFIX_STRING, tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
+        else owner.newValue(tree.name append NameTransformer.LOCAL_SUFFIX_STRING, sympos, tree.mods.flags & FieldFlags | PrivateLocal)
 
       val getter = Getter(tree)
       val getterSym = getter.createSym
@@ -150,7 +151,7 @@ trait MethodSynthesis {
       //
       // scala/bug#10009 the tree's modifiers can be temporarily out of sync with the new symbol's flags.
       //          typedValDef corrects this later on.
-      tree.symbol = fieldSym orElse (getterSym setPos tree.pos)
+      tree.symbol = fieldSym orElse getterSym.setPos(sympos)
 
       val namer = namerOf(tree.symbol)
 
@@ -233,7 +234,6 @@ trait MethodSynthesis {
       }
     }
 
-
     def enterImplicitWrapper(classDef: ClassDef): Unit = {
       val methDef = factoryMeth(classDef.mods & (AccessFlags | FINAL) | METHOD | IMPLICIT | SYNTHETIC, classDef.name.toTermName, classDef)
       val methSym = enterInScope(assignMemberSymbol(methDef))
@@ -248,15 +248,14 @@ trait MethodSynthesis {
       methSym setInfo implicitFactoryMethodCompleter(methDef, classDef.symbol)
     }
 
-
     trait DerivedAccessor {
       def tree: ValDef
       def derivedName: TermName
       def derivedFlags: Long
       def derivedTree(sym: Symbol): Tree
-
       def derivedPos = tree.pos.focus
-      def createSym = createMethod(tree, derivedName, derivedPos, derivedFlags)
+      def symPos = tree.namePos
+      def createSym = createMethod(tree, derivedName, symPos, derivedFlags)
     }
 
     case class Getter(tree: ValDef) extends DerivedAccessor {
@@ -272,7 +271,7 @@ trait MethodSynthesis {
           if (noFieldFor(tree, owner)) tree.rhs // context.unit.transformed.getOrElse(tree.rhs, tree.rhs)
           else Select(This(tree.symbol.enclClass), tree.symbol)
 
-        newDefDef(derivedSym, rhs)(tparams = Nil, vparamss = Nil, tpt = tpt)
+        newDefDefAt(derivedPos)(derivedSym, rhs)(tparams = Nil, vparamss = Nil, tpt = tpt)
       }
 
 //        derivedSym setPos tree.pos
@@ -303,10 +302,8 @@ trait MethodSynthesis {
           if (noFieldFor(tree, owner)) EmptyTree
           else Assign(Select(This(tree.symbol.enclClass), tree.symbol), Ident(setterParam))
 
-        newDefDef(derivedSym, rhs)(tparams = Nil, vparamss = List(vparams), tpt = tpt)
-
+        newDefDefAt(derivedPos)(derivedSym, rhs)(tparams = Nil, vparamss = List(vparams), tpt = tpt)
       }
     }
-
   }
 }

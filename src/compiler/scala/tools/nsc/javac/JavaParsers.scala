@@ -16,14 +16,15 @@
 package scala.tools.nsc
 package javac
 
-import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
-import scala.annotation.tailrec
+import scala.annotation._
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
-import scala.reflect.internal.util.Position
-import scala.reflect.internal.util.ListOfNil
+import scala.reflect.internal.util.{CodeAction, ListOfNil, Position}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
@@ -37,7 +38,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def freshName(prefix: String): Name = freshTermName(prefix)
     def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
-    def deprecationWarning(off: Int, msg: String, since: String) = runReporting.deprecationWarning(off, msg, since, site = "", origin = "")
+    def deprecationWarning(off: Int, msg: String, since: String, actions: List[CodeAction]) = runReporting.deprecationWarning(off, msg, since, site = "", origin = "", actions)
     implicit def i2p(offset : Int) : Position = Position.offset(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = runReporting.warning(pos, msg, WarningCategory.JavaSource, site = "")
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)
@@ -45,6 +46,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
   abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
+    def unit: CompilationUnit
 
     def freshName(prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
@@ -493,11 +495,39 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case SYNCHRONIZED =>
             in.nextToken()
           case _ =>
-            val privateWithin: TypeName =
-              if (isPackageAccess && !inInterface) thisPackageName
-              else tpnme.EMPTY
-
-            return Modifiers(flags, privateWithin) withAnnotations annots
+            val unsealed = 0L   // no flag for UNSEALED
+            def consume(added: FlagSet): false = { in.nextToken(); flags |= added; false }
+            def lookingAhead(s: String): Boolean = {
+              import scala.reflect.internal.Chars._
+              var i = 0
+              val n = s.length
+              val lookahead = in.in.lookahead
+              while (i < n && lookahead.ch != SU) {
+                if (lookahead.ch != s.charAt(i)) return false
+                lookahead.next()
+                i += 1
+              }
+              i == n && Character.isWhitespace(lookahead.ch)
+            }
+            val done = (in.token != IDENTIFIER) || (
+              in.name match {
+                case nme.javaRestrictedIdentifiers.SEALED => consume(Flags.SEALED)
+                case nme.javaRestrictedIdentifiers.UNSEALED => consume(unsealed)
+                case nme.javaRestrictedIdentifiers.NON =>
+                  !lookingAhead("-sealed") || {
+                    in.nextToken()
+                    in.nextToken()
+                    consume(unsealed)
+                  }
+                case _ => true
+              }
+            )
+            if (done) {
+              val privateWithin: TypeName =
+                if (isPackageAccess && !inInterface) thisPackageName
+                else tpnme.EMPTY
+              return Modifiers(flags, privateWithin) withAnnotations annots
+            }
         }
       }
       abort("should not be here")
@@ -613,7 +643,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
           optThrows()
-          val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.JAVA_DEFAULTMETHOD) || (mods hasFlag Flags.STATIC)
+          val isConcreteInterfaceMethod = !inInterface || (mods hasFlag Flags.JAVA_DEFAULTMETHOD) || (mods hasFlag Flags.STATIC) || (mods hasFlag Flags.PRIVATE)
           val bodyOk = !(mods1 hasFlag Flags.DEFERRED) && isConcreteInterfaceMethod
           val body =
             if (bodyOk && in.token == LBRACE) {
@@ -802,7 +832,15 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         List()
       }
 
+    def permitsOpt() =
+      if (in.token == IDENTIFIER && in.name == nme.javaRestrictedIdentifiers.PERMITS) {
+        in.nextToken()
+        repsep(() => typ(), COMMA)
+      }
+      else Nil
+
     def classDecl(mods: Modifiers): List[Tree] = {
+      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(CLASS)
       val pos = in.currentPos
       val name = identForType()
@@ -815,9 +853,11 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           javaLangObject()
         }
       val interfaces = interfacesOpt()
+      val permits = permitsOpt()
       val (statics, body) = typeBody(CLASS)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods, name, tparams, makeTemplate(superclass :: interfaces, body))
+          .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
       })
     }
 
@@ -867,6 +907,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def interfaceDecl(mods: Modifiers): List[Tree] = {
+      if (mods.hasFlag(SEALED)) patmat.javaClassesByUnit(unit.source) = mutable.Set.empty
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
@@ -878,11 +919,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else {
           List(javaLangObject())
         }
+      val permits = permitsOpt()
       val (statics, body) = typeBody(INTERFACE)
       addCompanionObject(statics, atPos(pos) {
         ClassDef(mods | Flags.TRAIT | Flags.INTERFACE | Flags.ABSTRACT,
                  name, tparams,
                  makeTemplate(parents, body))
+          .tap(cd => if (permits.nonEmpty) cd.updateAttachment(PermittedSubclasses(permits)))
       })
     }
 
@@ -905,7 +948,6 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         } else if (in.token == SEMI) {
           in.nextToken()
         } else {
-
           // See "14.3. Local Class and Interface Declarations"
           adaptRecordIdentifier()
           if (in.token == ENUM || in.token == RECORD || definesInterface(in.token))
@@ -988,11 +1030,14 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(RBRACE)
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
+      val hasAbstractMember = body.exists {
+        case m: MemberDef => m.mods.hasFlag(Flags.DEFERRED)
+        case _ => false
+      }
       val finalFlag = if (enumIsFinal) Flags.FINAL else 0L
+      val abstractFlag = if (hasAbstractMember) Flags.ABSTRACT else 0L
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
-        // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also ClassfileParser.
-        // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.
-        ClassDef(mods | Flags.JAVA_ENUM | Flags.SEALED | Flags.ABSTRACT | finalFlag, name, List(),
+        ClassDef(mods | Flags.JAVA_ENUM | Flags.SEALED | abstractFlag | finalFlag, name, List(),
                  makeTemplate(superclazz :: interfaces, body))
       })
     }

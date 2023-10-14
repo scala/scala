@@ -1,0 +1,9 @@
+t12815.scala:22: warning: method with a single empty parameter list overrides method e in trait T defined without a parameter list [quickfixable]
+  def e(): Int = 1 // warn
+      ^
+t12815.scala:23: warning: method without a parameter list overrides method f in trait T defined with a single empty parameter list [quickfixable]
+  def f: Int = 1   // warn
+      ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

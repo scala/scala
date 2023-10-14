@@ -490,6 +490,11 @@ abstract class UnCurry extends InfoTransform
             else
               super.transform(tree)
 
+          case sel: Select if sel.qualifier.tpe.typeSymbol.isDerivedValueClass =>
+            // `c.f` where `c` is a value class is translated to `C.f$extension(c)` (value class member) or
+            // `new C(c).f()` (universal trait member). In both cases, `try` within `c` needs a lift.
+            withNeedLift(needLift = true) { super.transform(tree) }
+
           case Apply(fn, args) =>
             // Read the param symbols before `transform(fn)`, because UnCurry replaces T* by Seq[T] (see DesugaredParameterType).
             // The call to `transformArgs` below needs `formals` that still have varargs.

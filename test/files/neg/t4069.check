@@ -9,7 +9,7 @@ t4069.scala:9: error: in XML literal: in XML content, please use '}}' to express
         ^
 t4069.scala:4: error:  I encountered a '}' where I didn't expect one, maybe this tag isn't closed <div>
             <div>
-             ^
+            ^
 t4069.scala:10: error: '}' expected but eof found.
 }
  ^

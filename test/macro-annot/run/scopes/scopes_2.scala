@@ -2,7 +2,7 @@
 object Test extends App {
   def assertEquals(a: Any, b: Any): Unit = { assert(a == b, s"$a != $b") }
 
-  implicit val x = 42
+  implicit val x: Int = 42
   @explorer object C
 
   // @Test def toplevel: Unit =

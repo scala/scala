@@ -176,4 +176,41 @@ class BuildFromTest {
   immutable.LongMap: BuildFrom[_, (Long, String), immutable.LongMap[String]]
   mutable.LongMap: BuildFrom[_, (Long, String), mutable.LongMap[String]]
   mutable.AnyRefMap: BuildFrom[_, (String, String), mutable.AnyRefMap[String, String]]
+
+  // Check that we don't get an implicit divergence in a futile part of the search tree:
+  {
+    sealed trait GPoint
+    sealed trait HNil extends GPoint
+    class HCons[H, +T <: GPoint] extends GPoint
+    abstract class ExtendsOrdered extends Ordered[ExtendsOrdered]
+
+
+    // In scala 2.13, this implicit search considers BuildFrom.buildFromSortedSetOps
+    // which looks for a dep. implicit of type Ordering[(Int, HCons[ExtendsOrdered, HNil])]
+    implicitly[collection.BuildFrom[Seq[Any], (Int, HCons[ExtendsOrdered, HNil]), Seq[(Int, HCons[ExtendsOrdered, HNil])]]]
+
+    //
+    // In Scala 2.12, buildFromSortedSetOps is not a candidate because if it is in the companion object of
+    // the SortedSet heirarchy, which is not part of the implicit scope for this search.
+    // In 2.13, the implicit was moved to `object BuildFrom`, so _is_ considered
+    //
+    // The dependent implicit search:
+    //
+    // implicitly[(Int, HCons[ExtendsOrdered, HNil])]
+    //
+    // ... diverges on both Scala 2.12 and 2.13
+    //
+    // error: diverging implicit expansion for type scala.math.Ordering.AsComparable[(Int, HCons[ExtendsOrdered,HNil])]
+    // starting with method orderingToOrdered in object Ordered
+    //
+    // Divergences in Ordering implicits are a long standing problem, but I always thought it too hard to
+    // fix while retaining source compatibility.
+    //
+    // Removing `extends Ordered[X]` avoids divergence, but I'm not sure why. I diffed the -Vtyper log but
+    // can't figure out why that is relevant.
+    //
+    // (In the original code, ExtendsOrdered was actually scala.Enumeration.Value, which does extends Ordered.
+    //
+    //
+  }
 }

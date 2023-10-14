@@ -293,7 +293,7 @@ trait EntityPage extends HtmlPage {
                 List(
                   Li(`class`="public in", elems=Span(elems=Txt("Public"))),
                   Li(`class`="protected out", elems=Span(elems=Txt("Protected")))
-                ) ++ List(Li(`class`="private out", elems=Span(elems=Txt("Private")))).filter(_ => universe.settings.visibilityPrivate))
+                ) ++ List(Li(`class`="private out", elems=Span(elems=Txt("Private")))).filter(_ => universe.settings.visibilityPrivate.value))
           ))
         )
       ))
@@ -341,7 +341,7 @@ trait EntityPage extends HtmlPage {
     val postamble =
       List(Div(id = "tooltip"),
            if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2021 ") :: A(href = "https://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "https://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
+             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2023 ") :: A(href = "https://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "https://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
            else
              Div(id = "footer", elems = Txt(tpl.universe.settings.docfooter.value)))
 
@@ -431,7 +431,7 @@ trait EntityPage extends HtmlPage {
       else Div(`class`="comment cmt", elems= commentToHtml(mbr.comment)) :: NoElems
 
     val authorComment =
-      if (! s.docAuthor || mbr.comment.isEmpty ||
+      if (!s.docAuthor.value || mbr.comment.isEmpty ||
         mbr.comment.isDefined && mbr.comment.get.authors.isEmpty) NoElems
       else Div(`class`= "comment cmt", elems=
         H(6, Txt(if (mbr.comment.get.authors.size > 1) "Authors:" else "Author:" )) ::

@@ -1,0 +1,31 @@
+t12478.scala:3: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+    accessLevel != "user‮ ⁦// Check if admin⁩ ⁦"
+                         ^
+t12478.scala:3: error: found unicode bidirectional character '\u2066'; in a string or character literal, use a unicode escape instead
+    accessLevel != "user‮ ⁦// Check if admin⁩ ⁦"
+                           ^
+t12478.scala:3: error: found unicode bidirectional character '\u2069'; in a string or character literal, use a unicode escape instead
+    accessLevel != "user‮ ⁦// Check if admin⁩ ⁦"
+                                             ^
+t12478.scala:3: error: found unicode bidirectional character '\u2066'; in a string or character literal, use a unicode escape instead
+    accessLevel != "user‮ ⁦// Check if admin⁩ ⁦"
+                                               ^
+t12478.scala:7: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  cl‮ass C
+     ^
+t12478.scala:9: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  def a‮cb
+        ^
+t12478.scala:11: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  // comm‮tne
+          ^
+t12478.scala:16: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  """te‮tx"""
+        ^
+t12478.scala:17: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  raw"""te‮tx"""
+           ^
+t12478.scala:19: error: found unicode bidirectional character '\u202e'; in a string or character literal, use a unicode escape instead
+  val u202e = '‮'
+                ^
+10 errors

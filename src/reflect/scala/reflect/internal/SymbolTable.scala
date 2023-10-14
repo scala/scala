@@ -77,11 +77,11 @@ abstract class SymbolTable extends macros.Universe
   protected def elapsedMessage(msg: String, startNs: Long) =
     msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)) + "ms"
 
-  def informProgress(msg: String)            = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, startNs: Long) = if (settings.verbose) informProgress(elapsedMessage(msg, startNs))
+  def informProgress(msg: String)            = if (settings.verbose.value) inform("[" + msg + "]")
+  def informTime(msg: String, startNs: Long) = if (settings.verbose.value) informProgress(elapsedMessage(msg, startNs))
   @inline final def informingProgress[T](msg: => String)(fn: => T) : T = {
-    val verbose: Boolean = settings.verbose
-    val start = if(verbose) System.nanoTime() else 0L
+    val verbose: Boolean = settings.verbose.value
+    val start = if (verbose) System.nanoTime() else 0L
     try fn finally if (verbose) informTime(msg, start)
   }
 
@@ -409,7 +409,7 @@ abstract class SymbolTable extends macros.Universe
     private[this] var caches = List[WeakReference[Clearable]]()
     private[this] var javaCaches = List[JavaClearable[_]]()
 
-    def recordCache[T <: Clearable](cache: T): T = {
+    def recordCache[T <: Clearable](cache: T): cache.type = {
       cache match {
         case jc: JavaClearable[_] =>
           javaCaches ::= jc
@@ -420,7 +420,7 @@ abstract class SymbolTable extends macros.Universe
     }
 
     /** Closes the provided classloader at the conclusion of this Run */
-    final def recordClassloader(loader: ClassLoader): ClassLoader = {
+    final def recordClassloader(loader: ClassLoader): loader.type = {
       def attemptClose(loader: ClassLoader): Unit = {
         loader match {
           case u: URLClassLoader => debuglog("Closing classloader " + u); u.close()
@@ -448,7 +448,7 @@ abstract class SymbolTable extends macros.Universe
       }
     }
 
-    def clearAll() = {
+    def clearAll(): Unit = {
       debuglog("Clearing " + (caches.size + javaCaches.size) + " caches.")
       caches foreach (ref => Option(ref.get).foreach(_.clear()))
       caches = caches.filterNot(_.get == null)
@@ -508,12 +508,6 @@ abstract class SymbolTable extends macros.Universe
 
   @deprecated("use enteringPhase", "2.10.0") // Used in sbt 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
-
-
-  /**
-   * Adds the `sm` String interpolator to a [[scala.StringContext]].
-   */
-  implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
 
   protected[scala] def currentRunProfilerBeforeCompletion(root: Symbol, associatedFile: AbstractFile): Unit = ()
   protected[scala] def currentRunProfilerAfterCompletion(root: Symbol, associatedFile: AbstractFile): Unit = ()

@@ -13,6 +13,8 @@
 package scala
 package io
 
+import annotation.nowarn
+
 /** The object Position provides convenience methods to encode
  *  line and column number in one single integer.  The encoded line
  *  (column) numbers range from 0 to `LINE_MASK` (`COLUMN_MASK`),
@@ -71,13 +73,12 @@ private[scala] abstract class Position {
   def toString(pos: Int): String = line(pos) + ":" + column(pos)
 }
 
+@nowarn
 private[scala] object Position extends Position {
   def checkInput(line: Int, column: Int): Unit = {
     if (line < 0)
-      throw new IllegalArgumentException(line + " < 0")
-    if ((line == 0) && (column != 0))
-      throw new IllegalArgumentException(line + "," + column + " not allowed")
-    if (column < 0)
-      throw new IllegalArgumentException(line + "," + column + " not allowed")
+      throw new IllegalArgumentException(s"$line < 0")
+    if (line == 0 && column != 0 || column < 0)
+      throw new IllegalArgumentException(s"$line,$column not allowed")
   }
 }

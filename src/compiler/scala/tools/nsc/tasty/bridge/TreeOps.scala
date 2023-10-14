@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, ForceKinds}, TastyModes._, ForceKinds._
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 
 import scala.tools.tasty.TastyName
 import scala.reflect.internal.Flags
@@ -57,10 +57,10 @@ trait TreeOps { self: TastyUniverse =>
       new TastyIdent(name).setType(tpe)
 
     @inline final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => namedMemberOfPrefix(qual.tpe, name))
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name))
 
     @inline final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => namedMemberOfTypeWithPrefix(qual.tpe, owner, name))
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name))
 
     private def selectImpl(qual: Tree, name: TastyName)(lookup: Context => Type)(implicit ctx: Context): Tree = {
 
@@ -70,17 +70,10 @@ trait TreeOps { self: TastyUniverse =>
       def selectCtor(qual: Tree) =
         u.Select(qual, u.nme.CONSTRUCTOR).setType(qual.tpe.typeSymbol.primaryConstructor.tpe)
 
-      if (ctx.mode.is(ReadAnnotation) && name.isSignedConstructor) {
-        val cls = qual.tpe.typeSymbol
-        cls.ensureCompleted(AnnotCtor)
-        if (cls.isJavaAnnotation)
-          selectCtor(qual)
-        else
-          selectName(qual, name)(lookup)
-      }
-      else {
+      if (ctx.mode.is(ReadAnnotationCtor) && name.isSignedConstructor)
+        selectCtor(qual)
+      else
         selectName(qual, name)(lookup)
-      }
 
     }
 
@@ -173,7 +166,7 @@ trait TreeOps { self: TastyUniverse =>
       }
     }
 
-    def Annotated(tpt: Tree, annot: Tree): Tree = {
+    def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
       if (annot.tpe.typeSymbol === defn.RepeatedAnnot
           && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
           && tpt.tpe.typeArgs.length == 1) {

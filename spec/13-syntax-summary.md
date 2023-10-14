@@ -8,6 +8,11 @@ chapter: 13
 
 The following descriptions of Scala tokens uses literal characters `‘c’` when referring to the ASCII fragment `\u0000` – `\u007F`.
 
+The nine [Bidirectional explicit formatting](https://www.unicode.org/reports/tr9/#Bidirectional_Character_Types)
+characters `\u202a - \u202e` and `\u2066 - \u2069` (inclusive) are forbidden 
+from appearing in source files. Note that they can be represented using 
+unicode escapes in string and character literals.
+
 ## Lexical Syntax
 
 The lexical syntax of Scala is given by the following grammar in EBNF form:
@@ -15,7 +20,7 @@ The lexical syntax of Scala is given by the following grammar in EBNF form:
 ```ebnf
 whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
 upper            ::=  ‘A’ | … | ‘Z’ | ‘$’ and any character in Unicode categories Lu, Lt or Nl,
-                      and any character in Unicode categories Lo and Lm that don't have
+                      and any character in Unicode categories Lo and Lm that doesn't have
                       contributory property Other_Lowercase
 lower            ::=  ‘a’ | … | ‘z’ | ‘_’ and any character in Unicode category Ll,
                       and any character in Unicode categories Lo or Lm that has contributory
@@ -72,7 +77,7 @@ interpolatedStringPart
                  ::= printableChar \ (‘"’ | ‘$’ | ‘\’) | escape
 escape           ::=  ‘\$\$’
                    |  ‘\$"’
-                   |  ‘\$’ id
+                   |  ‘\$’ alphaid
                    |  ‘\$’ BlockExpr
 alphaid          ::=  upper idrest
                    |  varid
@@ -139,7 +144,7 @@ grammar:
                       |  ‘:’ Annotation {Annotation}
                       |  ‘:’ ‘_’ ‘*’
 
-  Expr              ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
+  Expr              ::=  (Bindings | [‘implicit’] (id | ‘_’)) ‘=>’ Expr
                       |  Expr1
   Expr1             ::=  ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] ‘else’ Expr]
                       |  ‘while’ ‘(’ Expr ‘)’ {nl} Expr
@@ -149,6 +154,7 @@ grammar:
                       |  ‘throw’ Expr
                       |  ‘return’ [Expr]
                       |  [SimpleExpr ‘.’] id ‘=’ Expr
+                      |  PrefixOperator SimpleExpr ‘=’ Expr
                       |  SimpleExpr1 ArgumentExprs ‘=’ Expr
                       |  PostfixExpr
                       |  PostfixExpr Ascription
@@ -156,7 +162,8 @@ grammar:
   PostfixExpr       ::=  InfixExpr [id [nl]]
   InfixExpr         ::=  PrefixExpr
                       |  InfixExpr id [nl] InfixExpr
-  PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
+  PrefixExpr        ::=  [PrefixOperator] SimpleExpr
+  PrefixOperator    ::=  ‘-’ | ‘+’ | ‘~’ | ‘!’
   SimpleExpr        ::=  ‘new’ (ClassTemplate | TemplateBody)
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
@@ -181,7 +188,7 @@ grammar:
                       |  Expr1
                       |
   ResultExpr        ::=  Expr1
-                      |  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
+                      |  (Bindings | [‘implicit’] (id | ‘_’) [‘:’ CompoundType]) ‘=>’ Block
 
   Enumerators       ::=  Generator {semi Generator}
   Generator         ::=  [‘case’] Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}

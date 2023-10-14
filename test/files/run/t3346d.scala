@@ -11,7 +11,7 @@ object Test extends App {
     def create(v: A): Basket[A,B]
   }
 
-  implicit val bf = new BasketFactory[Int,TARInt] {
+  implicit val bf: BasketFactory[Int,TARInt] = new BasketFactory[Int,TARInt] {
     def create(v: Int): Basket[Int,TARInt] = new Basket[Int, TARInt]{}
   }
 

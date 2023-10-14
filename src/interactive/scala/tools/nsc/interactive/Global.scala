@@ -586,7 +586,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
       try {
         if (!unit.isUpToDate)
-          if (unit.problems.isEmpty || !settings.YpresentationStrict)
+          if (unit.problems.isEmpty || !settings.YpresentationStrict.value)
             typeCheck(unit)
           else debugLog("%s has syntax errors. Skipped typechecking".format(unit))
         else debugLog("already up to date: "+unit)
@@ -992,9 +992,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]): Unit = {
     informIDE("getScopeCompletion" + pos)
-    respond(response) { scopeMembers(pos) }
+    respond(response) { scopeMemberFlatten(scopeMembers(pos)) }
   }
 
+  @nowarn("msg=inheritance from class LinkedHashMap")
   private class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
     override def default(key: Name) = Set()
 
@@ -1043,9 +1044,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
         // imported val and var are always marked as inaccessible, but they could be accessed through their getters. scala/bug#7995
         val member = if (s.hasGetter)
-          new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
-        else
-          new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+          ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
+        else {
+          if (s.isAliasType) {
+            val aliasInfo = ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+            ScopeMember(s.info.typeSymbol, s.info.typeSymbol.tpe,
+                                              context.isAccessible(s.info.typeSymbol, pre, superAccess = false), viaImport,
+                                              aliasInfo = Some(aliasInfo))
+          } else ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+        }
         member.prefix = pre
         member
       }
@@ -1181,14 +1188,23 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def matchingResults(nameMatcher: (Name) => Name => Boolean = entered => candidate => candidate.startsWith(entered)): List[M] = {
       val enteredName = if (name == nme.ERROR) nme.EMPTY else name
       val matcher = nameMatcher(enteredName)
-      results filter { (member: Member) =>
+      results.filter { (member: Member) =>
         val symbol = member.sym
         def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
         def isJunk = !symbol.exists || symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
-        def nameTypeOk = forImport ||                  // Completing an import: keep terms and types.
-          symbol.name.isTermName == name.isTermName || // Keep names of the same type
-          name.isTypeName && isStable                  // Completing a type: keep stable terms (paths)
-        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && nameTypeOk)
+        def nameTypeOk: Boolean = {
+          forImport || // Completing an import: keep terms and types.
+            symbol.name.isTermName == name.isTermName || // Keep names of the same type
+            name.isTypeName && isStable // Completing a type: keep stable terms (paths)
+        }
+        // scala/bug#11846 aliasInfo should be match
+        def aliasTypeOk: Boolean = {
+          matcher(member.aliasInfo.map(_.sym.name).getOrElse(NoSymbol.name)) && !forImport && symbol.name.isTermName == name.isTermName
+        }
+        
+        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || (matcher(member.sym.name) || aliasTypeOk)
+          && nameTypeOk)
+
       }
     }
   }
@@ -1206,6 +1222,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       override def positionDelta = 0
       override def forImport: Boolean = false
     }
+  }
+
+  private def scopeMemberFlatten(members: List[ScopeMember]): List[ScopeMember] = {
+    val (infoWithoutAlias, infoWithAlias) = members.partition(_.aliasInfo.isEmpty)
+    infoWithoutAlias ++ infoWithAlias ++ infoWithAlias.flatten(_.aliasInfo)
   }
 
   final def completionsAt(pos: Position): CompletionResult = {
@@ -1235,13 +1256,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val allMembers = scopeMembers(pos)
         val positionDelta: Int = pos.start - focus1.pos.start
         val subName = name.subName(0, positionDelta)
-        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = false)
+        CompletionResult.ScopeMembers(positionDelta, scopeMemberFlatten(allMembers), subName, forImport = false)
       case imp@Import(i @ Ident(name), head :: Nil) if head.name == nme.ERROR =>
         val allMembers = scopeMembers(pos)
         val nameStart = i.pos.start
         val positionDelta: Int = pos.start - nameStart
         val subName = name.subName(0, pos.start - i.pos.start)
-        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = true)
+        CompletionResult.ScopeMembers(positionDelta, scopeMemberFlatten(allMembers), subName, forImport = true)
       case imp@Import(qual, selectors) =>
         selectors.reverseIterator.find(_.namePos <= pos.start) match {
           case None => CompletionResult.NoResults
@@ -1257,14 +1278,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val source = pos.source
 
         val nameStart: Int = (focus1.pos.end - 1 to effectiveQualEnd by -1).find(p =>
-          source.identifier(source.position(p)).exists(_.length == 0)
+          source.identFrom(source.position(p)).exists(_.length == 0)
         ).map(_ + 1).getOrElse(fallback)
         typeCompletions(sel, qual, nameStart, name)
       case Ident(name) =>
         val allMembers = scopeMembers(pos)
         val positionDelta: Int = pos.start - focus1.pos.start
         val subName = name.subName(0, positionDelta)
-        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = false)
+        CompletionResult.ScopeMembers(positionDelta, scopeMemberFlatten(allMembers), subName, forImport = false)
       case _ =>
         CompletionResult.NoResults
     }

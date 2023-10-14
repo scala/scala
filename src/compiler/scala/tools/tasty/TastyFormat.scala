@@ -22,34 +22,34 @@ object TastyFormat {
     */
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
 
-  /**Natural number. Each increment of the `MajorVersion` begins a
-   * new series of backward compatible TASTy versions.
+  /** Natural number. Each increment of the `MajorVersion` begins a
+   *  new series of backward compatible TASTy versions.
    *
-   * A TASTy file in either the preceding or succeeding series is
-   * incompatible with the current value.
+   *  A TASTy file in either the preceeding or succeeding series is
+   *  incompatible with the current value.
    */
   final val MajorVersion: Int = 28
 
-  /**Natural number. Each increment of the `MinorVersion`, within
-   * a series declared by the `MajorVersion`, breaks forward
-   * compatibility, but remains backwards compatible, with all
-   * preceding `MinorVersion`.
+  /** Natural number. Each increment of the `MinorVersion`, within
+   *  a series declared by the `MajorVersion`, breaks forward
+   *  compatibility, but remains backwards compatible, with all
+   *  preceeding `MinorVersion`.
    */
-  final val MinorVersion: Int = 0
+  final val MinorVersion: Int = 3
 
-  /**Natural Number. The `ExperimentalVersion` allows for
-   * experimentation with changes to TASTy without committing
-   * to any guarantees of compatibility.
+  /** Natural Number. The `ExperimentalVersion` allows for
+   *  experimentation with changes to TASTy without committing
+   *  to any guarantees of compatibility.
    *
-   * A zero value indicates that the TASTy version is from a
-   * stable, final release.
+   *  A zero value indicates that the TASTy version is from a
+   *  stable, final release.
    *
-   * A strictly positive value indicates that the TASTy
-   * version is experimental. An experimental TASTy file
-   * can only be read by a tool with the same version.
-   * However, tooling with an experimental TASTy version
-   * is able to read final TASTy documents if the file's
-   * `MinorVersion` is strictly less than the current value.
+   *  A strictly positive value indicates that the TASTy
+   *  version is experimental. An experimental TASTy file
+   *  can only be read by a tool with the same version.
+   *  However, tooling with an experimental TASTy version
+   *  is able to read final TASTy documents if the file's
+   *  `MinorVersion` is strictly less than the current value.
    */
   final val ExperimentalVersion: Int = 0
 
@@ -78,30 +78,14 @@ object TastyFormat {
    * with an unstable TASTy version.
    *
    * We follow the given algorithm:
+   *
    * ```
-   * if file.major != compiler.major then
-   *   return incompatible
-   * if compiler.experimental == 0 then
-   *   if file.experimental != 0 then
-   *     return incompatible
-   *   if file.minor > compiler.minor then
-   *     return incompatible
-   *   else
-   *     return compatible
-   * else invariant[compiler.experimental != 0]
-   *   if file.experimental == compiler.experimental then
-   *     if file.minor == compiler.minor then
-   *       return compatible (all fields equal)
-   *     else
-   *       return incompatible
-   *   else if file.experimental == 0,
-   *     if file.minor < compiler.minor then
-   *       return compatible (an experimental version can read a previous released version)
-   *     else
-   *       return incompatible (an experimental version cannot read its own minor version or any later version)
-   *   else invariant[file.experimental is non-0 and different than compiler.experimental]
-   *     return incompatible
+   * (fileMajor, fileMinor, fileExperimental) match
+   *   case (`compilerMajor`, `compilerMinor`, `compilerExperimental`) => true // full equality
+   *   case (`compilerMajor`, minor, 0) if minor < compilerMinor       => true // stable backwards compatibility
+   *   case _                                                          => false
    * ```
+   * @syntax markdown
    */
   def isVersionCompatible(
     fileMajor: Int,
@@ -111,18 +95,9 @@ object TastyFormat {
     compilerMinor: Int,
     compilerExperimental: Int
   ): Boolean = (
-    fileMajor == compilerMajor && (
-      if (fileExperimental == compilerExperimental) {
-        if (compilerExperimental == 0) {
-          fileMinor <= compilerMinor
-        }
-        else {
-          fileMinor == compilerMinor
-        }
-      }
-      else {
-        fileExperimental == 0 && fileMinor < compilerMinor
-      }
+    fileMajor == compilerMajor &&
+      (  fileMinor == compilerMinor && fileExperimental == compilerExperimental // full equality
+      || fileMinor <  compilerMinor && fileExperimental == 0 // stable backwards compatibility
     )
   )
 
@@ -199,11 +174,13 @@ object TastyFormat {
   // Cat. 1:    tag
 
   final val firstSimpleTreeTag = UNITconst
+  // final val ??? = 1
   final val UNITconst = 2
   final val FALSEconst = 3
   final val TRUEconst = 4
   final val NULLconst = 5
   final val PRIVATE = 6
+  // final val ??? = 7
   final val PROTECTED = 8
   final val ABSTRACT = 9
   final val FINAL = 10
@@ -226,6 +203,7 @@ object TastyFormat {
   final val CASEaccessor = 27
   final val COVARIANT = 28
   final val CONTRAVARIANT = 29
+  // final val ??? = 30
   final val HASDEFAULT = 31
   final val STABLE = 32
   final val MACRO = 33
@@ -301,6 +279,7 @@ object TastyFormat {
   final val IMPORT = 132
   final val TYPEPARAM = 133
   final val PARAM = 134
+  // final val ??? = 135
   final val APPLY = 136
   final val TYPEAPPLY = 137
   final val TYPED = 138
@@ -331,7 +310,9 @@ object TastyFormat {
   final val TYPEBOUNDS = 163
   final val TYPEBOUNDStpt = 164
   final val ANDtype = 165
+  // final val ??? = 166
   final val ORtype = 167
+  // final val ??? = 168
   final val POLYtype = 169
   final val TYPELAMBDAtype = 170
   final val LAMBDAtpt = 171
@@ -341,8 +322,10 @@ object TastyFormat {
   final val TYPEREFin = 175
   final val SELECTin = 176
   final val EXPORT = 177
-
+  // final val ??? = 178
+  // final val ??? = 179
   final val METHODtype = 180
+  final val APPLYsigpoly = 181
 
   final val MATCHtype = 190
   final val MATCHtpt = 191
@@ -509,6 +492,7 @@ object TastyFormat {
     case BOUNDED => "BOUNDED"
     case APPLY => "APPLY"
     case TYPEAPPLY => "TYPEAPPLY"
+    case APPLYsigpoly => "APPLYsigpoly"
     case NEW => "NEW"
     case THROW => "THROW"
     case TYPED => "TYPED"

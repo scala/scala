@@ -11,6 +11,8 @@ public class t12349a {
        public void a7() { System.out.println("t12349a#a7()"); }
        public void a8() { System.out.println("t12349a#a8()"); }
        public void a9() { System.out.println("t12349a#a9()"); }
+       public void aA() { System.out.println("t12349a#aA()"); }
+       public void aB() { System.out.println("t12349a#aB()"); }
 
     protected void b1() { System.out.println("t12349a#b1()"); }
     protected void b2() { System.out.println("t12349a#b2()"); }
@@ -21,6 +23,8 @@ public class t12349a {
     protected void b7() { System.out.println("t12349a#b7()"); }
     protected void b8() { System.out.println("t12349a#b8()"); }
     protected void b9() { System.out.println("t12349a#b9()"); }
+    protected void bA() { System.out.println("t12349a#bA()"); }
+    protected void bB() { System.out.println("t12349a#bB()"); }
 
               void c1() { System.out.println("t12349a#c1()"); }
               void c2() { System.out.println("t12349a#c2()"); }
@@ -31,6 +35,8 @@ public class t12349a {
               void c7() { System.out.println("t12349a#c7()"); }
               void c8() { System.out.println("t12349a#c8()"); }
               void c9() { System.out.println("t12349a#c9()"); }
+              void cA() { System.out.println("t12349a#cA()"); }
+              void cB() { System.out.println("t12349a#cB()"); }
 
       private void d1() { System.out.println("t12349a#d1()"); }
       private void d2() { System.out.println("t12349a#d2()"); }
@@ -41,5 +47,7 @@ public class t12349a {
       private void d7() { System.out.println("t12349a#d7()"); }
       private void d8() { System.out.println("t12349a#d8()"); }
       private void d9() { System.out.println("t12349a#d9()"); }
+      private void dA() { System.out.println("t12349a#dA()"); }
+      private void dB() { System.out.println("t12349a#dB()"); }
 
 }

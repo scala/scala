@@ -1,15 +1,22 @@
-package scala.tools
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
-import dotty.tools.vulpix.ParallelTesting
+package scala.tools
 
 package object tastytest {
 
   import scala.util.Try
 
   import Files.{pathSep, classpathSep}
-
-  def unlockExperimentalFeatures[T](op: => T): T =
-    new ParallelTesting().unlockExperimentalFeatures(op)
 
   def printerrln(str: String): Unit = System.err.println(red(str))
   def printwarnln(str: String): Unit = System.err.println(yellow(str))

@@ -5,6 +5,7 @@ t7475f.scala:13: error: not found: value c2
   c2 // a member, but inaccessible.
   ^
 t7475f.scala:26: error: value d2 is not a member of D[Any]
+did you mean d1?
     other.d2 // not a member
           ^
 3 errors

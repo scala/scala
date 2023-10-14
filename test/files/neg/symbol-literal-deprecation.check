@@ -1,4 +1,4 @@
-symbol-literal-deprecation.scala:4: warning: symbol literal is deprecated; use Symbol("TestSymbol") instead
+symbol-literal-deprecation.scala:4: warning: symbol literal is deprecated; use Symbol("TestSymbol") instead [quickfixable]
   val foo = 'TestSymbol
             ^
 error: No warnings can be incurred under -Werror.

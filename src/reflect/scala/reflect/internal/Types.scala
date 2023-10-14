@@ -772,8 +772,8 @@ trait Types
     def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
 
     class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
-      def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
-      def map[T](f: Type => T): List[T]  = collect(Type.this) map f
+      def foreach[U](f: Type => U): Unit = this.collect(Type.this).foreach(f)
+      def map[T](f: Type => T): List[T]  = this.collect(Type.this).map(f)
     }
 
     @inline final def orElse(alt: => Type): Type = if (this ne NoType) this else alt
@@ -1102,13 +1102,13 @@ trait Types
 // Spec: "The base types of a singleton type `$p$.type` are the base types of the type of $p$."
 //    override def baseTypeSeq: BaseTypeSeq = underlying.baseTypeSeq
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
-    override def safeToString: String = {
-      // Avoiding printing Predef.type and scala.package.type as "type",
-      // since in all other cases we omit those prefixes.
-      val sym = termSymbol.skipPackageObject
-      if (sym.isOmittablePrefix) sym.fullName + ".type"
-      else prefixString + "type"
-    }
+    // Avoid printing Predef.type and scala.package.type as "type",
+    // since in all other cases we omit those prefixes. Do not skipPackageObject.
+    override def safeToString: String =
+      termSymbol match {
+        case s if s.isOmittablePrefix => s"${if (s.isPackageObjectOrClass || s.isJavaDefined) s.fullNameString else s.nameString}.type"
+        case _ => s"${prefixString}type"
+      }
   }
 
   /** An object representing an erroneous type */
@@ -1559,18 +1559,16 @@ trait Types
     /** Bounds notation used in Scala syntax.
       * For example +This <: scala.collection.generic.Sorted[K,This].
       */
-    private[internal] def scalaNotation(typeString: Type => String): String = {
+    private[internal] def scalaNotation(typeString: Type => String): String =
       (if (emptyLowerBound) "" else " >: " + typeString(lo)) +
       (if (emptyUpperBound) "" else " <: " + typeString(hi))
-    }
     /** Bounds notation used in https://adriaanm.github.com/files/higher.pdf.
       * For example *(scala.collection.generic.Sorted[K,This]).
       */
-    private[internal] def starNotation(typeString: Type => String): String = {
+    private[internal] def starNotation(typeString: Type => String): String =
       if (emptyLowerBound && emptyUpperBound) ""
       else if (emptyLowerBound) s"(${typeString(hi)})"
       else s"(${typeString(lo)}, ${typeString(hi)})"
-    }
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
       val lo1 = map match {
@@ -1771,9 +1769,9 @@ trait Types
         }
       }
     }
-    //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG
+    //Console.println(s"baseTypeSeq(${tpe.typeSymbol}) = ${tpe.baseTypeSeqCache.toList}") //DEBUG
     if (tpe.baseTypeSeqCache eq undetBaseTypeSeq)
-      throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
+      throw new TypeError(s"illegal cyclic inheritance involving ${tpe.typeSymbol}")
   }
 
   protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
@@ -2137,7 +2135,9 @@ trait Types
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString
     override def toLongString = toString
-    override def safeToString = prefixString + "type"
+    override def safeToString =
+      if (sym.isOmittablePrefix) s"${if (sym.isPackageObjectOrClass || sym.isJavaDefined) sym.fullNameString else sym.nameString}.type"
+      else s"${prefixString}type"
     override def prefixString = if (sym.isOmittablePrefix) "" else prefix.prefixString + sym.nameString + "."
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
@@ -2794,8 +2794,9 @@ trait Types
         }
       }
     }
+    //Console.println(s"baseTypeSeq(${tpe.typeSymbol}) = ${tpe.baseTypeSeqCache.toList}") //DEBUG
     if (tpe.baseTypeSeqCache == undetBaseTypeSeq)
-      throw new TypeError("illegal cyclic inheritance involving " + tpe.sym)
+      throw new TypeError(s"illegal cyclic inheritance involving ${tpe.sym}")
   }
 
   /** A class representing a method type with parameters.
@@ -3149,7 +3150,7 @@ trait Types
 
     private def existentialClauses = {
       val str = quantified.map(_.existentialToString).mkString(" forSome { ", "; ", " }")
-      if (settings.explaintypes) "(" + str + ")" else str
+      if (settings.explaintypes.value) "(" + str + ")" else str
     }
 
     /** An existential can only be printed with wildcards if:
@@ -3589,7 +3590,7 @@ trait Types
        *    TC1[T1,..., TN] <: TC2[T'1,...,T'N]
        *  }}}
        *  Checks subtyping of higher-order type vars, and uses variances as defined in the
-       *  type parameter we're trying to infer (the result will be sanity-checked later).
+       *  type parameter we're trying to infer (the result will be confidence-checked later).
        */
       def unifyFull(tpe: Type): Boolean = {
         def unifiableKinds(lhs: List[Symbol], rhs: List[Symbol]): Boolean =
@@ -3766,7 +3767,7 @@ trait Types
         if (sym.owner.isTerm && (sym.owner != encl)) Some(sym.owner) else None
       ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
     }
-    private def levelString = if (settings.explaintypes) level else ""
+    private def levelString = if (settings.explaintypes.value) level else ""
     override def safeToString = (
       if ((constr eq null) || (inst eq null)) "TVar<" + originName + "=null>"
       else if (inst ne NoType) "=?" + inst
@@ -5220,12 +5221,12 @@ trait Types
 
   /** If option `explaintypes` is set, print a subtype trace for `found <:< required`. */
   def explainTypes(found: Type, required: Type): Unit = {
-    if (settings.explaintypes) withTypesExplained(found <:< required)
+    if (settings.explaintypes.value) withTypesExplained(found <:< required)
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `op(found, required)`. */
   def explainTypes(op: (Type, Type) => Any, found: Type, required: Type): Unit = {
-    if (settings.explaintypes) withTypesExplained(op(found, required))
+    if (settings.explaintypes.value) withTypesExplained(op(found, required))
   }
 
   /** Execute `op` while printing a trace of the operations on types executed. */
@@ -5264,24 +5265,69 @@ trait Types
    */
   def importableMembers(pre: Type): Scope = pre.members filter isImportable
 
-  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (!updatedSyms.isEmpty)
+  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: collection.Set[Symbol]) = if (!updatedSyms.isEmpty) {
+    val invldtr = new InvalidateTypeCaches(updatedSyms)
     for (t <- tree if t.tpe != null)
-      for (tp <- t.tpe) {
-        invalidateCaches(tp, updatedSyms)
-      }
+      invldtr.invalidate(t.tpe)
+  }
 
-  def invalidateCaches(t: Type, updatedSyms: List[Symbol]): Unit =
-    t match {
-      case tr: TypeRef      if updatedSyms.contains(tr.sym) => tr.invalidateTypeRefCaches()
-      case ct: CompoundType if ct.baseClasses.exists(updatedSyms.contains) => ct.invalidatedCompoundTypeCaches()
-      case st: SingleType =>
-        if (updatedSyms.contains(st.sym)) st.invalidateSingleTypeCaches()
-        val underlying = st.underlying
-        if (underlying ne st)
-          invalidateCaches(underlying, updatedSyms)
-      case _ =>
+  def invalidateCaches(t: Type, updatedSyms: collection.Set[Symbol]): Unit =
+    new InvalidateTypeCaches(updatedSyms).invalidate(t)
+
+  class InvalidateTypeCaches(changedSymbols: collection.Set[Symbol]) extends TypeFolder {
+    private var res = false
+    private val seen = new java.util.IdentityHashMap[Type, Boolean]
+
+    def invalidate(tps: Iterable[Type]): Unit = {
+      res = false
+      seen.clear()
+      try tps.foreach(invalidateImpl)
+      finally seen.clear()
     }
 
+    def invalidate(tp: Type): Unit = invalidate(List(tp))
+
+    protected def invalidateImpl(tp: Type): Boolean = Option(seen.get(tp)).getOrElse {
+      val saved = res
+      try {
+        apply(tp)
+        res
+      } finally res = saved
+    }
+
+    def apply(tp: Type): Unit = tp match {
+      case _ if seen.containsKey(tp) =>
+
+      case tr: TypeRef =>
+        val preInvalid = invalidateImpl(tr.pre)
+        var argsInvalid = false
+        tr.args.foreach(arg => argsInvalid = invalidateImpl(arg) || argsInvalid)
+        if (preInvalid || argsInvalid || changedSymbols(tr.sym)) {
+          tr.invalidateTypeRefCaches()
+          res = true
+        }
+        seen.put(tp, res)
+
+      case ct: CompoundType if ct.baseClasses.exists(changedSymbols) =>
+        ct.invalidatedCompoundTypeCaches()
+        res = true
+        seen.put(tp, res)
+
+      case st: SingleType =>
+        val preInvalid = invalidateImpl(st.pre)
+        if (preInvalid || changedSymbols(st.sym)) {
+          st.invalidateSingleTypeCaches()
+          res = true
+        }
+        val underInvalid = (st.underlying ne st) && invalidateImpl(st.underlying)
+        res ||= underInvalid
+        seen.put(tp, res)
+
+      case _ =>
+        tp.foldOver(this)
+        seen.put(tp, res)
+    }
+  }
 
   val shorthands = Set(
     "scala.collection.immutable.List",
@@ -5293,8 +5339,6 @@ trait Types
     "scala.collection.Iterable",
     "scala.collection.Iterator")
 
-  @deprecated("Use _.tpe", "2.12.12") // used by scala-meta, leave until they remove the dependency.
-  private[scala] val treeTpe = (t: Tree) => t.tpe
   private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
@@ -5346,23 +5390,23 @@ trait Types
 
 // -------------- Classtags --------------------------------------------------------
 
-  implicit val AnnotatedTypeTag = ClassTag[AnnotatedType](classOf[AnnotatedType])
-  implicit val BoundedWildcardTypeTag = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
-  implicit val ClassInfoTypeTag = ClassTag[ClassInfoType](classOf[ClassInfoType])
-  implicit val CompoundTypeTag = ClassTag[CompoundType](classOf[CompoundType])
-  implicit val ConstantTypeTag = ClassTag[ConstantType](classOf[ConstantType])
-  implicit val ExistentialTypeTag = ClassTag[ExistentialType](classOf[ExistentialType])
-  implicit val MethodTypeTag = ClassTag[MethodType](classOf[MethodType])
-  implicit val NullaryMethodTypeTag = ClassTag[NullaryMethodType](classOf[NullaryMethodType])
-  implicit val PolyTypeTag = ClassTag[PolyType](classOf[PolyType])
-  implicit val RefinedTypeTag = ClassTag[RefinedType](classOf[RefinedType])
-  implicit val SingletonTypeTag = ClassTag[SingletonType](classOf[SingletonType])
-  implicit val SingleTypeTag = ClassTag[SingleType](classOf[SingleType])
-  implicit val SuperTypeTag = ClassTag[SuperType](classOf[SuperType])
-  implicit val ThisTypeTag = ClassTag[ThisType](classOf[ThisType])
-  implicit val TypeBoundsTag = ClassTag[TypeBounds](classOf[TypeBounds])
-  implicit val TypeRefTag = ClassTag[TypeRef](classOf[TypeRef])
-  implicit val TypeTagg = ClassTag[Type](classOf[Type])
+  implicit val AnnotatedTypeTag: ClassTag[AnnotatedType] = ClassTag[AnnotatedType](classOf[AnnotatedType])
+  implicit val BoundedWildcardTypeTag: ClassTag[BoundedWildcardType] = ClassTag[BoundedWildcardType](classOf[BoundedWildcardType])
+  implicit val ClassInfoTypeTag: ClassTag[ClassInfoType] = ClassTag[ClassInfoType](classOf[ClassInfoType])
+  implicit val CompoundTypeTag: ClassTag[CompoundType] = ClassTag[CompoundType](classOf[CompoundType])
+  implicit val ConstantTypeTag: ClassTag[ConstantType] = ClassTag[ConstantType](classOf[ConstantType])
+  implicit val ExistentialTypeTag: ClassTag[ExistentialType] = ClassTag[ExistentialType](classOf[ExistentialType])
+  implicit val MethodTypeTag: ClassTag[MethodType] = ClassTag[MethodType](classOf[MethodType])
+  implicit val NullaryMethodTypeTag: ClassTag[NullaryMethodType] = ClassTag[NullaryMethodType](classOf[NullaryMethodType])
+  implicit val PolyTypeTag: ClassTag[PolyType] = ClassTag[PolyType](classOf[PolyType])
+  implicit val RefinedTypeTag: ClassTag[RefinedType] = ClassTag[RefinedType](classOf[RefinedType])
+  implicit val SingletonTypeTag: ClassTag[SingletonType] = ClassTag[SingletonType](classOf[SingletonType])
+  implicit val SingleTypeTag: ClassTag[SingleType] = ClassTag[SingleType](classOf[SingleType])
+  implicit val SuperTypeTag: ClassTag[SuperType] = ClassTag[SuperType](classOf[SuperType])
+  implicit val ThisTypeTag: ClassTag[ThisType] = ClassTag[ThisType](classOf[ThisType])
+  implicit val TypeBoundsTag: ClassTag[TypeBounds] = ClassTag[TypeBounds](classOf[TypeBounds])
+  implicit val TypeRefTag: ClassTag[TypeRef] = ClassTag[TypeRef](classOf[TypeRef])
+  implicit val TypeTagg: ClassTag[Type] = ClassTag[Type](classOf[Type])
 }
 
 object TypeConstants {

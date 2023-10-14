@@ -1,0 +1,4 @@
+TestSaferExceptions_fail.scala:5: error: Unsupported Scala 3 erased value x$1; found in method apply in  tastytest.SaferExceptions.<refinement>.
+  def test = SaferExceptions.safeDiv(1, 0) // error
+                             ^
+1 error

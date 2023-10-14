@@ -64,9 +64,12 @@ trait ContextOps { self: TastyUniverse =>
   }
 
   final def location(owner: Symbol): String = {
-    if (!isSymbol(owner)) "<NoSymbol>"
-    else if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
-    else s"${describeOwner(owner)} in ${location(owner.owner)}"
+    if (!isSymbol(owner))
+      "<NoSymbol>"
+    else if (owner.isClass || owner.isPackageClass || owner.isPackageObjectOrClass)
+      s"${owner.kindString} ${owner.fullNameString}"
+    else
+      s"${describeOwner(owner)} in ${location(owner.owner)}"
   }
 
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
@@ -93,29 +96,32 @@ trait ContextOps { self: TastyUniverse =>
 
   /**Perform an operation within a context that has the mode `IndexStats` will force any collected annotations
    * afterwards */
-  def inIndexStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inIndexStatsContext[T](op: Context => T)(implicit ctx: Context): T = {
     val statsCtx = ctx.addMode(IndexStats)
-    op(statsCtx)
-    statsCtx.initialContext.forceAnnotations()
+    try op(statsCtx)
+    finally statsCtx.initialContext.forceAnnotations()
   }
 
   /** Perform an operation within a context that has the mode `InnerScope` will enter any inline methods afterwards */
-  def inInnerScopeContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inInnerScopeContext[T](op: Context => T)(implicit ctx: Context): T = {
     val innerCtx = ctx.addMode(InnerScope)
-    op(innerCtx)
-    innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
+    try op(innerCtx)
+    finally innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
   }
 
 
   /** an aggregate of `inInnerScopeContext` within `inIndexStatsContext` */
-  def inIndexScopedStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  def inIndexScopedStatsContext[T](op: Context => T)(implicit ctx: Context): T = {
     inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
   }
 
-  /**Forces lazy annotations, if one is `scala.annotation.internal.Child` then it will add the referenced type as a
-   * sealed child.
+  /**Analyses critical annotations, critical annotations will be forced as they are necessary to
+   * the reading of TASTy. E.g. `scala.annotation.internal.Child` is a critical annotation that
+   * must be forced to add its first type argument as a sealed child.
    */
   private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
+
+    def inOwner[T](op: Context => T): T = op(ctx.withOwner(sym.owner))
 
     def lookupChild(childTpe: Type): Symbol = {
       val child = symOfType(childTpe)
@@ -129,9 +135,10 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
+    var problematic: List[String] = Nil
+
     for (annot <- sym.annotations) {
-      annot.completeInfo()
-      if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
+      if (annot.symbol === defn.ChildAnnot) {
         val child = {
           val child0 = lookupChild(annot.tpe.typeArgs.head)
           if (child0 eq sym) {
@@ -151,6 +158,17 @@ trait ContextOps { self: TastyUniverse =>
         ctx.log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
         sym.addChild(child)
       }
+      if ((annot.symbol eq defn.TargetNameAnnotationClass) ||
+          (annot.symbol eq defn.StaticMethodAnnotationClass)) {
+        problematic ::= inOwner { implicit ctx =>
+          annot.completeInfo() // these should be safe to force
+          unsupportedMessage(s"annotation on $sym: @$annot")
+        }
+      }
+    }
+    if (problematic.nonEmpty) {
+      sym.removeAnnotation(u.definitions.CompileTimeOnlyAttr)
+      sym.addAnnotation(u.definitions.CompileTimeOnlyAttr, u.Literal(u.Constant(problematic.head)))
     }
   }
 
@@ -179,14 +197,14 @@ trait ContextOps { self: TastyUniverse =>
         }
         else {
           log(s"eagerly adding annotations to ${showSym(sym)}")
-          analyseAnnotations(sym.setAnnotations(annots.map(_.eager(sym))))
+          analyseAnnotations(sym.setAnnotations(annots.map(_.lzy(sym))))
         }
       }
     }
 
     final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
-    final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
+    final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations.value
 
     def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Inline
 
@@ -195,7 +213,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def log(str: => String): Unit = {
-      if (u.settings.YdebugTasty) {
+      if (u.settings.YdebugTasty.value) {
         logImpl(str)
       }
     }
@@ -220,7 +238,7 @@ trait ContextOps { self: TastyUniverse =>
         op.tap(eval => logImpl(s"${yellow(id0)} ${cyan(s">>>")} ${magenta(i.res(eval))}$modStr"))
       }
 
-      if (u.settings.YdebugTasty) initialContext.subTrace(addInfo(info, op))
+      if (u.settings.YdebugTasty.value) initialContext.subTrace(addInfo(info, op))
       else op
     }
 
@@ -266,7 +284,7 @@ trait ContextOps { self: TastyUniverse =>
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
-        newFlags = FlagSets.Creation.Default
+        newFlags = FlagSets.Creation.Wildcard
       ).setInfo(info)
 
     final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
@@ -553,6 +571,9 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
+
+    final def argumentCtx(fn: Tree): Context =
+      if (fn.symbol.isPrimaryConstructor) retractMode(ReadAnnotationCtor) else thisCtx
 
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 

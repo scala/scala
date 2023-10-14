@@ -708,7 +708,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    */
   def mul(factor: Long): FiniteDuration  = this * factor
 
-  def unary_- = Duration(-length, unit)
+  def unary_- : FiniteDuration = Duration(-length, unit)
 
   final def isFinite = true
 

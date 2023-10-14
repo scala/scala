@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.6"),
+    mimaReferenceVersion := Some("2.13.12"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -31,18 +31,17 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
 
-    // #8835
-    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.scala$reflect$runtime$SynchronizedOps$SynchronizedBaseTypeSeq$$super$maxDepthOfElems"),
+    // KEEP: make use of CompletionStage#handle to get a better performance than CompletionStage#whenComplete.
+    ProblemFilters.exclude[MissingTypesProblem]("scala.concurrent.impl.FutureConvertersImpl$P"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.apply"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
-    // this is an internal class and adding a final override here should not be a problem
-    ProblemFilters.exclude[FinalMethodProblem]("scala.concurrent.impl.Promise#DefaultPromise.zipWith"),
-
-    // private[scala] Internal API
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
-    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.FileZipArchive#LeakyEntry.this"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$zipFilePool$"),
-
-    )
+    // 2.13.13; it's okay because the class is private
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.MapNodeRemoveAllSetNodeIterator.next"),
+  )
 
   override val buildSettings = Seq(
     mimaFailOnNoPrevious := false, // we opt everything out, knowing we only check library/reflect

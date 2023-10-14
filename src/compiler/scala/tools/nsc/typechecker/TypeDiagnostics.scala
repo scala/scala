@@ -41,7 +41,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  @author Paul Phillips
  */
 trait TypeDiagnostics extends splain.SplainDiagnostics {
-  self: Analyzer with StdAttachments =>
+  _: Analyzer with StdAttachments =>
 
   import global._
   import definitions._
@@ -204,7 +204,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     // expanded if necessary to disambiguate simple identifiers.
     val deepDealias = DealiasedType(tp)
     if (tp eq deepDealias) "" else {
-      // A sanity check against expansion being identical to original.
+      // A check against expansion being identical to original.
       val s = "" + deepDealias
       if (s == "" + tp) ""
       else "\n    (which expands to)  " + s
@@ -369,7 +369,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     private val savedName = sym.name
     private var postQualifiedWith: List[Symbol] = Nil
     def restoreName()     = sym.name = savedName
-    def modifyName(f: String => String) = sym setName newTypeName(f(sym.name.toString))
+    def modifyName(f: String => String): Unit = sym setName newTypeName(f(sym.name.toString))
 
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
@@ -487,7 +487,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     }
 
     def apply(context: Context, tree: Tree): Tree = {
-      if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
+      if (settings.warnDeadCode.value && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
         context.warning(tree.pos, "dead code following this construct", WarningCategory.WFlagDeadCode)
       tree
     }
@@ -512,8 +512,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val params    = mutable.Set[Symbol]()
     val patvars   = mutable.Set[Symbol]()
 
-    def defnSymbols = defnTrees.toList map (_.symbol)
-    def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
+    def varsWithoutSetters = defnTrees.iterator.map(_.symbol).filter(t => t.isVar && !isExisting(t.setter))
 
     def qualifiesTerm(sym: Symbol) = (
       (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || isEffectivelyPrivate(sym))
@@ -530,6 +529,13 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       )
     def isExisting(sym: Symbol) = sym != null && sym.exists
 
+    // so trivial that it never consumes params
+    def isTrivial(rhs: Tree): Boolean =
+      rhs.symbol == Predef_??? || rhs.tpe == null || rhs.tpe =:= NothingTpe || (rhs match {
+        case Literal(_) => true
+        case _          => isConstantType(rhs.tpe) || isSingleType(rhs.tpe)
+      })
+
     override def traverse(t: Tree): Unit = {
       val sym = t.symbol
       t match {
@@ -541,22 +547,33 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
               else if (sym.isSynthetic && sym.isImplicit) return
-              else if (!sym.isConstructor && rhs.symbol != Predef_???)
+              else if (!sym.isConstructor && !sym.isVar && !isTrivial(rhs))
                 for (vs <- vparamss) params ++= vs.map(_.symbol)
               defnTrees += m
+            case TypeDef(mods@_, name@_, tparams@_, rhs@_) =>
+              if (!sym.isAbstract && !sym.isDeprecated)
+                defnTrees += m
             case _ =>
               defnTrees += m
-        }
+          }
         case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars && !t.isErrorTyped =>
           pat.foreach {
             case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
             case _ =>
-        }
+          }
         case _: RefTree if isExisting(sym)            => targets += sym
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
         case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
           ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
-        case _                                        =>
+        case Literal(_) =>
+          t.attachments.get[OriginalTreeAttachment].foreach(ota => traverse(ota.original))
+        case tt: TypeTree =>
+          tt.original match {
+            case null =>
+            case xo if xo ne tt => traverse(xo)
+            case _ =>
+          }
+        case _ =>
       }
 
       if (t.tpe ne null) {
@@ -602,9 +619,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           case nme.CONSTRUCTOR => sym.owner.companion.isCaseClass
           case nme.copy        => sym.owner.typeSignature.member(nme.copy).isSynthetic
         }
-      def defaultGetterOK = sym.isDefaultGetter && !privateSyntheticDefault
-      def contextBoundOK = sym.isImplicit && settings.warnUnusedSynthetics
-      contextBoundOK || defaultGetterOK
+      sym.isParameter || sym.isParamAccessor || sym.isDefaultGetter && !privateSyntheticDefault
     }
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
@@ -646,7 +661,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       clean.sortBy(treepos)
     }
     // local vars which are never set, except those already returned in unused
-    def unsetVars = localVars.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
+    def unsetVars = varsWithoutSetters.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).toList.sortBy(sympos)
     def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
     def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
     def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
@@ -690,45 +705,41 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         def wcat(sym: Symbol) = if (sym.isPrivate) WarningCategory.UnusedPrivates else WarningCategory.UnusedLocals
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
-          val pos = (
-            if (defn.pos.isDefined) defn.pos
-            else if (sym.pos.isDefined) sym.pos
-            else sym match {
-              case sym: TermSymbol => sym.referenced.pos
-              case _               => NoPosition
+          val pos =
+            sym match {
+              case sym if sym.pos.isDefined                        => sym.pos
+              case sym: TermSymbol if sym.referenced.pos.isDefined => sym.referenced.pos
+              case _ if defn.pos.isDefined                         => defn.pos
+              case _                                               => NoPosition
             }
-          )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
-          val what = (
+          def long = if (settings.uniqid.value) s" (${sym.nameString})" else ""
+          def getterNameString(sym: Symbol): String = sym.getterName.decoded + long
+          val what =
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (
-              sym.isVar
-                || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))
-            ) s"var ${sym.name.getterName.decoded}"
-            else if (
-              sym.isVal
-                || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE)))
-                || sym.isLazy
-            ) s"val ${sym.name.decoded}"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.name.getterName.decoded}" }
-            else if (sym.isMethod) s"method ${sym.name.decoded}"
-            else if (sym.isModule) s"object ${sym.name.decoded}"
+            else if (sym.isSetter) { cond = valAdvice ; s"var ${getterNameString(sym)}" }
+            else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.nameString}"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.nameString}"
+            else if (sym.isMethod) s"method ${sym.nameString}"
+            else if (sym.isModule) s"object ${sym.nameString}"
             else "term"
-          )
+          // consider using sym.owner.fullLocationString
           emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
-          val why = if (defn.symbol.isPrivate) "private" else "local"
-          emitUnusedWarning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used", wcat(defn.symbol), defn.symbol)
+          val sym = defn.symbol
+          val why = if (sym.isPrivate) "private" else "local"
+          val pos = if (sym.pos.isDefined) sym.pos else defn.pos
+          emitUnusedWarning(pos, s"$why ${sym.fullLocationString} is never used", wcat(sym), sym)
         }
 
         for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
+          emitUnusedWarning(v.pos, s"local var ${v.nameString} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {
@@ -736,25 +747,42 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars, v)
       }
       if (settings.warnUnusedParams) {
-        def isImplementation(m: Symbol): Boolean = {
+        // don't warn unused args of overriding methods (or methods matching in self-type)
+        def isImplementation(m: Symbol): Boolean = m.isMethod && {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.PairsCursor(classOf(m))
-          opc.iterator.exists(pair => pair.low == m)
+          val classOfM = classOf(m)
+          if (classOfM.hasSelfType) {
+            val opc = new overridingPairs.PairsCursor(classOfM) {
+              override protected def bases: List[Symbol] = self.baseClasses
+            }
+            opc.iterator.exists(pair => pair.low == m || pair.high == m)
+          } else {
+            val opc = new overridingPairs.PairsCursor(classOfM)
+            opc.iterator.exists(_.low == m)
+          }
         }
-        import PartialFunction._
         def isConvention(p: Symbol): Boolean = (
             p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
           ||
             p.isImplicit && cond(p.tpe.typeSymbol) { case SameTypeClass | SubTypeClass | DummyImplicitClass => true }
         )
-        def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
+        def warningIsOnFor(s: Symbol) =
+          if (!s.isImplicit) settings.warnUnusedExplicits
+          else if (!s.isSynthetic) settings.warnUnusedImplicits
+          else settings.warnUnusedSynthetics
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
             && !isImplementation(s.owner)
             && !isConvention(s)
           )
-        for (s <- unusedPrivates.unusedParams if warnable(s))
-          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams, s)
+        for (s <- unusedPrivates.unusedParams if warnable(s)) {
+          val what =
+            if (s.name.startsWith(nme.EVIDENCE_PARAM_PREFIX)) s"evidence parameter ${s.nameString} of type ${s.tpe}"
+            else s"parameter ${s.nameString}"
+          val where =
+            if (s.owner.isAnonymousFunction) "anonymous function" else s.owner.toString
+          emitUnusedWarning(s.pos, s"$what in $where is never used", WarningCategory.UnusedParams, s)
+        }
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
@@ -771,7 +799,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
 
   trait TyperDiagnostics {
-    self: Typer =>
+    _: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)

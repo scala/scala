@@ -56,6 +56,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SAMFunction
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
+    this.PostfixAttachment
+    this.InfixAttachment
+    this.AutoApplicationAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
     this.ForAttachment
@@ -73,6 +76,13 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NullaryOverrideAdapted
     this.ChangeOwnerAttachment
     this.InterpolatedString
+    this.RootSelection
+    this.TypedExpectingUnitAttachment
+    this.FieldTypeInferred
+    this.LookupAmbiguityWarning
+    this.PermittedSubclasses
+    this.PermittedSubclassSymbols
+    this.NamePos
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -232,6 +242,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaLangPackageClass
     definitions.ScalaPackage
     definitions.ScalaPackageClass
+    definitions.ScalaPackageObject
     definitions.RuntimePackage
     definitions.RuntimePackageClass
     definitions.AnyClass
@@ -310,8 +321,11 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaStringBufferClass
     definitions.JavaCharSequenceClass
     definitions.ListModule
+    definitions.ListModuleAlias
     definitions.NilModule
+    definitions.NilModuleAlias
     definitions.SeqModule
+    definitions.SeqModuleAlias
     definitions.Collection_SeqModule
     definitions.ArrayModule
     definitions.ArrayModule_overloadedApply
@@ -441,6 +455,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TargetNameAnnotationClass
     definitions.StaticMethodAnnotationClass
     definitions.PolyFunctionClass
+    definitions.ExperimentalAnnotationClass
     definitions.BeanPropertyAttr
     definitions.BooleanBeanPropertyAttr
     definitions.CompileTimeOnlyAttr
@@ -494,6 +509,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.lazyHolders
     definitions.LazyRefClass
     definitions.LazyUnitClass
+    definitions.RichFloatClass
     definitions.allRefClasses
     definitions.UnitClass
     definitions.ByteClass
@@ -518,6 +534,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaValueClasses
     definitions.ScalaValueClassesSet
     definitions.ScalaNumericValueClassesSet
+    definitions.ScalaIntegralValueClasses
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType

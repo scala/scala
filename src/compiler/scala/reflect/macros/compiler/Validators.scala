@@ -27,24 +27,23 @@ trait Validators {
     self: MacroImplRefCompiler =>
 
     def validateMacroImplRef() = {
-      sanityCheck()
-      if (macroImpl != Predef_???) checkMacroDefMacroImplCorrespondence()
-    }
-
-    private def sanityCheck() = {
-      if (!macroImpl.isMethod) MacroImplReferenceWrongShapeError()
-      if (macroImpl.typeParams.sizeCompare(targs) != 0) MacroImplWrongNumberOfTypeArgumentsError()
-      if (!macroImpl.isPublic) MacroImplNotPublicError()
-      if (macroImpl.isOverloaded) MacroImplOverloadedError()
-      val implicitParams = aparamss.flatten filter (_.isImplicit)
-      if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
-      val effectiveOwner = if (isImplMethod) macroImplOwner else macroImplOwner.owner
-      val effectivelyStatic = effectiveOwner.isStaticOwner || effectiveOwner.moduleClass.isStaticOwner
-      val correctBundleness = if (isImplMethod) macroImplOwner.isModuleClass else macroImplOwner.isClass && !macroImplOwner.isModuleClass
-      if (!effectivelyStatic || !correctBundleness) {
-        val isReplClassBased = settings.Yreplclassbased.value && effectiveOwner.enclosingTopLevelClass.isInterpreterWrapper
-        MacroImplReferenceWrongShapeError(isReplClassBased)
+      def confidenceCheck() = {
+        if (!macroImpl.isMethod) MacroImplReferenceWrongShapeError()
+        if (macroImpl.typeParams.sizeCompare(targs) != 0) MacroImplWrongNumberOfTypeArgumentsError()
+        if (!macroImpl.isPublic) MacroImplNotPublicError()
+        if (macroImpl.isOverloaded) MacroImplOverloadedError()
+        val implicitParams = aparamss.flatten filter (_.isImplicit)
+        if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
+        val effectiveOwner = if (isImplMethod) macroImplOwner else macroImplOwner.owner
+        val effectivelyStatic = effectiveOwner.isStaticOwner || effectiveOwner.moduleClass.isStaticOwner
+        val correctBundleness = if (isImplMethod) macroImplOwner.isModuleClass else macroImplOwner.isClass && !macroImplOwner.isModuleClass
+        if (!effectivelyStatic || !correctBundleness) {
+          val isReplClassBased = settings.Yreplclassbased.value && effectiveOwner.enclosingTopLevelClass.isInterpreterWrapper
+          MacroImplReferenceWrongShapeError(isReplClassBased)
+        }
       }
+      confidenceCheck()
+      if (macroImpl != Predef_???) checkMacroDefMacroImplCorrespondence()
     }
 
     private def checkMacroDefMacroImplCorrespondence() = {
@@ -54,15 +53,15 @@ trait Validators {
       // we only check strict correspondence between value parameterss
       // type parameters of macro defs and macro impls don't have to coincide with each other
       if (aparamss.sizeCompare(rparamss) != 0) MacroImplParamssMismatchError()
-      foreach2(aparamss, rparamss)((aparams, rparams) => {
+      foreach2(aparamss, rparamss) { (aparams, rparams) =>
         if (aparams.sizeCompare(rparams) < 0) MacroImplMissingParamsError(aparams, rparams)
         if (rparams.sizeCompare(aparams) < 0) MacroImplExtraParamsError(aparams, rparams)
-      })
+      }
 
       try {
-        // cannot fuse this map2 and the map2 above because if aparamss.flatten != rparamss.flatten
+        // cannot fuse this foreach2 and the foreach2 above because if aparamss.flatten != rparamss.flatten
         // then `atpeToRtpe` is going to fail with an unsound substitution
-        map2(aparamss.flatten, rparamss.flatten)((aparam, rparam) => {
+        foreach2(aparamss.flatten, rparamss.flatten) { (aparam, rparam) =>
           if (aparam.name != rparam.name && !rparam.isSynthetic) MacroImplParamNameMismatchError(aparam, rparam)
           if (isRepeated(aparam) ^ isRepeated(rparam)) MacroImplVarargMismatchError(aparam, rparam)
           val aparamtpe = aparam.tpe match {
@@ -70,7 +69,7 @@ trait Validators {
             case tpe => tpe
           }
           checkMacroImplParamTypeMismatch(atpeToRtpe(aparamtpe), rparam)
-        })
+        }
 
         checkMacroImplResultTypeMismatch(atpeToRtpe(aret), rret)
 

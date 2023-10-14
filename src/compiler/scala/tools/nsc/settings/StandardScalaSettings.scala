@@ -14,11 +14,10 @@ package scala.tools.nsc
 package settings
 
 import scala.tools.util.PathResolver.Defaults
+import scala.util.Properties.{isJavaAtLeast, javaSpecVersion}
 
 /** Settings which aren't behind a -V, -W, -X, -Y, or -P option.
  *  When possible, the val and the option have identical names.
- *  The abstract settings are commented as to why they are as yet
- *  implemented in MutableSettings rather than mutation-generically.
  */
 trait StandardScalaSettings { _: MutableSettings =>
 
@@ -48,11 +47,51 @@ trait StandardScalaSettings { _: MutableSettings =>
     else Wconf.tryToSet(List(s"cat=feature:s"))
   }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
-  val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help"
-  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s) maxwarns.value = 0 }
+  val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help" withAbbreviation("-h")
+  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s.value) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
-  val target =         ChoiceSetting  ("-target", "target", "Target platform for object files.", AllTargetVersions, "8") withPreSetHook normalizeTarget _ withAbbreviation "--target"
+  val quickfix =       MultiStringSetting(
+    "-quickfix",
+    "filters",
+    "Apply quick fixes provided by the compiler for warnings and errors to source files",
+    helpText = Some(
+      """Apply quick fixes provided by the compiler for warnings and errors to source files.
+        |Syntax: -quickfix:<filter>,...,<filter>
+        |
+        |<filter> syntax is the same as for configurable warnings, see `-Wconf:help`. Examples:
+        |  -quickfix:any                    apply all available quick fixes
+        |  -quickfix:msg=Auto-application   apply quick fixes where the message contains "Auto-application"
+        |
+        |Use `-Wconf:any:warning-verbose` to display applicable message filters with each warning.
+        |
+        |Use `-quickfix:silent` to omit the `[quickfixable]` tag in compiler messages.
+        |""".stripMargin),
+    prepend = true)
+  def quickFixSilent: Boolean = quickfix.value == List("silent")
+  val release =
+    ChoiceSetting("-release", "release", "Compile for a version of the Java API and target class file.", AllTargetVersions, normalizeTarget(javaSpecVersion))
+      .withPostSetHook { setting =>
+        val current = setting.value.toInt
+        if (!isJavaAtLeast("9") && current > 8) errorFn.apply("-release is only supported on JVM 9 and higher")
+        if (target.valueSetByUser.map(_.toInt > current).getOrElse(false)) errorFn("-release cannot be less than -target")
+        //target.value = setting.value  // this would trigger deprecation
+      }
+      .withAbbreviation("--release")
+      // .withAbbreviation("-java-output-version")
+  def releaseValue: Option[String] = release.valueSetByUser
+  val target =
+    ChoiceSetting("-target", "target", "Target platform for object files.", AllTargetVersions, "8")
+      .withPreSetHook(normalizeTarget)
+      .withPostSetHook { setting =>
+        if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false)) errorFn("-release cannot be less than -target")
+      }
+      .withAbbreviation("--target")
+      // .withAbbreviation("--Xtarget")
+      // .withAbbreviation("-Xtarget")
+      // .withAbbreviation("-Xunchecked-java-output-version")
+      .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
+  def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
@@ -66,14 +105,24 @@ trait StandardScalaSettings { _: MutableSettings =>
   // Support passe prefixes of -target values:
   //   - `jvm-` (from back when we also had `msil`)
   //   - `1.` (from back when Java 2 was a possibility)
-  // `-target:1.jvm-13` is ridiculous, though.
-  private[this] def normalizeTarget(in: String): String = in.stripPrefix("jvm-").stripPrefix("1.")
+  // Otherwise, `-release` could be `IntSetting`.
+  private def normalizeTarget(in: String): String = {
+    val jvmish = raw"jvm-(\d*)".r
+    in match {
+      case "1.8" | "jvm-1.8" => "8"
+      case jvmish(n) => n
+      case n => n
+    }
+  }
 }
 
 object StandardScalaSettings {
-  // not final in case some separately compiled client code wanted to depend on updated values
   val MinTargetVersion = 8
-  val MaxTargetVersion = 18
+  val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
+    case SpecificScalaVersion(1, minor, _, _) => minor
+    case SpecificScalaVersion(major, _, _, _) => major
+    case _ => 21
+  }
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)
 }

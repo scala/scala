@@ -38,7 +38,7 @@ trait Seq[+A]
       case _ => false
     })
 
-  override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
+  override def hashCode(): Int = MurmurHash3.seqHash(this)
 
   override def toString(): String = super[Iterable].toString()
 
@@ -422,7 +422,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @param  that    the sequence to test
    *  @param  from    the start index
    *  @return  the first index `>= from` such that the elements of this $coll starting at this index
-   *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+   *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
    */
   // TODO Should be implemented in a way that preserves laziness
   def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
@@ -455,7 +455,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  $mayNotTerminateInf
     *  @param  that    the sequence to test
     *  @return  the first index `>= 0` such that the elements of this $coll starting at this index
-    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
     */
   @deprecatedOverriding("Override indexOfSlice(that, from) instead - indexOfSlice(that) calls indexOfSlice(that, 0)", "2.13.0")
   def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
@@ -467,7 +467,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @param  that    the sequence to test
    *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
-   *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+   *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
    */
   def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = {
     val l = length
@@ -486,7 +486,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *
     *  @param  that    the sequence to test
     *  @return  the last index such that the elements of this $coll starting at this index
-    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    *           match the elements of sequence `that`, or `-1` if no such subsequence exists.
     */
   @deprecatedOverriding("Override lastIndexOfSlice(that, end) instead - lastIndexOfSlice(that) calls lastIndexOfSlice(that, Int.MaxValue)", "2.13.0")
   def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, Int.MaxValue)
@@ -528,32 +528,59 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   @deprecated("Use .reverseIterator.map(f).to(...) instead of .reverseMap(f)", "2.13.0")
   def reverseMap[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
 
-  /** Iterates over distinct permutations.
-    *
-    *  $willForceEvaluation
-    *
-    *  @return   An Iterator which traverses the distinct permutations of this $coll.
-    *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
-    */
+  /** Iterates over distinct permutations of elements.
+   *
+   *  $willForceEvaluation
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this $coll.
+   *  @example {{{
+   *    Seq('a', 'b', 'b').permutations.foreach(println)
+   *    // List(a, b, b)
+   *    // List(b, a, b)
+   *    // List(b, b, a)
+   *  }}}
+   */
   def permutations: Iterator[C] =
     if (isEmpty) Iterator.single(coll)
     else new PermutationsItr
 
-  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original sequence, with the elements taken in order.  Thus, `"xy"` and `"yy"`
-    *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
-    *  more than one way to generate the same subsequence, only one will be returned.
-    *
-    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
-    *  whether the first, second, or third `"y"` is selected.  However, since all are
-    *  identical, only one will be chosen.  Which of the three will be taken is an
-    *  implementation detail that is not defined.
-    *
-    *  $willForceEvaluation
-    *
-    *  @return   An Iterator which traverses the possible n-element combinations of this $coll.
-    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
-    */
+  /** Iterates over combinations of elements.
+   *
+   *  A '''combination''' of length `n` is a sequence of `n` elements selected in order of their first index in this sequence.
+   *
+   *  For example, `"xyx"` has two combinations of length 2. The `x` is selected first: `"xx"`, `"xy"`.
+   *  The sequence `"yx"` is not returned as a combination because it is subsumed by `"xy"`.
+   *
+   *  If there is more than one way to generate the same combination, only one will be returned.
+   *
+   *  For example, the result `"xy"` arbitrarily selected one of the `x` elements.
+   *
+   *  As a further illustration, `"xyxx"` has three different ways to generate `"xy"` because there are three elements `x`
+   *  to choose from. Moreover, there are three unordered pairs `"xx"` but only one is returned.
+   *
+   *  It is not specified which of these equal combinations is returned. It is an implementation detail
+   *  that should not be relied on. For example, the combination `"xx"` does not necessarily contain
+   *  the first `x` in this sequence. This behavior is observable if the elements compare equal
+   *  but are not identical.
+   *
+   *  As a consequence, `"xyx".combinations(3).next()` is `"xxy"`: the combination does not reflect the order
+   *  of the original sequence, but the order in which elements were selected, by "first index";
+   *  the order of each `x` element is also arbitrary.
+   *
+   *  $willForceEvaluation
+   *
+   *  @return   An Iterator which traverses the n-element combinations of this $coll.
+   *  @example {{{
+   *    Seq('a', 'b', 'b', 'b', 'c').combinations(2).foreach(println)
+   *    // List(a, b)
+   *    // List(a, c)
+   *    // List(b, b)
+   *    // List(b, c)
+   *    Seq('b', 'a', 'b').combinations(2).foreach(println)
+   *    // List(b, b)
+   *    // List(b, a)
+   *  }}}
+   */
   def combinations(n: Int): Iterator[C] =
     if (n < 0 || n > size) Iterator.empty
     else new CombinationsItr(n)
@@ -696,7 +723,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else if (len > 1) {
       b.sizeHint(len)
       val arr = new Array[Any](len)
-      copyToArray(arr)
+      @annotation.unused val copied = copyToArray(arr)
+      //assert(copied == len)
       java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
       var i = 0
       while (i < len) {
@@ -708,22 +736,23 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   /** Sorts this $coll according to a comparison function.
-    *  $willNotTerminateInf
-    *  $willForceEvaluation
-    *
-    *  The sort is stable. That is, elements that are equal (as determined by
-    *  `lt`) appear in the same order in the sorted sequence as in the original.
-    *
-    *  @param  lt  the comparison function which tests whether
-    *              its first argument precedes its second argument in
-    *              the desired ordering.
-    *  @return     a $coll consisting of the elements of this $coll
-    *              sorted according to the comparison function `lt`.
-    *  @example {{{
-    *    List("Steve", "Tom", "John", "Bob").sortWith(_.compareTo(_) < 0) =
-    *    List("Bob", "John", "Steve", "Tom")
-    *  }}}
-    */
+   *  $willNotTerminateInf
+   *  $willForceEvaluation
+   *
+   *  The sort is stable. That is, elements that are equal
+   *  (`lt` returns false for both directions of comparison)
+   *  appear in the same order in the sorted sequence as in the original.
+   *
+   *  @param  lt  a predicate that is true if
+   *              its first argument strictly precedes its second argument in
+   *              the desired ordering.
+   *  @return     a $coll consisting of the elements of this $coll
+   *              sorted according to the comparison function `lt`.
+   *  @example {{{
+   *    List("Steve", "Bobby", "Tom", "John", "Bob").sortWith((x, y) => x.take(3).compareTo(y.take(3)) < 0) =
+   *    List("Bobby", "Bob", "John", "Steve", "Tom")
+   *  }}}
+   */
   def sortWith(lt: (A, A) => Boolean): C = sorted(Ordering.fromLessThan(lt))
 
   /** Sorts this $coll according to the Ordering which results from transforming

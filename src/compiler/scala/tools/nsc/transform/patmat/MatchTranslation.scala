@@ -10,7 +10,8 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.transform.patmat
+package scala.tools.nsc
+package transform.patmat
 
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
@@ -67,7 +68,7 @@ trait MatchTranslation {
       def pos     = tree.pos
       def tpe     = binder.info.dealias // the type of the variable bound to the pattern
       def pt      = unbound match {
-        case Star(tpt)      => this glbWith seqType(tpt.tpe)
+        case Star(tpt)      => seqType(tpt.tpe)
         case TypeBound(tpe) => tpe
         case tree           => tree.tpe
       }
@@ -76,7 +77,6 @@ trait MatchTranslation {
         case Bind(_, Typed(_, tpt)) => tpt.pos
         case _ => pos
       }
-      def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
 
       object SymbolAndTypeBound {
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
@@ -98,10 +98,10 @@ trait MatchTranslation {
 
       private def bindingStep(sub: Symbol, subpattern: Tree) = step(SubstOnlyTreeMaker(sub, binder))(rebindTo(subpattern))
       private def equalityTestStep()                         = step(EqualityTestTreeMaker(binder, tree, pos))()
-      private def typeTestStep(sub: Symbol, subPt: Type)     = step(TypeTestTreeMaker(sub, binder, subPt, glbWith(subPt))(tptPos, pos))()
+      private def typeTestStep(sub: Symbol, subPt: Type)     = step(TypeTestTreeMaker(sub, binder, subPt, subPt)(tptPos, pos))()
       private def alternativesStep(alts: List[Tree])         = step(AlternativesTreeMaker(binder, translatedAlts(alts), alts.head.pos))()
       private def translatedAlts(alts: List[Tree])           = alts map (alt => rebindTo(alt).translate())
-      private def noStep()                                   = step()()
+      private def noStep()                                   = step(DummyTreeMaker)()
 
       private def unsupportedPatternMsg = sm"""
         |unsupported pattern: ${tree.shortClass} / $this (this is a scalac bug.)
@@ -195,7 +195,7 @@ trait MatchTranslation {
         case _                                                    => (cases, None)
       }
 
-      if (!settings.XnoPatmatAnalysis) checkMatchVariablePatterns(nonSyntheticCases)
+      if (!settings.XnoPatmatAnalysis.value) checkMatchVariablePatterns(nonSyntheticCases)
 
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
@@ -234,7 +234,7 @@ trait MatchTranslation {
       // if they're already simple enough to be handled by the back-end, we're done
       if (caseDefs forall treeInfo.isCatchCase) {
         // well, we do need to look for unreachable cases
-        if (!settings.XnoPatmatAnalysis) unreachableTypeSwitchCase(caseDefs).foreach(cd => reportUnreachable(cd.body.pos))
+        if (!settings.XnoPatmatAnalysis.value) unreachableTypeSwitchCase(caseDefs).foreach(cd => reportUnreachable(cd.body.pos))
 
         caseDefs
       } else {
@@ -260,7 +260,7 @@ trait MatchTranslation {
 
           val exSym = freshSym(pos, ThrowableTpe, "ex")
           val suppression =
-            if (settings.XnoPatmatAnalysis) Suppression.FullSuppression
+            if (settings.XnoPatmatAnalysis.value) Suppression.FullSuppression
             else Suppression.NoSuppression.copy(suppressExhaustive = true) // try/catches needn't be exhaustive
 
           List(

@@ -16,6 +16,7 @@ package internal
 
 import Flags._
 import util._
+import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 
 abstract class TreeGen {
@@ -146,10 +147,12 @@ abstract class TreeGen {
   //            || patPre.typeSymbol.isPackageClass
   //            || selPre =:= patPre)
 
-  def mkAttributedQualifierIfPossible(prefix: Type): Option[Tree] = prefix match {
+  @tailrec final def mkAttributedQualifierIfPossible(prefix: Type): Option[Tree] = prefix match {
     case NoType | NoPrefix | ErrorType => None
     case TypeRef(_, sym, _) if sym.isModule || sym.isClass || sym.isType => None
-    case pre => Some(mkAttributedQualifier(prefix))
+    case RefinedType(parents, _) if !parents.exists(_.isStable) => None
+    case AnnotatedType(_, tpe) => mkAttributedQualifierIfPossible(tpe)
+    case prefix => Some(mkAttributedQualifier(prefix))
   }
 
 
@@ -451,7 +454,7 @@ abstract class TreeGen {
     else parents
 
   def mkClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], templ: Template): ClassDef = {
-    val isInterface = mods.isTrait && (templ.body forall treeInfo.isInterfaceMember)
+    val isInterface = mods.isTrait && templ.body.forall(treeInfo.isInterfaceMember)
     val mods1 = if (isInterface) (mods | Flags.INTERFACE) else mods
     ClassDef(mods1, name, tparams, templ)
   }

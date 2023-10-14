@@ -127,6 +127,10 @@ names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at pa
 names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
+names-defaults-neg-pu.scala:193: error: an expression of type Null is ineligible for implicit conversion
+Error occurred in an application involving default arguments.
+  def f = new A3[Int]()
+          ^
 names-defaults-neg-pu.scala:95: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
@@ -137,4 +141,4 @@ names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprec
   deprNam5(deprNam5Arg = null)
                        ^
 3 warnings
-33 errors
+34 errors

@@ -14,6 +14,7 @@ package scala.reflect.reify
 package utils
 
 import java.lang.System.{lineSeparator => EOL}
+import scala.util.matching.Regex.quoteReplacement
 
 trait NodePrinters {
   self: Utils =>
@@ -63,7 +64,7 @@ trait NodePrinters {
           }
 
           val replacement = "Modifiers(" + buf.reverse.mkString(", ")  + ")"
-          java.util.regex.Matcher.quoteReplacement(replacement)
+          quoteReplacement(replacement)
         })
         s
       })

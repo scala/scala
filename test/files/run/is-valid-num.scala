@@ -1,6 +1,5 @@
-/*
- * filter: inliner warnings; re-run with
- */
+// scalac: -Xlint -Werror
+@annotation.nowarn("cat=deprecation&msg=isWhole")
 object Test {
   def x = BigInt("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
   def y = BigDecimal("" + (Short.MaxValue + 1) + ".0")
@@ -11,7 +10,7 @@ object Test {
   def l2 = Int.MinValue.toLong - 1
 
   def main(args: Array[String]): Unit = {
-//    assert(x.isWhole, x)
+    assert(x.isWhole, x)
     assert(!x.isValidDouble, x)
     assert(!x.isValidFloat, x)
     assert(!x.isValidLong, x)
@@ -171,7 +170,7 @@ object Test {
 
     if (!d.isInfinity) {
       val bd = BigDecimal(new java.math.BigDecimal(d))
-//      assert(!bd.isWhole, bd)
+      assert(!bd.isWhole, bd)
       assert(bd.isExactDouble, bd)
       assert(bd.isExactFloat == isFloat, bd)
       assert(!bd.isValidLong, bd)
@@ -221,7 +220,7 @@ object Test {
     assert(bd.isValidShort == isShort, bd)
     assert(bd.isValidByte == isByte, bd)
 
-//    assert(bi.isWhole, bi)
+    assert(bi.isWhole, bi)
     assert(bi.isValidDouble == isDouble, bi)
     assert(bi.isValidFloat == isFloat, bi)
     assert(bi.isValidLong == isLong, bi)

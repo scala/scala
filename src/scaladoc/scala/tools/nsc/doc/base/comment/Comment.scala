@@ -15,7 +15,7 @@ package doc
 package base
 package comment
 
-import scala.collection._
+import scala.collection.mutable.ListBuffer
 
 /** A Scaladoc comment and all its tags.
   *
@@ -29,7 +29,7 @@ abstract class Comment {
   def body: Body
 
   private def closeHtmlTags(inline: Inline): Inline = {
-    val stack = mutable.ListBuffer.empty[HtmlTag]
+    val stack = ListBuffer.empty[HtmlTag]
     def scan(i: Inline): Unit = {
       i match {
         case Chain(list) =>

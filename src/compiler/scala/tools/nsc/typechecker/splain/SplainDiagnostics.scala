@@ -20,7 +20,7 @@ trait SplainDiagnostics extends splain.SplainFormatting {
   import global._
 
   def splainFoundReqMsg(found: Type, req: Type): String = {
-    if (settings.VtypeDiffs) ";\n" + showFormattedL(formatDiff(found, req, top = true), break = true).indent.joinLines
+    if (settings.VtypeDiffs.value) ";\n" + showFormattedL(formatDiff(found, req, top = true), break = true).indent.joinLines
     else ""
   }
 }

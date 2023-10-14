@@ -159,7 +159,7 @@ public final class Statics {
           MethodHandles.Lookup lookup = MethodHandles.lookup();
           try {
               return lookup.findStatic(Class.forName("java.lang.invoke.VarHandle"), "releaseFence", MethodType.methodType(Void.TYPE));
-          } catch (ClassNotFoundException e) {
+          } catch (NoSuchMethodException | ClassNotFoundException e) {
               try {
                   Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
                   return lookup.findVirtual(unsafeClass, "storeFence", MethodType.methodType(void.class)).bindTo(findUnsafe(unsafeClass));
@@ -168,7 +168,7 @@ public final class Statics {
                   error.addSuppressed(e);
                   throw error;
               }
-          } catch (NoSuchMethodException | IllegalAccessException e) {
+          } catch (IllegalAccessException e) {
               throw new ExceptionInInitializerError(e);
           }
       }

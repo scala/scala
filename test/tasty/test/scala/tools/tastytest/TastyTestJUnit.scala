@@ -2,6 +2,7 @@ package scala.tools.tastytest
 
 import org.junit.{Test => test, BeforeClass => setup, AfterClass => teardown}
 import org.junit.Assert._
+import org.junit.Assume._
 
 import scala.util.{Try, Failure, Properties}
 
@@ -27,6 +28,7 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
+  /** false positives that should fail, but work when annotations are not read */
   @test def posFalseNoAnnotations(): Unit = TastyTest.posSuite(
     src                     = "pos-false-noannotations",
     srcRoot                 = assertPropIsSet(propSrc),
@@ -59,6 +61,15 @@ class TastyTestJUnit {
     srcRoot                 = assertPropIsSet(propSrc),
     pkgName                 = assertPropIsSet(propPkgName),
     outDirs                 = None,
+    additionalSettings      = Nil,
+    additionalDottySettings = Nil
+  ).eval
+
+  @test def negFullCircle(): Unit = TastyTest.negFullCircleSuite(
+    src                     = "neg-full-circle",
+    srcRoot                 = assertPropIsSet(propSrc),
+    pkgName                 = assertPropIsSet(propPkgName),
+    outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
   ).eval

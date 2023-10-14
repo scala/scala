@@ -1,7 +1,8 @@
 
 import scala.tools.partest._
 import scala.tools.nsc.Settings
-import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.reporters.FilteringReporter
+import scala.reflect.internal.util.CodeAction
 
 /** Test that compiler enforces maxerrs when given a plain Reporter. */
 object Test extends DirectTest {
@@ -14,8 +15,9 @@ object Test extends DirectTest {
     }
   """.trim
 
+  var store0: UnfilteredStoreReporter = _
   // a reporter that ignores all limits
-  lazy val store = new UnfilteredStoreReporter
+  def store = store0
 
   final val limit = 3
 
@@ -28,17 +30,25 @@ object Test extends DirectTest {
     s.maxerrs.value = limit
     s
   }
-  override def reporter(s: Settings) = store
+  override def reporter(s: Settings) =
+    if (store0 ne null) store0
+    else {
+      store0 = new UnfilteredStoreReporter(s)
+      store0
+    }
 }
 
-class UnfilteredStoreReporter extends Reporter {
+class UnfilteredStoreReporter(s: Settings) extends FilteringReporter {
   import scala.tools.nsc.reporters.StoreReporter._
   import scala.collection.mutable
   import scala.reflect.internal.util.Position
 
   val infos = new mutable.LinkedHashSet[Info]
 
-  override def info0(pos: Position, msg: String, severity: Severity, force: Boolean) = infos += Info(pos, msg, severity)
+  override def settings: Settings = s
+
+  override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+    infos += Info(pos, msg, severity, actions)
 
   override def reset(): Unit = {
     super.reset()

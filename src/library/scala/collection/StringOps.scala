@@ -33,21 +33,23 @@ object StringOps {
   private class StringIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < s.length
-    def next(): Char = try {
+    def next(): Char = {
+      if (pos >= s.length) Iterator.empty.next()
       val r = s.charAt(pos)
       pos += 1
       r
-    } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
+    }
   }
 
   private class ReverseIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = s.length-1
     def hasNext: Boolean = pos >= 0
-    def next(): Char = try {
+    def next(): Char = {
+      if (pos < 0) Iterator.empty.next()
       val r = s.charAt(pos)
       pos -= 1
       r
-    } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
+    }
   }
 
   private class GroupedIterator(s: String, groupSize: Int) extends AbstractIterator[String] {
@@ -155,6 +157,9 @@ object StringOps {
     /** Creates a new non-strict filter which combines this filter with the given predicate. */
     def withFilter(q: Char => Boolean): WithFilter = new WithFilter(a => p(a) && q(a), s)
   }
+
+  /** Avoid an allocation in [[collect]]. */
+  private val fallback: Any => Any = _ => fallback
 }
 
 /** Provides extension methods for strings.
@@ -270,17 +275,12 @@ final class StringOps(private val s: String) extends AnyVal {
     *                `pf` to each char on which it is defined and collecting the results.
     */
   def collect(pf: PartialFunction[Char, Char]): String = {
+    val fallback: Any => Any = StringOps.fallback
     var i = 0
-    var matched = true
-    def d(x: Char): Char = {
-      matched = false
-      0
-    }
     val b = new StringBuilder
-    while(i < s.length) {
-      matched = true
-      val v = pf.applyOrElse(s.charAt(i), d)
-      if(matched) b += v
+    while (i < s.length) {
+      val v = pf.applyOrElse(s.charAt(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[Char])
       i += 1
     }
     b.result()
@@ -295,17 +295,12 @@ final class StringOps(private val s: String) extends AnyVal {
     *                `pf` to each char on which it is defined and collecting the results.
     */
   def collect[B](pf: PartialFunction[Char, B]): immutable.IndexedSeq[B] = {
+    val fallback: Any => Any = StringOps.fallback
     var i = 0
-    var matched = true
-    def d(x: Char): B = {
-      matched = false
-      null.asInstanceOf[B]
-    }
     val b = immutable.IndexedSeq.newBuilder[B]
-    while(i < s.length) {
-      matched = true
-      val v = pf.applyOrElse(s.charAt(i), d)
-      if(matched) b += v
+    while (i < s.length) {
+      val v = pf.applyOrElse(s.charAt(i), fallback)
+      if (v.asInstanceOf[AnyRef] ne fallback) b.addOne(v.asInstanceOf[B])
       i += 1
     }
     b.result()
@@ -599,14 +594,14 @@ final class StringOps(private val s: String) extends AnyVal {
   @inline final def mkString: String = s
 
   /** Appends this string to a string builder. */
-  @inline final def addString(b: StringBuilder): StringBuilder = b.append(s)
+  @inline final def addString(b: StringBuilder): b.type = b.append(s)
 
   /** Appends this string to a string builder using a separator string. */
-  @inline final def addString(b: StringBuilder, sep: String): StringBuilder =
+  @inline final def addString(b: StringBuilder, sep: String): b.type =
     addString(b, "", sep, "")
 
   /** Appends this string to a string builder using start, end and separator strings. */
-  final def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+  final def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
     val jsb = b.underlying
     if (start.length != 0) jsb.append(start)
     val len = s.length
@@ -1593,28 +1588,55 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.unwrap)
 
-  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original string, with the chars taken in order.  Thus, `"xy"` and `"yy"`
-    *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
-    *  more than one way to generate the same subsequence, only one will be returned.
-    *
-    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
-    *  whether the first, second, or third `"y"` is selected.  However, since all are
-    *  identical, only one will be chosen.  Which of the three will be taken is an
-    *  implementation detail that is not defined.
-    *
-    *  @return   An Iterator which traverses the possible n-element combinations of this string.
-    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
-    *  @note     $unicodeunaware
-    */
+  /** Iterates over combinations of elements.
+   *
+   *  A '''combination''' of length `n` is a sequence of `n` elements selected in order of their first index in this sequence.
+   *
+   *  For example, `"xyx"` has two combinations of length 2. The `x` is selected first: `"xx"`, `"xy"`.
+   *  The sequence `"yx"` is not returned as a combination because it is subsumed by `"xy"`.
+   *
+   *  If there is more than one way to generate the same combination, only one will be returned.
+   *
+   *  For example, the result `"xy"` arbitrarily selected one of the `x` elements.
+   *
+   *  As a further illustration, `"xyxx"` has three different ways to generate `"xy"` because there are three elements `x`
+   *  to choose from. Moreover, there are three unordered pairs `"xx"` but only one is returned.
+   *
+   *  It is not specified which of these equal combinations is returned. It is an implementation detail
+   *  that should not be relied on. For example, the combination `"xx"` does not necessarily contain
+   *  the first `x` in this sequence. This behavior is observable if the elements compare equal
+   *  but are not identical.
+   *
+   *  As a consequence, `"xyx".combinations(3).next()` is `"xxy"`: the combination does not reflect the order
+   *  of the original sequence, but the order in which elements were selected, by "first index";
+   *  the order of each `x` element is also arbitrary.
+   *
+   *  @return   An Iterator which traverses the n-element combinations of this string.
+   *  @example {{{
+   *    "abbbc".combinations(2).foreach(println)
+   *    // ab
+   *    // ac
+   *    // bb
+   *    // bc
+   *    "bab".combinations(2).foreach(println)
+   *    // bb
+   *    // ba
+   *  }}}
+   *  @note     $unicodeunaware
+   */
   def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.unwrap)
 
-  /** Iterates over distinct permutations.
-    *
-    *  @return   An Iterator which traverses the distinct permutations of this string.
-    *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
-    *  @note     $unicodeunaware
-    */
+  /** Iterates over distinct permutations of elements.
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this string.
+   *  @example {{{
+   *    "abb".permutations.foreach(println)
+   *    // abb
+   *    // bab
+   *    // bba
+   *  }}}
+   *  @note     $unicodeunaware
+   */
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
 

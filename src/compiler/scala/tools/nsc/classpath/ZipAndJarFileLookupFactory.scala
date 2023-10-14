@@ -119,7 +119,7 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
             case pkgFile :: rest =>
               val subpackages = getSubpackages(pkgFile)
               val fullPkgName = packagePrefix + pkgFile.name
-              packages.put(fullPkgName, PackageFileInfo(pkgFile, subpackages))
+              packages.update(fullPkgName, PackageFileInfo(pkgFile, subpackages))
               val newPackagePrefix = fullPkgName + "."
               subpackagesQueue.enqueue(PackageInfo(newPackagePrefix, subpackages))
               loop(rest)
@@ -128,7 +128,7 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
           loop(filesForPrefix)
         }
       val subpackages = getSubpackages(file)
-      packages.put(ClassPath.RootPackage, PackageFileInfo(file, subpackages))
+      packages.update(ClassPath.RootPackage, PackageFileInfo(file, subpackages))
       val infos = mutable.Queue(PackageInfo(ClassPath.RootPackage, subpackages))
       traverse(infos)
       packages
@@ -225,7 +225,7 @@ final class FileBasedCache[K, T] {
                       override def run(): Unit = {
                         cache.synchronized {
                           if (e.referenceCount.compareAndSet(0, -1)) {
-                            cache.remove(key)
+                            cache.subtractOne(key)
                             cl.close()
                           }
                         }
@@ -294,7 +294,7 @@ final class FileBasedCache[K, T] {
           }
           val value = create()
           val entry = Entry(k, stamps, value)
-          cache.put(key, entry)
+          cache.update(key, entry)
           closeableRegistry.registerCloseable(referenceCountDecrementer(entry, key))
           value
         }
@@ -302,7 +302,7 @@ final class FileBasedCache[K, T] {
         // Cache miss
         val value = create()
         val entry = Entry(k, stamps, value)
-        cache.put(key, entry)
+        cache.update(key, entry)
         closeableRegistry.registerCloseable(referenceCountDecrementer(entry, key))
         value
     }

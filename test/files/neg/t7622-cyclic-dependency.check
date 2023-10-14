@@ -1,1 +1,1 @@
-error: Cycle in phase dependencies detected at cyclicdependency2, created phase-cycle.dot
+fatal error: Cycle in phase dependencies detected at cyclicdependency2, created phase-cycle.dot

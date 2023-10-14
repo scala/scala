@@ -1,22 +1,28 @@
 
-import scala.tools.partest.DirectTest
-
-object Test extends DirectTest {
-  // for reference, UTF-8 of U0
-  //val data = Array(0xed, 0xa0, 0x81).map(_.asInstanceOf[Byte])
-  def U0 = "\ud801"
-  def U1 = "\udc00"
-  def code =
-    s"""class C {
-       |  def x = "$U0"
-       |  def y = "$U1"
-       |  def $U0 = x
-       |  def $U1 = y
-       |}""".stripMargin
-
-  def show(): Unit = {
-    assert(U0.length == 1)
-    assert(!compile())
-  }
+case class C(n: Int) {
+  def 𐀀(c: C): C = C(n * c.n)   // actually a letter but supplementary 0x10000
+  def ☀(c: C): C = C(n * c.n)   // just a symbol
+  def ☀=(c: C): C = C(n * c.n)   // just a symbol
+  def 🌀(c: C): C = C(n * c.n)  // cyclone operator is symbol, supplementary
+  def 🌀=(c: C): C = C(n * c.n)  // cyclone operator is symbol, supplementary
+  def *(c: C): C = C(n * c.n)
+  def +(c: C): C = C(n + c.n)
 }
 
+object Test extends App {
+  val Sum = 84
+  val Product = 1764
+  val ProductSum = 1806
+  val SumProduct = 3528
+  val c, d = C(42)
+  def assertEquals(expected: Int, actual: C) = assert(expected == actual.n)
+  assertEquals(Sum, c + d)
+  assertEquals(Product, c * d)
+  assertEquals(Product, c ☀ d)
+  assertEquals(ProductSum, c * d + d)
+  assertEquals(ProductSum, c ☀ d + d)
+  assertEquals(SumProduct, c ☀= d + d)           // assignment op is low precedence
+  assertEquals(SumProduct, c 𐀀 d + d)            // the first one, letter should be low precedence
+  assertEquals(ProductSum, c 🌀d + d)            // the second one, cyclone should be high precedence
+  assertEquals(SumProduct, c 🌀= d + d)          // assignment op is low precedence
+}

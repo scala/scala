@@ -1,10 +1,10 @@
 t856.scala:3: error: class ComplexRect needs to be abstract.
-Missing implementations for 2 members. Stub implementations follow:
+Missing implementations for 2 members.
   // Members declared in scala.Equals
   def canEqual(that: Any): Boolean = ???
 
   // Members declared in scala.Product2
-  def _2: Double = ???
+  def _2: Double = ??? // implements `def _2: T2`
 
 class ComplexRect(val _1:Double, _2:Double) extends Complex {
       ^

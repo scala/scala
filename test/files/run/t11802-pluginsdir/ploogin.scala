@@ -19,7 +19,7 @@ abstract class Ploogin(val global: Global, val name: String = "ploogin") extends
     def newPhase(prev: Phase) = new TestPhase(prev)
     class TestPhase(prev: Phase) extends StdPhase(prev) {
       override def description = TestComponent.this.description
-      def apply(unit: CompilationUnit): Unit = if (settings.developer) inform(s"My phase name is $phaseName")
+      def apply(unit: CompilationUnit): Unit = if (settings.developer.value) inform(s"My phase name is $phaseName")
     }
   }
 }

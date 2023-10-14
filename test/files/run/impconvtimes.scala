@@ -9,7 +9,7 @@ object Test {
     def *(newUnit: Unit) = Measure(scalar, newUnit)
   }
 
-  implicit def double2Measure(scalar: Double) =
+  implicit def double2Measure(scalar: Double): Measure =
     Measure(scalar, NoUnit)
 
 

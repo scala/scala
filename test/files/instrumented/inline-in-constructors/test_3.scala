@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:**
+// scalac: -opt:inline:** -Wopt
 import scala.tools.partest.instrumented.Instrumentation._
 import instrumented._
 

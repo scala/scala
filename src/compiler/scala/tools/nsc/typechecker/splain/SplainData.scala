@@ -14,6 +14,7 @@ package scala.tools.nsc
 package typechecker
 package splain
 
+import scala.annotation.tailrec
 import scala.util.matching.Regex
 
 trait SplainData {
@@ -41,14 +42,14 @@ trait SplainData {
     def removeErrorsFor(tpe: Type): Unit = errors = errors.dropWhile(_.tpe == tpe)
 
     def startSearch(expectedType: Type): Unit = {
-      if (settings.Vimplicits) {
+      if (settings.Vimplicits.value) {
         if (!nested) errors = List()
         stack = expectedType :: stack
       }
     }
 
     def finishSearch(success: Boolean, expectedType: Type): Unit = {
-      if (settings.Vimplicits) {
+      if (settings.Vimplicits.value) {
         if (success) removeErrorsFor(expectedType)
         stack = stack.drop(1)
       }
@@ -68,10 +69,20 @@ trait SplainData {
   }
 
   object ImplicitError {
-    def unapplyCandidate(e: ImplicitError): Tree =
-      e.candidate match {
-        case TypeApply(fun, _) => fun
-        case a                 => a
+    def unapplyCandidate(e: ImplicitError): Tree = unapplyRecursively(e.candidate)
+
+    @tailrec
+    private def unapplyRecursively(tree: Tree): Tree =
+      tree match {
+        case TypeApply(fun, _) => unapplyRecursively(fun)
+        case Apply(fun, _) => unapplyRecursively(fun)
+        case a => a
+      }
+
+    def cleanCandidate(e: ImplicitError): String =
+      unapplyCandidate(e).toString match {
+        case ImplicitError.candidateRegex(suf) => suf
+        case a => a
       }
 
     def candidateName(e: ImplicitError): String =
@@ -82,12 +93,6 @@ trait SplainData {
       }
 
     val candidateRegex: Regex = """.*\.this\.(.*)""".r
-
-    def cleanCandidate(e: ImplicitError): String =
-      unapplyCandidate(e).toString match {
-        case candidateRegex(suf) => suf
-        case a                   => a
-      }
 
     def shortName(ident: String): String = ident.substring(ident.lastIndexOf(".") + 1)
   }

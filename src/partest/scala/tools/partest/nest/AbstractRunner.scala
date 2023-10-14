@@ -18,6 +18,7 @@ import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections.distinctBy
+import scala.sys.process.Process
 import scala.util.{Try, Success, Failure}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -33,9 +34,11 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   val debug: Boolean                 = config.optDebug || propOrFalse("partest.debug")
   val verbose: Boolean               = config.optVerbose
   val terse: Boolean                 = config.optTerse
+  val realeasy: Boolean              = config.optDev
+  val testBranch: Boolean            = config.optBranch
 
   protected val printSummary         = true
-  protected val partestCmd           = "test/partest"
+  protected val partestCmd           = "partest"
 
   private[this] var totalTests       = 0
   private[this] val passedTests      = mutable.ListBuffer[TestState]()
@@ -64,6 +67,12 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   }
 
   private[this] val realSysErr = System.err
+
+  val gitRunner = List("/usr/local/bin/git", "/usr/bin/git").map(f => new java.io.File(f)).find(_.canRead)
+  def runGit[R](cmd: String)(f: LazyList[String] => R): Option[R] =
+    Try {
+      gitRunner.map(git => f(Process(s"$git $cmd").lazyLines_!))
+    }.toOption.flatten
 
   def statusLine(state: TestState, durationMs: Long) = {
     import state._
@@ -101,6 +110,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     if (terse) {
       if (state.isSkipped) { printS(); Nil }
       else if (state.isOk) { printDot() ; Nil }
+      else if (state.shortStatus(0) == '?') { printUnknown() ; Nil }
       else { printEx() ; statusLine(state, durationMs) :: errInfo }
     } else {
       echo(statusLine(state, durationMs))
@@ -162,15 +172,28 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           }
         }
 
-        def files_s = failed0.map(_.testFile).mkString(""" \""" + "\n  ")
-        echo("# Failed test paths (this command will update checkfiles)")
-        echo(partestCmd + " --update-check \\\n  " + files_s + "\n")
+        if (failed0.size == 1) {
+          echo("# A test failed. To update the check file:")
+          echo(s"$partestCmd --update-check ${failed0.head.testIdent}")
+        }
+        else {
+          val bslash = "\\"
+          def files_s = failed0.map(_.testFile).mkString(s" ${bslash}\n  ")
+          echo("# Failed test paths (this command will update checkfiles)")
+          echo(s"$partestCmd --update-check ${bslash}\n  $files_s\n")
+        }
       }
 
       if (printSummary) {
         echo(message)
         levyJudgment()
       }
+      if (realeasy)
+        for (lines <- runGit("status --porcelain")(_.filter(_.endsWith(".check")).map(_.drop(3))) if lines.nonEmpty) {
+          echo(bold(red("# There are uncommitted check files!")))
+          for (file <- lines)
+            echo(s"$file\n")
+        }
     }
   }
 
@@ -185,7 +208,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     }
     else {
       val norm = Function.chain(Seq(testIdentToTestPath, checkFileToTestFile, testFileToTestDir, testDirToTestFile))
-      val (individualTests, invalid) = config.parsed.residualArgs map (p => norm(Path(p))) partition denotesTestPath
+      val (individualTests, invalid) = config.parsed.residualArgs.map(p => norm(Path(p))).partition(denotesTestPath)
       if (invalid.nonEmpty) {
         if (verbose)
           invalid foreach (p => echoWarning(s"Discarding invalid test path " + p))
@@ -210,9 +233,71 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         paths.sortBy(_.toString)
       }
 
+      // tests touched on this branch
+      val branchedTests: List[Path] = if (!testBranch) Nil else {
+        import scala.util.chaining._
+        //* issue/12494 8dfd7f015d [upstream/2.13.x: ahead 1] Allow companion access boundary
+        //git rev-parse --abbrev-ref HEAD
+        //git branch -vv --list issue/1234
+        //git diff --name-only upstream/2.13.x
+        val parseVerbose = raw"\* \S+ \S+ \[([^:]+): .*\] .*".r
+        def parseTracking(line: String) = line match {
+          case parseVerbose(tracking) => tracking.tap(ref => echo(s"Tracking $ref"))
+          case _ => "upstream/2.13.x".tap(default => echoWarning(s"Tracking default $default, failed to understand '$line'"))
+        }
+        case class MADFile(path: String, status: Int)
+        // D       test/files/neg/t12590.scala
+        def madden(line: String): MADFile =
+          line.split("\\s+") match {
+            case Array(mad, p) =>
+              val score = mad match { case "M" => 0 case "A" => 1 case "D" => -1 }
+              MADFile(p, score)
+            case _ =>
+              echoWarning(s"diff --name-status, failed to understand '$line'")
+              MADFile("NOPATH", -1)
+          }
+        def isPresent(mad: MADFile) = mad.status >= 0
+        def isTestFiles(path: String) = path.startsWith("test/files/")
+        val maybeFiles =
+          for {
+            current  <- runGit("rev-parse --abbrev-ref HEAD")(_.head).tap(_.foreach(b => echo(s"Testing on branch $b")))
+            tracking <- runGit(s"branch -vv --list $current")(lines => parseTracking(lines.head))
+            files    <- runGit(s"diff --name-status $tracking")(lines => lines.map(madden).filter(isPresent).map(_.path).filter(isTestFiles).toList)
+          }
+          yield files
+        //test/files/neg/t12349.check
+        //test/files/neg/t12349/t12349a.java
+        //test/files/neg/t12349/t12349b.scala
+        //test/files/neg/t12349/t12349c.scala
+        //test/files/neg/t12494.check
+        //test/files/neg/t12494.scala
+        maybeFiles.getOrElse(Nil).flatMap { s =>
+          val path = Path(s)
+          val segs = path.segments
+          if (segs.length < 4 || !standardKinds.contains(segs(2))) Nil
+          else if (segs.length > 4) {
+            val prefix = Path(path.segments.take(4).mkString("/"))
+            List(pathSettings.testParent / prefix)
+          }
+          else {
+            // p.check -> p.scala or p
+            val norm =
+              if (!path.hasExtension("scala") && !path.isDirectory) {
+                val asDir = Path(path.path.stripSuffix(s".${path.extension}"))
+                if (asDir.exists) asDir
+                else asDir.addExtension("scala")
+              }
+              else path
+            List(pathSettings.testParent / norm)
+          }
+        }
+        .distinct.filter(denotesTestPath)
+      }
+
       val isRerun = config.optFailed
       val rerunTests = if (isRerun) testKinds.failedTests else Nil
-      def miscTests = individualTests ++ greppedTests ++ rerunTests
+      val specialTests = if (realeasy) List(Path("test/files/run/t6240-universe-code-gen.scala")) else Nil
+      def miscTests = List(individualTests, greppedTests, branchedTests, rerunTests, specialTests).flatten
 
       val givenKinds = standardKinds filter config.parsed.isSet
       val kinds = (
@@ -228,15 +313,21 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
       def testContributors = {
         List(
-          if (rerunTests.isEmpty) "" else "previously failed tests",
-          if (kindsTests.isEmpty) "" else s"${kinds.size} named test categories",
-          if (greppedTests.isEmpty) "" else s"${greppedTests.size} tests matching '$grepExpr'",
-          if (individualTests.isEmpty) "" else "specified tests"
-        ) filterNot (_ == "") mkString ", "
+          (rerunTests, "previously failed tests"),
+          (kindsTests, s"${kinds.size} named test categories"),
+          (greppedTests, s"${greppedTests.size} tests matching '$grepExpr'"),
+          (branchedTests, s"${branchedTests.size} tests modified on this branch"),
+          (individualTests, "specified tests"),
+          (specialTests, "other tests you might have forgotten"),
+        ).filterNot(_._1.isEmpty).map(_._2) match {
+          case Nil => "the well of despair. I see you're not in a testing mood."
+          case one :: Nil => one
+          case all => all.init.mkString("", ", ", s", and ${all.last}")
+        }
       }
 
-      val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical).sortBy(_.toString).toArray
-      val grouped = (allTests groupBy kindOf).toArray sortBy (x => standardKinds indexOf x._1)
+      val allTests: Array[Path] = distinctBy(miscTests ::: kindsTests)(_.toCanonical).sortBy(_.toString).toArray
+      val grouped = allTests.groupBy(kindOf).toArray.sortBy(x => standardKinds.indexOf(x._1))
 
       onlyIndividualTests = individualTests.nonEmpty && rerunTests.isEmpty && kindsTests.isEmpty && greppedTests.isEmpty
       totalTests = allTests.size

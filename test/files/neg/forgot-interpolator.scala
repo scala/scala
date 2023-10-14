@@ -93,3 +93,21 @@ package curry {
     def f5 = "I draw the line at $palomino" // no warn
   }
 }
+
+package companions {
+  class X
+  object X
+  class C {
+    def f1 = "$X"   // nowarn companion
+    def f2 = "$Byte"   // nowarn companion
+    def f3 = "$Char"   // nowarn companion
+    def f4 = "$Short"   // nowarn companion
+    def f5 = "$Int"   // nowarn companion
+    def f6 = "$Float"   // nowarn companion
+    def f7 = "$Double"   // nowarn companion
+    def f8 = "$Character"   // nowarn companion
+    def f9 = "$Integer"   // nowarn companion
+    def f0 = "$companions"   // nowarn companion
+  }
+}
+package object companions

@@ -16,42 +16,56 @@ package mutable
 import scala.collection.generic.DefaultSerializationProxy
 import scala.math.Ordering
 
-/** This class implements priority queues using a heap.
-  *  To prioritize elements of type A there must be an implicit
-  *  Ordering[A] available at creation.
-  *
-  *  If multiple elements have the same priority in the ordering of this
-  *  PriorityQueue, no guarantees are made regarding the order in which elements
-  *  are returned by `dequeue` or `dequeueAll`. In particular, that means this
-  *  class does not guarantee first in first out behaviour that may be
-  *  incorrectly inferred from the Queue part of the name of this class.
-  *
-  *  Only the `dequeue` and `dequeueAll` methods will return elements in priority
-  *  order (while removing elements from the heap).  Standard collection methods
-  *  including `drop`, `iterator`, and `toString` will remove or traverse the heap
-  *  in whichever order seems most convenient.
-  *
-  *  Therefore, printing a `PriorityQueue` will not reveal the priority order of
-  *  the elements, though the highest-priority element will be printed first.  To
-  *  print the elements in order, one must duplicate the `PriorityQueue` (by using
-  *  `clone`, for instance) and then dequeue them:
-  *
-  *  @example {{{
-  *  val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
-  *  println(pq)                  // elements probably not in order
-  *  println(pq.clone.dequeueAll) // prints ArraySeq(7, 5, 3, 2, 1)
-  *  }}}
-  *
-  *  @tparam A    type of the elements in this priority queue.
-  *  @param ord   implicit ordering used to compare the elements of type `A`.
-  *
-  *  @define Coll PriorityQueue
-  *  @define coll priority queue
-  *  @define orderDependent
-  *  @define orderDependentFold
-  *  @define mayNotTerminateInf
-  *  @define willNotTerminateInf
-  */
+/** A heap-based priority queue.
+ *
+ *  To prioritize elements of type `A` there must be an implicit
+ *  `Ordering[A]` available at creation. Elements are retrieved
+ *  in priority order by using [[dequeue]] or [[dequeueAll]].
+ *
+ *  If multiple elements have the same priority as determined by the ordering for this
+ *  `PriorityQueue`, no guarantees are made regarding the order in which those elements
+ *  are returned by `dequeue` or `dequeueAll`. In particular, that means this
+ *  class does not guarantee first-in-first-out behavior, as may be
+ *  incorrectly inferred from the fact that this data structure is
+ *  called a "queue".
+ *
+ *  Only the `dequeue` and `dequeueAll` methods will return elements in priority
+ *  order (while removing elements from the heap).  Standard collection methods
+ *  such as `drop`, `iterator`, `toList` and `toString` use an arbitrary
+ *  iteration order: they will traverse the heap or remove elements
+ *  in whichever order seems most convenient.
+ *
+ *  Therefore, printing a `PriorityQueue` will not show elements in priority order,
+ *  though the highest-priority element will be printed first.
+ *  To print the elements in order, it's necessary to `dequeue` them.
+ *  To do this non-destructively, duplicate the `PriorityQueue` first;
+ *  the `clone` method is a suitable way to obtain a disposable copy.
+ *
+ *  Client keys are assumed to be immutable. Mutating keys may violate
+ *  the invariant of the underlying heap-ordered tree. Note that [[clone]]
+ *  does not rebuild the underlying tree.
+ *
+ *  {{{
+ *  scala> val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
+ *  val pq: scala.collection.mutable.PriorityQueue[Int] = PriorityQueue(7, 3, 5, 1, 2)
+ *
+ *  scala> pq.toList              // also not in order
+ *  val res0: List[Int] = List(7, 3, 5, 1, 2)
+ *
+ *  scala> pq.clone.dequeueAll
+ *  val res1: Seq[Int] = ArraySeq(7, 5, 3, 2, 1)
+ *  }}}
+ *
+ *  @tparam A    type of the elements in this priority queue.
+ *  @param ord   implicit ordering used to compare the elements of type `A`.
+ *
+ *  @define Coll PriorityQueue
+ *  @define coll priority queue
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ */
 sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   extends AbstractIterable[A]
     with Iterable[A]
@@ -75,6 +89,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     def p_size0_=(s: Int) = size0 = s
     def p_array = array
     def p_ensureSize(n: Int) = super.ensureSize(n)
+    def p_ensureAdditionalSize(n: Int) = super.ensureAdditionalSize(n)
     def p_swap(a: Int, b: Int): Unit = {
       val h = array(a)
       array(a) = array(b)
@@ -84,7 +99,11 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 
   private val resarr = new ResizableArrayAccess[A]
 
-  resarr.p_size0 += 1                  // we do not use array(0) TODO: explain -- what is the first element even for?
+  // we do not use array(0)
+  // storing the root of the heap at array(1) simplifies the calculations for
+  // parent and child indices: for a given index k, the parent of k is k / 2,
+  // the left child is k * 2, and the right child is k * 2 + 1
+  resarr.p_size0 += 1
   def length: Int = resarr.length - 1  // adjust length accordingly
   override def size: Int = length
   override def knownSize: Int = length
@@ -139,7 +158,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *  @return             this $coll.
     */
   def addOne(elem: A): this.type = {
-    resarr.p_ensureSize(resarr.p_size0 + 1)
+    resarr.p_ensureAdditionalSize(1)
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     fixUp(resarr.p_array, resarr.p_size0)
     resarr.p_size0 += 1
@@ -156,7 +175,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   private def unsafeAdd(elem: A): Unit = {
     // like += but skips fixUp, which breaks the ordering invariant
     // a series of unsafeAdds MUST be followed by heapify
-    resarr.p_ensureSize(resarr.p_size0 + 1)
+    resarr.p_ensureAdditionalSize(1)
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     resarr.p_size0 += 1
   }

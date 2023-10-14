@@ -1,0 +1,7 @@
+t12715.scala:21: error: parent trait E has a super call to method B.f, which binds to the value D.f. Super calls can only target methods.
+object O1 extends B with C with D with E
+       ^
+t12715.scala:22: error: parent trait E has a super call to method B.f, which binds to the value C.f. Super calls can only target methods.
+object O2 extends B with C with E with D
+       ^
+2 errors

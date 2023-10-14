@@ -179,7 +179,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val buffer = ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, ListOfNil))
     val applies = args filterNot isEmptyText map (t => Apply(Select(Ident(_buf), _plus), List(t)))
 
-    atPos(pos)( Block(buffer :: applies.toList, Ident(_buf)) )
+    atPos(pos)( gen.mkBlock(buffer :: applies.toList ::: List(Ident(_buf))) )
   }
 
   /** Returns (Some(prefix) | None, rest) based on position of ':' */
@@ -271,6 +271,6 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       args
     )
 
-    atPos(pos.makeTransparent)( Block(nsResult, Block(attrResult, body)) )
+    atPos(pos.makeTransparent)( gen.mkBlock(nsResult :+ gen.mkBlock(attrResult :+ body)) )
   }
 }

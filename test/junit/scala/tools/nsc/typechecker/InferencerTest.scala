@@ -6,7 +6,6 @@ import org.junit.{After, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.testkit.BytecodeTesting
 
 class A
@@ -26,18 +25,19 @@ trait ZwC[-T] extends Z[T] with C
 class InferencerTests extends BytecodeTesting {
   import compiler.global._, analyzer._
 
-  var storedXsource: ScalaVersion = null
+  var storedYscala3ImplicitResolution: Boolean = false
   @Before
-  def storeXsource(): Unit = {
-    storedXsource = settings.source.value
+  def storeYscala3ImplicitResolution(): Unit = {
+    storedYscala3ImplicitResolution = settings.Yscala3ImplicitResolution.value
   }
   @After
-  def restoreXsource(): Unit = {
-    settings.source.value = storedXsource
+  def restoreYscala3ImplicitResolution(): Unit = {
+    settings.Yscala3ImplicitResolution.value = storedYscala3ImplicitResolution
   }
 
   @Test
   def isAsSpecificScala2(): Unit = {
+    settings.Yscala3ImplicitResolution.value = false
     val run = new global.Run
 
     enteringPhase(run.typerPhase) {
@@ -103,7 +103,7 @@ class InferencerTests extends BytecodeTesting {
 
   @Test
   def isAsSpecificScala3(): Unit = {
-    settings.source.value = ScalaVersion("3.0")
+    settings.Yscala3ImplicitResolution.value = true
 
     val run = new global.Run
 

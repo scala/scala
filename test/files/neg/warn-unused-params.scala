@@ -1,6 +1,8 @@
 // scalac: -Wunused:params -Werror
 //
 
+import Answers._
+
 trait InterFace {
   /** Call something. */
   def call(a: Int, b: String, c: Double): Int
@@ -31,7 +33,7 @@ trait BadAPI extends InterFace {
 
   override def equals(other: Any): Boolean = true  // no warn
 
-  def i(implicit s: String) = 42           // yes, warn
+  def i(implicit s: String) = answer           // yes, warn
 
   /*
   def future(x: Int): Int = {
@@ -61,7 +63,7 @@ case class CaseyKasem(k: Int)        // no warn
 case class CaseyAtTheBat(k: Int)(s: String)        // warn
 
 trait Ignorance {
-  def f(readResolve: Int) = 42           // warn
+  def f(readResolve: Int) = answer           // warn
 }
 
 class Reusing(u: Int) extends Unusing(u)   // no warn
@@ -75,28 +77,63 @@ trait Unimplementation {
 }
 
 trait DumbStuff {
-  def f(implicit dummy: DummyImplicit) = 42
-  def g(dummy: DummyImplicit) = 42
+  def f(implicit dummy: DummyImplicit) = answer
+  def g(dummy: DummyImplicit) = answer
 }
 trait Proofs {
-  def f[A, B](implicit ev: A =:= B) = 42
-  def g[A, B](implicit ev: A <:< B) = 42
-  def f2[A, B](ev: A =:= B) = 42
-  def g2[A, B](ev: A <:< B) = 42
+  def f[A, B](implicit ev: A =:= B) = answer
+  def g[A, B](implicit ev: A <:< B) = answer
+  def f2[A, B](ev: A =:= B) = answer
+  def g2[A, B](ev: A <:< B) = answer
 }
 
 trait Anonymous {
-  def f = (i: Int) => 42      // warn
+  def f = (i: Int) => answer      // warn
 
-  def f1 = (_: Int) => 42     // no warn underscore parameter (a fresh name)
+  def f1 = (_: Int) => answer     // no warn underscore parameter (a fresh name)
 
   def f2: Int => Int = _ + 1  // no warn placeholder syntax (a fresh name and synthetic parameter)
 
-  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
+  def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
 }
 trait Context[A]
 trait Implicits {
-  def f[A](implicit ctx: Context[A]) = 42
-  def g[A: Context] = 42
+  def f[A](implicit ctx: Context[A]) = answer
+  def g[A: Context] = answer
 }
 class Bound[A: Context]
+object Answers {
+  def answer: Int = 42
+}
+
+trait BadMix { _: InterFace =>
+  def f(a: Int,
+        b: String,               // warn
+        c: Double): Int = {
+    println(c)
+    a
+  }
+  @deprecated("no warn in deprecated API", since="yesterday")
+  def g(a: Int,
+        b: String,               // no warn
+        c: Double): Int = {
+    println(c)
+    a
+  }
+  override def call(a: Int,
+                    b: String,               // no warn, required by superclass
+                    c: Double): Int = {
+    println(c)
+    a
+  }
+
+  def meth(x: Int) = x
+
+  override def equals(other: Any): Boolean = true  // no warn
+
+  def i(implicit s: String) = answer           // yes, warn
+}
+
+class Unequal {
+  override def equals(other: Any) = toString.nonEmpty   // no warn non-trivial RHS, required by universal method
+}

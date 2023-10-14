@@ -70,7 +70,7 @@ trait Set[A]
         false
     })
 
-  override def hashCode(): Int = MurmurHash3.setHash(toIterable)
+  override def hashCode(): Int = MurmurHash3.setHash(this)
 
   override def iterableFactory: IterableFactory[Set] = Set
 
@@ -115,7 +115,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     */
   def subsets(len: Int): Iterator[C] = {
     if (len < 0 || len > size) Iterator.empty
-    else new SubsetsItr(toIterable.to(IndexedSeq), len)
+    else new SubsetsItr(this.to(IndexedSeq), len)
   }
 
   /** An iterator over all subsets of this set.
@@ -123,7 +123,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return     the iterator.
     */
   def subsets(): Iterator[C] = new AbstractIterator[C] {
-    private[this] val elms = toIterable.to(IndexedSeq)
+    private[this] val elms = SetOps.this.to(IndexedSeq)
     private[this] var len = 0
     private[this] var itr: Iterator[C] = Iterator.empty
 
@@ -199,7 +199,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @`inline` final def &~ (that: Set[A]): C = this diff that
 
   @deprecated("Consider requiring an immutable Set", "2.13.0")
-  def -- (that: IterableOnce[A]): C = fromSpecific(coll.toSet.removedAll(that))
+  def -- (that: IterableOnce[A]): C = {
+    val toRemove = that.iterator.to(immutable.Set)
+    fromSpecific(view.filterNot(toRemove))
+  }
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A): C = diff(Set(elem))
@@ -220,16 +223,24 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.IterableOnce[A]): C = fromSpecific(that match {
-    case that: collection.Iterable[A] => new View.Concat(toIterable, that)
-    case _ => iterator.concat(that.iterator)
-  })
+  def concat(that: collection.IterableOnce[A]): C = this match {
+    case optimizedSet @ (_ : scala.collection.immutable.Set.Set1[A] | _: scala.collection.immutable.Set.Set2[A] | _: scala.collection.immutable.Set.Set3[A] | _: scala.collection.immutable.Set.Set4[A]) =>
+      // StrictOptimizedSetOps optimization of concat (these Sets cannot extend StrictOptimizedSetOps because of binary-incompatible return type; cf. PR #10036)
+      var result = optimizedSet.asInstanceOf[scala.collection.immutable.SetOps[A, scala.collection.immutable.Set, scala.collection.immutable.Set[A]]]
+      val it = that.iterator
+      while (it.hasNext) result = result + it.next()
+      result.asInstanceOf[C]
+    case _ => fromSpecific(that match {
+      case that: collection.Iterable[A] => new View.Concat(this, that)
+      case _ => iterator.concat(that.iterator)
+    })
+  }    
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
-  def + (elem: A): C = fromSpecific(new View.Appended(toIterable, elem))
+  def + (elem: A): C = fromSpecific(new View.Appended(this, elem))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  def + (elem1: A, elem2: A, elems: A*): C = fromSpecific(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+  def + (elem1: A, elem2: A, elems: A*): C = fromSpecific(new View.Concat(new View.Appended(new View.Appended(this, elem1), elem2), elems))
 
   /** Alias for `concat` */
   @`inline` final def ++ (that: collection.IterableOnce[A]): C = concat(that)

@@ -12,6 +12,8 @@
 
 package scala.tools
 
+import scala.reflect.internal.util.StringContextStripMarginOps
+
 package object nsc {
   type Mode = scala.reflect.internal.Mode
   val Mode = scala.reflect.internal.Mode
@@ -32,4 +34,8 @@ package object nsc {
 
   @deprecated("Use scala.reflect.internal.util.ListOfNil", "2.11.0")
   lazy val ListOfNil = scala.reflect.internal.util.ListOfNil
+
+  /** Adds the `sm` interpolator to a [[scala.StringContext]].
+   */
+  implicit val `strip margin`: StringContext => StringContextStripMarginOps = StringContextStripMarginOps
 }

@@ -17,7 +17,7 @@ package html
 import model._
 import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
-import scala.collection._
+import scala.collection.mutable
 import page.diagram._
 import scala.reflect.internal.Reporter
 
@@ -95,7 +95,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
   )
 
   final def webjarResources = List(
-    ("jquery.min.js", "9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=")
+    ("jquery.min.js", "/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=")
   )
 
   /** Generates the Scaladoc site for a model into the site root.

@@ -1,4 +1,4 @@
-// scalac: -Ywarn-unused:implicits -Xfatal-warnings
+// scalac: -Werror -Wunused:implicits
 //
 
 trait InterFace {
@@ -31,4 +31,12 @@ trait BadAPI extends InterFace {
   }
 
   def i(implicit s: String, t: Int) = t           // yes, warn
+}
+
+trait T {
+  def f()(implicit i: Int): Int
+}
+trait U { _: T =>
+  override def f()(implicit i: Int): Int = g()  // no warn, required by baseclass, scala/bug#12876
+  def g(): Int
 }

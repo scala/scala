@@ -20,7 +20,7 @@ import scala.util.hashing.MurmurHash3
 
 /** This class implements mutable sets using a hashtable.
   *
-  * @see [[https://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
+  * @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   * section on `Hash Tables` for more information.
   *
   * @define Coll `mutable.HashSet`
@@ -93,11 +93,18 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   override def addAll(xs: IterableOnce[A]): this.type = {
     sizeHint(xs.knownSize)
     xs match {
-      case hm: immutable.HashSet[A] =>
-        hm.foreachWithHash((k, h) => addElem(k, improveHash(h)))
+      case hs: immutable.HashSet[A] =>
+        hs.foreachWithHash((k, h) => addElem(k, improveHash(h)))
         this
-      case hm: mutable.HashSet[A] =>
-        val iter = hm.nodeIterator
+      case hs: mutable.HashSet[A] =>
+        val iter = hs.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          addElem(next.key, next.hash)
+        }
+        this
+      case lhs: mutable.LinkedHashSet[A] =>
+        val iter = lhs.entryIterator
         while (iter.hasNext) {
           val next = iter.next()
           addElem(next.key, next.hash)
@@ -121,6 +128,14 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
         this
       case hs: mutable.HashSet[A] =>
         val iter = hs.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          remove(next.key, next.hash)
+          if (size == 0) return this
+        }
+        this
+      case lhs: mutable.LinkedHashSet[A] =>
+        val iter = lhs.entryIterator
         while (iter.hasNext) {
           val next = iter.next()
           remove(next.key, next.hash)

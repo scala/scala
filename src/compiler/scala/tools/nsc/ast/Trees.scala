@@ -65,10 +65,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
-  class PostfixSelect(qual: Tree, name: Name) extends Select(qual, name)
-
   /** emitted by typer, eliminated by refchecks */
-  case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree {
+  case class TypeTreeWithDeferredRefCheck(precheck: TypeTree)(val check: () => TypeTree) extends TypTree {
     override def transform(transformer: ApiTransformer): Tree =
       transformer.treeCopy.TypeTreeWithDeferredRefCheck(this)
     override def traverse(traverser: Traverser): Unit = {
@@ -110,6 +108,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   object treeInfo extends {
     val global: Trees.this.type = self
   } with TreeInfo
+  import treeInfo._
 
   // --- additional cases in operations ----------------------------------
 
@@ -137,8 +136,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     def InjectDerivedValue(tree: Tree, arg: Tree) =
       new InjectDerivedValue(arg).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
-      case dc@TypeTreeWithDeferredRefCheck() => new TypeTreeWithDeferredRefCheck()(dc.check).copyAttrs(tree)
-      case x                                 => throw new MatchError(x)
+      case dc@TypeTreeWithDeferredRefCheck(prechk) => new TypeTreeWithDeferredRefCheck(prechk)(dc.check).copyAttrs(tree)
+      case x => throw new MatchError(x)
     }
   }
 
@@ -164,7 +163,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       case _ => this.treeCopy.InjectDerivedValue(tree, arg)
     }
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
-      case t @ TypeTreeWithDeferredRefCheck() => t
+      case t: TypeTreeWithDeferredRefCheck => t
       case _ => this.treeCopy.TypeTreeWithDeferredRefCheck(tree)
     }
   }
@@ -203,7 +202,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     case InjectDerivedValue(arg) =>
       transformer.treeCopy.InjectDerivedValue(
         tree, transformer.transform(arg))
-    case TypeTreeWithDeferredRefCheck() =>
+    case _: TypeTreeWithDeferredRefCheck =>
       transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
     case x => super.xtransform(transformer, tree)
   }
@@ -280,12 +279,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
       override def traverse(tree: Tree) = {
         tree match {
-         case _: DefTree | Function(_, _) | Template(_, _, _) =>
-           markLocal(tree)
-         case _ =>
-           tree
+          case _: DefTree | Function(_, _) | Template(_, _, _) => markLocal(tree)
+          case _ =>
         }
-
         tree.traverse(this)
       }
     }
@@ -324,10 +320,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 transform(fn)
               case EmptyTree =>
                 tree
-              // The typer does not accept UnApply. Replace it to Apply, which can be retyped.
-              case UnApply(Apply(Select(prefix, termNames.unapply | termNames.unapplySeq),
-                                 List(Ident(termNames.SELECTOR_DUMMY))), args) =>
-                Apply(prefix, transformTrees(args))
+              // The typer does not accept UnApply. Replace it with Apply, which can be retyped.
+              case UnApply(Unapplied(Applied(Select(fun, nme.unapply | nme.unapplySeq), _, _)), args) =>
+                Apply(transform(fun), transformTrees(args))
               case _ =>
                 val dupl = tree.duplicate
                 // Typically the resetAttrs transformer cleans both symbols and types.
@@ -375,7 +370,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
    case Parens(expr)                                               (only used during parsing)
    case DocDef(comment, defn) =>                                   (eliminated by typer)
-   case TypeTreeWithDeferredRefCheck() =>                          (created and eliminated by typer)
+   case TypeTreeWithDeferredRefCheck(prechk) =>                    (created by typer and eliminated by refchecks)
    case SelectFromArray(_, _, _) =>                                (created and eliminated by erasure)
    case InjectDerivedValue(_) =>                                   (created and eliminated by erasure)
 

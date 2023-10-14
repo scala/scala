@@ -12,6 +12,7 @@
 
 package scala.tools.nsc
 
+import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor, _}
 
@@ -92,12 +93,12 @@ object PickleExtractor {
       input.visibleAnnotations.asScala.foreach { node =>
         if (node.desc == "Lscala/reflect/ScalaSignature;") {
           val Array("bytes", data: String) = node.values.toArray(): @unchecked
-          val bytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+          val bytes = data.getBytes(UTF_8)
           val len = ByteCodecs.decode(bytes)
           pickleData = bytes.take(len)
         } else if (node.desc == "Lscala/reflect/ScalaLongSignature;") {
           val Array("bytes", data: java.util.Collection[String @unchecked]) = node.values.toArray(): @unchecked
-          val encoded = data.asScala.toArray flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+          val encoded = data.asScala.toArray.flatMap(_.getBytes(UTF_8))
           val len = ByteCodecs.decode(encoded)
           pickleData = encoded.take(len)
         }

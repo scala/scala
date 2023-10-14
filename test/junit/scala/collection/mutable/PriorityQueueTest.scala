@@ -3,35 +3,36 @@ package scala.collection.mutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
-import scala.collection.mutable
+import scala.tools.testkit.AssertUtil.{assertFails, assertNotReachable, assertThrows}
+import scala.util.Random
+import scala.util.chaining._
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
-
-import scala.tools.testkit.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */
 class PriorityQueueTest {
-  val priorityQueue = new mutable.PriorityQueue[Int]()
-  val elements = List.fill(1000)(scala.util.Random.nextInt(Int.MaxValue))
-  priorityQueue.enqueue(elements :_*)
+  val elements = List.fill(1000)(Random.nextInt(Int.MaxValue))
+  def priorityQueue = PriorityQueue.empty[Int].tap(_.enqueue(elements:_*))
 
   @deprecated("Tests deprecated API", since="2.13")
   @Test
   def orderedCompanion(): Unit = {
-    val pq = new mutable.PriorityQueue[Int]()
+    val pq = PriorityQueue.empty[Int]
     assert(pq.orderedCompanion == PriorityQueue)
   }
 
   @Test
   def orderingReverseReverse(): Unit = {
-    val pq = new mutable.PriorityQueue[Nothing]()((_,_) => 42)
+    val pq = PriorityQueue.empty[Nothing]((_,_) => 42)
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
 
   @Test /* Regression for https://github.com/scala/bug/issues/11439 */
   def emptyMapInPlace(): Unit = {
-    val pq = mutable.PriorityQueue.empty[String].mapInPlace(_.toUpperCase) // used to crash because of the weird resarr implementation
+    val pq = PriorityQueue.empty[String].mapInPlace(_.toUpperCase) // used to crash because of the weird resarr implementation
     assert(pq.isEmpty)
   }
 
@@ -54,8 +55,8 @@ class PriorityQueueTest {
   }
   @Test
   def lastOfEmptyThrowsException(): Unit = {
-    assert(List(1,2,3,4,5).contains(collection.mutable.PriorityQueue[Int](1,2,3,4,5).last))
-    assertThrows[NoSuchElementException](collection.mutable.PriorityQueue[Int]().last)
+    assert(List(1,2,3,4,5).contains(PriorityQueue[Int](1,2,3,4,5).last))
+    assertThrows[NoSuchElementException](PriorityQueue.empty[Int].last)
   }
 
   @Test
@@ -89,5 +90,38 @@ class PriorityQueueTest {
          """.stripMargin
       )
     }
+  }
+  @Test def `pq does not hold onto elements`: Unit = {
+    implicit val `order anything, it's on me`: Ordering[Any] = implicitly[Ordering[String]].on(_.toString)
+    val thing = new Object
+    val pq = PriorityQueue.empty[Any]
+    assertNotReachable(thing, pq) {
+      pq.addOne(thing)
+      assertEquals(thing, pq.dequeue())
+    }
+    assertNotReachable(thing, pq) {
+      pq.addOne(thing)
+      pq.clear()
+    }
+    // sanity check
+    assertFails(_.contains("held reference")) {
+      assertNotReachable(thing, pq) {
+        pq.addOne(thing)
+      }
+    }
+  }
+  @Test def `pq may be rebuilt after mutation`: Unit = {
+    case class Thing(var s: String)
+    implicit val `order by s`: Ordering[Thing] = implicitly[Ordering[String]].on(_.s)
+    val pq = PriorityQueue.empty[Thing]
+    val thingOne = Thing("abc")
+    val thingTwo = Thing("def")
+    pq.addOne(thingOne)
+    pq.addOne(thingTwo)
+    assertEquals(thingTwo, pq.clone.dequeue())
+    thingTwo.s = "aaa"
+    val newly = PriorityQueue.from(pq)
+    assertEquals(thingOne, newly.dequeue())
+    assertEquals(thingTwo, pq.clone.dequeue())
   }
 }

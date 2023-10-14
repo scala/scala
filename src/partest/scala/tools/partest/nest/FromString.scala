@@ -13,7 +13,7 @@
 package scala.tools.partest.nest
 
 import scala.reflect.OptManifest
-import scala.tools.cmd.toArgs
+import scala.sys.process.Parser.tokenize
 import scala.tools.nsc.io.Directory
 
 /** A general mechanism for defining how a command line argument
@@ -53,7 +53,7 @@ object FromString {
    *  list "foo", "bar", "baz".
    */
   val ArgumentsFromString: FromString[List[String]] = new FromString[List[String]] {
-    def apply(s: String) = toArgs(s)
+    def apply(s: String) = tokenize(s)
   }
 
   /** Identity.

@@ -18,8 +18,6 @@ import ForceKinds._
 
 object ForceKinds {
 
-  /** When forcing the constructor of an annotation */
-  final val AnnotCtor: ForceKinds.Single = of(1 << 0)
   /** When forcing the companion of a module */
   final val DeepForce: ForceKinds.Single = of(1 << 1)
   /** When forcing the owner of a symbol */
@@ -51,7 +49,6 @@ class ForceKinds(val toInt: Int) extends AnyVal {
 
   def describe: List[String] = {
     var xs = List.empty[String]
-    if (is(AnnotCtor)) xs ::= "reading annotation constructor"
     if (is(DeepForce)) xs ::= "deep"
     if (is(CompleteOwner)) xs ::= "class owner is required"
     if (is(OverloadedSym)) xs ::= "overload resolution"

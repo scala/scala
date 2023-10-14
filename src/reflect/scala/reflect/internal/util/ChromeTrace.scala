@@ -43,7 +43,8 @@ final class ChromeTrace(f: Path) extends Closeable {
   private val traceWriter = FileUtils.newAsyncBufferedWriter(f)
   private val context = mutable.Stack[JsonContext](TopContext)
   private val tidCache = new ThreadLocal[String]() {
-    override def initialValue(): String = Thread.currentThread().getId.formatted("%05d")
+    @annotation.nowarn("cat=deprecation")
+    override def initialValue(): String = f"${Thread.currentThread().getId}%05d"
   }
   objStart()
   fld("traceEvents")

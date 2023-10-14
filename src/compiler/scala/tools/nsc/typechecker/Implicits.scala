@@ -20,14 +20,12 @@ package tools.nsc
 package typechecker
 
 import scala.annotation.{nowarn, tailrec}
-import scala.collection.mutable
-import mutable.{LinkedHashMap, ListBuffer}
-import scala.util.matching.Regex
-import symtab.Flags._
+import scala.collection.mutable, mutable.{LinkedHashMap, ListBuffer}
+import scala.language.implicitConversions
 import scala.reflect.internal.util.{ReusableInstance, Statistics, TriState}
 import scala.reflect.internal.TypesStats
-import scala.language.implicitConversions
 import scala.tools.nsc.Reporting.WarningCategory
+import symtab.Flags._
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -41,6 +39,7 @@ trait Implicits extends splain.SplainData {
   import statistics._
   import typingStack.printTyping
   import typeDebug._
+  import scala.util.matching.Regex.Match
 
   // standard usage
   def inferImplicitFor(pt: Type, tree: Tree, context: Context, reportAmbiguous: Boolean = true): SearchResult =
@@ -103,7 +102,7 @@ trait Implicits extends splain.SplainData {
     val subtypeStart    = if (settings.areStatisticsEnabled) statistics.startCounter(subtypeImpl) else null
     val start           = if (settings.areStatisticsEnabled) statistics.startTimer(implicitNanos) else null
     if (shouldPrint)
-      typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
+      typingStack.printTyping(tree, s"typing implicit: $tree ${context.undetparamsString}")
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     ImplicitErrors.startSearch(pt)
     val dpt = if (isView) pt else dropByName(pt)
@@ -418,7 +417,7 @@ trait Implicits extends splain.SplainData {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
-        typingStack.printTyping(f"[search #$searchId] $what $msg")
+        typingStack.printTyping(s"[search #$searchId] $what $msg")
     }
 
     import infer._
@@ -445,7 +444,7 @@ trait Implicits extends splain.SplainData {
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
-      if (settings.debug)
+      if (settings.debug.value)
         reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
@@ -742,17 +741,14 @@ trait Implicits extends splain.SplainData {
                       as = as.tail
                     }
                   } else {
-                    while (ps.nonEmpty && as.nonEmpty) {
+                    while (!(ps.isEmpty || as.isEmpty)) {
                       if (!(as.head <:< ps.head.tpe))
                         return false
                       ps = ps.tail
                       as = as.tail
                     }
                   }
-                  ps.isEmpty && as.nonEmpty && {
-                    val lastArg = as.head
-                    as.tail.isEmpty && loop(restpe, lastArg)
-                  }
+                  ps.isEmpty && !as.isEmpty && as.tail.isEmpty && loop(restpe, as.head)
                 }
               }
 
@@ -761,7 +757,14 @@ trait Implicits extends splain.SplainData {
         case NullaryMethodType(restpe)  => loop(restpe, pt)
         case PolyType(_, restpe)        => loop(restpe, pt)
         case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else methodToExpressionTp(tp) <:< pt // is !fast case needed??
-        case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
+        case _                          => (if (fast) isPlausiblySubType(tp, pt) else tp <:< pt) && {
+          pt match {
+            case RefinedType(_, syms) if !syms.isEmpty =>
+              syms.reverseIterator.exists(x => context.isAccessible(tp.nonPrivateMember(x.name), tp))
+            case _ =>
+              true
+          }
+        }
       }
       loop(tp0, pt0)
     }
@@ -1173,7 +1176,7 @@ trait Implicits extends splain.SplainData {
 
       val eligible: List[ImplicitInfo] = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
       if (eligible.nonEmpty)
-        printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, s"${eligible.size} eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -1262,7 +1265,7 @@ trait Implicits extends splain.SplainData {
 
           if (invalidImplicits.nonEmpty)
             setAddendum(pos, () =>
-              s"\n Note: implicit ${invalidImplicits.head} is not applicable here because it comes after the application point and it lacks an explicit result type"
+              s"\n Note: implicit ${invalidImplicits.head} is not applicable here because it comes after the application point and it lacks an explicit result type.${if (invalidImplicits.head.isModule) " An object can be written as a lazy val with an explicit type." else ""}"
             )
         }
 
@@ -1504,7 +1507,7 @@ trait Implicits extends splain.SplainData {
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
-      if (settings.debug) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
+      if (settings.debug.value) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
       // otherwise -Vimplicits/-Vdebug will spam the long with zillions of "macros are disabled"
@@ -1825,14 +1828,15 @@ trait Implicits extends splain.SplainData {
   object ImplicitAmbiguousMsg extends ImplicitAnnotationMsg(_.implicitAmbiguousMsg, ImplicitAmbiguousClass, "implicitAmbiguous")
 
   class Message(sym: Symbol, msg: String, annotationName: String) {
+    import scala.util.matching.Regex.{quoteReplacement, Groups}
     // https://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
     private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
     private def interpolate(text: String, vars: Map[String, String]) =
-      Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-        case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
+      Intersobralator.replaceAllIn(text, (_: Match) match {
+        case Groups(v) => quoteReplacement(vars.getOrElse(v, ""))
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
-        case x               => throw new MatchError(x)
+        case x         => throw new MatchError(x)
       })
 
     def referencedTypeParams: List[String] = Intersobralator.findAllMatchIn(msg).map(_.group(1)).distinct.toList
@@ -1859,7 +1863,7 @@ trait Implicits extends splain.SplainData {
       formatDefSiteMessage(typeArgsAtSym(paramTp).map(_.toString))
 
     def formatDefSiteMessage(typeArgs: List[String]): String =
-      interpolate(msg, Map(symTypeParamNames zip typeArgs: _*))
+      interpolate(msg, Map(symTypeParamNames.zip(typeArgs): _*))
 
     def formatParameterMessage(fun: Tree): String = {
       val paramNames = referencedTypeParams
@@ -1880,13 +1884,15 @@ trait Implicits extends splain.SplainData {
         case PolyType(tps, tr@TypeRef(_, _, tprefs)) =>
           if (tps.corresponds(tprefs)((p, r) => p == r.typeSymbol)) tr.typeConstructor.toString
           else {
-            val freshTpars = tps.mapConserve { case p if p.name == tpnme.WILDCARD => p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p))) case p => p }
+            val freshTpars = tps.mapConserve { p =>
+              if (p.unexpandedName == tpnme.WILDCARD) p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p)))
+              else p
+            }
             freshTpars.map(_.name).mkString("[", ", ", "] -> ") + tr.instantiateTypeParams(tps, freshTpars.map(_.typeConstructor)).toString
           }
-
         case tp => tp.toString
       }
-      interpolate(msg, Map(paramNames zip argTypes: _*))
+      interpolate(msg, Map(paramNames.zip(argTypes): _*))
     }
 
     def validate: Option[String] = {

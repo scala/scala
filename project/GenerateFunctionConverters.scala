@@ -341,7 +341,7 @@ object GenerateFunctionConverters {
   def sourceFile(subPack: String, body: String): String =
     s"""$copyright
        |
-       |${packaging}${subPack}
+       |$packaging$subPack
        |
        |$body
        |""".stripMargin
