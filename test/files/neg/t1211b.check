@@ -1,0 +1,11 @@
+test.scala:4: error: type K is not a member of object Test
+did you mean I.K? Static Java members belong to companion objects in Scala;
+they are not inherited, even by subclasses defined in Java.
+    new this.K
+             ^
+test.scala:5: error: type K is not a member of object Test
+did you mean I.K? Static Java members belong to companion objects in Scala;
+they are not inherited, even by subclasses defined in Java.
+    new Test.K
+             ^
+2 errors

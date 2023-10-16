@@ -492,13 +492,21 @@ trait ContextErrors extends splain.SplainErrors {
               }
             val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
             val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
-            val javaRules = orEmpty(owner.isJavaDefined && owner.isClass && !owner.hasPackageFlag) {
-              val (jtype, jmember) = cx.javaFindMember(target, name, _.isStaticMember)
-              orEmpty(jmember != NoSymbol) {
-                val more = sm"""Static Java members belong to companion objects in Scala;
-                  |they are not inherited, even by subclasses defined in Java."""
-                s"did you mean ${jtype.typeSymbol.fullName}.${jmember.name}? $more"
-              }
+            val javaRules = orEmpty(owner.isClass && !owner.hasPackageFlag) {
+              owner.baseClasses.iterator.filter(bc => bc.ne(ObjectClass) && bc.isJavaDefined)
+                .map { bc => cx.javaFindMember(bc.info, name, _.isStaticMember) match {
+                    case (_, NoSymbol) if name.isTermName =>
+                      cx.javaFindMember(bc.info, name.toTypeName, _.isStaticMember)
+                    case res => res
+                  }
+                }
+                .find(_._2 ne NoSymbol) match {
+                  case Some((jtype, jmember)) =>
+                    val more = sm"""Static Java members belong to companion objects in Scala;
+                      |they are not inherited, even by subclasses defined in Java."""
+                    s"did you mean ${jtype.typeSymbol.fullName}.${jmember.name}? $more"
+                  case _ => ""
+                }
             }
             List(companion, altStr, notAnyRef, semicolon, javaRules).filter("" != _).map("\n" + _).mkString
           }
