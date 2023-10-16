@@ -1,0 +1,14 @@
+t10392.scala:9: warning: implicit conversion method cv2 should be enabled
+by making the implicit value scala.language.implicitConversions visible.
+This can be achieved by adding the import clause 'import scala.language.implicitConversions'
+or by setting the compiler option -language:implicitConversions.
+See the Scaladoc for value scala.language.implicitConversions for a discussion
+why the feature should be explicitly enabled.
+  private implicit def cv2(i: Int): String = i.toString * 2
+                       ^
+t10392.scala:9: warning: private method cv2 in class C is never used
+  private implicit def cv2(i: Int): String = i.toString * 2
+                       ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

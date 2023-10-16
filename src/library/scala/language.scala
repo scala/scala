@@ -95,22 +95,29 @@ object language {
    */
   implicit lazy val reflectiveCalls: reflectiveCalls = languageFeature.reflectiveCalls
 
-  /** Where this feature is enabled, definitions of implicit conversions are allowed.
+  /** Where this feature is enabled, definitions of implicit conversion methods are allowed.
    *  If `implicitConversions` is not enabled, the definition of an implicit
-   *  conversion will trigger a warning from the compiler.
+   *  conversion method will trigger a warning from the compiler.
    *
    *  An implicit conversion is an implicit value of unary function type `A => B`,
    *  or an implicit method that has in its first parameter section a single,
    *  non-implicit parameter. Examples:
    *
    *  {{{
-   *     implicit def stringToInt(s: String): Int = s.length
-   *     implicit val conv = (s: String) => s.length
-   *     implicit def listToX(xs: List[T])(implicit f: T => X): X = ...
+   *     implicit def intToString(i: Int): String = s"$i"
+   *     implicit val conv: Int => String = i => s"$i"
+   *     implicit val numerals: List[String] = List("zero", "one", "two", "three")
+   *     implicit val strlen: String => Int = _.length
+   *     implicit def listToInt[T](xs: List[T])(implicit f: T => Int): Int = xs.map(f).sum
    *  }}}
    *
-   *  Implicit classes and implicit values of other types are not governed by this
-   *  language feature.
+   *  This language feature warns only for implicit conversions introduced by methods.
+   *
+   *  Other values, including functions or data types which extend `Function1`,
+   *  such as `Map`, `Set`, and `List`, do not warn.
+   *
+   *  Implicit class definitions, which introduce a conversion to the wrapping class,
+   *  also do not warn.
    *
    *  '''Why keep the feature?''' Implicit conversions are central to many aspects
    *  of Scala’s core libraries.
