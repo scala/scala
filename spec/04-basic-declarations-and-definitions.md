@@ -840,6 +840,25 @@ class C extends I {
 Here, it is OK to leave out the result type of `factorial`
 in `C`, even though the method is recursive.
 
+### Tail-Recursive Call Elimination
+
+Method definitions which contain self-recursive invocations in tail position
+are optimized for stack safety. Self-invocations which are the last operation
+before returning from the method are replaced with jumps to the beginning of
+the method, much as in a while loop. Sibling-invocations, in which a method
+calls itself but with a different instance as receiver, are also optimized.
+
+This transform is performed automatically by the compiler whenever possible.
+A method definition bearing the annotation, `scala.annotation.tailrec`,
+will fail to compile if the transform is not possible. (The annotation is intended
+for cases where deoptimization would likely result in a stack overflow.)
+
+```scala
+@annotation.tailrec
+def sum(xs: List[Int], acc: Int): Int =
+  xs match { case h :: t => sum(t, acc + h) case _ => acc }
+```
+
 <!-- ## Overloaded Definitions
 \label{sec:overloaded-defs}
 \todo{change}
