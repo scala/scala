@@ -121,7 +121,7 @@ object StandardScalaSettings {
   val MaxTargetVersion = ScalaVersion(javaSpecVersion) match {
     case SpecificScalaVersion(1, minor, _, _) => minor
     case SpecificScalaVersion(major, _, _, _) => major
-    case _ => 21
+    case _ => 22
   }
 
   private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)
