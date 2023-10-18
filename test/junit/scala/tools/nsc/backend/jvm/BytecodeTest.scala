@@ -993,4 +993,14 @@ class BytecodeTest extends BytecodeTesting {
       Op(RETURN),
     ))
   }
+
+  @Test def t12835(): Unit = {
+    val c1 =
+      """def f: Unit = {
+        |  val x = 1
+        |}
+        |""".stripMargin
+    val lines = compileMethod(c1).instructions.collect { case l: LineNumber => l }
+    assertSameCode(List(LineNumber(2, Label(0))), lines)
+  }
 }
