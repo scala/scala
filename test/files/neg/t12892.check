@@ -1,0 +1,8 @@
+Test.scala:3: error: incompatible type in overriding
+def m(): B (defined in trait B)
+  with <defaultmethod> def m(): A (defined in trait A);
+  (note that def m(): B (defined in trait B) is abstract,
+  and is therefore overridden by concrete <defaultmethod> def m(): A (defined in trait A))
+  def u = new B {}
+              ^
+1 error
