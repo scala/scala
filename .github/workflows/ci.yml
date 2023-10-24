@@ -16,7 +16,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        java-distribution: [temurin]
         java: [8, 11, 17, 21]
+        include:
+          - os: ubuntu-latest
+            java-distribution: zulu
+            java: 22-ea
+          - os: windows-latest
+            java-distribution: zulu
+            java: 22-ea
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
@@ -26,7 +34,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: ${{matrix.java-distribution}}
           java-version: ${{matrix.java}}
           cache: sbt
 
