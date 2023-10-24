@@ -92,17 +92,13 @@ class DirectCompiler(val runner: Runner) {
     import runner.{sources => _, _}
     import testInfo._
 
-    // adding codelib.jar to the classpath
-    // codelib provides the possibility to override standard reify
-    // this shields the massive amount of reification tests from changes in the API
-    val codeLib = suiteRunner.pathSettings.srcCodeLib.fold[List[Path]](x => Nil, lib => List[Path](lib))
     // add the instrumented library version to classpath -- must come first
     val specializedOverride: List[Path] =
       if (kind == "specialized")
         List(suiteRunner.pathSettings.srcSpecLib.fold(sys.error, identity))
       else Nil
 
-    val classPath: List[Path] = specializedOverride ++ codeLib ++ fileManager.testClassPath ++ List[Path](outDir)
+    val classPath: List[Path] = specializedOverride ++ fileManager.testClassPath ++ List[Path](outDir)
 
     val parseArgErrors = ListBuffer.empty[String]
 

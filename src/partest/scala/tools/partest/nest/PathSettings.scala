@@ -44,5 +44,4 @@ class PathSettings(testSourcePath: String) {
   val srcDir = Directory((testRoot / testSourcePath).toCanonical)
 
   def srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
-  def srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)
 }
