@@ -1,0 +1,15 @@
+i17284.scala:4: warning: Suspicious `synchronized` call involving boxed primitive `Integer`
+  def literal = 451.synchronized {} // error
+                    ^
+i17284.scala:8: warning: Suspicious `synchronized` call involving boxed primitive `Integer`
+    x.synchronized {} // error
+      ^
+i17284.scala:13: warning: Suspicious `synchronized` call involving boxed primitive `Integer`
+    x.synchronized {} // error
+      ^
+i17284.scala:16: warning: Suspicious `synchronized` call involving boxed primitive `Boolean`
+  def bool = true.synchronized {} // error
+                  ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

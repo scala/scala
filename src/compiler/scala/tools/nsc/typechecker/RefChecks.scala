@@ -1719,7 +1719,7 @@ abstract class RefChecks extends Transform {
     }
 
     private def transformSelect(tree: Select): Tree = {
-      val Select(qual, _) = tree
+      val Select(qual, name) = tree
       val sym = tree.symbol
 
       checkUndesiredProperties(sym, tree.pos)
@@ -1727,6 +1727,9 @@ abstract class RefChecks extends Transform {
 
       if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
+
+      if (name == nme.synchronized_ && isBoxedValueClass(qual.tpe.typeSymbol))
+        refchecksWarning(tree.pos, s"Suspicious `synchronized` call involving boxed primitive `${qual.tpe.typeSymbol.name}`", WarningCategory.LintUniversalMethods)
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
