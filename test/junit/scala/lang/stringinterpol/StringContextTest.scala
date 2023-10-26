@@ -364,6 +364,9 @@ class StringContextTest {
       StringContext.glob(Seq("a", "bb", "c"), "abb")       -> None,
       StringContext.glob(Seq("a", "bb", "c"), "bbc")       -> None,
       StringContext.glob(Seq("a", "bb", "c"), "bbaaac")    -> None,
+
+      // Escapes!
+      StringContext.glob(Seq("Hello,\t", ""), "Hello,\tJames") -> Some(Seq("James")),
   
       // Many many ambiguous wildcards
       StringContext.glob(Seq.fill(100)("a"), "a" * 200) -> Some(Seq.fill(98)("") :+ "a" * 100)

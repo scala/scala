@@ -57,7 +57,7 @@ import scala.collection.mutable.ArrayBuilder
  */
 case class StringContext(parts: String*) {
 
-  import StringContext.{checkLengths => scCheckLengths, glob, standardInterpolator => scStandardInterpolator}
+  import StringContext.{checkLengths => scCheckLengths, glob, processEscapes, standardInterpolator => scStandardInterpolator}
 
   @deprecated("use same-named method on StringContext companion object", "2.13.0")
   def checkLengths(args: scala.collection.Seq[Any]): Unit = scCheckLengths(args, parts)
@@ -127,7 +127,7 @@ case class StringContext(parts: String*) {
      *  Here, we use the `TimeSplitter` regex within the `s` matcher, further splitting the
      *  matched string "10.50" into its constituent parts
      */
-    def unapplySeq(s: String): Option[Seq[String]] = glob(parts, s)
+    def unapplySeq(s: String): Option[Seq[String]] = glob(parts.map(processEscapes), s)
   }
   /** The raw string interpolator.
    *
