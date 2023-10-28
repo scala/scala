@@ -14,9 +14,7 @@ object Dingus
 }
 
 val x = (new Dingus).y
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class Dingus
 object Dingus
 val x: Int = 110

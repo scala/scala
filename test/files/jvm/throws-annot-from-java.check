@@ -29,9 +29,7 @@ scala> :paste
   	println(throwsAnn)
   }
 }
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 foo
 atp.typeParams.isEmpty: true
 throws[IllegalStateException](classOf[java.lang.IllegalStateException])

@@ -12,9 +12,7 @@ scala> :paste -java <| EOF
     |    }
     |}
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now compiling with javac.
 
 scala> new p.C
 val res0: p.C = hi, C

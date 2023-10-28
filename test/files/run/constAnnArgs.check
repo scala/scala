@@ -10,9 +10,7 @@ scala> :pa -raw << JUMP!
 
 package scala { class deprecated(message: String = "", since: String = "") extends scala.annotation.ConstantAnnotation }
 JUMP!
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now compiling with scalac.
 
 scala> @deprecated(message = "x", since = "y") def g = 1; g
                                                           ^

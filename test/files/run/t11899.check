@@ -4,9 +4,7 @@ scala> :paste < DONE
 
 type T
 DONE
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 type T
 
 scala> 42

@@ -188,9 +188,7 @@ scala> :paste < EOF
 
 class C { def c = 42 }
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class C
 
 scala> new C().c
@@ -201,9 +199,7 @@ scala> :paste <| EOF
 
 class D { def d = 42 }
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class D
 
 scala> new D().d
@@ -224,9 +220,7 @@ object Dingus
   private val x = 55
 }
 EOF
-
-// Exiting paste mode, now interpreting.
-
+// Exiting paste mode... now interpreting.
 class Dingus
 object Dingus
 
