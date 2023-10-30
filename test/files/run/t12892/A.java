@@ -65,7 +65,7 @@ abstract class Dc extends Aa {
     public abstract boolean equals(Object other);
 }
 
-class Test {
+class JTest {
     Ba t(Ba b) { return b.m(); }
     Ca t(Ca c) { return c.m(); }
     Da t(Da d) { return d.m(); }

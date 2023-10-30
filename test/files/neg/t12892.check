@@ -1,16 +1,26 @@
-Test.scala:4: error: type mismatch;
- found   : A
- required: Ba
-  def t(b: Ba): Ba = b.m
-                       ^
-Test.scala:5: error: type mismatch;
- found   : A
- required: Ca
-  def t(c: Ca): Ca = c.m
-                       ^
-Test.scala:6: error: type mismatch;
+Test.scala:8: error: type mismatch;
  found   : Aa
  required: Da
   def t(d: Da): Da = d.m
                        ^
-3 errors
+Test.scala:12: error: type mismatch;
+ found   : Int => Int
+ required: Ba
+  val ba: Ba = (x: Int) => x + 1
+                        ^
+Test.scala:13: error: type mismatch;
+ found   : Int => Int
+ required: Bb
+  val bb: Bb = (x: Int) => x + 1
+                        ^
+Test.scala:20: error: type mismatch;
+ found   : Int => Int
+ required: Ca
+  val ca: Ca = (x: Int) => x + 1
+                        ^
+Test.scala:21: error: type mismatch;
+ found   : Int => Int
+ required: Cb
+  val cb: Cb = (x: Int) => x + 1
+                        ^
+5 errors

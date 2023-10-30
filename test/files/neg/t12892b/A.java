@@ -64,36 +64,3 @@ abstract class Dc extends Aa {
     @Override
     public abstract boolean equals(Object other);
 }
-
-class Test {
-    Ba t(Ba b) { return b.m(); }
-    Ca t(Ca c) { return c.m(); }
-    Da t(Da d) { return d.m(); }
-
-    A a = x -> x + 1;
-
-    // error: not a SAM, multiple non-overriding abstract methods found
-    // Ba ba = x -> x + 1;
-    // Bb bb = x -> x + 1;
-    Bc bc = x -> x + 1;
-}
-
-// error: does not override abstract method m
-// class Xa implements Ba { public int sam(int x) { return x; } }
-// class Xb implements Bb { public int sam(int x) { return x; } }
-
-class Xc implements Bc { public int sam(int x) { return x; } }
-
-// error: does not override abstract method m
-// class Ya extends Ca { public int sam(int x) { return x; } }
-// class Yb extends Cb { public int sam(int x) { return x; } }
-
-// error: does not override abstract method equals
-// class Yc extends Cc { public int sam(int x) { return x; } }
-
-// error: does not override abstract method m
-// class Za extends Da { public int sam(int x) { return x; } }
-// class Zb extends Db { public int sam(int x) { return x; } }
-
-// error: does not override abstract method equals
-// class Zc extends Dc { public int sam(int x) { return x; } }

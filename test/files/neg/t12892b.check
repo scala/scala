@@ -1,36 +1,36 @@
-Test.scala:9: error: incompatible type in overriding
+Test.scala:4: error: incompatible type in overriding
 def m(): Ba (defined in trait Ba)
   with <defaultmethod> def m(): A (defined in trait A);
   (note that def m(): Ba (defined in trait Ba) is abstract,
   and is therefore overridden by concrete <defaultmethod> def m(): A (defined in trait A))
   class Xa extends Ba { def sam(i: Int) = i }
         ^
-Test.scala:16: error: class Ya needs to be abstract.
+Test.scala:13: error: class Ya needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def m(): Ca (defined in class Ca)
   class Ya extends Ca { def sam(i: Int) = i }
         ^
-Test.scala:19: error: class Yb needs to be abstract.
+Test.scala:16: error: class Yb needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def m(): A (defined in class Cb)
   class Yb extends Cb { def sam(i: Int) = i }
         ^
-Test.scala:22: error: class Yc needs to be abstract.
+Test.scala:19: error: class Yc needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def equals(other: Object): Boolean (defined in class Cc)
   class Yc extends Cc { def sam(i: Int) = i }
         ^
-Test.scala:25: error: class Za needs to be abstract.
+Test.scala:22: error: class Za needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def m(): Da (defined in class Da)
   class Za extends Da { def sam(i: Int) = i }
         ^
-Test.scala:28: error: class Zb needs to be abstract.
+Test.scala:25: error: class Zb needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def m(): Aa (defined in class Db)
   class Zb extends Db { def sam(i: Int) = i }
         ^
-Test.scala:31: error: class Zc needs to be abstract.
+Test.scala:28: error: class Zc needs to be abstract.
 No implementation found in a subclass for deferred declaration
 def equals(other: Object): Boolean (defined in class Dc)
   class Zc extends Dc { def sam(i: Int) = i }

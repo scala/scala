@@ -252,7 +252,7 @@ trait Definitions extends api.StandardDefinitions {
     }
     /** Is this symbol a member of Object or Any? */
     def isUniversalMember(sym: Symbol): Boolean =
-      if (sym.isOverloaded) sym.alternatives.exists(alt => ObjectClass.isSubClass(alt.owner))
+      if (sym.isOverloaded) sym.alternatives.exists(isUniversalMember)
       else ObjectClass.isSubClass(sym.owner)
 
     /** Is this symbol unimportable? Unimportable symbols include:

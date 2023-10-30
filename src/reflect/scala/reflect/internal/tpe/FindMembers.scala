@@ -111,11 +111,17 @@ trait FindMembers {
         var entry = if (findAll) decls.elems else decls.lookupEntry(name)
         while (entry ne null) {
           val sym = entry.sym
-          val flags =
+          val flags0 =
             if (fastFlags)
               sym.rawflags & phaseFlagMask
             else
               sym.flags(phaseFlagMask)
+          // In lookup from a Java class, treat default methods as abstract. jls-8.4.8: concrete methods from the
+          // superclass override methods from superinterfaces (handled by the two invocations of `walkBaseClasses`),
+          // But default methods are handled the same as abstract methods.
+          val flags =
+            if (selectorClass.isJavaDefined && currentBaseClass.isInterface) flags0 | DEFERRED
+            else flags0
           val meetsRequirements = (flags & required) == required
           if (meetsRequirements) {
             val excl: Long = flags & excluded
