@@ -621,16 +621,14 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
 
   /** Here is where we:
-    *
-    *  1) Read some source code, and put it in the "read" object.
-    *  2) Evaluate the read object, and put the result in the "eval" object.
-    *  3) Create a String for human consumption, and put it in the "print" object.
-    *
-    *  Read! Eval! Print! Some of that not yet centralized here.
-    */
-  class ReadEvalPrint(val lineId: Int) {
-    def this() = this(freshLineId())
-
+   *
+   *  1) Read some source code, and put it in the "read" object.
+   *  2) Evaluate the read object, and put the result in the "eval" object.
+   *  3) Create a String for human consumption, and put it in the "print" object.
+   *
+   *  Read! Eval! Print! Some of that not yet centralized here.
+   */
+  class ReadEvalPrint(val lineId: Int = freshLineId()) {
     val packageName = sessionNames.packageName(lineId)
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
@@ -824,7 +822,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
     /** handlers for each tree in this request */
-    val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
+    val handlers: List[MemberHandler] = trees.map(memberHandlers.chooseHandler(_))
     val definesValueClass = handlers.exists(_.definesValueClass)
 
     val isClassBased = IMain.this.isClassBased && !definesValueClass
@@ -968,7 +966,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
 
     /** Compile the object file.  Returns whether the compilation succeeded.
-      *  If all goes well, the "types" map is computed. */
+     *  If all goes well, the "types" map is computed.
+     */
     def compile: Boolean = {
 
       // compile the object containing the user's code
