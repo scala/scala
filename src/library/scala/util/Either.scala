@@ -85,6 +85,14 @@ package util
  *  // Similarly, refutable patterns are not supported:
  *  for (x: Int <- right1) yield x
  *  // error: value withFilter is not a member of Right[Double,Int]
+ *
+ *  // To use a filtered value, convert to an Option first,
+ *  // which drops the Left case, as None contains no value:
+ *  for {
+ *    i <- right1.toOption
+ *    if i > 0
+ *  } yield i
+ *
  *  }}}
  *
  *  Since `for` comprehensions use `map` and `flatMap`, the types
