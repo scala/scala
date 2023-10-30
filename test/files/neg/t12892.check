@@ -1,0 +1,16 @@
+Test.scala:4: error: type mismatch;
+ found   : A
+ required: Ba
+  def t(b: Ba): Ba = b.m
+                       ^
+Test.scala:5: error: type mismatch;
+ found   : A
+ required: Ca
+  def t(c: Ca): Ca = c.m
+                       ^
+Test.scala:6: error: type mismatch;
+ found   : Aa
+ required: Da
+  def t(d: Da): Da = d.m
+                       ^
+3 errors
