@@ -10,6 +10,9 @@ i17266.scala:32: warning: notify not selected from this instance
 i17266.scala:33: warning: notifyAll not selected from this instance
   def `maybe notifyAll`(): Unit = notifyAll()
                                   ^
+i17266.scala:53: warning: Suspicious `synchronized` call involving boxed primitive `Integer`
+    1.synchronized { // warn
+      ^
 error: No warnings can be incurred under -Werror.
-4 warnings
+5 warnings
 1 error

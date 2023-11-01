@@ -50,7 +50,7 @@ class ObjectHolder {
   */
 
   def test4 =
-    1.synchronized { // not an error (should be?)
+    1.synchronized { // warn
       println("hello")
     }
 
