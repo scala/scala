@@ -44,18 +44,51 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * import java.io.{BufferedReader, FileReader}
   * import scala.util.{Try, Using}
   *
+  * val files = List("file1.txt", "file2.txt", "file3.txt", "file4.txt")
   * val lines: Try[Seq[String]] = Using.Manager { use =>
-  *   val r1 = use(new BufferedReader(new FileReader("file1.txt")))
-  *   val r2 = use(new BufferedReader(new FileReader("file2.txt")))
-  *   val r3 = use(new BufferedReader(new FileReader("file3.txt")))
-  *   val r4 = use(new BufferedReader(new FileReader("file4.txt")))
+  *   // acquire resources
+  *   def reader(filename: String) = use(new BufferedReader(new FileReader(filename)))
   *
   *   // use your resources here
   *   def lines(reader: BufferedReader): Iterator[String] =
   *     Iterator.continually(reader.readLine()).takeWhile(_ != null)
   *
-  *   (lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)).toList
+  *   files.map(reader).flatMap(lines)
   * }
+  * }}}
+  *
+  * Composed or "wrapped" resources may be acquired in order of construction,
+  * if "underlying" resources are not closed:
+  * {{{
+  *   def reader(filename: String) = use(new BufferedReader(use(new FileReader(filename))))
+  * }}}
+  *
+  * Custom resources can be registered on construction by requiring an implicit `Manager`.
+  * This ensures they will be released even if composition fails:
+  * {{{
+  * import scala.util.Using
+  *
+  * case class X(x: String)(implicit mgr: Using.Manager) extends AutoCloseable {
+  *   override def close() = println(s"CLOSE $x")
+  *   mgr.acquire(this)
+  * }
+  * case class Y(y: String)(x: String)(implicit mgr: Using.Manager) extends AutoCloseable {
+  *   val xres = X(x)
+  *   override def close() = println(s"CLOSE $y")
+  *   // an error during construction releases previously acquired resources
+  *   assert(y != null, "y is null")
+  *   mgr.acquire(this)
+  * }
+  *
+  * Using.Manager { implicit mgr =>
+  *   val y = Y("Y")("X")
+  *   println(s"USE $y")
+  * }
+  * println {
+  *   Using.Manager { implicit mgr =>
+  *     Y(null)("X")
+  *   }
+  * } // Failure(java.lang.AssertionError: assertion failed: y is null)
   * }}}
   *
   * If you wish to avoid wrapping management and operations in a `Try`, you can use
