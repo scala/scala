@@ -32,8 +32,6 @@ import scala.annotation.tailrec
   *  provides all of the methods a `Map` does, with the difference that all the
   *  changes are atomic. It also describes methods specific to concurrent maps.
   *
-  *  '''Note''': The concurrent maps do not accept `'''null'''` for keys or values.
-  *
   *  @define atomicop
   *  This is an atomic operation.
   */
@@ -92,10 +90,10 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     */
   def replace(k: K, v: V): Option[V]
 
-  override def getOrElseUpdate(key: K, op: => V): V = get(key) match {
+  override def getOrElseUpdate(key: K, @deprecatedName("op", since="2.13.13") defaultValue: => V): V = get(key) match {
     case Some(v) => v
     case None =>
-      val v = op
+      val v = defaultValue
       putIfAbsent(key, v) match {
         case Some(ov) => ov
         case None => v

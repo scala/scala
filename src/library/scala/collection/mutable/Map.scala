@@ -135,15 +135,15 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
    *  multiple times, or may evaluate `op` without inserting the result.
    *
    *  @param  key the key to test
-   *  @param  op  the computation yielding the value to associate with `key`, if
+   *  @param  defaultValue  the computation yielding the value to associate with `key`, if
    *              `key` is previously unbound.
    *  @return     the value associated with key (either previously or as a result
    *              of executing the method).
    */
-  def getOrElseUpdate(key: K, op: => V): V =
+  def getOrElseUpdate(key: K, @deprecatedName("op", since="2.13.13") defaultValue: => V): V =
     get(key) match {
       case Some(v) => v
-      case None => val d = op; this(key) = d; d
+      case None => val d = defaultValue; this(key) = d; d
     }
 
   /** Removes a key from this map, returning the value associated previously
