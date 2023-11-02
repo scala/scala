@@ -49,10 +49,17 @@ An _implicit parameter list_
 implicit. A method or constructor can have only one implicit parameter
 list, and it must be the last parameter list given.
 
-A method with implicit parameters can be applied to arguments just
-like a normal method. In this case the `implicit` label has no
-effect. However, if such a method misses arguments for its implicit
-parameters, such arguments will be automatically provided.
+The `implicit` modifier must be included in the first group of modifiers in the parameter list.
+For class parameters, order of modifiers is not significant; the following definitions are equivalent:
+
+```scala
+class C()(implicit override val i: Int, j: Int) extends T    // preferred style
+class C()(override implicit val i: Int, j: Int) extends T
+```
+
+A method with implicit parameters can be applied to explicit arguments just
+as though the parameters were not declared implicit. In that case, missing parameters
+can be supplied by default arguments.
 
 The actual arguments that are eligible to be passed to an implicit
 parameter of type ´T´ fall into two categories. First, eligible are
