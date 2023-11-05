@@ -1,7 +1,7 @@
 package scala.math
 
 import org.junit.Test
-import org.junit.Assert.{assertFalse, assertTrue}
+import org.junit.Assert.{assertFalse, assertNull, assertTrue}
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class BigIntTest {
@@ -33,4 +33,6 @@ class BigIntTest {
   @Test def `testBit respects BigInteger`: Unit = assertThrows[ArithmeticException](bigint.testBit(-3), _.contains("Negative bit address"))
 
   @Test def `testBit 0`: Unit = assertFalse(bigint.testBit(0))
+
+  @Test def `BitInteger to BitInt respects null`: Unit = assertNull(null.asInstanceOf[java.math.BigInteger]: BigInt)
 }

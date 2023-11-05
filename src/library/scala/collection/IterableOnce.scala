@@ -254,7 +254,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 }
 
 object IterableOnce {
-  @`inline` implicit def iterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A] =
+  @inline implicit def iterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A] =
     new IterableOnceExtensionMethods[A](it)
 
   /** Computes the number of elements to copy to an array from a source IterableOnce
