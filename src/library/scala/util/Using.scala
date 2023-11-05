@@ -182,7 +182,7 @@ object Using {
       * the resource is released when the manager is closed, and then
       * returns the (unmodified) resource.
       */
-    def apply[R: Releasable](resource: R): R = {
+    def apply[R: Releasable](resource: R): resource.type = {
       acquire(resource)
       resource
     }
@@ -421,6 +421,8 @@ object Using {
   }
 
   object Releasable {
+    // prefer explicit types 2.14
+    //implicit val AutoCloseableIsReleasable: Releasable[AutoCloseable] = new Releasable[AutoCloseable] {}
     /** An implicit `Releasable` for [[java.lang.AutoCloseable `AutoCloseable`s]]. */
     implicit object AutoCloseableIsReleasable extends Releasable[AutoCloseable] {
       def release(resource: AutoCloseable): Unit = resource.close()
