@@ -123,7 +123,7 @@ object BigInt {
 
   /** Implicit conversion from `java.math.BigInteger` to `scala.BigInt`.
    */
-  implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
+  implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = if (x eq null) null else apply(x)
 
   // this method is adapted from Google Guava's version at
   //   https://github.com/google/guava/blob/master/guava/src/com/google/common/math/LongMath.java
