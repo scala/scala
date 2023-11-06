@@ -941,25 +941,25 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   // TODO once computeIfAbsent is added to concurrent.Map,
   // move the comment there and tweak the 'at most once' part
   /** If the specified key is not already in the map, computes its value using
-    *  the given thunk `op` and enters it into the map.
-    *
-    *  If the specified mapping function throws an exception,
-    *  that exception is rethrown.
-    *
-    *  Note: This method will invoke op at most once.
-    *  However, `op` may be invoked without the result being added to the map if
-    *  a concurrent process is also trying to add a value corresponding to the
-    *  same key `k`.
-    *
-    *  @param k      the key to modify
-    *  @param op     the expression that computes the value
-    *  @return       the newly added value
-    */
-  override def getOrElseUpdate(k: K, op: => V): V = {
+   *  the given thunk `defaultValue` and enters it into the map.
+   *
+   *  If the specified mapping function throws an exception,
+   *  that exception is rethrown.
+   *
+   *  Note: This method will invoke `defaultValue` at most once.
+   *  However, `defaultValue` may be invoked without the result being added to the map if
+   *  a concurrent process is also trying to add a value corresponding to the
+   *  same key `k`.
+   *
+   *  @param k      the key to modify
+   *  @param defaultValue     the expression that computes the value
+   *  @return       the newly added value
+   */
+  override def getOrElseUpdate(k: K, @deprecatedName("op", since="2.13.13") defaultValue: => V): V = {
     val hc = computeHash(k)
     lookuphc(k, hc) match {
       case INodeBase.NO_SUCH_ELEMENT_SENTINEL =>
-        val v = op
+        val v = defaultValue
         insertifhc(k, hc, v, INode.KEY_ABSENT, fullEquals = false /* unused */) match {
           case Some(oldValue) => oldValue
           case None => v
