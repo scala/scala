@@ -2,6 +2,7 @@ package scala.tools.xsbt
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
+import xsbti.UseScope
 
 class ExtractUsedNamesTest extends BridgeTesting {
 
@@ -251,6 +252,22 @@ class ExtractUsedNamesTest extends BridgeTesting {
     assertEquals(usedNames("TuplerInstances.<refinement>"), expectedNamesForTuplerInstancesRefinement)
   }
 
+  @Test
+  def `zinc/issues/753`(): Unit = {
+    val src =
+      """sealed trait T
+        |class O extends T
+        |object Arr {
+        |  def test(x: T): Int = x match {
+        |    case _: O => 1
+        |  }
+        |}
+        |""".stripMargin
+    withTemporaryDirectory { tmpDir =>
+      val (_, analysisCallback) = compileSrcs(tmpDir, src)
+      assertTrue(analysisCallback.usedNamesAndScopes("Arr").find(_.name == "T").get.scopes.contains(UseScope.PatMatTarget))
+    }
+  }
 
   /**
    * Standard names that appear in every compilation unit that has any class
