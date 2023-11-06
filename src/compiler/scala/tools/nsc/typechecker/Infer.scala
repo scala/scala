@@ -331,7 +331,7 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
-      def isCompatibleSam(tp: Type, pt: Type): Boolean = (definitions.isFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
+      def isCompatibleSam(tp: Type, pt: Type): Boolean = (definitions.isFunctionType(tp) || definitions.isPartialFunctionType(tp) || tp.isInstanceOf[MethodType] || tp.isInstanceOf[PolyType]) &&  {
         val samFun = samToFunctionType(pt)
         (samFun ne NoType) && isCompatible(tp, samFun)
       }
