@@ -265,4 +265,13 @@ class BigDecimalTest {
   def testIsComparable() {
     assert(BigDecimal(0.1).isInstanceOf[java.lang.Comparable[_]])
   }
+
+  @Test
+  def testImplicitBigDecimalConversionJavaToScalaHandlesNull(): Unit = {
+    val bdNull: BigDecimal = (null: java.math.BigDecimal): BigDecimal
+    assert(bdNull == null)
+
+    val bdValue: BigDecimal = (BD.ONE: java.math.BigDecimal): BigDecimal
+    assert(bdValue.bigDecimal == BD.ONE)
+  }
 }
