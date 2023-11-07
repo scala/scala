@@ -104,8 +104,8 @@ object language {
    *  non-implicit parameter. Examples:
    *
    *  {{{
-   *     implicit def intToString(i: Int): String = s"$i"
-   *     implicit val conv: Int => String = i => s"$i"
+   *     implicit def intToString(i: Int): String = s"\$i"
+   *     implicit val conv: Int => String = i => s"\$i"
    *     implicit val numerals: List[String] = List("zero", "one", "two", "three")
    *     implicit val strlen: String => Int = _.length
    *     implicit def listToInt[T](xs: List[T])(implicit f: T => Int): Int = xs.map(f).sum

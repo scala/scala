@@ -357,6 +357,24 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def take(n: Int): C
 
   /** Takes longest prefix of elements that satisfy a predicate.
+   *
+   *  The matching prefix starts with the first element of this $coll,
+   *  and the element following the prefix is the first element that
+   *  does not satisfy the predicate. The matching prefix may empty,
+   *  so that this method returns an empty $coll.
+   *
+   *  Example:
+   *
+   *  {{{
+   *      scala> List(1, 2, 3, 100, 4).takeWhile(n => n < 10)
+   *      val res0: List[Int] = List(1, 2, 3)
+   *
+   *      scala> List(1, 2, 3, 100, 4).takeWhile(n => n == 0)
+   *      val res1: List[Int] = List()
+   *  }}}
+   *
+   *  Use [[span]] to obtain both the prefix and suffix.
+   *  Use [[filter]] to retain only those elements from the entire $coll that satisfy the predicate.
    *  $orderDependent
    *  @param   p  The predicate used to test elements.
    *  @return  the longest prefix of this $coll whose elements all satisfy
@@ -374,6 +392,25 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def drop(n: Int): C
 
   /** Drops longest prefix of elements that satisfy a predicate.
+   *
+   *  The matching prefix starts with the first element of this $coll,
+   *  and the element following the prefix is the first element that
+   *  does not satisfy the predicate. The matching prefix may empty,
+   *  so that this method returns the entire $coll.
+   *
+   *  Example:
+   *
+   *  {{{
+   *      scala> List(1, 2, 3, 100, 4).dropWhile(n => n < 10)
+   *      val res0: List[Int] = List(100, 4)
+   *
+   *      scala> List(1, 2, 3, 100, 4).dropWhile(n => n == 0)
+   *      val res1: List[Int] = List(1, 2, 3, 100, 4)
+   *  }}}
+   *
+   *  Use [[span]] to obtain both the prefix and suffix.
+   *  Use [[filterNot]] to drop all elements that satisfy the predicate.
+   *
    *  $orderDependent
    *  @param   p  The predicate used to test elements.
    *  @return  the longest suffix of this $coll whose first element

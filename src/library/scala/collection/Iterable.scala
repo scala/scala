@@ -420,12 +420,14 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new IterableOps.WithFilter(this, p)
 
   /** A pair of, first, all elements that satisfy predicate `p` and, second,
-    *  all elements that do not. Interesting because it splits a collection in two.
-    *
-    *  The default implementation provided here needs to traverse the collection twice.
-    *  Strict collections have an overridden version of `partition` in `StrictOptimizedIterableOps`,
-    *  which requires only a single traversal.
-    */
+   *  all elements that do not.
+   *
+   *  The two $coll correspond to the result of [[filter]] and [[filterNot]], respectively.
+   *
+   *  The default implementation provided here needs to traverse the collection twice.
+   *  Strict collections have an overridden version of `partition` in `StrictOptimizedIterableOps`,
+   *  which requires only a single traversal.
+   */
   def partition(p: A => Boolean): (C, C) = {
     val first = new View.Filter(this, p, false)
     val second = new View.Filter(this, p, true)
