@@ -37,19 +37,97 @@ String @local                               // Type annotation
 
 ## Predefined Annotations
 
+Predefined annotations are found in the `scala.annotation` package,
+and also in the `scala` package.
+
+### Scala Compiler Annotations
+
+  * `@tailrec` Marks a method which must be transformed by the compiler
+    to eliminate self-recursive invocations in tail position.
+    It is an error if there are no such invocations, or a recursive call
+    not in tail position.
+
+  * `@switch` Marks the expression submitted to a match as "switchable",
+    such that the match can be compiled to an efficient form.
+    The compiler will warn if the type of the expression is not a switchable type.
+    Certain degenerate matches may remain unoptimized without a warning.
+
+  * `@unchecked` When applied to the selector of a `match` expression,
+    this attribute suppresses any warnings about non-exhaustive pattern
+    matches that would otherwise be emitted. For instance, no warnings
+    would be produced for the method definition below, or the similar value definition.
+
+    ```scala
+    def f(x: Option[Int]) = (x: @unchecked) match {
+      case Some(y) => y
+    }
+    val Some(y) = x: @unchecked
+    ```
+
+    Without the `@unchecked` annotation, a Scala compiler could
+    infer that the pattern match is non-exhaustive, and could produce a
+    warning because `Option` is a `sealed` class.
+
+  * `@uncheckedStable` When applied a value declaration or definition, it allows the defined
+    value to appear in a path, even if its type is [volatile](03-types.html#volatile-types).
+    For instance, the following member definitions are legal:
+
+    ```scala
+    type A { type T }
+    type B
+    @uncheckedStable val x: A with B // volatile type
+    val y: x.T                       // OK since `x' is still a path
+    ```
+
+    Without the `@uncheckedStable` annotation, the designator `x`
+    would not be a path since its type `A with B` is volatile. Hence,
+    the reference `x.T` would be malformed.
+
+    When applied to value declarations or definitions that have non-volatile
+    types, the annotation has no effect.
+
+  * `@specialized` When applied to the definition of a type parameter,
+    this annotation causes the compiler to generate specialized definitions for primitive types.
+    An optional list of primitive types may be given, in which case specialization
+    takes into account only those types.
+    For instance, the following code would generate specialized traits for
+    `Unit`, `Int` and `Double`:
+
+    ```scala
+    trait Function0[@specialized(Unit, Int, Double) T] {
+      def apply: T
+    }
+    ```
+
+    Whenever the static type of an expression matches a specialized variant of
+    a definition, the compiler will instead use the specialized version.
+    See the [specialization SID](https://docs.scala-lang.org/sips/scala-specialization.html) for more details of the implementation.
+    
+### Deprecation Annotations
+
+  * `@deprecated(message: <stringlit>, since: <stringlit>)`<br/>
+    Marks a definition as deprecated. Accesses to the
+    defined entity will then cause a deprecated warning mentioning the
+    _message_ `<stringlit>` to be issued from the compiler.
+    The argument _since_ documents since when the definition should be considered deprecated.<br/>
+    Deprecated warnings are suppressed in code that belongs itself to a definition
+    that is labeled deprecated.
+
+  * `@deprecatedName(name: <stringlit>, since: <stringlit>)`<br/>
+    Marks a formal parameter name as deprecated. Invocations of this entity
+    using named parameter syntax referring to the deprecated parameter name cause a deprecation warning.
+
 ### Java Platform Annotations
 
-The meaning of annotation clauses is implementation-dependent. On the
+The meaning of other annotation clauses is implementation-dependent. On the
 Java platform, the following annotations have a standard meaning.
 
   * `@transient` Marks a field to be non-persistent; this is
-    equivalent to the `transient`
-    modifier in Java.
+    equivalent to the `transient` modifier in Java.
 
   * `@volatile` Marks a field which can change its value
     outside the control of the program; this
-    is equivalent to the `volatile`
-    modifier in Java.
+    is equivalent to the `volatile` modifier in Java.
 
   * `@SerialVersionUID(<longlit>)` Attaches a serial version identifier (a
     `long` constant) to a class.
@@ -81,75 +159,6 @@ Java platform, the following annotations have a standard meaning.
 
   * `@scala.beans.BooleanBeanProperty` This annotation is equivalent to `scala.reflect.BeanProperty`, but
     the generated getter method is named `isX` instead of `getX`.
-
-### Deprecation Annotations
-
-  * `@deprecated(message: <stringlit>, since: <stringlit>)`<br/>
-    Marks a definition as deprecated. Accesses to the
-    defined entity will then cause a deprecated warning mentioning the
-    _message_ `<stringlit>` to be issued from the compiler.
-    The argument _since_ documents since when the definition should be considered deprecated.<br/>
-    Deprecated warnings are suppressed in code that belongs itself to a definition
-    that is labeled deprecated.
-
-  * `@deprecatedName(name: <stringlit>, since: <stringlit>)`<br/>
-    Marks a formal parameter name as deprecated. Invocations of this entity
-    using named parameter syntax referring to the deprecated parameter name cause a deprecation warning.
-
-### Scala Compiler Annotations
-
-  * `@unchecked` When applied to the selector of a `match` expression,
-    this attribute suppresses any warnings about non-exhaustive pattern
-    matches that would otherwise be emitted. For instance, no warnings
-    would be produced for the method definition below.
-
-    ```scala
-    def f(x: Option[Int]) = (x: @unchecked) match {
-      case Some(y) => y
-    }
-    ```
-
-    Without the `@unchecked` annotation, a Scala compiler could
-    infer that the pattern match is non-exhaustive, and could produce a
-    warning because `Option` is a `sealed` class.
-
-  * `@uncheckedStable` When applied a value declaration or definition, it allows the defined
-    value to appear in a path, even if its type is [volatile](03-types.html#volatile-types).
-    For instance, the following member definitions are legal:
-
-    ```scala
-    type A { type T }
-    type B
-    @uncheckedStable val x: A with B // volatile type
-    val y: x.T                       // OK since `x' is still a path
-    ```
-
-    Without the `@uncheckedStable` annotation, the designator `x`
-    would not be a path since its type `A with B` is volatile. Hence,
-    the reference `x.T` would be malformed.
-
-    When applied to value declarations or definitions that have non-volatile
-    types, the annotation has no effect.
-
-  * `@specialized` When applied to the definition of a type parameter, this annotation causes
-    the compiler
-    to generate specialized definitions for primitive types. An optional list of
-    primitive
-    types may be given, in which case specialization takes into account only
-    those types.
-    For instance, the following code would generate specialized traits for
-    `Unit`, `Int` and `Double`
-
-    ```scala
-    trait Function0[@specialized(Unit, Int, Double) T] {
-      def apply: T
-    }
-    ```
-
-    Whenever the static type of an expression matches a specialized variant of
-    a definition, the compiler will instead use the specialized version.
-    See the [specialization sid](https://docs.scala-lang.org/sips/scala-specialization.html) for more details of the implementation.
-    
 
 ## User-defined Annotations
 
