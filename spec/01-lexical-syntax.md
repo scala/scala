@@ -70,6 +70,14 @@ big_bob++=`def`
 decomposes into the three identifiers `big_bob`, `++=`, and
 `def`.
 
+Although `/` is an `opchar`, the sequence of characters `//` or `/*`,
+which open a comment, must be enclosed in backquotes when used in an identifier.
+
+```scala
+def `://`(s: String): URI
+def `*/*`(d: Double): Double
+```
+
 The rules for pattern matching further distinguish between
 _variable identifiers_, which start with a lower case letter
 or `_`, and _constant identifiers_, which do not.
