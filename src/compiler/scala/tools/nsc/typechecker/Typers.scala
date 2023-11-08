@@ -19,7 +19,7 @@ import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
-import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
+import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}, WarningCategory.Scala3Migration
 import scala.util.chaining._
 import symtab.Flags._
 import Mode._
@@ -3417,9 +3417,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           for (sym <- scope)  context.unit.synthetics.get(sym) match {
             // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
             case Some(tree) if shouldAdd(sym) =>
+              def isSyntheticCaseApplyTweaked = tree match {
+                case DefDef(mods, nme.apply, _, _, _, _) =>
+                  sym.owner.sourceModule.companionSymbol.isCaseClass && {
+                    mods.hasFlag(PRIVATE) || mods.privateWithin != tpnme.EMPTY
+                  }
+                case _ => false
+              }
               // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
-              if (!sym.initialize.hasFlag(IS_ERROR))
+              if (!sym.initialize.hasFlag(IS_ERROR)) {
                 newStats += typedStat(tree) // might add even more synthetics to the scope
+                if (currentRun.isScala3 && !sym.owner.isCaseClass && isSyntheticCaseApplyTweaked)
+                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", Scala3Migration, sym)
+              }
               context.unit.synthetics -= sym
             case _ => ()
           }
@@ -4016,7 +4026,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         return finish(ErroneousAnnotation)
       }
       if (currentRun.isScala3 && (/*annTypeSym.eq(SpecializedClass) ||*/ annTypeSym.eq(ElidableMethodClass)))
-        context.warning(ann.pos, s"@${annTypeSym.fullNameString} is ignored in Scala 3", WarningCategory.Scala3Migration)
+        context.warning(ann.pos, s"@${annTypeSym.fullNameString} is ignored in Scala 3", Scala3Migration)
 
       /* Calling constfold right here is necessary because some trees (negated
        * floats and literals in particular) are not yet folded.
@@ -4983,7 +4993,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
 
           if (currentRun.isScala3)
-            context.warning(pos, msg, WarningCategory.Scala3Migration, action)
+            context.warning(pos, msg, Scala3Migration, action)
           else
             context.deprecationWarning(pos, NoSymbol, msg, "2.13.2", action)
 
@@ -5583,7 +5593,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           case LookupSucceeded(qual, sym)   =>
             sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w => {
-              val cat = if (currentRun.isScala3) WarningCategory.Scala3Migration else WarningCategory.Other
+              val cat = if (currentRun.isScala3) Scala3Migration else WarningCategory.Other
               val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
