@@ -1,4 +1,4 @@
-// scalac: -opt:l:default
+//> using options -opt:default
 import scala.sys.error
 
 class Foo_1 {

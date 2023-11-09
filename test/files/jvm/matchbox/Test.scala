@@ -1,4 +1,4 @@
-// scalac: -opt:l:method -Xlint
+//> using options -opt:local -Xlint
 import scala.jdk.CollectionConverters._
 import scala.reflect.{classTag, ClassTag}
 import scala.tools.asm, asm.ClassReader, asm.tree

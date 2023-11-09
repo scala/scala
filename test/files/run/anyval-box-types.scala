@@ -1,4 +1,4 @@
-// scalac: -Xmaxwarns 0 -opt:l:method
+//> using options -Xmaxwarns 0 -opt:local
 //
 object Test extends App {
 
