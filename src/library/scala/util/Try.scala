@@ -17,13 +17,15 @@ import scala.runtime.Statics
 import scala.util.control.NonFatal
 
 /**
- * The `Try` type represents a computation that may either result in an exception, or return a
- * successfully computed value. It's similar to, but semantically different from the [[scala.util.Either]] type.
+ * The `Try` type represents a computation that may fail during evaluation by raising an exception.
+ * It holds either a successfully computed value or the exception that was thrown.
+ * This is similar to the [[scala.util.Either]] type, but with different semantics.
  *
- * Instances of `Try[T]`, are either an instance of [[scala.util.Success]][T] or [[scala.util.Failure]][T].
+ * Instances of `Try[T]` are an instance of either [[scala.util.Success]][T] or [[scala.util.Failure]][T].
  *
- * For example, `Try` can be used to perform division on a user-defined input, without the need to do explicit
- * exception-handling in all of the places that an exception might occur.
+ * For example, consider a computation that performs division on user-defined input.
+ * `Try` can reduce or eliminate the need for explicit exception handling in all of the places
+ * where an exception might be thrown.
  *
  * Example:
  * {{{
@@ -58,8 +60,6 @@ import scala.util.control.NonFatal
  * Serious system errors, on the other hand, will be thrown.
  *
  * ''Note:'': all Try combinators will catch exceptions and return failure unless otherwise specified in the documentation.
- *
- * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  */
 sealed abstract class Try[+T] extends Product with Serializable {
 
@@ -202,13 +202,22 @@ sealed abstract class Try[+T] extends Product with Serializable {
 }
 
 object Try {
-  /** Constructs a `Try` using the by-name parameter.  This
-   * method will ensure any non-fatal exception is caught and a
-   * `Failure` object is returned.
+  /** Constructs a `Try` using the by-name parameter as a result value.
+   *
+   *  The evaluation of `r` is attempted once.
+   *
+   *  Any non-fatal exception is caught and results in a `Failure`
+   *  that holds the exception.
+   *
+   *  @param r the result value to compute
+   *  @return the result of evaluating the value, as a `Success` or `Failure`
    */
   def apply[T](r: => T): Try[T] =
-    try Success(r) catch {
-      case NonFatal(e) => Failure(e)
+    try {
+      val r1 = r
+      Success(r1)
+    } catch {
+      case NonFatal(e) => return Failure(e)
     }
 }
 
@@ -246,7 +255,6 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
   override def toEither: Either[Throwable, T] = Left(exception)
   override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
 }
-
 
 final case class Success[+T](value: T) extends Try[T] {
   override def isFailure: Boolean = false
