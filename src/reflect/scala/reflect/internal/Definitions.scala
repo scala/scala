@@ -711,7 +711,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SuccessClass = requiredClass[scala.util.Success[_]]
     lazy val FutureClass = requiredClass[scala.concurrent.Future[_]]
     lazy val PromiseClass = requiredClass[scala.concurrent.Promise[_]]
-    lazy val NonFatalClass = requiredClass[scala.util.control.NonFatal.type]
+    lazy val NonFatalModule = requiredModule[scala.util.control.NonFatal.type]
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
