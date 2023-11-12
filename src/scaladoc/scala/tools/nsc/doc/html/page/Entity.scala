@@ -103,7 +103,7 @@ trait EntityPage extends HtmlPage {
                             case _                       => Span(`class`= "separator")
                           }) :: Txt(" ") ::
                           A(`class`= mbr.kind, href=relativeLinkTo(mbr), title=memberToShortCommentTitleTag(mbr)) ::
-                          A(href=relativeLinkTo(mbr), title=memberToShortCommentTitleTag(mbr), elems= Txt(mbr.name)) :: NoElems
+                          A(href=relativeLinkTo(mbr), title=memberToShortCommentTitleTag(mbr), elems=Txt(mbr.name)) :: NoElems
                         )
 
                     // Get path from root
@@ -384,7 +384,7 @@ trait EntityPage extends HtmlPage {
       )
   }
 
-  def memberToCommentHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean): Elems = {
+  def memberToCommentHtml(mbr: MemberEntity, inTpl: DocTemplateEntity, isSelf: Boolean): Elems =
     mbr match {
       // comment of class itself
       case dte: DocTemplateEntity if isSelf =>
@@ -392,8 +392,11 @@ trait EntityPage extends HtmlPage {
       case _ =>
         // comment of non-class member or non-documented inner class
         val commentBody = memberToCommentBodyHtml(mbr, inTpl, isSelf = false)
-        if (commentBody.isEmpty)
+        if (commentBody.isEmpty) {
+          if (universe.settings.docRequired.value && mbr.visibility.isPublic && inTpl.visibility.isPublic && mbr.toString.startsWith("scala.collection") && mbr.isInstanceOf[Def])
+            docletReporter.error(scala.reflect.internal.util.NoPosition, s"Member $mbr is public but has no documentation")
           NoElems
+        }
         else {
           val shortComment = memberToShortCommentHtml(mbr, isSelf)
           val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, inTpl, isSelf)
@@ -405,7 +408,6 @@ trait EntityPage extends HtmlPage {
           shortComment ++ includedLongComment
         }
     }
-  }
 
   def memberToUseCaseCommentHtml(mbr: MemberEntity, isSelf: Boolean): Elems = {
     mbr match {

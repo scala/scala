@@ -106,12 +106,12 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   def popWhile(f: A => Boolean): scala.collection.Seq[A] = removeHeadWhile(f)
 
   /** Returns the top element of the stack. This method will not remove
-    *  the element from the stack. An error is signaled if there is no
-    *  element on the stack.
-    *
-    *  @throws NoSuchElementException
-    *  @return the top element
-    */
+   *  the element from the stack. An error is signaled if there is no
+   *  element on the stack.
+   *
+   *  @throws NoSuchElementException if the stack is empty
+   *  @return the top element
+   */
   @`inline` final def top: A = head
 
   override protected def klone(): Stack[A] = {

@@ -401,7 +401,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  The matching prefix starts with the first element of this $coll,
    *  and the element following the prefix is the first element that
-   *  does not satisfy the predicate. The matching prefix may empty,
+   *  does not satisfy the predicate. The matching prefix may be empty,
    *  so that this method returns the entire $coll.
    *
    *  Example:
@@ -1188,7 +1188,20 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     None
   }
 
-  @deprecated("`aggregate` is not relevant for sequential collections. Use `foldLeft(z)(seqop)` instead.", "2.13.0")
+  /** Aggregates the results of applying an operator to subsequent elements.
+   *
+   *  Since this method degenerates to `foldLeft` for sequential (non-parallel) collections,
+   *  where the combining operation is ignored, it is advisable to prefer `foldLeft` for that case.
+   *
+   *  For [[https://github.com/scala/scala-parallel-collections parallel collections]],
+   *  use the `aggregate` method specified by `scala.collection.parallel.ParIterableLike`.
+   *
+   *  @param   z      the start value, a neutral element for `seqop`.
+   *  @param   seqop  the binary operator used to accumulate the result.
+   *  @param   combop an associative operator for combining sequential results, unused for sequential collections.
+   *  @tparam  B      the result type, produced by `seqop`, `combop`, and by this function as a final result.
+   */
+  @deprecated("For sequential collections, prefer `foldLeft(z)(seqop)`. For parallel collections, use `ParIterableLike#aggregate`.", "2.13.0")
   def aggregate[B](z: => B)(seqop: (B, A) => B, combop: (B, B) => B): B = foldLeft(z)(seqop)
 
   /** Tests whether every element of this collection's iterator relates to the

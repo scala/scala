@@ -164,6 +164,11 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     if (idx >= 0 && idx < sz) headptr(idx) = newelem
     else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
+  /** Replace the contents of this $coll with the mapped result.
+   *
+   *  @param f the mapping function
+   *  @return this $coll
+   */
   def mapInPlace(f: T => T): this.type = {
     headptr.mapInPlace(f)
     this

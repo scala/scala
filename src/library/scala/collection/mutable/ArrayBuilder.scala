@@ -27,8 +27,10 @@ sealed abstract class ArrayBuilder[T]
   protected[this] def elems: Array[T]
   protected var size: Int = 0
 
+  /** Current number of elements. */
   def length: Int = size
 
+  /** Current number of elements. */
   override def knownSize: Int = size
 
   protected[this] final def ensureSize(size: Int): Unit = {

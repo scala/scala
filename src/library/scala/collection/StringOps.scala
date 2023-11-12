@@ -973,36 +973,38 @@ final class StringOps(private val s: String) extends AnyVal {
   }
 
   /** Uses the underlying string as a pattern (in a fashion similar to
-    *  printf in C), and uses the supplied arguments to fill in the
-    *  holes.
-    *
-    *    The interpretation of the formatting patterns is described in
-    *    [[java.util.Formatter]], with the addition that
-    *    classes deriving from `ScalaNumber` (such as [[scala.BigInt]] and
-    *    [[scala.BigDecimal]]) are unwrapped to pass a type which `Formatter`
-    *    understands.
-    *
-    *  @param args the arguments used to instantiating the pattern.
-    *  @throws java.lang.IllegalArgumentException
-    */
-  def format(args : Any*): String =
-    java.lang.String.format(s, args map unwrapArg: _*)
+   *  printf in C), and uses the supplied arguments to fill in the
+   *  holes.
+   *
+   *  The interpretation of the formatting patterns is described in
+   *  [[java.util.Formatter]], with the addition that
+   *  classes deriving from `ScalaNumber` (such as [[scala.BigInt]] and
+   *  [[scala.BigDecimal]]) are unwrapped to pass a type which `Formatter` understands.
+   *
+   *  See [[scala.StringContext#f]] for a formatting interpolator that
+   *  checks the format string at compilation.
+   *
+   *  @param args the arguments used to instantiating the pattern.
+   *  @throws java.util.IllegalFormatException if the format contains syntax or conversion errors
+   */
+  def format(args: Any*): String =
+    java.lang.String.format(s, args.map(unwrapArg): _*)
 
   /** Like `format(args*)` but takes an initial `Locale` parameter
-    *  which influences formatting as in `java.lang.String`'s format.
-    *
-    *    The interpretation of the formatting patterns is described in
-    *    [[java.util.Formatter]], with the addition that
-    *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
-    *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
-    *    understands.
-    *
-    *  @param l    an instance of `java.util.Locale`
-    *  @param args the arguments used to instantiating the pattern.
-    *  @throws java.lang.IllegalArgumentException
-    */
+   *  which influences formatting as in `java.lang.String`'s format.
+   *
+   *    The interpretation of the formatting patterns is described in
+   *    [[java.util.Formatter]], with the addition that
+   *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
+   *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
+   *    understands.
+   *
+   *  @param l    an instance of `java.util.Locale`
+   *  @param args the arguments used to instantiating the pattern.
+   *  @throws java.util.IllegalFormatException if the format contains syntax or conversion errors
+   */
   def formatLocal(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, s, args map unwrapArg: _*)
+    java.lang.String.format(l, s, args.map(unwrapArg): _*)
 
   def compare(that: String): Int = s.compareTo(that)
 

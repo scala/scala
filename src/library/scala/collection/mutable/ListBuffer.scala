@@ -296,6 +296,11 @@ class ListBuffer[A]
     len -= n
   }
 
+  /** Replace the contents of this $coll with the mapped result.
+   *
+   *  @param f the mapping function
+   *  @return this $coll
+   */
   def mapInPlace(f: A => A): this.type = {
     mutationCount += 1
     val buf = new ListBuffer[A]
@@ -306,6 +311,11 @@ class ListBuffer[A]
     this
   }
 
+  /** Replace the contents of this $coll with the flatmapped result.
+   *
+   *  @param f the mapping function
+   *  @return this $coll
+   */
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     mutationCount += 1
     var src = first
@@ -327,6 +337,11 @@ class ListBuffer[A]
     this
   }
 
+  /** Replace the contents of this $coll with the filtered result.
+   *
+   *  @param p the filtering predicate
+   *  @return this $coll
+   */
   def filterInPlace(p: A => Boolean): this.type = {
     ensureUnaliased()
     var prev: Predecessor[A] = null
