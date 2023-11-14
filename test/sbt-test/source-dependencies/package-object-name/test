@@ -1,0 +1,6 @@
+> setup; reload
+
+> compile
+$ copy-file changes/A1.scala A.scala
+> compile
+> checkIterations 2

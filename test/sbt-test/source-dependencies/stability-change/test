@@ -1,0 +1,8 @@
+> setup; reload
+
+> compile
+
+# replace val x with var x, invalidating the import in B
+$ copy-file changes/A.scala A.scala
+
+-> compile

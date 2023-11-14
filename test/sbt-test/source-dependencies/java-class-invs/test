@@ -1,0 +1,7 @@
+> setup; reload
+
+> app/compile
+
+$ copy-file changes/Std.scala std/Std.scala
+
+> app/compile

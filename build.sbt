@@ -943,6 +943,49 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
 
+// Running scripted tests locally
+//  - `set ThisBuild / Compile / packageDoc / publishArtifact := false` for faster turn around time
+//  - `sbtTest/scripted source-dependencies/scalac-options` to run a single test
+//  - `set sbtTest/scriptedBufferLog := false` to see sbt log of test
+//  - add `> set logLevel := Level.Debug` to individual `test` script for debug output
+lazy val sbtTest = project.in(file("test") / "sbt-test")
+  .enablePlugins(ScriptedPlugin)
+  .settings(disableDocs)
+  .settings(
+    scalaVersion := appConfiguration.value.provider.scalaProvider.version,
+    publish / skip := true,
+    bspEnabled := false,
+    target := (ThisBuild / target).value / thisProject.value.id,
+
+    sbtTestDirectory := baseDirectory.value,
+
+    scriptedBatchExecution := true, // set to `false` to execute each test in a separate sbt instance
+    scriptedParallelInstances := 2, // default is 1
+
+    // hide sbt output of scripted tests
+    scriptedBufferLog := true,
+
+    scriptedLaunchOpts ++= Seq(
+      "-Dplugin.scalaVersion=" + version.value,
+      "-Dsbt.boot.directory=" + (target.value / ".sbt-scripted").getAbsolutePath, // Workaround sbt/sbt#3469
+      "-Dscripted.common=" + (baseDirectory.value / "common.sbt.template").getAbsolutePath,
+    ),
+
+    // Pass along ivy home and repositories settings to sbt instances run from the tests
+    scriptedLaunchOpts ++= {
+      val repositoryPath = (io.Path.userHome / ".sbt" / "repositories").absolutePath
+      s"-Dsbt.repository.config=$repositoryPath" ::
+        ivyPaths.value.ivyHome.map("-Dsbt.ivy.home=" + _.getAbsolutePath).toList
+    },
+
+    scripted := scripted.dependsOn(
+      library / publishLocal,
+      reflect / publishLocal,
+      compiler / publishLocal,
+      sbtBridge / publishLocal,
+    ).evaluated
+  )
+
 lazy val partestJavaAgent = configureAsSubproject(project, srcdir = Some("partest-javaagent"))
   .settings(fatalWarningsSettings)
   .settings(disableDocs)
@@ -1157,6 +1200,7 @@ lazy val partests = List(
 lazy val remainingTests = List(
   (osgiTestFelix   / Test / Keys.test).result.map(_ -> "osgiTestFelix/test"),
   (osgiTestEclipse / Test / Keys.test).result.map(_ -> "osgiTestEclipse/test"),
+  (sbtTest / scripted         ).toTask("").result.map(_ -> "sbtTest/scripted"),
   (library / mimaReportBinaryIssues      ).result.map(_ -> "library/mimaReportBinaryIssues"), // doesn't aggregate..
   (reflect / mimaReportBinaryIssues      ).result.map(_ -> "reflect/mimaReportBinaryIssues"), // ..so specify both
   (testJDeps                             ).result.map(_ -> "testJDeps"),

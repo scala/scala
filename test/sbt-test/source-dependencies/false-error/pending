@@ -1,0 +1,7 @@
+> setup; reload
+
+> compile
+
+$ copy-file changes/A.scala A.scala
+
+> compile

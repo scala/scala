@@ -1,0 +1,8 @@
+> setup; reload
+
+> checkNoClassFiles
+> compile
+-> checkNoClassFiles
+$ delete src/main/scala/For.scala src/main/scala/Nested.scala
+> compile
+> checkNoClassFiles

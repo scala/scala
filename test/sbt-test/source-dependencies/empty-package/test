@@ -1,0 +1,17 @@
+> setup; reload
+
+$ copy-file changes/Define1.scala Define.scala
+$ copy-file changes/Use.scala Use.scala
+> compile
+
+$ copy-file changes/Define2.scala Define.scala
+> compile
+
+$ delete Define.scala
+
+# https://github.com/sbt/zinc/issues/1268
+# This compilation should fail, but it doesn't. The `Test` classfiles are deleted, but Use.scala is not re-compiled.
+> compile
+
+$ copy-file changes/Define1.scala Define.scala
+> compile

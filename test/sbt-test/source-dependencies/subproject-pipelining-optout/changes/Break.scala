@@ -1,0 +1,3 @@
+package example
+
+object Break

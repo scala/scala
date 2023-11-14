@@ -1,0 +1,9 @@
+> setup; reload
+
+> compile
+
+$ copy-file changes/1.scala src/main/scala/1.scala
+-> compile
+
+$ delete src/main/scala/1.scala
+> compile

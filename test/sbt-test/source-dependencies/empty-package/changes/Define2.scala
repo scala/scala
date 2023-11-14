@@ -1,0 +1,3 @@
+package pkgName
+
+object Test

@@ -1,0 +1,12 @@
+> setup; reload
+
+> set incOptions := incOptions.value.withIgnoredScalacOptions(Array("-Werror"))
+> set scalacOptions ++= Seq("-Werror", "-deprecation")
+
+> compile
+
+$ copy-file changes/A.scala A.scala
+> set scalacOptions -= "-Werror"
+
+> compile
+> checkRecompilations 1 A

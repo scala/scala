@@ -1,0 +1,4 @@
+> setup; reload
+
+> compile
+> checkClasses A.scala: A

@@ -1,0 +1,3 @@
+package object foo {
+	implicit val Foo = 123
+}

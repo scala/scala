@@ -1,0 +1,7 @@
+> setup; reload
+
+> compile
+$ copy-file changed/FactoryProvider.scala src/main/scala/foo/FactoryProvider.scala
+-> compile
+> clean
+-> compile

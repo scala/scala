@@ -1,0 +1,3 @@
+package clear
+
+object B
