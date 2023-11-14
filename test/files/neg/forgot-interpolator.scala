@@ -1,5 +1,5 @@
-// scalac: -Xlint:missing-interpolator -Xfatal-warnings
-//
+//> using options -Werror -Xlint:missing-interpolator
+
 class A {
   val bippy = 123
 
@@ -111,3 +111,18 @@ package companions {
   }
 }
 package object companions
+
+object `t10125 avoid forcing owners` {
+  implicit class HasIr(s: String) {
+    def ir: Int = 1234
+  }
+
+  val bar = "$bar".ir   // nowarn owner
+
+  val x = "$x" // nowarn owner
+}
+
+object t10456 {
+  @deprecated("${myProperty}")
+  var myProperty: String = _
+}

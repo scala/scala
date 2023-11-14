@@ -5961,8 +5961,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _                       => true                    // catches all others including NullaryMethodType
             }
             def isNullaryTerm: Boolean = {
-              val maybe = context.lookupSymbol(TermName(id), _ => true).symbol
-              maybe != NoSymbol && !maybe.hasPackageFlag && !maybe.isModule && maybe.alternatives.exists(x => requiresNoArgs(x.info))
+              val idName = TermName(id)
+              val maybe = context.lookupSymbol(idName, _ => true).symbol
+              maybe != NoSymbol && !maybe.hasPackageFlag && !maybe.isModule &&
+              !context.owner.ownersIterator.exists(_.name.dropLocal == idName) && // avoid forcing an owner
+              maybe.alternatives.exists(x => requiresNoArgs(x.info))
             }
             id == "this" || isNullaryTerm
           }

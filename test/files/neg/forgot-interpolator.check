@@ -22,6 +22,9 @@ forgot-interpolator.scala:91: warning: possible missing interpolator: detected i
 forgot-interpolator.scala:92: warning: possible missing interpolator: detected interpolated identifier `$calico`
     def f4 = "I also salute $calico" // warn 9
              ^
+forgot-interpolator.scala:126: warning: possible missing interpolator: detected an interpolated expression
+  @deprecated("${myProperty}")
+              ^
 error: No warnings can be incurred under -Werror.
-8 warnings
+9 warnings
 1 error
