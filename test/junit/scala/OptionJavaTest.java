@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import scala.jdk.javaapi.CollectionConverters;
+import scala.jdk.javaapi.OptionConverters;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -168,21 +169,26 @@ public class OptionJavaTest {
         assertNull(noneStringOpt.getOrElse(() -> null));
     }
 
-    /* Compiler error: method orNull in class scala.Option[A] cannot
+    /* Option#orNull is difficult to use directly from Java.
+     * https://github.com/scala/bug/issues/11625
+     * Compiler error: method orNull in class scala.Option[A] cannot
      * be applied to given types;
      *   found: no arguments
      *   required: scala.<:<[scala.runtime.Null,A1]
      *   reason: cannot infer type-variable(s) A1
-     * see bug#11625
      */
-    // @Test
-    // public void testOrNull() {
-    //     assertEquals(1, someIntegerOpt.orNull().intValue());
-    //     assertNull(noneIntegerOpt.orNull());
-    //
-    //     assertEquals("hi", someStringOpt.orNull());
-    //     assertNull(noneStringOpt.orNull());
-    // }
+    @Test
+    public void testOrNull() {
+        //var magic = scala.Predef.$conforms();
+        //scala.$less$colon$less<scala.runtime.Null$,Object> magic =
+        //    scala.$less$colon$less$.MODULE$.<Object>refl();
+        //assertNull(noneStringOpt.orNull(magic));
+
+        assertEquals(42, OptionConverters.toJavaOptionalInt(Option.apply(42)).orElse(27));
+        assertNull(OptionConverters.toJava(noneIntegerOpt).orElse(null));
+        assertEquals("hi", OptionConverters.toJava(Option.apply("hi")).orElse(null));
+        assertNull(OptionConverters.toJava(noneStringOpt).orElse(null));
+    }
 
     @Test
     public void testToList() {
