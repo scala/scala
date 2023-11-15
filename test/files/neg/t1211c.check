@@ -1,0 +1,11 @@
+test.scala:5: error: value E is not a member of J
+did you mean I.E? Static Java members belong to companion objects in Scala;
+they are not inherited, even by subclasses defined in Java.
+    j.f(j.E.E1)
+          ^
+test.scala:6: error: value E is not a member of object J
+did you mean I.E? Static Java members belong to companion objects in Scala;
+they are not inherited, even by subclasses defined in Java.
+    j.f(J.E.E1)
+          ^
+2 errors
