@@ -130,7 +130,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
    * @param allClassSymbols The class symbols found in all the compilation units.
    */
   def registerGeneratedClasses(classSymbols: Iterator[Symbol]): Unit = {
-    classSymbols.foreach { symbol =>
+    // Guard against a local class in case it surreptitiously leaks here
+    classSymbols.filter(!_.isLocalClass).foreach { symbol =>
       val sourceFile = symbol.sourceFile
       val sourceVF0 =
         if (sourceFile == null) symbol.enclosingTopLevelClass.sourceFile
@@ -142,29 +143,26 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       }
 
       def registerProductNames(names: FlattenedNames): Unit = {
-        // Guard against a local class in case it surreptitiously leaks here
-        if (!symbol.isLocalClass) {
-          val pathToClassFile = s"${names.binaryName}.class"
-          val classFile = {
-            JarUtils.outputJar match {
-              case Some(outputJar) =>
-                new java.io.File(JarUtils.classNameInJar(outputJar, pathToClassFile))
-              case None =>
-                val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
-                new java.io.File(outputDir, pathToClassFile)
-            }
+        val pathToClassFile = s"${names.binaryName}.class"
+        val classFile = {
+          JarUtils.outputJar match {
+            case Some(outputJar) =>
+              new java.io.File(JarUtils.classNameInJar(outputJar, pathToClassFile))
+            case None =>
+              val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
+              new java.io.File(outputDir, pathToClassFile)
           }
-          val zincClassName = names.className
-          val srcClassName = classNameAsString(symbol)
-          sourceVF foreach { source =>
-            callback.generatedNonLocalClass(
-              source,
-              classFile.toPath,
-              zincClassName,
-              srcClassName
-            )
-          }
-        } else ()
+        }
+        val zincClassName = names.className
+        val srcClassName = classNameAsString(symbol)
+        sourceVF foreach { source =>
+          callback.generatedNonLocalClass(
+            source,
+            classFile.toPath,
+            zincClassName,
+            srcClassName
+          )
+        }
       }
 
       val names = FlattenedNames(
