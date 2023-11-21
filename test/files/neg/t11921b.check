@@ -1,12 +1,6 @@
 t11921b.scala:135: error: could not find implicit value for parameter i: Int
     def u = t // doesn't compile in Scala 2 (maybe there's a ticket for that)
             ^
-t11921b.scala:151: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-drop the `extends` clause or use a regular object instead
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
-package object pt12850 extends t12850 {
-                       ^
 t11921b.scala:11: error: reference to x is ambiguous;
 it is both defined in the enclosing object Test and inherited in the enclosing class D as value x (defined in class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
@@ -79,4 +73,4 @@ Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test10.C.v
     def v = t(lo) // error
               ^
-10 errors
+9 errors

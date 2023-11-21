@@ -6,10 +6,6 @@ To express the assignment expression, wrap it in brackets, e.g., `{ z = ... }`.
 t12798-migration.scala:25: warning: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_- = -42` [quickfixable]
   def unary_-() = -42
       ^
-t12798-migration.scala:28: warning: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-drop the `extends` clause or use a regular object instead
-package object tester extends Runnable {
-                      ^
 t12798-migration.scala:33: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition [quickfixable]
   def this(s: String) { this() }
                      ^
@@ -50,5 +46,5 @@ case class `case mods propagate` private (s: String)
 t12798-migration.scala:52: warning: access modifiers for `apply` method are copied from the case class constructor
 case class `copyless case mods propagate` private (s: String) {
            ^
-15 warnings
+14 warnings
 1 error
