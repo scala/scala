@@ -38,7 +38,11 @@ class ScalaVersionTest {
 
     // oh really
     assertEquals(NoScalaVersion, ScalaVersion("none"))
+    assertSame(NoScalaVersion, ScalaVersion("none"))
+    assertEquals(FutureScalaVersion, ScalaVersion("future"))
+    assertSame(FutureScalaVersion, ScalaVersion("future"))
     assertEquals(AnyScalaVersion, ScalaVersion("any"))
+    assertSame(AnyScalaVersion, ScalaVersion("any"))
 
     assertThrows[NumberFormatException] { ScalaVersion("2.11.7.2") }
     assertThrows[NumberFormatException] { ScalaVersion("2.11.7.beta") }

@@ -24,14 +24,25 @@ sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
   def versionString: String = unparse
 }
 
-/**
- * A scala version that sorts higher than all actual versions
- */
-case object NoScalaVersion extends ScalaVersion {
+/** A scala version that sorts higher than all actual versions. */
+sealed abstract class MaximalScalaVersion extends ScalaVersion
+
+/** If "no version" is specified, assume a maximal version, "the latest". */
+case object NoScalaVersion extends MaximalScalaVersion {
   def unparse = "none"
 
   def compare(that: ScalaVersion): Int = that match {
-    case NoScalaVersion => 0
+    case _: MaximalScalaVersion => 0
+    case _ => 1
+  }
+}
+
+/** Specify a maximal version, "the latest". */
+case object FutureScalaVersion extends MaximalScalaVersion {
+  def unparse = "future"
+
+  def compare(that: ScalaVersion): Int = that match {
+    case _: MaximalScalaVersion => 0
     case _ => 1
   }
 }
@@ -58,7 +69,7 @@ case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBu
       else if (rev > thatRev) 1
       else build compare thatBuild
     case AnyScalaVersion => 1
-    case NoScalaVersion => -1
+    case _: MaximalScalaVersion => -1
   }
 }
 
@@ -103,12 +114,12 @@ object ScalaVersion {
     }
 
     versionString match {
-      case "none" => NoScalaVersion
-      case ""     => NoScalaVersion
-      case "any"  => AnyScalaVersion
+      case "none" | "" => NoScalaVersion
+      case "future"    => FutureScalaVersion
+      case "any"       => AnyScalaVersion
       case vpat(majorS, minorS, revS, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
-      case _      => error() ; AnyScalaVersion
+      case _           => error(); AnyScalaVersion
     }
   }
 
