@@ -1509,7 +1509,7 @@ abstract class RefChecks extends Transform {
 
       // assumes non-empty `anns`
       def groupRepeatableAnnotations(sym: Symbol, anns: List[AnnotationInfo]): List[AnnotationInfo] =
-        if (!(sym isSubClass ClassfileAnnotationClass)) anns else anns match {
+        if (!(sym.isJavaDefined && sym.isSubClass(ClassfileAnnotationClass))) anns else anns match {
           case single :: Nil => anns
           case multiple      =>
             sym.getAnnotation(AnnotationRepeatableAttr) match {
