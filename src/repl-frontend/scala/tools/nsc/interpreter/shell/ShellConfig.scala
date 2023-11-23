@@ -21,9 +21,9 @@ import scala.sys.Prop._
 import scala.tools.nsc.{Properties, GenericRunnerSettings, Settings}
 import scala.tools.nsc.Properties._
 
+import dev.dirs.ProjectDirectories
 
 object ShellConfig {
-  import scala.tools.nsc.Properties
 
   val EDITOR = Properties.envOrNone("EDITOR")
   val InterruptedString = Properties.shellInterruptedString
@@ -65,7 +65,14 @@ trait ShellConfig {
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = Properties.coloredOutputEnabled
 
-  val historyFile = s"$userHome/.scala_history_jline3"
+  val datadir =
+    try {
+      val projectdirs = ProjectDirectories.from("org", "scala-lang", "repl2")
+      projectdirs.dataLocalDir
+    } catch {
+      case _: UnsupportedOperationException => userHome
+    }
+  val historyFile = s"$datadir/.scala_history"
 
   private val info  = bool("scala.repl.info")
   private val debug = bool("scala.repl.debug")

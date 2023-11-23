@@ -10,9 +10,10 @@ import VersionUtil.versionProperties
 
 /** OSGi packaging for the Scala build, distilled from sbt-osgi.
  *
- * We don't use sbt-osgi (yet) because it does not allow a crucial bit of
-  * configuration that we need: Setting the classpath for BND. In sbt-osgi this is always
-  * `fullClasspath in Compile` whereas we want `products in Compile in packageBin`. */
+ *  We don't use sbt-osgi (yet) because it does not allow a crucial bit of
+ *  configuration that we need: Setting the classpath for BND. In sbt-osgi this is always
+ * `fullClasspath in Compile` whereas we want `products in Compile in packageBin`.
+ */
 object Osgi {
   val bundle = TaskKey[File]("osgiBundle", "Create an OSGi bundle.")
   val bundleName = SettingKey[String]("osgiBundleName", "The Bundle-Name for the manifest.")
