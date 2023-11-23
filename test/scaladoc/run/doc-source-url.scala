@@ -26,7 +26,7 @@ object Test extends ScaladocModelTest {
 
   override def model: Option[Universe] = newDocFactory.makeUniverse(Left(List(resourceFile)))
 
-  def scaladocSettings = "-doc-source-url file:€{FILE_PATH}@@€{FILE_EXT}@@€{FILE_PATH_EXT}@@€{FILE_LINE}"
+  def scaladocSettings = "-doc-source-url file:€{FILE_PATH}@@€{FILE_EXT}@@€{FILE_PATH_EXT}@@€{FILE_LINE} -sourcepath ."
 
   def testModel(rootPackage: Package) = {
     import access._
