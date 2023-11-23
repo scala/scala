@@ -1,13 +1,13 @@
 
 package scala.concurrent
 
-import org.junit.Assert.assertTrue
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.testing.AssertUtil._
-import scala.util.Try
+import scala.util.{Success, Try}
 
 
 @RunWith(classOf[JUnit4])
@@ -36,5 +36,46 @@ class FutureTest {
       p.complete(Try(s))
     }
     */
+  }
+
+  @Test
+  def `bug/issues#9304 blocking shouldn't prevent Future from being resolved`(): Unit = {
+    implicit val directExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(_.run())
+
+    val p = Promise[Int]()
+    val p0 = Promise[Int]()
+    val p1 = Promise[Int]()
+
+    val f = p0.future
+      .flatMap { _ =>
+        p.future
+          .flatMap { _ =>
+            val f = p0.future.flatMap { _ =>
+              Future.successful(1)
+            }
+            // At this point scala.concurrent.Future.InternalCallbackExecutor has 1 runnable in _tasksLocal
+            // (flatMap from the previous line)
+
+            // blocking sets _tasksLocal to Nil (instead of null). Next it calls Batch.run, which checks
+            // that _tasksLocal must be null, throws exception and all tasks are lost.
+            // ... Because blocking throws an exception, we need to swallow it to demonstrate that Future `f` is not
+            // completed.
+            Try(blocking {
+              1
+            })
+
+            f
+          }
+      }
+
+    p.completeWith(p1.future.map(_ + 1))
+    p0.complete(Success(0))
+    p1.complete(Success(1))
+
+    assertTrue(p.future.isCompleted)
+    assertEquals(Some(Success(2)), p.future.value)
+
+    assertTrue(f.isCompleted)
+    assertEquals(Some(Success(1)), f.value)
   }
 }
