@@ -54,13 +54,14 @@ trait PresentationCompilation { self: IMain =>
       // where `bar` is the complete name of a member.
       val line1 = if (!cursorIsInKeyword()) buf else buf.patch(cursor, Cursor, 0)
 
-      val trees = pc.newUnitParser(line1).parseStats() match {
+      val parserSource = pc.newSourceFile(line1)
+      val trees = pc.newUnitParser(new pc.CompilationUnit(parserSource)).parseStats() match {
         case Nil => List(pc.EmptyTree)
         case xs => xs
       }
       val importer = global.mkImporter(pc)
       //println(s"pc: [[$line1]], <<${trees.size}>>")
-      val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true, storeResultInVal = false)
+      val request = new Request(line1, trees map (t => importer.importTree(t)), parserSource, generousImports = true, storeResultInVal = false)
       val origUnit = request.mkUnit
       val unit = new pc.CompilationUnit(origUnit.source)
       unit.body = pc.mkImporter(global).importTree(origUnit.body)

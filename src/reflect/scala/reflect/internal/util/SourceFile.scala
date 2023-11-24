@@ -140,6 +140,10 @@ class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], overri
     else pos withSource underlying withShift start
 }
 
+/* See PerRunReporting.repSrc */
+class ReplBatchSourceFile(filename: String, content: String, val parserSource: BatchSourceFile)
+  extends BatchSourceFile(filename, content)
+
 /** a file whose contents do not change over time */
 class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends SourceFile {
   def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
@@ -227,8 +231,8 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
 
 
   override def equals(that : Any) = that match {
-    case that : BatchSourceFile => file.path == that.file.path && start == that.start
-    case _ => false
+    case that: BatchSourceFile if !file.isVirtual && !that.file.isVirtual => file.path == that.file.path && start == that.start
+    case _ => super.equals(that)
   }
-  override def hashCode = file.path.## + start.##
+  override def hashCode = if (!file.isVirtual) file.path.## + start.## else super.hashCode()
 }
