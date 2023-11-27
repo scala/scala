@@ -1,4 +1,4 @@
-// scalac: -Yrecursion 1
+// was: -Yrecursion 1
 object Comp extends App {
 
    trait Family {

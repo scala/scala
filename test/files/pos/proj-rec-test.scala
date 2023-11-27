@@ -1,5 +1,5 @@
 
-// scalac: -Yrecursion 1
+// was: -Yrecursion 1
 //
 object ProjTest {
   trait MInt { type Type }
