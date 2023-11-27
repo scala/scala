@@ -148,7 +148,7 @@ object AssertUtil {
         val ae = new AssertionError(s"Exception failed check: $failed")
         ae.addSuppressed(failed)
         throw ae
-      case NonFatal(other) =>
+      case other if NonFatal(other) =>
         val ae = new AssertionError(s"Wrong exception: expected ${implicitly[ClassTag[T]]} but was ${other.getClass.getName}")
         ae.addSuppressed(other)
         throw ae

@@ -220,7 +220,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     assert(bindExceptions, "withLastExceptionLock called incorrectly.")
     bindExceptions = false
 
-    try reporter.withoutPrintingResults(body) catch { case NonFatal(t) =>
+    try reporter.withoutPrintingResults(body) catch { case t if NonFatal(t) =>
       repldbg("withLastExceptionLock: " + rootCause(t))
       reporter.trace(stackTraceString(rootCause(t)))
       alt

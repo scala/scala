@@ -993,7 +993,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
   } catch {
     case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
-    case NonFatal(ex) =>
+    case ex if NonFatal(ex) =>
       // We want to be robust when annotations are unavailable, so the very least
       // we can do is warn the user about the exception
       // There was a reference to ticket 1135, but that is outdated: a reference to a class not on

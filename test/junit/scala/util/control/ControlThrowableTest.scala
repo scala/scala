@@ -30,7 +30,7 @@ class ControlThrowableTest {
   @Test
   def fatal(): Unit =
     new MyCtl match {
-      case NonFatal(_) => fail("ControlThrowable was NonFatal")
+      case ex if NonFatal(ex) => fail("ControlThrowable was NonFatal")
       case _ => ()
     }
 

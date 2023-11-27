@@ -147,7 +147,7 @@ object Reader {
 
     val reader = builder.build()
     try inputrcFileContents.foreach(f => InputRC.configure(reader, new ByteArrayInputStream(f))) catch {
-      case NonFatal(_) =>
+      case ex if NonFatal(ex) =>
     } //ignore
 
     val keyMap = reader.getKeyMaps.get("main")

@@ -988,7 +988,7 @@ trait ContextErrors extends splain.SplainErrors {
           } catch {
             // the code above tries various tricks to detect the relevant portion of the stack trace
             // if these tricks fail, just fall back to uninformative, but better than nothing.
-            case NonFatal(ex) =>
+            case ex if NonFatal(ex) =>
               macroLogVerbose("got an exception when processing a macro generated exception\n" +
                               "offender = " + stackTraceString(realex) + "\n" +
                               "error = " + stackTraceString(ex))

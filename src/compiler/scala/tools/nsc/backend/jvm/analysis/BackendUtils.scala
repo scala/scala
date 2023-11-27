@@ -959,7 +959,7 @@ object BackendUtils {
 
       @inline def safely(f: => Unit): Unit = try f catch {
         case Aborted =>
-        case NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
+        case e if NonFatal(e) => raiseError(s"Exception thrown during signature parsing", sig, Some(e))
       }
 
       private def current = {

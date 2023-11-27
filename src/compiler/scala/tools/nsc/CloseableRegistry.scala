@@ -28,7 +28,7 @@ final class CloseableRegistry extends Closeable {
       try {
         c.close()
       } catch {
-        case NonFatal(_) =>
+        case ex if NonFatal(ex) =>
       }
     }
     closeables = Nil

@@ -180,7 +180,7 @@ private[process] trait ProcessBuilderImpl {
         done {
           try process.exitValue()
           catch {
-            case NonFatal(_) => -2
+            case ex if NonFatal(ex) => -2
           }
         }
       }

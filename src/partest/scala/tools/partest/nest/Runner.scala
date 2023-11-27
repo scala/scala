@@ -245,7 +245,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
             finally out.close()
           } catch {
             case t: ControlThrowable => throw t
-            case NonFatal(t) =>
+            case t if NonFatal(t) =>
               // We'll let the checkfile diffing report this failure
               Files.write(log.toPath, stackTraceString(t).getBytes(Charset.defaultCharset()), CREATE, APPEND)
             case t: Throwable =>

@@ -48,7 +48,7 @@ class Suite(val name: String) {
     for ((ctx, test) <- tests) {
       try test()
       catch {
-        case NonFatal(err) => errors += (ctx -> err)
+        case err if NonFatal(err) => errors += (ctx -> err)
       }
     }
     if (errors.nonEmpty) {

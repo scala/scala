@@ -27,7 +27,7 @@ package scala.util.control
  *        if (p(v)) break
  *        else ???
  *      } catch {
- *        case NonFatal(t) => log(t)  // can't catch a break
+ *        case t if NonFatal(t) => log(t)  // can't catch a break
  *      }
  *    }
  *  }

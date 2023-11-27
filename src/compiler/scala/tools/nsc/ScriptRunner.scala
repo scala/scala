@@ -131,7 +131,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
                   Jar.create(jarFile, compiledPath.toDirectory, mainClass)
                   None
                 } catch {
-                  case NonFatal(e) => jarFile.delete() ; Some(e)
+                  case e if NonFatal(e) => jarFile.delete() ; Some(e)
                 }
               } else None
             } else Some(NoScriptError)
@@ -184,7 +184,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 
     try withCompiledScript(scriptFile.path) { runCompiled(_, scriptArgs) }
     catch {
-      case NonFatal(e) => Some(e)
+      case e if NonFatal(e) => Some(e)
     }
     finally scriptFile.delete()  // in case there was a compilation error
   }

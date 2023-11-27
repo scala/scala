@@ -43,7 +43,7 @@ abstract class UnPickler {
       assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
       new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
     } catch {
-      case NonFatal(ex) =>
+      case ex if NonFatal(ex) =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
         throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
     }

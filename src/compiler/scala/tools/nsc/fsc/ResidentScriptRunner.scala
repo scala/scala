@@ -48,6 +48,6 @@ final class DaemonKiller(settings: GenericRunnerSettings) extends ScriptRunner {
       new StandardCompileClient().process(Array("-shutdown"))
       None
     } catch {
-      case NonFatal(t) => Some(t)
+      case t if NonFatal(t) => Some(t)
     }
 }

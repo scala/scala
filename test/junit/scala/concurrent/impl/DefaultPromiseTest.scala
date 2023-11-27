@@ -314,7 +314,7 @@ class DefaultPromiseTest {
               f
               doneLatch.countDown()
             } catch {
-              case NonFatal(e) => ec.reportFailure(e)
+              case e if NonFatal(e) => ec.reportFailure(e)
             }
           }
         })

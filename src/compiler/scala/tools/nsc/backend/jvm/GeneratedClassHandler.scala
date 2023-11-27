@@ -173,7 +173,7 @@ private[jvm] object GeneratedClassHandler {
           unitInPostProcess.task.value.get.get
         } catch {
           case _: ClosedByInterruptException => throw new InterruptedException()
-          case NonFatal(t) =>
+          case t if NonFatal(t) =>
             t.printStackTrace()
             frontendAccess.backendReporting.error(NoPosition, s"unable to write ${unitInPostProcess.sourceFile} $t")
         }

@@ -272,7 +272,7 @@ object Exception {
   }
 
   final val nothingCatcher: Catcher[Nothing]  = mkThrowableCatcher(_ => false, throw _)
-  final def nonFatalCatcher[T]: Catcher[T]    = mkThrowableCatcher({ case NonFatal(_) => true; case _ => false }, throw _)
+  final def nonFatalCatcher[T]: Catcher[T]    = mkThrowableCatcher({ case ex if NonFatal(ex) => true; case _ => false }, throw _)
   final def allCatcher[T]: Catcher[T]         = mkThrowableCatcher(_ => true, throw _)
 
   /** The empty `Catch` object.

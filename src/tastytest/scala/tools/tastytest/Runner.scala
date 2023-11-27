@@ -39,7 +39,7 @@ class Runner private (classloader: ScalaClassLoader) {
     def kernel(out: OutputStream, err: OutputStream): Try[Unit] = Try {
       try classloader.asContext[Unit](Runner_run.invoke(null, name, out, err))
       catch {
-        case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
+        case ex if NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
       }
     }
     val outStream = new ByteArrayOutputStream(50)
@@ -76,7 +76,7 @@ object Runner extends Script.Command {
       classloader.asContext[Unit](main.invoke(null, Array.empty[String]))
     }
     catch {
-      case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
+      case ex if NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
     }
   }
 

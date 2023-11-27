@@ -35,7 +35,7 @@ trait CommonRunner {
    */
   def runAndCatch(urls: Seq[URL], objectName: String, arguments: Seq[String]): Option[Throwable] =
     try   { run(urls, objectName, arguments) ; None }
-    catch { case NonFatal(e) => Some(rootCause(e)) }
+    catch { case e if NonFatal(e) => Some(rootCause(e)) }
 }
 
 /** An object that runs another object specified by name.

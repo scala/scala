@@ -72,7 +72,7 @@ object Dotc extends Script.Command {
       op
     }
     catch {
-      case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
+      case ex if NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
     }
   }
 

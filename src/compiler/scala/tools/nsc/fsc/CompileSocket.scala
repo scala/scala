@@ -214,7 +214,7 @@ class CompileSocket extends CompileOutputCommon {
   }
 
   private def chmodFailHandler(msg: String): PartialFunction[Throwable, Unit] = {
-    case NonFatal(e) =>
+    case e if NonFatal(e) =>
       if (verbose) e.printStackTrace()
       fatal(msg)
   }
