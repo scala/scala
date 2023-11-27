@@ -2614,23 +2614,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
       // verify no _* except in last position
-      for (Apply(_, xs) <- cdef.pat; x <- xs.dropRight(1))
-        if (treeInfo.isStar(x)) StarPositionInPatternError(x)
+      for (Apply(_, xs) <- cdef.pat ; x <- xs dropRight 1 ; if treeInfo isStar x)
+        StarPositionInPatternError(x)
 
       // withoutAnnotations - see continuations-run/z1673.scala
       // This adjustment is awfully specific to continuations, but AFAICS the
       // whole AnnotationChecker framework is.
-      val pat0 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
-      var guard0 = cdef.guard
-
-      // rewrite `case NonFatal(x) =>` to `case x if NonFatal(x) =>`
-      val pat1 = pat0 match {
-        case UnApply(Apply(Select(qual, nme.unapply), Ident(nme.SELECTOR_DUMMY) :: Nil), (bind @ Bind(b, Ident(nme.WILDCARD))) :: Nil)
-        if !pat0.isErroneous && qual.symbol.eq(NonFatalModule) && guard0.isEmpty =>
-          guard0 = Apply(Select(qual, nme.apply), Ident(b) :: Nil)
-          bind
-        case p0 => p0
-      }
+      val pat1 = typedPattern(cdef.pat, pattpe.withoutAnnotations)
 
       for (bind @ Bind(name, _) <- cdef.pat) {
         val sym = bind.symbol
@@ -2643,8 +2633,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      val guard1: Tree = if (guard0 == EmptyTree) EmptyTree
-                         else typed(guard0, BooleanTpe)
+      val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
+                         else typed(cdef.guard, BooleanTpe)
       var body1: Tree = typed(cdef.body, pt)
 
       if (context.enclosingCaseDef.savedTypeBounds.nonEmpty) {

@@ -66,6 +66,14 @@ trait PatternMatching extends Transform
 
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
+      case CaseDef(UnApply(Apply(Select(qual, nme.unapply), Ident(nme.SELECTOR_DUMMY) :: Nil), (bind@Bind(b, Ident(nme.WILDCARD))) :: Nil), guard, body)
+        if guard.isEmpty && qual.symbol == definitions.NonFatalModule =>
+        transform(treeCopy.CaseDef(
+          tree,
+          bind,
+          localTyper.typed(atPos(tree.pos)(Apply(gen.mkAttributedRef(definitions.NonFatal_apply), List(Ident(bind.symbol))))),
+          body))
+
       case Match(sel, cases) =>
         val origTp = tree.tpe
 
