@@ -170,10 +170,11 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 
   final def runScript(scriptFile: String, scriptArgs: List[String]): Option[Throwable] = {
     val f = File(scriptFile)
+    def usingCompilationServer = settings.Yscriptrunner.valueSetByUser.map(_ != "default").getOrElse(false)
     if (!f.exists) Some(new IOException(s"no such file: $scriptFile"))
     else if (!f.canRead) Some(new IOException(s"can't read: $scriptFile"))
     else if (f.isDirectory) Some(new IOException(s"can't compile a directory: $scriptFile"))
-    else if (!settings.nc.value && !f.isFile) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
+    else if (!f.isFile && usingCompilationServer) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
     else withCompiledScript(scriptFile) { runCompiled(_, scriptArgs) }
   }
 

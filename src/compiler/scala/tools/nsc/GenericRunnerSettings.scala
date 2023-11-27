@@ -60,6 +60,7 @@ class GenericRunnerSettings(error: String => Unit, pathFactory: PathFactory) ext
       "-save",
       "save the compiled script (assumes the code is a script)") withAbbreviation "-savecompiled" withAbbreviation "--save"
 
+  @deprecated("check Yscriptrunner instead", since="2.13.0")
   val nc = BooleanSetting(
       "-nc",
       "do not use the legacy fsc compilation daemon").withAbbreviation("-nocompdaemon").withAbbreviation("--no-compilation-daemon")
