@@ -1,4 +1,4 @@
-// scalac: -opt:l:none
+//> using options -opt:none
 class Foo_1 {
   def foo(x: AnyRef): Int = {
     val bool = x == null

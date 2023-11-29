@@ -1,4 +1,4 @@
-// scalac: -opt:l:none
+//> using options -opt:none
 //
 // See comment in BCodeBodyBuilder
 

@@ -1,4 +1,4 @@
-// scalac: -opt:l:method
+//> using options -opt:local
 object Matchbox {
   import scala.{specialized => sp}
 

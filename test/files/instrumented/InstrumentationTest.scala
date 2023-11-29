@@ -1,4 +1,4 @@
-// scalac: -opt:l:none
+//> using options -opt:none
 import scala.tools.partest.instrumented.Instrumentation._
 
 /** We check if classes put in empty package are properly instrumented */
