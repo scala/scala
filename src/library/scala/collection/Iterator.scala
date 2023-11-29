@@ -589,8 +589,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     /** Trillium logic boolean: -1 = unknown, 0 = false, 1 = true */
     private[this] var _hasNext: Int = -1
 
-    private[this] def nextCur(): Unit = {
-      cur = null
+    def nextCur(): Unit = {
+      cur = Iterator.empty
       cur = f(self.next()).iterator
       _hasNext = -1
     }

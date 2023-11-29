@@ -24,7 +24,7 @@ import scala.runtime.ScalaRunTime.stringOf
 import scala.util.{Failure, Success, Try}
 import scala.util.chaining._
 import scala.util.control.{ControlThrowable, NonFatal}
-import java.lang.ref._
+import java.lang.ref.{Reference, ReferenceQueue, SoftReference}
 import java.lang.reflect.{Array => _, _}
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -44,6 +44,15 @@ object AssertUtil {
 
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)
+
+  private val Bail = new ControlThrowable {}
+
+  def bail(): Nothing = throw Bail
+
+  // maybe there is a way to communicate that the test was skipped
+  def bailable(name: String)(test: => Unit): Unit =
+    try test
+    catch { case _: Bail.type => println(s"$name skipped bail!") }
 
   private val printable = raw"\p{Print}".r
 
@@ -78,9 +87,10 @@ object AssertUtil {
 
   private final val timeout = 60 * 1000L                 // wait a minute
 
-  private implicit class `ref helper`[A](val r: Reference[A]) extends AnyVal {
-    def isEmpty: Boolean  = r.get == null
+  private implicit class `ref helper`[A <: AnyRef](val r: Reference[A]) extends AnyVal {
+    def isEmpty: Boolean  = r.get == null // r.refersTo(null) to avoid influencing collection
     def nonEmpty: Boolean = !isEmpty
+    def hasReferent(x: AnyRef): Boolean = r.get eq x
   }
   private implicit class `class helper`(val clazz: Class[_]) extends AnyVal {
     def allFields: List[Field] = {
@@ -191,24 +201,29 @@ object AssertUtil {
   /** Value is not strongly reachable from roots after body is evaluated.
    */
   def assertNotReachable[A <: AnyRef](a: => A, roots: AnyRef*)(body: => Unit): Unit = {
-    val wkref = new WeakReference(a)
+    val refq = new ReferenceQueue[A]
+    val ref: Reference[A] = new SoftReference(a, refq)
     // fail if following strong references from root discovers referent. Quit if ref is empty.
     def assertNoRef(root: AnyRef): Unit = {
       val seen  = new IdentityHashMap[AnyRef, Unit]
       val stack = mutable.Stack.empty[AnyRef]
-      def loop(): Unit = if (wkref.nonEmpty && stack.nonEmpty) {
+      def loop(): Unit = if (ref.nonEmpty && stack.nonEmpty) {
         val o: AnyRef = stack.pop()
         if (o != null && !seen.containsKey(o)) {
           seen.put(o, ())
-          assertFalse(s"Root $root held reference $o", o eq wkref.get)
+          assertFalse(s"Root $root held reference $o", ref.hasReferent(o))
           o match {
             case a: Array[AnyRef] =>
-              a.foreach(e => if (!e.isInstanceOf[Reference[_]]) stack.push(e))
+              a.foreach(e => if (e != null && !e.isInstanceOf[Reference[_]]) stack.push(e))
             case _ =>
               for (f <- o.getClass.allFields)
                 if (!Modifier.isStatic(f.getModifiers) && !f.getType.isPrimitive && !classOf[Reference[_]].isAssignableFrom(f.getType))
                   stack.push(f.follow(o))
           }
+        }
+        refq.poll() match {
+          case null  =>
+          case r @ _ => fail("assertNotReachable dropped reference value")
         }
         loop()
       }
