@@ -208,7 +208,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   protected def newSpecificBuilder: Builder[A @uncheckedVariance, C]
 
-  /** The empty iterable of the same type as this iterable
+  /** The empty iterable of the same type as this iterable.
     *
     * @return an empty iterable of type `C`.
     */
@@ -481,7 +481,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     iterator.grouped(size).map(fromSpecific)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
-    *  over them (as opposed to partitioning them, as is done in `grouped`.)
+    *  over them (as opposed to partitioning them, as is done in `grouped`).
     *
     *  An empty collection returns an empty iterator, and a non-empty
     *  collection containing fewer elements than the window size returns
@@ -502,7 +502,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def sliding(size: Int): Iterator[C] = sliding(size, 1)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
-    *  over them (as opposed to partitioning them, as is done in grouped.)
+    *  over them (as opposed to partitioning them, as is done in `grouped`).
     *
     *  The returned iterator will be empty when called on an empty collection.
     *  The last element the iterator produces may be smaller than the window

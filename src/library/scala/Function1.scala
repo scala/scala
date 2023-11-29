@@ -70,7 +70,7 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    */
   def apply(v1: T1): R
 
-  /** Composes two instances of Function1 in a new Function1, with this function applied last.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied last.
    *
    *  @tparam   A   the type to which function `g` can be applied
    *  @param    g   a function A => T1
@@ -78,7 +78,7 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    */
   @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
 
-  /** Composes two instances of Function1 in a new Function1, with this function applied first.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied first.
    *
    *  @tparam   A   the result type of function `g`
    *  @param    g   a function R => A

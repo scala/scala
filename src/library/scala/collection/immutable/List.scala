@@ -186,7 +186,8 @@ sealed abstract class List[+A]
     h
   }
 
-  /**
+  /** @inheritdoc
+    *
     *  @example {{{
     *  // Given a list
     *  val letters = List('a','b','c','d','e')

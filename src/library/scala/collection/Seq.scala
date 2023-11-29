@@ -79,7 +79,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   override def view: SeqView[A] = new SeqView.Id[A](this)
 
-  /** Get the element at the specified index. This operation is provided for convenience in `Seq`. It should
+  /** Gets the element at the specified index. This operation is provided for convenience in `Seq`. It should
     * not be assumed to be efficient unless you have an `IndexedSeq`. */
   @throws[IndexOutOfBoundsException]
   def apply(i: Int): A
@@ -141,7 +141,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def appended[B >: A](elem: B): CC[B] = iterableFactory.from(new View.Appended(this, elem))
 
-  /** Alias for `appended`
+  /** Alias for `appended`.
     *
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
@@ -165,7 +165,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     case _ => prefix.iterator ++ iterator
   })
 
-  /** Alias for `prependedAll` */
+  /** Alias for `prependedAll`. */
   @`inline` override final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependedAll(prefix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
@@ -179,7 +179,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def appendedAll[B >: A](suffix: IterableOnce[B]): CC[B] = super.concat(suffix)
 
-  /** Alias for `appendedAll` */
+  /** Alias for `appendedAll`. */
   @`inline` final def :++ [B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
@@ -214,22 +214,22 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def distinctBy[B](f: A => B): C = fromSpecific(new View.DistinctBy(this, f))
 
-  /** Returns new $coll with elements in reversed order.
+  /** Returns a new $coll with the elements of this $coll in reverse order.
    *
    *  $willNotTerminateInf
    *  $willForceEvaluation
    *
-   *  @return A new $coll with all elements of this $coll in reversed order.
+   *  @return a new $coll with all elements of this $coll in reverse order.
    */
   def reverse: C = fromSpecific(reversed)
 
-  /** An iterator yielding elements in reversed order.
+  /** An iterator yielding the elements of this $coll in reverse order.
    *
    *   $willNotTerminateInf
    *
    * Note: `xs.reverseIterator` is the same as `xs.reverse.iterator` but might be more efficient.
    *
-   *  @return  an iterator yielding the elements of this $coll in reversed order
+   *  @return  an iterator yielding the elements of this $coll in reverse order.
    */
   def reverseIterator: Iterator[A] = reversed.iterator
 
@@ -843,8 +843,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   override def isEmpty: Boolean = lengthCompare(0) == 0
 
-  /** Are the elements of this collection the same (and in the same order)
-    * as those of `that`?
+  /** Tests whether the elements of this collection are the same (and in the same order)
+    * as those of `that`.
     */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val thisKnownSize = knownSize
@@ -966,7 +966,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     occ
   }
 
-  /** Search this sorted sequence for a specific element. If the sequence is an
+  /** Searches this sorted sequence for a specific element. If the sequence is an
     * `IndexedSeq`, a binary search is used. Otherwise, a linear search is used.
     *
     * The sequence should be sorted with the same `Ordering` before calling; otherwise,
@@ -986,7 +986,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
     linearSearch(view, elem, 0)(ord)
 
-  /** Search within an interval in this sorted sequence for a specific element. If this
+  /** Searches within an interval in this sorted sequence for a specific element. If this
     * sequence is an `IndexedSeq`, a binary search is used. Otherwise, a linear search
     * is used.
     *
