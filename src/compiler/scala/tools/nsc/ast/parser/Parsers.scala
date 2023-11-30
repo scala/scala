@@ -2154,7 +2154,7 @@ self =>
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
         } else {
           this.typ() match {
-            case Ident(name: TypeName) if nme.isVariableName(name) =>
+            case t @ Ident(name: TypeName) if nme.isVariableName(name) && !t.hasAttachment[BackquotedIdentifierAttachment.type] =>
               atPos(start) { Bind(name, EmptyTree) }
             case t => t
           }
