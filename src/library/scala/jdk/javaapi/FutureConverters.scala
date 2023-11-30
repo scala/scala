@@ -70,13 +70,19 @@ object FutureConverters {
       case cf: CF[T] => cf.wrapped
       // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
       case f: Future[T @unchecked] => f
-      case cf: CompletableFuture[T @unchecked] if cf.isDone && !cf.isCompletedExceptionally =>
-        val p = new P[T](cs)
-        p.tryComplete(Success(cf.join()))
-        p.future
       case _ =>
         val p = new P[T](cs)
-        cs.handle(p)
+        val completedCF = cs match {
+          case cf0: CompletableFuture[T @unchecked] =>
+            // drop `MinimalStage` (scala/bug#12918)
+            val cf = cf0.toCompletableFuture
+            if (cf.isDone && !cf.isCompletedExceptionally) cf else null
+          case _ => null
+        }
+        if (completedCF != null)
+          p.tryComplete(Success(completedCF.join()))
+        else
+          cs.handle(p)
         p.future
     }
   }
