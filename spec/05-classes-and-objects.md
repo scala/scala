@@ -862,11 +862,11 @@ a `val` or `var` modifier. Hence, an accessor
 definition for the parameter is [generated](#class-definitions).
 
 A case class definition of `´c´[´\mathit{tps}\,´](´\mathit{ps}_1\,´)´\ldots´(´\mathit{ps}_n´)` with type
-parameters ´\mathit{tps}´ and value parameters ´\mathit{ps}´ implies
+parameters ´\mathit{tps}´ and value parameters ´\mathit{ps}´ with type ascriptions ´\mathit{pts}´ implies
 the definition of a companion object, which serves as an [extractor object](08-pattern-matching.html#extractor-patterns). It has the following shape:
 
 ```scala
-object ´c´ {
+object ´c´ extends Function´\mathit{n}\,´[´\mathit{pt}_1\,\ldots\,\mathit{pt}_n´\,´c´[´\mathit{tps}\,´]]{
   def apply[´\mathit{tps}\,´](´\mathit{ps}_1\,´)´\ldots´(´\mathit{ps}_n´): ´c´[´\mathit{tps}\,´] = new ´c´[´\mathit{Ts}\,´](´\mathit{xs}_1\,´)´\ldots´(´\mathit{xs}_n´)
   def unapply[´\mathit{tps}\,´](´x´: ´c´[´\mathit{tps}\,´]) =
     if (x eq null) scala.None
@@ -887,6 +887,8 @@ the  `apply` and `unapply` methods are added to the existing object.
 If the object ´c´ already has a [matching](#definition-matching)
 `apply` (or `unapply`) member, no new definition is added.
 The definition of `apply` is omitted if class ´c´ is `abstract`.
+
+It will not be modified to extend Function if the existing definition doesn't extend it.
 
 If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and
