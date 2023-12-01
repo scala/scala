@@ -1,0 +1,23 @@
+
+scala> @annotation.nowarn def f { }
+def f: Unit
+
+scala> def f { }
+             ^
+       error: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `f`'s return type [quickfixable]
+       Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=deprecation, version=2.13.0
+
+scala> @annotation.nowarn def f { }
+def f: Unit
+
+scala> class C { def match = 42 }
+                     ^
+       error: identifier expected but 'match' found.
+
+scala> class C { def `match` = 42 }
+class C
+
+scala> class C { def `match` = 42 }
+class C
+
+scala> :quit

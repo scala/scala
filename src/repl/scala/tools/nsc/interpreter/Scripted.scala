@@ -48,7 +48,7 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
   def addBackReferences(req: Request): Either[String, Request] = {
     val defines = req.definesTermNames
     if (defines.isEmpty) {
-      recordRequest(new Request(req.line, req.trees))
+      recordRequest(new Request(req.line, req.trees, req.parserSource))
       Left(s"new ${req.lineRep.readPath}")
     } else {
       val newReq = requestFromLine(

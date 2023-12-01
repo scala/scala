@@ -14,30 +14,29 @@
 
 package scala.tools.nsc.interpreter
 
-import java.io.{PrintWriter, StringWriter, Closeable}
+import java.io.{Closeable, PrintWriter, StringWriter}
 import java.net.URL
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.implicitConversions
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
+import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, ReplBatchSourceFile, SourceFile}
 import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
-import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, SourceFile}
-import scala.tools.nsc.{Global, Settings}
+import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
-import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
-import scala.tools.util.PathResolver
-import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
-import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.util.Exceptional.rootCause
-import scala.util.{Try => Trying}
+import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
+import scala.tools.nsc.{Global, Settings}
+import scala.tools.util.PathResolver
 import scala.util.chaining._
 import scala.util.control.NonFatal
+import scala.util.{Try => Trying}
 
 
 /** An interpreter for Scala code.
@@ -457,14 +456,18 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     prevRequestList collectFirst { case r if r.defines contains sym => r }
   }
 
-  private[interpreter] def requestFromLine(input: String, synthetic: Boolean = false, fatally: Boolean = false): Either[Result, Request] =
+  private[interpreter] def requestFromLine(input: String, synthetic: Boolean = false, fatally: Boolean = false): Either[Result, Request] = {
+    // The `currentRun` was used for compiling the previous line, ensure to clear out suspended messages.
+    // Also JLine and completion may run the parser in the same run before actual compilation.
+    currentRun.reporting.clearSuspendedMessages()
     parse(input, fatally) flatMap {
-      case (Nil, _) => Left(Error)
-      case (trees, firstXmlPos) =>
-        executingRequest = new Request(input, trees, firstXmlPos, synthetic = synthetic)
+      case (Nil, _, _) => Left(Error)
+      case (trees, firstXmlPos, parserSource) =>
+        executingRequest = new Request(input, trees, parserSource, firstXmlPos, synthetic = synthetic)
         reporter.currentRequest = executingRequest
         Right(executingRequest)
     }
+  }
 
   // dealias non-public types so we don't see protected aliases like Self
   def dealiasNonPublic(tp: Type) = tp match {
@@ -783,7 +786,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** One line of code submitted by the user for interpretation */
-  class Request(val line: String, origTrees: List[Tree], firstXmlPos: Position = NoPosition,
+  class Request(val line: String, origTrees: List[Tree], val parserSource: BatchSourceFile, firstXmlPos: Position = NoPosition,
                 generousImports: Boolean = false, synthetic: Boolean = false, storeResultInVal: Boolean = true) extends ReplRequest {
     def defines    = defHandlers flatMap (_.definedSymbols)
     def definesTermNames: List[String] = defines collect { case s: TermSymbol => s.decodedName.toString }
@@ -799,7 +802,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     // pad with a trailing " " so that the synthetic position for enclosing trees does not exactly coincide with the
     // position of the user-written code, these seems to confuse the presentation compiler.
     private val paddedLine = line + " "
-    private val unit = new CompilationUnit(new BatchSourceFile(if (synthetic) "<synthetic>" else label, paddedLine))
+    private val unit = new CompilationUnit(new ReplBatchSourceFile(if (synthetic) "<synthetic>" else label, paddedLine, parserSource))
     // a dummy position used for synthetic trees (needed for pres compiler to locate the trees for user input)
     private val wholeUnit = Position.range(unit.source, 0, 0, paddedLine.length)
 
@@ -1174,19 +1177,20 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   } with ExprTyper { }
 
   /** Parse a line into and return parsing result (error, incomplete or success with list of trees) */
-  def parse(line: String): Either[Result, (List[Tree], Position)] = parse(line, fatally = false)
-  def parse(line: String, fatally: Boolean): Either[Result, (List[Tree], Position)] = {
+  def parse(line: String): Either[Result, (List[Tree], Position, BatchSourceFile)] = parse(line, fatally = false)
+  def parse(line: String, fatally: Boolean): Either[Result, (List[Tree], Position, BatchSourceFile)] = {
     var isIncomplete = false
     val handler = if (fatally) null else (_: Position, _: String) => isIncomplete = true
     currentRun.parsing.withIncompleteHandler(handler) {
-      val unit = newCompilationUnit(line, label)
+      val source = newSourceFile(line, label)
+      val unit = new CompilationUnit(source)
       val trees = newUnitParser(unit).parseStats()
       if (!isIncomplete)
         runReporting.summarizeErrors()
       if (reporter.hasErrors) Left(Error)
       else if (isIncomplete) Left(Incomplete)
       else if (reporter.hasWarnings && settings.fatalWarnings.value) Left(Error)
-      else Right((trees, unit.firstXmlPos))
+      else Right((trees, unit.firstXmlPos, source))
     }.tap(_ => if (!isIncomplete) reporter.reset())
   }
 

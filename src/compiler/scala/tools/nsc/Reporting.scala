@@ -22,7 +22,7 @@ import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.internal
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, SourceFile, TextEdit}
+import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, ReplBatchSourceFile, SourceFile, TextEdit}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
 import scala.tools.nsc.settings.NoScalaVersion
@@ -105,6 +105,19 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
     private val summarizedInfos: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
 
+    /**
+     * The REPL creates two SourceFile instances for each line:
+     *   - `requestFromLine` -> `parse`
+     *   - Class Request has field `unit` initialized with a new SourceFile - note that the content is different (`paddedLine`)
+     *
+     * ReplBatchSourceFile has a reference to the first source file and we make sure to consistently use this
+     * one for the warning suspension / suppression hash maps.
+     */
+    private def repSrc(s: SourceFile) = s match {
+      case r: ReplBatchSourceFile => r.parserSource
+      case _ => s
+    }
+
     private val suppressions: mutable.LinkedHashMap[SourceFile, mutable.ListBuffer[Suppression]] = mutable.LinkedHashMap.empty
     private val suppressionsComplete: mutable.Set[SourceFile] = mutable.Set.empty
     private val suspendedMessages: mutable.LinkedHashMap[SourceFile, mutable.LinkedHashSet[Message]] = mutable.LinkedHashMap.empty
@@ -116,25 +129,30 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       suspendedMessages ++= old.suspendedMessages
     }
 
+    def clearSuspendedMessages(): Unit = {
+      suspendedMessages.clear()
+    }
+
     private def isSuppressed(warning: Message): Boolean =
-      suppressions.getOrElse(warning.pos.source, Nil).find(_.matches(warning)) match {
+      suppressions.getOrElse(repSrc(warning.pos.source), Nil).find(_.matches(warning)) match {
         case Some(s) => s.markUsed(); true
         case _ => false
       }
 
-    def clearSuppressionsComplete(sourceFile: SourceFile): Unit = suppressionsComplete -= sourceFile
+    def clearSuppressionsComplete(sourceFile: SourceFile): Unit = suppressionsComplete -= repSrc(sourceFile)
 
     def addSuppression(sup: Suppression): Unit = {
       val source = sup.annotPos.source
-      suppressions.getOrElseUpdate(source, mutable.ListBuffer.empty) += sup
+      suppressions.getOrElseUpdate(repSrc(source), mutable.ListBuffer.empty) += sup
     }
 
     def suppressionExists(pos: Position): Boolean =
-      suppressions.getOrElse(pos.source, Nil).exists(_.annotPos.point == pos.point)
+      suppressions.getOrElse(repSrc(pos.source), Nil).exists(_.annotPos.point == pos.point)
 
     def runFinished(hasErrors: Boolean): Unit = {
       // report suspended messages (in case the run finished before typer)
       suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning))
+
       // report unused nowarns only if all all phases are done. scaladoc doesn't run all phases.
       if (!hasErrors && settings.warnUnusedNowarn && !settings.isScaladoc)
         for {
@@ -149,11 +167,12 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     def reportSuspendedMessages(unit: CompilationUnit): Unit = {
+      val src = repSrc(unit.source)
       // sort suppressions. they are not added in any particular order because of lazy type completion
-      for (sups <- suppressions.get(unit.source))
-        suppressions(unit.source) = sups.sortBy(sup => 0 - sup.start)
-      suppressionsComplete += unit.source
-      suspendedMessages.remove(unit.source).foreach(_.foreach(issueIfNotSuppressed))
+      for (sups <- suppressions.get(src))
+        suppressions(src) = sups.sortBy(sup => 0 - sup.start)
+      suppressionsComplete += src
+      suspendedMessages.remove(src).foreach(_.foreach(issueIfNotSuppressed))
     }
 
     private def summaryMap(action: Action, category: WarningCategory) = {
@@ -203,11 +222,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     def shouldSuspend(warning: Message): Boolean =
-      warning.pos.source != NoSourceFile && !suppressionsComplete(warning.pos.source)
+      warning.pos.source != NoSourceFile && !suppressionsComplete(repSrc(warning.pos.source))
 
     def issueIfNotSuppressed(warning: Message): Unit =
       if (shouldSuspend(warning))
-        suspendedMessages.getOrElseUpdate(warning.pos.source, mutable.LinkedHashSet.empty) += warning
+        suspendedMessages.getOrElseUpdate(repSrc(warning.pos.source), mutable.LinkedHashSet.empty) += warning
       else {
         if (!isSuppressed(warning))
           issueWarning(warning)
@@ -322,9 +341,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain".replace("#", construct)
       // on postfix error, include interesting infix warning
-      def isXfix = featureName == "postfixOps" && suspendedMessages.get(pos.source).map(_.exists(w => pos.includes(w.pos))).getOrElse(false)
+      def isXfix = featureName == "postfixOps" && suspendedMessages.get(repSrc(pos.source)).map(_.exists(w => pos.includes(w.pos))).getOrElse(false)
       if (required) {
-        val amended = if (isXfix) s"$msg\n${suspendedMessages(pos.source).filter(pos includes _.pos).map(_.msg).mkString("\n")}" else msg
+        val amended = if (isXfix) s"$msg\n${suspendedMessages(repSrc(pos.source)).filter(pos includes _.pos).map(_.msg).mkString("\n")}" else msg
         reporter.error(pos, amended)
       } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
