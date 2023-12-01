@@ -16,7 +16,9 @@ package scala
  *  The only method not already present in class `AnyRef` is `canEqual`.
  */
 trait Equals extends Any {
-  /** A method that should be called from every well-designed equals method
+  /** Checks whether this instance can possibly equal `that`.
+   *
+   *  A method that should be called from every well-designed equals method
    *  that is open to be overridden in a subclass. See
    *  [[https://www.artima.com/pins1ed/object-equality.html Programming in Scala,
    *  Chapter 28]] for discussion and design.
@@ -26,7 +28,8 @@ trait Equals extends Any {
    */
   def canEqual(that: Any): Boolean
 
-  /** The universal equality method defined in `AnyRef`.
+  /** Checks whether this instance is equal to `that`.
+   *  This universal equality method is defined in `AnyRef`.
    */
   def equals(that: Any): Boolean
 }

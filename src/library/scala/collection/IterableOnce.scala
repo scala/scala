@@ -42,7 +42,13 @@ import scala.runtime.{AbstractFunction1, AbstractFunction2}
   * @define coll collection
   */
 trait IterableOnce[+A] extends Any {
-  /** Iterator can be used only once */
+
+  /** An [[scala.collection.Iterator]] over the elements of this $coll.
+    *
+    * If an `IterableOnce` object is in fact an [[scala.collection.Iterator]], this method always returns itself,
+    * in its current state, but if it is an [[scala.collection.Iterable]], this method always returns a new
+    * [[scala.collection.Iterator]].
+    */
   def iterator: Iterator[A]
 
   /** Returns a [[scala.collection.Stepper]] for the elements of this collection.
@@ -76,7 +82,7 @@ trait IterableOnce[+A] extends Any {
     s.asInstanceOf[S]
   }
 
-  /** @return The number of elements in this $coll, if it can be cheaply computed,
+  /** The number of elements in this $coll, if it can be cheaply computed,
    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
    */
   def knownSize: Int = -1
@@ -347,7 +353,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def filterNot(pred: A => Boolean): C
 
-  /** Selects the first ''n'' elements.
+  /** Selects the first `n` elements.
    *  $orderDependent
    *  @param  n    the number of elements to take from this $coll.
    *  @return a $coll consisting only of the first `n` elements of this $coll,
@@ -356,7 +362,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def take(n: Int): C
 
-  /** Takes longest prefix of elements that satisfy a predicate.
+  /** Selects the longest prefix of elements that satisfy a predicate.
    *
    *  The matching prefix starts with the first element of this $coll,
    *  and the element following the prefix is the first element that
@@ -382,7 +388,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def takeWhile(p: A => Boolean): C
 
-  /** Selects all elements except first ''n'' ones.
+  /** Selects all elements except the first `n` ones.
    *  $orderDependent
    *  @param  n    the number of elements to drop from this $coll.
    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
@@ -391,7 +397,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def drop(n: Int): C
 
-  /** Drops longest prefix of elements that satisfy a predicate.
+  /** Selects all elements except the longest prefix that satisfies a predicate.
    *
    *  The matching prefix starts with the first element of this $coll,
    *  and the element following the prefix is the first element that
@@ -605,8 +611,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def isTraversableAgain: Boolean = false
 
-  /** Apply `f` to each element for its side effects
-   *  Note: [U] parameter needed to help scalac's type inference.
+  /** Applies `f` to each element for its side effects.
+   *  Note: `U` parameter needed to help scalac's type inference.
    */
   def foreach[U](f: A => U): Unit = {
     val it = iterator
@@ -907,7 +913,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use `dest ++= coll` instead", "2.13.0")
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
-  /** Copy elements to an array, returning the number of elements written.
+  /** Copies elements to an array, returning the number of elements written.
    *
    *  Fills the given array `xs` starting at index `start` with values of this $coll.
    *
@@ -923,7 +929,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
   def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0, Int.MaxValue)
 
-  /** Copy elements to an array, returning the number of elements written.
+  /** Copies elements to an array, returning the number of elements written.
    *
    *  Fills the given array `xs` starting at index `start` with values of this $coll.
    *
@@ -1067,15 +1073,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       case  _ => Some(reduceLeft(ord.max))
     }
 
-  /** Finds the first element which yields the largest value measured by function f.
+  /** Finds the first element which yields the largest value measured by function `f`.
    *
    *  $willNotTerminateInf
    *
    *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The result type of the function f.
+   *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @throws   UnsupportedOperationException if this $coll is empty.
-   *  @return   the first element of this $coll with the largest value measured by function f
+   *  @return   the first element of this $coll with the largest value measured by function `f`
    *            with respect to the ordering `cmp`.
    */
   def maxBy[B](f: A => B)(implicit ord: Ordering[B]): A =
@@ -1107,15 +1113,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       }
   }
 
-  /** Finds the first element which yields the largest value measured by function f.
+  /** Finds the first element which yields the largest value measured by function `f`.
    *
    *  $willNotTerminateInf
    *
    *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The result type of the function f.
+   *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @return   an option value containing the first element of this $coll with the
-   *            largest value measured by function f with respect to the ordering `cmp`.
+   *            largest value measured by function `f` with respect to the ordering `cmp`.
    */
   def maxByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
     knownSize match {
@@ -1123,15 +1129,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       case  _ => foldLeft(new Maximized[A, B]("maxBy")(f)(ord.gt))((m, a) => m(m, a)).toOption
     }
 
-  /** Finds the first element which yields the smallest value measured by function f.
+  /** Finds the first element which yields the smallest value measured by function `f`.
    *
    *  $willNotTerminateInf
    *
    *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The result type of the function f.
+   *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @throws   UnsupportedOperationException if this $coll is empty.
-   *  @return   the first element of this $coll with the smallest value measured by function f
+   *  @return   the first element of this $coll with the smallest value measured by function `f`
    *            with respect to the ordering `cmp`.
    */
   def minBy[B](f: A => B)(implicit ord: Ordering[B]): A =
@@ -1140,15 +1146,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       case  _ => foldLeft(new Maximized[A, B]("minBy")(f)(ord.lt))((m, a) => m(m, a)).result
     }
 
-  /** Finds the first element which yields the smallest value measured by function f.
+  /** Finds the first element which yields the smallest value measured by function `f`.
    *
    *  $willNotTerminateInf
    *
    *  @param    cmp   An ordering to be used for comparing elements.
-   *  @tparam   B     The result type of the function f.
+   *  @tparam   B     The result type of the function `f`.
    *  @param    f     The measuring function.
    *  @return   an option value containing the first element of this $coll
-   *            with the smallest value measured by function f
+   *            with the smallest value measured by function `f`
    *            with respect to the ordering `cmp`.
    */
   def minByOption[B](f: A => B)(implicit ord: Ordering[B]): Option[A] =
@@ -1335,7 +1341,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   @inline final def addString(b: StringBuilder): b.type = addString(b, "")
 
-  /** Given a collection factory `factory`, convert this collection to the appropriate
+  /** Given a collection factory `factory`, converts this $coll to the appropriate
    *  representation for the current element type `A`. Example uses:
    *
    *  {{{
@@ -1349,29 +1355,61 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use .iterator instead of .toIterator", "2.13.0")
   @`inline` final def toIterator: Iterator[A] = iterator
 
+  /** Converts this $coll to a `List`.
+    *
+    * @return This $coll as a `List[A]`.
+    */
   def toList: immutable.List[A] = immutable.List.from(this)
 
+  /** Converts this $coll to a `Vector`.
+    *
+    * @return This $coll as a `Vector[A]`.
+    */
   def toVector: immutable.Vector[A] = immutable.Vector.from(this)
 
+  /** Converts this $coll to a `Map`, given an implicit coercion from the $coll's type to a key-value tuple.
+    *
+    * @tparam K The key type for the resulting map.
+    * @tparam V The value type for the resulting map.
+    * @param ev An implicit coercion from `A` to `[K, V]`.
+    * @return This $coll as a `Map[K, V]`.
+    */
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
     immutable.Map.from(this.asInstanceOf[IterableOnce[(K, V)]])
 
+  /** Converts this $coll to a `Set`.
+    *
+    * @tparam B The type of elements of the result, a supertype of `A`.
+    * @return This $coll as a `Set[B]`.
+    */
   def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(this)
 
-  /** @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
+  /** @return This $coll as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
    */
   def toSeq: immutable.Seq[A] = immutable.Seq.from(this)
 
+  /** Converts this $coll to an `IndexedSeq`.
+    *
+    * @return This $coll as an `IndexedSeq[A]`.
+    */
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
   @deprecated("Use .to(LazyList) instead of .toStream", "2.13.0")
   @inline final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
+  /** Converts this $coll to a `Buffer`.
+    *
+    * @tparam B The type of elements of the result, a supertype of `A`.
+    * @return This $coll as a `Buffer[B]`.
+    */
   @inline final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
 
-  /** Convert collection to array.
+  /** Converts this $coll to an `Array`.
     *
     * Implementation note: DO NOT call [[Array.from]] from this method.
+    *
+    * @tparam B The type of elements of the result, a supertype of `A`.
+    * @return This $coll as an `Array[B]`.
     */
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) {
