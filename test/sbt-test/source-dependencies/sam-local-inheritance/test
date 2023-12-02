@@ -1,0 +1,15 @@
+> setup; reload
+
+> compile
+
+> checkRecompilations 0 A B C
+
+# change the SAM type
+$ copy-file changes/A.scala A.scala
+
+> compile
+
+> checkIterations 3
+> checkRecompilations 1 A
+# SAM type change does not affect C, hence C should not be recompiled
+> checkRecompilations 2 B
