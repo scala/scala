@@ -398,6 +398,10 @@ object NumericRange {
       def check(t: T): T =
         if (num.gt(t, limit)) throw new IllegalArgumentException("More than Int.MaxValue elements.")
         else t
+
+      def isMinValue(t: T): Boolean =
+        num.lt(t, num.zero) && num.gt(num.minus(t, num.one), t)
+
       // If the range crosses zero, it might overflow when subtracted
       val startside = num.sign(start)
       val endside = num.sign(end)
@@ -440,10 +444,12 @@ object NumericRange {
               // There is a last piece
               val enddiff = num.minus(end,waypointB)
               val endq    = check(num.quot(enddiff, step))
-              if (num.sign(endq) != num.sign(num.minus(endq, one))) {
-                // types smaller or equal to Int are already handled (including custom wrappers),
-                // in this case, we need an extra step of checking for Long.MinValue
-                // abs value of Long.MinValue would be Long.MinValue, so we'd need to add one to it, and then use the abs value of the expression
+              // Types smaller or equal to Int are already handled (including custom wrappers),
+              // in this case, we need an extra step of checking for "MinValue" of types larger than Int.
+              if (isMinValue(endq)) {
+                // Since num.quot("num.MinValue", "1 or -1") returns MinValue, check gets bypassed!
+                // If there are more than Int.MaxValue of elements in the [end+1, wayPointB] section of the range,
+                // there would definitely be more than Int.MaxValue elements in the range.
                 check(num.abs(num.plus(endq, one)))
               }
               val last    = if (endq == zero) waypointB else num.plus(waypointB, num.times(endq, step))
