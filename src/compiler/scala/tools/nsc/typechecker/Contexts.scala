@@ -1098,7 +1098,7 @@ trait Contexts { self: Analyzer =>
 
     private def collectImplicits(syms: Scope, pre: Type): List[ImplicitInfo] =
       for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported = false))
-      yield new ImplicitInfo(sym.name, pre, sym)
+      yield new ImplicitInfo(sym.name, pre, sym, inPackagePrefix = false)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = if (isExcludedRootImport(imp)) List() else {
       val qual = imp.qual
@@ -1114,12 +1114,12 @@ trait Contexts { self: Analyzer =>
           // Looking up implicit members in the package, rather than package object, here is at least
           // consistent with what is done just below for named imports.
           for (sym <- qual.tpe.implicitMembers.toList if isQualifyingImplicit(sym.name, sym, pre, imported = true))
-          yield new ImplicitInfo(sym.name, pre, sym, imp, sel)
+          yield new ImplicitInfo(sym.name, pre, sym, importInfo = imp, importSelector = sel)
         case (sel @ ImportSelector(from, _, to, _)) :: sels1 =>
           var impls = collect(sels1).filter(_.name != from)
           if (!sel.isMask)
             withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
-              impls = new ImplicitInfo(to, pre, sym, imp, sel) :: impls
+              impls = new ImplicitInfo(to, pre, sym, importInfo = imp, importSelector = sel) :: impls
             }
           impls
       }
