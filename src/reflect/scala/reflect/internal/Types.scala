@@ -4358,9 +4358,9 @@ trait Types
     override def apply(tp: Type) = super.apply(tp.normalize) // normalize is required here
   }
 
-  object        unwrapToClass extends ClassUnwrapper(existential = true) { }
-  object  unwrapToStableClass extends ClassUnwrapper(existential = false) { }
-  object   unwrapWrapperTypes extends  TypeUnwrapper(true, true, true, true) { }
+  object        unwrapToClass extends ClassUnwrapper(existential = true)
+  object  unwrapToStableClass extends ClassUnwrapper(existential = false)
+  object   unwrapWrapperTypes extends  TypeUnwrapper(poly = true, existential = true, annotated = true, nullary = true)
 
   def elementExtract(container: Symbol, tp: Type): Type = {
     assert(!container.isAliasType, container)

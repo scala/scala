@@ -1026,7 +1026,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   }
 
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
-    in = new JavaCharArrayReader(new ArraySeq.ofChar(unit.source.content), true, syntaxError)
+    in = new JavaCharArrayReader(new ArraySeq.ofChar(unit.source.content), decodeUni = true, syntaxError)
     init()
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)

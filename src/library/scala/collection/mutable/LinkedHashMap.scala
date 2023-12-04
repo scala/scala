@@ -103,12 +103,12 @@ class LinkedHashMap[K, V]
       super.contains(key) // A subclass might override `get`, use the default implementation `contains`.
   }
 
-  override def put(key: K, value: V): Option[V] = put0(key, value, true) match {
+  override def put(key: K, value: V): Option[V] = put0(key, value, getOld = true) match {
     case null => None
     case sm => sm
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = put0(key, value, getOld = false)
 
   override def remove(key: K): Option[V] = removeEntry0(key) match {
     case null => None
@@ -144,7 +144,7 @@ class LinkedHashMap[K, V]
         if (contentSize + 1 >= threshold) growTable(table.length * 2)
         // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
         val newIdx = if (table0 eq table) idx else index(hash)
-        put0(key, default, false, hash, newIdx)
+        put0(key, default, getOld = false, hash, newIdx)
         default
       }
     }
@@ -299,7 +299,7 @@ class LinkedHashMap[K, V]
               growTable(table.length * 2)
               index(hash)
             } else indexedHash
-          put0(key, value, false, hash, newIndexedHash)
+          put0(key, value, getOld = false, hash, newIndexedHash)
 
         case (Some(_), Some(newValue)) => foundEntry.value = newValue
       }

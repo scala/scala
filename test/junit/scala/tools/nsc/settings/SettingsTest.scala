@@ -249,20 +249,20 @@ class SettingsTest {
   }
   @Test def `wildcard doesn't disable everything`(): Unit = {
     val settings = new Settings()
-    settings.processArguments("-opt:_" :: Nil, true)
+    settings.processArguments("-opt:_" :: Nil, processAll = true)
     assertTrue("has the choice", settings.opt.contains(settings.optChoices.unreachableCode))
     assertTrue("is enabled", settings.optUnreachableCode)
     assertFalse("inliner is not enabled", settings.optInlinerEnabled)
   }
   @Test def `kill switch can be enabled explicitly`(): Unit = {
     val settings = new Settings()
-    settings.processArguments("-opt:unreachable-code,none" :: Nil, true)
+    settings.processArguments("-opt:unreachable-code,none" :: Nil, processAll = true)
     assertTrue("has the choice", settings.opt.contains(settings.optChoices.unreachableCode))
     assertFalse("is not enabled", settings.optUnreachableCode)
   }
   @Test def `kill switch disables inline`(): Unit = {
     val settings = new Settings()
-    settings.processArguments("-opt:inline:**" :: "-opt:none" :: Nil, true)
+    settings.processArguments("-opt:inline:**" :: "-opt:none" :: Nil, processAll = true)
     assertTrue("has the choice", settings.optInlineFrom.nonEmpty)
     assertFalse("is not enabled", settings.optInlinerEnabled)
   }
@@ -270,7 +270,7 @@ class SettingsTest {
     import scala.collection.mutable.ListBuffer
     val errors   = ListBuffer.empty[String]
     val settings = new Settings(errors.addOne)
-    val (ok, rest) = settings.processArguments("-Vinline" :: "-Xlint" :: Nil, true)
+    val (ok, rest) = settings.processArguments("-Vinline" :: "-Xlint" :: Nil, processAll = true)
     assertFalse("processing should fail", ok)
     assertEquals("processing stops at bad option", 2, rest.length)
     assertEquals(2, errors.size)  // missing arg and bad option
@@ -279,7 +279,7 @@ class SettingsTest {
     import scala.collection.mutable.ListBuffer
     val errors   = ListBuffer.empty[String]
     val settings = new Settings(errors.addOne)
-    val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-Vdebug" :: "x.scala" :: Nil, true)
+    val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-Vdebug" :: "x.scala" :: Nil, processAll = true)
     assertTrue("processing should succeed", ok)
     assertEquals("processing stops at argument", 1, rest.length)
     assertEquals("processing stops at the correct argument", "x.scala", rest.head)
@@ -289,7 +289,7 @@ class SettingsTest {
   }
   @Test def `t12098 MultiStringSetting prepends`(): Unit = {
     val settings = new Settings(msg => fail(s"Unexpected error: $msg"))
-    val (ok, rest) = settings.processArguments("-Wconf:cat=lint-missing-interpolator:ws" :: "-Xlint" :: "x.scala" :: Nil, true)
+    val (ok, rest) = settings.processArguments("-Wconf:cat=lint-missing-interpolator:ws" :: "-Xlint" :: "x.scala" :: Nil, processAll = true)
     assertTrue("processing should succeed", ok)
     assertTrue(settings.warnMissingInterpolator)
     assertTrue(settings.lintDeprecation)

@@ -19,12 +19,14 @@ package scala.concurrent
 @deprecated("Use `java.util.concurrent.Exchanger` instead.", since = "2.13.0")
 class SyncChannel[A] {
 
-  private[this] var pendingWrites = List[(A, SyncVar[Boolean])]()
+  private final val Signal = ()
+  private type Signal = Unit
+  private[this] var pendingWrites = List[(A, SyncVar[Signal])]()
   private[this] var pendingReads  = List[SyncVar[A]]()
 
   def write(data: A): Unit = {
     // create write request
-    val writeReq = new SyncVar[Boolean]
+    val writeReq = new SyncVar[Signal]
 
     this.synchronized {
       // check whether there is a reader waiting
@@ -33,10 +35,10 @@ class SyncChannel[A] {
         pendingReads = pendingReads.tail
 
         // let reader continue
-        readReq put data
+        readReq.put(data)
 
         // resolve write request
-        writeReq put true
+        writeReq.put(Signal)
       }
       else {
         // enqueue write request
@@ -59,10 +61,10 @@ class SyncChannel[A] {
         pendingWrites = pendingWrites.tail
 
         // let writer continue
-        writeReq.put(true)
+        writeReq.put(Signal)
 
         // resolve read request
-        readReq.put (data)
+        readReq.put(data)
       }
       else {
         // enqueue read request

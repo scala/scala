@@ -157,7 +157,7 @@ object ClassPath {
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
 
   /** Expand path and possibly expanding stars */
-  def expandPath(path: String, expandStar: Boolean = true): List[String] =
+  def expandPath(path: String, expandStar: Boolean): List[String] =
     if (expandStar) split(path) flatMap expandS
     else split(path)
 

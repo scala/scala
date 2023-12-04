@@ -448,7 +448,7 @@ object ProcessBuilder extends ProcessBuilderImpl {
     def #>(out: => OutputStream): ProcessBuilder = #> (new OStreamBuilder(out, "<output stream>"))
 
     /** Writes the output stream of this process to a [[scala.sys.process.ProcessBuilder]]. */
-    def #>(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(toSource, b, false)
+    def #>(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(toSource, b, toError = false)
 
     /** Returns a [[scala.sys.process.ProcessBuilder]] representing this `Source`. */
     def cat = toSource
@@ -474,6 +474,6 @@ object ProcessBuilder extends ProcessBuilderImpl {
     def #<(in: => InputStream): ProcessBuilder = #< (new IStreamBuilder(in, "<input stream>"))
 
     /** Reads the output of a [[scala.sys.process.ProcessBuilder]] into the input stream of this process. */
-    def #<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, toSink, false)
+    def #<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, toSink, toError = false)
   }
 }

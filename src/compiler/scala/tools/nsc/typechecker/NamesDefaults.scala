@@ -16,7 +16,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.mutable
 import scala.reflect.ClassTag
-import PartialFunction.{cond => when}
+import PartialFunction.cond
 
 /**
  *  @author Lukas Rytz
@@ -528,7 +528,7 @@ trait NamesDefaults { self: Analyzer =>
     def matchesName(param: Symbol, name: Name, argIndex: Int) = {
       def warn(msg: String, since: String) = context0.deprecationWarning(args(argIndex).pos, param, msg, since)
       def checkDeprecation(anonOK: Boolean) =
-        when (param.deprecatedParamName) {
+        cond(param.deprecatedParamName) {
           case Some(`name`)      => true
           case Some(nme.NO_NAME) => anonOK
         }
@@ -536,11 +536,11 @@ trait NamesDefaults { self: Analyzer =>
       def since   = if (version.isEmpty) version else s" (since $version)"
       def checkName = {
         val res = param.name == name
-        if (res && checkDeprecation(true)) warn(s"naming parameter $name is deprecated$since.", version)
+        if (res && checkDeprecation(anonOK = true)) warn(s"naming parameter $name is deprecated$since.", version)
         res
       }
       def checkAltName = {
-        val res = checkDeprecation(false)
+        val res = checkDeprecation(anonOK = false)
         if (res) warn(s"the parameter name $name is deprecated$since: use ${param.name} instead", version)
         res
       }

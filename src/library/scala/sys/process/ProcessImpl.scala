@@ -192,7 +192,7 @@ private[process] trait ProcessImpl {
     private def ioHandler(e: IOException): Unit = e.printStackTrace()
   }
 
-  private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
+  private[process] class PipeSource(label: => String) extends PipeThread(isSink = false, () => label) {
     setName(s"PipeSource($label)-$getName")
     protected[this] val pipe = new PipedOutputStream
     protected[this] val source = new LinkedBlockingQueue[Option[InputStream]](1)
@@ -215,7 +215,7 @@ private[process] trait ProcessImpl {
     }
     def done() = source.put(None)
   }
-  private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
+  private[process] class PipeSink(label: => String) extends PipeThread(isSink = true, () => label) {
     setName(s"PipeSink($label)-$getName")
     protected[this] val pipe = new PipedInputStream
     protected[this] val sink = new LinkedBlockingQueue[Option[OutputStream]](1)

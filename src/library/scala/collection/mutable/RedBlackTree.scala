@@ -613,7 +613,7 @@ private[collection] object RedBlackTree {
         val left = f(level+1, leftSize)
         val x = xs.next()
         val right = f(level+1, size-1-leftSize)
-        val n = new Node(x, null, false, left, right, null)
+        val n = new Node(x, null, red = false, left, right, null)
         if(left ne null) left.parent = n
         right.parent = n
         n
@@ -634,7 +634,7 @@ private[collection] object RedBlackTree {
         val left = f(level+1, leftSize)
         val (k, v) = xs.next()
         val right = f(level+1, size-1-leftSize)
-        val n = new Node(k, v, false, left, right, null)
+        val n = new Node(k, v, red = false, left, right, null)
         if(left ne null) left.parent = n
         right.parent = n
         n

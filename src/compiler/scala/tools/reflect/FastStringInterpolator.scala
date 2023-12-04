@@ -19,9 +19,9 @@ trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
 
   // fast track entry for StringContext.s
-  def interpolateS: Tree = interpolated(c.macroApplication, false)
+  def interpolateS: Tree = interpolated(c.macroApplication, isRaw = false)
   // fast track entry for StringContext.raw
-  def interpolateRaw: Tree = interpolated(c.macroApplication, true)
+  def interpolateRaw: Tree = interpolated(c.macroApplication, isRaw = true)
 
   // rewrite a tree like `scala.StringContext.apply("hello \\n ", " ", "").s("world", Test.this.foo)`
   // to `"hello \n world ".+(Test.this.foo)`

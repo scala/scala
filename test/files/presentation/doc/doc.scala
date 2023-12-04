@@ -90,7 +90,7 @@ object Test extends InteractiveTest {
           println("Couldn't reload")
         case Some(_) =>
           val parseResponse = new Response[Tree]
-          askParsedEntered(batch, true, parseResponse)
+          askParsedEntered(batch, keepLoaded = true, parseResponse)
           parseResponse.get.swap.toOption match {
             case None =>
               println("Couldn't parse")

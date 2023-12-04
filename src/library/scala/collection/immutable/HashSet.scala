@@ -1822,7 +1822,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
   }
 
   override def diff(that: SetNode[A], shift: Int): SetNode[A] =
-    filterImpl(that.contains(_, originalHash, hash, shift), true)
+    filterImpl(that.contains(_, originalHash, hash, shift), flipped = true)
 
   override def equals(that: Any): Boolean =
     that match {

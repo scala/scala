@@ -429,8 +429,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
    *  which requires only a single traversal.
    */
   def partition(p: A => Boolean): (C, C) = {
-    val first = new View.Filter(this, p, false)
-    val second = new View.Filter(this, p, true)
+    val first = new View.Filter(this, p, isFlipped = false)
+    val second = new View.Filter(this, p, isFlipped = true)
     (fromSpecific(first), fromSpecific(second))
   }
 

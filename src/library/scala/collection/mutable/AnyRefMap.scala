@@ -48,20 +48,20 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     with Serializable {
 
   import AnyRefMap._
-  def this() = this(AnyRefMap.exceptionDefault, 16, true)
+  def this() = this(AnyRefMap.exceptionDefault, 16, initBlank = true)
 
   /** Creates a new `AnyRefMap` that returns default values according to a supplied key-value mapping. */
-  def this(defaultEntry: K => V) = this(defaultEntry, 16, true)
+  def this(defaultEntry: K => V) = this(defaultEntry, 16, initBlank = true)
 
   /** Creates a new `AnyRefMap` with an initial buffer of specified size.
    *
    *  An `AnyRefMap` can typically contain half as many elements as its buffer size
    *  before it requires resizing.
    */
-  def this(initialBufferSize: Int) = this(AnyRefMap.exceptionDefault, initialBufferSize, true)
+  def this(initialBufferSize: Int) = this(AnyRefMap.exceptionDefault, initialBufferSize, initBlank = true)
 
   /** Creates a new `AnyRefMap` with specified default values and initial buffer size. */
-  def this(defaultEntry: K => V, initialBufferSize: Int) = this(defaultEntry, initialBufferSize, true)
+  def this(defaultEntry: K => V, initialBufferSize: Int) = this(defaultEntry, initialBufferSize, initBlank = true)
 
   private[this] var mask = 0
   private[this] var _size = 0
@@ -387,7 +387,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     val hz = java.util.Arrays.copyOf(_hashes, _hashes.length)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = java.util.Arrays.copyOf(_values,  _values.length)
-    val arm = new AnyRefMap[K, V](defaultEntry, 1, false)
+    val arm = new AnyRefMap[K, V](defaultEntry, 1, initBlank = false)
     arm.initializeTo(mask, _size, _vacant, hz, kz,  vz)
     arm
   }
@@ -436,7 +436,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
    *  collection immediately.
    */
   def mapValuesNow[V1](f: V => V1): AnyRefMap[K, V1] = {
-    val arm = new AnyRefMap[K,V1](AnyRefMap.exceptionDefault,  1,  false)
+    val arm = new AnyRefMap[K,V1](AnyRefMap.exceptionDefault,  1,  initBlank = false)
     val hz = java.util.Arrays.copyOf(_hashes, _hashes.length)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = new Array[AnyRef](_values.length)

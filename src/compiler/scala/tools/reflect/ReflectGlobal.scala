@@ -67,6 +67,6 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
   override type RuntimeClass = java.lang.Class[_]
   override implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
 
-  override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = super.openPackageModule(pkgClass, true)
+  override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = super.openPackageModule(pkgClass, force = true)
 }
 

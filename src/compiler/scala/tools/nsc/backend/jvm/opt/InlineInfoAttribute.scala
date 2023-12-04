@@ -166,4 +166,4 @@ object InlineInfoAttribute {
  * In order to instruct the ASM framework to deserialize the ScalaInlineInfo attribute, we need
  * to pass a prototype instance when running the class reader.
  */
-object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(false, null, null, null))
+object InlineInfoAttributePrototype extends InlineInfoAttribute(InlineInfo(isEffectivelyFinal = false, sam = null, methodInfos = null, warning = null))

@@ -15,8 +15,9 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("msg=Boolean literals")
 class ScalaInlineInfoTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:l:none"
+  override def compilerArgs = "-opt:none"
   import compiler._
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head

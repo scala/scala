@@ -278,7 +278,7 @@ abstract class RefChecks extends Transform {
       }
 
       def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
-      def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
+      def infoStringWithLocation(sym: Symbol) = infoString0(sym, showLocation = true)
 
       def infoString0(member: Symbol, showLocation: Boolean) = {
         val location =
@@ -1137,7 +1137,7 @@ abstract class RefChecks extends Transform {
           nonSensiblyNew()
         else if (isEffectivelyFinalDeep(actual) && isEffectivelyFinalDeep(receiver) && !haveSubclassRelationship) {  // object X, Y; X == Y
           if (isEitherNullable)
-            nonSensible("non-null ", false)
+            nonSensible("non-null ", alwaysEqual = false)
           else
             nonSensiblyNeq()
         }
@@ -1169,7 +1169,7 @@ abstract class RefChecks extends Transform {
         if (isCaseEquals) {
           def thisCase = receiver.info.member(nme.equals_).owner
           actual.info.baseClasses.find(_.isCase) match {
-            case Some(p) if p != thisCase => nonSensible("case class ", false)
+            case Some(p) if p != thisCase => nonSensible("case class ", alwaysEqual = false)
             case None =>
               // stronger message on (Some(1) == None)
               //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()

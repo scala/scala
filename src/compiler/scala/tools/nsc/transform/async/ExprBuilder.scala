@@ -214,7 +214,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         addState(stateBuilder.build(endState, style = style))
       }
       if (isRoot && currState != endState) {
-        addState(new AsyncState(Nil, endState, Array(), true))
+        addState(new AsyncState(Nil, endState, Array(), isEmpty = true))
       }
     }
 
@@ -370,7 +370,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
           addState(state)
           loop(rest, needsAfterState || state.nextStates.contains(afterState))
       }
-      loop(nestedStates, false)
+      loop(nestedStates, needsAfterState = false)
     }
   }
 

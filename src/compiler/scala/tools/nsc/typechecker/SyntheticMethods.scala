@@ -77,7 +77,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     if (!syntheticsOk)
       return templ
 
-    val typer = newTyper(if (reporter.hasErrors) context.makeSilent(false) else context)
+    val typer = newTyper(if (reporter.hasErrors) context.makeSilent(reportAmbiguousErrors = false) else context)
     val synthesizer = new ClassMethodSynthesis(clazz0, typer)
     import synthesizer._
 

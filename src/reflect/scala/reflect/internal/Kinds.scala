@@ -411,8 +411,8 @@ trait Kinds {
     abstract class InferKind {
       protected def infer(tpe: Type, owner: Symbol, topLevel: Boolean): Kind
       protected def infer(sym: Symbol, topLevel: Boolean): Kind = infer(sym.tpeHK, sym.owner, topLevel)
-      def apply(sym: Symbol): Kind = infer(sym, true)
-      def apply(tpe: Type, owner: Symbol): Kind = infer(tpe, owner, true)
+      def apply(sym: Symbol): Kind = infer(sym, topLevel = true)
+      def apply(tpe: Type, owner: Symbol): Kind = infer(tpe, owner, topLevel = true)
     }
 
     def apply(pre: Type): InferKind = new InferKind {
@@ -420,7 +420,7 @@ trait Kinds {
         val bounds = if (topLevel) TypeBounds.empty
                      else tpe.asSeenFrom(pre, owner).bounds
         if(!tpe.isHigherKinded) ProperTypeKind(bounds)
-        else TypeConKind(bounds, tpe.typeParams map { p => Argument(p.variance, infer(p, false))(p) })
+        else TypeConKind(bounds, tpe.typeParams map { p => Argument(p.variance, infer(p, topLevel = false))(p) })
       }
     }
   }

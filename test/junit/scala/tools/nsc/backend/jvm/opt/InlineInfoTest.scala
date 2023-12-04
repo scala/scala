@@ -14,6 +14,7 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("msg=Boolean literals")
 class InlineInfoTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}

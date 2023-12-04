@@ -15,7 +15,7 @@ object SameAPI {
     a.extraHash() == b.extraHash()
 
   def apply(a: Definition, b: Definition): Boolean =
-    new SameAPI(false, true).sameDefinitions(List(a), List(b), topLevel = true)
+    new SameAPI(includePrivate = false, includeParamNames = true).sameDefinitions(List(a), List(b), topLevel = true)
 
   def apply(a: Companions, b: Companions): Boolean = {
     val sameClasses = apply(a.classApi, b.classApi)
@@ -23,7 +23,7 @@ object SameAPI {
     sameClasses && sameObjects
   }
 
-  def apply(a: ClassLike, b: ClassLike): Boolean = new SameAPI(false, true).check(a, b)
+  def apply(a: ClassLike, b: ClassLike): Boolean = new SameAPI(includePrivate = false, includeParamNames = true).check(a, b)
 
   def separateDefinitions(s: Seq[Definition]): (Seq[Definition], Seq[Definition]) =
     s.partition(isValueDefinition)

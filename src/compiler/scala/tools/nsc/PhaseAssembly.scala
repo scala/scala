@@ -62,8 +62,8 @@ trait PhaseAssembly {
       node
     }
 
-    def softConnectNodes(frm: Node, to: Node) = connectNodes(Edge(frm, to, false))
-    def hardConnectNodes(frm: Node, to: Node) = connectNodes(Edge(frm, to, true))
+    def softConnectNodes(frm: Node, to: Node) = connectNodes(Edge(frm, to, hard = false))
+    def hardConnectNodes(frm: Node, to: Node) = connectNodes(Edge(frm, to, hard = true))
 
     // Connect the frm and to nodes in the edge and add it to the set of edges.
     private def connectNodes(e: Edge): Unit = {

@@ -381,7 +381,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |}""".stripMargin
     val m = compileMethod(code)
     assertSameCode(m, List(
-      TypeOp(NEW, "java/lang/Object"), Op(DUP), Invoke(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
+      TypeOp(NEW, "java/lang/Object"), Op(DUP), Invoke(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", itf = false), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
       Ldc(LDC, ""), TypeOp(CHECKCAST, "java/lang/Long"), Op(POP),
       VarOp(ALOAD, 1), Jump(IFNONNULL, Label(18)), Op(ACONST_NULL), Op(ATHROW), Label(18),
       VarOp(ALOAD, 0), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),

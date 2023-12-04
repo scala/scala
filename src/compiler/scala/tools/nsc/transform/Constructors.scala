@@ -366,7 +366,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       def rewriteUnspecialized(assignee: Symbol, stat: Tree): Tree = {
         assert(ctorParams(genericClazz).length == primaryConstrParams.length, "Bad param len")
         // this is just to make private fields public
-        (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat)
+        (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, addressFields = true))(stat)
         // also make assigned fields mutable so they don't end up final in bytecode
         // and mark the specialized class constructor for a release fence addition
         if (assignee.isField)

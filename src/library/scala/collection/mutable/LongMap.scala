@@ -43,7 +43,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     with Serializable {
   import LongMap._
 
-  def this() = this(LongMap.exceptionDefault, 16, true)
+  def this() = this(LongMap.exceptionDefault, 16, initBlank = true)
 
   // TODO: override clear() with an optimization more tailored for efficiency.
   override protected def fromSpecific(coll: scala.collection.IterableOnce[(Long, V)]): LongMap[V] = {
@@ -56,17 +56,17 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   override protected def newSpecificBuilder: Builder[(Long, V),LongMap[V]] = new GrowableBuilder(LongMap.empty[V])
 
   /** Creates a new `LongMap` that returns default values according to a supplied key-value mapping. */
-  def this(defaultEntry: Long => V) = this(defaultEntry, 16, true)
+  def this(defaultEntry: Long => V) = this(defaultEntry, 16, initBlank = true)
 
   /** Creates a new `LongMap` with an initial buffer of specified size.
     *
     *  A LongMap can typically contain half as many elements as its buffer size
     *  before it requires resizing.
     */
-  def this(initialBufferSize: Int) = this(LongMap.exceptionDefault, initialBufferSize, true)
+  def this(initialBufferSize: Int) = this(LongMap.exceptionDefault, initialBufferSize, initBlank = true)
 
   /** Creates a new `LongMap` with specified default values and initial buffer size. */
-  def this(defaultEntry: Long => V,  initialBufferSize: Int) = this(defaultEntry,  initialBufferSize,  true)
+  def this(defaultEntry: Long => V,  initialBufferSize: Int) = this(defaultEntry,  initialBufferSize,  initBlank = true)
 
   private[this] var mask = 0
   private[this] var extraKeys: Int = 0
@@ -455,7 +455,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   override def clone(): LongMap[V] = {
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = java.util.Arrays.copyOf(_values,  _values.length)
-    val lm = new LongMap[V](defaultEntry, 1, false)
+    val lm = new LongMap[V](defaultEntry, 1, initBlank = false)
     lm.initializeTo(mask, extraKeys, zeroValue, minValue, _size, _vacant, kz,  vz)
     lm
   }
@@ -522,7 +522,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def mapValuesNow[V1](f: V => V1): LongMap[V1] = {
     val zv = if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
     val mv = if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
-    val lm = new LongMap[V1](LongMap.exceptionDefault,  1,  false)
+    val lm = new LongMap[V1](LongMap.exceptionDefault,  1,  initBlank = false)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = new Array[AnyRef](_values.length)
     var i,j = 0

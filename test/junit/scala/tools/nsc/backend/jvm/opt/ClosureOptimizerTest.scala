@@ -56,7 +56,7 @@ class ClosureOptimizerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameCode(getMethod(c, "t"),
-      List(VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/collection/immutable/List", "head", "()Ljava/lang/Object;", false),
+      List(VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/collection/immutable/List", "head", "()Ljava/lang/Object;", itf = false),
         TypeOp(CHECKCAST, "java/lang/String"), Op(ARETURN)))
   }
 

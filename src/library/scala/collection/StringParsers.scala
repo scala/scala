@@ -28,6 +28,8 @@ private[scala] object StringParsers {
   private final val longOverflowBoundary = -922337203685477580L
   private final val longOverflowDigit = 9
 
+  private final val POS = true
+
   @inline
   private[this] final def decValue(ch: Char): Int = java.lang.Character.digit(ch, 10)
 
@@ -72,9 +74,9 @@ private[scala] object StringParsers {
         if (v > -1) Some(v.toByte)
         else None
       }
-      else if (v > -1) stepToOverflow(from, len, -v, true, Byte.MinValue).map(_.toByte)
-      else if (first == '+') stepToOverflow(from, len, 0, true, Byte.MinValue).map(_.toByte)
-      else if (first == '-') stepToOverflow(from, len, 0, false, Byte.MinValue).map(_.toByte)
+      else if (v > -1) stepToOverflow(from, len, -v, POS, Byte.MinValue).map(_.toByte)
+      else if (first == '+') stepToOverflow(from, len, 0, POS, Byte.MinValue).map(_.toByte)
+      else if (first == '-') stepToOverflow(from, len, 0, !POS, Byte.MinValue).map(_.toByte)
       else None
     }
   }
@@ -91,9 +93,9 @@ private[scala] object StringParsers {
         if (v > -1) Some(v.toShort)
         else None
       }
-      else if (v > -1) stepToOverflow(from, len, -v, true, Short.MinValue).map(_.toShort)
-      else if (first == '+') stepToOverflow(from, len, 0, true, Short.MinValue).map(_.toShort)
-      else if (first == '-') stepToOverflow(from, len, 0, false, Short.MinValue).map(_.toShort)
+      else if (v > -1) stepToOverflow(from, len, -v, POS, Short.MinValue).map(_.toShort)
+      else if (first == '+') stepToOverflow(from, len, 0, POS, Short.MinValue).map(_.toShort)
+      else if (first == '-') stepToOverflow(from, len, 0, !POS, Short.MinValue).map(_.toShort)
       else None
     }
   }
@@ -125,9 +127,9 @@ private[scala] object StringParsers {
         if (v > -1) Some(v)
         else None
       }
-      else if (v > -1) step(1, -v, true)
-      else if (first == '+') step(1, 0, true)
-      else if (first == '-') step(1, 0, false)
+      else if (v > -1) step(1, -v, POS)
+      else if (first == '+') step(1, 0, POS)
+      else if (first == '-') step(1, 0, !POS)
       else None
     }
   }
@@ -160,9 +162,9 @@ private[scala] object StringParsers {
         if (v > -1) Some(v)
         else None
       }
-      else if (v > -1) step(1, -v, true)
-      else if (first == '+') step(1, 0, true)
-      else if (first == '-') step(1, 0, false)
+      else if (v > -1) step(1, -v, POS)
+      else if (first == '+') step(1, 0, POS)
+      else if (first == '-') step(1, 0, !POS)
       else None
     }
   }

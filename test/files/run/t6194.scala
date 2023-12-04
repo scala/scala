@@ -1,8 +1,8 @@
-import scala.tools.nsc.util._
+import java.io.File.pathSeparator
+import scala.tools.nsc.util.ClassPath
 
 object Test {
-  def main(args: Array[String]): Unit = {
-    val cp = ClassPath.expandPath("""C:\FooBar\Java\includes\*.jar""") mkString java.io.File.pathSeparator
-    println(cp)
+  def main(args: Array[String]): Unit = println {
+    ClassPath.expandPath("""C:\FooBar\Java\includes\*.jar""", expandStar = false).mkString(pathSeparator)
   }
 }

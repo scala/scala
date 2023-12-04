@@ -53,7 +53,7 @@ trait StubErrorMessageTest extends StoreReporterDirectTest {
     import scala.reflect.internal.util.Position
     filteredInfos.foreach { report =>
       print(if (report.severity == storeReporter.ERROR) "error: " else "")
-      println(Position.formatMessage(report.pos, report.msg, true))
+      println(Position.formatMessage(report.pos, report.msg, shortenFile = true))
     }
   }
 }

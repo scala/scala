@@ -166,8 +166,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       }
 
       val names = FlattenedNames(
-        fullName(symbol, java.io.File.separatorChar, symbol.moduleSuffix, true),
-        fullName(symbol, '.', symbol.moduleSuffix, false)
+        fullName(symbol, java.io.File.separatorChar, symbol.moduleSuffix, includePackageObjectClassNames = true),
+        fullName(symbol, '.', symbol.moduleSuffix, includePackageObjectClassNames = false)
       )
 
       registerProductNames(names)
@@ -177,8 +177,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
         symbol.owner.isPackageClass && symbol.isModuleClass && symbol.companionClass == NoSymbol
       if (isTopLevelUniqueModule || symbol.isPackageObject) {
         val names = FlattenedNames(
-          fullName(symbol, java.io.File.separatorChar, "", true),
-          fullName(symbol, '.', "", false)
+          fullName(symbol, java.io.File.separatorChar, "", includePackageObjectClassNames = true),
+          fullName(symbol, '.', "", includePackageObjectClassNames = false)
         )
         registerProductNames(names)
       }

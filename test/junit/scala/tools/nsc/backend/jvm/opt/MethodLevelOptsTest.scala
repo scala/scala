@@ -16,6 +16,7 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("msg=Boolean literals should be passed using named argument syntax for parameter itf.")
 class MethodLevelOptsTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:method"
   import compiler._

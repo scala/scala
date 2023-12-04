@@ -626,7 +626,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // A module reference in a pattern has type Foo.type, not "object Foo"
         narrowIf(checkStable(tree), sym.isModuleNotMethod)
       else if (isModuleTypedExpr)                     // (3)
-        narrowIf(tree, true)
+        narrowIf(tree, condition = true)
       else if (isGetClassCall)                        // (4)
         tree setType MethodType(Nil, getClassReturnType(pre))
       else
@@ -2435,10 +2435,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (meth.owner.isClass && meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
             StarWithDefaultError(meth)
 
-          for (pp <- meth.paramss ; p <- pp)
-            for (n <- p.deprecatedParamName)
-              if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.contains(n))))
-                DeprecatedParamNameError(p, n)
+          for (pp <- meth.paramss; p <- pp)
+            p.deprecatedParamName match {
+              case Some(nme.NO_NAME) | None =>
+              case Some(alt) =>
+                if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == alt || p1.deprecatedParamName.contains(alt))))
+                  DeprecatedParamNameError(p, alt)
+            }
 
           if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated) && !meth.isSynthetic)
             meth.paramss match {
