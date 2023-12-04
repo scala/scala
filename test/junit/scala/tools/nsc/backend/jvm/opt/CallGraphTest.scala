@@ -36,8 +36,10 @@ class CallGraphTest extends BytecodeTesting {
     case call: MethodInsnNode => call
   }).toList
 
+  def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType): Unit =
+    checkCallsite(call, callsiteMethod, target, calleeDeclClass, false, false, false)
   def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
-                    safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean, argInfos: IntMap[ArgInfo] = IntMap.empty) = {
+                    @deprecatedName safeToInline: Boolean, @deprecatedName atInline: Boolean, @deprecatedName atNoInline: Boolean, argInfos: IntMap[ArgInfo] = IntMap.empty): Unit = {
     val callsite = callGraph.callsites(callsiteMethod)(call)
     try {
       assert(callsite.callsiteInstruction == call)
@@ -143,7 +145,7 @@ class CallGraphTest extends BytecodeTesting {
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = cachedClassBType("java/lang/Class")
     @unused val r = callGraph.callsites(m)(fn)
-    checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
+    checkCallsite(fn, m, forNameMeth, classTp)
   }
 
   @Test

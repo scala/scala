@@ -57,7 +57,7 @@ abstract class IndexedTest[T, E] {
     expectSameContent("basic equality", false, test1, test2, 0, size)
   }
 
-  protected def expectSameContent(txt: String, canBeSame:Boolean, orig: T, test: T, offset: Int, len: Int): Unit = {
+  protected def expectSameContent(txt: String, @deprecatedName canBeSame: Boolean, orig: T, test: T, offset: Int, len: Int): Unit = {
     val txtAndState = s"$txt canBeSame $canBeSame isMutableContent $isMutableContent isTakeAllSame $isTakeAllSame offset $offset len $len length(test) ${length(test)}"
     val isValidSame = canBeSame && !isMutableContent && offset == 0 && len == size
     if (isValidSame && isTakeAllSame)

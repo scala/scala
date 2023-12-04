@@ -204,7 +204,7 @@ object Array {
 
   /** Creates an array of `Boolean` objects */
   // Subject to a compiler optimization in Cleanup, see above.
-  def apply(x: Boolean, xs: Boolean*): Array[Boolean] = {
+  def apply(@deprecatedName x: Boolean, xs: Boolean*): Array[Boolean] = {
     val array = new Array[Boolean](xs.length + 1)
     array(0) = x
     val iterator = xs.iterator
