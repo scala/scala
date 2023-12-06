@@ -14,7 +14,7 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
   *
@@ -28,8 +28,9 @@ import scala.annotation.tailrec
   * @define Coll `immutable.VectorMap`
   */
 final class VectorMap[K, +V] private (
-    private[immutable] val fields: Vector[Any],
-    private[immutable] val underlying: Map[K, (Int, V)], dropped: Int)
+    private[immutable] val fields: Vector[Any], // K | Tombstone | Null
+    private[immutable] val underlying: Map[K, (Int, V)],
+    dropped: Int)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
@@ -39,9 +40,7 @@ final class VectorMap[K, +V] private (
 
   override protected[this] def className: String = "VectorMap"
 
-  private[immutable] def this(fields: Vector[K], underlying: Map[K, (Int, V)]) = {
-    this(fields, underlying, 0)
-  }
+  private[immutable] def this(fields: Vector[K], underlying: Map[K, (Int, V)]) = this(fields, underlying, 0)
 
   override val size = underlying.size
 
@@ -73,10 +72,8 @@ final class VectorMap[K, +V] private (
   private def nextValidField(slot: Int): (Int, K) = {
     if (slot >= fields.size) (-1, null.asInstanceOf[K])
     else fields(slot) match {
-      case Tombstone(distance) =>
-        nextValidField(slot + distance)
-      case k =>
-        (slot, k.asInstanceOf[K])
+      case Tombstone(distance) => nextValidField(slot + distance)
+      case k /*: K | Null */   => (slot, k.asInstanceOf[K])
     }
   }
 
@@ -106,12 +103,13 @@ final class VectorMap[K, +V] private (
 
     override def hasNext: Boolean = slot < fieldsLength
 
-    override def next(): (K, V) = {
-      if (!hasNext) throw new NoSuchElementException("next called on depleted iterator")
-      val result = (key, underlying(key)._2)
-      advance()
-      result
-    }
+    override def next(): (K, V) =
+      if (!hasNext) Iterator.empty.next()
+      else {
+        val result = (key, underlying(key)._2)
+        advance()
+        result
+      }
   }
 
   // No-Op overrides to allow for more efficient steppers in a minor release.
@@ -208,6 +206,11 @@ final class VectorMap[K, +V] private (
     new VectorMap(fields.dropRight(fields.size - slot), underlying - key, dropped)
   }
 
+  /** A [[Vector]] of the keys contained by this map.
+   *
+   *  @return  a [[Vector]] of the keys contained by this map.
+   */
+  @nowarn("msg=overriding method keys")
   override def keys: Vector[K] = keysIterator.toVector
 
   override def values: Iterable[V] = new Iterable[V] with IterableFactoryDefaults[V, Iterable] {
@@ -251,7 +254,7 @@ private[immutable] final class VectorMapBuilder[K, V] extends mutable.Builder[(K
 
   override def result(): VectorMap[K, V] = {
     if (aliased eq null) {
-        aliased = new VectorMap(vectorBuilder.result(), mapBuilder.result())
+      aliased = new VectorMap(vectorBuilder.result(), mapBuilder.result())
     }
     aliased
   }

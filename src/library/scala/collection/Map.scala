@@ -179,9 +179,16 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override /*PartialFunction*/ def applyOrElse[K1 <: K, V1 >: V](x: K1, default: K1 => V1): V1 = getOrElse(x, default(x))
 
-  /** Collects all keys of this map in a set.
-    * @return  a set containing all keys of this map.
-    */
+  /** A set representing the keys contained by this map.
+   *
+   *  For efficiency the resulting set may be a view (maintaining a reference to the map and reflecting modifications
+   *  to the map), but it may also be a strict collection without reference to the map.
+   *
+   *   - To ensure an independent strict collection, use `m.keysIterator.toSet`
+   *   - To obtain a view on the keys, use `scala.collection.View.fromIteratorProvider(m.keysIterator)`
+   *
+   *  @return a set representing the keys contained by this map
+   */
   def keySet: Set[K] = new KeySet
 
   /** The implementation class of the set returned by `keySet`.
@@ -199,25 +206,32 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     override def isEmpty: Boolean = MapOps.this.isEmpty
   }
 
-  /** Collects all keys of this map in an iterable collection.
-    *
-    *  @return the keys of this map as an iterable.
-    */
+  /** An [[Iterable]] collection of the keys contained by this map.
+   *
+   *  For efficiency the resulting collection may be a view (maintaining a reference to the map and reflecting
+   *  modifications to the map), but it may also be a strict collection without reference to the map.
+   *
+   *   - To ensure an independent strict collection, use `m.keysIterator.toSet`
+   *   - To obtain a view on the keys, use `scala.collection.View.fromIteratorProvider(m.keysIterator)`
+   *
+   *  @return an [[Iterable]] collection of the keys contained by this map
+   */
+  @deprecatedOverriding("This method should be an alias for keySet", since="2.13.13")
   def keys: Iterable[K] = keySet
 
   /** Collects all values of this map in an iterable collection.
-    *
-    *  @return the values of this map as an iterable.
-    */
+   *
+   *  @return the values of this map as an iterable.
+   */
   def values: Iterable[V] = new AbstractIterable[V] with DefaultSerializable {
     override def knownSize: Int = MapOps.this.knownSize
     override def iterator: Iterator[V] = valuesIterator
   }
 
-  /** Creates an iterator for all keys.
-    *
-    *  @return an iterator over all keys.
-    */
+  /** An [[Iterator]] of the keys contained by this map.
+   *
+   *  @return an [[Iterator]] of the keys contained by this map
+   */
   def keysIterator: Iterator[K] = new AbstractIterator[K] {
     val iter = MapOps.this.iterator
     def hasNext = iter.hasNext
