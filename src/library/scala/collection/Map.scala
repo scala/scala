@@ -276,13 +276,14 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
   /** Defines the default value computation for the map,
-    *  returned when a key is not found
-    *  The method implemented here throws an exception,
-    *  but it might be overridden in subclasses.
-    *
-    *  @param key the given key value for which a binding is missing.
-    *  @throws NoSuchElementException
-    */
+   *  returned when a key is not found.
+   *
+   *  The method implemented here throws an exception,
+   *  but it may be overridden by subclasses.
+   *
+   *  @param key the given key value for which a binding is missing.
+   *  @throws NoSuchElementException if no default value is defined
+   */
   @throws[NoSuchElementException]
   def default(key: K): V =
     throw new NoSuchElementException("key not found: " + key)

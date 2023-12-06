@@ -928,7 +928,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *
     * Patching at negative indices is the same as patching starting at 0.
     * Patching at indices at or larger than the length of the original $coll appends the patch to the end.
-    * If more values are replaced than actually exist, the excess is ignored.
+    * If the `replaced` count would exceed the available elements, the difference in excess is ignored.
     *
     *  @param  from     the index of the first replaced element
     *  @param  other    the replacement sequence

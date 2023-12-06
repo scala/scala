@@ -418,7 +418,8 @@ lazy val library = configureAsSubproject(project)
       Seq(
         "-doc-no-compile", libraryAuxDir.toString,
         "-skip-packages", "scala.concurrent.impl",
-        "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
+        "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt",
+        //"-required", // placeholder for internal flag
       )
     },
     Compile / console / scalacOptions := {

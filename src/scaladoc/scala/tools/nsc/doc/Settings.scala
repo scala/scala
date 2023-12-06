@@ -208,6 +208,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     "Avoid warnings for ambiguous and incorrect links."
   )
 
+  val docRequired = BooleanSetting (
+    "-required",
+    "Require documentation for public members."
+  ).internalOnly()
+
   val docSkipPackages = StringSetting (
     "-skip-packages",
     "<package1>:...:<packageN>",

@@ -562,10 +562,22 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     this
   }
 
+  /** An overload of `map` which produces a `LongMap`.
+   *
+   *  @param f the mapping function
+   */
   def map[V2](f: ((Long, V)) => (Long, V2)): LongMap[V2] = LongMap.from(new View.Map(coll, f))
 
+  /** An overload of `flatMap` which produces a `LongMap`.
+   *
+   *  @param f the mapping function
+   */
   def flatMap[V2](f: ((Long, V)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
+  /** An overload of `collect` which produces a `LongMap`.
+   *
+   *  @param pf the mapping function
+   */
   def collect[V2](pf: PartialFunction[(Long, V), (Long, V2)]): LongMap[V2] =
     strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 

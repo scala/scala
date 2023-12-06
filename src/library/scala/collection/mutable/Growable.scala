@@ -33,7 +33,7 @@ trait Growable[-A] extends Clearable {
   def addOne(elem: A): this.type
 
   /** Alias for `addOne` */
-  @`inline` final def += (elem: A): this.type = addOne(elem)
+  @inline final def += (elem: A): this.type = addOne(elem)
 
   //TODO This causes a conflict in StringBuilder; looks like a compiler bug
   //@deprecated("Use addOne or += instead of append", "2.13.0")
@@ -47,17 +47,17 @@ trait Growable[-A] extends Clearable {
    *  @return the $coll itself
    */
   @deprecated("Use `++=` aka `addAll` instead of varargs `+=`; infix operations with an operand of multiple args will be deprecated", "2.13.0")
-  @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
+  @inline final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
 
   /** ${Add}s all elements produced by an IterableOnce to this $coll.
    *
-   *  @param xs   the IterableOnce producing the elements to $add.
+   *  @param elems   the IterableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def addAll(xs: IterableOnce[A]): this.type = {
-    if (xs.asInstanceOf[AnyRef] eq this) addAll(Buffer.from(xs)) // avoid mutating under our own iterator
+  def addAll(@deprecatedName("xs") elems: IterableOnce[A]): this.type = {
+    if (elems.asInstanceOf[AnyRef] eq this) addAll(Buffer.from(elems)) // avoid mutating under our own iterator
     else {
-      val it = xs.iterator
+      val it = elems.iterator
       while (it.hasNext) {
         addOne(it.next())
       }
@@ -66,11 +66,12 @@ trait Growable[-A] extends Clearable {
   }
 
   /** Alias for `addAll` */
-  @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
+  @inline final def ++= (@deprecatedName("xs") elems: IterableOnce[A]): this.type = addAll(elems)
 
-  /** @return The number of elements in the collection under construction, if it can be cheaply computed,
-    *  -1 otherwise. The default implementation always returns -1.
-    */
+  /** The number of elements in the collection under construction, if it can be cheaply computed, -1 otherwise.
+   *
+   *  @return The number of elements. The default implementation always returns -1.
+   */
   def knownSize: Int = -1
 }
 

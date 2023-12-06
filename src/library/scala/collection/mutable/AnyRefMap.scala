@@ -475,11 +475,30 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     this
   }
 
-  // The implicit dummy parameter is necessary to distinguish these methods from the base methods they overload (not override)
+  // The implicit dummy parameter is necessary to distinguish these methods from the base methods they overload (not override).
+  // Previously, in Scala 2, f took `K with AnyRef` scala/bug#11035
+  /**
+   * An overload of `map` which produces an `AnyRefMap`.
+   *
+   * @param f the mapping function must produce a key-value pair where the key is an `AnyRef`
+   * @param dummy an implicit placeholder for purposes of distinguishing the (erased) signature of this method
+   */
   def map[K2 <: AnyRef, V2](f: ((K, V)) => (K2, V2))(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.Map(this, f))
+  /**
+   * An overload of `flatMap` which produces an `AnyRefMap`.
+   *
+   * @param f the mapping function must produce key-value pairs where the key is an `AnyRef`
+   * @param dummy an implicit placeholder for purposes of distinguishing the (erased) signature of this method
+   */
   def flatMap[K2 <: AnyRef, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.FlatMap(this, f))
+  /**
+   * An overload of `collect` which produces an `AnyRefMap`.
+   *
+   * @param pf the mapping function must produce a key-value pair where the key is an `AnyRef`
+   * @param dummy an implicit placeholder for purposes of distinguishing the (erased) signature of this method
+   */
   def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     strictOptimizedCollect(AnyRefMap.newBuilder[K2, V2], pf)
 

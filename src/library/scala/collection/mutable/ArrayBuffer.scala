@@ -77,6 +77,10 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     array = ArrayBuffer.ensureSize(array, size0, size0.toLong + n)
   }
 
+  /** Uses the given size to resize internal storage, if necessary.
+   *
+   *  @param size Expected maximum number of elements.
+   */
   def sizeHint(size: Int): Unit =
     if(size > length && size >= 1) ensureSize(size)
 
