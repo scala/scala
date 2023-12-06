@@ -292,11 +292,17 @@ object IterableOnce {
   * @define orderDependent
   *
   *              Note: might return different results for different runs, unless the underlying collection type is ordered.
-  * @define orderDependentFold
+  * @define orderDependentReduce
   *
   *              Note: might return different results for different runs, unless the
   *              underlying collection type is ordered or the operator is associative
   *              and commutative.
+  * @define orderIndependentReduce
+  *
+  *              Note: might return different results for different runs, unless either
+  *              of the following conditions is met: (1) the operator is associative,
+  *              and the underlying collection type is ordered; or (2) the operator is
+  *              associative and commutative.
   * @define mayNotTerminateInf
   *
   *              Note: may not terminate for infinite-sized collections.
@@ -308,9 +314,10 @@ object IterableOnce {
   * @define consumesIterator
   *              After calling this method, one should discard the iterator it was called
   * on. Using it is undefined and subject to change.
-  * @define undefinedorder
-  *              The order in which operations are performed on elements is unspecified
-  *              and may be nondeterministic.
+  * @define undefinedOrder
+  *              The order of applications of the operator is unspecified and may be nondeterministic.
+  * @define exactlyOnce
+  *              Each element appears exactly once in the computation.
   * @define coll collection
   *
   */
@@ -688,20 +695,28 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     loop(seq.length - 1, seq(seq.length - 1))
   }
 
-  /** Applies a binary operator to a start value and all elements of this $coll,
-   *  going left to right.
+  /** Applies the given binary operator `op` to the given initial value `z` and all
+   *  elements of this $coll, going left to right. Returns the initial value if this $coll
+   *  is empty.
    *
+   *  "Going left to right" only makes sense if this collection is ordered: then if
+   *  `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the elements of this $coll, the result is
+   *  `op( op( ... op( op(z, x,,1,,), x,,2,,) ... ), x,,n,,)`.
+   *
+   *  If this collection is not ordered, then for each application of the operator, each
+   *  right operand is an element. In addition, the leftmost operand is the initial
+   *  value, and each other left operand is itself an application of the operator. The
+   *  elements of this $coll and the initial value all appear exactly once in the
+   *  computation.
+   *
+   *  $orderDependent
    *  $willNotTerminateInf
-   *  $orderDependentFold
    *
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll,
-   *           going left to right with the start value `z` on the left:
-   *           `op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)` where `x,,1,,, ..., x,,n,,`
-   *           are the elements of this $coll.
-   *           Returns `z` if this $coll is empty.
+   *  @param    z       An initial value.
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator.
+   *  @return           The result of applying `op` to `z` and all elements of this $coll,
+   *                    going left to right. Returns `z` if this $coll is empty.
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = this match {
     case seq: IndexedSeq[A @unchecked] => foldl[A, B](seq, 0, z, op)
@@ -714,19 +729,28 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       result
   }
 
-  /** Applies a binary operator to all elements of this $coll and a start value,
-   *  going right to left.
+  /** Applies the given binary operator `op` to all elements of this $coll and the given
+   *  initial value `z`, going right to left. Returns the initial value if this $coll is
+   *  empty.
    *
+   *  "Going right to left" only makes sense if this collection is ordered: then if
+   *  `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the elements of this $coll, the result is
+   *  `op(x,,1,,, op(x,,2,,, op( ... op(x,,n,,, z) ... )))`.
+   *
+   *  If this collection is not ordered, then for each application of the operator, each
+   *  left operand is an element. In addition, the rightmost operand is the initial
+   *  value, and each other right operand is itself an application of the operator. The
+   *  elements of this $coll and the initial value all appear exactly once in the
+   *  computation.
+   *
+   *  $orderDependent
    *  $willNotTerminateInf
-   *  $orderDependentFold
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll,
-   *           going right to left with the start value `z` on the right:
-   *           `op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))` where `x,,1,,, ..., x,,n,,`
-   *           are the elements of this $coll.
-   *           Returns `z` if this $coll is empty.
+   *
+   *  @param    z       An initial value.
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator.
+   *  @return           The result of applying `op` to all elements of this $coll and `z`,
+   *                    going right to left. Returns `z` if this $coll is empty.
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = reversed.foldLeft(z)((b, a) => op(a, b))
 
@@ -736,56 +760,92 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use foldRight instead of :\\", "2.13.0")
   @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
 
-  /** Folds the elements of this $coll using the specified associative binary operator.
+  /** Applies the given binary operator `op` to the given initial value `z` and all
+   *  elements of this $coll.
+   *
+   *  For each application of the operator, each operand is either an element of this
+   *  $coll, the initial value, or another such application of the operator.
+   *  $undefinedOrder $exactlyOnce The initial value may be used an arbitrary number of
+   *  times, but at least once.
+   *
+   *  If this collection is ordered, then for any application of the operator, the
+   *  element(s) appearing in the left operand will precede those in the right.
+   *
+   *  $orderIndependentReduce In either case, it is also necessary that the initial value
+   *  be a neutral value for the operator, e.g. `Nil` for `List` concatenation or `1` for
+   *  multiplication.
+   *
    *  The default implementation in `IterableOnce` is equivalent to `foldLeft` but may be
    *  overridden for more efficient traversal orders.
    *
-   *  $undefinedorder
    *  $willNotTerminateInf
    *
-   *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
-   *  @param z       a neutral element for the fold operation; may be added to the result
-   *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
-   *                 0 for addition, or 1 for multiplication).
-   *  @param op      a binary operator that must be associative.
-   *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
+   *  @tparam A1     The type parameter for the binary operator, a supertype of `A`.
+   *  @param z       An initial value; may be used an arbitrary number of times in the
+   *                 computation of the result; must be a neutral value for `op` for the
+   *                 result to always be the same across runs.
+   *  @param op      A binary operator; must be associative for the result to always be the
+   *                 same across runs.
+   *  @return        The result of applying `op` between all the elements and `z`, or `z`
+   *                 if this $coll is empty.
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
-  /** Reduces the elements of this $coll using the specified associative binary operator.
+  /** Applies the given binary operator `op` to all elements of this $coll.
    *
-   *  $undefinedorder
+   *  For each application of the operator, each operand is either an element of this
+   *  $coll or another such application of the operator. $undefinedOrder $exactlyOnce
    *
-   *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
-   *  @param op       A binary operator that must be associative.
-   *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
-   *  @throws UnsupportedOperationException if this $coll is empty.
+   *  If this collection is ordered, then for any application of the operator, the
+   *  element(s) appearing in the left operand will precede those in the right.
+   *
+   *  $orderIndependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @tparam B      The type parameter for the binary operator, a supertype of `A`.
+   *  @param op      A binary operator; must be associative for the result to always be the
+   *                 same across runs.
+   *  @return        The result of applying `op` between all the elements if the $coll is
+   *                 nonempty.
+   *  @throws        UnsupportedOperationException if this $coll is empty.
    */
   def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
 
-  /** Reduces the elements of this $coll, if any, using the specified
-   *  associative binary operator.
+  /** If this $coll is nonempty, reduces it with the given binary operator `op`.
    *
-   *  $undefinedorder
+   *  The behavior is the same as [[reduce]] except that the value is `None` if the $coll
+   *  is empty. $undefinedOrder $exactlyOnce
    *
-   *  @tparam B     A type parameter for the binary operator, a supertype of `A`.
-   *  @param op      A binary operator that must be associative.
-   *  @return        An option value containing result of applying reduce operator `op` between all
-   *                 the elements if the collection is nonempty, and `None` otherwise.
+   *  $orderIndependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @tparam B      A type parameter for the binary operator, a supertype of `A`.
+   *  @param op      A binary operator; must be associative for the result to always be the
+   *                 same across runs.
+   *  @return        The result of reducing this $coll with `op` if the $coll is nonempty,
+   *                 inside a `Some`, and `None` otherwise.
    */
   def reduceOption[B >: A](op: (B, B) => B): Option[B] = reduceLeftOption(op)
 
-  /** Applies a binary operator to all elements of this $coll,
-   *  going left to right.
-   *  $willNotTerminateInf
-   *  $orderDependentFold
+  /** Applies the given binary operator `op` to all elements of this $coll, going left to
+   *  right.
    *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll,
-   *           going left to right:
-   *           `op( op( ... op(x,,1,,, x,,2,,) ..., x,,n-1,,), x,,n,,)` where `x,,1,,, ..., x,,n,,`
-   *           are the elements of this $coll.
+   *  "Going left to right" only makes sense if this collection is ordered: then if
+   *  `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the elements of this $coll, the result is
+   *  `op( op( op( ... op(x,,1,,, x,,2,,) ... ), x,,n-1,,), x,,n,,)`.
+   *
+   *  If this collection is not ordered, then for each application of the operator, each
+   *  right operand is an element. In addition, the leftmost operand is the first element
+   *  of this $coll and each other left operand is itself an application of the
+   *  operator. $exactlyOnce
+   *
+   *  $orderDependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator, a supertype of `A`.
+   *  @return           The result of applying `op` to all elements of this $coll, going
+   *                    left to right.
    *  @throws UnsupportedOperationException if this $coll is empty.
    */
   def reduceLeft[B >: A](op: (B, A) => B): B = this match {
@@ -804,16 +864,25 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     else onEmpty
   }
 
-  /** Applies a binary operator to all elements of this $coll, going right to left.
-   *  $willNotTerminateInf
-   *  $orderDependentFold
+  /** Applies the given binary operator `op` to all elements of this $coll, going right to
+   *  left.
    *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll,
-   *           going right to left:
-   *           `op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))` where `x,,1,,, ..., x,,n,,`
-   *           are the elements of this $coll.
+   *  "Going right to left" only makes sense if this collection is ordered: then if
+   *  `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the elements of this $coll, the result is
+   *  `op(x,,1,,, op(x,,2,,, op( ... op(x,,n-1,,, x,,n,,) ... )))`.
+   *
+   *  If this collection is not ordered, then for each application of the operator, each
+   *  left operand is an element. In addition, the rightmost operand is the last element
+   *  of this $coll and each other right operand is itself an application of the
+   *  operator. $exactlyOnce
+   *
+   *  $orderDependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator, a supertype of `A`.
+   *  @return           The result of applying `op` to all elements of this $coll, going
+   *                    right to left.
    *  @throws UnsupportedOperationException if this $coll is empty.
    */
   def reduceRight[B >: A](op: (A, B) => B): B = this match {
@@ -822,14 +891,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     case _ => reversed.reduceLeft[B]((x, y) => op(y, x)) // reduceLeftIterator
   }
 
-  /** Optionally applies a binary operator to all elements of this $coll, going left to right.
-   *  $willNotTerminateInf
-   *  $orderDependentFold
+  /** If this $coll is nonempty, reduces it with the given binary operator `op`, going
+    * left to right.
    *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  an option value containing the result of `reduceLeft(op)` if this $coll is nonempty,
-   *           `None` otherwise.
+   *  The behavior is the same as [[reduceLeft]] except that the value is `None` if the
+   *  $coll is empty. $exactlyOnce
+   *
+   *  $orderDependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator, a supertype of `A`.
+   *  @return           The result of reducing this $coll with `op` going left to right if
+   *                    the $coll is nonempty, inside a `Some`, and `None` otherwise.
    */
   def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] =
     knownSize match {
@@ -848,15 +922,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     else None
   }
 
-  /** Optionally applies a binary operator to all elements of this $coll, going
+  /** If this $coll is nonempty, reduces it with the given binary operator `op`, going
    *  right to left.
-   *  $willNotTerminateInf
-   *  $orderDependentFold
    *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  an option value containing the result of `reduceRight(op)` if this $coll is nonempty,
-   *           `None` otherwise.
+   *  The behavior is the same as [[reduceRight]] except that the value is `None` if the
+   *  $coll is empty. $exactlyOnce
+   *
+   *  $orderDependentReduce
+   *  $willNotTerminateInf
+   *
+   *  @param    op      A binary operator.
+   *  @tparam   B       The result type of the binary operator, a supertype of `A`.
+   *  @return           The result of reducing this $coll with `op` going right to left if
+   *                    the $coll is nonempty, inside a `Some`, and `None` otherwise.
    */
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B] =
     knownSize match {
