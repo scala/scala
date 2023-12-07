@@ -943,6 +943,8 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
 
+lazy val verifyScriptedBoilerplate = taskKey[Unit]("Ensure scripted tests have the necessary boilerplate.")
+
 // Running scripted tests locally
 //  - `set ThisBuild / Compile / packageDoc / publishArtifact := false` for faster turn around time
 //  - `sbtTest/scripted source-dependencies/scalac-options` to run a single test
@@ -980,7 +982,25 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
         ivyPaths.value.ivyHome.map("-Dsbt.ivy.home=" + _.getAbsolutePath).toList
     },
 
+    verifyScriptedBoilerplate := {
+      import java.nio.file._
+      val tests = (baseDirectory.value * "*").get.flatMap(f => (f * "*").get()).filter(_.isDirectory)
+      for (t <- tests) {
+        for (script <- (t * ("test" || "pending" || "disabled")).get().headOption) {
+          val ls = Files.lines(script.toPath)
+          val setup = ls.findFirst().orElseGet(() => "")
+          ls.close()
+          if (setup.trim != "> setup; reload")
+            throw new MessageOnlyException(s"$script is missing test boilerplate; the first needs to be `> setup; reload`")
+        }
+        val pluginFile = "project/ScriptedTestPlugin.scala"
+        if (!(t / pluginFile).exists)
+          throw new MessageOnlyException(s"$t is missing the file $pluginFile; copy it from any other scripted test")
+      }
+    },
+
     scripted := scripted.dependsOn(
+      verifyScriptedBoilerplate,
       library / publishLocal,
       reflect / publishLocal,
       compiler / publishLocal,
