@@ -318,7 +318,7 @@ abstract class BCodeIdiomatic {
     } // end of emitT2T()
 
     // can-multi-thread
-    final def boolconst(@deprecatedName b: Boolean): Unit = {
+    final def boolconst(b: Boolean): Unit = {
       if (b) emit(Opcodes.ICONST_1)
       else emit(Opcodes.ICONST_0)
     }

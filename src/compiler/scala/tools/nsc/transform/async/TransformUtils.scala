@@ -89,7 +89,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
 
   def literalUnit: Tree = Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees
   def literalBoxedUnit: Tree = gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
-  def literalBool(@deprecatedName b: Boolean): Tree = Literal(Constant(b)).setType(definitions.BooleanTpe)
+  def literalBool(b: Boolean): Tree = Literal(Constant(b)).setType(definitions.BooleanTpe)
 
   def isLiteralUnit(t: Tree): Boolean = t match {
     case Literal(Constant(())) => true

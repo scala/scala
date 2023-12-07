@@ -41,7 +41,7 @@ trait ParsersCommon extends ScannersCommon {
   // same time; use Parser.unit instead
   import global.{currentUnit => _, _}
 
-  def newLiteral(value: Any) = Literal(Constant(value))
+  def newLiteral(const: Any) = Literal(Constant(const))
   def literalUnit            = gen.mkSyntheticUnit()
 
   /** This is now an abstract class, only to work around the optimizer:

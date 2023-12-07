@@ -67,7 +67,7 @@ trait AllocationTest {
   import AllocationTest._
 
   /** Asserts whether it's expected for `a == b` to allocate memory. */
-  def nonAllocatingEqual(@deprecatedName expected: Boolean, a: AnyRef, b: AnyRef): Unit = {
+  def nonAllocatingEqual(expected: Boolean, a: AnyRef, b: AnyRef): Unit = {
     assertEquals(expected, nonAllocating(Boolean.box(a == b)))
   }
 

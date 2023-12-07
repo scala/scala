@@ -207,7 +207,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      *  @note    This method is mutually exclusive with `withPadding`.
      *  @group Configuration
      */
-    def withPartial(@deprecatedName x: Boolean): this.type = {
+    def withPartial(x: Boolean): this.type = {
       partial = x
       padding = null
       this

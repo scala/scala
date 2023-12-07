@@ -9,6 +9,11 @@ class C {
       case _ => 1
     }
   var b = false
+  def fs(n: Int)(s: String, b: Boolean) = if (b) s*n else s
+  def gs[A](n: Int)(s: A, b: Boolean) = if (b) s.toString*n else s.toString
+
+  def check(cond: Boolean, msg: => String) = if (cond) println(msg)
+  def uncheck(cond: Boolean, msg: => String, flag: Boolean) = if (cond && flag) println(msg)
 }
 
 object Test extends App {
@@ -21,7 +26,7 @@ object Test extends App {
   val y = Some(false)
   val z = Option(false)
   val w = (true, false)
-  val v = c g true  // nowarn?
+  val v = c g true  // nowarn infix
 
   val s = collection.mutable.Set.empty[String]
   def mutateS(): Unit = s("updater") = true
@@ -30,7 +35,13 @@ object Test extends App {
   val m = collection.mutable.Map.empty[String, true]
   def mutateM(): Unit = m("updater") = true
 
+  val ss = c.fs(42)("hello", true)
+  val tt = c.gs(42)("hello", true)
+
   def f(g: Boolean => Option[Boolean]) = g(true).getOrElse(false)
+
+  c.check(true, "OK")
+  c.uncheck(false, "OK", true)
 }
 
 class Arrays {
@@ -44,4 +55,10 @@ class Tuples {
 class Functions {
   val f: Boolean => Boolean = identity
   def test = f(true)
+}
+
+case class Klazz(isKlazz: Boolean)
+
+class Klazzy {
+  def test = Klazz(true) // warn case class apply as for ctor
 }

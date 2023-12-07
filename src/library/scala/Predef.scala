@@ -259,7 +259,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION)
-  def assert(@deprecatedName assertion: Boolean): Unit = {
+  def assert(assertion: Boolean): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed")
   }
@@ -274,7 +274,7 @@ object Predef extends LowPriorityImplicits {
    *  @group assertions
    */
   @elidable(ASSERTION) @inline
-  final def assert(@deprecatedName assertion: Boolean, message: => Any): Unit = {
+  final def assert(assertion: Boolean, message: => Any): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: "+ message)
   }

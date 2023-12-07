@@ -153,11 +153,11 @@ abstract class SymbolTable extends macros.Universe
   }
 
   @inline
-  final def assert(@deprecatedName assertion: Boolean, message: => Any): Unit =
+  final def assert(assertion: Boolean, message: => Any): Unit =
     if (!assertion) throwAssertionError(message)
 
   @deprecated("consider supplying an explanatory message", since = "2.12.5")
-  final def assert(@deprecatedName assertion: Boolean): Unit = assert(assertion, "")
+  final def assert(assertion: Boolean): Unit = assert(assertion, "")
 
   @inline
   final def require(requirement: Boolean, message: => Any): Unit =

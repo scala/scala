@@ -79,10 +79,10 @@ trait ContextOps { self: TastyUniverse =>
     ???
   }
 
-  @inline final def assert(@deprecatedName assertion: Boolean, msg: => Any): Unit =
+  @inline final def assert(assertion: Boolean, msg: => Any): Unit =
     u.assert(assertion, msg)
 
-  @inline final def assert(@deprecatedName assertion: Boolean): Unit =
+  @inline final def assert(assertion: Boolean): Unit =
     u.assert(assertion, "")
 
   private final def findObject(owner: Symbol, name: u.Name): Symbol = {

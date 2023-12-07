@@ -1713,17 +1713,43 @@ abstract class RefChecks extends Transform {
         if (!inPattern) {
           checkImplicitViewOptionApply(tree.pos, fn, args)
           checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
+          checkNamedBooleanArgs(fn, args)
         }
-        val sym = fn.symbol
-        if (settings.lintNamedBooleans && sym.ne(null) && sym.ne(NoSymbol) && !sym.isJavaDefined)
-          foreach2(args, sym.paramss.head)((arg, param) => arg match {
-            case t @ Literal(Constant(_: Boolean)) if
-              t.hasAttachment[UnnamedArg.type] && param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
-              runReporting.warning(t.pos, s"Boolean literals should be passed using named argument syntax for parameter ${param.name}.", WarningCategory.LintNamedBooleans, sym)
-            case _ =>
-          })
         currentApplication = tree
         tree
+    }
+
+    /** Check that boolean literals are passed as named args.
+     *  The rule is enforced when the type of the parameter is `Boolean`.
+     *  The rule is relaxed when the method has exactly one boolean parameter
+     *  and it is the first parameter, such as `assert(false, msg)`.
+     */
+    private def checkNamedBooleanArgs(fn: Tree, args: List[Tree]): Unit = {
+      val sym = fn.symbol
+      def applyDepth: Int = {
+        def loop(t: Tree, d: Int): Int =
+          t match {
+            case Apply(f, _) => loop(f, d+1)
+            case _ => d
+          }
+        loop(fn, 0)
+      }
+      def isAssertParadigm(params: List[Symbol]): Boolean = !sym.isConstructor && !sym.isCaseApplyOrUnapply && {
+        params match {
+          case h :: t => h.tpe == BooleanTpe && !t.exists(_.tpe == BooleanTpe)
+          case _ => false
+        }
+      }
+      if (settings.lintNamedBooleans && !sym.isJavaDefined && !args.isEmpty) {
+        val params = sym.paramLists(applyDepth)
+        if (!isAssertParadigm(params))
+          foreach2(args, params)((arg, param) => arg match {
+            case Literal(Constant(_: Boolean))
+            if arg.hasAttachment[UnnamedArg.type] && param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
+              runReporting.warning(arg.pos, s"Boolean literals should be passed using named argument syntax for parameter ${param.name}.", WarningCategory.LintNamedBooleans, sym)
+            case _ =>
+          })
+      }
     }
 
     private def transformSelect(tree: Select): Tree = {
