@@ -479,6 +479,17 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         val sym = if (tree.symbol.isModule) tree.symbol.moduleClass else tree.symbol
         localToNonLocalClass.resolveNonLocal(sym)
         super.traverse(tree)
+
+      case f: Function =>
+        f.attachments.get[SAMFunction].foreach { sam =>
+          addDependency(sam.samTp.typeSymbol)
+          // Not using addInheritanceDependency as it would incorrectly classify dependency as non-local
+          // ref: https://github.com/scala/scala/pull/10617/files#r1415226169
+          val from = resolveDependencySource
+          addClassDependency(_localInheritanceCache, processor.localInheritance, from, sam.samTp.typeSymbol)
+        }
+        super.traverse(tree)
+
       case other => super.traverse(other)
     }
   }

@@ -948,6 +948,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
 //  - `sbtTest/scripted source-dependencies/scalac-options` to run a single test
 //  - `set sbtTest/scriptedBufferLog := false` to see sbt log of test
 //  - add `> set logLevel := Level.Debug` to individual `test` script for debug output
+//  - uncomment `-agentlib:...` below to attach the debugger while running a test
 lazy val sbtTest = project.in(file("test") / "sbt-test")
   .enablePlugins(ScriptedPlugin)
   .settings(disableDocs)
@@ -969,6 +970,7 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
       "-Dplugin.scalaVersion=" + version.value,
       "-Dsbt.boot.directory=" + (target.value / ".sbt-scripted").getAbsolutePath, // Workaround sbt/sbt#3469
       "-Dscripted.common=" + (baseDirectory.value / "common.sbt.template").getAbsolutePath,
+      // "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005",
     ),
 
     // Pass along ivy home and repositories settings to sbt instances run from the tests
