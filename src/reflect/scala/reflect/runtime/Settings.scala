@@ -25,7 +25,7 @@ private[reflect] class Settings extends MutableSettings {
 
   trait Setting extends SettingValue { }
 
-  class BooleanSetting(x: Boolean) extends Setting {
+  class BooleanSetting(@deprecatedName x: Boolean) extends Setting {
     type T = Boolean
     protected var v: Boolean = x
     override def value: Boolean = v

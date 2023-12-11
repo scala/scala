@@ -184,10 +184,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def typecheck(expr: Tree, pt: Type, mode: scala.reflect.internal.Mode, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
         transformDuringTyper(expr, mode, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
-            trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+            trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, printOwners = settings.Yshowsymowners.value, printKinds = settings.Yshowsymkinds.value))
             currentTyper.silent(_.typed(expr, mode, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
-                trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
+                trace("success: ")(showAttributed(result, printKinds = settings.Yshowsymkinds.value))
                 result
               case error: analyzer.SilentTypeError =>
                 trace("failed: ")(error.err.errMsg)
@@ -199,7 +199,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree =
         transformDuringTyper(tree, TERMmode, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
-            trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+            trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, printOwners = settings.Yshowsymowners.value, printKinds = settings.Yshowsymkinds.value))
             analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
@@ -257,10 +257,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   List(),
                   List(methdef),
                   NoPosition))
-          trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+          trace("wrapped: ")(showAttributed(moduledef, printOwners = settings.Yshowsymowners.value, printKinds = settings.Yshowsymkinds.value))
 
           val cleanedUp = resetAttrs(moduledef)
-          trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
+          trace("cleaned up: ")(showAttributed(cleanedUp, printOwners = settings.Yshowsymowners.value, printKinds = settings.Yshowsymkinds.value))
           cleanedUp.asInstanceOf[ModuleDef]
         }
 

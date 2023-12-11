@@ -160,4 +160,7 @@ trait StdAttachments {
   case class PermittedSubclassSymbols(permits: List[Symbol]) extends PlainAttachment
 
   case class NamePos(pos: Position) extends PlainAttachment
+
+  /** Not a named arg in an application. Used for suspicious literal booleans. */
+  case object UnnamedArg extends PlainAttachment
 }

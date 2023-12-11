@@ -52,8 +52,8 @@ class IndySammyTest extends BytecodeTesting {
     assertSameCode(anonfun, lamBody)
     assertSameCode(applyInvoke, List(
       VarOp(ALOAD, 0),
-      Invoke(INVOKEVIRTUAL, "C", "lam", s"()L${funClassName(from, to)};", false)) ++ appArgs ++ List(
-      Invoke(INVOKEINTERFACE, funClassName(from, to), "apply", applySig, true), ret)
+      Invoke(INVOKEVIRTUAL, "C", "lam", s"()L${funClassName(from, to)};", itf = false)) ++ appArgs ++ List(
+      Invoke(INVOKEINTERFACE, funClassName(from, to), "apply", applySig, itf = true), ret)
     )
   }
 
@@ -102,7 +102,7 @@ class IndySammyTest extends BytecodeTesting {
   @Test
   def testVC_Any_VC(): Unit =
     test("VC", "Any", "new VC(1)", x => s"new VC(1)")("(I)Ljava/lang/Object;",
-      List(TypeOp(NEW, "VC"), Op(DUP), Op(ICONST_1), Invoke(INVOKESPECIAL, "VC", "<init>", "(I)V", false), Op(ARETURN)),
+      List(TypeOp(NEW, "VC"), Op(DUP), Op(ICONST_1), Invoke(INVOKESPECIAL, "VC", "<init>", "(I)V", itf = false), Op(ARETURN)),
       List(Op(ICONST_1)),
       Op(ARETURN))()
 
@@ -126,8 +126,8 @@ class IndySammyTest extends BytecodeTesting {
   @Test
   def testAny_VC_1(): Unit =
     test("Any", "VC", "1", x => s"new VC($x.asInstanceOf[Int])")("(Ljava/lang/Object;)I",
-      List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", false), Op(IRETURN)),
-      List(Op(ICONST_1), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", false)),
+      List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false), Op(IRETURN)),
+      List(Op(ICONST_1), Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", itf = false)),
       Op(IRETURN))()
 
   // TODO

@@ -1987,9 +1987,14 @@ self =>
      *  }}}
      */
     def argumentExprs(): List[Tree] = {
-      def args(): List[Tree] = commaSeparated(
-        if (isIdent) treeInfo.assignmentToMaybeNamedArg(expr()) else expr()
-      )
+      def args(): List[Tree] = commaSeparated {
+        val checkNamedArg = isIdent
+        expr() match {
+          case t @ Assign(id: Ident, rhs) if checkNamedArg => atPos(t.pos)(NamedArg(id, rhs))
+          case t @ Literal(Constant(_: Boolean)) => t.updateAttachment(UnnamedArg)
+          case t => t
+        }
+      }
       in.token match {
         case LBRACE => List(blockExpr())
         case LPAREN => inParens {

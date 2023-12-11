@@ -48,7 +48,7 @@ class ProcessTest {
       }
     }
     withIn(inputStream) {
-      Process("echo -n").run(true).exitValue()
+      Process("echo -n").run(connectInput = true).exitValue()
       latch.countDown()
     }
     assertNull(exception)

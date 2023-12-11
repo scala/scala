@@ -166,7 +166,7 @@ trait Interface extends ast.TreeDSL {
         // according to -Ystatistics 10% of translateMatch's time is spent in this method...
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
 
-        val checkType = new TypeCollector[Boolean](false) {
+        val checkType = new TypeCollector[Boolean](initial = false) {
           override def apply(tp: Type): Unit =
             if (!result) {
               tp match {

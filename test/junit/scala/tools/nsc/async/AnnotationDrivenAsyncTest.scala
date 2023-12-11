@@ -552,7 +552,7 @@ class AnnotationDrivenAsyncTest {
     run.compileSources(source :: Nil)
 
     def showInfo(info: StoreReporter#Info): String = {
-      Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
+      Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, shortenFile = false)
     }
 
     Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)

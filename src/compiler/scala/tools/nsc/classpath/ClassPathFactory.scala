@@ -15,7 +15,7 @@ package scala.tools.nsc.classpath
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils.AbstractFileOps
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.ClassPath, ClassPath.{expandDir, expandPath}
 
 /**
  * Provides factory methods for classpath. When creating classpath instances for a given path,
@@ -37,11 +37,6 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
       dir <- Option(settings.pathFactory.getDirectory(file))
     } yield createSourcePath(dir)
 
-
-  def expandPath(path: String, expandStar: Boolean = true): List[String] = scala.tools.nsc.util.ClassPath.expandPath(path, expandStar)
-
-  def expandDir(extdir: String): List[String] = scala.tools.nsc.util.ClassPath.expandDir(extdir)
-
   def contentsOfDirsInPath(path: String): List[ClassPath] =
     for {
       dir <- expandPath(path, expandStar = false)
@@ -50,18 +45,18 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
     } yield newClassPath(entry)
 
   def classesInExpandedPath(path: String): IndexedSeq[ClassPath] =
-    classesInPathImpl(path, expand = true).toIndexedSeq
+    classesInPathImpl(path, expandStar = true).toIndexedSeq
 
-  def classesInPath(path: String) = classesInPathImpl(path, expand = false)
+  def classesInPath(path: String): List[ClassPath] = classesInPathImpl(path, expandStar = false)
 
-  def classesInManifest(useManifestClassPath: Boolean) =
+  def classesInManifest(useManifestClassPath: Boolean): List[ClassPath] =
     if (useManifestClassPath) scala.tools.nsc.util.ClassPath.manifests.map(url => newClassPath(AbstractFile getResources url))
     else Nil
 
   // Internal
-  protected def classesInPathImpl(path: String, expand: Boolean) =
+  protected def classesInPathImpl(path: String, expandStar: Boolean): List[ClassPath] =
     for {
-      file <- expandPath(path, expand)
+      file <- expandPath(path, expandStar)
       dir <- {
         def asImage = if (file.endsWith(".jimage")) Some(settings.pathFactory.getFile(file)) else None
         Option(settings.pathFactory.getDirectory(file)).orElse(asImage)

@@ -689,7 +689,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case ANNOTATION =>
             annotFns = readAnnot(ctx) :: annotFns
           case tag =>
-            assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
+            assert(false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
       (flags, if (ctx.ignoreAnnotations) Nil else annotFns.reverse, privateWithin)

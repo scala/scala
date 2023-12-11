@@ -278,7 +278,7 @@ abstract class RefChecks extends Transform {
       }
 
       def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
-      def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
+      def infoStringWithLocation(sym: Symbol) = infoString0(sym, showLocation = true)
 
       def infoString0(member: Symbol, showLocation: Boolean) = {
         val location =
@@ -1137,7 +1137,7 @@ abstract class RefChecks extends Transform {
           nonSensiblyNew()
         else if (isEffectivelyFinalDeep(actual) && isEffectivelyFinalDeep(receiver) && !haveSubclassRelationship) {  // object X, Y; X == Y
           if (isEitherNullable)
-            nonSensible("non-null ", false)
+            nonSensible("non-null ", alwaysEqual = false)
           else
             nonSensiblyNeq()
         }
@@ -1169,7 +1169,7 @@ abstract class RefChecks extends Transform {
         if (isCaseEquals) {
           def thisCase = receiver.info.member(nme.equals_).owner
           actual.info.baseClasses.find(_.isCase) match {
-            case Some(p) if p != thisCase => nonSensible("case class ", false)
+            case Some(p) if p != thisCase => nonSensible("case class ", alwaysEqual = false)
             case None =>
               // stronger message on (Some(1) == None)
               //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()
@@ -1713,9 +1713,43 @@ abstract class RefChecks extends Transform {
         if (!inPattern) {
           checkImplicitViewOptionApply(tree.pos, fn, args)
           checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
+          checkNamedBooleanArgs(fn, args)
         }
         currentApplication = tree
         tree
+    }
+
+    /** Check that boolean literals are passed as named args.
+     *  The rule is enforced when the type of the parameter is `Boolean`.
+     *  The rule is relaxed when the method has exactly one boolean parameter
+     *  and it is the first parameter, such as `assert(false, msg)`.
+     */
+    private def checkNamedBooleanArgs(fn: Tree, args: List[Tree]): Unit = {
+      val sym = fn.symbol
+      def applyDepth: Int = {
+        def loop(t: Tree, d: Int): Int =
+          t match {
+            case Apply(f, _) => loop(f, d+1)
+            case _ => d
+          }
+        loop(fn, 0)
+      }
+      def isAssertParadigm(params: List[Symbol]): Boolean = !sym.isConstructor && !sym.isCaseApplyOrUnapply && {
+        params match {
+          case h :: t => h.tpe == BooleanTpe && !t.exists(_.tpe == BooleanTpe)
+          case _ => false
+        }
+      }
+      if (settings.lintNamedBooleans && !sym.isJavaDefined && !args.isEmpty) {
+        val params = sym.paramLists(applyDepth)
+        if (!isAssertParadigm(params))
+          foreach2(args, params)((arg, param) => arg match {
+            case Literal(Constant(_: Boolean))
+            if arg.hasAttachment[UnnamedArg.type] && param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
+              runReporting.warning(arg.pos, s"Boolean literals should be passed using named argument syntax for parameter ${param.name}.", WarningCategory.LintNamedBooleans, sym)
+            case _ =>
+          })
+      }
     }
 
     private def transformSelect(tree: Select): Tree = {

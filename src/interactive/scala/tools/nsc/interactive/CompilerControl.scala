@@ -207,7 +207,7 @@ trait CompilerControl { self: Global =>
     postWorkItem(new AskLoadedTypedItem(source, keepLoaded, response))
 
   final def askLoadedTyped(source: SourceFile, response: Response[Tree]): Unit =
-    askLoadedTyped(source, false, response)
+    askLoadedTyped(source, keepLoaded = false, response)
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.

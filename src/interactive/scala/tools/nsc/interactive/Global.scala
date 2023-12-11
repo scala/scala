@@ -403,7 +403,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case unit: RichCompilationUnit => unit.isParsed
       case _                         => true
     })
-    if (isPastNamer) super.openPackageModule(pkgClass, true)
+    if (isPastNamer) super.openPackageModule(pkgClass, force = true)
     else analyzer.packageObjects.deferredOpen.add(pkgClass)
   }
 

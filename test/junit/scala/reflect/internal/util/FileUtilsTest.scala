@@ -11,7 +11,7 @@ class FileUtilsTest {
     val fileTest = File.createTempFile("FileUtilsTest", "t1")
     val fileExpected = File.createTempFile("FileUtilsTest", "t2")
 
-    val sTest = FileUtils.newAsyncBufferedWriter(new FileWriter(fileTest), false)
+    val sTest = FileUtils.newAsyncBufferedWriter(new FileWriter(fileTest), threadsafe = false)
     val sExpected = new BufferedWriter(new FileWriter(fileExpected))
 
     def writeBoth(s:String, asChars: Boolean) = {
@@ -25,8 +25,8 @@ class FileUtilsTest {
     }
 
     for (i <- 1 to 2000) {
-      writeBoth(s"line $i text;", true)
-      writeBoth(s"line $i chars", false)
+      writeBoth(s"line $i text;", asChars = true)
+      writeBoth(s"line $i chars", asChars = false)
       sTest.newLine()
       sExpected.newLine()
     }

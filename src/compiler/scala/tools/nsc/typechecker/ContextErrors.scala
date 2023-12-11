@@ -377,7 +377,7 @@ trait ContextErrors extends splain.SplainErrors {
         issueNormalTypeError(ddef, "constructor definition not allowed here")
 
       def DeprecatedParamNameError(param: Symbol, name: Name) =
-        issueSymbolTypeError(param, "deprecated parameter name "+ name +" has to be distinct from any other parameter name (deprecated or not).")
+        issueSymbolTypeError(param, s"deprecated parameter name $name has to be distinct from any other parameter name (deprecated or not).")
 
       // analyzeSuperConsructor
       def SuperConstrReferenceError(tree: Tree) =

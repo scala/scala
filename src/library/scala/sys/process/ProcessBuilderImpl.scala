@@ -107,7 +107,7 @@ private[process] trait ProcessBuilderImpl {
 
     def #|(other: ProcessBuilder): ProcessBuilder  = {
       require(other.canPipeTo, "Piping to multiple processes is not supported.")
-      new PipedBuilder(this, other, false)
+      new PipedBuilder(this, other, toError = false)
     }
     def #||(other: ProcessBuilder): ProcessBuilder = new OrBuilder(this, other)
     def #&&(other: ProcessBuilder): ProcessBuilder = new AndBuilder(this, other)
@@ -213,12 +213,12 @@ private[process] trait ProcessBuilderImpl {
   }
   private[process] class FileImpl(base: File) extends FileBuilder with Sink with Source {
     protected def toSource: FileInput = new FileInput(base)
-    protected def toSink: FileOutput = new FileOutput(base, false)
+    protected def toSink: FileOutput = new FileOutput(base, append = false)
 
     def #<<(f: File): ProcessBuilder           = #<<(new FileInput(f))
     def #<<(u: URL): ProcessBuilder            = #<<(new URLInput(u))
     def #<<(s: => InputStream): ProcessBuilder = #<<(new IStreamBuilder(s, "<input stream>"))
-    def #<<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, new FileOutput(base, true), false)
+    def #<<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, new FileOutput(base, append = true), toError = false)
   }
 
   private[process] abstract class BasicBuilder extends AbstractBuilder {

@@ -905,7 +905,7 @@ private[internal] trait TypeMaps {
   }
 
   // dependent method types
-  object IsDependentCollector extends TypeCollector(false) {
+  object IsDependentCollector extends TypeCollector(initial = false) {
     def apply(tp: Type): Unit =
       if (tp.isImmediatelyDependent) result = true
       else if (!result) tp.dealias.foldOver(this)
@@ -1050,7 +1050,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  abstract class ExistsTypeRefCollector extends TypeCollector[Boolean](false) {
+  abstract class ExistsTypeRefCollector extends TypeCollector[Boolean](initial = false) {
 
     protected def pred(sym: Symbol): Boolean
 
@@ -1153,7 +1153,7 @@ private[internal] trait TypeMaps {
         if (p(tp)) result = Some(tp) else tp.foldOver(this)
   }
 
-  object ErroneousCollector extends TypeCollector(false) {
+  object ErroneousCollector extends TypeCollector(initial = false) {
     def apply(tp: Type): Unit =
       if (!result) {
         result = tp.isError
@@ -1299,7 +1299,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  object IsRelatableCollector extends TypeCollector[Boolean](true) {
+  object IsRelatableCollector extends TypeCollector[Boolean](initial = true) {
     var barLevel: Int = 0
 
     def apply(tp: Type): Unit = if (result) tp match {

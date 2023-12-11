@@ -1151,7 +1151,7 @@ object BTypes {
     }
   }
 
-  val EmptyInlineInfo = InlineInfo(false, None, SortedMap.empty, None)
+  val EmptyInlineInfo = InlineInfo(isEffectivelyFinal = false, sam = None, methodInfos = SortedMap.empty, warning = None)
 
   /**
    * Metadata about a method, used by the inliner.

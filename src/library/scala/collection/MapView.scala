@@ -51,9 +51,9 @@ trait MapView[K, +V]
     */
   override def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
-  override def filter(pred: ((K, V)) => Boolean): MapView[K, V] = new MapView.Filter(this, false, pred)
+  override def filter(pred: ((K, V)) => Boolean): MapView[K, V] = new MapView.Filter(this, isFlipped = false, pred)
 
-  override def filterNot(pred: ((K, V)) => Boolean): MapView[K, V] = new MapView.Filter(this, true, pred)
+  override def filterNot(pred: ((K, V)) => Boolean): MapView[K, V] = new MapView.Filter(this, isFlipped = true, pred)
 
   override def partition(p: ((K, V)) => Boolean): (MapView[K, V], MapView[K, V]) = (filter(p), filterNot(p))
 

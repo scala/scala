@@ -34,7 +34,7 @@ object Scalac extends Script.Command {
     }
 
     def newCompiler(args: String*): Global =
-      fromSettings(new Settings().tap(_.processArguments(args.toList, true)))
+      fromSettings(new Settings().tap(_.processArguments(args.toList, processAll = true)))
 
     def fromSettings(settings: Settings): Global = {
       val pwriter = new PrintWriter(writer, true)

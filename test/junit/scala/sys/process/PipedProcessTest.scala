@@ -20,12 +20,12 @@ class PipedProcessTest {
   // PipedProcesses need not to release resources when it normally end
   @Test
   def normallyEnd(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = false)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false)
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, toError = false)
     val f = Future(p.callRunAndExitValue(source, sink))
     waitForIt(readyOrNot(f), label = "normallyEnd")
     assertEquals(Some(0), Await.result(f, TestDuration.Standard))
@@ -37,14 +37,14 @@ class PipedProcessTest {
 
   @Test
   def shouldSyncRunAndExitValue(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock {
       override def runloop(src: InputStream, dst: OutputStream) = Thread.sleep(5) //used to simulate the block
     }
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = false)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false) {
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, toError = false) {
       override def newSource = source
       override def newSink   = sink
     }
@@ -58,12 +58,12 @@ class PipedProcessTest {
   // PipedProcesses must release resources when b.run() failed
   @Test
   def bFailed(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = false)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = true), io, false)
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = true), io, toError = false)
     val f = Future {
       ignoring(classOf[IOException]) {
         p.callRunAndExitValue(source, sink): Unit
@@ -79,12 +79,12 @@ class PipedProcessTest {
   // PipedProcesses must release resources when a.run() failed
   @Test
   def aFailed(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = false)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = true), new ProcessBuilderMock(b, error = false), io, false)
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = true), new ProcessBuilderMock(b, error = false), io, toError = false)
     val f = Future {
       ignoring(classOf[IOException]) {
         p.callRunAndExitValue(source, sink): Unit
@@ -100,12 +100,12 @@ class PipedProcessTest {
   // PipedProcesses must release resources when interrupted during waiting for first.exitValue()
   @Test
   def firstInterrupted(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = true)
     val b = new ProcessMock(error = false)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false)
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, toError = false)
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
@@ -119,12 +119,12 @@ class PipedProcessTest {
   // PipedProcesses must release resources when interrupted during waiting for second.exitValue()
   @Test
   def secondInterrupted(): Unit = {
-    val io = BasicIO(false, ProcessLogger(_ => ()))
+    val io = BasicIO(withIn = false, ProcessLogger(_ => ()))
     val source = new PipeSourceMock
     val sink = new PipeSinkMock
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = true)
-    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false)
+    val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, toError = false)
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }

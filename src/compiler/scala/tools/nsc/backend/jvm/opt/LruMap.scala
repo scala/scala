@@ -17,8 +17,8 @@ import scala.jdk.CollectionConverters._
 import java.util.{LinkedHashMap, Collections, Map => JMap}
 
 object LruMap{
-  def apply[K,V](maxSize:Int, threadsafe:Boolean): Map[K,V] = {
-    require (maxSize > 0)
+  def apply[K,V](maxSize: Int, threadsafe: Boolean): Map[K,V] = {
+    require(maxSize > 0)
     val basic = new LruMapImpl[K,V](maxSize)
     val threaded = if (threadsafe) Collections.synchronizedMap(basic) else basic
 

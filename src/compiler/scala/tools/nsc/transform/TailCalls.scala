@@ -126,8 +126,8 @@ abstract class TailCalls extends Transform {
       }
       override def toString = s"${method.name} tparams=$tparams tailPos=$tailPos label=$label label info=${label.info}"
 
-      final def noTailContext() = clonedTailContext(false)
-      final def yesTailContext() = clonedTailContext(true)
+      final def noTailContext() = clonedTailContext(tailPos = false)
+      final def yesTailContext() = clonedTailContext(tailPos = true)
       @tailrec
       protected final def clonedTailContext(tailPos: Boolean): TailContext = this match {
         case _ if this.tailPos == tailPos => this

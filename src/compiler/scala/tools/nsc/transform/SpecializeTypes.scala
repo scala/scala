@@ -908,7 +908,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    val subclasses = specializations(clazz.info.typeParams) filter satisfiable
+    val subclasses = specializations(clazz.info.typeParams).filter(satisfiable(_))
     subclasses foreach {
       env =>
       val spc      = specializedClass(env, decls1)
@@ -1099,7 +1099,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (currentRun compiles overriding)
               checkOverriddenTParams(overridden)
 
-            val env    = unify(overridden.info, overriding.info, emptyEnv, false, true)
+            val env    = unify(overridden.info, overriding.info, emptyEnv, tparams = true)
             def atNext = exitingSpecialize(overridden.owner.info.decl(specializedName(overridden, env)))
 
             if (TypeEnv.restrict(env, stvars).nonEmpty && TypeEnv.isValid(env, overridden) && atNext != NoSymbol) {
@@ -1187,7 +1187,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  If `tparams` is true, then the methods tries to unify over type params in polytypes as well.
    */
-  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean, tparams: Boolean): TypeEnv = (tp1, tp2) match {
+  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean = false, tparams: Boolean = false): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if sym1.isSpecialized =>
       debuglog(s"Unify $tp1, $tp2")
       if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
@@ -1348,8 +1348,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  that does not fall within the bounds, but whose bounds contain
    *  type variables that are @specialized, (that could become satisfiable).
    */
-  def satisfiable(env: TypeEnv): Boolean = satisfiable(env, false)
-  def satisfiable(env: TypeEnv, warnings: Boolean): Boolean = {
+  def satisfiable(env: TypeEnv, warnings: Boolean = false): Boolean = {
     def matches(tpe1: Type, tpe2: Type): Boolean = (tpe2 == AnyTpe) || { // opt for common case of unbounded type parameter
       val t1 = subst(env, tpe1)
       val t2 = subst(env, tpe2)
@@ -1384,8 +1383,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // log(t2 + ", " + specializedTypeVars(t2))
       // log("unify: " + unify(t1, t2, env, false, false) + " in " + env)
       if (t1 <:< t2) noconstraints
-      else if (specializedTypeVars(t1).nonEmpty) Some(unify(t1, t2, env, false, false) -- env.keys)
-      else if (specializedTypeVars(t2).nonEmpty) Some(unify(t2, t1, env, false, false) -- env.keys)
+      else if (specializedTypeVars(t1).nonEmpty) Some(unify(t1, t2, env) -- env.keys)
+      else if (specializedTypeVars(t2).nonEmpty) Some(unify(t2, t1, env) -- env.keys)
       else None
     }
 
@@ -1969,7 +1968,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // log("Type env of: " + tree.symbol + ": " + boundTvars)
       // log("newtparams: " + newtparams)
       // don't make private fields public
-      val substituter = new ImplementationAdapter(srcParams, newParams, source.enclClass, false)
+      val substituter = new ImplementationAdapter(srcParams, newParams, source.enclClass, addressFields = false)
       val newRhs = substituter(body(source).duplicate)
       tpt.modifyType(_.substSym(oldParams, newParams))
       copyDefDef(tree)(vparamss = newVparams.map(ValDef.apply) :: Nil, rhs = newRhs)

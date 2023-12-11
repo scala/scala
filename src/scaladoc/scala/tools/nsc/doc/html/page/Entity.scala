@@ -790,13 +790,13 @@ trait EntityPage extends HtmlPage {
       case PrivateInTemplate(None) =>
         Some(Txt("private"))
       case PrivateInTemplate(Some(owner)) =>
-        Some((Txt("private[") :: typeToHtml(owner, true)) :+ Txt("]"))
+        Some((Txt("private[") :: typeToHtml(owner, hasLinks = true)) :+ Txt("]"))
       case ProtectedInInstance() =>
         Some(Txt("protected[this]"))
       case ProtectedInTemplate(None) =>
         Some(Txt("protected"))
       case ProtectedInTemplate(Some(owner)) =>
-        Some((Txt("protected[") :: typeToHtml(owner, true)) :+ Txt("]"))
+        Some((Txt("protected[") :: typeToHtml(owner, hasLinks = true)) :+ Txt("]"))
       case Public() =>
         None
     }

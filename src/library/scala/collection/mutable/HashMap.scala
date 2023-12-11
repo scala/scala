@@ -174,7 +174,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
               growTable(table.length * 2)
               index(hash)
             } else indexedHash
-          put0(key, value, false, hash, newIndexedHash)
+          put0(key, value, getOld = false, hash, newIndexedHash)
 
         case (Some(_), Some(newValue)) => foundNode.value = newValue
       }
@@ -470,13 +470,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
         if(contentSize + 1 >= threshold) growTable(table.length * 2)
         // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
         val newIdx = if (table0 eq table) idx else index(hash)
-        put0(key, default, false, hash, newIdx)
+        put0(key, default, getOld = false, hash, newIdx)
         default
       }
     }
   }
 
-  override def put(key: K, value: V): Option[V] = put0(key, value, true) match {
+  override def put(key: K, value: V): Option[V] = put0(key, value, getOld = true) match {
     case null => None
     case sm => sm
   }
@@ -486,9 +486,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     case nd => Some(nd.value)
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = put0(key, value, getOld = false)
 
-  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
+  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, getOld = false); this }
 
   def subtractOne(elem: K): this.type = { remove0(elem); this }
 

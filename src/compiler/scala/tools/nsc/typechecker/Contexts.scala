@@ -278,7 +278,7 @@ trait Contexts { self: Analyzer =>
 
     /** Set all modes in the mask `enable` to true, and all in `disable` to false. */
     def set(enable: ContextMode = NOmode, disable: ContextMode = NOmode): this.type = {
-      contextMode = contextMode.set(true, enable).set(false, disable)
+      contextMode = (contextMode | enable) &~ disable
       this
     }
 
@@ -649,7 +649,7 @@ trait Contexts { self: Analyzer =>
       val savedContextMode = contextMode
       val savedReporter    = reporter
 
-      setAmbiguousErrors(false)
+      setAmbiguousErrors(report = false)
       _reporter = new BufferingReporter
 
       try expr
@@ -762,7 +762,7 @@ trait Contexts { self: Analyzer =>
 
     def makeNonSilent(newtree: Tree): Context = {
       val c = make(newtree, reporter = reporter.makeImmediate)
-      c.setAmbiguousErrors(true)
+      c.setAmbiguousErrors(report = true)
       c
     }
 

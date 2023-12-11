@@ -46,7 +46,7 @@ class DeterminismTester {
       g.settings.classpath.value = output.toAbsolutePath.toString
       g.settings.outputDirs.setSingleOutput(output.toString)
       g.settings.async.value = true
-      g.settings.processArguments(scalacOptions, true)
+      g.settings.processArguments(scalacOptions, processAll = true)
       val storeReporter = new StoreReporter(g.settings)
       g.reporter = storeReporter
       import g._

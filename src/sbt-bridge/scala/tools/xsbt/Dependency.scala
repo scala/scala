@@ -111,13 +111,13 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     }
 
     // Define processor reusing `processDependency` definition
-    val memberRef = processDependency(DependencyByMemberRef, false) _
-    val inheritance = processDependency(DependencyByInheritance, true) _
-    val localInheritance = processDependency(LocalDependencyByInheritance, true) _
+    val memberRef = processDependency(DependencyByMemberRef, allowLocal = false)(_)
+    val inheritance = processDependency(DependencyByInheritance, allowLocal = true)(_)
+    val localInheritance = processDependency(LocalDependencyByInheritance, allowLocal = true)(_)
 
     @deprecated("Use processDependency that takes allowLocal.", "1.1.0")
     def processDependency(context: DependencyContext)(dep: ClassDependency): Unit =
-      processDependency(context, true)(dep)
+      processDependency(context, allowLocal = true)(dep)
 
     /*
      * Handles dependency on given symbol by trying to figure out if represents a term
@@ -193,7 +193,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
                  * any dependency. Therefore, we do a last-time effort to get the origin of the symbol
                  * by inspecting the classpath manually.
                  */
-                val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, false)
+                val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, includePackageObjectClassNames = false)
                 global.findAssociatedFile(fqn) match {
                   case Some((at, true)) =>
                     processExternalDependency(fqn, at)

@@ -200,7 +200,7 @@ trait SplainFormatters {
     def apply[A](
         tpe: Type, simple: String, args: List[A], formattedArgs: => List[Formatted], top: Boolean,
     )(rec: (A, Boolean) => Formatted): Option[Formatted] = tpe match {
-      case TypeRef(_, ByNameParamClass, List(a)) => Some(ByName(formatType(a, true)))
+      case TypeRef(_, ByNameParamClass, List(a)) => Some(ByName(formatType(a, top = true)))
       case _                                     => None
     }
 
@@ -268,12 +268,12 @@ trait SplainFormatting extends SplainFormatters {
 
         Seq(ErrorNode(error, alwaysShow = alwaysDisplayRoot)) ++ {
 
-          if (children.size >= 2) children.flatMap(_.doCollectFull(true))
-          else children.flatMap(_.doCollectFull(false))
+          if (children.size >= 2) children.flatMap(_.doCollectFull(alwaysDisplayRoot = true))
+          else children.flatMap(_.doCollectFull(alwaysDisplayRoot = false))
         }
       }
 
-    lazy val collectFull: Seq[ErrorNode] = doCollectFull(true)
+    lazy val collectFull: Seq[ErrorNode] = doCollectFull(alwaysDisplayRoot = true)
 
     lazy val collectCompact: Seq[ErrorNode] = {
 
@@ -719,7 +719,7 @@ trait SplainFormatting extends SplainFormatters {
     specialFormatters.iterator.map(_.diff(left, right, top)).collectFirst { case Some(a) => a }
 
   def formatDiffSimple(left: Type, right: Type): Formatted =
-    Diff(formatType(left, true), formatType(right, true))
+    Diff(formatType(left, top = true), formatType(right, top = true))
 
   def formatDiffImpl(found: Type, req: Type, top: Boolean): Formatted = {
     val (left, right) = dealias(found) -> dealias(req)

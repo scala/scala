@@ -298,10 +298,14 @@ abstract class CallGraph {
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
-  private case class CallsiteInfo(isStaticallyResolved: Boolean, sourceFilePath: Option[String],
-                                  annotatedInline: Boolean, annotatedNoInline: Boolean,
-                                  samParamTypes: IntMap[ClassBType],
-                                  warning: Option[CalleeInfoWarning])
+  private case class CallsiteInfo(
+    isStaticallyResolved: Boolean = false,
+    sourceFilePath: Option[String] = None,
+    annotatedInline: Boolean = false,
+    annotatedNoInline: Boolean = false,
+    samParamTypes: IntMap[ClassBType] = IntMap.empty,
+    warning: Option[CalleeInfoWarning],
+  )
 
   /**
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
@@ -357,12 +361,12 @@ abstract class CallGraph {
 
         case None =>
           val warning = MethodInlineInfoMissing(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, calleeDeclarationClassBType.info.orThrow.inlineInfo.warning)
-          CallsiteInfo(false, None, false, false, IntMap.empty, Some(warning))
+          CallsiteInfo(warning = Some(warning))
       }
     } catch {
       case Invalid(noInfo: NoClassBTypeInfo) =>
         val warning = MethodInlineInfoError(calleeDeclarationClassBType.internalName, calleeMethodNode.name, calleeMethodNode.desc, noInfo)
-        CallsiteInfo(false, None, false, false, IntMap.empty, Some(warning))
+        CallsiteInfo(warning = Some(warning))
     }
   }
 

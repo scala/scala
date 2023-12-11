@@ -128,7 +128,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   /** If the action does not result in true, fail the action. */
   def nextTestActionExpectTrue(reason: String, body: => Boolean): TestState = nextTestAction(body) { case false => genFail(reason) }
   /** Fail the action. */
-  def nextTestActionFailing(reason: String): TestState = nextTestActionExpectTrue(reason, false)
+  def nextTestActionFailing(reason: String): TestState = nextTestActionExpectTrue(reason, body = false)
 
   private def assembleTestCommand(outDir: File, javaopts: List[String]): List[String] = {
     if (javaopts.nonEmpty)

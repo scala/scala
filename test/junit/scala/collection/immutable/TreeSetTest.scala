@@ -214,7 +214,7 @@ class TreeSetTest extends AllocationTest {
         case _ => false
       }
     }
-    class CustomOrder(val selfEqual: Boolean) extends Ordering[K] {
+    class CustomOrder(@deprecatedName val selfEqual: Boolean) extends Ordering[K] {
       override def compare(x: K, y: K): Int = x.s compareTo y.s
 
       override def equals(obj: Any): Boolean = obj match {

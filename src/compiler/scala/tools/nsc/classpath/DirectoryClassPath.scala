@@ -150,7 +150,7 @@ object JrtClassPath {
             val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
             if (Files.notExists(ctSym)) None
             else {
-              val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, true)
+              val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, checkStamps = true)
               Some(classPath)
             }
           } catch {
@@ -159,7 +159,7 @@ object JrtClassPath {
         case _ =>
           try {
             val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-            val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, false)
+            val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, checkStamps = false)
             Some(classPath)
           } catch {
             case _: ProviderNotFoundException | _: FileSystemNotFoundException => None

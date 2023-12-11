@@ -166,7 +166,7 @@ final class ChromeTrace(f: Path) extends Closeable {
         else traceWriter.write(",")
       case _ =>
     }
-    context.push(ObjectContext(true))
+    context.push(ObjectContext(first = true))
     traceWriter.write("{")
   }
   private def objEnd(): Unit = {
@@ -175,7 +175,7 @@ final class ChromeTrace(f: Path) extends Closeable {
   }
   private def arrStart(): Unit = {
     traceWriter.write("[")
-    context.push(ArrayContext(true))
+    context.push(ArrayContext(first = true))
   }
   private def arrEnd(): Unit = {
     traceWriter.write("]")

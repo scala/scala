@@ -261,7 +261,7 @@ trait ContextOps { self: TastyUniverse =>
       case TastyName.Root | TastyName.RootPkg => loadingMirror.RootPackage
       case TastyName.EmptyPkg                 => loadingMirror.EmptyPackage
       case fullname                           =>
-        symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
+        symOrDependencyError(isObject = false, isPackage = true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
     }
 
     private def symOrDependencyError(isObject: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {

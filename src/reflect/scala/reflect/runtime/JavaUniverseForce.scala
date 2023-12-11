@@ -83,6 +83,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.PermittedSubclasses
     this.PermittedSubclassSymbols
     this.NamePos
+    this.UnnamedArg
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

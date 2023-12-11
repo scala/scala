@@ -29,7 +29,7 @@ class InlineSourceMatcherTest extends BytecodeTesting {
     try body finally global.settings.optChoices.inlineFrom.selections = saved
   }
 
-  case class E(regex: String, negated: Boolean = false, terminal: Boolean = true)
+  case class E(regex: String, @deprecatedName negated: Boolean = false, @deprecatedName terminal: Boolean = true)
 
   def check(pat: String, expect: E*): InlineSourceMatcher = {
     val m = new InlineSourceMatcher(pat.split(':').toList)

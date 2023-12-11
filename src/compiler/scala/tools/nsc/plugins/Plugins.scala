@@ -182,7 +182,7 @@ trait Plugins { global: Global =>
   def findMacroClassLoader(): ClassLoader = {
     val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
       for {
-        file <- ClassPath.expandPath(settings.YmacroClasspath.value, true)
+        file <- ClassPath.expandPath(settings.YmacroClasspath.value, expandStar = true)
         af <- Option(settings.pathFactory.getDirectory(file))
       } yield af.file.toURI.toURL
     } else global.classPath.asURLs

@@ -112,14 +112,14 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
-  override def update(key: K, value: V): Unit = put0(key, value, false)
+  override def update(key: K, value: V): Unit = put0(key, value, getOld = false)
 
-  override def put(key: K, value: V): Option[V] = put0(key, value, true) match {
+  override def put(key: K, value: V): Option[V] = put0(key, value, getOld = true) match {
     case null => None
     case sm => sm
   }
 
-  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, false); this }
+  def addOne(elem: (K, V)): this.type = { put0(elem._1, elem._2, getOld = false); this }
 
   @`inline` private[this] def put0(key: K, value: V, getOld: Boolean): Some[V] = {
     if(contentSize + 1 >= threshold) growTable(table.length * 2)
@@ -403,7 +403,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     if(contentSize + 1 >= threshold) growTable(table.length * 2)
     // Avoid recomputing index if the `defaultValue()` or new element hasn't triggered a table resize.
     val newIdx = if (table0 eq table) idx else index(hash)
-    put0(key, default, false, hash, newIdx)
+    put0(key, default, getOld = false, hash, newIdx)
     default
   }
 
@@ -725,7 +725,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
           case nn: LLNode @uc => (nn.key, nn.hash, nn.value)
           case nn: RBNode @uc => (nn.key, nn.hash, nn.value)
         }
-        val n = new RBNode(key, hash, value, false, left, right, null)
+        val n = new RBNode(key, hash, value, red = false, left, right, null)
         if(left ne null) left.parent = n
         right.parent = n
         n

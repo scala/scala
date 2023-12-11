@@ -79,10 +79,10 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
           if (sym.isModuleClass) {
             if (isTopLevelModule(sym) && sym.companionClass == NoSymbol)
-              addGenerated(false)
-            addGenerated(true)
+              addGenerated(separatorRequired = false)
+            addGenerated(separatorRequired = true)
           } else
-            addGenerated(false)
+            addGenerated(separatorRequired = false)
         }
       }
     }

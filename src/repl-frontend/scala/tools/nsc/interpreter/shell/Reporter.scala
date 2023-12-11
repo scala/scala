@@ -20,7 +20,7 @@ import scala.tools.nsc.reporters.FilteringReporter
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 
 object ReplReporterImpl {
-  val defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
+  val defaultOut = new NewLinePrintWriter(new ConsoleWriter, autoFlush = true)
 }
 
 // settings are for AbstractReporter (noWarnings, isVerbose, isDebug)

@@ -1,0 +1,21 @@
+named-booleans.scala:22: warning: Boolean literals should be passed using named argument syntax for parameter x.
+  val x0 = c.f(17, true, b) // warn
+                   ^
+named-booleans.scala:38: warning: Boolean literals should be passed using named argument syntax for parameter b.
+  val ss = c.fs(42)("hello", true)
+                             ^
+named-booleans.scala:39: warning: Boolean literals should be passed using named argument syntax for parameter b.
+  val tt = c.gs(42)("hello", true)
+                             ^
+named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter cond.
+  c.uncheck(false, "OK", true)
+            ^
+named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter flag.
+  c.uncheck(false, "OK", true)
+                         ^
+named-booleans.scala:63: warning: Boolean literals should be passed using named argument syntax for parameter isKlazz.
+  def test = Klazz(true) // warn case class apply as for ctor
+                   ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

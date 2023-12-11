@@ -349,7 +349,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(staticAndDynamicArgs.length - numDynamicArgs)
           val bootstrapDescriptor = staticHandleFromSymbol(bootstrapMethodRef)
           val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos) case x => throw new MatchError(x)})
-          val descriptor = methodBTypeFromMethodType(qual.symbol.info, false)
+          val descriptor = methodBTypeFromMethodType(qual.symbol.info, isConstructor=false)
           genLoadArguments(dynamicArgs, qual.symbol.info.params.map(param => typeToBType(param.info)))
           mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, bootstrapDescriptor, bootstrapArgs : _*)
 

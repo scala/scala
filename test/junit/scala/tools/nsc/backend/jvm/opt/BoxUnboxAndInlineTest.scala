@@ -57,7 +57,7 @@ class BoxUnboxAndInlineTest extends BytecodeTesting {
     val code: List[Instruction] = List(
       Label(1),
       Op(ACONST_NULL),
-      Invoke(INVOKESTATIC, "scala/runtime/ObjectRef", "create", "(Ljava/lang/Object;)Lscala/runtime/ObjectRef;", false),
+      Invoke(INVOKESTATIC, "scala/runtime/ObjectRef", "create", "(Ljava/lang/Object;)Lscala/runtime/ObjectRef;", itf = false),
       VarOp(ASTORE, 1),
       Op(ACONST_NULL),
       VarOp(ALOAD, 1),
