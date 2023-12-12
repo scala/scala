@@ -401,28 +401,45 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+    class NonCyclicStack {
+      // for diverging types, neg/t510.scala
+      private val maxRecursion = 42
+
+      // For each abstract type symbol (type member, type parameter), keep track of seen types represented by that symbol
+      private lazy val map = collection.mutable.HashMap[Symbol, mutable.ListBuffer[Type]]()
+
+      def lockSymbol[T](sym: Symbol, tp: Type)(body: => T): T = {
+        val stk = map.getOrElseUpdate(sym, ListBuffer.empty)
+        stk.prepend(tp)
+        try body
+        finally stk.remove(0)
+      }
+
+      def isUnlocked(sym: Symbol, tp: Type): Boolean =
+        !sym.isNonClassType || !map.get(sym).exists(tps => tps.length > maxRecursion || tps.contains(tp))
+    }
+
     /** Check that type `tp` is not a subtype of itself
      */
-    def checkNonCyclic(pos: Position, tp: Type): Boolean = {
+    def checkNonCyclic(pos: Position, tp: Type, stack: NonCyclicStack = new NonCyclicStack): Boolean = {
       def checkNotLocked(sym: Symbol) =
-        sym.initialize.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
+        stack.isUnlocked(sym, tp) || { CyclicAliasingOrSubtypingError(pos, sym); false }
 
       tp match {
         case TypeRef(pre, sym, args) =>
           checkNotLocked(sym) && {
-            !sym.isNonClassType || {
-              sym.lock(())
-              try checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args))
-              finally sym.unlock()
-            }
+            !sym.isNonClassType ||
+              stack.lockSymbol(sym, tp) {
+                checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args), stack)
+              }
           }
 
         case SingleType(_, sym) =>
           checkNotLocked(sym)
         case st: SubType =>
-          checkNonCyclic(pos, st.supertype)
+          checkNonCyclic(pos, st.supertype, stack)
         case ct: CompoundType =>
-          ct.parents forall (x => checkNonCyclic(pos, x))
+          ct.parents forall (x => checkNonCyclic(pos, x, stack))
         case _ =>
           true
       }
