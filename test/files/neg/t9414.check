@@ -1,0 +1,10 @@
+t9414.scala:6: error: could not optimize @tailrec annotated method bar: it is neither private nor final so can be overridden
+      @tailrec def bar: Int = {
+                   ^
+t9414.scala:20: error: could not optimize @tailrec annotated method bar: it is neither private nor final so can be overridden
+      @tailrec def bar: Int = {
+                   ^
+t9414.scala:34: error: could not optimize @tailrec annotated method bar: it is neither private nor final so can be overridden
+    @tailrec def bar: Int = {
+                 ^
+3 errors
