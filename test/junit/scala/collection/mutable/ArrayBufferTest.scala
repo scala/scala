@@ -1,10 +1,11 @@
 package scala.collection.mutable
 
-import org.junit.Test
 import org.junit.Assert.{assertEquals, assertTrue}
+import org.junit.Test
 
 import java.lang.reflect.InvocationTargetException
 import scala.annotation.nowarn
+import scala.runtime.PStatics.VM_MaxArraySize
 import scala.tools.testkit.AssertUtil.{assertSameElements, assertThrows, fail}
 import scala.tools.testkit.ReflectUtil.{getMethodAccessible, _}
 import scala.util.chaining._
@@ -390,25 +391,26 @@ class ArrayBufferTest {
     def resizeUp(arrayLen: Int, targetLen: Int): Int = sut.invoke(ArrayBuffer, arrayLen, targetLen).asInstanceOf[Int]
 
     // check termination and correctness
-    assertTrue(7 < ArrayBuffer.DefaultInitialSize)  // condition of test
+    assertTrue(7 < ArrayBuffer.DefaultInitialSize) // condition of test
     assertEquals(ArrayBuffer.DefaultInitialSize, resizeUp(7, 10))
-    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1))  // was: ok
-    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 2))  // was: ok
-    assertEquals(-1, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 1))  // was: wrong
-    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 2))  // was: hang
-    assertEquals(Int.MaxValue - 8, resizeUp(Int.MaxValue / 2, Int.MaxValue - 8))
+    assertEquals(VM_MaxArraySize, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1)) // `MaxValue / 2` cannot be doubled
+    assertEquals(VM_MaxArraySize / 2 * 2, resizeUp(VM_MaxArraySize / 2, VM_MaxArraySize / 2 + 1)) // `VM_MaxArraySize / 2` can be doubled
+    assertEquals(VM_MaxArraySize, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 2))
+    assertEquals(-1, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 1)) // no resize needed
+    assertEquals(VM_MaxArraySize, resizeUp(Int.MaxValue / 2 + 1, Int.MaxValue / 2 + 2))
+    assertEquals(VM_MaxArraySize, resizeUp(Int.MaxValue / 2, VM_MaxArraySize))
+    assertEquals(123456*2+33, resizeUp(123456, 123456*2+33)) // use targetLen if it's larger than double the current
 
     // check limits
     def rethrow(op: => Any): Unit =
       try op catch { case e: InvocationTargetException => throw e.getCause }
     def checkExceedsMaxInt(targetLen: Int): Unit = {
       assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
-                              _ == s"Size of array-backed collection must exceed 0.  Encountered size: $targetLen")
+                              _ == s"Overflow while resizing array of array-backed collection. Requested length: $targetLen; current length: 0; increase: $targetLen")
     }
-    import scala.runtime.PStatics
     def checkExceedsVMArrayLimit(targetLen: Int): Unit =
       assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
-                              _ == s"Size of array-backed collection exceeds VM array size limit of ${PStatics.VM_MaxArraySize}.  Encountered size: $targetLen")
+                              _ == s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $targetLen; current length: 0")
 
     checkExceedsMaxInt(Int.MaxValue + 1)
     checkExceedsVMArrayLimit(Int.MaxValue)

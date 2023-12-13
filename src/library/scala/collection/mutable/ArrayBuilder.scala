@@ -488,21 +488,21 @@ object ArrayBuilder {
     protected def elems: Array[Unit] = throw new UnsupportedOperationException()
 
     def addOne(elem: Unit): this.type = {
-      val newSize:Int = size + 1
+      val newSize = size + 1
       ensureSize(newSize)
       size = newSize
       this
     }
 
     override def addAll(xs: IterableOnce[Unit]): this.type = {
-      val newSize:Int = size + xs.iterator.size
+      val newSize = size + xs.iterator.size
       ensureSize(newSize)
       size = newSize
       this
     }
 
     override def addAll(xs: Array[_ <: Unit], offset: Int, length: Int): this.type = {
-      val newSize: Int = size + length
+      val newSize = size + length
       ensureSize(newSize)
       size = newSize
       this
@@ -520,9 +520,8 @@ object ArrayBuilder {
       case _ => false
     }
 
-    protected[this] def resize(size: Int): Unit = ()
+    protected[this] def resize(size: Int): Unit = capacity = size
 
     override def toString = "ArrayBuilder.ofUnit"
   }
 }
-

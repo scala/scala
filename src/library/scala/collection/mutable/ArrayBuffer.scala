@@ -15,11 +15,10 @@ package collection
 package mutable
 
 import java.util.Arrays
-
-import scala.annotation.nowarn
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
+import scala.runtime.PStatics.VM_MaxArraySize
 
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
@@ -307,24 +306,29 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 
-  import scala.runtime.PStatics.VM_MaxArraySize
+  @inline private def checkArrayLengthLimit(length: Int, currentLength: Int): Unit =
+    if (length > VM_MaxArraySize)
+      throw new Exception(s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $length; current length: $currentLength")
+    else if (length < 0)
+      throw new Exception(s"Overflow while resizing array of array-backed collection. Requested length: $length; current length: $currentLength; increase: ${length - currentLength}")
+
   /**
+   * The increased size for an array-backed collection.
+   *
    * @param arrayLen  the length of the backing array
    * @param targetLen the minimum length to resize up to
-   * @return -1 if no resizing is needed, the greater of targetLen and 2 * arrayLen if neither exceeds VM_MaxArraySize,
-   *         or VM_MaxArraySize otherwise.
+   * @return
+   *   - `-1` if no resizing is needed, else
+   *   - `VM_MaxArraySize` if `arrayLen` is too large to be doubled, else
+   *   - `max(targetLen, arrayLen * 2, , DefaultInitialSize)`.
+   *   - Throws an exception if `targetLen` exceeds `VM_MaxArraySize` or is negative (overflow).
    */
   private[mutable] def resizeUp(arrayLen: Int, targetLen: Int): Int = {
-    // Hybrid
     if (targetLen > 0 && targetLen <= arrayLen) -1
     else {
-      IterableOnce.checkArraySizeWithinVMLimit(targetLen) // safe because `targetSize <= Int.MaxValue`
-
-      math.min(
-        if (targetLen > (Int.MaxValue >> 1)) VM_MaxArraySize
-        else math.max(targetLen, math.max(arrayLen << 1, DefaultInitialSize)),
-        VM_MaxArraySize
-      )
+      checkArrayLengthLimit(targetLen, arrayLen)
+      if (arrayLen > VM_MaxArraySize / 2) VM_MaxArraySize
+      else math.max(targetLen, math.max(arrayLen * 2, DefaultInitialSize))
     }
   }
 

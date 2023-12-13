@@ -283,15 +283,6 @@ object IterableOnce {
       case src: Iterable[A] => src.copyToArray[B](xs, start, len)
       case src              => src.iterator.copyToArray[B](xs, start, len)
     }
-
-  @inline private[collection] def checkArraySizeWithinVMLimit(size: Int): Unit = {
-    import scala.runtime.PStatics.VM_MaxArraySize
-    if (size > VM_MaxArraySize) {
-      throw new Exception(s"Size of array-backed collection exceeds VM array size limit of $VM_MaxArraySize.  Encountered size: $size")
-    } else if (size < 0) {
-      throw new Exception(s"Size of array-backed collection must exceed 0.  Encountered size: $size")
-    }
-  }
 }
 
 /** This implementation trait can be mixed into an `IterableOnce` to get the basic methods that are shared between
