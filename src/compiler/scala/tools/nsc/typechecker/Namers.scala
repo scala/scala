@@ -863,12 +863,6 @@ trait Namers extends MethodSynthesis {
     def monoTypeCompleter(tree: MemberDef) = new MonoTypeCompleter(tree)
     class MonoTypeCompleter(tree: MemberDef) extends TypeCompleterBase(tree) {
       override def completeImpl(sym: Symbol): Unit = {
-        // this early test is there to avoid infinite baseTypes when
-        // adding setters and getters --> bug798
-        // It is a def in an attempt to provide some insulation against
-        // uninitialized symbols misleading us. It is not a certainty
-        // this accomplishes anything, but performance is a non-consideration
-        // on these flag checks so it can't hurt.
         def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
 
         val annotations = annotSig(tree.mods.annotations, tree, _ => true)
@@ -886,12 +880,6 @@ trait Namers extends MethodSynthesis {
         }
 
         sym.setInfo(if (!sym.isJavaDefined) tp else RestrictJavaArraysMap(tp))
-
-        if (needsCycleCheck) {
-          log(s"Needs cycle check: ${sym.debugLocationString}")
-          if (!typer.checkNonCyclic(tree.pos, tp))
-            sym setInfo ErrorType
-        }
 
         validate(sym)
       }
