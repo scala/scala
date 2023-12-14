@@ -1025,12 +1025,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
     final def isEffectivelyFinalOrNotOverridden: Boolean = {
-      def isNotOverridden =
-        owner.isClass && (
-             owner.isEffectivelyFinal
-          || owner.isSealed && owner.sealedChildren.forall(c => c.isEffectivelyFinal && overridingSymbol(c) == NoSymbol)
-        )
-      isEffectivelyFinal || isTerm && !isDeferred && isNotOverridden
+      def isNotOverriddenAt(c: Symbol, hasLocalOwner: Boolean): Boolean = {
+        def checkOverrideIn(sc: Symbol) = overridingSymbol(sc) == NoSymbol && isNotOverriddenAt(sc, hasLocalOwner || sc.originalOwner.isTerm)
+        c.isClass && (c.isEffectivelyFinal || {
+          (c.isSealed || hasLocalOwner) && c.children.forall(checkOverrideIn)
+        })
+      }
+      isEffectivelyFinal || isTerm && !isDeferred && isNotOverriddenAt(owner, owner.originalOwner.isTerm)
     }
 
     /** Is this symbol owned by a package? */
