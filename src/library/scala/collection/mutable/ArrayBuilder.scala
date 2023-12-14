@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.collection.mutable.ArrayBuffer.resizeUp
 import scala.reflect.ClassTag
 
 /** A builder class for arrays.
@@ -34,15 +35,11 @@ sealed abstract class ArrayBuilder[T]
   override def knownSize: Int = size
 
   protected[this] final def ensureSize(size: Int): Unit = {
-    if (capacity < size || capacity == 0) {
-      var newsize = if (capacity == 0) 16 else capacity * 2
-      while (newsize < size) newsize *= 2
-      resize(newsize)
-    }
+    val newLen = resizeUp(capacity, size)
+    if (newLen > 0) resize(newLen)
   }
 
-  override final def sizeHint(size: Int): Unit =
-    if (capacity < size) resize(size)
+  override final def sizeHint(size: Int): Unit = if (capacity < size) resize(size)
 
   def clear(): Unit = size = 0
 
@@ -491,17 +488,23 @@ object ArrayBuilder {
     protected def elems: Array[Unit] = throw new UnsupportedOperationException()
 
     def addOne(elem: Unit): this.type = {
-      size += 1
+      val newSize = size + 1
+      ensureSize(newSize)
+      size = newSize
       this
     }
 
     override def addAll(xs: IterableOnce[Unit]): this.type = {
-      size += xs.iterator.size
+      val newSize = size + xs.iterator.size
+      ensureSize(newSize)
+      size = newSize
       this
     }
 
     override def addAll(xs: Array[_ <: Unit], offset: Int, length: Int): this.type = {
-      size += length
+      val newSize = size + length
+      ensureSize(newSize)
+      size = newSize
       this
     }
 
@@ -517,7 +520,7 @@ object ArrayBuilder {
       case _ => false
     }
 
-    protected[this] def resize(size: Int): Unit = ()
+    protected[this] def resize(size: Int): Unit = capacity = size
 
     override def toString = "ArrayBuilder.ofUnit"
   }

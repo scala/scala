@@ -89,7 +89,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     def p_size0_=(s: Int) = size0 = s
     def p_array = array
     def p_ensureSize(n: Int) = super.ensureSize(n)
-    def p_ensureAdditionalSize(n: Int) = super.ensureAdditionalSize(n)
+    def p_ensureAdditionalSize(n: Int) = super.ensureSize(size0 + n)
     def p_swap(a: Int, b: Int): Unit = {
       val h = array(a)
       array(a) = array(b)
