@@ -11,6 +11,7 @@ import org.junit.runners.JUnit4
 import scala.tools.testkit.AllocationTest
 
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("msg=Boolean literals should be passed using named argument syntax for parameter selfEqual")
 class TreeSetTest extends AllocationTest {
 
   @Test
@@ -214,7 +215,7 @@ class TreeSetTest extends AllocationTest {
         case _ => false
       }
     }
-    class CustomOrder(@deprecatedName val selfEqual: Boolean) extends Ordering[K] {
+    class CustomOrder(val selfEqual: Boolean) extends Ordering[K] {
       override def compare(x: K, y: K): Int = x.s compareTo y.s
 
       override def equals(obj: Any): Boolean = obj match {
