@@ -15,6 +15,7 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
+@annotation.nowarn("msg=Boolean literals should be passed using named argument syntax for parameter (safeToInline|atInline|atNoInline)")
 class CallGraphTest extends BytecodeTesting {
   override def compilerArgs = "-opt:inline:** -Wopt"
   import compiler._
@@ -37,7 +38,7 @@ class CallGraphTest extends BytecodeTesting {
   }).toList
 
   def checkCallsite(call: MethodInsnNode, callsiteMethod: MethodNode, target: MethodNode, calleeDeclClass: ClassBType,
-                    @deprecatedName safeToInline: Boolean, @deprecatedName atInline: Boolean, @deprecatedName atNoInline: Boolean, argInfos: IntMap[ArgInfo] = IntMap.empty): Unit = {
+                    safeToInline: Boolean, atInline: Boolean, atNoInline: Boolean, argInfos: IntMap[ArgInfo] = IntMap.empty): Unit = {
     val callsite = callGraph.callsites(callsiteMethod)(call)
     try {
       assert(callsite.callsiteInstruction == call)
