@@ -2952,8 +2952,9 @@ self =>
       }
       val trees = lhs.toList.init.flatMap(mkDefs(_, tp.duplicate, rhs.duplicate)) ::: mkDefs(lhs.last, tp, rhs)
       val hd = trees.head
-      hd setPos hd.pos.withStart(pos)
+      hd.setPos(hd.pos.withStart(pos))
       ensureNonOverlapping(hd, trees.tail)
+      if (trees.lengthCompare(1) > 0) trees.foreach(_.updateAttachment(MultiDefAttachment))
       trees
     }
 

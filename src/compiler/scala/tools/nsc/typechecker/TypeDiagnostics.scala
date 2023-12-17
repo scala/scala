@@ -702,6 +702,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           if (sym.isPrivate) settings.warnUnusedPrivates && !sym.isTopLevel
           else settings.warnUnusedLocals
         val valAdvice = "is never updated: consider using immutable val"
+        def varAdvice(v: Symbol) = if (v.accessedOrSelf.hasAttachment[MultiDefAttachment.type]) "is never updated: consider refactoring vars to a separate definition" else valAdvice
         def wcat(sym: Symbol) = if (sym.isPrivate) WarningCategory.UnusedPrivates else WarningCategory.UnusedLocals
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
@@ -719,7 +720,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           val what =
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${getterNameString(sym)}" }
+            else if (sym.isSetter) { cond = varAdvice(sym); s"var ${getterNameString(sym)}" }
             else if (sym.isVar || sym.isGetter && sym.accessed.isVar) s"var ${sym.nameString}"
             else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) s"val ${sym.nameString}"
             else if (sym.isMethod) s"method ${sym.nameString}"
@@ -739,7 +740,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          emitUnusedWarning(v.pos, s"local var ${v.nameString} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
+          emitUnusedWarning(v.pos, s"local var ${v.nameString} in ${v.owner} ${varAdvice(v)}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {

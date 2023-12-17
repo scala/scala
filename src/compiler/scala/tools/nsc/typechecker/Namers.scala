@@ -1763,6 +1763,9 @@ trait Namers extends MethodSynthesis {
 
         patchSymInfo(pt)
 
+        if (vdef.hasAttachment[MultiDefAttachment.type])
+          vdef.symbol.updateAttachment(MultiDefAttachment)
+
         // derives the val's result type from type checking its rhs under the expected type `pt`
         // vdef.tpt is mutated, and `vdef.tpt.tpe` is `assignTypeToTree`'s result
         val tptFromRhsUnderPt = assignTypeToTree(vdef, typer, pt)

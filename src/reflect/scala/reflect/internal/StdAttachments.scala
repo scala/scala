@@ -92,6 +92,11 @@ trait StdAttachments {
    */
   case object PatVarDefAttachment extends PlainAttachment
 
+  /** Indicates that a definition was part of either a pattern or "sequence shorthand"
+   *  that introduced multiple definitions. All variables must be either `val` or `var`.
+   */
+  case object MultiDefAttachment extends PlainAttachment
+
   /** Identifies trees are either result or intermediate value of for loop desugaring.
    */
   case object ForAttachment extends PlainAttachment
