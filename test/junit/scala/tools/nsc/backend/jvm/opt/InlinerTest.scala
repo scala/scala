@@ -17,7 +17,6 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-@annotation.nowarn("msg=Boolean literals should be passed using named argument syntax for parameter itf.")
 class InlinerTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}
@@ -83,7 +82,7 @@ class InlinerTest extends BytecodeTesting {
         Op(POP), // pop receiver - we know the stack value is also in the local variable 0, so we use that local in the inlined code
         Op(ICONST_1), Jump(GOTO, Label(10)), // load return value
         Label(10),
-        VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", itf = false), Op(IADD), Op(IRETURN)))
+        VarOp(ALOAD, 0), InvokeVirtual("C", "f", "()I"), Op(IADD), Op(IRETURN)))
 
     // line numbers are kept, so there's a line 2 (from the inlined f)
     assert(gConv.instructions exists {
@@ -113,7 +112,7 @@ class InlinerTest extends BytecodeTesting {
 
     val invokeQQQ = List(
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", itf = false))
+      InvokeVirtual("scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;"))
 
     val gBeforeLocalOpt = VarOp(ALOAD, 0) :: Op(POP) :: invokeQQQ ::: List(
       Jump(GOTO, Label(14)),
@@ -218,7 +217,7 @@ class InlinerTest extends BytecodeTesting {
     val List(c) = { compileClass(code); compiledClassesFromCache }
     val methods @ List(_, g) = c.methods.asScala.filter(_.name.length == 1).toList
     val List(fIns, gIns) = methods.map(instructionsFromMethod(_).dropNonOp)
-    val invokeG = Invoke(INVOKEVIRTUAL, "C", "g", "()I", itf = false)
+    val invokeG = InvokeVirtual("C", "g", "()I")
     assert(fIns contains invokeG, fIns) // no inlining into f, that request is elided
     assert(gIns contains invokeG, gIns) // f is inlined into g, g invokes itself recursively
 
@@ -240,7 +239,7 @@ class InlinerTest extends BytecodeTesting {
     val List(c) = { compileClass(code); compiledClassesFromCache }
     val methods @ List(f, g, h) = c.methods.asScala.filter(_.name.length == 1).sortBy(_.name).toList
     val List(fIns, gIns, hIns) = methods.map(instructionsFromMethod(_).dropNonOp)
-    val invokeG = Invoke(INVOKEVIRTUAL, "C", "g", "()I", itf = false)
+    val invokeG = InvokeVirtual("C", "g", "()I")
     // first round
     //   - no inlining into f, these requests are elided
     //   - h = g + g
@@ -422,7 +421,7 @@ class InlinerTest extends BytecodeTesting {
     val b = compileClass(scalaCode, List(javaCode -> "A.java"), allowMessage = i => { c += 1; i.msg.contains(warn) })
     assertEquals(1, c)
     val ins = getInstructions(b, "g")
-    val invokeFlop = Invoke(INVOKEVIRTUAL, "B", "flop", "()I", itf = false)
+    val invokeFlop = InvokeVirtual("B", "flop", "()I")
     assert(ins contains invokeFlop, ins.stringLines)
   }
 
@@ -1518,15 +1517,15 @@ class InlinerTest extends BytecodeTesting {
 
     assertSameCode(is("t1"), List(
       Label(0), LineNumber(12, Label(0)),
-      VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "A", "fx", "()V", itf = false),
+      VarOp(ALOAD, 0), InvokeVirtual("A", "fx", "()V"),
       Op(ICONST_1), Op(IRETURN), Label(6)))
 
     assertSameCode(is("t2"), List(
-      Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "B", "fx", "()V", itf = false),
+      Label(0), LineNumber(3, Label(0)), VarOp(ALOAD, 0), InvokeVirtual("B", "fx", "()V"),
       Label(4), LineNumber(4, Label(4)), Op(ICONST_1), Label(7), LineNumber(13, Label(7)), Op(IRETURN), Label(10)))
 
     assertSameCode(is("t3"), List(
-      Label(0), LineNumber(9, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "fx", "()V", itf = false),
+      Label(0), LineNumber(9, Label(0)), VarOp(ALOAD, 0), InvokeVirtual("C", "fx", "()V"),
       Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Label(7), LineNumber(14, Label(7)), Op(IRETURN), Label(10)))
   }
 
@@ -1742,7 +1741,7 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val List(t) = compileClasses(code)
     val i = getMethod(t, "bar")
-    assertSameCode(i.instructions, List(Label(0), LineNumber(7, Label(0)), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", itf = false), Op(ARETURN), Label(5)))
+    assertSameCode(i.instructions, List(Label(0), LineNumber(7, Label(0)), VarOp(ALOAD, 1), InvokeVirtual("java/lang/Object", "toString", "()Ljava/lang/String;"), Op(ARETURN), Label(5)))
   }
 
   @Test
@@ -2063,7 +2062,7 @@ class InlinerTest extends BytecodeTesting {
         // add
         Jump(GOTO, Label(53)), Label(53), Op(IADD),
         // inlined third call
-        VarOp(ALOAD, 0), VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Invoke(INVOKEVIRTUAL, "C", "getClass", "()Ljava/lang/Class;", itf = false), VarOp(ASTORE, 12), Op(POP2), VarOp(ISTORE, 11), Op(POP), Op(ICONST_0),
+        VarOp(ALOAD, 0), VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(LLOAD, 2), VarOp(ALOAD, 4), InvokeVirtual("C", "getClass", "()Ljava/lang/Class;"), VarOp(ASTORE, 12), Op(POP2), VarOp(ISTORE, 11), Op(POP), Op(ICONST_0),
         // null out local, add
         Jump(GOTO, Label(72)), Label(72), Op(ACONST_NULL), VarOp(ASTORE, 12), Op(IADD),
         // inlined fourth call, with null test on parameter
@@ -2089,7 +2088,7 @@ class InlinerTest extends BytecodeTesting {
       // x = U
       Ldc(LDC, "U"), VarOp(ASTORE, 3),
       // if (x.hashCode)
-      VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false), Op(ICONST_0), Jump(IF_ICMPLE, Label(16)),
+      VarOp(ALOAD, 3), InvokeVirtual("java/lang/String", "hashCode", "()I"), Op(ICONST_0), Jump(IF_ICMPLE, Label(16)),
       // x = a
       VarOp(ALOAD, 2), VarOp(ASTORE, 3), Jump(GOTO, Label(20)),
       // res = ""
@@ -2099,7 +2098,7 @@ class InlinerTest extends BytecodeTesting {
       // arg-local, x = null
       Label(23), Op(ACONST_NULL), VarOp(ASTORE, 2), Op(ACONST_NULL), VarOp(ASTORE, 3), VarOp(ASTORE, 1),
       // println(s)
-      Field(GETSTATIC, "scala/Console$", "MODULE$", "Lscala/Console$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/Console$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
+      Field(GETSTATIC, "scala/Console$", "MODULE$", "Lscala/Console$;"), VarOp(ALOAD, 1), InvokeVirtual("scala/Console$", "println", "(Ljava/lang/Object;)V"), Op(RETURN))
     )
   }
 
@@ -2121,7 +2120,7 @@ class InlinerTest extends BytecodeTesting {
       case _ => true
     },
       List(
-        Invoke(INVOKEVIRTUAL, "C", "mark", "()I", false),
+        InvokeVirtual("C", "mark", "()I"),
         VarOp(ISTORE, 3),
         VarOp(ILOAD, 3),
         VarOp(ILOAD, 3),
@@ -2195,13 +2194,13 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin
     val List(a, c) = compileClasses(code)
-    assertSameCode(getMethod(c, "t1"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "field", "()I", false), Op(IRETURN)))
-    assertSameCode(getMethod(c, "t2"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "hasSuper", "()I", false), Op(ICONST_1), Op(IADD), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t1"), List(VarOp(ALOAD, 0), InvokeVirtual("C", "field", "()I"), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t2"), List(VarOp(ALOAD, 0), InvokeVirtual("C", "hasSuper", "()I"), Op(ICONST_1), Op(IADD), Op(IRETURN)))
     assertEquals(getAsmMethod(c, "priv$1").access & (ACC_PRIVATE | ACC_STATIC), ACC_PRIVATE)
-    assertSameCode(getMethod(c, "t3"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "hasPrivate", "()I", false), Op(IRETURN)))
-    assertSameCode(getMethod(c, "t4"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "field", "()I", false), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t3"), List(VarOp(ALOAD, 0), InvokeVirtual("C", "hasPrivate", "()I"), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t4"), List(VarOp(ALOAD, 0), InvokeVirtual("C", "field", "()I"), Op(IRETURN)))
     assertEquals(getAsmMethod(c, "priv$2").access & (ACC_PRIVATE | ACC_STATIC), ACC_PRIVATE | ACC_STATIC)
-    assertSameCode(getMethod(c, "t5"), List(Invoke(INVOKESTATIC, "C", "priv$2", "()I", false), Op(IRETURN))) // TODO: should not inline here...
+    assertSameCode(getMethod(c, "t5"), List(Invoke(INVOKESTATIC, "C", "priv$2", "()I", itf = false), Op(IRETURN))) // TODO: should not inline here...
   }
 
   @Test

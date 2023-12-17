@@ -10,12 +10,11 @@ import org.junit.runners.JUnit4
 import scala.jdk.CollectionConverters._
 import scala.collection.immutable.TreeMap
 import scala.tools.asm.tree.ClassNode
-import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
+import scala.tools.nsc.backend.jvm.BTypes.{EmptyInlineInfo, InlineInfo, MethodInlineInfo}
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-@annotation.nowarn("msg=Boolean literals")
 class ScalaInlineInfoTest extends BytecodeTesting {
   override def compilerArgs = "-opt:none"
   import compiler._
@@ -82,64 +81,58 @@ class ScalaInlineInfoTest extends BytecodeTesting {
 
     val cs @ List(c, t, tl, to) = compileClasses(code)
     val infoT = inlineInfo(t)
-    val expectT = InlineInfo (
-      false, // final class
-      None, // not a sam
-      TreeMap(
-        (("O", "()LT$O$;"),                                                 MethodInlineInfo(false,false,false)),
-        (("T$$super$toString", "()Ljava/lang/String;"),                     MethodInlineInfo(true ,false,false)),
-        (("T$_setter_$x1_$eq", "(I)V"),                                     MethodInlineInfo(false,false,false)),
-        (("f1", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("f1$", "(LT;)I"),                                                 MethodInlineInfo(true ,false,false)),
-        (("f2", "()I"),                                                     MethodInlineInfo(true ,false,false)), // no static impl method for private method f2
-        (("f3", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("f3$", "(LT;)I"),                                                 MethodInlineInfo(true ,false,false)),
-        (("f4", "()Ljava/lang/String;"),                                    MethodInlineInfo(false,true, false)),
-        (("f4$", "(LT;)Ljava/lang/String;"),                                MethodInlineInfo(true ,true, false)),
-        (("f5", "()I"),                                                     MethodInlineInfo(true ,false,false)),
-        (("f5$", "(LT;)I"),                                                 MethodInlineInfo(true ,false,false)),
-        (("f6", "()I"),                                                     MethodInlineInfo(false,false,true )), // no static impl method for abstract method f6
-        (("x1", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("y2", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("y2_$eq", "(I)V"),                                                MethodInlineInfo(false,false,false)),
-        (("x3", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("x3_$eq", "(I)V"),                                                MethodInlineInfo(false,false,false)),
-        (("x4", "()I"),                                                     MethodInlineInfo(false,false,false)),
-        (("x4$", "(LT;)I"),                                                 MethodInlineInfo(true ,false,false)),
-        (("x5", "()I"),                                                     MethodInlineInfo(true, false,false)),
-        (("x5$", "(LT;)I"),                                                 MethodInlineInfo(true ,false,false)),
-        (("L$2", "(Lscala/runtime/LazyRef;)LT$L$1$;"),                      MethodInlineInfo(true, false,false)),
-        (("nest$1", "()I"),                                                 MethodInlineInfo(true, false,false)),
-        (("$init$", "(LT;)V"),                                              MethodInlineInfo(true,false,false)),
-        (("L$lzycompute$1", "(Lscala/runtime/LazyRef;)LT$L$1$;"),           MethodInlineInfo(true,false,false))
-      ),
-      None // warning
-    )
+    val expectT = EmptyInlineInfo.copy(methodInfos = TreeMap(
+        (("O", "()LT$O$;"),                                                 MethodInlineInfo()),
+        (("T$$super$toString", "()Ljava/lang/String;"),                     MethodInlineInfo(effectivelyFinal = true)),
+        (("T$_setter_$x1_$eq", "(I)V"),                                     MethodInlineInfo()),
+        (("f1", "()I"),                                                     MethodInlineInfo()),
+        (("f1$", "(LT;)I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("f2", "()I"),                                                     MethodInlineInfo(effectivelyFinal = true)), // no static impl method for private method f2
+        (("f3", "()I"),                                                     MethodInlineInfo()),
+        (("f3$", "(LT;)I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("f4", "()Ljava/lang/String;"),                                    MethodInlineInfo(annotatedInline = true)),
+        (("f4$", "(LT;)Ljava/lang/String;"),                                MethodInlineInfo(effectivelyFinal = true, annotatedInline = true)),
+        (("f5", "()I"),                                                     MethodInlineInfo(effectivelyFinal = true)),
+        (("f5$", "(LT;)I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("f6", "()I"),                                                     MethodInlineInfo(annotatedNoInline = true)), // no static impl method for abstract method f6
+        (("x1", "()I"),                                                     MethodInlineInfo()),
+        (("y2", "()I"),                                                     MethodInlineInfo()),
+        (("y2_$eq", "(I)V"),                                                MethodInlineInfo()),
+        (("x3", "()I"),                                                     MethodInlineInfo()),
+        (("x3_$eq", "(I)V"),                                                MethodInlineInfo()),
+        (("x4", "()I"),                                                     MethodInlineInfo()),
+        (("x4$", "(LT;)I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("x5", "()I"),                                                     MethodInlineInfo(effectivelyFinal = true)),
+        (("x5$", "(LT;)I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("L$2", "(Lscala/runtime/LazyRef;)LT$L$1$;"),                      MethodInlineInfo(effectivelyFinal = true)),
+        (("nest$1", "()I"),                                                 MethodInlineInfo(effectivelyFinal = true)),
+        (("$init$", "(LT;)V"),                                              MethodInlineInfo(effectivelyFinal = true)),
+        (("L$lzycompute$1", "(Lscala/runtime/LazyRef;)LT$L$1$;"),           MethodInlineInfo(effectivelyFinal = true))
+      ))
 
     assert(infoT == expectT, mapDiff(expectT.methodInfos, infoT.methodInfos) + infoT)
     assertSameMethods(t, expectT.methodInfos.keySet.map(x => x._1 + x._2))
 
     val infoC = inlineInfo(c)
-    val expectC = InlineInfo(false, None, TreeMap(
-      ("O", "()LT$O$;")                             -> MethodInlineInfo(true ,false,false),
-      ("f1", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("f3", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("f4", "()Ljava/lang/String;")                -> MethodInlineInfo(false,true,false),
-      ("f5", "()I")                                 -> MethodInlineInfo(true,false,false),
-      ("f6", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("x1", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("T$_setter_$x1_$eq", "(I)V")                 -> MethodInlineInfo(false,false,false),
-      ("y2", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("y2_$eq", "(I)V")                            -> MethodInlineInfo(false,false,false),
-      ("x3", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("x3_$eq", "(I)V")                            -> MethodInlineInfo(false,false,false),
-      ("x4$lzycompute", "()I")                      -> MethodInlineInfo(true ,false,false),
-      ("x4", "()I")                                 -> MethodInlineInfo(false,false,false),
-      ("T$$super$toString", "()Ljava/lang/String;") -> MethodInlineInfo(true ,false,false),
-      ("<init>", "()V")                             -> MethodInlineInfo(false,false,false),
-      ("O$lzycompute$1", "()V")                     -> MethodInlineInfo(true,false,false)
-    ),
-      None)
+    val expectC = EmptyInlineInfo.copy(methodInfos = TreeMap(
+      ("O", "()LT$O$;")                             -> MethodInlineInfo(effectivelyFinal = true),
+      ("f1", "()I")                                 -> MethodInlineInfo(),
+      ("f3", "()I")                                 -> MethodInlineInfo(),
+      ("f4", "()Ljava/lang/String;")                -> MethodInlineInfo(annotatedInline = true),
+      ("f5", "()I")                                 -> MethodInlineInfo(effectivelyFinal = true),
+      ("f6", "()I")                                 -> MethodInlineInfo(),
+      ("x1", "()I")                                 -> MethodInlineInfo(),
+      ("T$_setter_$x1_$eq", "(I)V")                 -> MethodInlineInfo(),
+      ("y2", "()I")                                 -> MethodInlineInfo(),
+      ("y2_$eq", "(I)V")                            -> MethodInlineInfo(),
+      ("x3", "()I")                                 -> MethodInlineInfo(),
+      ("x3_$eq", "(I)V")                            -> MethodInlineInfo(),
+      ("x4$lzycompute", "()I")                      -> MethodInlineInfo(effectivelyFinal = true),
+      ("x4", "()I")                                 -> MethodInlineInfo(),
+      ("T$$super$toString", "()Ljava/lang/String;") -> MethodInlineInfo(effectivelyFinal = true),
+      ("<init>", "()V")                             -> MethodInlineInfo(),
+      ("O$lzycompute$1", "()V")                     -> MethodInlineInfo(effectivelyFinal = true)
+    ))
 
     assert(infoC == expectC, mapDiff(expectC.methodInfos, infoC.methodInfos) + infoC)
     assertSameMethods(c, expectC.methodInfos.keySet.map(x => x._1 + x._2))
@@ -192,9 +185,9 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     val List(c, om) = compileClasses(code)
     val infoC = inlineInfo(c)
     val expected = Map(
-      ("<init>", "()V")         -> MethodInlineInfo(false,false,false),
-      ("O$lzycompute$1", "()V") -> MethodInlineInfo(true,false,false),
-      ("O", "()LC$O$;")         -> MethodInlineInfo(true,false,false))
+      ("<init>", "()V")         -> MethodInlineInfo(),
+      ("O$lzycompute$1", "()V") -> MethodInlineInfo(effectivelyFinal = true),
+      ("O", "()LC$O$;")         -> MethodInlineInfo(effectivelyFinal = true))
     assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
     assertSameMethods(c, expected.keySet.map(x => x._1 + x._2))
   }

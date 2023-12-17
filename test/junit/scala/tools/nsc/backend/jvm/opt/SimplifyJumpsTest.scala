@@ -261,7 +261,7 @@ class SimplifyJumpsTest {
   def noSimplifyNonConst(): Unit = {
     @unused val ops = List(
       Ldc(LDC, ""),
-      Invoke(INVOKEVIRTUAL, "java/lang/String", "length", "()I", itf = false),
+      InvokeVirtual("java/lang/String", "length", "()I"),
       Jump(IFEQ, Label(1)),
       Ldc(LDC, "nonempty"),
       Jump(GOTO, Label(2)),
