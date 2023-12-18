@@ -1,0 +1,12 @@
+t7530.scala:4: warning: private var j in class C is never updated: consider refactoring vars to a separate definition
+  private var (i, j) = init()
+                  ^
+t7530.scala:11: warning: private var j in class D is never updated: consider refactoring vars to a separate definition
+  private var i, j = init()
+                 ^
+t7530.scala:19: warning: private var j in class E is never updated: consider refactoring vars to a separate definition
+  private var K(i, j) = init()
+                   ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error
