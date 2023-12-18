@@ -13,8 +13,7 @@
 package scala.tools.testkit
 
 import scala.jdk.CollectionConverters._
-import scala.tools.asm
-import asm.{tree => t}
+import scala.tools.asm, asm.{tree => t}, asm.Opcodes._
 
 /** Makes using ASM from ByteCodeTests more convenient.
  *
@@ -268,4 +267,6 @@ object ASMConverters {
     case FrameEntry(tp, local, stack)                => method.visitFrame(tp, local.length, frameTypesToAsm(local, asmLabel).toArray, stack.length, frameTypesToAsm(stack, asmLabel).toArray)
     case LineNumber(line, start)                     => method.visitLineNumber(line, asmLabel(start))
   }
+  def InvokeInterface(owner: String, name: String, desc: String): Invoke = Invoke(opcode = INVOKEINTERFACE, owner, name, desc, itf = true)
+  def InvokeVirtual(owner: String, name: String, desc: String): Invoke = Invoke(opcode = INVOKEVIRTUAL, owner, name, desc, itf = false)
 }

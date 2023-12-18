@@ -55,18 +55,18 @@ class BytecodeTest extends BytecodeTesting {
       Jump(IFEQ, Label(20)),
 
       LineNumber(6, Label(11)),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", itf = false),
+      InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V"),
       Jump(GOTO, Label(33)),
 
       LineNumber(5, Label(20)),
       Jump(GOTO, Label(24)),
 
       LineNumber(8, Label(24)),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", itf = false),
+      InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V"),
       Jump(GOTO, Label(33)),
 
       LineNumber(10, Label(33)),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", itf = false)
+      InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V")
     )
 
     val mainIns = getInstructions(module, "main") filter {
@@ -112,7 +112,7 @@ class BytecodeTest extends BytecodeTesting {
       // AnyRef ==
       VarOp(ALOAD, 2), VarOp(ALOAD, 1), VarOp(ASTORE, 3), Op(DUP), Jump(IFNONNULL, Label(14)),
       Op(POP), VarOp(ALOAD, 3), Jump(IFNULL, Label(19)), Jump(GOTO, Label(23)),
-      Label(14), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false), Jump(IFEQ, Label(23)),
+      Label(14), VarOp(ALOAD, 3), InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"), Jump(IFEQ, Label(23)),
       Label(19), Op(ICONST_1), Jump(GOTO, Label(26)),
       Label(23), Op(ICONST_0),
       Label(26), Op(IRETURN)))
@@ -143,8 +143,8 @@ class BytecodeTest extends BytecodeTesting {
 
     // t8: no null checks invoking equals on modules and constants
     assertSameCode(getMethod(c, "t8"), List(
-      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false), Jump(IFNE, Label(10)),
-      Ldc(LDC, ""), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false), Jump(IFNE, Label(14)),
+      Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"), VarOp(ALOAD, 1), InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"), Jump(IFNE, Label(10)),
+      Ldc(LDC, ""), VarOp(ALOAD, 1), InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"), Jump(IFNE, Label(14)),
       Label(10), Op(ICONST_1), Jump(GOTO, Label(17)),
       Label(14), Op(ICONST_0),
       Label(17), Op(IRETURN)))
@@ -172,8 +172,8 @@ class BytecodeTest extends BytecodeTesting {
     assertSameCode(t.instructions.filterNot(isFrameLine), List(
       Label(0), Ldc(LDC, ""), VarOp(ASTORE, 1),
       Label(4), VarOp(ALOAD, 1), Jump(IFNULL, Label(20)),
-      Label(9), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "foo", "()V", itf = false), Label(13), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(17), Jump(GOTO, Label(4)),
-      Label(20), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", itf = false), Op(RETURN), Label(26)))
+      Label(9), VarOp(ALOAD, 0), InvokeVirtual("C", "foo", "()V"), Label(13), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(17), Jump(GOTO, Label(4)),
+      Label(20), VarOp(ALOAD, 0), InvokeVirtual("C", "bar", "()V"), Op(RETURN), Label(26)))
     val labels = t.instructions collect { case l: Label => l }
     val x = t.localVars.find(_.name == "x").get
     assertEquals(x.start, labels(1))
@@ -192,7 +192,7 @@ class BytecodeTest extends BytecodeTesting {
       """.stripMargin
     val t = compileClass(code)
     val tMethod = getMethod(t, "t$")
-    @unused val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", itf = false)
+    @unused val invoke = InvokeVirtual("java/lang/Object", "toString", "()Ljava/lang/String;")
     // ths static accessor is positioned at the line number of the accessed method.
     assertSameCode(tMethod.instructions,
       List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", itf = true), Op(RETURN), Label(4))
@@ -557,7 +557,7 @@ class BytecodeTest extends BytecodeTesting {
       TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
       VarOp(ASTORE, 4),
       VarOp(ALOAD, 4),
-      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", itf = false),
+      InvokeVirtual("scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;"),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false),
       VarOp(ISTORE, 5),
       VarOp(ILOAD, 5),
@@ -567,7 +567,7 @@ class BytecodeTest extends BytecodeTesting {
       Label(22),
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
       VarOp(ALOAD, 3),
-      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false),
+      InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"),
       Jump(IFEQ, Label(31)),
       IntOp(BIPUSH, 20),
       Op(IRETURN),
@@ -599,7 +599,7 @@ class BytecodeTest extends BytecodeTesting {
       TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
       VarOp(ASTORE, 5),
       VarOp(ALOAD, 5),
-      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", itf = false),
+      InvokeVirtual("scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;"),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false),
       VarOp(ISTORE, 7),
       Op(ICONST_1),
@@ -632,7 +632,7 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ILOAD, 4),
       Jump(IFEQ, Label(71)),
       VarOp(ALOAD, 5),
-      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", itf = false),
+      InvokeVirtual("scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;"),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false),
       VarOp(ISTORE, 8),
       VarOp(ILOAD, 8),
@@ -656,13 +656,13 @@ class BytecodeTest extends BytecodeTesting {
       TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
       VarOp(ASTORE, 4),
       VarOp(ALOAD, 4),
-      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", itf = false),
+      InvokeVirtual("scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;"),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false),
       VarOp(ISTORE, 5),
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
       VarOp(ILOAD, 5),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "boxToInteger", "(I)Ljava/lang/Integer;", itf = false),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", itf = false),
+      InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V"),
       Field(GETSTATIC, "scala/runtime/BoxedUnit", "UNIT", "Lscala/runtime/BoxedUnit;"),
       Op(POP),
       Op(RETURN),
@@ -671,11 +671,11 @@ class BytecodeTest extends BytecodeTesting {
       Label(27),
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
       VarOp(ALOAD, 3),
-      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false),
+      InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"),
       Jump(IFEQ, Label(40)),
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
       Ldc(LDC, "nil"),
-      Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", itf = false),
+      InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V"),
       Field(GETSTATIC, "scala/runtime/BoxedUnit", "UNIT", "Lscala/runtime/BoxedUnit;"),
       Op(POP),
       Op(RETURN),
@@ -701,7 +701,7 @@ class BytecodeTest extends BytecodeTesting {
       TypeOp(CHECKCAST, "scala/collection/immutable/$colon$colon"),
       VarOp(ASTORE, 4),
       VarOp(ALOAD, 4),
-      Invoke(INVOKEVIRTUAL, "scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;", itf = false),
+      InvokeVirtual("scala/collection/immutable/$colon$colon", "head", "()Ljava/lang/Object;"),
       Invoke(INVOKESTATIC, "scala/runtime/BoxesRunTime", "unboxToInt", "(Ljava/lang/Object;)I", itf = false),
       VarOp(ISTORE, 5),
       VarOp(ILOAD, 5),
@@ -711,7 +711,7 @@ class BytecodeTest extends BytecodeTesting {
       Label(22),
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
       VarOp(ALOAD, 3),
-      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false),
+      InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"),
       Jump(IFEQ, Label(31)),
       IntOp(BIPUSH, 20),
       Op(IRETURN),
@@ -768,7 +768,7 @@ class BytecodeTest extends BytecodeTesting {
       Label(19),
       Field(GETSTATIC, "scala/collection/immutable/Nil$", "MODULE$", "Lscala/collection/immutable/Nil$;"),
       VarOp(ALOAD, 4),
-      Invoke(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", itf = false),
+      InvokeVirtual("java/lang/Object", "equals", "(Ljava/lang/Object;)Z"),
       Jump(IFEQ, Label(30)),
       TypeOp(NEW, "B"),
       Op(DUP),
@@ -784,7 +784,7 @@ class BytecodeTest extends BytecodeTesting {
       Op(ATHROW),
       Label(41),
       TypeOp(CHECKCAST, "Tree"),
-      Invoke(INVOKEVIRTUAL, "PatmatAdaptMatchEnd", "atPos", "(LTree;)LTree;", itf = false),
+      InvokeVirtual("PatmatAdaptMatchEnd", "atPos", "(LTree;)LTree;"),
       TypeOp(CHECKCAST, "RefTree"),
       VarOp(ASTORE, 3),
       VarOp(ALOAD, 3),
@@ -946,7 +946,7 @@ class BytecodeTest extends BytecodeTesting {
       IntOp(BIPUSH, 65),
       VarOp(ILOAD, 3),
       Op(IADD),
-      Invoke(INVOKEVIRTUAL, "java/io/Writer", "write", "(I)V", itf = false),
+      InvokeVirtual("java/io/Writer", "write", "(I)V"),
       Op(RETURN),
       Label(34),
       VarOp(ALOAD, 0),
@@ -983,8 +983,8 @@ class BytecodeTest extends BytecodeTesting {
       VarOp(ALOAD, 0),
       Invoke(INVOKESPECIAL, "SourceMapWriter", "Base64Map", "()Ljava/lang/String;", itf = false),
       VarOp(ILOAD, 3),
-      Invoke(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", itf = false),
-      Invoke(INVOKEVIRTUAL, "java/io/Writer", "write", "(I)V", itf = false),
+      InvokeVirtual("java/lang/String", "charAt", "(I)C"),
+      InvokeVirtual("java/io/Writer", "write", "(I)V"),
       VarOp(ILOAD, 2),
       Op(ICONST_0),
       Jump(IF_ICMPEQ, Label(47)),

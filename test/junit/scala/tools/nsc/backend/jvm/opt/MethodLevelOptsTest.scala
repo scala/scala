@@ -16,7 +16,6 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
-@annotation.nowarn("msg=Boolean literals should be passed using named argument syntax for parameter itf.")
 class MethodLevelOptsTest extends BytecodeTesting {
   override def compilerArgs = "-opt:l:method"
   import compiler._
@@ -100,7 +99,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameCode(getMethod(c, "t"), List(
-      Op(ACONST_NULL), Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false), Op(ARETURN)))
+      Op(ACONST_NULL), InvokeVirtual("java/lang/Object", "toString", "()Ljava/lang/String;"), Op(ARETURN)))
   }
 
   @Test
@@ -140,10 +139,10 @@ class MethodLevelOptsTest extends BytecodeTesting {
 
     assertSameCode(getMethod(c, "t"), List(
       Ldc(LDC, "el"), VarOp(ASTORE, 1),
-      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), VarOp(ALOAD, 1), InvokeVirtual("scala/Predef$", "println", "(Ljava/lang/Object;)V"),
       Op(ACONST_NULL), VarOp(ASTORE, 1),
       Ldc(LDC, "zit"), VarOp(ASTORE, 1),
-      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "()V", false),
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), InvokeVirtual("scala/Predef$", "println", "()V"),
       VarOp(ALOAD, 1), Op(ARETURN)))
   }
 
@@ -179,7 +178,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code, allowMessage = ignoreDeprecations)
     assertSameCode(getMethod(c, "t"), List(
-      TypeOp(NEW, "java/lang/Integer"), Ldc(LDC, "nono"), Invoke(INVOKESPECIAL, "java/lang/Integer", "<init>", "(Ljava/lang/String;)V", false),
+      TypeOp(NEW, "java/lang/Integer"), Ldc(LDC, "nono"), Invoke(INVOKESPECIAL, "java/lang/Integer", "<init>", "(Ljava/lang/String;)V", itf = false),
       VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
   }
 
@@ -201,7 +200,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
       VarOp(ILOAD, 1),
       VarOp(ILOAD, 2),
       VarOp(ILOAD, 3),
-      Invoke(INVOKESTATIC, "C", "$anonfun$t$1", "(III)I", false), Op(IRETURN)))
+      Invoke(INVOKESTATIC, "C", "$anonfun$t$1", "(III)I", itf = false), Op(IRETURN)))
   }
 
   @Test

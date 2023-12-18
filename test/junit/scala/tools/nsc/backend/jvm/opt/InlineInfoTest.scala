@@ -14,7 +14,6 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-@annotation.nowarn("msg=Boolean literals")
 class InlineInfoTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}
@@ -68,9 +67,9 @@ class InlineInfoTest extends BytecodeTesting {
     compileClasses("class C { new A }", javaCode = List((jCode, "A.java")))
     val info = global.genBCode.bTypes.cachedClassBType("A").info.get.inlineInfo
     assertEquals(info.methodInfos, Map(
-      ("bar", "()I")    -> MethodInlineInfo(true,false,false),
-      ("<init>", "()V") -> MethodInlineInfo(false,false,false),
-      ("baz", "()I")    -> MethodInlineInfo(true,false,false)))
+      ("bar", "()I")    -> MethodInlineInfo(effectivelyFinal = true),
+      ("<init>", "()V") -> MethodInlineInfo(),
+      ("baz", "()I")    -> MethodInlineInfo(effectivelyFinal = true)))
   }
 
   @Test
@@ -89,7 +88,7 @@ class InlineInfoTest extends BytecodeTesting {
     // the classpath (classfile WatchEvent$Kind.class) instead of the actual companion from the source, so the static method was missing.
     val info = global.genBCode.bTypes.cachedClassBType("java/nio/file/WatchEvent$Kind").info.get.inlineInfo
     assertEquals(info.methodInfos, Map(
-      ("HAI", "()Ljava/lang/String;") -> MethodInlineInfo(true,false,false),
-      ("<init>", "()V")               -> MethodInlineInfo(false,false,false)))
+      ("HAI", "()Ljava/lang/String;") -> MethodInlineInfo(effectivelyFinal = true),
+      ("<init>", "()V")               -> MethodInlineInfo()))
   }
 }

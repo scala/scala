@@ -1160,9 +1160,9 @@ object BTypes {
    * @param annotatedInline                     True if the method is annotated `@inline`
    * @param annotatedNoInline                   True if the method is annotated `@noinline`
    */
-  final case class MethodInlineInfo(effectivelyFinal: Boolean,
-                                    annotatedInline: Boolean,
-                                    annotatedNoInline: Boolean)
+  final case class MethodInlineInfo(effectivelyFinal: Boolean = false,
+                                    annotatedInline: Boolean = false,
+                                    annotatedNoInline: Boolean = false)
 
   // no static way (without symbol table instance) to get to nme.ScalaATTR / ScalaSignatureATTR
   val ScalaAttributeName    = "Scala"
