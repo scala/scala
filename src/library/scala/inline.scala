@@ -16,12 +16,13 @@ package scala
  * An annotation for methods that the optimizer should inline.
  *
  * Note that by default, the Scala optimizer is disabled and no callsites are inlined. See
- * `-opt:help` for information on how to enable the optimizer and inliner.
+ * `-opt:help` and [[https://docs.scala-lang.org/overviews/compiler-options/optimizer.html the overview document]]
+ * for information on how to enable the optimizer and inliner.
  *
  * When inlining is enabled, the inliner will always try to inline methods or callsites annotated
- * `@inline` (under the condition that inlining from the defining class is allowed, see
- * `-opt-inline-from:help`). If inlining is not possible, for example because the method is not
- * final, an optimizer warning will be issued. See `-opt-warnings:help` for details.
+ * `@inline` (under the condition that inlining from the defining class is allowed).
+ * If inlining is not possible, for example because the method is not
+ * final, an optimizer warning will be issued. See `-Wopt:help` for details.
  *
  * Examples:
  *
