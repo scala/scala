@@ -129,9 +129,10 @@ jobs:
       name: language spec
       dist: focal
       language: ruby
+      rvm: 2.7
       install:
         - ruby -v
-        - gem install bundler
+        - gem install bundler -v "< 2.5" #scala-dev#857
         - bundler --version
         - bundle install --path vendor/bundle
         # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
