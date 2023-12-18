@@ -18,6 +18,7 @@ import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import scala.reflect.internal.util.FreshNameCreator
 import scala.reflect.internal.util.ListOfNil
+import scala.util.chaining._
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -371,16 +372,16 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     if (isFunction || typeSym.isSubClass(SerializableClass))
       anonClass.addAnnotation(SerialVersionUIDAnnotation)
 
-    anonClass.setInfo(fun.tpe match {
-      case tpe @ RefinedType(parents, scope) =>
-        assert(scope.forall(_.isType), s"Cannot expand function of type $tpe")
-        ClassInfoType(parents, scope, anonClass)
-      case tpe =>
-        val parents =
-          if (!isFunction) tpe :: Nil
-          else addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
-        ClassInfoType(parents, newScope, anonClass)
-    })
+    val rScope = newScope
+    def parents(tp: Type): List[Type] = tp match {
+      case RefinedType(ps, scope) =>
+        assert(scope.forall(_.isType), s"Cannot expand function of type $tp")
+        ps.flatMap(parents).tap(_ => scope.foreach(rScope.enter))
+      case _ =>
+        if (!isFunction) tp :: Nil
+        else addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
+    }
+    anonClass.setInfo(ClassInfoType(parents(fun.tpe), rScope, anonClass))
 
     // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
     // nested in a value-class method, its owner was already changed to the extension method.

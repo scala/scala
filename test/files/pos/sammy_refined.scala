@@ -18,4 +18,5 @@ class Outer {
   val t1: T = x => x
   val t2: T { type U = String } = x => x
   val t3: T { type U } = x => x
+  val t4: (T { type U }) { type V } = x => x
 }
