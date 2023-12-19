@@ -25,6 +25,21 @@ import scala.annotation.tailrec
  *  optimizations behind a reasonably clean API.
  */
 private[collection] object NewRedBlackTree {
+  def validate[A](tree: Tree[A, _])(implicit ordering: Ordering[A]): tree.type = {
+    def impl(tree: Tree[A, _], keyProp: A => Boolean): Int = {
+      assert(keyProp(tree.key), s"key check failed: $tree")
+      if (tree.isRed) {
+        assert(tree.left == null || tree.left.isBlack, s"red-red left $tree")
+        assert(tree.right == null || tree.right.isBlack, s"red-red right $tree")
+      }
+      val leftBlacks = if (tree.left == null) 0 else impl(tree.left, k => keyProp(k) && ordering.compare(k, tree.key) < 0)
+      val rightBlacks = if (tree.right == null) 0 else impl(tree.right, k => keyProp(k) && ordering.compare(k, tree.key) > 0)
+      assert(leftBlacks == rightBlacks, s"not balanced: $tree")
+      leftBlacks + (if (tree.isBlack) 1 else 0)
+    }
+    if (tree != null) impl(tree, _ => true)
+    tree
+  }
 
   def isEmpty(tree: Tree[_, _]): Boolean = tree eq null
 
@@ -447,7 +462,7 @@ private[collection] object NewRedBlackTree {
     if (ordering.lt(tree.key, from)) return doFrom(tree.right, from)
     val newLeft = doFrom(tree.left, from)
     if (newLeft eq tree.left) tree
-    else if (newLeft eq null) upd(tree.right, tree.key, tree.value, overwrite = false)
+    else if (newLeft eq null) maybeBlacken(upd(tree.right, tree.key, tree.value, overwrite = false))
     else join(newLeft, tree.key, tree.value, tree.right)
   }
   private[this] def doTo[A, B](tree: Tree[A, B], to: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -455,15 +470,15 @@ private[collection] object NewRedBlackTree {
     if (ordering.lt(to, tree.key)) return doTo(tree.left, to)
     val newRight = doTo(tree.right, to)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value, overwrite = false)
-    else join (tree.left, tree.key, tree.value, newRight)
+    else if (newRight eq null) maybeBlacken(upd(tree.left, tree.key, tree.value, overwrite = false))
+    else join(tree.left, tree.key, tree.value, newRight)
   }
   private[this] def doUntil[A, B](tree: Tree[A, B], until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
     if (tree eq null) return null
     if (ordering.lteq(until, tree.key)) return doUntil(tree.left, until)
     val newRight = doUntil(tree.right, until)
     if (newRight eq tree.right) tree
-    else if (newRight eq null) upd(tree.left, tree.key, tree.value, overwrite = false)
+    else if (newRight eq null) maybeBlacken(upd(tree.left, tree.key, tree.value, overwrite = false))
     else join(tree.left, tree.key, tree.value, newRight)
   }
 
