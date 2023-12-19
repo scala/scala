@@ -32,6 +32,8 @@ trait T1 { def t(a: Int): Int }; trait U1
 object Test {
   implicit val s: String = ""
   type NonClassTypeRefinement = DerivedOneAbstract with OneAbstract
+  type NonOverridingMethodRefinement = OneAbstract { def apples(): Int }
+  type OverridingMethodRefinement = OneAbstract { def ap(a: Int): Int } // allowed in Scala 3
   type NonClassType = DerivedOneAbstract
 
   // errors:
@@ -47,6 +49,8 @@ object Test {
   def f9 = ((x: Int) => 0): SelfTp
   def g0 = ((x: Int) => 0): T1 with U1
   def g1 = ((x: Int) => 0): NonClassTypeRefinement
+  def h1 = ((x: Int) => 0): NonOverridingMethodRefinement
+  def h2 = ((x: Int) => 0): OverridingMethodRefinement
 
   // allowed:
   def g2 = ((x: Int) => 0): OneEmptyConstructor

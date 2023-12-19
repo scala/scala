@@ -18,6 +18,7 @@ import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import scala.reflect.internal.util.FreshNameCreator
 import scala.reflect.internal.util.ListOfNil
+import scala.util.chaining._
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -366,15 +367,21 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   def expandFunction(localTyper: analyzer.Typer)(fun: Function, inConstructorFlag: Long): Tree = {
     val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos, inConstructorFlag)
-    val parents = if (isFunctionType(fun.tpe)) {
-      anonClass addAnnotation SerialVersionUIDAnnotation
-      addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
-    } else {
-      if (fun.tpe.typeSymbol.isSubClass(SerializableClass))
-        anonClass addAnnotation SerialVersionUIDAnnotation
-      fun.tpe :: Nil
+    val typeSym = fun.tpe.typeSymbol
+    val isFunction = isFunctionSymbol(typeSym)
+    if (isFunction || typeSym.isSubClass(SerializableClass))
+      anonClass.addAnnotation(SerialVersionUIDAnnotation)
+
+    val rScope = newScope
+    def parents(tp: Type): List[Type] = tp match {
+      case RefinedType(ps, scope) =>
+        assert(scope.forall(_.isType), s"Cannot expand function of type $tp")
+        ps.flatMap(parents).tap(_ => scope.foreach(rScope.enter))
+      case _ =>
+        if (!isFunction) tp :: Nil
+        else addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
     }
-    anonClass setInfo ClassInfoType(parents, newScope, anonClass)
+    anonClass.setInfo(ClassInfoType(parents(fun.tpe), rScope, anonClass))
 
     // The original owner is used in the backend for the EnclosingMethod attribute. If fun is
     // nested in a value-class method, its owner was already changed to the extension method.
@@ -387,7 +394,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     localTyper.typedPos(fun.pos) {
       Block(
         ClassDef(anonClass, NoMods, ListOfNil, List(samDef), fun.pos),
-        Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
+        Typed(New(anonClass.tpe), TypeTree(fun.tpe)),
+      )
     }
   }
 

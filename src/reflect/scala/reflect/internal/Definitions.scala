@@ -1019,8 +1019,14 @@ trait Definitions extends api.StandardDefinitions {
       * and the caching means that samOf is effectively computed during typer (assuming the same inputs were presented to samOf during that phase).
       * It's kind of strange that erasure sees deferredMembers that typer does not (see commented out assert below)
       */
-    def samOf(tp: Type): Symbol =
-      if (isNonRefinementClassType(unwrapToClass(tp))) { // TODO: is this really faster than computing tpSym below? how about just `tp.typeSymbol.isClass` (and !tpSym.isRefinementClass)?
+    def samOf(tp: Type): Symbol = {
+      @tailrec def isEligible(tp: Type): Boolean = unwrapToClass(tp) match {
+        case TypeRef(_, sym, _) => sym.isClass && !sym.isRefinementClass
+        case RefinedType(parent :: Nil, decls) => decls.forall(_.isType) && isEligible(parent)
+        case _ => false
+      }
+
+      if (isEligible(tp)) {
         // look at erased type because we (only) care about what ends up in bytecode
         // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
         val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
@@ -1065,6 +1071,7 @@ trait Definitions extends api.StandardDefinitions {
 
         samCache.getOrElseUpdate(tpSym, compute)
       } else NoSymbol
+    }
 
     def samOfProto(pt: Type): Symbol =
       pt match {
