@@ -65,14 +65,15 @@ trait StandardScalaSettings { _: MutableSettings =>
     }
   def releaseValue: Option[String] = release.valueSetByUser
   val target =
-    ChoiceSetting("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.", AllTargetVersions, DefaultTargetVersion)
+    ChoiceSetting("-target", "target", "Target platform for class files. Target < 8 is deprecated; target > 8 uses 8.",
+      AllTargetVersions, DefaultTargetVersion, AllTargetVersions.map(v => if (v.toInt <= 8) s"uses $v" else "unsupported, uses default 8"))
     .withPreSetHook(normalizeTarget)
     .withPostSetHook { setting =>
       if (releaseValue.map(_.toInt < setting.value.toInt).getOrElse(false))
         errorFn("-release cannot be less than -target")
       if (!setting.deprecationMessage.isDefined)
         if (setting.value.toInt > MaxSupportedTargetVersion) {
-          setting.withDeprecationMessage(s"Scala 2.12 cannot emit valid class files for targets newer than $MaxSupportedTargetVersion (this is possible with Scala 2.13). Use -release to compile against a specific platform API version.")
+          setting.withDeprecationMessage(s"Scala 2.12 cannot emit valid class files for targets newer than $MaxSupportedTargetVersion; this is possible with Scala 2.13. Use -release to compile against a specific version of the platform API.")
           setting.value = DefaultTargetVersion
         } else if (setting.value.toInt < MinSupportedTargetVersion) {
           setting.withDeprecationMessage(s"${setting.name}:${setting.value} is deprecated, forcing use of $DefaultTargetVersion")
