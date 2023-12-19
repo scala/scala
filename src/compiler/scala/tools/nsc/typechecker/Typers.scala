@@ -3311,7 +3311,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def typedImport(imp : Import): Import = transformed.remove(imp) match {
+    def typedImport(imp: Import): Import = transformed.remove(imp) match {
       case Some(imp1: Import) => imp1
       case _                  => log(s"unhandled import: $imp in $unit"); imp
     }

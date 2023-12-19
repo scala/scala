@@ -1106,7 +1106,7 @@ trait Contexts { self: Analyzer =>
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
           List()
-        case sel :: Nil if sel.isWildcard =>
+        case sel :: _ if sel.isWildcard =>
           // Using pre.implicitMembers seems to exposes a problem with out-dated symbols in the IDE,
           // see the example in https://www.assembla.com/spaces/scala-ide/tickets/1002552#/activity/ticket
           // I haven't been able to boil that down the an automated test yet.
@@ -1255,12 +1255,11 @@ trait Contexts { self: Analyzer =>
       )
 
     /** If the given import is permitted, fetch the symbol and filter for accessibility.
+     *  Tests `exists` to complete SymbolLoaders, which sets the symbol's access flags (scala/bug#12736)
      */
-    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol = {
+    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol =
       if (isExcludedRootImport(imp)) NoSymbol
       else sym.filter(s => s.exists && isAccessible(s, imp.qual.tpe, superAccess = false))
-      // `exists` above completes SymbolLoaders, which sets the symbol's access flags (scala/bug#12736)
-    }
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
@@ -1988,7 +1987,7 @@ trait Contexts { self: Analyzer =>
 
     override def hashCode = tree.##
     override def equals(other: Any) = other match {
-      case that: ImportInfo => (tree == that.tree)
+      case that: ImportInfo => tree == that.tree
       case _                => false
     }
     override def toString = tree.toString

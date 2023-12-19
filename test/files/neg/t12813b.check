@@ -1,0 +1,28 @@
+t12813b.scala:5: error: a is imported twice
+import O.{a, a}   // error
+          ^
+t12813b.scala:8: error: b is an ambiguous name on import
+import O.{a => b, a => b}   // error
+          ^
+t12813b.scala:10: error: b is an ambiguous name on import
+import O.{a => b, toString => b}    // error
+          ^
+t12813b.scala:11: error: toString is an ambiguous name on import
+import O.{a => toString, toString}  // error
+          ^
+t12813b.scala:12: error: toString is an ambiguous name on import
+import O.{toString, a => toString}  // error
+          ^
+t12813b.scala:14: error: wildcard import must be in last position
+import O.{given, a, _}    // error 3
+          ^
+t12813b.scala:15: error: wildcard import must be in last position
+import O.{given, toString, a, _}    // error 3
+          ^
+t12813b.scala:18: error: duplicate wildcard selector
+import O.{a, given, *, _} // error 3
+                    ^
+t12813b.scala:19: error: given requires a wildcard selector
+import O.{a, given}       // error 3
+             ^
+9 errors

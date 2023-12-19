@@ -1335,12 +1335,7 @@ trait ContextErrors extends splain.SplainErrors {
           ByNameParameter, AbstractVar = Value
       }
 
-      object DuplicatesErrorKinds extends Enumeration {
-        val RenamedTwice, AppearsTwice = Value
-      }
-
       import SymValidateErrors._
-      import DuplicatesErrorKinds._
       import symtab.Flags
 
       def TypeSigError(tree: Tree, ex: TypeError) = {
@@ -1432,16 +1427,6 @@ trait ContextErrors extends splain.SplainErrors {
         val errorAddendum =
           ": parameter may only be referenced in a subsequent parameter section"
         issueSymbolTypeError(sym,  "illegal dependent method type" + errorAddendum)(context)
-      }
-
-      def DuplicatesError(tree: Tree, name: Name, kind: DuplicatesErrorKinds.Value) = {
-        val msg = kind match {
-          case RenamedTwice => "is renamed twice"
-          case AppearsTwice => "appears twice as a target of a renaming"
-          case x            => throw new MatchError(x)
-        }
-
-        issueNormalTypeError(tree, name.decode + " " + msg)
       }
     }
 

@@ -543,10 +543,10 @@ trait Infer extends Checkable {
      */
     def methTypeArgs(fn: Tree, tparams: List[Symbol], formals: List[Type], restpe: Type,
                      argtpes: List[Type], pt: Type): AdjustedTypeArgs = {
-      val tvars = tparams map freshVar
       if (!sameLength(formals, argtpes))
         throw new NoInstance("parameter lists differ in length")
 
+      val tvars = tparams.map(freshVar)
       val restpeInst = restpe.instantiateTypeParams(tparams, tvars)
 
       // first check if typevars can be fully defined from the expected type.
@@ -576,10 +576,9 @@ trait Infer extends Checkable {
 
         // Note that isCompatible side-effects: subtype checks involving typevars
         // are recorded in the typevar's bounds (see TypeConstraint)
-        if (!isCompatible(tp1, pt1)) {
+        if (!isCompatible(tp1, pt1))
           throw new DeferredNoInstance(() =>
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
-        }
       }
       val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
       if (settings.warnInferAny && !fn.isEmpty) {
