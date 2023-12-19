@@ -396,7 +396,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SuccessClass
     definitions.FutureClass
     definitions.PromiseClass
-    definitions.NonFatalClass
+    definitions.NonFatalModule
+    definitions.NonFatal_apply
     definitions.MacroContextType
     definitions.ProductRootClass
     definitions.Any_$eq$eq
