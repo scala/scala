@@ -40,6 +40,9 @@ import scala.annotation.meta._
  *  // warning: there were three deprecation warnings in total; re-run with -deprecation for details
  *  }}}
  *
+ *  The Scala compiler also warns about using definitions annotated with [[java.lang.Deprecated]]. However it is
+ *  recommended to use the Scala `@deprecated` annotation in Scala code because it allows providing a deprecation message.
+ *
  *  '''`@deprecated` in the Scala language and its standard library'''<br/>
  *
  *  A deprecated element of the Scala language or a definition in the Scala standard library will

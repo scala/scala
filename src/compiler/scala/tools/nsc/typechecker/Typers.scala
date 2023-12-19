@@ -4180,7 +4180,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (hasError) ErroneousAnnotation
           else if (unmappable) UnmappableAnnotation
-          else AnnotationInfo(annType, Nil, nvPairs.map(p => (p._1, p._2.get))).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
+          else {
+            if (annTypeSym == JavaDeprecatedAttr && !context.unit.isJava && settings.lintDeprecation)
+              context.warning(ann.pos, """Prefer the Scala annotation over Java's `@Deprecated` to provide a message and version: @deprecated("message", since = "MyLib 1.0")""", WarningCategory.LintDeprecation)
+            AnnotationInfo(annType, Nil, nvPairs.map(p => (p._1, p._2.get))).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
+          }
         }
       }
       @inline def statically = {
@@ -4230,7 +4234,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               info.args.exists(treeInfo.isDefaultGetter)
           }
           if (annTypeSym == DeprecatedAttr && settings.lintDeprecation && argss.head.lengthIs < 2 && usesDefault)
-            context.warning(ann.pos, """Specify both message and version: @deprecated("message", since = "1.0")""", WarningCategory.LintDeprecation)
+            context.warning(ann.pos, """Specify both message and version: @deprecated("message", since = "MyLib 1.0")""", WarningCategory.LintDeprecation)
           info
         }
       }

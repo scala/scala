@@ -1,0 +1,9 @@
+t12845.scala:4: warning: Prefer the Scala annotation over Java's `@Deprecated` to provide a message and version: @deprecated("message", since = "MyLib 1.0")
+  @Deprecated def f = 0
+   ^
+t12845.scala:6: warning: method f in object O is deprecated
+class C { def g = O.f }
+                    ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

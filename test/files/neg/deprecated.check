@@ -1,7 +1,7 @@
-deprecated.scala:5: warning: Specify both message and version: @deprecated("message", since = "1.0")
+deprecated.scala:5: warning: Specify both message and version: @deprecated("message", since = "MyLib 1.0")
   @deprecated def f = ???
    ^
-deprecated.scala:9: warning: Specify both message and version: @deprecated("message", since = "1.0")
+deprecated.scala:9: warning: Specify both message and version: @deprecated("message", since = "MyLib 1.0")
   @deprecated("Don't use it."/*, forRemoval=true*/) def stale = ???
    ^
 deprecated.scala:21: warning: method f in trait T is deprecated
