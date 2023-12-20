@@ -1,10 +1,10 @@
 LogConfig_2.scala:7: warning: value MESSAGE_FORMAT_VERSION_CONFIG in class TopicConfig_1 is deprecated
   val MessageFormatVersionPropX = TopicConfig_1.MESSAGE_FORMAT_VERSION_CONFIG
                                                 ^
-LogConfig_2.scala:10: warning: Specify both message and version: @deprecated("message", since = "1.0")
+LogConfig_2.scala:10: warning: Specify both message and version: @deprecated("message", since = "MyLib 1.0")
   @deprecated("3.0")
    ^
-LogConfig_2.scala:12: warning: Specify both message and version: @deprecated("message", since = "1.0")
+LogConfig_2.scala:12: warning: Specify both message and version: @deprecated("message", since = "MyLib 1.0")
   @deprecated("3.0") @nowarn("cat=deprecation")
    ^
 LogConfig_2.scala:12: warning: @nowarn annotation does not suppress any warnings

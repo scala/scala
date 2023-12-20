@@ -90,7 +90,7 @@ class WConfTest extends BytecodeTesting {
       |}
       |""".stripMargin
 
-  val l2 = (2, "Specify both message and version: @deprecated(\"message\", since = \"1.0\")")
+  val l2 = (2, "Specify both message and version: @deprecated(\"message\", since = \"MyLib 1.0\")")
   val l5a = (5, "method f in class A is deprecated")
   val l5b = (5, "method g in class A is deprecated")
   val l7 = (7, "reflective access of structural type member method f should be enabled")
