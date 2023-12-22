@@ -508,4 +508,8 @@ class ArrayBufferTest {
     check(_ ++= (1 to 100))
     check(_.insertAll(1, 1 to 100))
   }
+
+  @Test def `drop right when empty is empty`: Unit = {
+    assertTrue(ArrayBuffer().dropRight(1).isEmpty)
+  }
 }
