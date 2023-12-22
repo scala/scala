@@ -299,18 +299,11 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     else new ArrayBuffer[B] ++= coll
   }
 
-  def newBuilder[A]: Builder[A, ArrayBuffer[A]] =
-    new GrowableBuilder[A, ArrayBuffer[A]](empty) {
-      override def sizeHint(size: Int): Unit = elems.ensureSize(size)
-    }
+  def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new GrowableBuilder[A, ArrayBuffer[A]](empty[A]) {
+    override def sizeHint(size: Int): Unit = elems.sizeHint(size)
+  }
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
-
-  @inline private def checkArrayLengthLimit(length: Int, currentLength: Int): Unit =
-    if (length > VM_MaxArraySize)
-      throw new Exception(s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $length; current length: $currentLength")
-    else if (length < 0)
-      throw new Exception(s"Overflow while resizing array of array-backed collection. Requested length: $length; current length: $currentLength; increase: ${length - currentLength}")
 
   /**
    * The increased size for an array-backed collection.
@@ -320,13 +313,19 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
    * @return
    *   - `-1` if no resizing is needed, else
    *   - `VM_MaxArraySize` if `arrayLen` is too large to be doubled, else
-   *   - `max(targetLen, arrayLen * 2, , DefaultInitialSize)`.
+   *   - `max(targetLen, arrayLen * 2, DefaultInitialSize)`.
    *   - Throws an exception if `targetLen` exceeds `VM_MaxArraySize` or is negative (overflow).
    */
   private[mutable] def resizeUp(arrayLen: Int, targetLen: Int): Int = {
+    def checkArrayLengthLimit(): Unit =
+      if (targetLen > VM_MaxArraySize)
+        throw new Exception(s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $targetLen; current length: $arrayLen")
+      else if (targetLen < 0)
+        throw new Exception(s"Overflow while resizing array of array-backed collection. Requested length: $targetLen; current length: $arrayLen; increase: ${targetLen - arrayLen}")
+
     if (targetLen > 0 && targetLen <= arrayLen) -1
     else {
-      checkArrayLengthLimit(targetLen, arrayLen)
+      checkArrayLengthLimit()
       if (arrayLen > VM_MaxArraySize / 2) VM_MaxArraySize
       else math.max(targetLen, math.max(arrayLen * 2, DefaultInitialSize))
     }

@@ -508,4 +508,15 @@ class ArrayBufferTest {
     check(_ ++= (1 to 100))
     check(_.insertAll(1, 1 to 100))
   }
+
+  @Test def `drop right when empty is empty`: Unit = {
+    assertTrue(ArrayBuffer().dropRight(1).isEmpty)
+  }
+
+  @Test def `refuse to build from an overly huge thing`: Unit = {
+    val bld = ArrayBuffer.newBuilder[String]
+    assertThrows[Exception](bld.sizeHint(Int.MaxValue), _.contains("exceeds VM length limit"))
+    bld.addOne("hello, world")
+    assertTrue(bld.result().contains("hello, world"))
+  }
 }

@@ -47,7 +47,7 @@ final class Tuple2Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2]](p
 
   def map[B, To](f: (El1, El2) => B)(implicit bf: BuildFrom[It1, B, To]): To = {
     val b = bf.newBuilder(coll1)
-    b.sizeHint(coll1, 0)
+    b.sizeHint(coll1, delta = 0)
     val elems1 = coll1.iterator
     val elems2 = coll2.iterator
 

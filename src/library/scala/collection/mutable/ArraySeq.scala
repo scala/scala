@@ -43,8 +43,7 @@ sealed abstract class ArraySeq[T]
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[T]): ArraySeq[T] = {
     val b = ArrayBuilder.make(elemTag).asInstanceOf[ArrayBuilder[T]]
-    val s = coll.knownSize
-    if(s > 0) b.sizeHint(s)
+    b.sizeHint(coll, delta = 0)
     b ++= coll
     ArraySeq.make(b.result())
   }

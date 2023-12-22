@@ -95,7 +95,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   }
 
   override def addAll(xs: IterableOnce[(K, V)]): this.type = {
-    sizeHint(xs.knownSize)
+    sizeHint(xs)
 
     xs match {
       case hm: immutable.HashMap[K, V] =>

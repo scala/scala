@@ -1174,8 +1174,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   /** A copy of this array with all elements of a collection appended. */
   def appendedAll[B >: A : ClassTag](suffix: IterableOnce[B]): Array[B] = {
     val b = ArrayBuilder.make[B]
-    val k = suffix.knownSize
-    if(k >= 0) b.sizeHint(k + xs.length)
+    b.sizeHint(suffix, delta = xs.length)
     b.addAll(xs)
     b.addAll(suffix)
     b.result()
