@@ -529,7 +529,7 @@ object Logic {
     with IterableFactoryDefaults[A, LogicLinkedHashSet] {
     override def iterableFactory: IterableFactory[LogicLinkedHashSet] = LogicLinkedHashSet
     override def addAll(xs: IterableOnce[A]): this.type = {
-      sizeHint(xs.knownSize)
+      sizeHint(xs)
       super.addAll(xs)
     }
   }

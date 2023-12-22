@@ -174,8 +174,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   }
 
   override def addAll(xs: IterableOnce[(K, V)]): this.type = {
-    val k = xs.knownSize
-    if(k > 0) sizeHint(contentSize + k)
+    sizeHint(xs, delta = contentSize)
     super.addAll(xs)
   }
 

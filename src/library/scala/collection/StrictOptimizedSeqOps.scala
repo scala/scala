@@ -34,9 +34,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
 
   override def prepended[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
-    if (knownSize >= 0) {
-      b.sizeHint(size + 1)
-    }
+    b.sizeHint(this, delta = 1)
     b += elem
     b ++= this
     b.result()
@@ -44,9 +42,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
 
   override def appended[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
-    if (knownSize >= 0) {
-      b.sizeHint(size + 1)
-    }
+    b.sizeHint(this, delta = 1)
     b ++= this
     b += elem
     b.result()

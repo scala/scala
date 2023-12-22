@@ -318,7 +318,7 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
 
   def from[E](it: collection.IterableOnce[E]) = {
     val newlhs = empty[E]
-    newlhs.sizeHint(it.knownSize)
+    newlhs.sizeHint(it, delta = 0)
     newlhs.addAll(it)
     newlhs
   }

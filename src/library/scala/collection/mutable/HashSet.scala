@@ -91,7 +91,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   }
 
   override def addAll(xs: IterableOnce[A]): this.type = {
-    sizeHint(xs.knownSize)
+    sizeHint(xs, delta = 0)
     xs match {
       case hs: immutable.HashSet[A] =>
         hs.foreachWithHash((k, h) => addElem(k, improveHash(h)))

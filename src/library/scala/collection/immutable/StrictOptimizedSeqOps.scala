@@ -14,9 +14,8 @@ package scala
 package collection
 package immutable
 
-/**
-  * Trait that overrides operations to take advantage of strict builders.
-  */
+/** Trait that overrides operations to take advantage of strict builders.
+ */
 trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   extends Any
     with SeqOps[A, CC, C]
@@ -41,9 +40,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   override def updated[B >: A](index: Int, elem: B): CC[B] = {
     if (index < 0) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${if (knownSize>=0) knownSize else "unknown"})")
     val b = iterableFactory.newBuilder[B]
-    if (knownSize >= 0) {
-      b.sizeHint(size)
-    }
+    b.sizeHint(this)
     var i = 0
     val it = iterator
     while (i < index && it.hasNext) {

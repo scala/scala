@@ -61,7 +61,7 @@ object Factory {
   private class ArrayFactory[A: ClassTag] extends Factory[A, Array[A]] with Serializable {
     def fromSpecific(it: IterableOnce[A]): Array[A] = {
       val b = newBuilder
-      b.sizeHint(scala.math.max(0, it.knownSize))
+      b.sizeHint(it, delta = 0)
       b ++= it
       b.result()
     }

@@ -480,7 +480,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
   def from[K, V](it: collection.IterableOnce[(K, V)]) = {
     val newlhm = empty[K, V]
-    newlhm.sizeHint(it.knownSize)
+    newlhm.sizeHint(it, delta = 0)
     newlhm.addAll(it)
     newlhm
   }
