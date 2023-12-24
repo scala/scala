@@ -1316,8 +1316,20 @@ trait Contexts { self: Analyzer =>
     }
 
     final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
-      val sym = pre.member(name).filter(qualifies)
       val preSym = pre.typeSymbol
+      val sym = {
+        def asModule =
+          if (name.isTypeName && nme.isModuleName(name))
+            pre.member(name.dropModule.toTermName) match {
+              case nope @ NoSymbol => nope
+              case member          => member.filter(qualifies).moduleClass
+            }
+          else NoSymbol
+        pre.member(name) match {
+          case NoSymbol => asModule
+          case member   => member.filter(qualifies)
+        }
+      }
       if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
       else {
         // In Java code, static inner classes, which we model as members of the companion object,
