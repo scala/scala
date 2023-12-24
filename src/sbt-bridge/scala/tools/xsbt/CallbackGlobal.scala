@@ -106,6 +106,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     val analyzer = new Analyzer(global)
     def newPhase(prev: Phase) = analyzer.newPhase(prev)
     def name = phaseName
+    def description = "analyze the generated class files and map them to sources"
   }
 
   /** Phase that extracts dependency information */
@@ -120,6 +121,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     val dependency = new Dependency(global)
     def newPhase(prev: Phase) = dependency.newPhase(prev)
     def name = phaseName
+    def description = "extract dependency information"
   }
 
   /**
@@ -140,13 +142,17 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     val api = new API(global)
     def newPhase(prev: Phase) = api.newPhase(prev)
     def name = phaseName
+    def description = "construct a representation of the public API"
   }
 
   override lazy val phaseDescriptors = {
     phasesSet += sbtAnalyzer
+    phasesDescMap(sbtAnalyzer) = sbtAnalyzer.description
     if (callback.enabled()) {
       phasesSet += sbtDependency
+      phasesDescMap(sbtDependency) = sbtDependency.description
       phasesSet += apiExtractor
+      phasesDescMap(apiExtractor) = apiExtractor.description
     }
     this.computePhaseDescriptors
   }
