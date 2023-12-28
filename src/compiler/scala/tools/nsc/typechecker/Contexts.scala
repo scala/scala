@@ -728,7 +728,7 @@ trait Contexts { self: Analyzer =>
     def makeImportContext(tree: Import): Context =
       make(tree).tap { ctx =>
         if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport)
-          allImportInfos(ctx.unit) ::= ((ctx.importOrNull, ctx.owner))
+          allImportInfos(ctx.unit) ::= ctx.importOrNull -> ctx.owner
       }
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
@@ -770,6 +770,7 @@ trait Contexts { self: Analyzer =>
     def makeImplicit(reportAmbiguousErrors: Boolean) = {
       val c = makeSilent(reportAmbiguousErrors)
       c(ImplicitsEnabled | EnrichmentEnabled) = false
+      c(InImplicitSearch) = true
       c
     }
 
@@ -1095,9 +1096,9 @@ trait Contexts { self: Analyzer =>
         f(imported)
     }
 
-    private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
-      for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
-        new ImplicitInfo(sym.name, pre, sym)
+    private def collectImplicits(syms: Scope, pre: Type): List[ImplicitInfo] =
+      for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported = false))
+      yield new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = if (isExcludedRootImport(imp)) List() else {
       val qual = imp.qual
@@ -1112,12 +1113,13 @@ trait Contexts { self: Analyzer =>
           // I haven't been able to boil that down the an automated test yet.
           // Looking up implicit members in the package, rather than package object, here is at least
           // consistent with what is done just below for named imports.
-          collectImplicits(qual.tpe.implicitMembers, pre, imported = true)
+          for (sym <- qual.tpe.implicitMembers.toList if isQualifyingImplicit(sym.name, sym, pre, imported = true))
+          yield new ImplicitInfo(sym.name, pre, sym, imp, sel)
         case (sel @ ImportSelector(from, _, to, _)) :: sels1 =>
           var impls = collect(sels1).filter(_.name != from)
           if (!sel.isMask)
             withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
-              impls = new ImplicitInfo(to, pre, sym) :: impls
+              impls = new ImplicitInfo(to, pre, sym, imp, sel) :: impls
             }
           impls
       }
@@ -1685,7 +1687,9 @@ trait Contexts { self: Analyzer =>
 
         // the choice has been made
         if (lookupError == null) {
-          imp1.recordUsage(impSel, impSym)
+          // implicit searcher decides when import was used
+          if (thisContext.contextMode.inNone(InImplicitSearch))
+            imp1.recordUsage(impSel, impSym)
 
           // optimization: don't write out package prefixes
           finish(duplicateAndResetPos.transform(imp1.qual), impSym)
@@ -1968,7 +1972,7 @@ trait Contexts { self: Analyzer =>
           if (tree.symbol.hasCompleteInfo) s"(qual=$qual, $result)"
           else s"(expr=${tree.expr}, ${result.fullLocationString})"
         }")
-      if (settings.warnUnusedImport && result != NoSymbol && pos != NoPosition)
+      if (settings.warnUnusedImport && !isRootImport && result != NoSymbol && pos != NoPosition)
         allUsedSelectors(this) += sel
     }
 
@@ -2091,11 +2095,16 @@ object ContextMode {
   final val DiagUsedDefaults: ContextMode         = 1 << 18
 
   /** Are we currently typing the core or args of an annotation?
-    * When set, Java annotations may be instantiated directly.
-    */
+   *  When set, Java annotations may be instantiated directly.
+   */
   final val TypingAnnotation: ContextMode         = 1 << 19
 
   final val InPackageClauseName: ContextMode      = 1 << 20
+
+  /** Context created with makeImplicit, for use in implicit search.
+   *  Controls whether import elements are marked used on lookup.
+   */
+  final val InImplicitSearch: ContextMode         = 1 << 21
 
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers

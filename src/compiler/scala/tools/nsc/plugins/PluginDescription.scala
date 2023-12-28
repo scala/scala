@@ -13,8 +13,6 @@
 package scala.tools.nsc
 package plugins
 
-import scala.reflect.internal.util.StringContextStripMarginOps
-
 /** A description of a compiler plugin, suitable for serialization
  *  to XML for inclusion in the plugin's .jar file.
  *

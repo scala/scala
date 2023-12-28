@@ -22,7 +22,7 @@ import java.util.zip.Deflater
 import scala.annotation.{elidable, nowarn}
 import scala.collection.mutable
 import scala.language.existentials
-import scala.reflect.internal.util.{ StatisticsStatics, StringContextStripMarginOps }
+import scala.reflect.internal.util.StatisticsStatics
 import scala.tools.nsc.util.DefaultJarFactory
 import scala.tools.util.PathResolver.Defaults
 import scala.util.chaining._

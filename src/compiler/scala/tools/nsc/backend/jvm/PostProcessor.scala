@@ -16,7 +16,7 @@ package backend.jvm
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable
-import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
+import scala.reflect.internal.util.{NoPosition, Position}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
 import scala.tools.asm.tree.ClassNode
