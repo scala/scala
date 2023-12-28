@@ -1341,7 +1341,6 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-
     private def isReplImportWrapperImport(tree: Tree): Boolean = {
       tree match {
         case Import(expr, selector :: Nil) =>
@@ -1685,10 +1684,13 @@ trait Contexts { self: Analyzer =>
         }
 
         // the choice has been made
-        imp1.recordUsage(impSel, impSym)
+        if (lookupError == null) {
+          imp1.recordUsage(impSel, impSym)
 
-        // optimization: don't write out package prefixes
-        finish(duplicateAndResetPos.transform(imp1.qual), impSym)
+          // optimization: don't write out package prefixes
+          finish(duplicateAndResetPos.transform(imp1.qual), impSym)
+        }
+        else finish(EmptyTree, NoSymbol)
       }
       else finish(EmptyTree, NoSymbol)
     }
@@ -1899,7 +1901,7 @@ trait Contexts { self: Analyzer =>
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
       case ErrorType        => tree setType NoType // fix for #2870
-      case _                => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info) //debug
+      case bad              => throw new FatalError(s"symbol ${tree.symbol} has bad type: ${bad}")
     }
 
     /** Is name imported explicitly, not via wildcard? */

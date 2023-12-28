@@ -1,0 +1,14 @@
+t12690b.scala:15: error: reference to v is ambiguous;
+it is imported twice in the same scope by
+import Y.v
+and import X.v
+    v
+    ^
+t12690b.scala:11: warning: Unused import
+  import X.v
+           ^
+t12690b.scala:12: warning: Unused import
+  import Y.v
+           ^
+2 warnings
+1 error
