@@ -2852,7 +2852,8 @@ self =>
         if (in.token == ARROW || (currentRun.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           if (name == nme.WILDCARD && !bbq) syntaxError(in.offset, "Wildcard import cannot be renamed")
-          (wildcardOrIdent(), in.offset)
+          val renameOffset = in.offset
+          (wildcardOrIdent(), renameOffset)
         }
         else if (name == nme.WILDCARD && !bbq) (null, -1)
         else (name, start)
