@@ -2827,7 +2827,7 @@ self =>
                 val msg =
                   if (h.isRename || duplicate.isRename) s"${h.rename} is an ambiguous name on import"
                   else s"${h.rename} is imported twice"
-                syntaxError(h.namePos, msg)
+                syntaxError(h.renamePos, msg)
               }
             h :: checkSelectors(t)
           }
@@ -2852,7 +2852,8 @@ self =>
         if (in.token == ARROW || (currentRun.isScala3 && isRawIdent && in.name == nme.as)) {
           in.nextToken()
           if (name == nme.WILDCARD && !bbq) syntaxError(in.offset, "Wildcard import cannot be renamed")
-          (wildcardOrIdent(), in.offset)
+          val pos = in.offset
+          (wildcardOrIdent(), pos)
         }
         else if (name == nme.WILDCARD && !bbq) (null, -1)
         else (name, start)
