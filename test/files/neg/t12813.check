@@ -1,16 +1,16 @@
 t12813.scala:5: error: a is imported twice
 import O.{a, a}   // error
-          ^
-t12813.scala:8: error: b is an ambiguous name on import
+             ^
+t12813.scala:8: error: a is renamed twice to b
 import O.{a => b, a => b}   // error
-               ^
+                       ^
 t12813.scala:10: error: b is an ambiguous name on import
 import O.{a => b, toString => b}    // error
-               ^
+                              ^
 t12813.scala:11: error: toString is an ambiguous name on import
 import O.{a => toString, toString}  // error
-               ^
+                         ^
 t12813.scala:12: error: toString is an ambiguous name on import
 import O.{toString, a => toString}  // error
-          ^
+                         ^
 5 errors

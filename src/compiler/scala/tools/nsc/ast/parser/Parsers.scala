@@ -2825,9 +2825,11 @@ self =>
             if (!h.isMask)
               t.find(_.rename == h.rename).foreach { duplicate =>
                 val msg =
-                  if (h.isRename || duplicate.isRename) s"${h.rename} is an ambiguous name on import"
+                  if (h.isRename || duplicate.isRename)
+                    if (h.name == duplicate.name) s"${h.name} is renamed twice to ${h.rename}"
+                    else s"${h.rename} is an ambiguous name on import"
                   else s"${h.rename} is imported twice"
-                syntaxError(h.renamePos, msg)
+                syntaxError(duplicate.renamePos, msg)
               }
             h :: checkSelectors(t)
           }
