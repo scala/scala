@@ -1,4 +1,4 @@
-t3664.scala:9: warning: Synthetic case companion used as a Function, use explicit object with Function parent
+t3664b.scala:9: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `C.apply` explicitly.
   def f(xs: List[Int]): List[C] = xs.map(C)
                                          ^
 error: No warnings can be incurred under -Werror.

@@ -228,6 +228,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
     private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
 
+    private val fixableFunctionMembers = List(TermName("tupled"), TermName("curried"))
+
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
@@ -1122,12 +1124,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
+      def adaptApplyInsertion(): Tree = {
+        val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `${tree.symbol.name}.apply` explicitly."
+        context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
+        typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, pt)
+      }
+
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
           debuglog("error tree = " + tree)
           if (settings.isDebug && settings.explaintypes.value) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
+          else if (currentRun.isScala3Cross && isFunctionType(pt) && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase)
+            adaptApplyInsertion()
           else adaptMismatchedSkolems()
         }
 
@@ -5360,6 +5370,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!(context.unit.isJava && cls.isClass)) NoSymbol
         else context.javaFindMember(cls.typeOfThis, name, s => s.isStaticMember || s.isStaticModule)._2
 
+      // If they try C.tupled, make it (C.apply _).tupled
+      def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
+        if (qual.symbol != null && currentRun.isScala3Cross && qual.symbol.isModule && qual.symbol.companion.isCase &&
+            context.undetparams.isEmpty && fixableFunctionMembers.contains(name)) {
+          val t2 = {
+            val t = atPos(tree.pos)(Select(qual, nme.apply))
+            val t1 = typedSelect(t, qual, nme.apply)
+            typed(atPos(tree.pos)(Select(etaExpand(t1, context.owner), name)), mode, pt)
+          }
+          if (!t2.isErroneous) {
+            val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `($qual.apply _).$name` explicitly."
+            context.deprecationWarning(tree.pos, qual.symbol, msg, "2.13.13")
+            t2
+          }
+          else EmptyTree
+        }
+        else EmptyTree
+
       /* Attribute a selection where `tree` is `qual.name`.
        * `qual` is already attributed.
        */
@@ -5392,9 +5420,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   context.warning(tree.pos, s"dubious usage of ${sel.symbol} with integer value", WarningCategory.LintNumericMethods)
               }
               val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-              if ((qual1 ne qual) && !qual1.isErrorTyped)
-                return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-                  .tap(checkDubiousAdaptation)
+              val fixed =
+                if ((qual1 ne qual) && !qual1.isErrorTyped)
+                  typed(treeCopy.Select(tree, qual1, name), mode, pt).tap(checkDubiousAdaptation)
+                else
+                  fixUpCaseTupled(tree, qual, name, mode)
+              if (!fixed.isEmpty)
+                return fixed
           }
 
           // This special-case complements the logic in `adaptMember` in erasure, it handles selections
