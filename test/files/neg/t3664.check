@@ -1,0 +1,6 @@
+t3664.scala:11: warning: Synthetic case companion used as a Function, use explicit object with Function parent
+  def f(xs: List[Int]): List[C] = xs.map(C)
+                                         ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

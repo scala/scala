@@ -5614,47 +5614,50 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
-            if (currentRun.isScala3) {
+            if (currentRun.isScala3)
               tree.getAndRemoveAttachment[VirtualStringContext.type].foreach(_ =>
                 if (symbol != definitions.StringContextModule)
                   runReporting.warning(
                     tree.pos,
                     s"String interpolations always use scala.StringContext in Scala 3 (${symbol.fullNameString} is used here)",
                     Scala3Migration,
-                    context.owner))
-            }
-            (// this -> Foo.this
-            if (symbol.isThisSym)
-              typed1(This(symbol.owner) setPos tree.pos, mode, pt)
-            else if (symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(symbol) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
-              // Inferring classOf type parameter from expected type.  Otherwise an
-              // actual call to the stubbed classOf method is generated, returning null.
-              typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
-            }
-            else {
-              val pre1  = if (symbol.isTopLevel) symbol.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(symbol))
-                context.warning(tree.pos, s"${symbol.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
-              val tree1 = if (qual == EmptyTree) tree else {
-                val pos = tree.pos
-                Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+                    context.owner)
+              )
+            val onSuccess =
+              if (symbol.isThisSym)
+                typed1(This(symbol.owner).setPos(tree.pos), mode, pt) // this -> Foo.this
+              else if (symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(symbol) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
+                // Inferring classOf type parameter from expected type.  Otherwise an
+                // actual call to the stubbed classOf method is generated, returning null.
+                typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
               }
-              var tree2: Tree = null
-              var pre2: Type = pre1
-              makeAccessible(tree1, symbol, pre1, qual) match {
-                case (t: Tree, tp: Type) =>
-                  tree2 = t
-                  pre2 = tp
-                case t: Tree =>
-                  tree2 = t
-                case x => throw new MatchError(x)
+              else {
+                val pre1  = if (symbol.isTopLevel) symbol.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+                if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(symbol))
+                  context.warning(tree.pos, s"${symbol.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
+                val tree1 = if (qual == EmptyTree) tree else {
+                  val pos = tree.pos
+                  Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+                }
+                var tree2: Tree = null
+                var pre2: Type = pre1
+                makeAccessible(tree1, symbol, pre1, qual) match {
+                  case (t: Tree, tp: Type) =>
+                    tree2 = t
+                    pre2 = tp
+                  case t: Tree =>
+                    tree2 = t
+                  case x => throw new MatchError(x)
+                }
+                // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference,
+                // to avoid inference errors in pattern matching.
+                stabilize(tree2, pre2, mode, pt).modifyType(dropIllegalStarTypes)
               }
-            // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
-            //         inference errors in pattern matching.
-              stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
-            }) setAttachments tree.attachments
-          }
+            if (!isPastTyper && currentRun.isScala3 && !currentRun.isScala3Cross && isFunctionType(pt) && symbol.isModule && symbol.isSynthetic && symbol.companion.isCase)
+              context.deprecationWarning(tree.pos, symbol, s"Synthetic case companion used as a Function, use explicit object with Function parent", "2.13.13")
+            onSuccess.setAttachments(tree.attachments)
         }
+      }
 
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
