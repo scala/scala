@@ -35,10 +35,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
    *
    *  Some builder classes will optimize their representation based on the hint.
    *  However, builder implementations are required to work correctly even if the hint is
-   *  wrong, i.e., if a different number of elements is added.
-   *
-   *  The semantics of supplying a hint out of range, such as a size that is negative
-   *  or unreasonably large, is not specified but is implementation-dependent.
+   *  wrong, e.g., a different number of elements is added, or the hint is out of range.
    *
    *  The default implementation simply ignores the hint.
    *
@@ -54,8 +51,12 @@ trait Builder[-A, +To] extends Growable[A] { self =>
    *
    *  {{{
    *    if (coll.knownSize != -1)
-   *      sizeHint(coll.knownSize + delta)
+   *      if (coll.knownSize + delta <= 0) sizeHint(0)
+   *      else sizeHint(coll.knownSize + delta)
    *  }}}
+   *
+   *  If the delta is negative and the result size is known to be negative,
+   *  then the size hint is issued at zero.
    *
    *  Some builder classes will optimize their representation based on the hint.
    *  However, builder implementations are required to work correctly even if the hint is
@@ -67,7 +68,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   final def sizeHint(coll: scala.collection.IterableOnce[_], delta: Int = 0): Unit =
     coll.knownSize match {
       case -1 =>
-      case sz => sizeHint(sz + delta)
+      case sz => sizeHint(0 max sz + delta)
     }
 
   /** Gives a hint how many elements are expected to be added
