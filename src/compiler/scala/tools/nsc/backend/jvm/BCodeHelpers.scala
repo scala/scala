@@ -22,7 +22,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.NoReporter
-import scala.util.chaining.scalaUtilChainingOps
+import scala.util.chaining._
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.

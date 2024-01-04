@@ -21,7 +21,7 @@ trait ChainingSyntax {
 
 /** Adds chaining methods `tap` and `pipe` to every type.
  */
-final class ChainingOps[A](private val self: A) extends AnyVal {
+final class ChainingOps[A](val self: A) extends AnyVal {
   /** Applies `f` to the value for its side effects, and returns the original value.
     *
     * {{{
@@ -36,7 +36,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *  @tparam U     the result type of the function `f`.
     *  @return       the original value `self`.
     */
-  def tap[U](f: A => U): A = {
+  def tap[U](f: A => U): self.type = {
     f(self)
     self
   }

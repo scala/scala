@@ -16,5 +16,7 @@ package object util {
   /**
    * Adds chaining methods `tap` and `pipe` to every type. See [[ChainingOps]].
    */
-  object chaining extends ChainingSyntax
+  object chaining extends ChainingSyntax {
+    implicit val `accommodate existential for tap`: languageFeature.existentials = language.existentials
+  }
 }
