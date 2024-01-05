@@ -5356,9 +5356,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // For Java, instance and static members are in the same scope, but we put the static ones in the companion object
       // so, when we can't find a member in the class scope, check the companion
       def inCompanionForJavaStatic(cls: Symbol, name: Name): Symbol =
-        if (!(context.unit.isJava && cls.isClass)) NoSymbol else {
-          context.javaFindMember(cls.typeOfThis, name, _.isStaticMember)._2
-        }
+        if (!(context.unit.isJava && cls.isClass)) NoSymbol
+        else context.javaFindMember(cls.typeOfThis, name, s => s.isStaticMember || s.isStaticModule)._2
 
       /* Attribute a selection where `tree` is `qual.name`.
        * `qual` is already attributed.
@@ -5379,7 +5378,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (!isPastTyper && isUniversalMember(result.symbol))
               context.warning(tree.pos, s"dubious usage of ${result.symbol} with unit value", WarningCategory.LintUniversalMethods)
 
-          val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.tpe.typeSymbol, name)
+          val sym = tree.symbol orElse member(qualTp, name) orElse inCompanionForJavaStatic(qualTp.typeSymbol, name)
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an

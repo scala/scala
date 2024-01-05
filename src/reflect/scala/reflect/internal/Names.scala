@@ -519,7 +519,7 @@ trait Names extends api.Names {
 
     def dropLocal: TermName      = toTermName stripSuffix NameTransformer.LOCAL_SUFFIX_STRING
     def dropSetter: TermName     = toTermName stripSuffix NameTransformer.SETTER_SUFFIX_STRING
-    def dropModule: ThisNameType = this stripSuffix NameTransformer.MODULE_SUFFIX_STRING
+    def dropModule: ThisNameType = stripSuffix(NameTransformer.MODULE_SUFFIX_STRING)
     def localName: TermName      = getterName append NameTransformer.LOCAL_SUFFIX_STRING
     def setterName: TermName     = getterName append NameTransformer.SETTER_SUFFIX_STRING
     def getterName: TermName     = dropTraitSetterSeparator.dropSetter.dropLocal
