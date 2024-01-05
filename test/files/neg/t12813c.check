@@ -1,0 +1,4 @@
+t12813c.scala:6: error: a is renamed twice to abcdefghij
+import O.{a => abcdefghij, a => abcdefghij}
+                                ^
+1 error
