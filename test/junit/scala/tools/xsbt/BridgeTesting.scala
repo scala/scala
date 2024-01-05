@@ -30,14 +30,14 @@ class BridgeTesting {
 
   def mkScaladoc: ScaladocBridge = new ScaladocBridge()
 
-  private val emptyChanges: DependencyChanges = new DependencyChanges {
+  val emptyChanges: DependencyChanges = new DependencyChanges {
     override val modifiedLibraries = new Array[VirtualFileRef](0)
     override val modifiedBinaries = new Array[File](0)
     override val modifiedClasses = new Array[String](0)
     override def isEmpty = true
   }
 
-  private val ignoreProgress = new CompileProgress { }
+  val ignoreProgress = new CompileProgress { }
 
   def compileSrcs(baseDir: Path, srcs: String*): (Seq[VirtualFile], TestCallback) =
     compileSrcs(baseDir, mkReporter, srcs: _*)

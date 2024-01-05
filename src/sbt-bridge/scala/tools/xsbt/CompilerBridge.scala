@@ -163,6 +163,7 @@ private final class CachedCompiler0(
       if (callback2 != null) callback2.problem2(p.category, p.position, p.message, p.severity, true, p.rendered, p.diagnosticCode, p.diagnosticRelatedInformation, p.actions)
       else callback.problem(p.category, p.position, p.message, p.severity, true)
 
+    compiler.set(callback, underlyingReporter)
     if (command.shouldStopWithInfo) {
       underlyingReporter.echo(command.getInfoMessage(compiler))
       throw new InterfaceCompileFailed(args, Array(), StopInfoError)
@@ -170,7 +171,6 @@ private final class CachedCompiler0(
 
     if (noErrors(underlyingReporter)) {
       debug(log, prettyPrintCompilationArguments(args))
-      compiler.set(callback, underlyingReporter)
       val run = new compiler.ZincRun(compileProgress)
 
       run.compileFiles(sources)
