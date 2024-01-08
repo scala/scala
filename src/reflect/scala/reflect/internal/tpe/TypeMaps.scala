@@ -611,7 +611,7 @@ private[internal] trait TypeMaps {
       /** Rewrite `This` trees in annotation argument trees */
       override def transform(tree: Tree): Tree = super.transform(tree) match {
         case This(_) if matchesThis(tree.symbol) => newThis()
-        case tree                                => tree
+        case transformed                         => transformed
       }
     }
 
@@ -842,7 +842,7 @@ private[internal] trait TypeMaps {
             transformIfMapped(id)(toSym => strictCopy.Ident(id, toSym.name))
           case sel @ Select(qual, _) =>
             transformIfMapped(sel)(toSym => strictCopy.Select(sel, qual, toSym.name))
-          case tree => tree
+          case transformed => transformed
         }
     }
 

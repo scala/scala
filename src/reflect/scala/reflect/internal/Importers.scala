@@ -398,7 +398,7 @@ trait Importers { to: SymbolTable =>
       case from.Ident(name) =>
         new Ident(importName(name))
       case from.ReferenceToBoxed(ident) =>
-        new ReferenceToBoxed(importTree(ident) match { case ident: Ident => ident case x => throw new MatchError(x) })
+        new ReferenceToBoxed(importTree(ident).asInstanceOf[Ident])
       case from.Literal(constant @ from.Constant(_)) =>
         new Literal(importConstant(constant))
       case theirtt @ from.TypeTree() =>

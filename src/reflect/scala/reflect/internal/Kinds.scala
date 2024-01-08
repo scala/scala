@@ -295,7 +295,7 @@ trait Kinds {
           case 2 => "X"
           case 3 => "Y"
           case 4 => "Z"
-          case n if n < 12 => ('O'.toInt - 5 + n).toChar.toString
+          case x if x < 12 => ('O'.toInt - 5 + x).toChar.toString
           case _ => "V"
         }
     }

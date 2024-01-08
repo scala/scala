@@ -1827,8 +1827,8 @@ trait Types
       val flattened: LinkedHashSet[Type] = LinkedHashSet.empty[Type]
       def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
       def loop(tp: Type): Unit = dealiasRefinement(tp) match {
-        case RefinedType(parents, ds) if ds.isEmpty => parents.foreach(loop)
-        case tp => flattened.add(tp)
+        case RefinedType(parents, decls) if decls.isEmpty => parents.foreach(loop)
+        case tp1 => flattened.add(tp1)
       }
       parents foreach loop
       if (decls.isEmpty && flattened.size == 1) {
@@ -4369,24 +4369,21 @@ trait Types
       case _                                    => NoType
     }
   }
-  def elementExtractOption(container: Symbol, tp: Type): Option[Type] = {
+  def elementExtractOption(container: Symbol, tp: Type): Option[Type] =
     elementExtract(container, tp) match {
       case NoType => None
-      case tp => Some(tp)
+      case tp1    => Some(tp1)
     }
-  }
-  def elementTest(container: Symbol, tp: Type)(f: Type => Boolean): Boolean = {
+  def elementTest(container: Symbol, tp: Type)(f: Type => Boolean): Boolean =
     elementExtract(container, tp) match {
       case NoType => false
-      case tp => f(tp)
+      case tp1    => f(tp1)
     }
-  }
-  def elementTransform(container: Symbol, tp: Type)(f: Type => Type): Type = {
+  def elementTransform(container: Symbol, tp: Type)(f: Type => Type): Type =
     elementExtract(container, tp) match {
       case NoType => NoType
-      case tp => f(tp)
+      case tp1    => f(tp1)
     }
-  }
 
   def transparentShallowTransform(container: Symbol, tp: Type)(f: Type => Type): Type = {
     def loop(tp: Type): Type = tp match {
@@ -5345,7 +5342,7 @@ trait Types
   @tailrec
   private[scala] final def typeIsNothing(tp: Type): Boolean =
     tp.dealias match {
-      case PolyType(_, tp) => typeIsNothing(tp)
+      case PolyType(_, resultType) => typeIsNothing(resultType)
       case TypeRef(_, NothingClass, _) => true
       case _ => false
     }
@@ -5353,7 +5350,7 @@ trait Types
   @tailrec
   private[scala] final def typeIsAnyOrJavaObject(tp: Type): Boolean =
     tp.dealias match {
-      case PolyType(_, tp) => typeIsAnyOrJavaObject(tp)
+      case PolyType(_, resultType) => typeIsAnyOrJavaObject(resultType)
       case TypeRef(_, AnyClass, _) => true
       case _: ObjectTpeJavaRef => true
       case _ => false
@@ -5361,7 +5358,7 @@ trait Types
 
   private[scala] final def typeIsAnyExactly(tp: Type): Boolean =
     tp.dealias match {
-      case PolyType(_, tp) => typeIsAnyExactly(tp)
+      case PolyType(_, resultType) => typeIsAnyExactly(resultType)
       case TypeRef(_, AnyClass, _) => true
       case _ => false
     }

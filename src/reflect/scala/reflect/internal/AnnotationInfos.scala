@@ -338,8 +338,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
           // in that case we're going to have correctly typed Array.apply calls, however that's 2.12 territory
           // and for 2.11 exposing an untyped call to ArrayModule should suffice
           Apply(Ident(ArrayModule), args.toList)
-        case NestedAnnotArg(ann: Annotation) =>
-          annotationToTree(ann)
+        case NestedAnnotArg(jarg: Annotation) =>
+          annotationToTree(jarg)
         case _ =>
           EmptyTree
       }

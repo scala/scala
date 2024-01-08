@@ -188,8 +188,8 @@ final class ChromeTrace(f: Path) extends Closeable {
       case oc @ ObjectContext(first) =>
         if (first) oc.first = false
         else traceWriter.write(",")
-      case context =>
-        throw new IllegalStateException("Wrong context: " + context)
+      case otherContext =>
+        throw new IllegalStateException(s"Wrong context: $otherContext")
     }
     traceWriter.write("\"")
     traceWriter.write(name)

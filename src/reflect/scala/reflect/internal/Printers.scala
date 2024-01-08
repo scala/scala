@@ -743,7 +743,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case treeInfo.Applied(core, _, argss) =>
           print("@")
           core match {
-            case Select(New(tree), _) => print(tree)
+            case Select(New(ann), _) => print(ann)
             case _ =>
           }
           printArgss(argss)

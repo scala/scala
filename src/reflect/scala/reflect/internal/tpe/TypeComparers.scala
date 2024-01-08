@@ -413,11 +413,11 @@ trait TypeComparers {
       case (_: PolyType, MethodType(ps, _)) if ps exists (_.tpe.isWildcard) => false // don't warn on HasMethodMatching on right hand side
       // TODO: rethink whether ExistentialType should be considered isHigherKinded when its underlying type is;
       // in any case, we do need to handle one of the types being an existential
-      case (tp1, et2: ExistentialType)                                      => et2.withTypeVars(isSubType(tp1, _, depth), depth)
-      case (et1: ExistentialType, tp2)                                      =>
+      case (ntp1, et2: ExistentialType)                                     => et2.withTypeVars(isSubType(ntp1, _, depth), depth)
+      case (et1: ExistentialType, ntp2)                                     =>
         try {
           skolemizationLevel += 1
-          isSubType(et1.skolemizeExistential, tp2, depth)
+          isSubType(et1.skolemizeExistential, ntp2, depth)
         } finally { skolemizationLevel -= 1 }
       case _                                                                => // @assume !(both .isHigherKinded) thus cannot be subtypes
         def tp_s(tp: Type): String = f"$tp%-20s ${util.shortClassOfInstance(tp)}%s"
