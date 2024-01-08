@@ -78,7 +78,7 @@ trait StandardScalaSettings { _: MutableSettings =>
         //target.value = setting.value  // this would trigger deprecation
       }
       .withAbbreviation("--release")
-      // .withAbbreviation("-java-output-version")
+      .withAbbreviation("-java-output-version")
   def releaseValue: Option[String] = release.valueSetByUser
   val target =
     ChoiceSetting("-target", "target", "Target platform for object files.", AllTargetVersions, "8")
@@ -89,7 +89,7 @@ trait StandardScalaSettings { _: MutableSettings =>
       .withAbbreviation("--target")
       // .withAbbreviation("--Xtarget")
       // .withAbbreviation("-Xtarget")
-      // .withAbbreviation("-Xunchecked-java-output-version")
+      .withAbbreviation("-Xunchecked-java-output-version")
       .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
   def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
