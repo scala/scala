@@ -1,0 +1,21 @@
+t11850.scala:9: warning: Name x is already introduced in an enclosing scope as value x in trait T. Did you intend to match it using backquoted `x`?
+      case x   => 1     // warn
+           ^
+t11850.scala:28: warning: Name x is already introduced in an enclosing scope as value x in class CT. Did you intend to match it using backquoted `x`?
+      case x   => 1     // warn
+           ^
+t11850.scala:118: warning: Name x is already introduced in an enclosing scope as value x. Did you intend to match it using backquoted `x`?
+    case Y(x, y)  => x+y // only allow 1-1
+           ^
+t11850.scala:118: warning: Name y is already introduced in an enclosing scope as value y. Did you intend to match it using backquoted `y`?
+    case Y(x, y)  => x+y // only allow 1-1
+              ^
+t11850.scala:125: warning: Name self is already introduced in an enclosing scope as value self in class Selfie. Did you intend to match it using backquoted `self`?
+    case (x, self) => x
+             ^
+t11850.scala:170: warning: Name _1 is already introduced in an enclosing scope as value _1 in class weird but true. Did you intend to match it using backquoted `_1`?
+    case (_1, 27) => 3 // briefly did not warn as param name
+          ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

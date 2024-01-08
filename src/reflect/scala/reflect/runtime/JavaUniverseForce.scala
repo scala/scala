@@ -60,6 +60,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.InfixAttachment
     this.AutoApplicationAttachment
     this.NoWarnAttachment
+    this.PatShadowAttachment
     this.PatVarDefAttachment
     this.MultiDefAttachment
     this.ForAttachment

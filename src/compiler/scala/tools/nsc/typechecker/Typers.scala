@@ -2200,9 +2200,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
       if (sym.isSynthetic && sym.name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX))
         rightAssocValDefs += ((sym, vdef1.rhs))
+      if (vdef.hasAttachment[PatVarDefAttachment.type])
+        sym.updateAttachment(PatVarDefAttachment)
       if (sym.isSynthetic && sym.owner.isClass && (tpt1.tpe eq UnitTpe) && vdef.hasAttachment[PatVarDefAttachment.type] && sym.isPrivateThis && vdef.mods.isPrivateLocal && !sym.enclClassChain.exists(_.isInterpreterWrapper)) {
         context.warning(vdef.pos, s"Pattern definition introduces Unit-valued member of ${sym.owner.name}; consider wrapping it in `locally { ... }`.", WarningCategory.OtherMatchAnalysis)
-        vdef.removeAttachment[PatVarDefAttachment.type]
       }
       vdef1
     }
@@ -2708,8 +2709,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
       initChildren(selectorTp.typeSymbol)
 
-      def finish(cases: List[CaseDef], matchType: Type) =
-        treeCopy.Match(tree, selector1, cases) setType matchType
+      def finish(cases: List[CaseDef], matchType: Type) = {
+        if (!isPastTyper && settings.warnPatternShadow && !context.owner.isSynthetic && selector.symbol != null)
+          for (cdef <- cases; bind @ Bind(name, _) <- cdef.pat if !bind.hasAttachment[NoWarnAttachment.type])
+            context.lookupSymbol(name, _ => true) match {
+              case LookupSucceeded(_, sym) => bind.updateAttachment(PatShadowAttachment(sym))
+              case _ =>
+            }
+        treeCopy.Match(tree, selector1, cases).setType(matchType)
+      }
 
       if (isFullyDefined(pt))
         finish(casesTyped, pt)
@@ -2717,7 +2725,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case packed if sameWeakLubAsLub(packed) => finish(casesTyped, lub(packed))
         case packed                             =>
           val lub = weakLub(packed)
-          finish(casesTyped map (adaptCase(_, mode, lub)), lub)
+          finish(casesTyped.map(adaptCase(_, mode, lub)), lub)
       }
     }
 
@@ -4086,14 +4094,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Apply(Select(New(_), nme.CONSTRUCTOR), _) if pt.typeSymbol == ArrayClass =>
           reportAnnotationError(ArrayConstantsError(tree)); None
 
-        case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), _) if isJava =>
-          val annInfo = typedAnnotation(ann, None, mode)
+        case Apply(Select(New(tpt), nme.CONSTRUCTOR), _) if isJava =>
+          val annInfo = typedAnnotation(tree, None, mode)
           val annType = annInfo.atp
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
             reportAnnotationError(AnnotationTypeMismatchError(tpt, pt, annType))
           else if (!annType.typeSymbol.isJavaDefined)
-            reportAnnotationError(NestedAnnotationError(ann, annType))
+            reportAnnotationError(NestedAnnotationError(tree, annType))
 
           if (annInfo.atp.isErroneous) { hasError = true; None }
           else Some(NestedAnnotArg(annInfo))
@@ -5478,11 +5486,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   SelectWithUnderlyingError(tree, err)
                   return tree
               }
-              case SilentResultValue(value) => value match {
-                case qual: Tree               => stabilize(qual, pre, mode, pt)
-                case (qual: Tree, pre1: Type) => stabilize(qual, pre1, mode, pt)
-                case x                        => throw new MatchError(x)
-              }
+              case SilentResultValue(result: Tree)               => stabilize(result, pre, mode, pt)
+              case SilentResultValue((result: Tree, pre1: Type)) => stabilize(result, pre1, mode, pt)
               case x => throw new MatchError(x)
             }
 
@@ -5500,14 +5505,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     setError(tree)
                   }
               // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
-              case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
+              case SelectFromTypeTree(qualifier@TypeTree(), name) if qualifier.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
                 treeCopy.SelectFromTypeTree(
                   result,
-                  TypeTreeWithDeferredRefCheck(qual) { () => val tp = qual.tpe; val sym = tp.typeSymbolDirect
+                  TypeTreeWithDeferredRefCheck(qualifier) { () => val tp = qualifier.tpe; val sym = tp.typeSymbolDirect
                     // will execute during refchecks -- TODO: make private checkTypeRef in refchecks public and call that one?
-                    checkBounds(qual, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
-                    qual // you only get to see the wrapped tree after running this check :-p
-                  }.setType(qual.tpe).setPos(qual.pos),
+                    checkBounds(qualifier, tp.prefix, sym.owner, sym.typeParams, tp.typeArgs, "")
+                    qualifier // you only get to see the wrapped tree after running this check :-p
+                  }.setType(qualifier.tpe).setPos(qual.pos),
                   name
                 )
               case _ =>
@@ -5599,42 +5604,42 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         )
         val nameLookup  = tree.symbol match {
           case NoSymbol => startContext.lookupSymbol(name, termQualifies)
-          case sym      => LookupSucceeded(EmptyTree, sym)
+          case oksymbol => LookupSucceeded(EmptyTree, oksymbol)
         }
         import InferErrorGen._
         nameLookup match {
-          case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
-          case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
-          case LookupNotFound               =>
+          case LookupAmbiguous(msg)            => issue(AmbiguousIdentError(tree, name, msg))
+          case LookupInaccessible(symbol, msg) => issue(AccessError(tree, symbol, context, msg))
+          case LookupNotFound =>
             asTypeName orElse inEmptyPackage orElse lookupInRoot(name) match {
               case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext, mode.in(all = PATTERNmode, none = APPSELmode | TYPEPATmode)))
-              case sym      => typed1(tree setSymbol sym, mode, pt)
+              case oksymbol => typed1(tree.setSymbol(oksymbol), mode, pt)
             }
-          case LookupSucceeded(qual, sym)   =>
-            sym.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w => {
+          case LookupSucceeded(qual, symbol) =>
+            symbol.getAndRemoveAttachment[LookupAmbiguityWarning].foreach(w => {
               val cat = if (currentRun.isScala3) Scala3Migration else WarningCategory.Other
               val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
             (// this -> Foo.this
-            if (sym.isThisSym)
-              typed1(This(sym.owner) setPos tree.pos, mode, pt)
-            else if (sym.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
+            if (symbol.isThisSym)
+              typed1(This(symbol.owner) setPos tree.pos, mode, pt)
+            else if (symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(symbol) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
               // Inferring classOf type parameter from expected type.  Otherwise an
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
             }
             else {
-              val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(sym))
-                context.warning(tree.pos, s"${sym.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
+              val pre1  = if (symbol.isTopLevel) symbol.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+              if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(symbol))
+                context.warning(tree.pos, s"${symbol.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
               val tree1 = if (qual == EmptyTree) tree else {
                 val pos = tree.pos
                 Select(atPos(pos.focusStart)(qual), name).setPos(pos)
               }
               var tree2: Tree = null
               var pre2: Type = pre1
-              makeAccessible(tree1, sym, pre1, qual) match {
+              makeAccessible(tree1, symbol, pre1, qual) match {
                 case (t: Tree, tp: Type) =>
                   tree2 = t
                   pre2 = tp
@@ -5941,7 +5946,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedReferenceToBoxed(tree: ReferenceToBoxed) = {
         val id = tree.ident
-        val id1 = typed1(id, mode, pt) match { case id: Ident => id case x => throw new MatchError(x) }
+        val id1 = typed1(id, mode, pt).asInstanceOf[Ident]
         // [Eugene] am I doing it right?
         val erasedTypes = phaseId(currentPeriod) >= currentRun.erasurePhase.id
         val tpe = capturedVariableType(id.symbol, erasedTypes = erasedTypes)

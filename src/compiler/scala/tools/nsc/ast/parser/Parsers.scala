@@ -264,9 +264,10 @@ self =>
     def smartParse(): Tree = withSmartParsing {
       val firstTry = parse()
       if (syntaxErrors.isEmpty) firstTry
-      else in.healBraces() match {
-        case Nil      => showSyntaxErrors() ; firstTry
-        case patches  => withPatches(patches).parse()
+      else {
+        val patches = in.healBraces()
+        if (!patches.isEmpty) withPatches(patches).parse()
+        else { showSyntaxErrors(); firstTry }
       }
     }
   }
@@ -2225,7 +2226,7 @@ self =>
           else atPos(p.pos.start, p.pos.start, body.pos.end) {
             val t = Bind(name, body)
             body match {
-              case Ident(nme.WILDCARD) if settings.warnUnusedPatVars => t updateAttachment NoWarnAttachment
+              case Ident(nme.WILDCARD) if settings.warnUnusedPatVars || settings.warnPatternShadow => t.updateAttachment(NoWarnAttachment)
               case _ => t
             }
           }
@@ -3412,9 +3413,9 @@ self =>
      *  }}}
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
-    def templateBody(isPre: Boolean) = inBraces(templateStatSeq(isPre = isPre)) match {
-      case (self, Nil)  => (self, EmptyTree.asList)
-      case result       => result
+    def templateBody(isPre: Boolean) = inBraces(templateStatSeq(isPre)) match {
+      case (selfTypeVal, Nil) => (selfTypeVal, EmptyTree.asList)
+      case result             => result
     }
     def templateBodyOpt(parenMeansSyntaxError: Boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
