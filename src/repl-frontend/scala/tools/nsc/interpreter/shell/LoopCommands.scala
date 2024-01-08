@@ -144,7 +144,7 @@ trait LoopCommands {
               def complete(buffer: String, cursor: Int, filter: Boolean) =
                 CompletionResult(buffer, cursor = 1, List(CompletionCandidate(completion)), "", "")
             }
-          case cmd :: rest =>
+          case cmd :: _ =>
             new Completion {
               def complete(buffer: String, cursor: Int, filter: Boolean) =
                 CompletionResult(buffer, cursor = 1, cmds.map(cmd => CompletionCandidate(":" + cmd.name)), "", "")

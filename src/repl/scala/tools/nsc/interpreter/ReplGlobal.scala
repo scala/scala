@@ -80,19 +80,19 @@ trait ReplGlobal extends Global {
       }
 
       override def transform(tree: Tree): Tree = super.transform(tree) match {
-        case tree @ Template(parents, self, body) if nme.isReplWrapperName(tree.symbol.name) =>
+        case tpl @ Template(_, _, body) if nme.isReplWrapperName(tpl.symbol.name) =>
           val unusedPrivates = newUnusedPrivates
-          unusedPrivates.traverse(tree)
+          unusedPrivates.traverse(tpl)
           val unusedSyms = unusedPrivates.unusedTerms.iterator.map(_.symbol)
           val unusedLineReadVals = unusedSyms.filter(sym => isLineReadVal(sym.name)).flatMap(sym => List(sym, sym.accessedOrSelf)).toSet
-          val (removedStats, retainedStats) = tree.body.partition (t => unusedLineReadVals(t.symbol))
-          if (removedStats.isEmpty) tree
+          val (removedStats, retainedStats) = body.partition(stat => unusedLineReadVals(stat.symbol))
+          if (removedStats.isEmpty) tpl
           else {
-            val decls = tree.symbol.info.decls
-            removedStats.foreach(tree => decls.unlink(tree.symbol))
-            deriveTemplate(tree)(_ => retainedStats)
+            val decls = tpl.symbol.info.decls
+            removedStats.foreach(stat => decls.unlink(stat.symbol))
+            deriveTemplate(tpl)(_ => retainedStats)
           }
-        case tree => tree
+        case transformed => transformed
       }
     }
   }

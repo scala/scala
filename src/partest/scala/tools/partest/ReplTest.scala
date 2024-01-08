@@ -12,6 +12,8 @@
 
 package scala.tools.partest
 
+import java.io.File.pathSeparator
+
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.{ILoop, ShellConfig}
 import scala.util.matching.Regex.{quoteReplacement, Match}
@@ -34,7 +36,7 @@ abstract class ReplTest extends DirectTest {
     if (getClass.getClassLoader.getParent != null) {
       s.classpath.value = s.classpath.value match {
         case "" => testOutput.toString
-        case s => s + java.io.File.pathSeparator + testOutput.toString
+        case cp => s"$cp$pathSeparator$testOutput"
       }
       s.usejavacp.value = true
     }

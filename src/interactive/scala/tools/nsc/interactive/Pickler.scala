@@ -106,32 +106,32 @@ object Pickler {
      *  @param   f the function to apply.
      */
     def map[U](f: T => U): Unpickled[U] = this match {
-      case UnpickleSuccess(x) => UnpickleSuccess(f(x))
-      case f: UnpickleFailure => f
+      case UnpickleSuccess(x)    => UnpickleSuccess(f(x))
+      case fail: UnpickleFailure => fail
     }
     /** Transforms success values to successes or failures using given function,
      *  leaves failures alone.
      *  @param   f the function to apply.
      */
     def flatMap[U](f: T => Unpickled[U]): Unpickled[U] = this match {
-      case UnpickleSuccess(x) => f(x)
-      case f: UnpickleFailure => f
+      case UnpickleSuccess(x)    => f(x)
+      case fail: UnpickleFailure => fail
     }
     /** Tries alternate expression if current result is a failure
      *  @param alt  the alternate expression to be tried in case of failure
      */
     def orElse[U >: T](alt: => Unpickled[U]): Unpickled[U] = this match {
       case UnpickleSuccess(x) => this
-      case f: UnpickleFailure => alt
+      case _: UnpickleFailure => alt
     }
 
     /** Transforms failures into thrown `MalformedInput` exceptions.
      *  @throws  Lexer.MalformedInput   if current result is a failure
      */
     def requireSuccess: UnpickleSuccess[T] = this match {
-      case s @ UnpickleSuccess(x) => s
+      case s @ UnpickleSuccess(_) => s
       case f: UnpickleFailure =>
-        throw new MalformedInput(f.rd, "Unrecoverable unpickle failure:\n"+f.errMsg)
+        throw new MalformedInput(f.rd, s"Unrecoverable unpickle failure:\n${f.errMsg}")
     }
   }
 

@@ -189,11 +189,11 @@ abstract class ScaladocModelTest extends DirectTest {
 
     def countLinks(c: Comment, p: EntityLink => Boolean): Int = countLinksInBody(c.body, p)
 
-    def countLinksInBody(body: Body, p: EntityLink => Boolean): Int = {
+    def countLinksInBody(body: Body, linkTest: EntityLink => Boolean): Int = {
       def countLinks(b: Any): Int = b match {
-        case el: EntityLink if p(el) => 1
+        case el: EntityLink if linkTest(el) => 1
         case s: collection.Seq[_] => s.toList.map(countLinks(_)).sum
-        case p: Product => p.productIterator.toList.map(countLinks(_)).sum
+        case p: Product => p.productIterator.map(countLinks(_)).sum
         case _ => 0
       }
       countLinks(body)

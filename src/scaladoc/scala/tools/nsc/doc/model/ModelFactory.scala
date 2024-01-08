@@ -751,10 +751,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         docTemplatesCache(bSym)
       else
         docTemplatesCache.get(bSym.owner) match {
-          case Some(inTpl) =>
-            val mbrs = inTpl.members.collect({ case mbr: MemberImpl if mbr.sym == bSym => mbr })
-            assert(mbrs.length == 1, "must have exactly one member with bSym")
-            mbrs.head
+          case Some(docTpl) =>
+            docTpl.members.collect { case mbr: MemberImpl if mbr.sym == bSym => mbr } match {
+              case h :: Nil => h
+              case _ => throw new AssertionError("must have exactly one member with bSym")
+            }
           case _ =>
             // move the class completely to the new location
             createNoDocMemberTemplate(bSym, inTpl)
@@ -961,14 +962,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
        *   - a NoDocTemplate if the type's symbol is not documented at all */
       def makeTemplateOrMemberTemplate(parent: Type): TemplateImpl = {
         def noDocTemplate = makeTemplate(parent.typeSymbol)
-        findTemplateMaybe(parent.typeSymbol) match {
-          case Some(tpl) => tpl
-          case None => parent match {
+        findTemplateMaybe(parent.typeSymbol).getOrElse {
+          parent match {
             case TypeRef(pre, sym, args) =>
-              findTemplateMaybe(pre.typeSymbol) match {
-                case Some(tpl) => findMember(parent.typeSymbol, tpl).collect({case t: TemplateImpl => t}).getOrElse(noDocTemplate)
-                case None => noDocTemplate
-              }
+              findTemplateMaybe(pre.typeSymbol)
+                .flatMap(findMember(parent.typeSymbol, _).collect { case t: TemplateImpl => t })
+                .getOrElse(noDocTemplate)
             case _ => noDocTemplate
           }
         }
