@@ -456,22 +456,13 @@ private[collection] object JavaCollectionWrappers extends Serializable {
 
     def underlyingConcurrentMap: concurrent.Map[K, V] = underlying
 
-    override def putIfAbsent(k: K, v: V) = underlying.putIfAbsent(k, v) match {
-      case Some(v) => v
-      case None => null.asInstanceOf[V]
-    }
+    override def putIfAbsent(k: K, v: V) = underlying.putIfAbsent(k, v).getOrElse(null.asInstanceOf[V])
 
-    override def remove(k: AnyRef, v: AnyRef) = try {
-      underlying.remove(k.asInstanceOf[K], v.asInstanceOf[V])
-    } catch {
-      case ex: ClassCastException =>
-        false
-    }
+    override def remove(k: AnyRef, v: AnyRef) =
+      try underlying.remove(k.asInstanceOf[K], v.asInstanceOf[V])
+      catch { case ex: ClassCastException => false }
 
-    override def replace(k: K, v: V): V = underlying.replace(k, v) match {
-      case Some(v) => v
-      case None => null.asInstanceOf[V]
-    }
+    override def replace(k: K, v: V): V = underlying.replace(k, v).getOrElse(null.asInstanceOf[V])
 
     override def replace(k: K, oldval: V, newval: V) = underlying.replace(k, oldval, newval)
   }
