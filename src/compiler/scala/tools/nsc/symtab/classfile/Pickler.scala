@@ -585,7 +585,7 @@ abstract class Pickler extends SubComponent {
         case StringTag  => writeRef(newTermName(c.stringValue))
         case ClazzTag   => writeRef(c.typeValue)
         case EnumTag    => writeRef(c.symbolValue)
-        case tag        => if (ByteTag <= tag && tag <= LongTag) writeLong(c.longValue)
+        case ctag       => if (ByteTag <= ctag && ctag <= LongTag) writeLong(c.longValue)
       }
 
       def writeModifiers(mods: Modifiers): Unit = {

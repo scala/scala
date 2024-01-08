@@ -809,9 +809,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
-          case ex: Throwable =>
+          case t: Throwable =>
             if (openMacros.nonEmpty) popMacroContext() // weirdly we started popping on an empty stack when refactoring fatalWarnings logic
-            val realex = ReflectionUtils.unwrapThrowable(ex)
+            val realex = ReflectionUtils.unwrapThrowable(t)
             realex match {
               case ex: InterruptedException => throw ex
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)

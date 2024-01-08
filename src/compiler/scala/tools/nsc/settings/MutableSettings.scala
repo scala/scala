@@ -811,7 +811,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       def loop(seen: List[String], args: List[String]): (List[String], List[String]) = args match {
         case Optionlike() :: _ if halting         => (seen, args)
         case "help" :: rest if helpText.isDefined => sawHelp = true ; loop(seen, rest)
-        case arg :: rest                          => loop(arg :: seen, rest)
+        case head :: rest                         => loop(head :: seen, rest)
         case Nil                                  => (seen, Nil)
       }
       val (seen, rest) = loop(Nil, args)

@@ -12,9 +12,8 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.{immutable, mutable}
+import scala.annotation.{tailrec, unused}
+import scala.collection.{immutable, mutable}, mutable.ArrayBuffer
 
 /** Solve pattern matcher exhaustivity problem via DPLL. */
 trait Solving extends Logic {
@@ -340,27 +339,23 @@ trait Solving extends Logic {
       val cnfExtractor = new AlreadyInCNF(symbolMapping)
       val cnfTransformer = new TransformToCnf(symbolMapping)
 
-      def cnfFor(prop: Prop): Solvable = {
+      def cnfFor(prop: Prop): Solvable =
         prop match {
-          case cnfExtractor.ToCnf(solvable) =>
-            // this is needed because t6942 would generate too many clauses with Tseitin
-            // already in CNF, just add clauses
-            solvable
-          case p                            =>
-            cnfTransformer.apply(p)
+          // this is needed because t6942 would generate too many clauses with Tseitin
+          // already in CNF, just add clauses
+          case cnfExtractor.ToCnf(solvable) => solvable
+          case prop                         => cnfTransformer.apply(prop)
         }
-      }
 
       simplified match {
         case And(props) =>
           // scala/bug#6942:
           // CNF(P1 /\ ... /\ PN) == CNF(P1) ++ CNF(...) ++ CNF(PN)
           val cnfs = new Array[Solvable](props.size)
-          @annotation.unused val copied = props.iterator.map(x => cnfFor(x)).copyToArray(cnfs)
+          @unused val copied = props.iterator.map(x => cnfFor(x)).copyToArray(cnfs)
           //assert(copied == cnfs.length, "")
           new Solvable(cnfs.flatten[Clause](_.cnf, reflect.classTag[Clause]), cnfs.head.symbolMapping)
-        case p          =>
-          cnfFor(p)
+        case simplified => cnfFor(simplified)
       }
     }
   }

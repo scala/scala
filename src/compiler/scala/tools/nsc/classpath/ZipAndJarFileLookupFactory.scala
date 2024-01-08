@@ -196,12 +196,11 @@ final class FileBasedCache[K, T] {
   private case class Entry(k: K, stamps: Seq[Stamp], t: T) {
     val referenceCount: AtomicInteger = new AtomicInteger(1)
     var timerTask: TimerTask = null
-    def cancelTimer(): Unit = {
+    def cancelTimer(): Unit =
       timerTask match {
         case null =>
-        case t => t.cancel()
+        case task => task.cancel()
       }
-    }
   }
   private val cache = collection.mutable.Map.empty[(K, Seq[Path]), Entry]
 

@@ -297,9 +297,9 @@ trait Infer extends Checkable {
         tree setSymbol sym setType ErrorType
       else accessible match {
         case NoSymbol                                                 => checkAccessibleError(tree, sym, pre, site)
-        case sym if context.owner.isTermMacro && (sym hasFlag LOCKED) => throw CyclicReference(sym, CheckAccessibleMacroCycle)
-        case sym                                                      =>
-          val sym1 = if (sym.isTerm) sym.cookJavaRawInfo() else sym // xform java rawtypes into existentials
+        case acc if context.owner.isTermMacro && (acc hasFlag LOCKED) => throw CyclicReference(acc, CheckAccessibleMacroCycle)
+        case acc                                                      =>
+          val sym1 = if (acc.isTerm) acc.cookJavaRawInfo() else acc // xform java rawtypes into existentials
           val owntype = (
             try pre memberType sym1
             catch { case ex: MalformedType => malformed(ex, pre memberType underlyingSymbol(sym)) }

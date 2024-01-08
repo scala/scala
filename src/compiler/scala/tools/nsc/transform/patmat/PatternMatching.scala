@@ -84,16 +84,16 @@ trait PatternMatching extends Transform
           // but for the rest of us pass in top as the expected type to avoid waste.
           val pt = if (origTp <:< definitions.AnyTpe) definitions.AnyTpe else WildcardType
           localTyper.typed(translated, pt) match {
-            case b @ Block(stats, m: Match) =>
+            case b @ Block(_, m: Match) =>
               b.setType(origTp)
               m.setType(origTp)
               b
-            case tree => tree setType origTp
+            case t => t.setType(origTp)
           }
         } catch {
-          case x: (Types#TypeError) =>
+          case x: Types#TypeError =>
             // TODO: this should never happen; error should've been reported during type checking
-            reporter.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
+            reporter.error(tree.pos, s"error during expansion of this match (this is a scalac bug).\nThe underlying error was: ${x.msg}")
             translated
         }
       case Try(block, catches, finalizer) =>

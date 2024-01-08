@@ -35,7 +35,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
               Block(StateTransitionStyle.UpdateAndContinue.trees(state, new StateSet), typedCurrentPos(literalUnit)).setType(definitions.UnitTpe)
             case None => ap
           }
-        case tree => tree
+        case transformed => transformed
       }
     }
   }

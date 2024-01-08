@@ -70,7 +70,7 @@ trait MatchTranslation {
       def pt      = unbound match {
         case Star(tpt)      => seqType(tpt.tpe)
         case TypeBound(tpe) => tpe
-        case tree           => tree.tpe
+        case unbound        => unbound.tpe
       }
 
       object SymbolAndTypeBound {

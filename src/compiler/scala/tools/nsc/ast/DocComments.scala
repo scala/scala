@@ -258,13 +258,11 @@ trait DocComments { self: Global =>
 
         def sectionString(param: String, paramMap: Map[String, (Int, Int)]): String =
           paramMap.get(param) match {
-            case Some(section) =>
-              // Cleanup the section tag and parameter
-              val sectionTextBounds = extractSectionText(parent, section)
-              cleanupSectionText(parent.substring(sectionTextBounds._1, sectionTextBounds._2))
+            case Some(paramSection) =>
+              val (start, end) = extractSectionText(parent, paramSection)
+              cleanupSectionText(parent.substring(start, end)) // Cleanup the section tag and parameter
             case None =>
-              reporter.echo(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
-                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.")
+              reporter.echo(sym.pos, s"""The "$getSectionHeader" annotation of the $sym comment contains @inheritdoc, but the corresponding section in the parent is not defined.""")
               "<invalid inheritdoc annotation>"
           }
 
@@ -457,8 +455,8 @@ trait DocComments { self: Global =>
 
       def getSite(name: Name): Type = {
         def findIn(sites: List[Symbol]): Type = sites match {
-          case List() => NoType
-          case site :: sites1 => select(site.thisType, name, findIn(sites1))
+          case site1 :: sites1 => select(site1.thisType, name, findIn(sites1))
+          case _ => NoType
         }
         // Previously, searching was taking place *only* in the current package and in the root package
         // now we're looking for it everywhere in the hierarchy, so we'll be able to link variable expansions like
@@ -543,16 +541,14 @@ trait DocComments { self: Global =>
 
       val substAliases = new TypeMap {
         def apply(tp: Type) = mapOver(tp) match {
-          case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name.startChar == '$') =>
+          case tp1 @ TypeRef(_, sym, args) if sym.name.length > 1 && sym.name.startChar == '$' =>
             subst(sym, aliases, aliasExpansions) match {
-              case (TypeRef(pre1, sym1, _), canNormalize) =>
-                val tpe = typeRef(pre1, sym1, args)
+              case (TypeRef(pre, sym, _), canNormalize) =>
+                val tpe = typeRef(pre, sym, args)
                 if (canNormalize) tpe.normalize else tpe
-              case _ =>
-                tp1
+              case _ => tp1
             }
-          case tp1 =>
-            tp1
+          case tp1 => tp1
         }
       }
 

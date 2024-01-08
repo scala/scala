@@ -149,8 +149,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
               currentTransformState = saved
             }
           }
-        case tree =>
-          tree
+        case transformed => transformed
       }
 
     private def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {

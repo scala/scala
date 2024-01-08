@@ -44,7 +44,7 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
         case AsInstanceOf(v, tpe) if v.tpe <:< tpe => finish(v)          // x.asInstanceOf[X]       ==> x
         case ValueClass.BoxAndUnbox(v)             => finish(v)          // (new B(v)).unbox        ==> v
         case ValueClass.BoxAndCompare(v1, op, v2)  => binop(v1, op, v2)  // new B(v1) == new B(v2)  ==> v1 == v2
-        case tree                                  => tree
+        case transformed                           => transformed
       }
     }
   }

@@ -509,7 +509,7 @@ trait Implicits extends splain.SplainData {
 
     private def core(tp: Type): Type = tp.dealiasWiden match {
       case RefinedType(parents, _)            => intersectionType(parents map core, tp.typeSymbol.owner)
-      case AnnotatedType(_, tp)               => core(tp)
+      case AnnotatedType(_, underlying)       => core(underlying)
       case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
       case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
       case TypeRef(pre, sym, args)            =>
@@ -834,30 +834,27 @@ trait Implicits extends splain.SplainData {
       @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
       def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
+        // try to infer implicit parameters immediately in order to:
+        //   1) guide type inference for implicit views
+        //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
+        //
+        // this is an improvement of the state of the art that brings consistency to implicit resolution rules
+        // (and also helps fundep materialization to be applicable to implicit views)
+        //
+        // there's one caveat though. we need to turn this behavior off for scaladoc
+        // because scaladoc usually doesn't know the entire story
+        // and is just interested in views that are potentially applicable
+        // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
+        // then Scaladoc will give us something of type `C[T]`, and it would like to know
+        // that `conv` is potentially available under such and such conditions
         val itree2 = if (!isView) fallback else pt match {
           case Function1(arg1, arg2) =>
-            typed1(
+            val applied = typed1(
               atPos(itree0.pos)(Apply(itree1, Ident(nme.argument).setType(approximate(arg1)) :: Nil)),
               EXPRmode,
               approximate(arg2)
-            ) match {
-              // try to infer implicit parameters immediately in order to:
-              //   1) guide type inference for implicit views
-              //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
-              //
-              // this is an improvement of the state of the art that brings consistency to implicit resolution rules
-              // (and also helps fundep materialization to be applicable to implicit views)
-              //
-              // there's one caveat though. we need to turn this behavior off for scaladoc
-              // because scaladoc usually doesn't know the entire story
-              // and is just interested in views that are potentially applicable
-              // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
-              // then Scaladoc will give us something of type `C[T]`, and it would like to know
-              // that `conv` is potentially available under such and such conditions
-              case tree if isImplicitMethodType(tree.tpe) && !isScaladoc =>
-                applyImplicitArgs(tree)
-              case tree => tree
-            }
+            )
+            if (isImplicitMethodType(applied.tpe) && !isScaladoc) applyImplicitArgs(applied) else applied
           case _ => fallback
         }
         context.reporter.firstError match { // using match rather than foreach to avoid non local return.
@@ -906,12 +903,12 @@ trait Implicits extends splain.SplainData {
             // In case we stepped on a macro along the way, the macro was expanded during the call to adapt. Along the way,
             // any type parameters that were instantiated were NOT yet checked for bounds, so we need to repeat the above
             // bounds check on the expandee tree
-            itree3.attachments.get[MacroExpansionAttachment] match {
-              case Some(MacroExpansionAttachment(exp @ TypeApply(fun, targs), _)) =>
+            itree3.attachments.get[MacroExpansionAttachment].foreach {
+              case MacroExpansionAttachment(exp @ TypeApply(fun, targs), _) =>
                 val targTpes     = mapList(targs)(_.tpe)
                 val withinBounds = checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targTpes, "inferred ")
                 if (!withinBounds) splainPushNonconformantBonds(pt, tree, targTpes, undetParams, None)
-              case _ => ()
+              case _ =>
             }
 
             context.reporter.firstError match {
