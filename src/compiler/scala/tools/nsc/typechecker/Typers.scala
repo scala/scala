@@ -2710,7 +2710,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       initChildren(selectorTp.typeSymbol)
 
       def finish(cases: List[CaseDef], matchType: Type) = {
-        if (!isPastTyper && settings.warnPatternShadow && !context.owner.isSynthetic && selector.symbol != null)
+        if (!isPastTyper && settings.warnPatternShadow && !context.owner.isSynthetic)
           for (cdef <- cases; bind @ Bind(name, _) <- cdef.pat if !bind.hasAttachment[NoWarnAttachment.type])
             context.lookupSymbol(name, _ => true) match {
               case LookupSucceeded(_, sym) => bind.updateAttachment(PatShadowAttachment(sym))

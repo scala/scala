@@ -187,3 +187,10 @@ class `kosher selector` {
     case x => x.toString
   }
 }
+class `lukas asked whats that null check for` {
+  import annotation._
+  def isOperatorPart(c: Char): Boolean = (c: @unchecked) match {
+    case '+' => true
+    case c => false
+  }
+}

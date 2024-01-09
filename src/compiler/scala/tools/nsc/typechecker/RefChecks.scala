@@ -2046,7 +2046,11 @@ abstract class RefChecks extends Transform {
             if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr)
 
             tree
-          case Match(selector, cases) =>
+          case Match(selector0, cases) =>
+            val selector = selector0 match {
+              case Typed(expr, _) => expr
+              case _              => selector0
+            }
             def notNull(s: Symbol) = if (s != null) s else NoSymbol
             val selectorSymbol = notNull(selector.symbol)
             // true to warn about shadowed when selSym is the scrutinee
