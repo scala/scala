@@ -175,8 +175,8 @@ class TryTest {
     val t = Success(1)
     val n = t.filter(x => x < 0)
     n match {
-      case Success(v) => fail()
-      case Failure(e: NoSuchElementException) => ()
+      case Success(_) => fail()
+      case Failure(_: NoSuchElementException) => ()
       case _          => fail()
     }
   }
@@ -234,7 +234,7 @@ class TryTest {
     val t = Success(1)
     val n = t.failed
     n match {
-      case Failure(e: UnsupportedOperationException) =>
+      case Failure(_: UnsupportedOperationException) =>
       case _ => fail()
     }
   }
@@ -243,7 +243,7 @@ class TryTest {
     val t = Failure(new Exception("foo"))
     val n = t.failed
     n match {
-      case Success(e: Exception) =>
+      case Success(_: Exception) =>
       case _ => fail()
     }
   }
