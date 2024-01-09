@@ -1040,21 +1040,15 @@ trait Namers extends MethodSynthesis {
 
     private def refersToSymbolLessAccessibleThan(tp: Type, sym: Symbol): Boolean = {
       val accessibilityReference =
-        if (sym.isValue && sym.owner.isClass && sym.isPrivate)
-          sym.getterIn(sym.owner)
+        if (sym.isValue && sym.owner.isClass && sym.isPrivate) sym.getterIn(sym.owner)
         else sym
 
-      @annotation.tailrec def loop(tp: Type): Boolean = tp match {
-        case SingleType(pre, sym) =>
-          (sym isLessAccessibleThan accessibilityReference) || loop(pre)
-        case ThisType(sym) =>
-          sym isLessAccessibleThan accessibilityReference
-        case p: SimpleTypeProxy =>
-          loop(p.underlying)
-        case _ =>
-          false
+      @tailrec def loop(tp: Type): Boolean = tp match {
+        case SingleType(pre, sym) => sym.isLessAccessibleThan(accessibilityReference) || loop(pre)
+        case ThisType(sym)        => sym.isLessAccessibleThan(accessibilityReference)
+        case p: SimpleTypeProxy   => loop(p.underlying)
+        case _ => false
       }
-
       loop(tp)
     }
 

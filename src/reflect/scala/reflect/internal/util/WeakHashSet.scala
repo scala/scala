@@ -425,4 +425,6 @@ object WeakHashSet {
   val defaultLoadFactor = .75
 
   def apply[A <: AnyRef](initialCapacity: Int = WeakHashSet.defaultInitialCapacity, loadFactor: Double = WeakHashSet.defaultLoadFactor) = new WeakHashSet[A](initialCapacity, defaultLoadFactor)
+
+  def empty[A <: AnyRef]: WeakHashSet[A] = new WeakHashSet[A]()
 }
