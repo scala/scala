@@ -639,7 +639,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       else {
         // approximation is necessary for whitebox macros to guide type inference
         // read more in the comments for onDelayed below
-        val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+        val undetparams = tp collect { case tp1 if tp1.typeSymbol.isTypeParameter => tp1.typeSymbol }
         deriveTypeWithWildcards(undetparams)(tp)
       }
     }

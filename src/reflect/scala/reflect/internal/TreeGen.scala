@@ -723,8 +723,7 @@ abstract class TreeGen {
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
         assert(!valeqs.isEmpty, "Missing ValEq")
         val rest1 = rest.drop(valeqs.length)
-        val pats = valeqs.collect { case ValEq(pat, _) => pat }
-        val rhss = valeqs.collect { case ValEq(_, rhs) => rhs }
+        val (pats, rhss) = valeqs.map(ValEq.unapply(_).get).unzip
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
         val pdefs = defpats.lazyZip(rhss).flatMap(mkPatDef)

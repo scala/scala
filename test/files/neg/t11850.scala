@@ -194,3 +194,11 @@ class `lukas asked whats that null check for` {
     case c => false
   }
 }
+case class Collector() {
+  def collect[T](pf: PartialFunction[Collector, T]): List[T] = ???
+  def flag = true
+}
+class `pattern matches occasionally appear in pattern-matching anonymous functions` {
+  val c = Collector()
+  def f = c.collect { case c if c.flag => c.toString }
+}

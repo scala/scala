@@ -240,7 +240,7 @@ trait Reshape {
         def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = (jann: @unchecked) match {
           case LiteralAnnotArg(const) => Literal(const)
           case ArrayAnnotArg(arr)     => Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
-          case NestedAnnotArg(ann)    => toPreTyperAnnotation(ann)
+          case NestedAnnotArg(naa)    => toPreTyperAnnotation(naa)
         }
 
         ann.assocs map { case (nme, arg) => NamedArg(Ident(nme), toScalaAnnotation(arg)) }
