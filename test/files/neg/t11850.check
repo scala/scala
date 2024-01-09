@@ -4,10 +4,10 @@ t11850.scala:9: warning: Name x is already introduced in an enclosing scope as v
 t11850.scala:28: warning: Name x is already introduced in an enclosing scope as value x in class CT. Did you intend to match it using backquoted `x`?
       case x   => 1     // warn
            ^
-t11850.scala:118: warning: Name x is already introduced in an enclosing scope as value x. Did you intend to match it using backquoted `x`?
+t11850.scala:118: warning: Name x is already introduced in an enclosing scope as value x at line 117. Did you intend to match it using backquoted `x`?
     case Y(x, y)  => x+y // only allow 1-1
            ^
-t11850.scala:118: warning: Name y is already introduced in an enclosing scope as value y. Did you intend to match it using backquoted `y`?
+t11850.scala:118: warning: Name y is already introduced in an enclosing scope as value y at line 117. Did you intend to match it using backquoted `y`?
     case Y(x, y)  => x+y // only allow 1-1
               ^
 t11850.scala:125: warning: Name self is already introduced in an enclosing scope as value self in class Selfie. Did you intend to match it using backquoted `self`?
@@ -16,12 +16,15 @@ t11850.scala:125: warning: Name self is already introduced in an enclosing scope
 t11850.scala:170: warning: Name _1 is already introduced in an enclosing scope as value _1 in class weird but true. Did you intend to match it using backquoted `_1`?
     case (_1, 27) => 3 // briefly did not warn as param name
           ^
-t11850.scala:187: warning: Name x is already introduced in an enclosing scope as value x. Did you intend to match it using backquoted `x`?
+t11850.scala:187: warning: Name x is already introduced in an enclosing scope as value x at line 186. Did you intend to match it using backquoted `x`?
     case x => x.toString
          ^
 t11850.scala:203: warning: Name c is already introduced in an enclosing scope as value c in class pattern matches occasionally appear in pattern-matching anonymous functions. Did you intend to match it using backquoted `c`?
   def f = c.collect { case c if c.flag => c.toString }
                            ^
+t11850.scala:212: warning: Name x is already introduced in an enclosing scope as object x in object is it worth qualifying what kind of term. Did you intend to match it using backquoted `x`?
+      case x   => 1
+           ^
 error: No warnings can be incurred under -Werror.
-8 warnings
+9 warnings
 1 error

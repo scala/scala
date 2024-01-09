@@ -2082,10 +2082,14 @@ abstract class RefChecks extends Transform {
                       case _ => super.traverse(t)
                     }
                   case bind @ Bind(name, _) =>
+                    def richLocation(sym: Symbol): String = sym.ownsString match {
+                      case ""   => val n = sym.pos.line; if (n > 0) s"$sym at line $n" else sym.fullLocationString
+                      case owns => s"$sym in $owns"
+                    }
                     for (shade <- bind.getAndRemoveAttachment[PatShadowAttachment]) {
                       val shadowed = shade.shadowed
                       if (!absolved.contains(name) && !bind.symbol.hasTransOwner(shadowed.accessedOrSelf) && checkShadowed(shadowed)(selSym))
-                        refchecksWarning(bind.pos, s"Name $name is already introduced in an enclosing scope as ${shadowed.fullLocationString}. Did you intend to match it using backquoted `$name`?", WarningCategory.OtherShadowing)
+                        refchecksWarning(bind.pos, s"Name $name is already introduced in an enclosing scope as ${richLocation(shadowed)}. Did you intend to match it using backquoted `$name`?", WarningCategory.OtherShadowing)
 
                     }
                   case _ => super.traverse(t)
@@ -2093,11 +2097,10 @@ abstract class RefChecks extends Transform {
               }
               traverser.traverse(p)
             }
-            def checkAllCases(): Unit = for (cdef <- cases) check(cdef.pat, selectorSymbol)
             // check the patterns for unfriendly shadowing, patvars bearing PatShadowAttachment
             def checkShadowingPatternVars(): Unit =
               selector match {
-                // or for `(x, y) match case p(x, y) =>` check the corresponding args (whether they are aliases)
+                // or for `(x, y) match case p(x, y) =>` check the corresponding args
                 case treeInfo.Applied(Select(core, nme.apply), _, tupleArgs :: Nil) if isTupleSymbol(core.symbol.companion) =>
                   for (cdef <- cases)
                     cdef.pat match {
@@ -2107,11 +2110,13 @@ abstract class RefChecks extends Transform {
                         foreach2(args, tupleArgs)((arg, sel) => check(arg, notNull(sel.symbol)))
                       case p => check(p, selectorSymbol)
                     }
+                // or for `tp.dealiased match case tp =>` check `tp` if it looks like a derived value, but not `this.x` or `x.asInstanceOf`
                 case treeInfo.Applied(Select(core, _), _, _) if core.symbol != null && !core.symbol.isThisSym && selector.tpe <:< core.tpe.widen =>
                   for (cdef <- cases) check(cdef.pat, core.symbol)
-                case _ => checkAllCases()
+                case _ =>
+                  for (cdef <- cases) check(cdef.pat, selectorSymbol)
               }
-            checkShadowingPatternVars()
+            if (settings.warnPatternShadow) checkShadowingPatternVars()
             tree
           case _ => tree
         }

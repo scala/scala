@@ -202,3 +202,13 @@ class `pattern matches occasionally appear in pattern-matching anonymous functio
   val c = Collector()
   def f = c.collect { case c if c.flag => c.toString }
 }
+object `is it worth qualifying what kind of term` {
+  trait T
+  object x extends T
+
+  def f(t: T) =
+    t match {
+      case `x` => 0
+      case x   => 1
+    }
+}
