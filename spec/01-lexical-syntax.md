@@ -344,10 +344,11 @@ Literal  ::=  [‘-’] integerLiteral
 ### Integer Literals
 
 ```ebnf
-integerLiteral  ::=  (decimalNumeral | hexNumeral)
+integerLiteral  ::=  (decimalNumeral | hexNumeral | binaryNumeral)
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  digit {digit}
 hexNumeral      ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
+binaryNumeral   ::=  ‘0’ (‘b’ | ‘B’) binaryDigit {binaryDigit}
 ```
 
 Values of type `Int` are all integer
