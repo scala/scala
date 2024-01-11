@@ -1,0 +1,6 @@
+t12304.scala:10: warning: fruitless type test: a value of type Foo cannot also be a Bar
+    m.collect { case (_, bar: Bar) =>}
+                              ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
