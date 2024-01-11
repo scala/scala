@@ -457,12 +457,14 @@ abstract class SymbolTable extends macros.Universe
       javaCaches = javaCaches.filter(_.isValid)
     }
 
-    def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap[K, V]())
-    def newMap[K, V]()            = recordCache(mutable.HashMap[K, V]())
-    def newSet[K]()               = recordCache(mutable.HashSet[K]())
-    def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
+    def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap.empty[K, V])
+    def newMap[K, V]()            = recordCache(mutable.HashMap.empty[K, V])
+    def newSet[K]()               = recordCache(mutable.HashSet.empty[K])
+    def newWeakSet[K <: AnyRef]() = recordCache(WeakHashSet.empty[K])
 
-    def newAnyRefMap[K <: AnyRef, V]() = recordCache(mutable.AnyRefMap[K, V]())
+    def newAnyRefMap[K <: AnyRef, V]() = recordCache(mutable.AnyRefMap.empty[K, V])
+    def newAnyRefMap[K <: AnyRef, V](default: K => V) = recordCache(mutable.AnyRefMap.withDefault[K, V](default))
+
     /**
       * Register a cache specified by a factory function and (optionally) a cleanup function.
       *

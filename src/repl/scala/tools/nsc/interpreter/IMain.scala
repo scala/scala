@@ -16,15 +16,14 @@ package scala.tools.nsc.interpreter
 
 import java.io.{Closeable, PrintWriter, StringWriter}
 import java.net.URL
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 import scala.language.implicitConversions
+import scala.reflect.{ClassTag, classTag}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, ReplBatchSourceFile, SourceFile}
 import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
-import scala.reflect.{ClassTag, classTag}
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
@@ -32,12 +31,10 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
-import scala.tools.nsc.{Global, Settings}
 import scala.tools.util.PathResolver
+import scala.util.{Try => Trying}
 import scala.util.chaining._
 import scala.util.control.NonFatal
-import scala.util.{Try => Trying}
-
 
 /** An interpreter for Scala code.
   *
@@ -774,7 +771,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       else parens(params.map(_.defString))
     }
 
-    @tailrec
     def loop(tpe: Type, acc: StringBuilder): StringBuilder = tpe match {
       case NullaryMethodType(resultType)  => acc ++= s": ${typeToCode(resultType.toString)}"
       case PolyType(tyParams, resultType) => loop(resultType, acc ++= tyParens(tyParams.map(_.defString)))
@@ -815,7 +811,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val trees: List[Tree] = origTrees match {
       case xs if !storeResultInVal => xs
       case init :+ tree =>
-        @tailrec def loop(scrut: Tree): Tree = scrut match {
+        def loop(scrut: Tree): Tree = scrut match {
           case _: Assign                => tree
           case _: RefTree | _: TermTree => storeInVal(tree)
           case Annotated(_, arg)        => loop(arg)
@@ -1074,38 +1070,31 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     def value(fullName: String) = {
       val runtimeMirror = this.runtimeMirror
       import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
-      val pkg :: rest = (fullName split '.').toList: @unchecked
+      val pkg :: path = fullName.split('.').toList: @unchecked
       val top = runtimeMirror.staticPackage(pkg)
-      @annotation.tailrec
       def loop(inst: InstanceMirror, cur: Symbol, path: List[String]): Option[Any] = {
         def mirrored =
           if (inst != null) inst
-          else runtimeMirror.reflect((runtimeMirror reflectModule cur.asModule).instance)
+          else runtimeMirror.reflect(runtimeMirror.reflectModule(cur.asModule).instance)
 
         path match {
           case last :: Nil  =>
             cur.typeSignature.decls.find(x => x.name.toString == last && x.isAccessor).map { m =>
               mirrored.reflectMethod(m.asMethod).apply()
             }
-          case next :: rest =>
-            val s = cur.typeSignature.member(TermName(next))
-            val i =
-              if (s.isModule) {
+          case next :: path =>
+            val sym = cur.typeSignature.member(TermName(next))
+            val inst1 =
+              if (sym.isModule)
                 if (inst == null) null
-                else runtimeMirror.reflect((runtimeMirror reflectModule s.asModule).instance)
-              }
-              else if (s.isAccessor) {
-                runtimeMirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
-              }
-              else {
-                assert(false, fullName)
-                inst
-              }
-            loop(i, s, rest)
+                else runtimeMirror.reflect(runtimeMirror.reflectModule(sym.asModule).instance)
+              else if (sym.isAccessor) runtimeMirror.reflect(mirrored.reflectMethod(sym.asMethod).apply())
+              else throw new AssertionError(s"not a module or accessor ($sym) in: $fullName")
+            loop(inst1, sym, path)
           case Nil => None
         }
       }
-      loop(null, top, rest)
+      loop(inst = null, top, path)
     }
     Option(symbolOfTerm(id)).filter(_.exists).flatMap(s => Trying(value(originalPath(s))).toOption.flatten)
   }

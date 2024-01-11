@@ -975,16 +975,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       singleType(NoPrefix, tree.symbol)
     case Select(qual, _) if treeInfo.admitsTypeSelection(tree) =>
       singleType(qual.tpe, tree.symbol)
-    case Import(expr, selectors) =>
+    case Import(_, _) =>
       tree.symbol.info match {
         case ImportType(expr) => expr match {
-          case s@Select(qual, name) if treeInfo.admitsTypeSelection(expr) => singleType(qual.tpe, s.symbol)
-          case i : Ident => i.tpe
+          case Select(qual, _) if treeInfo.admitsTypeSelection(expr) => singleType(qual.tpe, expr.symbol)
+          case _: Ident => expr.tpe
           case _ => tree.tpe
         }
         case _ => tree.tpe
       }
-
     case _ => tree.tpe
   }
 
