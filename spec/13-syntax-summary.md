@@ -35,6 +35,7 @@ opchar           ::=  ‘!’ | ‘#’ | ‘%’ | ‘&’ | ‘*’ | ‘+’ 
 printableChar    ::=  all characters in [\u0020, \u007E] inclusive
 UnicodeEscape    ::=  ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
 hexDigit         ::=  ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
+binaryDigit      ::=  ‘0’ | ‘1’
 charEscapeSeq    ::=  ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
 escapeSeq        ::=  UnicodeEscape | charEscapeSeq
 op               ::=  opchar {opchar}
@@ -51,6 +52,7 @@ idrest           ::=  {letter | digit} [‘_’ op]
 integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
 decimalNumeral   ::=  digit {digit}
 hexNumeral       ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
+binaryNumeral    ::=  ‘0’ (‘b’ | ‘B’) binaryDigit {binaryDigit}
 
 floatingPointLiteral
                  ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]
