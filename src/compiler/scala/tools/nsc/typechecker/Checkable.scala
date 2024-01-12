@@ -223,7 +223,7 @@ trait Checkable {
      *  additional conditions holds:
      *   - either A or B is effectively final
      *   - neither A nor B is a trait (i.e. both are actual classes, not eligible for mixin)
-     *   - both A and B are sealed/final, and every possible pairing of their children is irreconcilable
+     *   - either A or B is sealed/final, and every possible pairing of their children (or themselves) is irreconcilable
      *
      *  The last two conditions of the last possibility (that the symbols are not of
      *  classes being compiled in the current run) are because this currently runs too early,
@@ -241,15 +241,15 @@ trait Checkable {
       )
       // Are all children of these symbols pairwise irreconcilable?
       def allChildrenAreIrreconcilable(sym1: Symbol, sym2: Symbol) = {
-        val sc1 = sym1.sealedChildren
-        val sc2 = sym2.sealedChildren
+        val sc1 = if (isSealedOrFinal(sym1)) sym1.sealedChildren else Set(sym1)
+        val sc2 = if (isSealedOrFinal(sym2)) sym2.sealedChildren else Set(sym2)
         sc1.forall(c1 => sc2.forall(c2 => areIrreconcilableAsParents(c1, c2)))
       }
       areUnrelatedClasses(sym1, sym2) && (
          isEffectivelyFinal(sym1) // initialization important
       || isEffectivelyFinal(sym2)
       || !sym1.isTrait && !sym2.isTrait
-      || isSealedOrFinal(sym1) && isSealedOrFinal(sym2) && allChildrenAreIrreconcilable(sym1, sym2) && (isRecheck || !currentRun.compiles(sym1) && !currentRun.compiles(sym2))
+      || (isSealedOrFinal(sym1) || isSealedOrFinal(sym2)) && allChildrenAreIrreconcilable(sym1, sym2) && (isRecheck || !currentRun.compiles(sym1) && !currentRun.compiles(sym2))
       )
     }
     private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
@@ -370,7 +370,7 @@ trait Checkable {
               def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
               val Xsym = X.typeSymbol
               val Psym = P.typeSymbol
-              if (isSealedOrFinal(Xsym) && isSealedOrFinal(Psym) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym))) {
+              if ((isSealedOrFinal(Xsym) || isSealedOrFinal(Psym)) && (currentRun.compiles(Xsym) || currentRun.compiles(Psym))) {
                 debuglog(s"deferred recheckFruitless($X, $P)")
                 context.unit.addPostTyperCheck(() => recheckFruitless())
               }
