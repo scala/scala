@@ -111,4 +111,31 @@ object TailCalls {
    */
   def done[A](result: A): TailRec[A] = Done(result)
 
+
+  /**
+   * Call a function with a state argument, and a function which will
+   * recursively call the passed function with the new state.
+   *
+   * This can be used to implement a loop similar to using self-recursion
+   * with an anonymous function.
+   *
+   * Fore example computing a fibonacci number could be implemented as:
+   *
+   * {{{
+   * import scala.util.control.TailCalls._
+   *
+   * def fib(n: Int): Int =
+   *    recurse[(Int, Int, Int), Int]((n, 1, 0)) ( recur => { case (i, n1, n2) =>
+   *      if (i <= 0) {
+   *        done(n1)
+   *      } else {
+   *        recur((i - 1, n1 + n2, n1))
+   *      }
+   *    })
+   *}}}
+   */
+  def recurse[S, A](state: S)(body:  (S => TailRec[A]) => S => TailRec[A]): A = {
+    def impl(state: S): TailRec[A] = tailcall(body(impl)(state))
+    body(impl)(state).result
+  }
 }
