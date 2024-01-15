@@ -1661,14 +1661,13 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // documented in JavaUniverse.init
-    def init(): Unit = {
-      if (isInitialized) return
+    def init(): Unit = if (!isInitialized) {
       ObjectClass.initialize
       ScalaPackageClass.initialize
       symbolsNotPresentInBytecode
       NoSymbol
       isInitialized = true
-    } //init
+    }
 
     class UniverseDependentTypes(universe: Tree) {
       lazy val nameType         = universeMemberType(tpnme.Name)

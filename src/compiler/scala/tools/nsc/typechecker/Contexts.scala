@@ -1940,7 +1940,15 @@ trait Contexts { self: Analyzer =>
           // because typechecking .java sources doesn't need it.
           sym
         }
-        else qual.tpe.nonLocalMember(nom)
+        else {
+          val tp = qual.tpe
+          val sym = tp.typeSymbol
+          // opening package objects is delayed (scala/scala#9661), but that can lead to missing symbols for
+          // package object types that are forced early through Definitions; see scala/bug#12740 / scala/scala#10333
+          if (phase.id < currentRun.typerPhase.id && sym.hasPackageFlag && analyzer.packageObjects.deferredOpen.remove(sym))
+            openPackageModule(sym)
+          tp.nonLocalMember(nom)
+        }
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name))
           result = maybeNonLocalMember(current.name asTypeOf name)
