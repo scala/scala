@@ -1997,7 +1997,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             // param accessors for private members (the others are inherited from the generic class)
             if (m.isPrimaryConstructor) {
               for (param <- vparams ; if sClass.info.nonPrivateMember(param.name) == NoSymbol) {
-                val acc = param.cloneSymbol(sClass, param.flags | PARAMACCESSOR | PRIVATE)
+                val acc = param.cloneSymbol(sClass, param.flags | PARAMACCESSOR | PrivateLocal)
                 sClass.info.decls.enter(acc)
                 mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
               }
