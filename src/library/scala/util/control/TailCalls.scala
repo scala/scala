@@ -113,29 +113,40 @@ object TailCalls {
 
 
   /**
+   * Helper class for implementing `recurse`.
+   *
+   * It allows inferring the type of the state of the recursion.
+   */
+  class Recursion[S](state: S) {
+    def apply[A](body: S => (S => TailRec[A]) => TailRec[A]): A = {
+      def impl(state: S): TailRec[A] = tailcall(body(state)(impl))
+      body(state)(impl).result
+    }
+  }
+
+  /**
    * Call a function with a state argument, and a function which will
    * recursively call the passed function with the new state.
    *
    * This can be used to implement a loop similar to using self-recursion
    * with an anonymous function.
    *
-   * Fore example computing a fibonacci number could be implemented as:
+   * For example computing a fibonacci number could be implemented as:
    *
    * {{{
    * import scala.util.control.TailCalls._
    *
    * def fib(n: Int): Int =
-   *    recurse[(Int, Int, Int), Int]((n, 1, 0)) ( recur => { case (i, n1, n2) =>
+   *    recurse((n, 1, 0))[Int]{ case (i, n1, n2) => recur =>
    *      if (i <= 0) {
    *        done(n1)
    *      } else {
    *        recur((i - 1, n1 + n2, n1))
    *      }
-   *    })
-   *}}}
+   *    }
+   * }}}
+   *
+   * Note that it is often necessary to expicitly specify the return type as a type parameter.
    */
-  def recurse[S, A](state: S)(body:  (S => TailRec[A]) => S => TailRec[A]): A = {
-    def impl(state: S): TailRec[A] = tailcall(body(impl)(state))
-    body(impl)(state).result
-  }
+  def recurse[S](state: S): Recursion[S] = new Recursion[S](state)
 }
