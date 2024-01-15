@@ -104,19 +104,29 @@ object Y { def unapply(p: (Int, Int, Int)): Option[(Int, Int)] = Option(p).map {
 class Tupling {
   def f(x: Int, y: Int): Int = (x, y) match {
     case (42, 27) => 5
-    case (x, y)   => x+y // correspond to tuple arg
+    case (x, y)   => x+y // correspond to tuple arg (or anywhere in selector)
   }
   def g(x: Some[Int], y: Some[Int]): Int = (x, y) match {
     case (Some(42), Some(27)) => 5
-    case (Some(x), Some(y))   => x+y // correspond to tuple arg but not top level pattern
+    case (Some(x), Some(y))   => x+y // correspond to tuple arg but not top level pattern (or anywhere in selector)
   }
   def e(x: Int, y: Int): Int = (x, y) match {
-    case X(x, y)  => x+y // extractor args correspond to tuple args
+    case X(x, y)  => x+y // extractor args correspond to tuple args (or anywhere in selector)
     case _        => -1
   }
   def err(x: Int, y: Int, z: Int): Int = (x, y, z) match {
-    case Y(x, y)  => x+y // only allow 1-1
+    case Y(x, y)  => x+y // only allow 1-1 (or anywhere in selector)
     case _        => -1
+  }
+  def swap(x: Int, y: Int): Int = (x, y) match {
+    case X(y, x)  => x+y // anywhere in selector
+    case _        => -1
+  }
+  def add1(x: Int): Int = x + 1 match {
+    case x => x+42 // anywhere in selector
+  }
+  def add2(x: Int): Int = 1 + x match {
+    case x => x+42 // anywhere in selector
   }
 }
 class Selfie { self =>
@@ -183,8 +193,19 @@ class `derived thing is refinement` {
   }
 }
 class `kosher selector` {
+  def f(x: Any) = x.toString match {
+    case x => x
+  }
+}
+class `unkosher selector` {
   def f(x: Any) = 42 match {
     case x => x.toString
+  }
+}
+class `also unkosher selector` {
+  // selector is a value derived from x but it is an unrelated type; x does not "refine" Thing
+  def f(x: Thing) = x.toString match {
+    case x => x
   }
 }
 class `lukas asked whats that null check for` {

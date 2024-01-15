@@ -2046,28 +2046,48 @@ abstract class RefChecks extends Transform {
             if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr)
 
             tree
-          case Match(selector0, cases) =>
-            val selector = selector0 match {
-              case Typed(expr, _) => expr
-              case _              => selector0
+          case Match(selector, cases) =>
+            // only warn if it could be put in backticks in a pattern
+            def isWarnable(sym: Symbol): Boolean =
+              sym != null && sym.exists &&
+              !sym.hasPackageFlag && sym.isStable && !isByName(sym) &&
+              !sym.hasAttachment[PatVarDefAttachment.type] // val (_, v) = with one var is shadowed in desugaring
+              //!toCheck.isSynthetic // self-type symbols are synthetic: value self (<synthetic>), do warn
+
+            class CheckSelector extends InternalTraverser {
+              var selectorSymbols: List[Symbol] = null
+              override def traverse(t: Tree): Unit = {
+                val include = t match {
+                  case _: This    => true // !t.symbol.isStable
+                  case _: SymTree => isWarnable(t.symbol)
+                  case _          => false
+                }
+                if (include) selectorSymbols ::= t.symbol
+                t.traverse(this)
+              }
+              // true if the shadowed toCheck appears in the selector expression
+              def implicatesSelector(toCheck: Symbol): Boolean = {
+                if (selectorSymbols == null) {
+                  selectorSymbols = Nil
+                  apply(selector)
+                }
+                selectorSymbols.exists(sym => sym.eq(toCheck) || sym.accessedOrSelf.eq(toCheck.accessedOrSelf) ||
+                  toCheck.isThisSym && toCheck.owner == sym) // self match { case self: S => }, selector C.this is class symbol
+              }
             }
-            def notNull(s: Symbol) = if (s != null) s else NoSymbol
-            val selectorSymbol = notNull(selector.symbol)
+            val checkSelector = new CheckSelector
             // true to warn about shadowed when selSym is the scrutinee
-            def checkShadowed(shadowed: Symbol)(selSym: Symbol): Boolean = {
+            def checkShadowed(shadowed: Symbol): Boolean = {
               def checkShadowedSymbol(toCheck: Symbol): Boolean =
-                //!toCheck.isSynthetic && // self-type symbols are synthetic: value self (<synthetic>)
-                !toCheck.hasPackageFlag && toCheck.isStable && !isByName(toCheck) &&
-                !toCheck.hasAttachment[PatVarDefAttachment.type] && // val (_, v) = with one var
-                (selSym.eq(NoSymbol) || // following checks if selector symbol exists
-                 toCheck.ne(selSym) && toCheck.accessedOrSelf.ne(selSym.accessedOrSelf) &&
-                 !(toCheck.isThisSym && toCheck.owner == selSym)) // self match { case self: S => }, selector C.this is class symbol
-              if (shadowed.isOverloaded) shadowed.alternatives.exists(checkShadowedSymbol) else checkShadowedSymbol(shadowed)
+                isWarnable(toCheck) && !checkSelector.implicatesSelector(toCheck)
+
+              if (shadowed.isOverloaded) shadowed.alternatives.exists(checkShadowedSymbol)
+              else checkShadowedSymbol(shadowed)
             }
-            // warn if any checkable pattern var shadows, in the context of the given selector
+            // warn if any checkable pattern var shadows, in the context of the selector,
             // or for `tree match case Apply(fun, args) =>` check whether names in args equal names of fun.params
-            def check(p: Tree, selSym: Symbol): Unit = {
-              val traverser = new Traverser {
+            def checkPattern(p: Tree): Unit = {
+              val traverser = new InternalTraverser {
                 // names absolved of shadowing because it is a "current" parameter (of a case class, etc)
                 var absolved: List[Name] = Nil
                 override def traverse(t: Tree): Unit = t match {
@@ -2079,7 +2099,7 @@ abstract class RefChecks extends Transform {
                           try traverse(arg)
                           finally absolved = absolved.tail
                         }
-                      case _ => super.traverse(t)
+                      case _ => t.traverse(this)
                     }
                   case bind @ Bind(name, _) =>
                     def richLocation(sym: Symbol): String = sym.ownsString match {
@@ -2088,35 +2108,17 @@ abstract class RefChecks extends Transform {
                     }
                     for (shade <- bind.getAndRemoveAttachment[PatShadowAttachment]) {
                       val shadowed = shade.shadowed
-                      if (!absolved.contains(name) && !bind.symbol.hasTransOwner(shadowed.accessedOrSelf) && checkShadowed(shadowed)(selSym))
+                      if (!absolved.contains(name) && !bind.symbol.hasTransOwner(shadowed.accessedOrSelf) && checkShadowed(shadowed))
                         refchecksWarning(bind.pos, s"Name $name is already introduced in an enclosing scope as ${richLocation(shadowed)}. Did you intend to match it using backquoted `$name`?", WarningCategory.OtherShadowing)
 
                     }
-                  case _ => super.traverse(t)
+                  case _ => t.traverse(this)
                 }
               }
-              traverser.traverse(p)
+              traverser(p)
             }
             // check the patterns for unfriendly shadowing, patvars bearing PatShadowAttachment
-            def checkShadowingPatternVars(): Unit =
-              selector match {
-                // or for `(x, y) match case p(x, y) =>` check the corresponding args
-                case treeInfo.Applied(Select(core, nme.apply), _, tupleArgs :: Nil) if isTupleSymbol(core.symbol.companion) =>
-                  for (cdef <- cases)
-                    cdef.pat match {
-                      case Apply(_, args) if sameLength(args, tupleArgs) =>
-                        foreach2(args, tupleArgs)((arg, sel) => check(arg, notNull(sel.symbol)))
-                      case UnApply(_, args) if sameLength(args, tupleArgs) =>
-                        foreach2(args, tupleArgs)((arg, sel) => check(arg, notNull(sel.symbol)))
-                      case p => check(p, selectorSymbol)
-                    }
-                // or for `tp.dealiased match case tp =>` check `tp` if it looks like a derived value, but not `this.x` or `x.asInstanceOf`
-                case treeInfo.Applied(Select(core, _), _, _) if core.symbol != null && !core.symbol.isThisSym && selector.tpe <:< core.tpe.widen =>
-                  for (cdef <- cases) check(cdef.pat, core.symbol)
-                case _ =>
-                  for (cdef <- cases) check(cdef.pat, selectorSymbol)
-              }
-            if (settings.warnPatternShadow) checkShadowingPatternVars()
+            if (settings.warnPatternShadow) for (cdef <- cases) checkPattern(cdef.pat)
             tree
           case _ => tree
         }
