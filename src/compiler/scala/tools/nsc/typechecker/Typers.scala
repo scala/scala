@@ -18,7 +18,7 @@ import scala.annotation.{tailrec, unused}
 import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
-import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics, StringContextStripMarginOps}
+import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics}
 import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}, WarningCategory.Scala3Migration
 import scala.util.chaining._
 import symtab.Flags._

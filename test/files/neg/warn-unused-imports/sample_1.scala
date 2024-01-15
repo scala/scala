@@ -1,3 +1,4 @@
+// scalac: -Werror -Wunused:imports
 
 import language._
 

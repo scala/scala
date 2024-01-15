@@ -127,12 +127,10 @@ trait Implicits extends splain.SplainData {
     if (settings.areStatisticsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
     if (result.isSuccess && settings.lintImplicitRecursion && result.tree.symbol != null) {
-      val s =
-        if (result.tree.symbol.isAccessor) result.tree.symbol.accessed
-        else if (result.tree.symbol.isModule) result.tree.symbol.moduleClass
-        else result.tree.symbol
+      val rts = result.tree.symbol
+      val s = if (rts.isAccessor) rts.accessed else if (rts.isModule) rts.moduleClass else rts
       if (s != NoSymbol && context.owner.hasTransOwner(s))
-        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}", WarningCategory.WFlagSelfImplicit)
+        context.warning(result.tree.pos, s"Implicit resolves to enclosing $rts", WarningCategory.WFlagSelfImplicit)
     }
     implicitSearchContext.emitImplicitDictionary(result)
   }
@@ -196,9 +194,8 @@ trait Implicits extends splain.SplainData {
    *                  that were instantiated by the winning implicit.
    *  @param undetparams undetermined type parameters
    */
-  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol]) {
-    override def toString = "SearchResult(%s, %s)".format(tree,
-      if (subst.isEmpty) "" else subst)
+  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol], val implicitInfo: ImplicitInfo = null) {
+    override def toString = s"SearchResult($tree, ${if (subst.isEmpty) "" else subst})"
 
     def isFailure          = false
     def isAmbiguousFailure = false
@@ -225,7 +222,7 @@ trait Implicits extends splain.SplainData {
    *  @param   pre    The prefix type of the implicit
    *  @param   sym    The symbol of the implicit
    */
-  class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
+  class ImplicitInfo (val name: Name, val pre: Type, val sym: Symbol, val importInfo: ImportInfo = null, val importSelector: ImportSelector = null) {
     private[this] var tpeCache: Type = null
     private[this] var depolyCache: Type = null
     private[this] var isErroneousCache: TriState = TriState.Unknown
@@ -1207,8 +1204,12 @@ trait Implicits extends splain.SplainData {
           val savedInfos = undetParams.map(_.info)
           val typedFirstPending = {
             try {
-              if(isView || wildPtNotInstantiable || matchesPtInst(firstPending))
-                typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+              if (isView || wildPtNotInstantiable || matchesPtInst(firstPending)) {
+                val res = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+                if (res.isFailure) res
+                else
+                  new SearchResult(res.tree, res.subst, res.undetparams, firstPending)
+              }
               else SearchFailure
             } finally {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
@@ -1268,6 +1269,8 @@ trait Implicits extends splain.SplainData {
               s"\n Note: implicit ${invalidImplicits.head} is not applicable here because it comes after the application point and it lacks an explicit result type.${if (invalidImplicits.head.isModule) " An object can be written as a lazy val with an explicit type." else ""}"
             )
         }
+        else if (best.implicitInfo != null && best.implicitInfo.importInfo != null)
+          best.implicitInfo.importInfo.recordUsage(best.implicitInfo.importSelector, best.tree.symbol)
 
         best
       }

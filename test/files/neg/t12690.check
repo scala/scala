@@ -1,0 +1,6 @@
+t12690.scala:10: warning: Unused import
+  import A._ // missing unused warning (order of imports is significant)
+           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
