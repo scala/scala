@@ -3060,7 +3060,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // Note also that trait vals are modelled as getters, and thus that user-supplied code appears in their rhs.
     // Originally, it may have been an optimization to skip methods that were not user-defined (getters),
     // but it doesn't even exclude setters, contrary to its original comment (// exclude all accessors)
-    override def isSourceMethod  = !(this hasFlag STABLE)
+    override def isSourceMethod  = !hasStableFlag
 
     // unfortunately having the CASEACCESSOR flag does not actually mean you
     // are a case accessor (you can also be a field.)
