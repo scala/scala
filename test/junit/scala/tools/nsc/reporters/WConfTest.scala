@@ -242,7 +242,7 @@ class WConfTest extends BytecodeTesting {
     def check(s: String, ev: Version): Unit = Version.fromString(s) match {
       case pv: Version.ParseableVersion =>
         assertEquals(ev, pv.copy(orig = ""))
-      case nv: Version.NonParseableVersion =>
+      case _: Version.NonParseableVersion =>
         assertTrue(s"failed to parse $s, expected $ev", ev.isInstanceOf[Version.NonParseableVersion])
     }
 

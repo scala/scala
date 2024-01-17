@@ -323,7 +323,7 @@ private[internal] trait GlbLubs {
   }
 
   /** The least upper bound wrt <:< of a list of types */
-  protected[internal] def lub(ts: List[Type], depth: Depth): Type = {
+  protected[internal] def lub(ts0: List[Type], depth: Depth): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingTpe
       case List(t) => t
@@ -437,15 +437,15 @@ private[internal] trait GlbLubs {
       existentialAbstraction(tparams, dropIllegalStarTypes(lubType))
     }
     if (printLubs) {
-      println(indent + "lub of " + ts + " at depth "+depth)//debug
+      println(indent + "lub of " + ts0 + " at depth "+depth)//debug
       indent = indent + "  "
       assert(indent.length <= 100, "LUB is highly indented")
     }
     if (settings.areStatisticsEnabled) statistics.incCounter(nestedLubCount)
-    val res = lub0(ts)
+    val res = lub0(ts0)
     if (printLubs) {
       indent = indent stripSuffix "  "
-      println(indent + "lub of " + ts + " is " + res)//debug
+      println(indent + "lub of " + ts0 + " is " + res)//debug
     }
     res
   }
@@ -485,7 +485,7 @@ private[internal] trait GlbLubs {
 
   /** The greatest lower bound of a list of types (as determined by `<:<`), which have been normalized
     *  with regard to `elimSuper`. */
-  protected def glbNorm(ts: List[Type], depth: Depth): Type = {
+  protected def glbNorm(ts0: List[Type], depth: Depth): Type = {
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyTpe
       case List(t) => t
@@ -591,13 +591,13 @@ private[internal] trait GlbLubs {
         existentialAbstraction(tparams, glbType)
       } catch {
         case GlbFailure =>
-          if (ts forall (t => NullTpe <:< t)) NullTpe
+          if (ts0.forall(NullTpe <:< _)) NullTpe
           else NothingTpe
       }
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
     if (settings.areStatisticsEnabled) statistics.incCounter(nestedLubCount)
-    glb0(ts)
+    glb0(ts0)
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
   }
 
@@ -617,7 +617,7 @@ private[internal] trait GlbLubs {
 
     @tailrec
     def normalizeIter(ty: Type): PolyType = ty match {
-      case pt @ PolyType(tparams1, _) if sameLength(tparams1, tparamsHead) => pt
+      case pt @ PolyType(typeParams, _) if sameLength(typeParams, tparamsHead) => pt
       case tp =>
         val tpn = tp.normalize
         if (tp ne tpn) normalizeIter(tpn) else throw new NoCommonType(ptHead :: ptRest)

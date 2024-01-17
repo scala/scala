@@ -648,10 +648,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case BOOL_TAG   => BooleanTpe
         case 'L' =>
           def processInner(tp: Type): Type = tp match {
-            case TypeRef(pre, sym, args) if (!sym.isStatic) =>
-              typeRef(processInner(pre.widen), sym, args)
-            case _ =>
-              tp
+            case TypeRef(pre, sym, args) if !sym.isStatic => typeRef(processInner(pre.widen), sym, args)
+            case _ => tp
           }
           def processClassType(tp: Type): Type = tp match {
             case TypeRef(pre, classSym, args) =>
@@ -699,9 +697,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
               tp
           }
 
-          val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
-          assert(!classSym.isOverloaded, classSym.alternatives)
-          val classTpe = if (classSym eq ObjectClass) ObjectTpeJava else classSym.tpe_*
+          val classTpe = {
+            val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
+            assert(!classSym.isOverloaded, classSym.alternatives)
+            if (classSym eq ObjectClass) ObjectTpeJava else classSym.tpe_*
+          }
           var tpe = processClassType(processInner(classTpe))
           while (sig.charAt(index) == '.') {
             accept('.')

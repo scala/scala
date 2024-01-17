@@ -639,7 +639,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       else {
         // approximation is necessary for whitebox macros to guide type inference
         // read more in the comments for onDelayed below
-        val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+        val undetparams = tp collect { case tp1 if tp1.typeSymbol.isTypeParameter => tp1.typeSymbol }
         deriveTypeWithWildcards(undetparams)(tp)
       }
     }
@@ -809,9 +809,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
-          case ex: Throwable =>
+          case t: Throwable =>
             if (openMacros.nonEmpty) popMacroContext() // weirdly we started popping on an empty stack when refactoring fatalWarnings logic
-            val realex = ReflectionUtils.unwrapThrowable(ex)
+            val realex = ReflectionUtils.unwrapThrowable(t)
             realex match {
               case ex: InterruptedException => throw ex
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)

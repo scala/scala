@@ -137,19 +137,19 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     MethodBType(paramBTypes, resultType)
   }
 
-  def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
-    case Constant(mt: Type) =>
+  def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t.value match {
+    case mt: Type =>
       transformedType(mt) match {
         case mt1: MethodType =>
           methodBTypeFromMethodType(mt1, isConstructor = false).toASMType
-        case t =>
-          typeToBType(t).toASMType
+        case transformed =>
+          typeToBType(transformed).toASMType
       }
-    case c @ Constant(sym: Symbol) if sym.owner.isJavaDefined && sym.isStaticMember => staticHandleFromSymbol(sym)
-    case c @ Constant(sym: Symbol) => handleFromMethodSymbol(sym)
-    case c @ Constant(value: String) => value
-    case c @ Constant(value) if c.isNonUnitAnyVal => c.value.asInstanceOf[AnyRef]
-    case _ => reporter.error(pos, "Unable to convert static argument of ApplyDynamic into a classfile constant: " + t); null
+    case sym: Symbol if sym.owner.isJavaDefined && sym.isStaticMember => staticHandleFromSymbol(sym)
+    case sym: Symbol => handleFromMethodSymbol(sym)
+    case value: String => value
+    case value if t.isNonUnitAnyVal => value.asInstanceOf[AnyRef]
+    case _ => reporter.error(pos, s"Unable to convert static argument of ApplyDynamic into a classfile constant: $t"); null
   }
 
   def staticHandleFromSymbol(sym: Symbol): asm.Handle = {
@@ -233,8 +233,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           case SingleType(_, sym)      => primitiveOrClassToBType(sym)
           case ConstantType(_)         => typeToBType(t.underlying)
           case RefinedType(parents, _) => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b).get)
-          case AnnotatedType(_, t)     => typeToBType(t)
-          case ExistentialType(_, t)   => typeToBType(t)
+          case AnnotatedType(_, at)    => typeToBType(at)
+          case ExistentialType(_, et)  => typeToBType(et)
           case x                       => throw new MatchError(x)
         }
     }

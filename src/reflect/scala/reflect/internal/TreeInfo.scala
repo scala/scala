@@ -852,7 +852,7 @@ abstract class TreeInfo {
     def core: Tree = callee match {
       case TypeApply(fn, _)       => fn
       case AppliedTypeTree(fn, _) => fn
-      case tree                   => tree
+      case callee                 => callee
     }
 
     /** The type arguments of the `callee`.

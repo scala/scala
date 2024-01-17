@@ -646,7 +646,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // `case 1 | 2` is considered as two cases.
           def exceedsTwoCasesOrAlts = {
             // avoids traversing the entire list if there are more than 3 elements
-            def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
+            def lengthMax3(cases: List[List[TreeMaker]]): Int = cases match {
               case a :: b :: c :: _ => 3
               case cases            => cases.map {
                 case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)

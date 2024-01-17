@@ -71,7 +71,7 @@ class StackTraceTest {
     val res = s.linesIterator.toList
     assertEquals(9, res.length)
     assertTrue(res.exists(_.startsWith(CausedBy)))
-    assertEquals(2, res.collect { case s if s.startsWith(CausedBy) => s }.size)
+    assertEquals(2, res.filter(_.startsWith(CausedBy)).size)
   }
 
   // summary + one frame + elision times two with extra frame

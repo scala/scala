@@ -131,10 +131,11 @@ private[async] trait AnfTransform extends TransformUtils {
             case ld: LabelDef if ld.tpe.typeSymbol == definitions.BoxedUnitClass =>
               currentStats += ld
               literalBoxedUnit
-            case ld: LabelDef if ld.tpe.typeSymbol == definitions.UnitClass      =>
+            case ld: LabelDef if ld.tpe.typeSymbol == definitions.UnitClass =>
               currentStats += ld
               literalUnit
-            case expr                                                            => expr
+            case expr1 =>
+              expr1
           }
 
         case ValDef(mods, name, tpt, rhs) => atOwner(tree.symbol) {

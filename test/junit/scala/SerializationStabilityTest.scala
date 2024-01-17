@@ -85,9 +85,9 @@ object SerializationStability {
   def check[T <: AnyRef](stack: Array[StackTraceElement])(instance: => T)(prevResult: String, f: T => AnyRef = (x: T) => x): Unit = {
     val result = serialize(instance)
     overwrite match {
-      case Some(f) =>
+      case Some(ov) =>
         val lineNumberOfLiteralString = stack.apply(2).getLineNumber
-        patch(f, lineNumberOfLiteralString, prevResult, result)
+        patch(ov, lineNumberOfLiteralString, prevResult, result)
       case None =>
         if (!isCheckInitEnabled) {
           checkRoundTrip(instance)(f)

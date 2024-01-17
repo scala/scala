@@ -77,7 +77,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
         sym
       }
       deriveSymbolFromSource(tree) {
-        case tree @ ClassDef(mods, name, _, _) =>
+        case cdef @ ClassDef(mods, name, _, _) =>
           val existing = context.scope.lookup(name)
           val isRedefinition = (
                                existing.isType
@@ -90,10 +90,10 @@ trait MacroAnnotationNamers { self: Analyzer =>
                                )
           val clazz: Symbol = {
             if (isRedefinition) {
-              updatePosFlags(existing, tree.pos, mods.flags)
-              setPrivateWithin(tree, existing)
+              updatePosFlags(existing, cdef.pos, mods.flags)
+              setPrivateWithin(cdef, existing)
               clearRenamedCaseAccessors(existing)
-              tree.symbol = existing
+              cdef.symbol = existing
               existing
             }
             else coreCreateAssignAndEnterSymbol setFlag inConstructorFlag
@@ -111,7 +111,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
             assert(clazz.name.toString.indexOf('(') < 0, clazz.name)  // )
           }
           clazz
-        case tree @ ModuleDef(mods, name, _) =>
+        case mdef @ ModuleDef(mods, name, _) =>
           var m: Symbol = context.scope lookupModule name
           val moduleFlags = mods.flags | MODULE
           // TODO: inCurrentScope(m) check that's present in vanilla Namer is omitted here
@@ -128,18 +128,18 @@ trait MacroAnnotationNamers { self: Analyzer =>
               val packageScope = m.enclosingPackageClass.rawInfo.decls
               packageScope.filter(_.owner != m.enclosingPackageClass).toList.foreach(packageScope unlink _)
             }
-            updatePosFlags(m, tree.pos, moduleFlags)
-            setPrivateWithin(tree, m)
-            m.moduleClass andAlso (setPrivateWithin(tree, _))
+            updatePosFlags(m, mdef.pos, moduleFlags)
+            setPrivateWithin(mdef, m)
+            m.moduleClass andAlso (setPrivateWithin(mdef, _))
             context.unit.synthetics -= m
-            tree.symbol = m
+            mdef.symbol = m
           }
           else {
             m = coreCreateAssignAndEnterSymbol
             m.moduleClass setFlag moduleClassFlags(moduleFlags)
-            setPrivateWithin(tree, m.moduleClass)
+            setPrivateWithin(mdef, m.moduleClass)
           }
-          m.moduleClass setInfo namerOf(m).moduleClassTypeCompleter(tree)
+          m.moduleClass setInfo namerOf(m).moduleClassTypeCompleter(mdef)
           if (m.isTopLevel && !m.hasPackageFlag) {
             m.moduleClass.associatedFile = contextFile
             currentRun.symSource(m) = m.moduleClass.sourceFile

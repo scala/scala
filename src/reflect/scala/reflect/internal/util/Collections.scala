@@ -86,11 +86,11 @@ trait Collections {
   }
 
   final def collectFirst[A, B](as: List[A])(pf: PartialFunction[A, B]): Option[B] = {
-    @tailrec
-    def loop(rest: List[A]): Option[B] = rest match {
-      case Nil => None
-      case a :: as if pf.isDefinedAt(a) => Some(pf(a))
-      case a :: as => loop(as)
+    def loop(as: List[A]): Option[B] = as match {
+      case a :: as =>
+        if (pf.isDefinedAt(a)) Some(pf(a))
+        else loop(as)
+      case _ => None
     }
     loop(as)
   }

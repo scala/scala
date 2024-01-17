@@ -117,7 +117,7 @@ trait GenTrees {
                 abort("free var local to the reifee, should have already been inlined by Metalevels: " + inlinedSymtab.symDef(sym))
               state.symtab ++= inlinedSymtab
               rtree
-            case tree =>
+            case _ =>
               val migrated = Apply(Select(splicee, nme.in), List(Ident(nme.MIRROR_SHORT)))
               Select(migrated, nme.tree)
           }

@@ -69,7 +69,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   def dynamicContext_=(ctx: ScriptContext): Unit = intp.call("set", ctx)
 
   def dynamicContext: ScriptContext = intp.call("value") match {
-    case Right(ctx: ScriptContext) => ctx
+    case Right(scriptctx: ScriptContext) => scriptctx
     case Left(e) => throw e
     case Right(other) => throw new ScriptException(s"Unexpected value for context: $other")
   }

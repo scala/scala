@@ -1,0 +1,21 @@
+t11850.scala:9: warning: Name x is already introduced in an enclosing scope as value x in trait T. Did you intend to match it using backquoted `x`?
+      case x   => 1     // warn
+           ^
+t11850.scala:28: warning: Name x is already introduced in an enclosing scope as value x in class CT. Did you intend to match it using backquoted `x`?
+      case x   => 1     // warn
+           ^
+t11850.scala:135: warning: Name self is already introduced in an enclosing scope as value self in class Selfie. Did you intend to match it using backquoted `self`?
+    case (x, self) => x
+             ^
+t11850.scala:202: warning: Name x is already introduced in an enclosing scope as value x at line 201. Did you intend to match it using backquoted `x`?
+    case x => x.toString
+         ^
+t11850.scala:224: warning: Name c is already introduced in an enclosing scope as value c in class pattern matches occasionally appear in pattern-matching anonymous functions. Did you intend to match it using backquoted `c`?
+  def f = c.collect { case c if c.flag => c.toString }
+                           ^
+t11850.scala:233: warning: Name x is already introduced in an enclosing scope as object x in object is it worth qualifying what kind of term. Did you intend to match it using backquoted `x`?
+      case x   => 1
+           ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

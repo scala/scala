@@ -217,6 +217,7 @@ trait Warnings {
     val ArgDiscard             = LintWarning("arg-discard",               "-Wvalue-discard for adapted arguments.")
     val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
     val NamedBooleans          = LintWarning("named-booleans",            "Boolean literals should be named args unless param is @deprecatedName.")
+    val PatternShadow          = LintWarning("pattern-shadow",            "Pattern variable id is also a term in scope.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -254,6 +255,7 @@ trait Warnings {
   def lintArgDiscard             = lint.contains(ArgDiscard)
   def lintIntDivToFloat          = lint.contains(IntDivToFloat)
   def lintNamedBooleans          = lint.contains(NamedBooleans)
+  def warnPatternShadow          = lint.contains(PatternShadow)
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

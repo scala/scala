@@ -281,15 +281,10 @@ abstract class UnPickler {
       val owner        = readSymbolRef()
       val flags        = pickledToRawFlags(readLongNat())
 
-      var privateWithin: Symbol = null
-      var inforef: Int = 0
-      readNat() match {
-        case index if isSymbolRef(index) =>
-          privateWithin = at(index, () => readSymbol())
-          inforef = readNat()
-        case index =>
-          privateWithin = NoSymbol
-          inforef = index
+      val (privateWithin: Symbol, inforef: Int) = {
+        val index = readNat()
+        if (isSymbolRef(index)) (at(index, () => readSymbol()), readNat())
+        else (NoSymbol, index)
       }
 
       def isModuleFlag      = (flags & MODULE) != 0L

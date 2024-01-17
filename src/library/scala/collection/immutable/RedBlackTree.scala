@@ -31,8 +31,8 @@ private[collection] object RedBlackTree {
 
   def contains[A: Ordering](tree: Tree[A, _], x: A): Boolean = lookup(tree, x) ne null
   def get[A: Ordering, B](tree: Tree[A, B], x: A): Option[B] = lookup(tree, x) match {
-    case null => None
-    case tree => Some(tree.value)
+    case null  => None
+    case found => Some(found.value)
   }
 
   @tailrec

@@ -632,7 +632,7 @@ class ExtractAPI[GlobalType <: Global](
             xsbti.api.Annotated.of(processType(in, at.underlying), mkAnnotations(in, annots))
         }
       case rt: CompoundType   => structure(rt, rt.typeSymbol)
-      case t: ExistentialType => makeExistentialType(in, t)
+      case et: ExistentialType => makeExistentialType(in, et)
       case NoType =>
         Constants.emptyType // this can happen when there is an error that will be reported by a later phase
       case PolyType(typeParams, resultType) =>

@@ -314,9 +314,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
     startgen: Gen,
     ct: TrieMap[K, V]): Option[V] = {
 
-    val m = GCAS_READ(ct) // use -Yinline!
-
-    m match {
+    GCAS_READ(ct) match {
       case cn: CNode[K, V] =>
         val idx = (hc >>> lev) & 0x1f
         val bmp = cn.bitmap
@@ -343,8 +341,8 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
           if (res == None || (res eq null)) res
           else {
             @tailrec def cleanParent(nonlive: AnyRef): Unit = {
-              val pm = parent.GCAS_READ(ct)
-              pm match {
+              val cn = parent.GCAS_READ(ct)
+              cn match {
                 case cn: CNode[K, V] =>
                   val idx = (hc >>> (lev - 5)) & 0x1f
                   val bmp = cn.bitmap

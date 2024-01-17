@@ -114,7 +114,7 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     def mkAnnotation(tree: Tree): Tree = tree match {
-      case SyntacticNew(Nil, SyntacticApplied(SyntacticAppliedType(_, _), _) :: Nil, noSelfType, Nil) =>
+      case SyntacticNew(Nil, SyntacticApplied(SyntacticAppliedType(_, _), _) :: Nil, `noSelfType`, Nil) =>
         tree
       case _ =>
         throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation." +
@@ -876,10 +876,10 @@ trait ReificationSupport { self: SymbolTable =>
     // drop potential @scala.unchecked annotation
     protected object MaybeUnchecked {
       def unapply(tree: Tree): Some[Tree] = tree match {
-        case Annotated(SyntacticNew(Nil, ScalaDot(tpnme.unchecked) :: Nil, noSelfType, Nil), annottee) =>
+        case Annotated(SyntacticNew(Nil, ScalaDot(tpnme.unchecked) :: Nil, `noSelfType`, Nil), annottee) =>
           Some(annottee)
         case Typed(annottee, MaybeTypeTreeOriginal(
-          Annotated(SyntacticNew(Nil, ScalaDot(tpnme.unchecked) :: Nil, noSelfType, Nil), _))) =>
+          Annotated(SyntacticNew(Nil, ScalaDot(tpnme.unchecked) :: Nil, `noSelfType`, Nil), _))) =>
           Some(annottee)
         case annottee => Some(annottee)
       }
@@ -904,7 +904,7 @@ trait ReificationSupport { self: SymbolTable =>
         case Typed(
                Block(
                  List(ClassDef(clsMods, tpnme.ANON_FUN_NAME, Nil, Template(
-                   List(abspf: TypeTree, ser: TypeTree), noSelfType, List(
+                   List(abspf: TypeTree, ser: TypeTree), `noSelfType`, List(
                      DefDef(_, nme.CONSTRUCTOR, _, _, _, _),
                      DefDef(_, nme.applyOrElse, _, _, _,
                        Match(_, cases :+

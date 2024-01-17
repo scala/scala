@@ -463,8 +463,8 @@ trait Erasure {
        *  - Otherwise, return `NoSymbol`.
        */
       def arrayUpperBound(tp: Type): Symbol = tp.dealias match {
-        case tp: TypeRef if tp.sym.isClass =>
-          val cls = tp.sym
+        case TypeRef(_, sym, _) if sym.isClass =>
+          val cls = sym
           // Only a few classes have both primitives and references as subclasses.
           if ((cls eq AnyClass) || (cls eq AnyValClass) || (cls eq SingletonClass))
             NoSymbol
@@ -477,11 +477,11 @@ trait Erasure {
           arrayUpperBound(unwrapped)
         case tp @ DottyAndType() =>
           // Find first `p` in `parents` where `arrayUpperBound(p) ne NoSymbol`
-          @tailrec def loop(tps: List[Type]): Symbol = tps match {
-            case tp :: tps1 =>
-              val ub = arrayUpperBound(tp)
+          def loop(tps: List[Type]): Symbol = tps match {
+            case p :: tps =>
+              val ub = arrayUpperBound(p)
               if (ub ne NoSymbol) ub
-              else loop(tps1)
+              else loop(tps)
             case nil => NoSymbol
           }
           loop(tp.parents)
@@ -495,15 +495,15 @@ trait Erasure {
       def isOpaque(sym: Symbol) = sym.isScala3Defined && !sym.isClass && sym.hasAttachment[DottyOpaqueTypeAlias]
 
       tp.dealias match {
-        case tp: TypeRef if !isOpaque(tp.sym) =>
-          !tp.sym.isClass &&
-          !tp.sym.isJavaDefined && // In Java code, Array[T] can never erase to Object
+        case tp @ TypeRef(_, sym, _) if !isOpaque(sym) =>
+          !sym.isClass &&
+          !sym.isJavaDefined && // In Java code, Array[T] can never erase to Object
           !fitsInJVMArray(tp)
         case DottyTypeProxy(unwrapped) =>
           isGenericArrayElement(unwrapped)
         case tp @ DottyAndType() =>
           tp.parents.forall(isGenericArrayElement)
-        case tp =>
+        case _ =>
           false
       }
 

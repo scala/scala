@@ -2046,6 +2046,80 @@ abstract class RefChecks extends Transform {
             if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr)
 
             tree
+          case Match(selector, cases) =>
+            // only warn if it could be put in backticks in a pattern
+            def isWarnable(sym: Symbol): Boolean =
+              sym != null && sym.exists &&
+              !sym.hasPackageFlag && sym.isStable && !isByName(sym) &&
+              !sym.hasAttachment[PatVarDefAttachment.type] // val (_, v) = with one var is shadowed in desugaring
+              //!toCheck.isSynthetic // self-type symbols are synthetic: value self (<synthetic>), do warn
+
+            class CheckSelector extends InternalTraverser {
+              var selectorSymbols: List[Symbol] = null
+              override def traverse(t: Tree): Unit = {
+                val include = t match {
+                  case _: This    => true // !t.symbol.isStable
+                  case _: SymTree => isWarnable(t.symbol)
+                  case _          => false
+                }
+                if (include) selectorSymbols ::= t.symbol
+                t.traverse(this)
+              }
+              // true if the shadowed toCheck appears in the selector expression
+              def implicatesSelector(toCheck: Symbol): Boolean = {
+                if (selectorSymbols == null) {
+                  selectorSymbols = Nil
+                  apply(selector)
+                }
+                selectorSymbols.exists(sym => sym.eq(toCheck) || sym.accessedOrSelf.eq(toCheck.accessedOrSelf) ||
+                  toCheck.isThisSym && toCheck.owner == sym) // self match { case self: S => }, selector C.this is class symbol
+              }
+            }
+            val checkSelector = new CheckSelector
+            // true to warn about shadowed when selSym is the scrutinee
+            def checkShadowed(shadowed: Symbol): Boolean = {
+              def checkShadowedSymbol(toCheck: Symbol): Boolean =
+                isWarnable(toCheck) && !checkSelector.implicatesSelector(toCheck)
+
+              if (shadowed.isOverloaded) shadowed.alternatives.exists(checkShadowedSymbol)
+              else checkShadowedSymbol(shadowed)
+            }
+            // warn if any checkable pattern var shadows, in the context of the selector,
+            // or for `tree match case Apply(fun, args) =>` check whether names in args equal names of fun.params
+            def checkPattern(p: Tree): Unit = {
+              val traverser = new InternalTraverser {
+                // names absolved of shadowing because it is a "current" parameter (of a case class, etc)
+                var absolved: List[Name] = Nil
+                override def traverse(t: Tree): Unit = t match {
+                  case Apply(_, args) =>
+                    treeInfo.dissectApplied(t).core.tpe match {
+                      case MethodType(ps, _) =>
+                        foreach2(ps, args) { (p, arg) =>
+                          absolved ::= p.name
+                          try traverse(arg)
+                          finally absolved = absolved.tail
+                        }
+                      case _ => t.traverse(this)
+                    }
+                  case bind @ Bind(name, _) =>
+                    def richLocation(sym: Symbol): String = sym.ownsString match {
+                      case ""   => val n = sym.pos.line; if (n > 0) s"$sym at line $n" else sym.fullLocationString
+                      case owns => s"$sym in $owns"
+                    }
+                    for (shade <- bind.getAndRemoveAttachment[PatShadowAttachment]) {
+                      val shadowed = shade.shadowed
+                      if (!absolved.contains(name) && !bind.symbol.hasTransOwner(shadowed.accessedOrSelf) && checkShadowed(shadowed))
+                        refchecksWarning(bind.pos, s"Name $name is already introduced in an enclosing scope as ${richLocation(shadowed)}. Did you intend to match it using backquoted `$name`?", WarningCategory.OtherShadowing)
+
+                    }
+                  case _ => t.traverse(this)
+                }
+              }
+              traverser(p)
+            }
+            // check the patterns for unfriendly shadowing, patvars bearing PatShadowAttachment
+            if (settings.warnPatternShadow) for (cdef <- cases) checkPattern(cdef.pat)
+            tree
           case _ => tree
         }
 

@@ -84,18 +84,18 @@ trait Contexts { self: Analyzer =>
       var unused = List.empty[Culled]
       @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
         infos match {
-          case (info, owner) :: rest =>
+          case (info, owner) :: infos =>
             val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
             def checkSelectors(selectors: List[ImportSelector]): Unit =
               selectors match {
-                case selector :: rest =>
-                  checkSelectors(rest)
+                case selector :: selectors =>
+                  checkSelectors(selectors)
                   if (!selector.isMask && !used(selector))
                     unused ::= ((selector, info, owner))
                 case _ =>
               }
             checkSelectors(info.tree.selectors)
-            loop(rest)
+            loop(infos)
           case _ =>
         }
       loop(infos0)

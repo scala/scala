@@ -2719,6 +2719,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
                    isPrimaryConstructor))        ("primary constructor",  "constructor",     "PCTOR")
         else if (isClassConstructor)             ("constructor",          "constructor",     "CTOR")
         else if (isMethod)                       ("method",               "method",          "METH")
+        //else if (isValueParameter)               ("value parameter",      "parameter",       "VAL")
         else if (isTerm)                         ("value",                "value",           "VAL")
         else                                     ("",                     "",                "???")
 
@@ -2813,8 +2814,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  for backward compatibility reasons.
      */
     def locationString: String = ownsString match {
-      case ""   => ""
-      case s    => " in " + s
+      case "" => ""
+      case s  => s" in $s"
     }
     def fullLocationString: String = toString + locationString
     def signatureString: String    = if (hasRawInfo) infoString(rawInfo) else "<_>"
@@ -2857,8 +2858,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     private def defStringCompose(infoString: String) = compose(
-      flagString,
-      keyString,
+      compose(flagString, keyString),
       varianceString + nameString + infoString + flagsExplanationString
     )
 
@@ -2877,8 +2877,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def defStringSeenAs(info: Type) = defStringCompose(infoString(info))
 
-    /** Concatenate strings separated by spaces */
-    private def compose(ss: String*) = ss filter (_ != "") mkString " "
+    /** Concatenate non-empty strings separated by a space. */
+    private def compose(x: String, y: String): String =
+      if (x.isEmpty) y else if (y.isEmpty) x else s"$x $y"
 
     def isSingletonExistential: Boolean =
       nme.isSingletonName(name)

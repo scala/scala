@@ -88,6 +88,10 @@ trait StdAttachments {
    */
   case object NoWarnAttachment extends PlainAttachment
 
+  /** A pattern binding that shadows a symbol in scope. Removed by refchecks.
+   */
+  case class PatShadowAttachment(shadowed: Symbol)
+
   /** Indicates that a `ValDef` was synthesized from a pattern definition, `val P(x)`.
    */
   case object PatVarDefAttachment extends PlainAttachment

@@ -230,23 +230,21 @@ trait BaseTypeSeqs {
           i += 1
         }
         var minTypes: List[Type] = List()
-        def alreadyInMinTypes(tp: Type): Boolean = {
-          @annotation.tailrec def loop(tps: List[Type]): Boolean = tps match {
-            case x :: xs => (tp =:= x) || loop(xs)
-            case _       => false
+        def updateInMinTypes(tp: Type): Unit = {
+          def loop(tps: List[Type]): Boolean = tps match {
+            case x :: tps => (tp =:= x) || loop(tps)
+            case _        => false
           }
-          loop(minTypes)
+          if (!loop(minTypes))
+            minTypes ::= tp
         }
 
         i = 0
         while (i < nparents) {
           if (nextTypeSymbol(i) == minSym) {
             nextRawElem(i) match {
-              case RefinedType(variants, decls) =>
-                for (tp <- variants)
-                  if (!alreadyInMinTypes(tp)) minTypes ::= tp
-              case tp =>
-                if (!alreadyInMinTypes(tp)) minTypes ::= tp
+              case RefinedType(variants, _) => variants.foreach(updateInMinTypes)
+              case ntp => updateInMinTypes(ntp)
             }
             index(i) = index(i) + 1
           }

@@ -77,16 +77,17 @@ trait AllocationTest {
   }
 
   private def showAllocations(allocations: List[Long]): String = allocations match {
-    case Nil       => ""
-    case a :: tail =>
+    case a :: allocations =>
       val sb = new StringBuilder
       def append(a: Long, count: Int) = sb.append(s" allocation $a ($count times)\n")
-      @tailrec def loop(allocations: List[Long], last: Long, count: Int): String = allocations match {
-        case Nil                    => append(last, count).result()
-        case a :: tail if a != last => append(a, count); loop(tail, a, 1)
-        case a :: tail              => loop(tail, a, count + 1)
+      def loop(allocations: List[Long], last: Long, count: Int): String = allocations match {
+        case Nil => append(last, count).result()
+        case b :: allocations =>
+          val n = if (b != last) { append(b, count); 1 } else count + 1
+          loop(allocations, b, n)
       }
-      loop(tail, a, 1)
+      loop(allocations, a, 1)
+    case _         => ""
   }
 
   /** Asserts that the execution of `fn` allocates `size` bytes or less. */

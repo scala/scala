@@ -1128,7 +1128,7 @@ trait StdNames {
     def primitiveMethodName(name: Name): TermName =
       primitiveInfixMethodName(name) match {
         case NO_NAME => primitivePostfixMethodName(name)
-        case name => name
+        case ok_name => ok_name
       }
 
     /** Translate a String into a list of simple TypeNames and TermNames.

@@ -91,10 +91,10 @@ abstract class TreeBuilder {
   /** Create tree for a pattern alternative */
   def makeAlternative(ts: List[Tree]): Tree = {
     def alternatives(t: Tree): List[Tree] = t match {
-      case Alternative(ts)  => ts
-      case _                => List(t)
+      case Alternative(alts) => alts
+      case _                 => List(t)
     }
-    Alternative(ts flatMap alternatives)
+    Alternative(ts.flatMap(alternatives))
   }
 
   /** Create tree for case definition <case pat if guard => rhs> */
