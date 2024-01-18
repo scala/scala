@@ -327,6 +327,18 @@ class NumericRangeTest {
     assertTrue(dropped.end == range.end && dropped.step == range.step && dropped.start == (amount * step) + range.start)
   }
 
+  @Test
+  def wideLongRangeLengthShouldCrash() = {
+    assertThrows[IllegalArgumentException](NumericRange(1L, Long.MinValue, -1L).length)
+    assertThrows[IllegalArgumentException](NumericRange(0L, Long.MinValue, -1L).length)
+    // make sure everything's fine when we approach 0 a bit
+    assertThrows[IllegalArgumentException](NumericRange(1L, Long.MinValue + 1, -1L).length)
+    assertThrows[IllegalArgumentException](NumericRange(0L, Long.MinValue + 1, -1L).length)
+    // make sure everything's fine after a whole cycle of Int.MaxValue
+    assertThrows[IllegalArgumentException](NumericRange(1L, Long.MinValue + Int.MaxValue, -1L).length)
+    assertThrows[IllegalArgumentException](NumericRange(0L, Long.MinValue + Int.MaxValue, -1L).length)
+  }
+
 }
 
 object NumericRangeTest {
