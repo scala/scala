@@ -40,3 +40,8 @@ This license is used by the following third-party libraries:
 This license is used by the following third-party libraries:
 
   * jQuery
+
+### [Mozilla Public License](https://opensource.org/license/mpl-2-0/)
+This license is used by the following third-party libraries:
+
+  * directories-jvm
