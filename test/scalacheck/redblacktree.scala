@@ -63,7 +63,7 @@ abstract class RedBlackTreeTest(tname: String) extends Properties(tname) with Re
   def genInput: Gen[(Tree[String, Int], ModifyParm, Tree[String, Int])] = for {
     tree <- genTree
     parm <- genParm(tree)
-  } yield (tree, parm, modify(tree, parm))
+  } yield (tree, parm, validate(modify(tree, parm)))
 
   def setup(invariant: Tree[String, Int] => Boolean): Prop = forAll(genInput) { case (tree, parm, newTree) =>
     invariant(newTree)
@@ -348,7 +348,7 @@ abstract class BulkTest(pName: String) extends RedBlackTreeTest(pName) {
     l1.foreach { case i => t1 = update(t1, ""+i, i, false) }
     var t2: Tree[String, Int] = null
     l2.foreach { case i => t2 = update(t2, ""+i, i, false) }
-    val t3 = modify(t1, t2)
+    val t3 = validate(modify(t1, t2))
     (t1, t2, t3)
   }
 
