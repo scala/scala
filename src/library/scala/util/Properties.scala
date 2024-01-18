@@ -92,7 +92,7 @@ private[scala] trait PropertiesTrait {
   /** A verbose alternative to [[versionNumberString]].
    */
   val versionString         = s"version ${scalaPropOrElse("version.number", "(unknown)")}"
-  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2023, LAMP/EPFL and Lightbend, Inc.")
+  val copyrightString       = scalaPropOrElse("copyright.string", "Copyright 2002-2024, LAMP/EPFL and Lightbend, Inc.")
 
   /** This is the encoding to use reading in source files, overridden with -encoding.
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
