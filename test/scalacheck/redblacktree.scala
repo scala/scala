@@ -65,7 +65,7 @@ abstract class RedBlackTreeTest extends Properties("RedBlackTree") {
   def genInput: Gen[(Tree[String, Int], ModifyParm, Tree[String, Int])] = for {
     tree <- genTree
     parm <- genParm(tree)
-  } yield (tree, parm, modify(tree, parm))
+  } yield (tree, parm, validate(modify(tree, parm)))
 }
 
 trait RedBlackTreeInvariants {
