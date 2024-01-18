@@ -1011,6 +1011,8 @@ object ILoop {
     def doCompletion: Boolean = delegate.doCompletion
     def haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
 
+    def xsource: String = ""
+
     override val colorOk = delegate.colorOk
 
     // No truncated output, because the result changes on Windows because of line endings
