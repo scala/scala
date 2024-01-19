@@ -969,6 +969,9 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
     scriptedBufferLog := true,
 
     scriptedLaunchOpts ++= Seq(
+      // work around https://github.com/sbt/sbt/issues/7463
+      // we can remove it once we're on an sbt version with a fix.
+      "-Dsbt.io.jdktimestamps=true",
       "-Dplugin.scalaVersion=" + version.value,
       "-Dsbt.boot.directory=" + (target.value / ".sbt-scripted").getAbsolutePath, // Workaround sbt/sbt#3469
       "-Dscripted.common=" + (baseDirectory.value / "common.sbt.template").getAbsolutePath,
