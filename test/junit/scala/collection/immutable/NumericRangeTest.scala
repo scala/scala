@@ -327,6 +327,86 @@ class NumericRangeTest {
     assertTrue(dropped.end == range.end && dropped.step == range.step && dropped.start == (amount * step) + range.start)
   }
 
+  @Test
+  def indexOfAndLastIndexOfShouldBeCorrect(): Unit = {
+
+    // For a range, because every value exists at most once, without the optional from/end param,
+    // indexOf and lastIndexOf should be equal.
+
+    // General checks.
+    assertEquals(0, NumericRange(0, 1, 1).indexOf(0))
+    assertEquals(0, NumericRange(0, 1, 1).lastIndexOf(0))
+
+    assertEquals(0, NumericRange.inclusive(0, 0, 1).indexOf(0))
+    assertEquals(0, NumericRange.inclusive(0, 0, 1).lastIndexOf(0))
+
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).indexOf(300))
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).lastIndexOf(300))
+
+    assertEquals(Int.MaxValue - 1, NumericRange(0, Int.MaxValue, 1).indexOf(Int.MaxValue - 1))
+    assertEquals(Int.MaxValue - 1, NumericRange(0, Int.MaxValue, 1).lastIndexOf(Int.MaxValue - 1))
+
+    assertEquals(300 / 5, NumericRange(0, Int.MaxValue, 5).indexOf(300))
+    assertEquals(300 / 5, NumericRange(0, Int.MaxValue, 5).lastIndexOf(300))
+
+    assertEquals(700, NumericRange(-1000, 0, 1).indexOf(-300))
+    assertEquals(700, NumericRange(-1000, 0, 1).lastIndexOf(-300))
+
+    assertEquals(350, NumericRange(-1000, 0, 2).indexOf(-300))
+    assertEquals(350, NumericRange(-1000, 0, 2).lastIndexOf(-300))
+
+    // If a value is below or over the limits of the range, or fall between steps, should be -1
+    assertEquals(-1, NumericRange(0, 10, 1).indexOf(20))
+    assertEquals(-1, NumericRange(0, 10, 1).lastIndexOf(20))
+
+    assertEquals(-1, NumericRange(0, 10, 2).indexOf(20))
+    assertEquals(-1, NumericRange(0, 10, 2).lastIndexOf(20))
+
+    assertEquals(-1, NumericRange(0, 10, 1).indexOf(-5))
+    assertEquals(-1, NumericRange(0, 10, 1).lastIndexOf(-5))
+
+    assertEquals(-1, NumericRange(0, 10, 2).indexOf(1))
+    assertEquals(-1, NumericRange(0, 10, 2).lastIndexOf(1))
+
+    assertEquals(-1, NumericRange(0, 10, 2).indexOf(3))
+    assertEquals(-1, NumericRange(0, 10, 2).lastIndexOf(3))
+
+    // indexOf should return -1 if the index is less than the from value
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).indexOf(300, 100))
+    assertEquals(-1, NumericRange(0, Int.MaxValue, 1).indexOf(300, 400))
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).indexOf(300, 300))
+
+    assertEquals(150, NumericRange(0, Int.MaxValue, 2).indexOf(300, 140))
+    assertEquals(-1, NumericRange(0, Int.MaxValue, 2).indexOf(300, 160))
+
+    // lastIndexOf should return -1 if the index is more than the end value
+    assertEquals(-1, NumericRange(0, Int.MaxValue, 1).lastIndexOf(300, 100))
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).lastIndexOf(300, 400))
+    assertEquals(300, NumericRange(0, Int.MaxValue, 1).lastIndexOf(300, 300))
+
+    assertEquals(-1, NumericRange(0, Int.MaxValue, 2).lastIndexOf(300, 140))
+    assertEquals(150, NumericRange(0, Int.MaxValue, 2).lastIndexOf(300, 160))
+
+    // Sanity check - does it work with other types.
+    assertEquals(300 / 5, NumericRange(0L, Int.MaxValue.toLong, 5L).indexOf(300L))
+    assertEquals(300 / 5, NumericRange(0L, Int.MaxValue.toLong, 5L).lastIndexOf(300L))
+
+    assertEquals(300 / 5, NumericRange(BigInt(0), BigInt(Int.MaxValue), BigInt(5)).indexOf(BigInt(300)))
+    assertEquals(300 / 5, NumericRange(BigInt(0), BigInt(Int.MaxValue), BigInt(5)).lastIndexOf(BigInt(300)))
+
+    // indexOf different type returns -1
+    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).indexOf(300))
+    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).lastIndexOf(300))
+
+    /* Attempting an indexOf of a Range with more than Int.MaxValue elements always throws an error.
+    Not ideal, but this tests whether backwards compatibility is conserved. */
+    assertThrows[IllegalArgumentException](NumericRange(0L, Int.MaxValue.toLong + 1, 1L).indexOf(300L))
+    assertThrows[IllegalArgumentException](NumericRange(0L, Int.MaxValue.toLong + 1, 1L).lastIndexOf(300L))
+
+    assertThrows[IllegalArgumentException](NumericRange(Int.MinValue, Int.MaxValue, 1).indexOf(300))
+    assertThrows[IllegalArgumentException](NumericRange(Int.MinValue, Int.MaxValue, 1).lastIndexOf(300))
+  }
+
 }
 
 object NumericRangeTest {

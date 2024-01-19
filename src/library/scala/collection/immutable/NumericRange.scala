@@ -118,6 +118,38 @@ sealed class NumericRange[T](
     }
   }
 
+  private[this] def indexOfTyped(elem: T, from: Int): Int =
+    posOf(elem) match {
+      case pos if pos >= from => pos
+      case _                  => -1
+    }
+
+  final override def indexOf[B >: T](elem: B, from: Int): Int =
+    try indexOfTyped(elem.asInstanceOf[T], from)
+    catch { case _: ClassCastException => super.indexOf(elem, from) }
+
+  private[this] def lastIndexOfTyped(elem: T, end: Int): Int =
+    posOf(elem) match {
+      case pos if pos <= end => pos
+      case _                 => -1
+    }
+
+  final override def lastIndexOf[B >: T](elem: B, end: Int = length - 1): Int =
+    try lastIndexOfTyped(elem.asInstanceOf[T], end)
+    catch { case _: ClassCastException => super.lastIndexOf(elem, end) }
+
+  private[this] def posOf(i: T): Int =
+      /*
+      If i is in this NumericRange, its position can simply be calculated by taking the amount of values up till i.
+      NumericRange.count does this in an most efficient manner.
+      Note that the contains() method throws an exception if the range has more than Int.MaxValue elements, but so did
+      the original indexOf / lastIndexOf functions, so no functionality changed. */
+    if (contains(i)) {
+      /* Because of zero indexing, the count is always one higher than the index. This can be simply solved by setting
+      isInclusive = false. */
+      NumericRange.count(this.start, i, this.step, isInclusive = false)
+    } else -1
+
   // TODO: these private methods are straight copies from Range, duplicated
   // to guard against any (most likely illusory) performance drop.  They should
   // be eliminated one way or another.
