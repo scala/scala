@@ -1,0 +1,6 @@
+constant-multiply-overflow.scala:4: warning: Evaluation of a constant expression results in an arithmetic error: integer overflow
+  val long: Long = 100 * 1024 * 1024 * 1024
+                                     ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

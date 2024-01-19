@@ -155,7 +155,7 @@ abstract class ConstantFolder {
     case nme.GE  => Constant(x.intValue >= y.intValue)
     case nme.ADD => Constant(x.intValue + y.intValue)
     case nme.SUB => Constant(x.intValue - y.intValue)
-    case nme.MUL => Constant(x.intValue * y.intValue)
+    case nme.MUL => Constant(Math.multiplyExact(x.intValue, y.intValue))
     case nme.DIV => Constant(x.intValue / y.intValue)
     case nme.MOD => Constant(x.intValue % y.intValue)
     case _       => null
@@ -181,7 +181,7 @@ abstract class ConstantFolder {
     case nme.GE  => Constant(x.longValue >= y.longValue)
     case nme.ADD => Constant(x.longValue + y.longValue)
     case nme.SUB => Constant(x.longValue - y.longValue)
-    case nme.MUL => Constant(x.longValue * y.longValue)
+    case nme.MUL => Constant(Math.multiplyExact(x.longValue, y.longValue))
     case nme.DIV => Constant(x.longValue / y.longValue)
     case nme.MOD => Constant(x.longValue % y.longValue)
     case _       => null
