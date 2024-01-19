@@ -19,7 +19,7 @@ SBT_VERSION=`grep sbt.version $WORKSPACE/project/build.properties | sed -n 's/sb
 SBT_CMD=${SBT_CMD-sbt}
 # the jdktimestamps thing is to work around https://github.com/sbt/sbt/issues/7463 --
 # it can be removed again once we're on an sbt version with a fix
-SBT_CMD="$SBT_CMD -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18 -sbt-version $SBT_VERSION"
+SBT_CMD="$SBT_CMD -Dsbt.io.jdktimestamps=true -sbt-version $SBT_VERSION"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
