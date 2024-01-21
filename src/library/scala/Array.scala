@@ -123,7 +123,7 @@ object Array {
     */
   def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
     case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength, x.getClass)
     case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
