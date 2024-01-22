@@ -1256,7 +1256,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         }
         val reader = new TastyReader(TASTY, 0, TASTYUUIDLength)
         val expectedUUID = new UUID(reader.readUncompressedLong(), reader.readUncompressedLong())
-        val tastyUUID = new TastyHeaderUnpickler(TASTYBytes).readHeader()
+        val tastyUUID = new TastyHeaderUnpickler(TastyUnpickler.scala2CompilerConfig, TASTYBytes).readHeader()
         if (expectedUUID != tastyUUID) {
           loaders.warning(
             NoPosition,

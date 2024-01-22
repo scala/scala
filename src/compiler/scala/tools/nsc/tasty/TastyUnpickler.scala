@@ -13,7 +13,8 @@
 package scala.tools.nsc.tasty
 
 import scala.collection.mutable
-import scala.tools.tasty.{ErasedTypeRef, Signature, TastyFormat, TastyHeaderUnpickler, TastyName, TastyReader, TastyRefs}
+import scala.tools.tasty.{ErasedTypeRef, Signature, TastyName, TastyReader, TastyRefs}
+import scala.tools.tasty.{TastyFormat, TastyHeaderUnpickler, TastyVersion, UnpicklerConfig}
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
 import TastyName._
@@ -52,6 +53,54 @@ object TastyUnpickler {
     def apply(ref: NameRef): T = names(ref.index)
     def size: Int = names.size
   }
+
+  trait Scala2CompilerConfig extends UnpicklerConfig {
+
+    /** When Scala 3 is in an RC phase for a new minor version, we put here the TASTy of that Minor,
+     * otherwise it should be empty.
+     */
+    final val toolOverrides: List[TastyVersion] = List(TastyVersion(28, 4, 1) /* 3.4.0-RC4 */)
+
+    private def asScala3Compiler(version: TastyVersion): String =
+      if (version.major == 28) {
+        // scala 3.x.y series
+        if (version.experimental > 0)
+          // scenario here is someone using 3.4.0 to read 3.4.1-RC1-NIGHTLY, in this case, we should show 3.4 nightly.
+          s"the same nightly or snapshot Scala 3.${version.minor - 1} compiler"
+        else s"a Scala 3.${version.minor}.0 compiler or newer"
+      }
+      else if (version.experimental > 0) "the same Scala compiler" // unknown major version, just say same
+      else "a more recent Scala compiler" // unknown major version, just say later
+
+    /** The description of the upgraded scala compiler that can read the given TASTy version */
+    final def upgradeReaderHowTo(version: TastyVersion): String =
+      if (version.major == 28) {
+        // scala 3.x.y series
+        if (version.experimental > 0)
+          // scenario here is someone using 2.13.12 to read 3.4.1-RC1-NIGHTLY, in this case
+          // Scala 2.13 can not read it.
+          s"either use a stable version of the library, or try from the same Scala 3.x nightly or snapshot compiler"
+        else "use the latest Scala 2.13.x compiler" // happy path, they have stable TASTy, but this 2.13.x is too old.
+      }
+      else if (version.experimental > 0) "use the same Scala compiler" // unknown major version, just say same
+      else "use a more recent Scala compiler" // unknown major version, just say later
+
+    /** The description of the upgraded scala compiler that can produce the given TASTy version */
+    final def upgradedProducerTool(version: TastyVersion): String = asScala3Compiler(version)
+
+    final def recompileAdditionalInfo: String = """
+      |  Usually this means that the library dependency containing this file should be updated.""".stripMargin
+
+    final def upgradeAdditionalInfo(fileVersion: TastyVersion): String =
+      if (fileVersion.isExperimental && toolVersion.experimental == 0) {
+        """
+          |  Note that Scala 2.13.x is only configured to read stable TASTy.""".stripMargin
+      }
+      else ""
+  }
+
+  /** A config for the TASTy reader of a scala 2 compiler */
+  val scala2CompilerConfig: UnpicklerConfig = new Scala2CompilerConfig with UnpicklerConfig.DefaultTastyVersion {}
 }
 
 import TastyUnpickler._
@@ -134,7 +183,7 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
     result
   }
 
-  def readHeader(): Unit = new TastyHeaderUnpickler(reader).readHeader()
+  def readHeader(): Unit = new TastyHeaderUnpickler(scala2CompilerConfig, reader).readHeader()
 
   def readNames()(implicit ctx: Context): Unit = {
     ctx.log(s"reading names:")
