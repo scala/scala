@@ -6,11 +6,11 @@ object Reflection {
 
   def reflectionInvokerIdentity(ctx: reflectshims.Context)(tree: ctx.TreeShim): ctx.TreeShim = tree
 
-  class Invoker[C <: reflectshims.Context with Singleton](val ctx: C)(root: ctx.TreeShim) {
+  class Invoker[C <: reflectshims.Context & Singleton](val ctx: C)(root: ctx.TreeShim) {
     def tree: ctx.TreeShim = root
   }
 
-  class InvokerSAM[C <: reflectshims.Context with Singleton](val ctx: C) {
+  class InvokerSAM[C <: reflectshims.Context & Singleton](val ctx: C) {
 
     @FunctionalInterface
     trait TreeFn {

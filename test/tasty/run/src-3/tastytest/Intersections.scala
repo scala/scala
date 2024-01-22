@@ -6,7 +6,7 @@ object Intersections {
   trait C
   trait D
 
-  type AwithB = A with B
+  type AwithB = A & B // used to be A with B (now a syntax error)
   type AandB = A & B
   type AandBandCandD = A & B & C & D
 

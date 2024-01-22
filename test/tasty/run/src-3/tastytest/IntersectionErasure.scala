@@ -7,15 +7,15 @@ object IntersectionErasure {
 
   @FunctionalInterface
   abstract class IntersectionSAM {
-    def apply(arg: B with A): B with A
+    def apply(arg: B & A): B & A
   }
 
-  final class IntersectionVC(val unwrapped: B with A) extends AnyVal {
-    def matchesInternal(that: B with A): Boolean = that == unwrapped
+  final class IntersectionVC(val unwrapped: B & A) extends AnyVal {
+    def matchesInternal(that: B & A): Boolean = that == unwrapped
     def matches(that: IntersectionVC): Boolean = this == that
   }
 
-  final class IntersectionVCParametric[T <: B with A](val unwrapped: T) extends AnyVal {
+  final class IntersectionVCParametric[T <: B & A](val unwrapped: T) extends AnyVal {
     def matchesInternal(that: T): Boolean = that == unwrapped
     def matches(that: IntersectionVCParametric[T]): Boolean = this == that
   }

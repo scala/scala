@@ -13,7 +13,7 @@ object TestBiFunctor extends Suite("TestBiFunctor") {
   def toStringOnBiFunctor[F[_,_]: BiFunctor, A,B](fab: F[A,B]): F[String, String] =
     implicitly[BiFunctor[F]].bimap(fab)(_.toString, _.toString)
 
-  def toStringOnBiFunctorT2[F[_,_] <: Tuple2[_,_]: BiFunctorT2, A,B](fab: F[A,B]): F[String, String] =
+  def toStringOnBiFunctorT2[F[X,Y] <: Tuple2[X,Y]: BiFunctorT2, A,B](fab: F[A,B]): F[String, String] =
     implicitly[BiFunctorT2[F]].bimap(fab)(_.toString, _.toString)
 
   test(assert(toStringOnBiFunctor((true,1)) === ("true","1")))
