@@ -129,9 +129,21 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
-  /* A hook for the REPL to add a classpath entry containing products of previous runs to inliner's bytecode repository*/
-  // Fixes scala/bug#8779
-  def optimizerClassPath(base: ClassPath): ClassPath = base
+
+  /** The classpath used by inliner's bytecode repository.
+   *  If --release is used, swap the ctsym for jrt.
+   *  REPL adds a classpath entry containing products of previous runs. (scala/bug#8779)
+   *  @param base the class path to augment, nominally `this.classPath` or `platform.classPath`
+   */
+  def optimizerClassPath(base: ClassPath): ClassPath =
+    base match {
+      case AggregateClassPath(entries) if entries.head.isInstanceOf[CtSymClassPath] =>
+        JrtClassPath(release = None, unsafe = None, closeableRegistry) match {
+          case jrt :: _ => AggregateClassPath(jrt +: entries.drop(1))
+          case _ => base
+        }
+      case _ => base
+    }
 
   def classPath: ClassPath = platform.classPath
 
