@@ -14,6 +14,7 @@ package scala.tools.nsc.tasty
 
 import scala.collection.mutable
 import scala.tools.tasty.{ErasedTypeRef, Signature, TastyName, TastyReader, TastyRefs}
+import scala.tools.tasty.{AttributeUnpickler, Attributes}
 import scala.tools.tasty.{TastyFormat, TastyHeaderUnpickler, TastyVersion, UnpicklerConfig}
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
@@ -43,7 +44,11 @@ object TastyUnpickler {
     unpickler.readHeader()
     unpickler.readNames()
     val Some(astReader) = unpickler.readSection(TastyFormat.ASTsSection): @unchecked
-    val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef)(tasty)
+    val attributes = unpickler
+      .readSection(TastyFormat.AttributesSection)
+      .map(AttributeUnpickler.attributes)
+      .getOrElse(Attributes.empty)
+    val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef, attributes)(tasty)
     treeUnpickler.enterTopLevel(classRoot, objectRoot)
   }
 

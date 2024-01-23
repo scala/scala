@@ -28,6 +28,19 @@ object Files {
 
   def currentDir: String = FileSystems.getDefault.getPath(".").toString
 
+  def relativize(from: String, paths: String*): Try[Seq[String]] = Try {
+    val root = JPaths.get(from).toAbsolutePath
+    paths.map(p => root.relativize(JPaths.get(p).toAbsolutePath).toString())
+  }
+
+  def copyAll(relPaths: Seq[String], from: String, to: String): Try[Unit] = Try {
+    relPaths.foreach { p =>
+      // create all directories in the path if they don't exist
+      JFiles.createDirectories(JPaths.get(to/p).getParent)
+      JFiles.copy(JPaths.get(from/p), JPaths.get(to/p))
+    }
+  }
+
   def dir(dir: String): Try[String] = Try {
     val path = JPaths.get(dir)
     if (JFiles.isDirectory(path)) {

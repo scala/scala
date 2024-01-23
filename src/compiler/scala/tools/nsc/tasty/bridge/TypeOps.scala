@@ -260,7 +260,7 @@ trait TypeOps { self: TastyUniverse =>
       case tpe               => tpe
     }
 
-    def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
+    def AppliedType(tycon: Type, args: List[Type], isJava: Boolean)(implicit ctx: Context): Type = {
 
       def formatFnType(arrow: String, isErased: Boolean, arity: Int, args: List[Type]): String = {
         val len = args.length
@@ -289,7 +289,7 @@ trait TypeOps { self: TastyUniverse =>
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
         val syms = mutable.ListBuffer.empty[Symbol]
         def bindWildcards(tpe: Type) = tpe match {
-          case tpe: u.TypeBounds   => ctx.newWildcard(tpe).tap(syms += _).pipe(_.ref)
+          case tpe: u.TypeBounds   => ctx.newWildcard(tpe, isJava).tap(syms += _).pipe(_.ref)
           case tpe: LambdaPolyType => tpe.toNested
           case tpe                 => tpe
         }
@@ -323,16 +323,18 @@ trait TypeOps { self: TastyUniverse =>
       }
     }
 
-    def TypeRef(prefix: Type, name: TastyName.TypeName)(implicit ctx: Context): Type =
-      TypeRefIn(prefix, prefix, name)
+    def TypeRef(prefix: Type, name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Type =
+      TypeRefIn(prefix, prefix, name, isJava)
 
-    def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName)(implicit ctx: Context): Type = {
+    def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Type = {
       import scala.tools.tasty.TastyName._
 
       def doLookup = lookupTypeFrom(space)(prefix, name)
 
+      val preSym = prefix.typeSymbol
+
       // we escape some types in the scala package especially
-      if (prefix.typeSymbol === u.definitions.ScalaPackage) {
+      if (preSym === u.definitions.ScalaPackage) {
         name match {
           case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
             case tpnme.And                                                    => AndTpe
@@ -352,7 +354,14 @@ trait TypeOps { self: TastyUniverse =>
         }
       }
       else {
-        doLookup
+        if (isJava && preSym === u.definitions.JavaLangPackage) {
+          name match {
+            case TypeName(SimpleName(tpnme.Object)) => u.definitions.ObjectTpeJava // Object =:= scala.Any in Java.
+            case _                                  => doLookup
+          }
+        } else {
+          doLookup
+        }
       }
     }
 
@@ -523,7 +532,8 @@ trait TypeOps { self: TastyUniverse =>
 
   abstract class TastyCompleter(
       isClass: Boolean,
-      tflags: TastyFlagSet
+      tflags: TastyFlagSet,
+      val isJava: Boolean
   )(implicit capturedCtx: Context)
       extends BaseTastyCompleter(tflags) {
     override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope

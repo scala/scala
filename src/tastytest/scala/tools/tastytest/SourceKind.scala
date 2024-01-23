@@ -25,6 +25,7 @@ object SourceKind {
   case object Check     extends SourceKind(".check")()
   case object SkipCheck extends SourceKind(".skipcheck")()
   case object Java      extends SourceKind(".java")()
+  case object TastyFile extends SourceKind(".tasty")()
 
   def filterByKind(kinds: Set[SourceKind], paths: String*): Seq[String] =
     if (kinds.isEmpty) Nil

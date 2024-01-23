@@ -158,11 +158,11 @@ trait TreeOps { self: TastyUniverse =>
 
     @inline final def SeqLiteral(trees: List[Tree], tpt: Tree): Tree = u.ArrayValue(tpt, trees).setType(tpt.tpe)
 
-    def AppliedTypeTree(tpt: Tree, args: List[Tree])(implicit ctx: Context): Tree = {
+    def AppliedTypeTree(tpt: Tree, args: List[Tree], isJava: Boolean)(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndTpe) {
         u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(u.intersectionType(args.map(_.tpe)))
       } else {
-        u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe)))
+        u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe), isJava))
       }
     }
 

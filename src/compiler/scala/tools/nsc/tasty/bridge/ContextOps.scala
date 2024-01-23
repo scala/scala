@@ -280,17 +280,18 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newLocalDummy: Symbol = owner.newLocalDummy(u.NoPosition)
 
-    final def newWildcard(info: Type): Symbol =
+    final def newWildcard(info: Type, isJava: Boolean): Symbol =
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
-        newFlags = FlagSets.Creation.Wildcard
+        newFlags = FlagSets.Creation.wildcard(isJava)
       ).setInfo(info)
 
-    final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
+    final def newConstructor(owner: Symbol, isJava: Boolean, info: Type): Symbol = unsafeNewSymbol(
       owner = owner,
       name  = TastyName.Constructor,
       flags = Method,
+      isJava = isJava,
       info  = info
     )
 
@@ -300,6 +301,7 @@ trait ContextOps { self: TastyUniverse =>
         owner = cls,
         typeName = TastyName.SimpleName(cls.fullName('$') + "$$localSealedChildProxy").toTypeName,
         flags = tflags,
+        isJava = false,
         info = defn.LocalSealedChildProxyInfo(cls, tflags),
         privateWithin = u.NoSymbol
       )
@@ -311,6 +313,7 @@ trait ContextOps { self: TastyUniverse =>
         owner = owner,
         name  = tname,
         flags = flags1,
+        isJava = false,
         info  = defn.LambdaParamInfo(flags1, idx, infoDb)
       )
     }
@@ -360,17 +363,17 @@ trait ContextOps { self: TastyUniverse =>
           tpe
         }
       }
-      unsafeNewSymbol(owner, name, flags, info)
+      unsafeNewSymbol(owner, name, flags, isJava = false, info)
     }
 
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
     final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyCompleter, privateWithin: Symbol = noSymbol): Symbol = {
-      def default() = unsafeNewSymbol(owner, name, completer.tflags, completer, privateWithin)
+      def default() = unsafeNewSymbol(owner, name, completer.tflags, completer.isJava, completer, privateWithin)
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject, completer.tflags, completer, privateWithin)
+          redefineSymbol(sourceObject, completer, privateWithin)
         else
           default()
       }
@@ -382,11 +385,11 @@ trait ContextOps { self: TastyUniverse =>
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
     final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyCompleter, privateWithin: Symbol): Symbol = {
-      def default() = unsafeNewClassSymbol(owner, typeName, completer.tflags, completer, privateWithin)
+      def default() = unsafeNewClassSymbol(owner, typeName, completer.tflags, completer.isJava, completer, privateWithin)
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject.objectImplementation, completer.tflags, completer, privateWithin)
+          redefineSymbol(sourceObject.objectImplementation, completer, privateWithin)
         else
           default()
       }
@@ -423,31 +426,31 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Unsafe to call for creation of a object val, prefer `delayCompletion` if info is a LazyType
       */
-    private def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
-      unsafeSetInfoAndPrivate(unsafeNewUntypedSymbol(owner, name, flags), info, privateWithin)
+    private def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, isJava: Boolean, info: Type, privateWithin: Symbol = noSymbol): Symbol =
+      unsafeSetInfoAndPrivate(unsafeNewUntypedSymbol(owner, name, flags, isJava), info, privateWithin)
 
     /** Unsafe to call for creation of a object class, prefer `delayClassCompletion` if info is a LazyType
       */
-    private def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
-      unsafeSetInfoAndPrivate(unsafeNewUntypedClassSymbol(owner, typeName, flags), info, privateWithin)
+    private def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, isJava: Boolean, info: Type, privateWithin: Symbol): Symbol =
+      unsafeSetInfoAndPrivate(unsafeNewUntypedClassSymbol(owner, typeName, flags, isJava), info, privateWithin)
 
-    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol = {
+    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, isJava: Boolean): Symbol = {
       if (flags.isOneOf(Param | ParamSetter)) {
         if (name.isTypeName) {
-          owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
+          owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
         }
         else {
           if (owner.isClass && flags.is(FlagSets.FieldGetter)) {
             val fieldFlags = flags &~ FlagSets.FieldGetter | FlagSets.LocalField
             val termName   = encodeTermName(name)
-            val getter     = owner.newMethodSymbol(termName, u.NoPosition, newSymbolFlagSet(flags))
-            val fieldSym   = owner.newValue(termName, u.NoPosition, newSymbolFlagSet(fieldFlags))
+            val getter     = owner.newMethodSymbol(termName, u.NoPosition, newSymbolFlagSet(flags, isJava))
+            val fieldSym   = owner.newValue(termName, u.NoPosition, newSymbolFlagSet(fieldFlags, isJava))
             fieldSym.info  = defn.CopyInfo(getter, fieldFlags)
             owner.rawInfo.decls.enter(fieldSym)
             getter
           }
           else {
-            owner.newValueParameter(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+            owner.newValueParameter(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
           }
         }
       }
@@ -456,36 +459,36 @@ trait ContextOps { self: TastyUniverse =>
         if (!isEnum) {
           log(s"!!! visited module value $name first")
         }
-        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
         module.moduleClass.info =
           if (isEnum) defn.SingletonEnumClassInfo(module, flags)
           else defn.DefaultInfo
         module
       }
       else if (name.isTypeName) {
-        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
       else if (name === TastyName.Constructor) {
-        owner.newConstructor(u.NoPosition, newSymbolFlagSet(flags &~ Stable))
+        owner.newConstructor(u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
       }
       else if (name === TastyName.MixinConstructor) {
-        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable))
+        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
       }
       else {
-        owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
     }
 
-    private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet): Symbol = {
+    private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, isJava: Boolean): Symbol = {
       if (flags.is(FlagSets.Creation.ObjectClassDef)) {
         log(s"!!! visited module class $typeName first")
-        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.Default)
+        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.initial(isJava))
         module.info = defn.DefaultInfo
-        module.moduleClass.flags = newSymbolFlagSet(flags)
+        module.moduleClass.flags = newSymbolFlagSet(flags, isJava)
         module.moduleClass
       }
       else {
-        owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
     }
 
@@ -532,15 +535,15 @@ trait ContextOps { self: TastyUniverse =>
         inheritedAccess = sym.repr.tflags
       )
       val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-      val ctor = newConstructor(moduleCls, selfTpe)
+      val ctor = newConstructor(moduleCls, isJava = false, selfTpe) // TODO: test Java Enum
       moduleCls.typeOfThis = selfTpe
-      moduleCls.flags = newSymbolFlagSet(moduleClsFlags)
+      moduleCls.flags = newSymbolFlagSet(moduleClsFlags, isJava = false) // TODO: test Java Enum
       moduleCls.info = defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, moduleCls)
       moduleCls.privateWithin = sym.privateWithin
     }
 
-    final def redefineSymbol(symbol: Symbol, flags: TastyFlagSet, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
-      symbol.flags = newSymbolFlagSet(flags)
+    final def redefineSymbol(symbol: Symbol, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
+      symbol.flags = newSymbolFlagSet(completer.tflags, completer.isJava)
       unsafeSetInfoAndPrivate(symbol, completer, privateWithin)
     }
 

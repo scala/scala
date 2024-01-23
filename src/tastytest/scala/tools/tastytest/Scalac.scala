@@ -17,13 +17,14 @@ import scala.util.{ Try, Success, chaining }, chaining._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 import java.io.OutputStream
 import java.io.PrintWriter
+import scala.tools.tastytest.classpath
 
 object Scalac extends Script.Command {
 
-  def scalac(out: String, additionalSettings: Seq[String], sources: String*): Try[Boolean] =
-    scalac(Console.out, out, additionalSettings, sources:_*)
+  def scalac(out: String, extraCp: Option[String], additionalSettings: Seq[String], sources: String*): Try[Boolean] =
+    scalac(Console.out, out, extraCp, additionalSettings, sources:_*)
 
-  def scalac(writer: OutputStream, out: String, additionalSettings: Seq[String], sources: String*) = {
+  def scalac(writer: OutputStream, out: String, extraCp: Option[String], additionalSettings: Seq[String], sources: String*) = {
 
     def runCompile(global: Global): Boolean = {
       global.reporter.reset()
@@ -50,7 +51,7 @@ object Scalac extends Script.Command {
     else {
       val settings = Array(
         "-d", out,
-        "-classpath", out,
+        "-classpath", classpath(out, extraCp.toList:_*),
         "-deprecation",
         "-Xfatal-warnings",
         "-usejavacp"
@@ -68,7 +69,7 @@ object Scalac extends Script.Command {
       return 1
     }
     val Seq(out, src, additionalArgs @ _*) = args: @unchecked
-    val success = scalac(out, additionalArgs, src).get
+    val success = scalac(out, extraCp = None, additionalArgs, src).get
     if (success) 0 else 1
   }
 }

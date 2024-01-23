@@ -163,11 +163,18 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         this.isScala      = false
         this.YtastyReader = settings.YtastyReader.value
 
-        val magic = in.getInt(in.bp)
-        if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
+        val isJavaMagic = in.getInt(in.bp) == JAVA_MAGIC
+        if (!isJavaMagic && file.name.endsWith(".sig")) {
           currentClass = clazz.javaClassName
           isScala = true
           unpickler.unpickle(in.buf.take(file.sizeOption.get), 0, clazz, staticModule, file.name)
+        } else if (!isJavaMagic && file.name.endsWith(".tasty")) {
+          if (!YtastyReader)
+            MissingRequirementError.signal(s"Add -Ytasty-reader to scalac options to parse the TASTy in $file")
+
+          AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
+          val bytes = in.buf.take(file.sizeOption.get)
+          TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
         } else {
           parseHeader()
           this.pool = new ConstantPool

@@ -19,6 +19,15 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
+  @test def runPipelined(): Unit = TastyTest.runPipelinedSuite(
+    src                     = "run-pipelined",
+    srcRoot                 = assertPropIsSet(propSrc),
+    pkgName                 = assertPropIsSet(propPkgName),
+    outDirs                 = None,
+    additionalSettings      = Nil,
+    additionalDottySettings = Nil
+  ).eval
+
   @test def pos(): Unit = TastyTest.posSuite(
     src                     = "pos",
     srcRoot                 = assertPropIsSet(propSrc),

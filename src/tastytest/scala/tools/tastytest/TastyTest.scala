@@ -54,6 +54,32 @@ object TastyTest {
     _                 <- runMainOn(out, testNames:_*)
   } yield ()
 
+  /**Simulates a Scala 2 application that depends on a Scala 3 library,
+   * where pipeline-compatible compilation is tested by restricting to a TASTy-only classpath.
+   *
+   * Steps:
+   *  1) compile all Scala/Java files in `src-3` with scala 3 to `out-classes`, send (Java TASTy to `java-tasty.jar`).
+   *  2) copy TASTy files from `out-classes` to `out`. (ensuring Scala 2 will not see class files)
+   *  3) compile all Scala files in `src-2` with scala 2 to `out`, with `out:java-tasty.jar` as the classpath.
+   *  4) compile Java files in `src-3` to `out-classes` with Javac.
+   *  5) run the main method of all classes in `out/pkgName` that match a file in `src-2`.
+   *     e.g. `out/tastytest/TestFoo.class` should be compiled from a corresponding file
+   *          `src-2/tastytest/TestFoo.scala`. Use `out:out-classes` as the classpath.
+   */
+  def runPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+    (src2, src3)               <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala), src3Filters = Set(Scala, Java))
+    case ((out, outJ), outCls) <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2) <*> dir(p._3))
+    tastyJar                    = outJ/"java-tasty.jar"
+    _                          <- dotcPos(outCls, sourceRoot=srcRoot/src/"src-3", pipelineDottyOpts(tastyJar) ++: additionalDottySettings, src3:_*)
+    allOuts                    <- getFiles(outCls)
+    relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
+    _                          <- copyAll(relTastys, outCls, out)
+    _                          <- scalacPos(out, tastyJar, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                          <- javacPos(outCls, sourceRoot=srcRoot/src/"src-3", filterByKind(Set(Java), src3:_*):_*)
+    testNames                  <- visibleClasses(out, pkgName, src2:_*)
+    _                          <- runMainOn(classpath(out, outCls), testNames:_*)
+  } yield ()
+
   /**Simulates a Scala 2 application that depends on a Scala 3 library, where both may depend on a common prelude
    * compiled by Scala 2 and Java. In this case the applications are not executed.
    * Steps:
@@ -116,7 +142,7 @@ object TastyTest {
    */
   def negChangePreSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (preA, preB, src2, src3) <- getMovePreChangeSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
-    (out1, out2)             <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
+    (out1, out2)             <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2))
     _                        <- scalacPos(out1, individualCapable=false, sourceRoot=srcRoot/src/"pre-A", additionalSettings, preA:_*)
     _                        <- scalacPos(out2, individualCapable=false, sourceRoot=srcRoot/src/"pre-B", additionalSettings, preB:_*)
     _                        <- dotcPos(out2, out1, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
@@ -132,7 +158,7 @@ object TastyTest {
    */
   def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
-    (out1, out2)         <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
+    (out1, out2)         <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2))
     _                    <- dotcPos(out1, sourceRoot=srcRoot/src/"src-3-A", additionalDottySettings, src3A:_*)
     _                    <- dotcPos(out2, classpath(out1, out2), sourceRoot=srcRoot/src/"src-3-B", additionalDottySettings, src3B:_*)
     _                    <- scalacNeg(out2, additionalSettings, src2:_*)
@@ -143,7 +169,13 @@ object TastyTest {
     successWhen(Javac.javac(out, sources:_*))("javac failed to compile sources.")
   }
 
-  private def scalacPos(out: String, individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+  private def scalacPos(out: String, extraCp: String, individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] =
+    scalacPos(out, extraCp = Some(extraCp), individualCapable, sourceRoot, additionalSettings, sources:_*)
+
+  private def scalacPos(out: String, individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] =
+    scalacPos(out, extraCp = None, individualCapable, sourceRoot, additionalSettings, sources:_*)
+
+  private def scalacPos(out: String, extraCp: Option[String], individualCapable: Boolean, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     log(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
     val res = {
       if (debug && individualCapable) {
@@ -152,7 +184,7 @@ object TastyTest {
             case Nil => Success(true)
             case src :: rest =>
               log(s"compiling source ${yellow(src)} with scalac.")
-              Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, src) match {
+              Scalac.scalac(out, extraCp, "-Ytasty-reader" +: additionalSettings, src) match {
                 case Success(true) => compileIndividual(rest)
                 case err => err
               }
@@ -161,7 +193,7 @@ object TastyTest {
         compileIndividual(sources.toList)
       }
       else {
-        Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*)
+        Scalac.scalac(out, extraCp, "-Ytasty-reader" +: additionalSettings, sources:_*)
       }
     }
     successWhen(res)("scalac failed to compile sources.")
@@ -169,7 +201,7 @@ object TastyTest {
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
     def compile(source: String, writer: OutputStream) =
-      Scalac.scalac(writer, out, "-Ytasty-reader" +: additionalSettings, source)
+      Scalac.scalac(writer, out, extraCp = None, "-Ytasty-reader" +: additionalSettings, source)
     negTestImpl(withCapture(_, compile, identity))(files:_*)
   }
 
@@ -269,6 +301,9 @@ object TastyTest {
     successWhen(process)("dotc failed to compile sources.")
   }
 
+  private def pipelineDottyOpts(tastyJar: String): Seq[String] =
+    Seq("-Yjava-tasty", "-Yjava-tasty-output", tastyJar)
+
   private def dotcNeg(out: String, additionalSettings: Seq[String], files: String*)(implicit cl: Dotc.ClassLoader): Try[Unit] = {
     def compile(source: String, writer: OutputStream) = {
       Dotc.dotc(writer, out, out, additionalSettings, source)
@@ -354,11 +389,11 @@ object TastyTest {
   private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {
     val classes = {
       val matcher = globMatcher(
-        s"$classpath/${if (pkgName.isEmpty) "" else pkgName.*->/}Test*.class"
+        s"$classpath/${if (pkgName.isEmpty) "" else pkgName.toBinaryName}Test*.class"
       )
       val visibleTests = src2.map(getSourceAsName)
       val addPkg: String => String = if (pkgName.isEmpty) identity else pkgName + "." + _
-      val prefix = if (pkgName.isEmpty) "" else pkgName.*->/
+      val prefix = if (pkgName.isEmpty) "" else pkgName.toBinaryName
       val cp = JPaths.get(classpath).normalize
       def nameFromClass(path: JPath) = {
         path.subpath(cp.getNameCount, path.getNameCount)

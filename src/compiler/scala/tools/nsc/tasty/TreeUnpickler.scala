@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty
 
-import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat, TastyFlags}
+import scala.tools.tasty.{Attributes, TastyRefs, TastyReader, TastyName, TastyFormat, TastyFlags}
 import TastyRefs._, TastyFlags._, TastyFormat._
 import ForceKinds._
 
@@ -36,7 +36,8 @@ import scala.collection.immutable.ArraySeq
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
-    nameAtRef: NameRef => TastyName)(implicit
+    nameAtRef: NameRef => TastyName,
+    attributes: Attributes)(implicit
     val tasty: Tasty) { self =>
   import tasty._
   import TreeUnpickler._
@@ -69,6 +70,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
+
+  /** JAVAattr is necessary to support pipelining in Zinc, we have to set Java erasure semantics if found.
+   * To support this we also need to support TASTy-only classpaths, see https://github.com/lampepfl/dotty/pull/17594
+   * For a test case, see test/tasty/run-pipelined
+   */
+  private[this] val isJava = attributes.isJava
 
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
@@ -111,7 +118,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       reader: TastyReader,
       tflags: TastyFlagSet
   )(implicit ctx: Context)
-      extends TastyCompleter(isClass, tflags) {
+      extends TastyCompleter(isClass, tflags, isJava) {
 
     private val symAddr = reader.currentAddr
 
@@ -132,6 +139,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     def forkAt(start: Addr): TreeReader = new TreeReader(subReader(start, endAddr))
     def fork: TreeReader = forkAt(currentAddr)
+
+    def skipParentTree(tag: Int): Unit = if (tag != SPLITCLAUSE) skipTree(tag)
+    def skipParentTree(): Unit = skipParentTree(readByte())
 
     def skipTree(tag: Int): Unit =
       if (tag >= firstLengthTreeTag) goto(readEnd())
@@ -383,7 +393,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case TERMREFin =>
               defn.TermRefIn(name = readTastyName(), prefix = readType(), space = readType())
             case TYPEREFin =>
-              defn.TypeRefIn(name = readTastyName().toTypeName, prefix = readType(), space = readType())
+              defn.TypeRefIn(
+                name = readTastyName().toTypeName, prefix = readType(), space = readType(), isJava = isJava)
             case REFINEDtype =>
               var name   = readTastyName()
               val parent = readType()
@@ -391,7 +402,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               ctx.enterRefinement(parent)(refinedCtx =>
                 defn.RefinedType(parent, name, refinedCtx.owner, readType())
               )
-            case APPLIEDtype => defn.AppliedType(readType(), until(end)(readType()))
+            case APPLIEDtype => defn.AppliedType(readType(), until(end)(readType()), isJava)
             case TYPEBOUNDS =>
               val lo = readType()
               if (nothingButMods(end)) readVariances(lo)
@@ -417,7 +428,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case TYPEREFsymbol | TERMREFsymbol => defn.NamedType(sym = readSymRef(), prefix = readType())
           case TYPEREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef().objectImplementation)
           case TERMREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef())
-          case TYPEREF => defn.TypeRef(name = readTastyName().toTypeName, prefix = readType())
+          case TYPEREF => defn.TypeRef(name = readTastyName().toTypeName, prefix = readType(), isJava = isJava)
           case TERMREF => defn.TermRef(name = readTastyName(), prefix = readType())
           case THIS => defn.ThisType(readType())
           case RECtype =>
@@ -595,7 +606,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 noSymbol
               }
               else {
-                ctx.redefineSymbol(rootd, flags, mkCompleter, privateWithin)
+                ctx.redefineSymbol(rootd, mkCompleter, privateWithin)
                 ctx.log(s"$start replaced info of root ${showSym(rootd)}")
                 rootd
               }
@@ -936,6 +947,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     )
 
     private def readTemplate()(implicit ctx: Context): Unit = {
+      val start = currentAddr
       val cls = ctx.enterClassCompletion()
       val localDummy = symbolAtCurrent()
       assert(readByte() === TEMPLATE)
@@ -979,14 +991,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def indexMembers()(implicit ctx: Context): Unit = ctx.trace(traceIndexMembers) {
         val bodyIndexer = fork
-        while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
+        while ({val tag = bodyIndexer.reader.nextByte; tag != DEFDEF && tag != SPLITCLAUSE})
+          bodyIndexer.skipParentTree() // skip until primary ctor
         bodyIndexer.indexStats(end)
       }
 
       def collectParents()(implicit ctx: Context): List[Type] = ctx.trace(traceCollectParents) {
         val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
         val parentWithOuter = parentCtx.addMode(OuterTerm)
-        collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
+        collectWhile({val tag = nextByte; tag != SELFDEF && tag != DEFDEF && tag != SPLITCLAUSE}) {
           defn.adjustParent(
             nextUnsharedTag match {
               case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentWithOuter).tpe
@@ -1021,6 +1034,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val parents = collectParents()
         if (nextByte === SELFDEF) {
           addSelfDef()
+        }
+        if (nextByte === SPLITCLAUSE) {
+          assert(isJava,  s"unexpected SPLITCLAUSE at $start")
         }
         setInfoWithParents(tparams, ctx.processParents(cls, parents))
       }
@@ -1171,7 +1187,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // If we do directly a tpd.AppliedType tree we might get a
               // wrong number of arguments in some scenarios reading F-bounded
               // types. This came up in #137 of collection strawman.
-              tpd.AppliedTypeTree(readTpt(), until(end)(readTpt()))
+              tpd.AppliedTypeTree(readTpt(), until(end)(readTpt()), isJava)
             case ANNOTATEDtpt => tpd.Annotated(readTpt(), readTerm()(ctx.addMode(ReadAnnotTopLevel)))
             case LAMBDAtpt => tpd.LambdaTypeTree(readParams[NoCycle](TYPEPARAM).map(symFromNoCycle), readTpt())
             case MATCHtpt => matchTypeIsUnsupported

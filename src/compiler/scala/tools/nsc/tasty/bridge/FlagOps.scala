@@ -42,8 +42,8 @@ trait FlagOps { self: TastyUniverse =>
     object Creation {
       val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
       val ObjectClassDef: TastyFlagSet = Object | Final
-      val Wildcard: u.FlagSet = newSymbolFlagSetFromEncoded(Flags.EXISTENTIAL)
-      val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+      def wildcard(isJava: Boolean): u.FlagSet = newSymbolFlagSetFromEncoded(Flags.EXISTENTIAL, isJava)
+      def initial(isJava: Boolean): u.FlagSet = newSymbolFlagSet(EmptyTastyFlags, isJava)
     }
     def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
       flags | (inheritedAccess & (Private | Local | Protected))
@@ -56,11 +56,11 @@ trait FlagOps { self: TastyUniverse =>
   }
 
   /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
-  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
-    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags))
+  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet, isJava: Boolean): u.FlagSet =
+    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags), isJava)
 
-  private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet): u.FlagSet =
-    flags | ModifierFlags.SCALA3X
+  private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet, isJava: Boolean): u.FlagSet =
+    flags | (if (isJava) ModifierFlags.JAVA else ModifierFlags.SCALA3X)
 
   implicit final class SymbolFlagOps(val sym: Symbol) {
     def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
