@@ -48,6 +48,7 @@ trait FlagOps { self: TastyUniverse =>
     def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
       flags | (inheritedAccess & (Private | Local | Protected))
     val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
+    val JavaEnumCase: TastyFlagSet = Static | Enum // beware overlap with Scala enum
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
     val FieldGetter: TastyFlagSet = FieldAccessor | Stable
     val ParamGetter: TastyFlagSet = FieldGetter | ParamSetter
@@ -57,33 +58,36 @@ trait FlagOps { self: TastyUniverse =>
 
   /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
   private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet, isJava: Boolean): u.FlagSet =
-    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags), isJava)
+    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags, isJava), isJava)
 
   private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet, isJava: Boolean): u.FlagSet =
     flags | (if (isJava) ModifierFlags.JAVA else ModifierFlags.SCALA3X)
 
   implicit final class SymbolFlagOps(val sym: Symbol) {
-    def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
-      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags))
-    def isOneOf(mask: TastyFlagSet): Boolean =
-      sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet): Boolean =
-      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
+    def reset(tflags: TastyFlagSet, isJava: Boolean)(implicit ctx: Context): sym.type =
+      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags, isJava))
+    def isOneOf(mask: TastyFlagSet, isJava: Boolean): Boolean =
+      sym.hasFlag(unsafeEncodeTastyFlagSet(mask, isJava))
+    def is(mask: TastyFlagSet, isJava: Boolean): Boolean =
+      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask, isJava))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet, isJava: Boolean): Boolean =
       if (!butNot)
-        sym.is(mask)
+        sym.is(mask, isJava)
       else
-        sym.is(mask) && sym.not(butNot)
-    def not(mask: TastyFlagSet): Boolean =
-      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
+        sym.is(mask, isJava) && sym.not(butNot, isJava)
+    def not(mask: TastyFlagSet, isJava: Boolean): Boolean =
+      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask, isJava))
   }
 
   /** encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
    *  @note Do not use directly to initialise symbol flags, use `newSymbolFlagSet`
    */
-  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
+  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet, isJava: Boolean): u.FlagSet = {
     import u.Flag
     var flags = u.NoFlags
+    // JAVA FLAGS
+    if (isJava && tflags.is(Enum)) flags |= ModifierFlags.JAVA_ENUM
+    // STANDARD FLAGS
     if (tflags.is(Private)) flags |= Flag.PRIVATE
     if (tflags.is(Protected)) flags |= Flag.PROTECTED
     if (tflags.is(AbsOverride)) flags |= Flag.ABSOVERRIDE

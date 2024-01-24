@@ -115,6 +115,30 @@ object TastyTest {
     _                 <- scalacNeg(out, additionalSettings, src2:_*)
   } yield ()
 
+  /**Simulates a Scala 2 application that depends on a Scala 3 library, and is expected to fail compilation,
+   * where pipeline-compatible compilation is tested by restricting to a TASTy-only classpath.
+   *
+   * Steps:
+   *  1) compile all Scala/Java files in `src-3` with scala 3 to `out-classes`, send (Java TASTy to `java-tasty.jar`).
+   *  2) copy TASTy files from `out-classes` to `out`. (ensuring Scala 2 will not see class files)
+   *  3) attempt to compile all Scala files in `src-2` with scala 2 to `out`, with `out:java-tasty.jar` as the classpath.
+   *     - If a file matches `FOO_fail.scala`, then it is expected to fail compilation.
+   *     - For each `FOO_fail.scala`, if the file fails compilation, there is expected to be a corresponding `FOO.check` file, containing
+   *       the captured errors, or else a `FOO.skipcheck` file indicating to skip comparing errors.
+   *     - If `FOO_fail.scala` has a corresponding `FOO_pre.scala` file, then that is compiled first to `out`,
+   *       so that `FOO_fail.scala` may depend on its compilation results.
+   */
+  def negPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+    (src2, src3)               <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck), src3Filters = Set(Scala, Java))
+    case ((out, outJ), outCls) <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2) <*> dir(p._3))
+    tastyJar                    = outJ/"java-tasty.jar"
+    _                          <- dotcPos(outCls, sourceRoot=srcRoot/src/"src-3", pipelineDottyOpts(tastyJar) ++: additionalDottySettings, src3:_*)
+    allOuts                    <- getFiles(outCls)
+    relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
+    _                          <- copyAll(relTastys, outCls, out)
+    _                          <- scalacNeg(out, tastyJar, additionalSettings, src2:_*)
+  } yield ()
+
   /**Simulates a Scala 3 application that depends on a Scala 2 library, where the Scala 2
    * library directly depends on an upstream Scala 3 library. The Scala 3 application is expected to fail compilation.
    * Steps:
@@ -199,9 +223,15 @@ object TastyTest {
     successWhen(res)("scalac failed to compile sources.")
   }
 
-  private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
+  private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] =
+    scalacNeg(out, extraCp = None, additionalSettings, files:_*)
+
+  private def scalacNeg(out: String, extraCp: String, additionalSettings: Seq[String], files: String*): Try[Unit] =
+    scalacNeg(out, extraCp = Some(extraCp), additionalSettings, files:_*)
+
+  private def scalacNeg(out: String, extraCp: Option[String], additionalSettings: Seq[String], files: String*): Try[Unit] = {
     def compile(source: String, writer: OutputStream) =
-      Scalac.scalac(writer, out, extraCp = None, "-Ytasty-reader" +: additionalSettings, source)
+      Scalac.scalac(writer, out, extraCp, "-Ytasty-reader" +: additionalSettings, source)
     negTestImpl(withCapture(_, compile, identity))(files:_*)
   }
 

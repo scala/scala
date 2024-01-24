@@ -487,7 +487,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           flags |= HasDefault // this corresponds to DEFAULTPARAM
       }
       if (tag === VALDEF) {
-        if (flags.is(Inline) || ctx.owner.is(Trait))
+        if (flags.is(Inline) || ctx.owner.is(Trait, isJava))
           flags |= FieldAccessor
         if (flags.not(Mutable))
           flags |= Stable
@@ -869,6 +869,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             ctx.completeEnumSingleton(sym, tpe)
             defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation)
           }
+          else if (isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.Constant(sym))
           else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
           else if (sym.isMethod) defn.ExprType(tpe)
           else tpe
@@ -896,7 +897,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             else rhs.tpe
           ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
-          if (sym.is(Param)) sym.reset(Private | Protected)
+          if (sym.is(Param, isJava)) sym.reset(Private | Protected, isJava)
         }
       }
 
@@ -904,7 +905,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported | Given))
         val tpt = readTpt()(localCtx)
         ctx.setInfo(sym,
-          if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
+          if (nothingButMods(end) && sym.not(ParamSetter, isJava)) tpt.tpe
           else defn.ExprType(tpt.tpe))
       }
 

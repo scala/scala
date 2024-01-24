@@ -40,7 +40,7 @@ trait SymbolOps { self: TastyUniverse =>
       case u.NoSymbol =>
         ctx.log(s"could not retrieve symbol from type ${showType(space)}")
       case termSym if termSym.isTerm =>
-        if (termSym.is(Object)) {
+        if (termSym.is(Object, isJava = false)) {
           termSym.ensureCompleted(SpaceForce)
           termSym.moduleClass.ensureCompleted(DeepForce | SpaceForce)
         }

@@ -1,0 +1,11 @@
+TestEnum_fail.scala:8: warning: match may not be exhaustive.
+It would fail on the following input: B
+  JavaEnum.values()(i) match { // error
+                   ^
+TestEnum_fail.scala:14: warning: match may not be exhaustive.
+It would fail on the following input: B
+  ScalaEnum.values(i) match { // error
+                  ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

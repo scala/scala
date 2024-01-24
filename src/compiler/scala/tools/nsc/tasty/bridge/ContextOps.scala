@@ -33,7 +33,7 @@ trait ContextOps { self: TastyUniverse =>
 
   private def describeOwner(owner: Symbol): String = {
     val kind =
-      if (owner.isOneOf(Param | ParamSetter)) {
+      if (owner.isOneOf(Param | ParamSetter, isJava = false)) {
         if (owner.isType) "type parameter"
         else "parameter"
       }
@@ -45,7 +45,7 @@ trait ContextOps { self: TastyUniverse =>
 
   def boundsString(owner: Symbol): String = {
     if (owner.isType) s"bounds of $owner"
-    else if (owner.isOneOf(Param | ParamSetter)) s"parameter $owner"
+    else if (owner.isOneOf(Param | ParamSetter, isJava = false)) s"parameter $owner"
     else "result"
   }
 
@@ -126,11 +126,11 @@ trait ContextOps { self: TastyUniverse =>
     def lookupChild(childTpe: Type): Symbol = {
       val child = symOfType(childTpe)
       assert(isSymbol(child), s"did not find symbol of sealed child ${showType(childTpe)}")
-      if (child.isClass) {
+      if (child.isClass || child.isJava && child.isJavaEnum) {
         child
       }
       else {
-        assert(child.isModule, s"sealed child was not class or object ${showSym(child)}")
+        assert(child.isModule, s"sealed child was not class, object, or java enum case ${showSym(child)}")
         child.moduleClass
       }
     }
@@ -354,7 +354,7 @@ trait ContextOps { self: TastyUniverse =>
             case u.PolyType(tparams, res) if res.paramss.isEmpty => u.PolyType(tparams, u.NullaryMethodType(res))
             case _:u.MethodType | _:u.PolyType => tpe
             case _ => // val, which is not stable if structural. Dotty does not support vars
-              if (isOverride && overridden.is(Stable)) flags |= Stable
+              if (isOverride && overridden.is(Stable, isJava = false)) flags |= Stable
               u.NullaryMethodType(tpe)
           }
         }
@@ -474,6 +474,9 @@ trait ContextOps { self: TastyUniverse =>
       else if (name === TastyName.MixinConstructor) {
         owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
       }
+      else if (isJava && flags.is(FlagSets.JavaEnumCase)) {
+        owner.newValue(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
+      }
       else {
         owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
@@ -495,7 +498,7 @@ trait ContextOps { self: TastyUniverse =>
     final def enterClassCompletion(): Symbol = {
       val cls = globallyVisibleOwner.asClass
       val assumedSelfSym = {
-        if (cls.is(Object) && cls.owner.isClass) {
+        if (cls.is(Object, isJava = false) && cls.owner.isClass) {
           cls.sourceModule
         }
         else {
@@ -535,9 +538,9 @@ trait ContextOps { self: TastyUniverse =>
         inheritedAccess = sym.repr.tflags
       )
       val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-      val ctor = newConstructor(moduleCls, isJava = false, selfTpe) // TODO: test Java Enum
+      val ctor = newConstructor(moduleCls, isJava = false, selfTpe)
       moduleCls.typeOfThis = selfTpe
-      moduleCls.flags = newSymbolFlagSet(moduleClsFlags, isJava = false) // TODO: test Java Enum
+      moduleCls.flags = newSymbolFlagSet(moduleClsFlags, isJava = false)
       moduleCls.info = defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, moduleCls)
       moduleCls.privateWithin = sym.privateWithin
     }

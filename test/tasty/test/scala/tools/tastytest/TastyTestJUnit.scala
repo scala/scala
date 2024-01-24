@@ -56,6 +56,15 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
+  @test def negPipelined(): Unit = TastyTest.negPipelinedSuite(
+    src                     = "neg-pipelined",
+    srcRoot                 = assertPropIsSet(propSrc),
+    pkgName                 = assertPropIsSet(propPkgName),
+    outDirs                 = None,
+    additionalSettings      = Nil,
+    additionalDottySettings = Nil
+  ).eval
+
   @test def negMoveMacros(): Unit = TastyTest.negChangePreSuite(
     src                     = "neg-move-macros",
     srcRoot                 = assertPropIsSet(propSrc),
@@ -111,7 +120,7 @@ object TastyTestJUnit {
 
   final implicit class TryOps(val op: Try[Unit]) extends AnyVal {
     def eval: Unit = op match {
-      case Failure(err) => fail(err.toString)
+      case Failure(err) => fail(err.getMessage)
       case _ => ()
     }
   }

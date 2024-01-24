@@ -107,7 +107,7 @@ trait TypeOps { self: TastyUniverse =>
         }
 
       case tpe: u.TypeRef =>
-        if (tpe.sym.is(Object)) prefixed("path") {
+        if (tpe.sym.is(Object, isJava = false)) prefixed("path") {
           s"${tpe.sym.fullName}.type"
         }
         else prefixed("tpelazy") {
