@@ -14,6 +14,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 /** On pattern matcher checkability:
  *
@@ -179,7 +180,7 @@ trait Checkable {
           sym.name.toTermName == nme.WILDCARD ||  // don't warn for `case l: List[_]`. Here, `List[_]` is a TypeRef, the arg refers an abstract type symbol `_`
           nme.isVariableName(sym.name)            // don't warn for `x.isInstanceOf[List[_]]`. Here, `List[_]` is an existential, quantified sym has `isVariableName`
         }
-      var res: Set[Type] = Set.empty[Type]
+      var res = Set.empty[Type]
       def add(t: Type): Unit = if (!isUnwarnableTypeArg(t)) res += t
       def loop(tp: Type): Unit = tp match {
         case RefinedType(parents, _) =>
@@ -300,18 +301,20 @@ trait Checkable {
         case p                                                     => new CheckabilityChecker(AnyTpe, p).isCheckable
       })
 
+    def checkedSingleton(tree: Tree, P0: Type): Boolean =
+      isSingleType(P0) && P0.<:<(AnyRefTpe) || (P0.typeSymbol == SingletonClass).tap(if (_)
+        context.warning(tree.pos, s"fruitless type test: every non-null value will be a Singleton dynamically", WarningCategory.Other))
+
     /** TODO: much better error positions.
       * Kind of stuck right now because they just pass us the one tree.
       * TODO: Eliminate inPattern, canRemedy, which have no place here.
       *
       *  Instead of the canRemedy flag, annotate uncheckable types that have become checkable because of the availability of a class tag?
       */
-    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false): Unit = if (!uncheckedOk(P0)) {
+    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false): Unit = if (!uncheckedOk(P0) && !checkedSingleton(tree, P0)) {
       import Checkability._
 
-      if (P0.typeSymbol == SingletonClass)
-        context.warning(tree.pos, s"fruitless type test: every non-null value will be a Singleton dynamically", WarningCategory.Other)
-      else {
+      locally {
         // singleton types not considered here, dealias the pattern
         val P = P0.dealiasWiden
         val X = X0.widen
@@ -324,12 +327,12 @@ trait Checkable {
             InferErrorGen.TypePatternOrIsInstanceTestError(tree, P)
           // If top-level abstract types can be checked using a classtag extractor, don't warn about them
           case TypeRef(_, sym, _) if sym.isAbstractType && canRemedy =>
-            ;
           // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
-          case RefinedType(_, decls) if !decls.isEmpty =>
-            context.warning(tree.pos, s"a pattern match on a refinement type is unchecked", WarningCategory.Unchecked)
-          case RefinedType(parents, _) =>
-            parents.foreach(checkCheckable(tree, _, X, inPattern, canRemedy))
+          case RefinedType(parents, decls) =>
+            if (!decls.isEmpty)
+              context.warning(tree.pos, s"a pattern match on a refinement type is unchecked", WarningCategory.Unchecked)
+            else
+              parents.foreach(checkCheckable(tree, _, X, inPattern, canRemedy))
           case _ =>
             val checker = new CheckabilityChecker(X, P)
             if (checker.result == RuntimeCheckable)
