@@ -474,7 +474,7 @@ trait ContextOps { self: TastyUniverse =>
       else if (name === TastyName.MixinConstructor) {
         owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
       }
-      else if (isJava && flags.is(FlagSets.JavaEnumCase)) {
+      else if (isJava && flags.not(Method)) {
         owner.newValue(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
       else {

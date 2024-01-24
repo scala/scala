@@ -161,16 +161,21 @@ trait TreeOps { self: TastyUniverse =>
     def AppliedTypeTree(tpt: Tree, args: List[Tree], isJava: Boolean)(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndTpe) {
         u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(u.intersectionType(args.map(_.tpe)))
-      } else {
+      }
+      else if (isJava && u.definitions.isScalaRepeatedParamType(tpt.tpe)) {
+        u.AppliedTypeTree(tpt, args).setType(u.definitions.javaRepeatedType(args.head.tpe))
+      }
+      else {
         u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe), isJava))
       }
     }
 
-    def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
+    def Annotated(tpt: Tree, annot: Tree, isJava: Boolean)(implicit ctx: Context): Tree = {
       if (annot.tpe.typeSymbol === defn.RepeatedAnnot
           && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
           && tpt.tpe.typeArgs.length == 1) {
-        tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
+        if (isJava) tpd.TypeTree(u.definitions.javaRepeatedType(tpt.tpe.typeArgs.head))
+        else tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
       }
       else {
         u.Annotated(annot, tpt).setType(defn.AnnotatedType(tpt.tpe, annot))
