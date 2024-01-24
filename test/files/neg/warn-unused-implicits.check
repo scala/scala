@@ -4,6 +4,9 @@ warn-unused-implicits.scala:13: warning: parameter s in method f is never used
 warn-unused-implicits.scala:33: warning: parameter s in method i is never used
   def i(implicit s: String, t: Int) = t           // yes, warn
                  ^
+warn-unused-implicits.scala:52: warning: parameter ev in method ==> is never used
+    def ==>[B](b: B)(implicit ev: BadCanEqual[A, B]): Boolean = a == b // warn, ev.run
+                              ^
 error: No warnings can be incurred under -Werror.
-2 warnings
+3 warnings
 1 error

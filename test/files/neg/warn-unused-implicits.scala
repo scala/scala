@@ -40,3 +40,15 @@ trait U { _: T =>
   override def f()(implicit i: Int): Int = g()  // no warn, required by baseclass, scala/bug#12876
   def g(): Int
 }
+
+trait CanEqual[A, B]
+trait BadCanEqual[A, B] extends Runnable
+
+class EqTest {
+  implicit class ArrowAssert[A](a: A) {
+    def ==>[B](b: B)(implicit ev: CanEqual[A, B]): Boolean = a == b // no warn, no non-trivial members
+  }
+  implicit class BadArrowAssert[A](a: A) {
+    def ==>[B](b: B)(implicit ev: BadCanEqual[A, B]): Boolean = a == b // warn, ev.run
+  }
+}

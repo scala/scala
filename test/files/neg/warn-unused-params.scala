@@ -96,7 +96,7 @@ trait Anonymous {
 
   def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
 }
-trait Context[A]
+trait Context[A] { def answer = 27 /* contextually */ }
 trait Implicits {
   def f[A](implicit ctx: Context[A]) = answer
   def g[A: Context] = answer

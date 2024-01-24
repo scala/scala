@@ -769,7 +769,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         )
         def warningIsOnFor(s: Symbol) =
           if (!s.isImplicit) settings.warnUnusedExplicits
-          else if (!s.isSynthetic) settings.warnUnusedImplicits
+          else if (!s.isSynthetic) settings.warnUnusedImplicits && s.info.members.reverseIterator.exists(m => !m.isPrivate && !m.isConstructor && !isUniversalMember(m))
           else settings.warnUnusedSynthetics
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
