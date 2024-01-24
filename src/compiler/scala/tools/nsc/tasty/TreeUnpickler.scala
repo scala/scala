@@ -444,6 +444,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case RECthis => defn.RecThis(readTypeRef())
           case SHAREDtype =>
             val ref = readAddr()
+            // TODO [tasty]: there are enough cases now to suggest that ultimately
+            // nsc is not designed around cached types, e.g.
+            // - unique symbols for wildcard type arguments
+            // - context-sensitive substitutions of types we need to make,
+            //   which may propagate incorrect semantics to other sites if the type is shared
+            // so we should probably remove this,
+            // however as of writing removing caching breaks `TastyTestJUnit.run`,
+            // so further investigation is needed.
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype => defn.ByNameType(readType())
           case _ => defn.ConstantType(readConstant(tag))
@@ -1005,7 +1013,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             nextUnsharedTag match {
               case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentWithOuter).tpe
               case _ => readTpt()(parentCtx).tpe
-            }
+            },
+            isJava
           )
         }
       }

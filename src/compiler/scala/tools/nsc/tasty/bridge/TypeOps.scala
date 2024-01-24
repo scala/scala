@@ -161,9 +161,13 @@ trait TypeOps { self: TastyUniverse =>
     final val NoType: Type = u.NoType
     final val NoPrefix: Type = u.NoPrefix
 
-    def adjustParent(tp: Type): Type = {
+    final val ObjectTpe: Type = u.definitions.ObjectTpe
+    final val ObjectTpeJava: Type = u.definitions.ObjectTpeJava
+
+    def adjustParent(tp: Type, isJava: Boolean): Type = {
       val tpe = tp.dealias
-      if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
+      if (isJava && (tpe eq ObjectTpeJava)) ObjectTpe
+      else if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
       else tpe
     }
 
@@ -283,7 +287,27 @@ trait TypeOps { self: TastyUniverse =>
         case ErasedFunctionType(n) => erasedFnIsUnsupported(formatFnType("=>", isErased = true, n, args))
         case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", isErased = false, n, args))
         case _ =>
-          u.appliedType(tycon, args)
+          if (isJava && tycon.typeSymbol === u.definitions.ArrayClass) {
+            val arg0 = args.head
+            val arg1 =
+              arg0 match {
+                case arg0: u.RefinedType if arg0.parents.exists(_ eq ObjectTpeJava) =>
+                  // TODO [tasty]: in theory we could add more Modes to context to
+                  // detect this situation and not perform the substitution ahead of time,
+                  // however this does not work with SHAREDtype which caches.
+                  val parents1 = arg0.parents.map(tpe =>
+                    if (tpe eq ObjectTpeJava) ObjectTpe else tpe
+                  )
+                  IntersectionType(parents1)
+                case _ =>
+                  arg0
+              }
+
+            val args1 = if (arg1 eq arg0) args else arg1 :: Nil
+            u.appliedType(tycon, args1)
+          } else {
+            u.appliedType(tycon, args)
+          }
       }
 
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
@@ -356,7 +380,7 @@ trait TypeOps { self: TastyUniverse =>
       else {
         if (isJava && preSym === u.definitions.JavaLangPackage) {
           name match {
-            case TypeName(SimpleName(tpnme.Object)) => u.definitions.ObjectTpeJava // Object =:= scala.Any in Java.
+            case TypeName(SimpleName(tpnme.Object)) => ObjectTpeJava // Object =:= scala.Any in Java.
             case _                                  => doLookup
           }
         } else {
