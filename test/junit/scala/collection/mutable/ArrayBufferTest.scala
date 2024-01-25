@@ -412,7 +412,7 @@ class ArrayBufferTest {
       assertThrows[Exception](rethrow(resizeUp(0, targetLen)),
                               _ == s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $targetLen; current length: 0")
 
-    checkExceedsMaxInt(Int.MaxValue + 1)
+    checkExceedsMaxInt(Int.MaxValue + 1: @nowarn)
     checkExceedsVMArrayLimit(Int.MaxValue)
     checkExceedsVMArrayLimit(Int.MaxValue - 1)
   }

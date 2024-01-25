@@ -775,8 +775,7 @@ private[collection] object RedBlackTree {
   //see #Tree docs "Colour, mutablity and size encoding"
   //we make these final vals because the optimiser inlines them, without reference to the enclosing module
   private[RedBlackTree] final val colourBit         = 0x80000000
-  //really its ~colourBit but that doesnt get inlined
-  private[RedBlackTree] final val colourMask        = colourBit - 1
+  private[RedBlackTree] final val colourMask        = ~colourBit
   private[RedBlackTree] final val initialBlackCount = colourBit
   private[RedBlackTree] final val initialRedCount   = 0
 
