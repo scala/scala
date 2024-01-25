@@ -1,0 +1,4 @@
+unsafe.scala:9: error: value threadId is not a member of Thread
+  def f(t: Thread) = t.threadId
+                       ^
+one error found

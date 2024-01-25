@@ -260,7 +260,9 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
 
     // Assemble the elements!
     def basis = List[Traversable[ClassPath]](
-      jrt,                                          // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
+      if (settings.javabootclasspath.isSetByUser)   // respect explicit `-javabootclasspath rt.jar`
+        Nil
+      else jrt,                                     // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -271,7 +273,7 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
 
-    private def jrt: Option[ClassPath] = JrtClassPath.apply(settings.releaseValue, closeableRegistry)
+    private def jrt: List[ClassPath] = JrtClassPath.apply(settings.releaseValue, settings.unsafe.valueSetByUser, closeableRegistry)
 
     lazy val containers = basis.flatten.distinct
 

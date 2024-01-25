@@ -13,16 +13,18 @@
 package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
-import java.net.URL
-import java.util
+import java.net.{URI, URL}
+import java.nio.file._
 
-import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
-import FileUtils._
 import scala.collection.JavaConverters._
 import scala.reflect.internal.JDK9Reflectors
+import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
 import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.PackageNameUtils.{packageContains, separatePkgAndClassNames}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
+import scala.util.Properties.{isJavaAtLeast, javaHome}
+import scala.util.control.NonFatal
+import FileUtils._
 
 /**
  * A trait allowing to look for classpath entries in directories. It provides common logic for
@@ -71,7 +73,7 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends EfficientCla
       case None => emptyFiles
       case Some(directory) => listChildren(directory, Some(isMatchingFile))
     }
-    files.map(f => createFileEntry(toAbstractFile(f)))
+    files.iterator.map(f => createFileEntry(toAbstractFile(f))).toSeq
   }
 
   override private[nsc] def list(inPackage: PackageName, onPackageEntry: PackageEntry => Unit, onClassesAndSources: ClassRepresentation => Unit): Unit = {
@@ -95,7 +97,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
   protected def emptyFiles: Array[File] = Array.empty
   protected def getSubDir(packageDirName: String): Option[File] = {
     val packageDir = new File(dir, packageDirName)
-    if (packageDir.exists && packageDir.isDirectory) Some(packageDir)
+    if (packageDir.exists && packageDir.isDirectory && packageDir.canRead) Some(packageDir)
     else None
   }
   protected def listChildren(dir: File, filter: Option[File => Boolean]): Array[File] = {
@@ -114,7 +116,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     //
     // Note this behaviour can be enabled in javac with `javac -XDsortfiles`, but that's only
     // intended to improve determinism of the compiler for compiler hackers.
-    util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
+    java.util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
     listing
   }
   protected def getName(f: File): String = f.getName
@@ -128,44 +130,65 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 }
 
 object JrtClassPath {
-  import java.nio.file._, java.net.URI
   private val jrtClassPathCache = new FileBasedCache[Unit, JrtClassPath]()
   private val ctSymClassPathCache = new FileBasedCache[String, CtSymClassPath]()
-  def apply(release: Option[String], closeableRegistry: CloseableRegistry): Option[ClassPath] = {
-    import scala.util.Properties._
-    if (!isJavaAtLeast("9")) None
+  def apply(release: Option[String], unsafe: Option[List[String]], closeableRegistry: CloseableRegistry): List[ClassPath] =
+    if (!isJavaAtLeast("9")) Nil
     else {
       // TODO escalate errors once we're sure they are fatal
       // I'm hesitant to do this immediately, because -release will still work for multi-release JARs
       // even if we're running on a JRE or a non OpenJDK JDK where ct.sym is unavailable.
       //
       // Longer term we'd like an official API for this in the JDK
-      // Discussion: http://mail.openjdk.java.net/pipermail/compiler-dev/2018-March/thread.html#11738
+      // Discussion: https://mail.openjdk.java.net/pipermail/compiler-dev/2018-March/thread.html#11738
 
       val currentMajorVersion: Int = JDK9Reflectors.runtimeVersionMajor(JDK9Reflectors.runtimeVersion()).intValue()
       release match {
-        case Some(v) if v.toInt < currentMajorVersion =>
-          try {
-            val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
-            if (Files.notExists(ctSym)) None
-            else {
-              val classPath = ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, true)
-              Some(classPath)
-            }
-          } catch {
-            case _: Throwable => None
+        case Some(version) if version.toInt < currentMajorVersion =>
+          val ct = createCt(version, closeableRegistry)
+          unsafe match {
+            case Some(pkgs) if pkgs.nonEmpty =>
+              createJrt(closeableRegistry) match {
+                case Nil      => ct
+                case jrt :: _ => ct :+ new FilteringJrtClassPath(jrt, pkgs: _*)
+              }
+            case _ => ct
           }
         case _ =>
-          try {
-            val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-            val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, false)
-            Some(classPath)
-          } catch {
-            case _: ProviderNotFoundException | _: FileSystemNotFoundException => None
-          }
+          createJrt(closeableRegistry)
       }
     }
-  }
+  private def createCt(v: String, closeableRegistry: CloseableRegistry): List[ClassPath] =
+    try {
+      val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
+      if (Files.notExists(ctSym)) Nil
+      else List(
+        ctSymClassPathCache.getOrCreate(v, ctSym :: Nil, () => new CtSymClassPath(ctSym, v.toInt), closeableRegistry, checkStamps = true)
+      )
+    } catch {
+      case NonFatal(_) => Nil
+    }
+  private def createJrt(closeableRegistry: CloseableRegistry): List[JrtClassPath] =
+    try {
+      val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
+      val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, checkStamps = false)
+      List(classPath)
+    } catch {
+      case _: ProviderNotFoundException | _: FileSystemNotFoundException => Nil
+    }
+}
+
+final class FilteringJrtClassPath(delegate: JrtClassPath, allowed: String*) extends ClassPath with NoSourcePaths {
+  private val allowedPackages = allowed
+  private def packagePrefix(p: String, q: String) = p.startsWith(q) && (p.length == q.length || p.charAt(q.length) == '.')
+  private def ok(pkg: PackageName) = pkg.dottedString.isEmpty || allowedPackages.exists(packagePrefix(_, pkg.dottedString))
+  def asClassPathStrings: Seq[String] = delegate.asClassPathStrings
+  def asURLs: Seq[java.net.URL] = delegate.asURLs
+  private[nsc] def classes(inPackage: PackageName) = if (ok(inPackage)) delegate.classes(inPackage) else Nil
+  def findClassFile(className: String) = if (ok(PackageName(separatePkgAndClassNames(className)._1))) delegate.findClassFile(className) else None
+  private[nsc] def hasPackage(pkg: PackageName) = ok(pkg) && delegate.hasPackage(pkg)
+  private[nsc] def list(inPackage: PackageName) = if (ok(inPackage)) delegate.list(inPackage) else ClassPathEntries(Nil, Nil)
+  private[nsc] def packages(inPackage: PackageName) = if (ok(inPackage)) delegate.packages(inPackage) else Nil
 }
 
 /**
@@ -176,16 +199,15 @@ object JrtClassPath {
   *
   * The implementation assumes that no classes exist in the empty package.
   */
-final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with NoSourcePaths {
-  import java.nio.file.Path, java.nio.file._
+final class JrtClassPath(fs: FileSystem) extends ClassPath with NoSourcePaths {
   type F = Path
   private val dir: Path = fs.getPath("/packages")
 
   // e.g. "java.lang" -> Seq("/modules/java.base")
   private val packageToModuleBases: Map[String, Seq[Path]] = {
-    val ps = Files.newDirectoryStream(dir).iterator().asScala
+    val ps = Files.newDirectoryStream(dir).iterator.asScala
     def lookup(pack: Path): Seq[Path] = {
-      Files.list(pack).iterator().asScala.map(l => if (Files.isSymbolicLink(l)) Files.readSymbolicLink(l) else l).toList
+      Files.list(pack).iterator.asScala.map(l => if (Files.isSymbolicLink(l)) Files.readSymbolicLink(l) else l).toList
     }
     ps.map(p => (p.toString.stripPrefix("/packages/"), lookup(p))).toMap
   }
@@ -199,7 +221,7 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
     if (inPackage.isRoot) Nil
     else {
       packageToModuleBases.getOrElse(inPackage.dottedString, Nil).flatMap(x =>
-        Files.list(x.resolve(inPackage.dirPathTrailingSlash)).iterator().asScala.filter(_.getFileName.toString.endsWith(".class"))).map(x =>
+        Files.list(x.resolve(inPackage.dirPathTrailingSlash)).iterator.asScala.filter(_.getFileName.toString.endsWith(".class"))).map(x =>
         ClassFileEntryImpl(new PlainNioFile(x))).toVector
     }
   }
@@ -208,7 +230,7 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
     if (inPackage.isRoot) ClassPathEntries(packages(inPackage), Nil)
     else ClassPathEntries(packages(inPackage), classes(inPackage))
 
-  def asURLs: Seq[URL] = Seq(new URL("jrt:/"))
+  def asURLs: Seq[URL] = Seq(new URI("jrt:/").toURL)
   // We don't yet have a scheme to represent the JDK modules in our `-classpath`.
   // java models them as entries in the new "module path", we'll probably need to follow this.
   def asClassPathStrings: Seq[String] = Nil
@@ -226,16 +248,16 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
 }
 
 /**
-  * Implementation `ClassPath` based on the \$JAVA_HOME/lib/ct.sym backing http://openjdk.java.net/jeps/247
+  * Implementation `ClassPath` based on the \$JAVA_HOME/lib/ct.sym backing https://openjdk.java.net/jeps/247
   */
 final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends ClassPath with NoSourcePaths with Closeable {
   import java.nio.file.Path, java.nio.file._
 
   private val fileSystem: FileSystem = FileSystems.newFileSystem(ctSym, null: ClassLoader)
-  private val root: Path = fileSystem.getRootDirectories.iterator().next
-  private val roots = Files.newDirectoryStream(root).iterator().asScala.toList
+  private val root: Path = fileSystem.getRootDirectories.iterator.next
+  private val roots = Files.newDirectoryStream(root).iterator.asScala.toList
 
-  // http://mail.openjdk.java.net/pipermail/compiler-dev/2018-March/011737.html
+  // https://mail.openjdk.java.net/pipermail/compiler-dev/2018-March/011737.html
   private def codeFor(major: Int): String = if (major < 10) major.toString else ('A' + (major - 10)).toChar.toString
 
   private val releaseCode: String = codeFor(release)
@@ -243,9 +265,9 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
   private val rootsForRelease: List[Path] = roots.filter(root => fileNameMatchesRelease(root.getFileName.toString))
 
   // e.g. "java.lang" -> Seq(/876/java/lang, /87/java/lang, /8/java/lang))
-  private val packageIndex: scala.collection.Map[String, Seq[Path]] = {
+  private val packageIndex: scala.collection.Map[String, scala.collection.Seq[Path]] = {
     val index = collection.mutable.AnyRefMap[String, collection.mutable.ListBuffer[Path]]()
-    val isJava12OrHigher = scala.util.Properties.isJavaAtLeast("12")
+    val isJava12OrHigher = isJavaAtLeast("12")
     rootsForRelease.foreach(root => Files.walk(root).iterator().asScala.filter(Files.isDirectory(_)).foreach { p =>
       val moduleNamePathElementCount = if (isJava12OrHigher) 1 else 0
       if (p.getNameCount > root.getNameCount + moduleNamePathElementCount) {
@@ -265,7 +287,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
     if (inPackage.isRoot) Nil
     else {
       val sigFiles = packageIndex.getOrElse(inPackage.dottedString, Nil).iterator.flatMap(p =>
-        Files.list(p).iterator().asScala.filter(_.getFileName.toString.endsWith(".sig")))
+        Files.list(p).iterator.asScala.filter(_.getFileName.toString.endsWith(".sig")))
       sigFiles.map(f => ClassFileEntryImpl(new PlainNioFile(f))).toVector
     }
   }
