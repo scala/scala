@@ -81,6 +81,7 @@ object ClassfileConstants {
   final val CONSTANT_NAMEANDTYPE   = 12
   final val CONSTANT_METHODHANDLE  = 15
   final val CONSTANT_METHODTYPE    = 16
+  final val CONSTANT_DYNAMIC       = 17
   final val CONSTANT_INVOKEDYNAMIC = 18
   final val CONSTANT_MODULE        = 19
   final val CONSTANT_PACKAGE       = 20
