@@ -5,7 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
-import scala.annotation.unused
+import scala.annotation.{nowarn, unused}
 import scala.collection.immutable.VectorInline.{WIDTH3, WIDTH4, WIDTH5}
 import scala.collection.mutable.{ListBuffer, StringBuilder}
 import scala.tools.testkit.AssertUtil.intercept
@@ -110,10 +110,11 @@ class VectorTest {
   @Test
   def testBuilderAlignTo2(): Unit = {
     val Large = 1 << 20
-    for (
-      size <- Seq(0, 1, 31, 1 << 5, 1 << 10, 1 << 15, 1 << 20, 9 << 20, 1 << 25, 9 << 25, 50 << 25, 1 << 30, (1 << 31) - (1 << 26) - 1000);
+    @nowarn val KrazyKonstant = (1 << 31) - (1 << 26) - 1000
+    for {
+      size <- Seq(0, 1, 31, 1 << 5, 1 << 10, 1 << 15, 1 << 20, 9 << 20, 1 << 25, 9 << 25, 50 << 25, 1 << 30, KrazyKonstant)
       i <- Seq(0, 1, 5, 123)
-    ) {
+    } {
 //      println((i, size))
       val v = if (size < Large) Vector.tabulate(size)(_.toString) else Vector.fillSparse(size)("v")
       val prefix = Vector.fill(i)("prefix")

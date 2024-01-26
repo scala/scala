@@ -17,6 +17,7 @@ package typechecker
 import java.lang.ArithmeticException
 
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.control.ControlThrowable
 
 /** This class ...
  *
@@ -60,8 +61,8 @@ abstract class ConstantFolder {
   def apply(tree: Tree, site: Symbol): Tree = if (isPastTyper) tree else
     try {
       tree match {
-        case Apply(Select(FoldableTerm(x), op), List(FoldableTerm(y))) => fold(tree, foldBinop(op, x, y), foldable = true)
-        case Apply(Select(ConstantTerm(x), op), List(ConstantTerm(y))) => fold(tree, foldBinop(op, x, y), foldable = false)
+        case Apply(Select(FoldableTerm(x), op), List(FoldableTerm(y))) => fold(tree, safelyFoldBinop(tree, site)(op, x, y), foldable = true)
+        case Apply(Select(ConstantTerm(x), op), List(ConstantTerm(y))) => fold(tree, safelyFoldBinop(tree, site)(op, x, y), foldable = false)
         case Select(FoldableTerm(x), op) => fold(tree, foldUnop(op, x), foldable = true)
         case Select(ConstantTerm(x), op) => fold(tree, foldUnop(op, x), foldable = false)
         case _ => tree
@@ -86,9 +87,11 @@ abstract class ConstantFolder {
   /** Set the computed constant type.
    */
   private def fold(orig: Tree, folded: Constant, foldable: Boolean): Tree =
-    if ((folded eq null) || folded.tag == UnitTag) orig
-    else if (foldable) orig setType FoldableConstantType(folded)
-    else orig setType LiteralType(folded)
+    if (folded == null || folded.tag == UnitTag) orig
+    else orig.setType {
+      if (foldable) FoldableConstantType(folded)
+      else LiteralType(folded)
+    }
 
   private def foldUnop(op: Name, x: Constant): Constant = {
     val N = nme
@@ -127,8 +130,7 @@ abstract class ConstantFolder {
     if (value != null) Constant(value) else null
   }
 
-  /** These are local helpers to keep foldBinop from overly taxing the
-   *  optimizer.
+  /** These are local helpers to keep foldBinop from overly taxing the optimizer.
    */
   private def foldBooleanOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.ZOR  => Constant(x.booleanValue | y.booleanValue)
@@ -153,10 +155,18 @@ abstract class ConstantFolder {
     case nme.GT  => Constant(x.intValue > y.intValue)
     case nme.LE  => Constant(x.intValue <= y.intValue)
     case nme.GE  => Constant(x.intValue >= y.intValue)
-    case nme.ADD => Constant(x.intValue + y.intValue)
-    case nme.SUB => Constant(x.intValue - y.intValue)
-    case nme.MUL => Constant(x.intValue * y.intValue)
-    case nme.DIV => Constant(x.intValue / y.intValue)
+    case nme.ADD => Constant(safely(Math.addExact(x.intValue, y.intValue), x.intValue + y.intValue))
+    case nme.SUB => Constant(safely(Math.subtractExact(x.intValue, y.intValue), x.intValue - y.intValue))
+    case nme.MUL => Constant(safely(Math.multiplyExact(x.intValue, y.intValue), x.intValue * y.intValue))
+    case nme.DIV =>
+      val xd = x.intValue
+      val yd = y.intValue
+      val value =
+        if (yd == 0) xd / yd // Math.divideExact(xd, yd) // de-optimize
+        else if (yd == -1 && xd == Int.MinValue)
+          safely(throw new ArithmeticException("integer overflow"), xd / yd)
+        else xd / yd
+      Constant(value)
     case nme.MOD => Constant(x.intValue % y.intValue)
     case _       => null
   }
@@ -179,10 +189,18 @@ abstract class ConstantFolder {
     case nme.GT  => Constant(x.longValue > y.longValue)
     case nme.LE  => Constant(x.longValue <= y.longValue)
     case nme.GE  => Constant(x.longValue >= y.longValue)
-    case nme.ADD => Constant(x.longValue + y.longValue)
-    case nme.SUB => Constant(x.longValue - y.longValue)
-    case nme.MUL => Constant(x.longValue * y.longValue)
-    case nme.DIV => Constant(x.longValue / y.longValue)
+    case nme.ADD => Constant(safely(Math.addExact(x.longValue, y.longValue), x.longValue + y.longValue))
+    case nme.SUB => Constant(safely(Math.subtractExact(x.longValue, y.longValue), x.longValue - y.longValue))
+    case nme.MUL => Constant(safely(Math.multiplyExact(x.longValue, y.longValue), x.longValue * y.longValue))
+    case nme.DIV =>
+      val xd = x.longValue
+      val yd = y.longValue
+      val value =
+        if (yd == 0) xd / yd // Math.divideExact(xd, yd) // de-optimize
+        else if (yd == -1 && xd == Long.MinValue)
+          safely(throw new ArithmeticException("long overflow"), xd / yd)
+        else xd / yd
+      Constant(value)
     case nme.MOD => Constant(x.longValue % y.longValue)
     case _       => null
   }
@@ -231,4 +249,16 @@ abstract class ConstantFolder {
       case _                                        => null
     }
   }
+  private def safelyFoldBinop(tree: Tree, site: Symbol)(op: Name, x: Constant, y: Constant): Constant =
+    try foldBinop(op, x, y)
+    catch {
+      case e: ConstFoldException =>
+        if (settings.warnConstant)
+          runReporting.warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}, using ${e.value}", WarningCategory.LintConstant, site)
+        Constant(e.value)
+    }
+  private def safely[A](exact: => A, inexact: A): A =
+    try exact
+    catch { case e: ArithmeticException => throw new ConstFoldException(e.getMessage, inexact) }
+  private class ConstFoldException(msg: String, val value: Any) extends ControlThrowable(msg)
 }
