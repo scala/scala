@@ -31,9 +31,9 @@ templates: # this has no effect on travis, it's just a place to put our template
     name: build, publishLocal, build again
     script:
       - set -e
-      - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+      - sbt -Dsbt.io.jdktimestamps=true setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
       - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 -Dstarr.version=$STARR setupValidateTest compile
+      - sbt -Dsbt.io.jdktimestamps=true -Dstarr.version=$STARR setupValidateTest compile
     workspaces:
       create:
         name: bootstrapped
@@ -57,7 +57,7 @@ templates: # this has no effect on travis, it's just a place to put our template
     script:
       - set -e
       - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
+      - sbt -Dsbt.io.jdktimestamps=true -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
 
   test2: &test2
     stage: test
@@ -67,7 +67,7 @@ templates: # this has no effect on travis, it's just a place to put our template
     script:
       - set -e
       - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 -Dstarr.version=$STARR setupValidateTest testAll2
+      - sbt -Dsbt.io.jdktimestamps=true -Dstarr.version=$STARR setupValidateTest testAll2
 
 jobs:
   include:
@@ -117,7 +117,7 @@ jobs:
       script:
         - set -e
         - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-        - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 -Dscala.build.compileWithDotty=true library/compile
+        - sbt -Dsbt.io.jdktimestamps=true -Dscala.build.compileWithDotty=true library/compile
 
     - name: build benchmarks
       if: type = pull_request OR repo != scala/scala
@@ -126,7 +126,7 @@ jobs:
       script:
         - set -e
         - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-        - sbt -Dsbt.io.jdktimestamps=true -Dsbt.scala.version=2.12.18-M2 bench/Jmh/compile
+        - sbt -Dsbt.io.jdktimestamps=true bench/Jmh/compile
 
     - stage: build
       if: type = pull_request OR type = push
