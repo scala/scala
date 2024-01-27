@@ -886,28 +886,26 @@ abstract class RefChecks extends Transform {
      */
     private def validateBaseTypes(clazz: Symbol): Unit = {
       val seenParents = mutable.HashSet[Type]()
-      val seenTypes = new Array[List[Type]](clazz.info.baseTypeSeq.length)
-      for (i <- 0 until seenTypes.length)
-        seenTypes(i) = Nil
+      val seenTypes = Array.fill[List[Type]](clazz.info.baseTypeSeq.length)(Nil)
+      val warnCloneable = settings.warnCloneableObject && clazz.isModuleClass
 
       /* validate all base types of a class in reverse linear order. */
       def register(tp: Type): Unit = {
-//        if (clazz.fullName.endsWith("Collection.Projection"))
-//            println("validate base type "+tp)
         val baseClass = tp.typeSymbol
         if (baseClass.isClass) {
           if (!baseClass.isTrait && !baseClass.isJavaDefined && !currentRun.compiles(baseClass) && !separatelyCompiledScalaSuperclass.contains(baseClass))
             separatelyCompiledScalaSuperclass.update(baseClass, ())
           val index = clazz.info.baseTypeIndex(baseClass)
           if (index >= 0) {
-            if (seenTypes(index) forall (tp1 => !(tp1 <:< tp)))
-              seenTypes(index) =
-                tp :: (seenTypes(index) filter (tp1 => !(tp <:< tp1)))
+            if (!seenTypes(index).exists(_ <:< tp))
+              seenTypes(index) = tp :: seenTypes(index).filterNot(tp <:< _)
           }
         }
-        val remaining = tp.parents filterNot seenParents
+        if (warnCloneable && baseClass.eq(JavaCloneableClass))
+          reporter.warning(clazz.pos, s"$clazz should not extend Cloneable.")
+        val remaining = tp.parents.filterNot(seenParents)
         seenParents ++= remaining
-        remaining foreach register
+        remaining.foreach(register)
       }
       register(clazz.tpe)
       for (i <- 0 until seenTypes.length) {
@@ -915,12 +913,12 @@ abstract class RefChecks extends Transform {
         seenTypes(i) match {
           case Nil =>
             devWarning(s"base $baseClass not found in basetypes of $clazz. This might indicate incorrect caching of TypeRef#parents.")
-          case _ :: Nil =>
-            ;// OK
+          case _ :: Nil => // OK
           case tp1 :: tp2 :: _ =>
-            reporter.error(clazz.pos, "illegal inheritance;\n " + clazz +
-                       " inherits different type instances of " + baseClass +
-                       ":\n" + tp1 + " and " + tp2)
+            reporter.error(clazz.pos,
+              sm"""|illegal inheritance;
+                   | $clazz inherits different type instances of $baseClass:
+                   |$tp1 and $tp2""")
             explainTypes(tp1, tp2)
             explainTypes(tp2, tp1)
         }
