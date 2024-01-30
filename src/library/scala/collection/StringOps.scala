@@ -1059,20 +1059,19 @@ final class StringOps(private val s: String) extends AnyVal {
     true
   }
 
-  /** Applies a binary operator to a start value and all chars of this string,
-    * going left to right.
-    *
-    *  @param   z    the start value.
-    *  @param   op   the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive chars of this string,
-    *           going left to right with the start value `z` on the left:
-    *           {{{
-    *             op(...op(z, x_1), x_2, ..., x_n)
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the chars of this string.
-    *           Returns `z` if this string is empty.
-    */
+  /** Applies the given binary operator `op` to the given initial value `z` and all chars
+   *  in this string, going left to right. Returns the initial value if this string is
+   *  empty.
+   *
+   *  If `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the chars in this string, the
+   *  result is `op( op( ... op( op(z, x,,1,,), x,,2,,) ... ), x,,n,,)`.
+   *
+   *   @param    z       An initial value.
+   *   @param    op      A binary operator.
+   *   @tparam   B       The result type of the binary operator.
+   *   @return           The result of applying `op` to `z` and all chars in this string,
+   *                     going left to right. Returns `z` if this string is empty.
+   */
   def foldLeft[B](z: B)(op: (B, Char) => B): B = {
     var v = z
     var i = 0
@@ -1084,20 +1083,20 @@ final class StringOps(private val s: String) extends AnyVal {
     v
   }
 
-  /** Applies a binary operator to all chars of this string and a start value,
-    * going right to left.
-    *
-    *  @param   z    the start value.
-    *  @param   op   the binary operator.
-    *  @tparam  B    the result type of the binary operator.
-    *  @return  the result of inserting `op` between consecutive chars of this string,
-    *           going right to left with the start value `z` on the right:
-    *           {{{
-    *             op(x_1, op(x_2, ... op(x_n, z)...))
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the chars of this string.
-    *           Returns `z` if this string is empty.
-    */
+  /** Applies the given binary operator `op` to all chars in this string and the given
+   *  initial value `z`, going right to left. Returns the initial value if this string is
+   *  empty.
+   *
+   *  If `x,,1,,`, `x,,2,,`, ..., `x,,n,,` are the chars in this string, the
+   *  result is `op(x,,1,,, op(x,,2,,, op( ... op(x,,n,,, z) ... )))`.
+   *
+   *   @param    z       An initial value.
+   *   @param    op      A binary operator.
+   *   @tparam   B       The result type of the binary operator.
+   *   @return           The result of applying `op` to all chars in this string
+   *                     and `z`, going right to left. Returns `z` if this string
+   *                     is empty.
+   */
   def foldRight[B](z: B)(op: (Char, B) => B): B = {
     var v = z
     var i = s.length - 1
@@ -1108,15 +1107,17 @@ final class StringOps(private val s: String) extends AnyVal {
     v
   }
 
-  /** Folds the chars of this string using the specified associative binary operator.
-    *
-    *  @tparam A1     a type parameter for the binary operator, a supertype of Char.
-    *  @param z       a neutral element for the fold operation; may be added to the result
-    *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
-    *                 0 for addition, or 1 for multiplication).
-    *  @param op      a binary operator that must be associative.
-    *  @return        the result of applying the fold operator `op` between all the chars and `z`, or `z` if this string is empty.
-    */
+  /** Alias for [[foldLeft]].
+   *
+   *  The type parameter is more restrictive than for `foldLeft` to be
+   *  consistent with [[IterableOnceOps.fold]].
+   *
+   *   @tparam A1     The type parameter for the binary operator, a supertype of `Char`.
+   *   @param z       An initial value.
+   *   @param op      A binary operator.
+   *   @return        The result of applying `op` to `z` and all chars in this string,
+   *                  going left to right. Returns `z` if this string is empty.
+   */
   @`inline` def fold[A1 >: Char](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Selects the first char of this string.
