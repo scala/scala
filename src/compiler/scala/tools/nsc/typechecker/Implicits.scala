@@ -126,11 +126,20 @@ trait Implicits extends splain.SplainData {
     if (settings.areStatisticsEnabled) statistics.stopCounter(findMemberImpl, findMemberStart)
     if (settings.areStatisticsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
-    if (result.isSuccess && settings.lintImplicitRecursion && result.tree.symbol != null) {
-      val rts = result.tree.symbol
-      val s = if (rts.isAccessor) rts.accessed else if (rts.isModule) rts.moduleClass else rts
-      if (s != NoSymbol && context.owner.hasTransOwner(s))
-        context.warning(result.tree.pos, s"Implicit resolves to enclosing $rts", WarningCategory.WFlagSelfImplicit)
+    val rts = result.tree.symbol
+    if (result.isSuccess && rts != null) {
+      if (settings.lintImplicitRecursion) {
+        val s = if (rts.isAccessor) rts.accessed else if (rts.isModule) rts.moduleClass else rts
+        if (s != NoSymbol && context.owner.hasTransOwner(s))
+          context.warning(result.tree.pos, s"Implicit resolves to enclosing $rts", WarningCategory.WFlagSelfImplicit)
+      }
+
+      if (result.inPackagePrefix && currentRun.isScala3) {
+        val msg =
+          s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3.
+             |For migration, add `import ${rts.fullNameString}`.""".stripMargin
+        context.warning(result.tree.pos, msg, WarningCategory.Scala3Migration)
+      }
     }
     implicitSearchContext.emitImplicitDictionary(result)
   }
@@ -194,8 +203,8 @@ trait Implicits extends splain.SplainData {
    *                  that were instantiated by the winning implicit.
    *  @param undetparams undetermined type parameters
    */
-  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol], val implicitInfo: ImplicitInfo = null) {
-    override def toString = s"SearchResult($tree, ${if (subst.isEmpty) "" else subst})"
+  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol], val inPackagePrefix: Boolean = false, val implicitInfo: ImplicitInfo = null) {
+    override def toString = s"SearchResult($tree, ${if (subst.isEmpty) "" else subst}, $inPackagePrefix)"
 
     def isFailure          = false
     def isAmbiguousFailure = false
@@ -222,7 +231,7 @@ trait Implicits extends splain.SplainData {
    *  @param   pre    The prefix type of the implicit
    *  @param   sym    The symbol of the implicit
    */
-  class ImplicitInfo (val name: Name, val pre: Type, val sym: Symbol, val importInfo: ImportInfo = null, val importSelector: ImportSelector = null) {
+  class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol, val inPackagePrefix: Boolean = false, val importInfo: ImportInfo = null, val importSelector: ImportSelector = null) {
     private[this] var tpeCache: Type = null
     private[this] var depolyCache: Type = null
     private[this] var isErroneousCache: TriState = TriState.Unknown
@@ -291,7 +300,8 @@ trait Implicits extends splain.SplainData {
       case that: ImplicitInfo =>
           this.name == that.name &&
           this.pre =:= that.pre &&
-          this.sym == that.sym
+          this.sym == that.sym &&
+          this.inPackagePrefix == that.inPackagePrefix
       case _ => false
     }
     override def hashCode = {
@@ -602,7 +612,7 @@ trait Implicits extends splain.SplainData {
       } else {
         val ref = context.refByNameImplicit(pt)
         if(ref != EmptyTree)
-          new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
+          new SearchResult(ref, EmptyTreeTypeSubstituter, Nil, inPackagePrefix = info.inPackagePrefix)
         else {
           @tailrec
           def loop(ois: List[OpenImplicit], isByName: Boolean): Option[OpenImplicit] =
@@ -617,7 +627,7 @@ trait Implicits extends splain.SplainData {
           recursiveImplicit match {
             case Some(rec) =>
               val ref = atPos(pos.focus)(context.linkByNameImplicit(rec.pt))
-              new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
+              new SearchResult(ref, EmptyTreeTypeSubstituter, Nil, inPackagePrefix = info.inPackagePrefix)
             case None =>
               try {
                 context.openImplicits = OpenImplicit(info, pt, tree, isView, isByNamePt) :: context.openImplicits
@@ -957,7 +967,7 @@ trait Implicits extends splain.SplainData {
                 splainPushImplicitSearchFailure(itree3, pt, err)
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
-                val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams)
+                val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams, inPackagePrefix = info.inPackagePrefix)
                 if (settings.areStatisticsEnabled) statistics.incCounter(foundImplicits)
                 typingLog("success", s"inferred value of type $ptInstantiated is $result")
                 result
@@ -1205,7 +1215,7 @@ trait Implicits extends splain.SplainData {
                 val res = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
                 if (res.isFailure) res
                 else
-                  new SearchResult(res.tree, res.subst, res.undetparams, firstPending)
+                  new SearchResult(res.tree, res.subst, res.undetparams, res.inPackagePrefix, implicitInfo = firstPending)
               }
               else SearchFailure
             } finally {
@@ -1328,10 +1338,13 @@ trait Implicits extends splain.SplainData {
             if (symInfos.exists(_.isSearchedPrefix))
               infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: symInfos
             else if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-              val pre1 =
-                if (sym.isPackageClass) sym.packageObject.typeOfThis
-                else singleType(pre, companionSymbolOf(sym, context))
-              val preInfos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem))
+              val (pre1, inPackagePrefix) =
+                if (sym.isPackageClass) (sym.packageObject.typeOfThis, true)
+                else (singleType(pre, companionSymbolOf(sym, context)), false)
+              val preInfos = {
+                if (currentRun.isScala3Cross && inPackagePrefix) Iterator.empty
+                else pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem, inPackagePrefix = inPackagePrefix))
+              }
               val mergedInfos = if (symInfos.isEmpty) preInfos else {
                 if (shouldLogAtThisPhase && symInfos.exists(!_.dependsOnPrefix)) log {
                   val nonDepInfos = symInfos.iterator.filterNot(_.dependsOnPrefix).mkString("(", ", ", ")")

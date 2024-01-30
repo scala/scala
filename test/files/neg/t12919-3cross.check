@@ -1,0 +1,4 @@
+t12919-3cross.scala:24: error: No implicit Ordering defined for a.A.
+    def f(xs: List[a.A]) = xs.sorted // not found
+                              ^
+1 error
