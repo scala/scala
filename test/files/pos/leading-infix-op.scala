@@ -1,5 +1,5 @@
 
-// scalac: -Xsource:3
+// scalac: -Xsource:3-cross
 
 trait T {
   def f(x: Int): Boolean =

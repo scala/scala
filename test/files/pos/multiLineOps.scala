@@ -1,4 +1,4 @@
-// scalac: -Werror -Xsource:3
+// scalac: -Werror -Xsource:3-cross
 
 class Channel {
   def ! (msg: String): Channel = this

@@ -1,4 +1,5 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3-cross
+
 import scala.tools.testkit.AssertUtil.assertThrown
 import scala.util.chaining.*
 import org.junit.Assert.assertEquals

@@ -78,6 +78,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NullaryOverrideAdapted
     this.ChangeOwnerAttachment
     this.InterpolatedString
+    this.VirtualStringContext
+    this.CaseApplyInheritAccess
     this.RootSelection
     this.TypedExpectingUnitAttachment
     this.FieldTypeInferred

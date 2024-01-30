@@ -1,0 +1,22 @@
+source3Xneg.scala:47: error: value + is not a member of List[Int]
+object AnyPlus { def f(xs: List[Int]) = xs + ";" }
+                                           ^
+source3Xneg.scala:56: error: method copy in class CaseCompanionMods cannot be accessed as a member of CaseCompanionMods from object Test
+    CaseCompanionMods.i.copy(CaseCompanionMods(2).x) // 2 errors
+                        ^
+source3Xneg.scala:56: error: method apply in object CaseCompanionMods cannot be accessed as a member of object CaseCompanionMods from object Test
+error after rewriting to CaseCompanionMods.<apply: error>
+possible cause: maybe a wrong Dynamic method signature?
+    CaseCompanionMods.i.copy(CaseCompanionMods(2).x) // 2 errors
+                             ^
+source3Xneg.scala:60: error: value toUpperCase is not a member of Object
+    InferredSub.f.toUpperCase // error
+                  ^
+source3Xneg.scala:44: warning: Implicit definition must have explicit type (inferred String) [quickfixable]
+  implicit def s = "" // error
+               ^
+source3Xneg.scala:43: warning: Implicit definition must have explicit type (inferred Int) [quickfixable]
+  implicit val i = 0 // error
+               ^
+2 warnings
+4 errors

@@ -1,9 +1,3 @@
-t12816.scala:8: error: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-drop the `extends` clause or use a regular object instead
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
-package object p extends U {
-                 ^
 t12816.scala:29: error: reference to c is ambiguous;
 it is both defined in the enclosing package p and inherited in the enclosing trait RR as method c (defined in trait T)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
@@ -22,4 +16,4 @@ Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=p.RR.n3
     def n3: Z // warn
             ^
-3 errors
+2 errors

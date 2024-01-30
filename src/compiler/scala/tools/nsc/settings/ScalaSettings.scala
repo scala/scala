@@ -124,17 +124,50 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
+  private val XsourceHelp =
+    sm"""|-Xsource:3 is for migrating a codebase, -Xsource:3-cross is for cross-building.
+         |
+         |-Xsource:3 isues migration warnings in category `cat=scala3-migration`,
+         |  which by default are promoted to errors under the `-Wconf` configuration.
+         |  Examples of promoted warnings:
+         |  * Implicit definitions must have an explicit type
+         |  * (x: Any) + "" is deprecated
+         |  * Args not adapted to unit value
+         |  * Member classes cannot shadow a same-named class defined in a parent
+         |  * Presence or absence of parentheses in overrides must match exactly
+         |
+         |Certain benign syntax features are enabled:
+         |  * case C(xs*) =>
+         |  * A & B type intersection
+         |  * import p.*
+         |  * import p.m as n
+         |  * import p.{given, *}
+         |  * Eta-expansion `x.m` of methods without trailing `_`
+         |
+         |The following constructs emit a migration warning under -Xsource:3. With
+         |-Xsource:3-cross the semantics change to match Scala 3 and no warning is issued.
+         |  * Unicode escapes in raw interpolations and triple-quoted strings
+         |  * Leading infix operators continue the previous line
+         |  * Interpolator must be selectable from `scala.StringContext`
+         |  * Case class copy and apply have the same access modifier as the constructor
+         |  * The inferred type of an override is taken from the member it overrides
+         |"""
   @nowarn("cat=deprecation")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = ScalaVersion("2.13")).withPostSetHook { s =>
-    if (s.value >= ScalaVersion("3"))
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable warnings and features for a future version.", initial = ScalaVersion("2.13"), helpText = Some(XsourceHelp)).withPostSetHook { s =>
+    if (s.value >= ScalaVersion("3")) {
       isScala3.value = true
+      if (s.value > ScalaVersion("3"))
+        isScala3Cross.value = true
+    }
     else if (s.value >= ScalaVersion("2.14"))
-      s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3").value = ScalaVersion("3")
+      s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3 or -Xsource:3-cross").value = ScalaVersion("3")
     else if (s.value < ScalaVersion("2.13"))
       errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
   }
   @deprecated("Use currentRun.isScala3 instead", since="2.13.9")
   val isScala3           = BooleanSetting      ("isScala3", "Is -Xsource Scala 3?").internalOnly()
+  @deprecated("Use currentRun.isScala3Cross instead", since="2.13.13")
+  val isScala3Cross      = BooleanSetting      ("isScala3Cross", "Is -Xsource > Scala 3?").internalOnly()
   // The previous "-Xsource" option is intended to be used mainly though ^ helper
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")

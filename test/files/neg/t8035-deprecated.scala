@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xfatal-warnings
+//> using options -Werror -Xlint
 //
 object Foo {
   List(1,2,3).toSet()

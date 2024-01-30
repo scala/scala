@@ -24,16 +24,22 @@ sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
   def versionString: String = unparse
 }
 
-/**
- * A scala version that sorts higher than all actual versions
- */
-case object NoScalaVersion extends ScalaVersion {
-  def unparse = "none"
-
+/** A scala version that sorts higher than all actual versions. */
+sealed abstract class MaximalScalaVersion extends ScalaVersion {
   def compare(that: ScalaVersion): Int = that match {
-    case NoScalaVersion => 0
+    case _: MaximalScalaVersion => 0
     case _ => 1
   }
+}
+
+/** If "no version" is specified, assume a maximal version, "the latest". */
+case object NoScalaVersion extends MaximalScalaVersion {
+  def unparse = "none"
+}
+
+/** Same as `NoScalaVersion` but with a different toString */
+case object Scala3Cross extends MaximalScalaVersion {
+  def unparse = "3-cross"
 }
 
 /**
@@ -58,7 +64,7 @@ case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBu
       else if (rev > thatRev) 1
       else build compare thatBuild
     case AnyScalaVersion => 1
-    case NoScalaVersion => -1
+    case _: MaximalScalaVersion => -1
   }
 }
 
@@ -81,13 +87,13 @@ object ScalaVersion {
   private val dot   = """\."""
   private val dash  = "-"
   private val vchar = """\d""" //"[^-+.]"
-  private val vpat  = s"(?s)($vchar+)(?:$dot($vchar+)(?:$dot($vchar+)(?:$dash(.*))?)?)?".r
+  private val vpat  = s"(?s)($vchar+)(?:$dot($vchar+)(?:$dot($vchar+))?)?(?:$dash(.+))?".r
   private val rcpat = """(?i)rc(\d*)""".r
   private val mspat = """(?i)m(\d*)""".r
 
   def apply(versionString: String, errorHandler: String => Unit): ScalaVersion = {
     def error() = errorHandler(
-      s"Bad version (${versionString}) not major[.minor[.revision[-suffix]]]"
+      s"Bad version (${versionString}) not major[.minor[.revision]][-suffix]"
     )
 
     def toInt(s: String) = s match {
@@ -103,12 +109,12 @@ object ScalaVersion {
     }
 
     versionString match {
-      case "none" => NoScalaVersion
-      case ""     => NoScalaVersion
-      case "any"  => AnyScalaVersion
+      case "none" | "" => NoScalaVersion
+      case "3-cross"   => Scala3Cross
+      case "any"       => AnyScalaVersion
       case vpat(majorS, minorS, revS, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
-      case _      => error() ; AnyScalaVersion
+      case _           => error(); AnyScalaVersion
     }
   }
 

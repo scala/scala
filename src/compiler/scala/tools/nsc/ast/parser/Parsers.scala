@@ -1556,8 +1556,8 @@ self =>
 
       // Scala 2 allowed uprooted Ident for purposes of virtualization
       val t1 =
-        if (currentRun.isScala3) atPos(o2p(start)) { Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
-        else atPos(o2p(start)) { Ident(nme.StringContextName) }
+        if (currentRun.isScala3Cross) atPos(o2p(start)) { Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
+        else atPos(o2p(start)) { Ident(nme.StringContextName).updateAttachment(VirtualStringContext) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) } updateAttachment InterpolatedString
       t2 setPos t2.pos.makeTransparent
       val t3 = Select(t2, interpolator) setPos t2.pos
@@ -3391,11 +3391,6 @@ self =>
       // if there is no template body, then tstart may be in the next program element, so back up to just after the `class C[A]`.
       val templateOffset = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       val templatePos = o2p(templateOffset)
-
-      // warn now if user wrote parents for package object; `gen.mkParents` adds AnyRef to parents
-      if (currentRun.isScala3 && name == nme.PACKAGEkw && !parents.isEmpty)
-        migrationWarning(tstart, sm"""|package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
-                                      |drop the `extends` clause or use a regular object instead""", "3.0.0")
 
       atPos(templateOffset) {
         // Exclude only the 9 primitives plus AnyVal.

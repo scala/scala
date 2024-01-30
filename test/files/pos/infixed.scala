@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+// scalac: -Xsource:3-cross
 
 class K { def x(y: Int) = 0 }
 

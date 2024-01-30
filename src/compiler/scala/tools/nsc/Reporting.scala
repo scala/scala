@@ -44,8 +44,10 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       if (settings.rootdir.value.isEmpty) ""
       else Regex.quote(new java.io.File(settings.rootdir.value).getCanonicalPath.replace("\\", "/"))
     @nowarn("cat=deprecation")
-    def isScala3 = settings.isScala3.value
-    def isScala3Migration = settings.Xmigration.value != NoScalaVersion
+    val isScala3 = settings.isScala3.value
+    @nowarn("cat=deprecation")
+    val isScala3Cross: Boolean = settings.isScala3Cross.value
+    val isScala3Migration = settings.Xmigration.value != NoScalaVersion
     lazy val wconf = WConf.parse(settings.Wconf.value, rootDirPrefix) match {
       case Left(msgs) =>
         val multiHelp =

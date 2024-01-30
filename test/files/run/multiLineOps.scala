@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3-cross
 //
 // was: without backticks, "not found: value +" (but parsed here as +a * 6, where backticks fool the lexer)
 // now: + is taken as "solo" infix op
