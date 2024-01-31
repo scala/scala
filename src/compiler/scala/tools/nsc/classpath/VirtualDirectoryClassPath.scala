@@ -30,6 +30,8 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
     case Some(f) => dir.iterator.filter(f).toArray
     case _ => dir.toArray
   }
+  protected def hasChild(dir: AbstractFile, name: String): Boolean = dir.lookupName(name, directory = false) != null
+
   def getName(f: AbstractFile): String = f.name
   def toAbstractFile(f: AbstractFile): AbstractFile = f
   def isPackage(f: AbstractFile): Boolean = f.isPackage
@@ -47,5 +49,6 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
   private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = files(inPackage)
 
   protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
-  protected def isMatchingFile(f: AbstractFile): Boolean = f.isClass
+  protected def isMatchingFile(f: AbstractFile, siblingExists: String => Boolean): Boolean =
+    f.isClass && !(f.hasExtension("class") && siblingExists(f.name.dropRight(6) + ".tasty"))
 }

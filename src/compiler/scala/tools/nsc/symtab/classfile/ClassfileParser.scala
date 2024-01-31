@@ -15,22 +15,19 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.{ByteArrayOutputStream, IOException}
+import java.io.IOException
 import java.lang.Integer.toHexString
-import java.net.URLClassLoader
-import java.util.UUID
 
 import scala.annotation.switch
 import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
+import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.tasty.{TastyUniverse, TastyUnpickler}
-import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
 import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
@@ -73,14 +70,12 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var staticScope: Scope = _         // the scope of all static definitions
   protected var pool: ConstantPool = _         // the classfile's constant pool
   protected var isScala: Boolean = _           // does class file describe a scala class?
-  protected var isTASTY: Boolean = _           // is this class accompanied by a TASTY file?
   protected var isScalaRaw: Boolean = _        // this class file is a scala class with no pickled info
   protected var busy: Symbol = _               // lock to detect recursive reads
   protected var currentClass: String = _       // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
-  protected val TASTYUUIDLength: Int = 16
   private var YtastyReader          = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
@@ -512,7 +507,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       if (!c.isInstanceOf[StubSymbol] && c != clazz) mismatchError(c)
     }
 
-    if (isScala || isTASTY) {
+    if (isScala) {
       () // We're done
     } else if (isScalaRaw) {
       val decls = clazz.enclosingPackage.info.decls
@@ -1106,8 +1101,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
     var innersStart = -1
     var runtimeAnnotStart = -1
-    var TASTYAttrStart = -1
-    var TASTYAttrLen = -1
 
     val numAttrs = u2()
     var i = 0
@@ -1121,13 +1114,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case tpnme.ScalaATTR =>
           isScalaRaw = true
           i = numAttrs
-        case tpnme.TASTYATTR if !YtastyReader =>
-          MissingRequirementError.signal(s"Add -Ytasty-reader to scalac options to parse the TASTy in $file")
         case tpnme.TASTYATTR =>
-          isTASTY = true
-          TASTYAttrLen = attrLen
-          TASTYAttrStart = in.bp
-          i = numAttrs
+          MissingRequirementError.notFound(s"TASTy file for associated class file $file")
         case tpnme.InnerClassesATTR =>
           innersStart = in.bp
         case tpnme.RuntimeAnnotationATTR =>
@@ -1138,13 +1126,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       in.skip(attrLen)
       i += 1
     }
-
-    // To understand the situation, it's helpful to know that:
-    // - Scalac emits the `ScalaSignature` attribute for classfiles with pickled information
-    // and the `Scala` attribute for everything else.
-    // - Dotty emits the `TASTY` attribute for classfiles with pickled information
-    // and the `Scala` attribute for _every_ classfile.
-    isScalaRaw &= !isTASTY
 
     if (isScala) {
       def parseScalaSigBytes(): Array[Byte] = {
@@ -1223,65 +1204,6 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       assert(bytes != null, s"No Scala(Long)Signature annotation in classfile with ScalaSignature attribute: $clazz")
       unpickler.unpickle(bytes, 0, clazz, staticModule, file.name)
-    } else if (isTASTY) {
-
-      def parseTASTYFile(): Array[Byte] = file.underlyingSource match { // TODO: simplify when #3552 is fixed
-        case None =>
-          reporter.error(NoPosition, "Could not load TASTY from .tasty for virtual file " + file)
-          Array.empty
-        case Some(jar: ZipArchive) => // We are in a jar
-          val cl = new URLClassLoader(Array(jar.toURL), /*parent =*/ null)
-          val path = file.path.stripSuffix(".class") + ".tasty"
-          val stream = cl.getResourceAsStream(path)
-          if (stream != null) {
-            val tastyOutStream = new ByteArrayOutputStream()
-            val buffer = new Array[Byte](1024)
-            var read = stream.read(buffer, 0, buffer.length)
-            while (read != -1) {
-              tastyOutStream.write(buffer, 0, read)
-              read = stream.read(buffer, 0, buffer.length)
-            }
-            tastyOutStream.flush()
-            tastyOutStream.toByteArray
-          } else {
-            reporter.error(NoPosition, s"Could not find $path in $jar")
-            Array.empty
-          }
-        case _ =>
-          val plainFile = new PlainFile(io.File(file.path).changeExtension("tasty"))
-          if (plainFile.exists) plainFile.toByteArray
-          else {
-            reporter.error(NoPosition, "Could not find " + plainFile)
-            Array.empty
-          }
-      }
-
-      def parseTASTYBytes(): Array[Byte] = {
-        assert(TASTYAttrLen == TASTYUUIDLength, "TASTY Attribute is not a UUID")
-        assert(TASTYAttrStart != -1, "no TASTY Annotation position")
-        in.bp = TASTYAttrStart
-        val TASTY = in.nextBytes(TASTYUUIDLength)
-        val TASTYBytes = parseTASTYFile()
-        if (TASTYBytes.isEmpty) {
-          reporter.error(NoPosition, s"No Tasty file found for classfile $file with TASTY Attribute")
-        }
-        val reader = new TastyReader(TASTY, 0, TASTYUUIDLength)
-        val expectedUUID = new UUID(reader.readUncompressedLong(), reader.readUncompressedLong())
-        val tastyUUID = new TastyHeaderUnpickler(TastyUnpickler.scala2CompilerConfig, TASTYBytes).readHeader()
-        if (expectedUUID != tastyUUID) {
-          loaders.warning(
-            NoPosition,
-            s"$file is out of sync with its TASTy file. Loaded TASTy file. Try cleaning the project to fix this issue",
-            WarningCategory.Other,
-            clazz.fullNameString
-          )
-        }
-        TASTYBytes
-      }
-
-      AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
-      val bytes = parseTASTYBytes()
-      TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

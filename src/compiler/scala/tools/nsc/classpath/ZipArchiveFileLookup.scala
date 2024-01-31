@@ -46,14 +46,14 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends Efficie
   protected def files(inPackage: PackageName): Seq[FileEntryType] =
     for {
       dirEntry <- findDirEntry(inPackage).toSeq
-      entry <- dirEntry.iterator if isRequiredFileType(entry)
+      entry <- dirEntry.iterator if isRequiredFileType(entry, dirEntry.entries.contains)
     } yield createFileEntry(entry)
 
   protected def file(inPackage: PackageName, name: String): Option[FileEntryType] =
     findDirEntry(inPackage) match {
       case Some(dirEntry) =>
         val entry = dirEntry.lookupName(name, directory = false)
-        if (entry != null && isRequiredFileType(entry))
+        if (entry != null)
           Some(createFileEntry(entry))
         else
           None
@@ -68,7 +68,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends Efficie
         for (entry <- dirEntry.iterator) {
           if (entry.isPackage)
             onPackageEntry(PackageEntryImpl(inPackage.entryName(entry.name)))
-          else if (isRequiredFileType(entry))
+          else if (isRequiredFileType(entry, dirEntry.entries.contains))
             onClassesAndSources(createFileEntry(entry))
         }
       case None =>
@@ -81,6 +81,6 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends Efficie
 
 
   protected def createFileEntry(file: FileZipArchive#Entry): FileEntryType
-  protected def isRequiredFileType(file: AbstractFile): Boolean
+  protected def isRequiredFileType(file: AbstractFile, siblingExists: String => Boolean): Boolean
 }
 
