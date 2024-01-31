@@ -61,7 +61,7 @@ object Scalac extends Script.Command {
   }
 
   val commandName: String = "scalac"
-  val describe: String = s"$commandName <out: Directory> <src: File> <args: String*>"
+  val describe: String = s"$commandName <out: Directory> <src: File> [--extra-cp <cp: File>] <args: String*>"
 
   def process(args: String*): Int = {
     if (args.length < 2) {
@@ -69,7 +69,15 @@ object Scalac extends Script.Command {
       return 1
     }
     val Seq(out, src, additionalArgs @ _*) = args: @unchecked
-    val success = scalac(out, extraCp = None, additionalArgs, src).get
+    val (extraCp, additionalArgs0) = {
+      val extraCpIdx = additionalArgs.indexOf("--extra-cp")
+      if (extraCpIdx < 0) (None, additionalArgs)
+      else {
+        val (before, Seq(_, cp, rest @ _*)) = additionalArgs.splitAt(extraCpIdx): @unchecked
+        (Some(cp), before ++ rest)
+      }
+    }
+    val success = scalac(out, extraCp, additionalArgs0, src).get
     if (success) 0 else 1
   }
 }

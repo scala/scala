@@ -172,7 +172,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           if (!YtastyReader)
             MissingRequirementError.signal(s"Add -Ytasty-reader to scalac options to parse the TASTy in $file")
 
-          AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
+          // TODO [tasty]: it seems tests don't fail if we remove this, but previously this
+          // was added for the following reason:
+          // >  Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
+          AnyRefClass
+
           val bytes = in.buf.take(file.sizeOption.get)
           TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
         } else {
