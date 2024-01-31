@@ -879,7 +879,7 @@ abstract class TreeInfo {
   /** Returns a wrapper that knows how to destructure and analyze applications.
    */
   final def dissectApplied(tree: Tree) = new Applied(tree)
-  /** Equivalent ot disectApplied(tree).core, but more efficient */
+  /** Equivalent to dissectApplied(tree).core, but more efficient */
   @scala.annotation.tailrec
   final def dissectCore(tree: Tree): Tree = tree match {
     case TypeApply(fun, _) =>

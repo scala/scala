@@ -127,7 +127,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   private val XsourceHelp =
     sm"""|-Xsource:3 is for migrating a codebase, -Xsource:3-cross is for cross-building.
          |
-         |-Xsource:3 isues migration warnings in category `cat=scala3-migration`,
+         |-Xsource:3 issues migration warnings in category `cat=scala3-migration`,
          |  which by default are promoted to errors under the `-Wconf` configuration.
          |  Examples of promoted warnings:
          |  * Implicit definitions must have an explicit type
