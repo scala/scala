@@ -1125,12 +1125,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // if user wrote case companion C for expected function type, use C.apply or (C.apply _).tupled
-      def adaptApplyInsertion(): Tree =
+      def adaptApplyInsertion(): Tree = doAdaptApplyInsertion(retry = false)
+
+      def doAdaptApplyInsertion(retry: Boolean): Tree =
         if (currentRun.isScala3Cross && !isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
-          silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)))) match {
+          silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, if (retry) WildcardType else pt)) match {
             case SilentResultValue(applicator) =>
               val arity = definitions.functionArityFromType(applicator.tpe)
-              functionOrPfOrSamArgTypes(pt) match {
+              if (arity < 0) EmptyTree
+              else functionOrPfOrSamArgTypes(pt) match {
                 case arg :: Nil if definitions.isTupleType(arg) && arg.typeArgs.lengthCompare(arity) == 0 =>
                   val tupled = typed(atPos(tree.pos)(Select(applicator, nme.tupled)), mode, pt)
                   if (!tupled.isErroneous) {
@@ -1142,9 +1145,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 case args if args.lengthCompare(arity) == 0 =>
                   val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `${tree.symbol.name}.apply` explicitly."
                   context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
-                  typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, pt)
+                  applicator
                 case _ => EmptyTree
               }
+            case _ if !retry => doAdaptApplyInsertion(retry = true)
             case _ => EmptyTree
           }
         else EmptyTree

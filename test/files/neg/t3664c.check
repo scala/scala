@@ -1,11 +1,27 @@
-t3664c.scala:9: error: type mismatch;
+t3664c.scala:20: error: type mismatch;
  found   : C.type
  required: ((Int, Int, Int)) => C
   def f(xs: List[(Int, Int, Int)]): List[C] = xs.map(C) // hard error
                                                      ^
-t3664c.scala:11: error: type mismatch;
+t3664c.scala:22: error: type mismatch;
  found   : ((Int, Int)) => C
  required: ((Int, Int, Int)) => C
   def g(xs: List[(Int, Int, Int)]): List[C] = xs.map(C.tupled) // hard error
                                                        ^
-2 errors
+t3664c.scala:24: error: type mismatch;
+ found   : D.type
+ required: ((Int, Int)) => D
+  def d(xs: List[(Int, Int)]): List[D] = xs.map(D) // hard error
+                                                ^
+t3664c.scala:26: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => E), rather than applied to `()`.
+Write E.apply() to invoke method apply, or change the expected type.
+  val e: () => E = E
+                   ^
+t3664c.scala:26: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `E.apply` explicitly.
+  val e: () => E = E
+                   ^
+t3664c.scala:28: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `F.apply` explicitly.
+  def ov(xs: List[Int]): List[F] = xs.map(F)
+                                          ^
+3 warnings
+3 errors
