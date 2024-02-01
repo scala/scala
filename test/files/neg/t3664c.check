@@ -1,0 +1,11 @@
+t3664c.scala:9: error: type mismatch;
+ found   : C.type
+ required: ((Int, Int, Int)) => C
+  def f(xs: List[(Int, Int, Int)]): List[C] = xs.map(C) // hard error
+                                                     ^
+t3664c.scala:11: error: type mismatch;
+ found   : ((Int, Int)) => C
+ required: ((Int, Int, Int)) => C
+  def g(xs: List[(Int, Int, Int)]): List[C] = xs.map(C.tupled) // hard error
+                                                       ^
+2 errors

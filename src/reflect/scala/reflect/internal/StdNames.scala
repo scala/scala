@@ -901,6 +901,7 @@ trait StdNames {
     val tpe : NameType                 = nameType("tpe")
     val tree : NameType                = nameType("tree")
     val true_ : NameType               = nameType("true")
+    val tupled: NameType               = nameType("tupled")
     val typedProductIterator: NameType = nameType("typedProductIterator")
     val TypeName: NameType             = nameType("TypeName")
     val typeTagToManifest: NameType    = nameType("typeTagToManifest")

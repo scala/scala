@@ -228,7 +228,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
     private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
 
-    private val fixableFunctionMembers = List(TermName("tupled"), TermName("curried"))
+    private val fixableFunctionMembers = List(nme.tupled, TermName("curried"))
 
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
@@ -1124,11 +1124,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def adaptApplyInsertion(): Tree = {
-        val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `${tree.symbol.name}.apply` explicitly."
-        context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
-        typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, pt)
-      }
+      // if user wrote case companion C for expected function type, use C.apply or (C.apply _).tupled
+      def adaptApplyInsertion(): Tree =
+        if (currentRun.isScala3Cross && !isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
+          silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)))) match {
+            case SilentResultValue(applicator) =>
+              val arity = definitions.functionArityFromType(applicator.tpe)
+              functionOrPfOrSamArgTypes(pt) match {
+                case arg :: Nil if definitions.isTupleType(arg) && arg.typeArgs.lengthCompare(arity) == 0 =>
+                  val tupled = typed(atPos(tree.pos)(Select(applicator, nme.tupled)), mode, pt)
+                  if (!tupled.isErroneous) {
+                    val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `(${tree.symbol.name}.apply _).tupled` explicitly."
+                    context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
+                    tupled
+                  }
+                  else EmptyTree
+                case args if args.lengthCompare(arity) == 0 =>
+                  val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `${tree.symbol.name}.apply` explicitly."
+                  context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
+                  typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, pt)
+                case _ => EmptyTree
+              }
+            case _ => EmptyTree
+          }
+        else EmptyTree
 
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
@@ -1136,9 +1155,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (settings.isDebug && settings.explaintypes.value) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
-          else if (currentRun.isScala3Cross && isFunctionType(pt) && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase)
-            adaptApplyInsertion()
-          else adaptMismatchedSkolems()
+          else
+            adaptApplyInsertion() orElse adaptMismatchedSkolems()
         }
 
         // TODO: should we even get to fallbackAfterVanillaAdapt for an ill-typed tree?
@@ -5372,7 +5390,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // If they try C.tupled, make it (C.apply _).tupled
       def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
-        if (qual.symbol != null && currentRun.isScala3Cross && qual.symbol.isModule && qual.symbol.companion.isCase &&
+        if (currentRun.isScala3Cross && !isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
             context.undetparams.isEmpty && fixableFunctionMembers.contains(name)) {
           val t2 = {
             val t = atPos(tree.pos)(Select(qual, nme.apply))

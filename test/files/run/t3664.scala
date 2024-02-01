@@ -10,7 +10,7 @@ class Test {
   def mapped(xs: List[Int]): List[B] = xs.map(B)
 
   // accept for cross because dotty has no C.tupled but has fancy untupling adaptation
-  //def cross(xs: List[(Int, Int)]): List[C] = xs.map(C)
+  def cross(xs: List[(Int, Int)]): List[C] = xs.map(C)
 
   def f(xs: List[(Int, Int)]): List[C] = xs.map(C.tupled)
 
@@ -24,7 +24,7 @@ class Test {
 }
 object Test extends Test with App {
   assert(mapped(List(52)) == List(B(52)))
-  //assert(cross(List(27->42)) == List(C(27, 42)))
+  assert(cross(List(27->42)) == List(C(27, 42)))
   assert(f(List(27->42)) == List(C(27, 42)))
   assert(g(List(27)) == List(C(27, 42)))
 }
