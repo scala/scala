@@ -19,7 +19,7 @@ package reflect
 package internal
 
 import scala.collection.immutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Stack}
 import util.{ ReusableInstance, Statistics, shortClassOfInstance }
 import Flags._
 import scala.annotation.tailrec
@@ -43,6 +43,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   private[this] var _lockedCount = 0
   def lockedCount = this._lockedCount
   def lockedCount_=(i: Int) = _lockedCount = i
+
+  private[this] val _lockingTrace = Stack.empty[Symbol]
 
 
   @deprecated("Global existential IDs no longer used", "2.12.1")
@@ -553,19 +555,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // True if the symbol is unlocked.
     // True if the symbol is locked but still below the allowed recursion depth.
     // False otherwise
-    private[scala] def lockOK: Boolean = {
-      ((_rawflags & LOCKED) == 0L) ||
-      ((settings.Yrecursion.value != 0) &&
-       (recursionTable get this match {
-         case Some(n) => (n <= settings.Yrecursion.value)
-         case None => true }))
-    }
+    private[scala] def lockOK: Boolean = (
+      (_rawflags & LOCKED) == 0L || {
+        val limit = settings.Yrecursion.value
+        limit != 0 && (
+        recursionTable.get(this) match {
+          case Some(n) => n <= limit
+          case None => true
+        })
+      }
+    )
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
     private[scala] def lock(handler: => Unit): Boolean = {
+      _lockingTrace.push(this)
       if ((_rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
-          recursionTable get this match {
+          recursionTable.get(this) match {
             case Some(n) =>
               if (n > settings.Yrecursion.value) {
                 handler
@@ -578,7 +584,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
               recursionTable += (this -> 1)
               true
           }
-        } else { handler; false }
+        } else {
+          handler
+          false
+        }
       } else {
         _rawflags |= LOCKED
         true
@@ -586,13 +595,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     // Unlock a symbol
-    private[scala] def unlock() = {
+    private[scala] def unlock(): Unit =
       if ((_rawflags & LOCKED) != 0L) {
         _rawflags &= ~LOCKED
+        if (!_lockingTrace.isEmpty)
+          _lockingTrace.remove(idx = 0, count = 1)
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
       }
-    }
 
 // ----- tests ----------------------------------------------------------------------
 
@@ -1553,9 +1563,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
         lock {
           setInfo(ErrorType)
-          throw CyclicReference(this, tp)
+          val trace = _lockingTrace.toList
+          _lockingTrace.clear()
+          throw CyclicReference(this, tp, trace)
         }
       } else {
+        _lockingTrace.push(this)
         _rawflags |= LOCKED
       }
       val current = phase
@@ -1568,18 +1581,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           unlock()
           phase = current
         }
-      } else {
-          // In runtime reflection, there is only on phase, so don't mutate Global.phase which would lead to warnings
-        // of data races from when using TSAN to assess thread safety.
-        try {
-          tp.complete(this)
-        } finally {
-          unlock()
-        }
       }
+      else
+        // In runtime reflection, there is only one phase, so don't mutate Global.phase
+        // which would lead to warnings of data races from when using TSAN to assess thread safety.
+        try tp.complete(this)
+        finally unlock()
     } catch {
       case ex: CyclicReference =>
-        devWarning("... hit cycle trying to complete " + this.fullLocationString)
+        devWarning(s"... hit cycle trying to complete $fullLocationString")
         throw ex
     }
 
@@ -3835,8 +3845,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     else closestEnclMethod(from.owner)
 
   /** An exception for cyclic references of symbol definitions */
-  case class CyclicReference(sym: Symbol, info: Type)
-  extends TypeError("illegal cyclic reference involving " + sym) {
+  case class CyclicReference(sym: Symbol, info: Type, trace: List[Symbol] = Nil)
+  extends TypeError(s"illegal cyclic reference involving $sym") {
     if (settings.isDebug) printStackTrace()
   }
 

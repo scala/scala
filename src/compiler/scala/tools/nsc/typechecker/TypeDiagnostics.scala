@@ -839,19 +839,26 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
       context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)
 
-    private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
-    private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
-
     /** Returns Some(msg) if the given tree is untyped apparently due
      *  to a cyclic reference, and None otherwise.
      */
-    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
-      case ValDef(_, _, TypeTree(), _)       => s"recursive $sym needs type"
-      case DefDef(_, _, _, _, TypeTree(), _) => s"${cyclicAdjective(sym)} $sym needs result type"
-      case Import(expr, selectors)           =>
-        """encountered unrecoverable cycle resolving import.
-          |Note: this is often due in part to a class depending on a definition nested within its companion.
-          |If applicable, you may wish to try moving some members into another object.""".stripMargin
+    def cyclicReferenceMessage(sym: Symbol, tree: Tree, trace: List[Symbol], pos: Position) = {
+      def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
+      def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
+
+      val badsym = if (!sym.isSynthetic) sym else trace.filter(!_.isSynthetic) match {
+        case badsym :: Nil => badsym
+        case Nil           => sym
+        case baddies       => baddies.find(_.pos.focus == pos.focus).getOrElse(baddies.head)
+      }
+      condOpt(tree) {
+        case ValDef(_, _, TypeTree(), _)       => s"recursive $badsym needs type"
+        case DefDef(_, _, _, _, TypeTree(), _) => s"${cyclicAdjective(badsym)} $badsym needs result type"
+        case Import(expr, selectors)           =>
+          sm"""encountered unrecoverable cycle resolving import.
+              |Note: this is often due in part to a class depending on a definition nested within its companion.
+              |If applicable, you may wish to try moving some members into another object."""
+      }
     }
 
     // warn about class/method/type-members' type parameters that shadow types already in scope
@@ -886,20 +893,16 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       if (settings.isDebug) ex.printStackTrace()
 
       ex match {
-        case CyclicReference(sym, info: TypeCompleter) =>
-          if (context0.owner.isTermMacro) {
-            // see comments to TypeSigError for an explanation of this special case
-            throw ex
-          } else {
-            val pos = info.tree match {
-              case Import(expr, _)  => expr.pos
-              case _                => ex.pos
-            }
-            context0.error(pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
-
-            if (sym == ObjectClass)
-              throw new FatalError("cannot redefine root "+sym)
+        // see comments to TypeSigError for an explanation of this special case
+        case _: CyclicReference if context0.owner.isTermMacro => throw ex
+        case CyclicReference(sym, info: TypeCompleter, trace) =>
+          val pos = info.tree match {
+            case Import(expr, _)  => expr.pos
+            case _                => ex.pos
           }
+          context0.error(pos, cyclicReferenceMessage(sym, info.tree, trace, pos).getOrElse(ex.getMessage))
+
+          if (sym == ObjectClass) throw new FatalError(s"cannot redefine root $sym")
         case _ =>
           context0.error(ex.pos, ex.msg)
       }

@@ -1340,7 +1340,7 @@ trait ContextErrors extends splain.SplainErrors {
 
       def TypeSigError(tree: Tree, ex: TypeError) = {
         ex match {
-          case CyclicReference(_, _) if tree.symbol.isTermMacro =>
+          case CyclicReference(_, _, _) if tree.symbol.isTermMacro =>
             // say, we have a macro def `foo` and its macro impl `impl`
             // if impl: 1) omits return type, 2) has anything implicit in its body, 3) sees foo
             //
@@ -1353,8 +1353,8 @@ trait ContextErrors extends splain.SplainErrors {
             // hence we (together with reportTypeError in TypeDiagnostics) make sure that this CyclicReference
             // evades all the handlers on its way and successfully reaches `isCyclicOrErroneous` in Implicits
             throw ex
-          case CyclicReference(sym, info: TypeCompleter) =>
-            issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage)
+          case CyclicReference(sym, info: TypeCompleter, trace) =>
+            issueNormalTypeError(tree, typer.cyclicReferenceMessage(sym, info.tree, trace, tree.pos).getOrElse(ex.getMessage))
           case _ =>
             contextNamerErrorGen.issue(TypeErrorWithUnderlyingTree(tree, ex))
         }
