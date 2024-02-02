@@ -563,6 +563,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
    */
   val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
   val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
+  val cyclic          = BooleanSetting("-Vcyclic", "Debug cyclic reference error.")
   val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug" withPostSetHook (s => if (s.value) StatisticsStatics.enableDebugAndDeoptimize())
   val YdebugTasty     = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
   val VdebugTypeError = BooleanSetting("-Vdebug-type-error", "Print the stack trace when any error is caught.") withAbbreviation "-Ydebug-type-error"

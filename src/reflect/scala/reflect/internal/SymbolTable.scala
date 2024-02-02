@@ -95,6 +95,8 @@ abstract class SymbolTable extends macros.Universe
 
   def settings: MutableSettings
 
+  def isSymbolLockTracingEnabled: Boolean = isDeveloper
+
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.isDebug) log(msg)
 
