@@ -1050,7 +1050,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (nextByte === SPLITCLAUSE) {
           assert(isJava,  s"unexpected SPLITCLAUSE at $start")
         }
-        setInfoWithParents(tparams, ctx.processParents(cls, parents))
+        setInfoWithParents(tparams, ctx.processParents(cls, parents, isJava))
       }
 
       traverseTemplate()

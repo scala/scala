@@ -460,6 +460,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StaticMethodAnnotationClass
     definitions.PolyFunctionClass
     definitions.ExperimentalAnnotationClass
+    definitions.AnnotationDefaultClass
+    definitions.JavaAnnotationClass
     definitions.BeanPropertyAttr
     definitions.BooleanBeanPropertyAttr
     definitions.CompileTimeOnlyAttr

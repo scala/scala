@@ -165,6 +165,11 @@ trait ContextOps { self: TastyUniverse =>
           unsupportedMessage(s"annotation on $sym: @$annot")
         }
       }
+      if (annot.symbol === defn.AnnotationDefaultClass) { // Scala 3 has a different annotation for default values
+        import scala.reflect.internal.ModifierFlags
+        assert(sym.owner.hasAllFlags(ModifierFlags.JAVA | ModifierFlags.JAVA_ANNOTATION))
+        sym.addAnnotation(u.definitions.AnnotationDefaultAttr) // Scala 2 expects this to be present
+      }
     }
     if (problematic.nonEmpty) {
       sym.removeAnnotation(u.definitions.CompileTimeOnlyAttr)
@@ -510,7 +515,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     /** sets up value class machinery */
-    final def processParents(cls: Symbol, parentTypes: List[Type]): parentTypes.type = {
+    final def processParents(cls: Symbol, parentTypes: List[Type], isJava: Boolean): parentTypes.type = {
       if (parentTypes.head.typeSymbolDirect === u.definitions.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
         withPhaseNoLater("extmethods") { ctx0 =>
@@ -524,6 +529,12 @@ trait ContextOps { self: TastyUniverse =>
             }
           }
         }
+      }
+      else if (isJava && parentTypes.exists(_.typeSymbolDirect === defn.JavaAnnotationClass)) {
+        import scala.reflect.internal.ModifierFlags
+        //sys.error(s"Java annotations are not supported in TASTy $cls: $parentTypes, ${parentTypes.map(_.typeSymbolDirect)}, ${parentTypes.map(_.typeSymbol)}")
+        cls.setFlag(ModifierFlags.JAVA_ANNOTATION)
+        cls.info.decls.enter(cls.newClassConstructor(u.NoPosition))
       }
       parentTypes
     }

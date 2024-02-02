@@ -146,6 +146,8 @@ trait TypeOps { self: TastyUniverse =>
     final val TargetNameAnnotationClass: Symbol = u.definitions.TargetNameAnnotationClass
     final val StaticMethodAnnotationClass: Symbol = u.definitions.StaticMethodAnnotationClass
     final val ExperimentalAnnotationClass: Symbol = u.definitions.ExperimentalAnnotationClass
+    final val AnnotationDefaultClass: Symbol = u.definitions.AnnotationDefaultClass
+    final val JavaAnnotationClass: Symbol = u.definitions.JavaAnnotationClass
 
     object PolyFunctionType {
 
