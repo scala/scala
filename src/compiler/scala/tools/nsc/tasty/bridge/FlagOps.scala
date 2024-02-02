@@ -87,6 +87,8 @@ trait FlagOps { self: TastyUniverse =>
     var flags = u.NoFlags
     // JAVA FLAGS
     if (isJava && tflags.is(Enum)) flags |= ModifierFlags.JAVA_ENUM
+    if (isJava && tflags.is(Trait)) flags |= ModifierFlags.INTERFACE | ModifierFlags.ABSTRACT
+    if (isJava && tflags.is(HasDefault)) flags |= ModifierFlags.JAVA_DEFAULTMETHOD
     // STANDARD FLAGS
     if (tflags.is(Private)) flags |= Flag.PRIVATE
     if (tflags.is(Protected)) flags |= Flag.PROTECTED
@@ -110,7 +112,7 @@ trait FlagOps { self: TastyUniverse =>
     if (tflags.is(CaseAccessor)) flags |= Flag.CASEACCESSOR
     if (tflags.is(Covariant)) flags |= Flag.COVARIANT
     if (tflags.is(Contravariant)) flags |= Flag.CONTRAVARIANT
-    if (tflags.is(HasDefault)) flags |= Flag.DEFAULTPARAM
+    if (tflags.is(HasDefault) && !isJava) flags |= Flag.DEFAULTPARAM
     if (tflags.is(Stable)) flags |= Flag.STABLE
     if (tflags.is(ParamSetter)) flags |= Flag.PARAMACCESSOR
     if (tflags.is(Param)) flags |= Flag.PARAM

@@ -493,6 +493,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         flags |= Method
         if (name.isDefaultName)
           flags |= HasDefault // this corresponds to DEFAULTPARAM
+        if (isJava && !lacksDefinition && ctx.owner.is(Trait, isJava) && !name.isConstructorName)
+          flags |= HasDefault // will be replaced by JAVA_DEFAULTMETHOD
       }
       if (tag === VALDEF) {
         if (flags.is(Inline) || ctx.owner.is(Trait, isJava))
