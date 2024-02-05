@@ -336,7 +336,13 @@ trait TypeOps { self: TastyUniverse =>
       if (sym.isType) {
         prefix match {
           case tp: u.ThisType if !sym.isTypeParameter     => u.typeRef(prefix, sym, Nil)
-          case _:u.SingleType | _:u.RefinedType           => u.typeRef(prefix, sym, Nil)
+          case _:u.SingleType | _:u.RefinedType           =>
+            if (isJava && !sym.isStatic && sym.isClass) {
+              // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
+              // for a non-static Java inner class `sym`, you can directly reference it.
+              u.appliedType(sym, Nil)
+            }
+            else u.typeRef(prefix, sym, Nil)
           case pre: u.TypeRef if isJava && pre.sym.isType => u.typeRef(prefix, sym, Nil) // Foo[Int]#Bar[Long] in Java
           case _                                          => u.appliedType(sym, Nil)
         }
@@ -633,7 +639,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
-    defn.NamedType(pre, lookupSymbol(owner, tname), isJava)
+    defn.NamedType(pre, lookupSymbol(owner, tname, isJava), isJava)
 
   private def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested

@@ -137,15 +137,15 @@ trait SymbolOps { self: TastyUniverse =>
       }
     }
 
-  private[bridge] def lookupSymbol(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
+  private[bridge] def lookupSymbol(space: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Symbol = {
     deepComplete(space)
     tname match {
       case SignedName(qual, sig, target) => lookupSigned(space, qual, sig.map(_.encode), target)
-      case _                             => lookupSimple(space, tname)
+      case _                             => lookupSimple(space, tname, isJava)
     }
   }
 
-  private def lookupSimple(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
+  private def lookupSimple(space: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Symbol = {
     // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
     //    or else filters for non private.
     // There should be an investigation to see what code makes that false, and what is an equivalent check.
@@ -167,6 +167,15 @@ trait SymbolOps { self: TastyUniverse =>
       }
     }
     if (isSymbol(member) && hasType(member)) member
+    else if (isJava && tname.isTypeName && space.typeSymbol.isStatic && !space.typeSymbol.isPackageClass) {
+      // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
+      // Java (and Scala's Java parser) do not allow shadowing of static/nonstatic classes,
+      // so we can look in the companion for the non-static inner class (defined in the same TASTy file).
+      val space0 = space.typeSymbol.companionClass.typeOfThis
+      val secondTry = lookupSymbol(space0, tname, isJava)
+      if (secondTry.isClass) secondTry // avoid type parameters
+      else errorMissing(space0, tname)
+    }
     else errorMissing(space, tname)
   }
 
