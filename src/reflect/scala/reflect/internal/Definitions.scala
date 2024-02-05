@@ -658,7 +658,7 @@ trait Definitions extends api.StandardDefinitions {
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private[this] val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
-      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map(i => getRequiredClass(s"scala.$name$i"))).toVector
       private[this] val symSet = new SymbolSet(seq.toList)
       def contains(sym: Symbol): Boolean = symSet.contains(sym)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol

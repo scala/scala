@@ -1,0 +1,6 @@
+t3664b.scala:9: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `C.apply` explicitly.
+  def f(xs: List[Int]): List[C] = xs.map(C)
+                                         ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

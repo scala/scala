@@ -113,7 +113,7 @@ trait Unapplies extends ast.TreeDSL {
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = {
     val params = constrParamss(cdef)
-    def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && (params match {
+    def inheritFromFun = !currentRun.isScala3Cross && !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && (params match {
       case List(ps) if ps.length <= MaxFunctionArity => true
       case _ => false
     }) && applyAccess(constrMods(cdef)) != Inherit

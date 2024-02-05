@@ -1,0 +1,12 @@
+t3664.scala:10: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `B.apply` explicitly.
+  def mapped(xs: List[Int]): List[B] = xs.map(B)
+                                              ^
+t3664.scala:13: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `(C.apply _).tupled` explicitly.
+  def cross(xs: List[(Int, Int)]): List[C] = xs.map(C)
+                                                    ^
+t3664.scala:15: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `(C.apply _).tupled` explicitly.
+  def f(xs: List[(Int, Int)]): List[C] = xs.map(C.tupled)
+                                                  ^
+t3664.scala:17: warning: The method `apply` is inserted. The auto insertion will be deprecated, please write `(C.apply _).curried` explicitly.
+  def g(xs: List[Int]): List[C] = xs.map(C.curried).map(_(42))
+                                           ^

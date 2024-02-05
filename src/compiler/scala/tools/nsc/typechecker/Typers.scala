@@ -228,6 +228,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
     private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
 
+    private val fixableFunctionMembers = List(nme.tupled, TermName("curried"))
+
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
@@ -1122,13 +1124,43 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
+      // if user wrote case companion C for expected function type, use C.apply or (C.apply _).tupled
+      def adaptApplyInsertion(): Tree = doAdaptApplyInsertion(retry = false)
+
+      def doAdaptApplyInsertion(retry: Boolean): Tree =
+        if (currentRun.isScala3Cross && !isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
+          silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, if (retry) WildcardType else pt)) match {
+            case SilentResultValue(applicator) =>
+              val arity = definitions.functionArityFromType(applicator.tpe)
+              if (arity < 0) EmptyTree
+              else functionOrPfOrSamArgTypes(pt) match {
+                case arg :: Nil if definitions.isTupleType(arg) && arg.typeArgs.lengthCompare(arity) == 0 =>
+                  val tupled = typed(atPos(tree.pos)(Select(applicator, nme.tupled)), mode, pt)
+                  if (!tupled.isErroneous) {
+                    val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `(${tree.symbol.name}.apply _).tupled` explicitly."
+                    context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
+                    tupled
+                  }
+                  else EmptyTree
+                case args if args.lengthCompare(arity) == 0 =>
+                  val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `${tree.symbol.name}.apply` explicitly."
+                  context.deprecationWarning(tree.pos, tree.symbol, msg, "2.13.13")
+                  applicator
+                case _ => EmptyTree
+              }
+            case _ if !retry => doAdaptApplyInsertion(retry = true)
+            case _ => EmptyTree
+          }
+        else EmptyTree
+
       def adaptExprNotFunMode(): Tree = {
         def lastTry(err: AbsTypeError = null): Tree = {
           debuglog("error tree = " + tree)
           if (settings.isDebug && settings.explaintypes.value) explainTypes(tree.tpe, pt)
           if (err ne null) context.issue(err)
           if (tree.tpe.isErroneous || pt.isErroneous) setError(tree)
-          else adaptMismatchedSkolems()
+          else
+            adaptApplyInsertion() orElse adaptMismatchedSkolems()
         }
 
         // TODO: should we even get to fallbackAfterVanillaAdapt for an ill-typed tree?
@@ -5360,6 +5392,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!(context.unit.isJava && cls.isClass)) NoSymbol
         else context.javaFindMember(cls.typeOfThis, name, s => s.isStaticMember || s.isStaticModule)._2
 
+      // If they try C.tupled, make it (C.apply _).tupled
+      def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
+        if (currentRun.isScala3Cross && !isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
+            context.undetparams.isEmpty && fixableFunctionMembers.contains(name)) {
+          val t2 = {
+            val t = atPos(tree.pos)(Select(qual, nme.apply))
+            val t1 = typedSelect(t, qual, nme.apply)
+            typed(atPos(tree.pos)(Select(etaExpand(t1, context.owner), name)), mode, pt)
+          }
+          if (!t2.isErroneous) {
+            val msg = s"The method `apply` is inserted. The auto insertion will be deprecated, please write `($qual.apply _).$name` explicitly."
+            context.deprecationWarning(tree.pos, qual.symbol, msg, "2.13.13")
+            t2
+          }
+          else EmptyTree
+        }
+        else EmptyTree
+
       /* Attribute a selection where `tree` is `qual.name`.
        * `qual` is already attributed.
        */
@@ -5392,9 +5442,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   context.warning(tree.pos, s"dubious usage of ${sel.symbol} with integer value", WarningCategory.LintNumericMethods)
               }
               val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
-              if ((qual1 ne qual) && !qual1.isErrorTyped)
-                return typed(treeCopy.Select(tree, qual1, name), mode, pt)
-                  .tap(checkDubiousAdaptation)
+              val fixed =
+                if ((qual1 ne qual) && !qual1.isErrorTyped)
+                  typed(treeCopy.Select(tree, qual1, name), mode, pt).tap(checkDubiousAdaptation)
+                else
+                  fixUpCaseTupled(tree, qual, name, mode)
+              if (!fixed.isEmpty)
+                return fixed
           }
 
           // This special-case complements the logic in `adaptMember` in erasure, it handles selections
@@ -5614,47 +5668,50 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val fix = runReporting.codeAction("make reference explicit", tree.pos.focusStart, w.fix, w.msg)
               runReporting.warning(tree.pos, w.msg, cat, context.owner, fix)
             })
-            if (currentRun.isScala3) {
+            if (currentRun.isScala3)
               tree.getAndRemoveAttachment[VirtualStringContext.type].foreach(_ =>
                 if (symbol != definitions.StringContextModule)
                   runReporting.warning(
                     tree.pos,
                     s"String interpolations always use scala.StringContext in Scala 3 (${symbol.fullNameString} is used here)",
                     Scala3Migration,
-                    context.owner))
-            }
-            (// this -> Foo.this
-            if (symbol.isThisSym)
-              typed1(This(symbol.owner) setPos tree.pos, mode, pt)
-            else if (symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(symbol) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
-              // Inferring classOf type parameter from expected type.  Otherwise an
-              // actual call to the stubbed classOf method is generated, returning null.
-              typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
-            }
-            else {
-              val pre1  = if (symbol.isTopLevel) symbol.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
-              if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(symbol))
-                context.warning(tree.pos, s"${symbol.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
-              val tree1 = if (qual == EmptyTree) tree else {
-                val pos = tree.pos
-                Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+                    context.owner)
+              )
+            val onSuccess =
+              if (symbol.isThisSym)
+                typed1(This(symbol.owner).setPos(tree.pos), mode, pt) // this -> Foo.this
+              else if (symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(symbol) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty) {
+                // Inferring classOf type parameter from expected type.  Otherwise an
+                // actual call to the stubbed classOf method is generated, returning null.
+                typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
               }
-              var tree2: Tree = null
-              var pre2: Type = pre1
-              makeAccessible(tree1, symbol, pre1, qual) match {
-                case (t: Tree, tp: Type) =>
-                  tree2 = t
-                  pre2 = tp
-                case t: Tree =>
-                  tree2 = t
-                case x => throw new MatchError(x)
+              else {
+                val pre1  = if (symbol.isTopLevel) symbol.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
+                if (settings.lintUniversalMethods && !pre1.isInstanceOf[ThisType] && isUniversalMember(symbol))
+                  context.warning(tree.pos, s"${symbol.nameString} not selected from this instance", WarningCategory.LintUniversalMethods)
+                val tree1 = if (qual == EmptyTree) tree else {
+                  val pos = tree.pos
+                  Select(atPos(pos.focusStart)(qual), name).setPos(pos)
+                }
+                var tree2: Tree = null
+                var pre2: Type = pre1
+                makeAccessible(tree1, symbol, pre1, qual) match {
+                  case (t: Tree, tp: Type) =>
+                    tree2 = t
+                    pre2 = tp
+                  case t: Tree =>
+                    tree2 = t
+                  case x => throw new MatchError(x)
+                }
+                // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference,
+                // to avoid inference errors in pattern matching.
+                stabilize(tree2, pre2, mode, pt).modifyType(dropIllegalStarTypes)
               }
-            // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
-            //         inference errors in pattern matching.
-              stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
-            }) setAttachments tree.attachments
-          }
+            if (!isPastTyper && currentRun.isScala3 && !currentRun.isScala3Cross && isFunctionType(pt) && symbol.isModule && symbol.isSynthetic && symbol.companion.isCase)
+              context.deprecationWarning(tree.pos, symbol, s"Synthetic case companion used as a Function, use explicit object with Function parent", "2.13.13")
+            onSuccess.setAttachments(tree.attachments)
         }
+      }
 
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
