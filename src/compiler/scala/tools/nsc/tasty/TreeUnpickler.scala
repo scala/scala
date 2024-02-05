@@ -391,7 +391,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case TERMREFin =>
-              defn.TermRefIn(name = readTastyName(), prefix = readType(), space = readType())
+              defn.TermRefIn(name = readTastyName(), prefix = readType(), space = readType(), isJava = isJava)
             case TYPEREFin =>
               defn.TypeRefIn(
                 name = readTastyName().toTypeName, prefix = readType(), space = readType(), isJava = isJava)
@@ -423,13 +423,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def readSimpleType(): Type = {
         (tag: @switch) match {
-          case TYPEREFdirect => defn.NamedType(defn.NoPrefix, readSymRef())
-          case TERMREFdirect => defn.NamedType(defn.NoPrefix, readSymRef())
-          case TYPEREFsymbol | TERMREFsymbol => defn.NamedType(sym = readSymRef(), prefix = readType())
-          case TYPEREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef().objectImplementation)
-          case TERMREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef())
+          case TYPEREFdirect => defn.NamedType(defn.NoPrefix, readSymRef(), isJava)
+          case TERMREFdirect => defn.NamedType(defn.NoPrefix, readSymRef(), isJava)
+          case TYPEREFsymbol | TERMREFsymbol => defn.NamedType(sym = readSymRef(), prefix = readType(), isJava = isJava)
+          case TYPEREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef().objectImplementation, isJava = isJava)
+          case TERMREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef(), isJava = isJava)
           case TYPEREF => defn.TypeRef(name = readTastyName().toTypeName, prefix = readType(), isJava = isJava)
-          case TERMREF => defn.TermRef(name = readTastyName(), prefix = readType())
+          case TERMREF => defn.TermRef(name = readTastyName(), prefix = readType(), isJava = isJava)
           case THIS => defn.ThisType(readType())
           case RECtype =>
             typeAtAddr.get(start) match {
@@ -877,7 +877,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         ctx.setInfo(sym,
           if (repr.tflags.is(FlagSets.SingletonEnum)) {
             ctx.completeEnumSingleton(sym, tpe)
-            defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation)
+            defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation, isJava)
           }
           else if (isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.Constant(sym))
           else if (!isJava && sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
@@ -1104,7 +1104,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def traceReadTerm = TraceInfo[Tree](
         query = "reading term",
         qual = s"${astTagToString(tag)} $start",
-        res = tree => s"exit term `${showTree(tree)}` ${astTagToString(tag)} $start"
+        res = tree => s"exit term (`${showTree(tree)}`: ${showType(tree.tpe)}) ${astTagToString(tag)} $start"
       )
 
       def inParentCtor = ctx.mode.is(ReadParents | OuterTerm)
@@ -1119,9 +1119,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (qual.typeIdent, defn.ThisType(qual.tpe))
       }
 
-      def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree = completeSelect(name)
+      def completeSelectType(name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Tree =
+        completeSelect(name, isJava)
 
-      def completeSelect(name: TastyName)(implicit ctx: Context): Tree = tpd.Select(readTerm(), name)
+      def completeSelect(name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
+        tpd.Select(readTerm(), name, isJava)
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
         assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
@@ -1134,8 +1136,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case IDENTtpt => tpd.Ident(readTastyName().toTypeName)(readType())
         case SELECT =>
           if (inParentCtor) completeSelectionParent(readTastyName())
-          else completeSelect(readTastyName())
-        case SELECTtpt => completeSelectType(readTastyName().toTypeName)
+          else completeSelect(readTastyName(), isJava)
+        case SELECTtpt => completeSelectType(readTastyName().toTypeName, isJava)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
           tpd.This(qual)(tref)
@@ -1160,7 +1162,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 qual
               }
               else {
-                tpd.Select(readType())(qual, name)
+                tpd.Select(readType())(qual, name, isJava)
               }
             case SUPER =>
               val qual = readTerm()

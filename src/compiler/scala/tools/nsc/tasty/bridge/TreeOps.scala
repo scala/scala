@@ -56,11 +56,11 @@ trait TreeOps { self: TastyUniverse =>
     @inline final def Ident(name: TastyName)(tpe: Type): Tree =
       new TastyIdent(name).setType(tpe)
 
-    @inline final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name))
+    @inline final def Select(qual: Tree, name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name, isJava))
 
-    @inline final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name))
+    @inline final def Select(owner: Type)(qual: Tree, name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name, isJava))
 
     private def selectImpl(qual: Tree, name: TastyName)(lookup: Context => Type)(implicit ctx: Context): Tree = {
 

@@ -1,18 +1,24 @@
 package lib;
 
-public class InnerClass<T> {
+public class InnerClass {
 
   public class Inner<U> {
-    public T outerField;
     public U innerField;
 
-    public Inner(T outerField, U innerField) {
-      this.outerField = outerField;
+    public Inner(U innerField) {
       this.innerField = innerField;
     }
 
-    public T getOuterField() { return outerField; }
     public U getInnerField() { return innerField; }
+  }
+
+  public <U> Inner<U> createInner(U innerField) {
+    return new Inner<>(innerField);
+  }
+
+  public static <U> InnerClass.Inner<U> createInnerStatic(U innerField) {
+    var innerClass = new InnerClass();
+    return innerClass.new Inner<>(innerField);
   }
 
 }

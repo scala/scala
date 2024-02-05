@@ -332,12 +332,13 @@ trait TypeOps { self: TastyUniverse =>
     def ParamRef(binder: Type, idx: Int): Type =
       binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
 
-    def NamedType(prefix: Type, sym: Symbol): Type = {
+    def NamedType(prefix: Type, sym: Symbol, isJava: Boolean): Type = {
       if (sym.isType) {
         prefix match {
-          case tp: u.ThisType if !sym.isTypeParameter => u.typeRef(prefix, sym, Nil)
-          case _:u.SingleType | _:u.RefinedType       => u.typeRef(prefix, sym, Nil)
-          case _                                      => u.appliedType(sym, Nil)
+          case tp: u.ThisType if !sym.isTypeParameter     => u.typeRef(prefix, sym, Nil)
+          case _:u.SingleType | _:u.RefinedType           => u.typeRef(prefix, sym, Nil)
+          case pre: u.TypeRef if isJava && pre.sym.isType => u.typeRef(prefix, sym, Nil) // Foo[Int]#Bar[Long] in Java
+          case _                                          => u.appliedType(sym, Nil)
         }
       }
       else { // is a term
@@ -355,7 +356,7 @@ trait TypeOps { self: TastyUniverse =>
     def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Type = {
       import scala.tools.tasty.TastyName._
 
-      def doLookup = lookupTypeFrom(space)(prefix, name)
+      def doLookup = lookupTypeFrom(space)(prefix, name, isJava)
 
       val preSym = prefix.typeSymbol
 
@@ -391,11 +392,11 @@ trait TypeOps { self: TastyUniverse =>
       }
     }
 
-    def TermRef(prefix: Type, name: TastyName)(implicit ctx: Context): Type =
-      TermRefIn(prefix, prefix, name)
+    def TermRef(prefix: Type, name: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
+      TermRefIn(prefix, prefix, name, isJava)
 
-    def TermRefIn(prefix: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
-      lookupTypeFrom(space)(prefix, name.toTermName)
+    def TermRefIn(prefix: Type, space: Type, name: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
+      lookupTypeFrom(space)(prefix, name.toTermName, isJava)
 
   }
 
@@ -631,8 +632,8 @@ trait TypeOps { self: TastyUniverse =>
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
-  private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName)(implicit ctx: Context): Type =
-    defn.NamedType(pre, lookupSymbol(owner, tname))
+  private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
+    defn.NamedType(pre, lookupSymbol(owner, tname), isJava)
 
   private def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
