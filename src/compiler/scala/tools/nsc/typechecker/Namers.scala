@@ -1122,7 +1122,7 @@ trait Namers extends MethodSynthesis {
           val leg = legacy.toString
           val help = if (pts != leg) s" instead of $leg" else ""
           val msg = s"under -Xsource:3-cross, the inferred type changes to $pts$help"
-          val src = currentUnit.source
+          val src = tree.pos.source
           val pos = {
             val eql = src.indexWhere(_ == '=', start = tree.rhs.pos.start, step = -1)
             val declEnd = src.indexWhere(!_.isWhitespace, start = eql - 1, step = -1) + 1
