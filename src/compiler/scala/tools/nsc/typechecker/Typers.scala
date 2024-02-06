@@ -1181,7 +1181,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (isInharmonic) {
               // not `context.deprecationWarning` because they are not buffered in silent mode
               val msg = s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead."
-              val orig = currentUnit.source.sourceAt(tree.pos)
+              val orig = tree.pos.source.sourceAt(tree.pos)
               context.warning(tree.pos, msg, WarningCategory.Deprecation,
                 runReporting.codeAction("add conversion", tree.pos, s"${CodeAction.maybeWrapInParens(orig)}.to${ptSym.name}", msg))
             } else {
@@ -1191,7 +1191,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case Apply(Select(q, nme.DIV), _) if isInt(q) =>
                     val msg = s"integral division is implicitly converted (widened) to floating point. Add an explicit `.to${ptSym.name}`."
                     context.warning(tree.pos, msg, WarningCategory.LintIntDivToFloat,
-                      runReporting.codeAction("add conversion", tree.pos, s"(${currentUnit.source.sourceAt(tree.pos)}).to${ptSym.name}", msg))
+                      runReporting.codeAction("add conversion", tree.pos, s"(${tree.pos.source.sourceAt(tree.pos)}).to${ptSym.name}", msg))
                   case Apply(Select(a1, _), List(a2)) if isInt(tree) && isInt(a1) && isInt(a2) => traverse(a1); traverse(a2)
                   case Select(q, _) if isInt(tree) && isInt(q) => traverse(q)
                   case _ =>
@@ -5040,8 +5040,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val action = {
             val etaPos = pos.withEnd(pos.end + 2)
-            if (currentUnit.source.sourceAt(etaPos).endsWith(" _"))
-              runReporting.codeAction("replace by function literal", etaPos, s"() => ${currentUnit.source.sourceAt(pos)}", msg)
+            if (pos.source.sourceAt(etaPos).endsWith(" _"))
+              runReporting.codeAction("replace by function literal", etaPos, s"() => ${pos.source.sourceAt(pos)}", msg)
             else Nil
           }
 
