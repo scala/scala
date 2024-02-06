@@ -6,25 +6,30 @@ import org.junit.Test
 import java.nio.file.Files
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.ReleasablePath._
 import scala.util.Using
 
-import reporters.StoreReporter
-
 class QuickfixTest extends BytecodeTesting {
-  def testQuickfix(a: String, b: String, args: String, checkInfo: StoreReporter.Info => Boolean = _ => true): Unit = if (!scala.util.Properties.isWin) {
-    Using.resource(Files.createTempFile("unitSource", "scala")) { src =>
-      Files.write(src, a.getBytes)
-      val c = BytecodeTesting.newCompiler(extraArgs = args)
-      val r = c.newRun()
-      val f = AbstractFile.getFile(src.toFile.getAbsolutePath)
-      r.compileSources(List(new BatchSourceFile(f)))
-      assertEquals(b, new String(Files.readAllBytes(src)))
-      for (info <- c.global.reporter.asInstanceOf[StoreReporter].infos)
-        assert(checkInfo(info), info)
+
+  def testQuickfixs(as: List[String], b: String, args: String, checkInfo: StoreReporter.Info => Boolean = _ => true): Unit =
+    if (!scala.util.Properties.isWin) {
+      Using.resource(Files.createTempDirectory("quickfixTest")) { tmpDir =>
+        val srcs = as.indices.map(i => tmpDir.resolve(s"unitSource$i.scala")).toList
+        as.lazyZip(srcs).foreach { case (a, src) => Files.write(src, a.getBytes) }
+        val c = BytecodeTesting.newCompiler(extraArgs = args)
+        val r = c.newRun()
+        val fs = srcs.map(src => AbstractFile.getFile(src.toFile.getAbsolutePath))
+        r.compileSources(fs.map(new BatchSourceFile(_)))
+        assertEquals(b.replaceAll("\n+", "\n"), srcs.map(src => new String(Files.readAllBytes(src))).mkString("\n").replaceAll("\n+", "\n"))
+        for (info <- c.global.reporter.asInstanceOf[StoreReporter].infos)
+          assert(checkInfo(info), info)
+      }
     }
-  }
+
+  def testQuickfix(a: String, b: String, args: String, checkInfo: StoreReporter.Info => Boolean = _ => true): Unit =
+    testQuickfixs(List(a), b, args, checkInfo)
 
   def comp(args: String) = BytecodeTesting.newCompiler(extraArgs = args)
 
@@ -89,5 +94,58 @@ class QuickfixTest extends BytecodeTesting {
   @Test def `do not lie about fixing`: Unit = {
     val a = "import foo.bar"
     testQuickfix(a, a, "-quickfix:any", !_.msg.contains("[rewritten by -quickfix]"))
+  }
+
+  // https://github.com/scala/bug/issues/12941
+  @Test def correctSourceInTypeCompleters(): Unit = {
+    val a1s = List(
+      """trait Trait[A] {
+        |  def foo: Option[A]
+        |}
+        |object Test1 extends Trait[Any] {
+        |  def foo = None
+        |}
+        |""".stripMargin,
+      """object Test2 {
+        |  def one = Test1.foo
+        |}
+        |""".stripMargin)
+    val b1 =
+      """trait Trait[A] {
+        |  def foo: Option[A]
+        |}
+        |object Test1 extends Trait[Any] {
+        |  def foo: None.type = None
+        |}
+        |object Test2 {
+        |  def one = Test1.foo
+        |}
+        |""".stripMargin
+    testQuickfixs(a1s, b1, "-Xsource:3 -quickfix:any")
+
+    val a2s = List(
+      """object Test2 {
+        |  def one = Test1.foo
+        |}
+        |""".stripMargin,
+      """trait Trait[A] {
+        |  def foo: Option[A]
+        |}
+        |object Test1 extends Trait[Any] {
+        |  def foo = None
+        |}
+        |""".stripMargin)
+    val b2 =
+      """object Test2 {
+        |  def one = Test1.foo
+        |}
+        |trait Trait[A] {
+        |  def foo: Option[A]
+        |}
+        |object Test1 extends Trait[Any] {
+        |  def foo: None.type = None
+        |}
+        |""".stripMargin
+    testQuickfixs(a2s, b2, "-Xsource:3 -quickfix:any")
   }
 }
