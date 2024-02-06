@@ -333,17 +333,20 @@ trait TypeOps { self: TastyUniverse =>
       binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
 
     def NamedType(prefix: Type, sym: Symbol, isJava: Boolean): Type = {
-      if (sym.isType) {
+      if (isJava && sym.isClass && sym.isJavaDefined) {
+        def processInner(tp: Type): Type = tp match {
+          case u.TypeRef(pre, sym, args) if !sym.isStatic => u.typeRef(processInner(pre.widen), sym, args)
+          case _ => tp
+        }
+        prefix match {
+          case pre: u.TypeRef => processInner(u.typeRef(prefix, sym, Nil)) // e.g. prefix is `Foo[Int]`
+          case _              => processInner(sym.tpeHK) // ignore prefix otherwise
+        }
+      }
+      else if (sym.isType) {
         prefix match {
           case tp: u.ThisType if !sym.isTypeParameter     => u.typeRef(prefix, sym, Nil)
-          case _:u.SingleType | _:u.RefinedType           =>
-            if (isJava && !sym.isStatic && sym.isClass) {
-              // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
-              // for a non-static Java inner class `sym`, you can directly reference it.
-              u.appliedType(sym, Nil)
-            }
-            else u.typeRef(prefix, sym, Nil)
-          case pre: u.TypeRef if isJava && pre.sym.isType => u.typeRef(prefix, sym, Nil) // Foo[Int]#Bar[Long] in Java
+          case _:u.SingleType | _:u.RefinedType           => u.typeRef(prefix, sym, Nil)
           case _                                          => u.appliedType(sym, Nil)
         }
       }

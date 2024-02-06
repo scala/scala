@@ -66,7 +66,7 @@ object TastyTest {
    *     e.g. `out/tastytest/TestFoo.class` should be compiled from a corresponding file
    *          `src-2/tastytest/TestFoo.scala`. Use `out:out-classes` as the classpath.
    */
-  def runPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+  def runPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String], testFilter: Option[SourceKind] = None)(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3)               <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala), src3Filters = Set(Scala, Java))
     case ((out, outJ), outCls) <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2) <*> dir(p._3))
     tastyJar                    = outJ/"java-tasty.jar"
@@ -74,9 +74,10 @@ object TastyTest {
     allOuts                    <- getFiles(outCls)
     relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
     _                          <- copyAll(relTastys, outCls, out)
-    _                          <- scalacPos(out, tastyJar, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    src2Filtered                = testFilter.fold(src2)(kind => filterByKind(Set(kind), src2:_*))
+    _                          <- scalacPos(out, tastyJar, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2Filtered:_*)
     _                          <- javacPos(outCls, sourceRoot=srcRoot/src/"src-3", filterByKind(Set(Java), src3:_*):_*)
-    testNames                  <- visibleClasses(out, pkgName, src2:_*)
+    testNames                  <- visibleClasses(out, pkgName, src2Filtered:_*)
     _                          <- runMainOn(classpath(out, outCls), testNames:_*)
   } yield ()
 
@@ -128,7 +129,7 @@ object TastyTest {
    *     - If `FOO_fail.scala` has a corresponding `FOO_pre.scala` file, then that is compiled first to `out`,
    *       so that `FOO_fail.scala` may depend on its compilation results.
    */
-  def negPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+  def negPipelinedSuite(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String, String)], additionalSettings: Seq[String], additionalDottySettings: Seq[String], testFilter: Option[SourceKind] = None)(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
     (src2, src3)               <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck), src3Filters = Set(Scala, Java))
     case ((out, outJ), outCls) <- outDirs.fold(tempDir(pkgName) <*> tempDir(pkgName) <*> tempDir(pkgName))(p => dir(p._1) <*> dir(p._2) <*> dir(p._3))
     tastyJar                    = outJ/"java-tasty.jar"
@@ -136,7 +137,8 @@ object TastyTest {
     allOuts                    <- getFiles(outCls)
     relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
     _                          <- copyAll(relTastys, outCls, out)
-    _                          <- scalacNeg(out, tastyJar, additionalSettings, src2:_*)
+    src2Filtered                = testFilter.fold(src2)(kind => filterByKind(Set(kind, Check, SkipCheck), src2:_*))
+    _                          <- scalacNeg(out, tastyJar, additionalSettings, src2Filtered:_*)
   } yield ()
 
   /**Simulates a Scala 3 application that depends on a Scala 2 library, where the Scala 2

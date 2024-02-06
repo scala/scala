@@ -27,6 +27,10 @@ object SourceKind {
   case object Java      extends SourceKind(".java")()
   case object TastyFile extends SourceKind(".tasty")()
 
+  case class ExactFiles(names: String*) extends SourceKind("")(filter = Files.filterByNames(names.toSet)) {
+    override def fileOf(name: String) = names.find(_.startsWith(name)).getOrElse("")
+  }
+
   def filterByKind(kinds: Set[SourceKind], paths: String*): Seq[String] =
     if (kinds.isEmpty) Nil
     else paths.filter(kinds.foldLeft(NoSource.filter)((filter, kind) => p => kind.filter(p) || filter(p)))
