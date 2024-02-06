@@ -10,8 +10,10 @@ import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.ReleasablePath._
 import scala.util.Using
 
+import reporters.StoreReporter
+
 class QuickfixTest extends BytecodeTesting {
-  def testQuickfix(a: String, b: String, args: String): Unit = if (!scala.util.Properties.isWin) {
+  def testQuickfix(a: String, b: String, args: String, checkInfo: StoreReporter.Info => Boolean = _ => true): Unit = if (!scala.util.Properties.isWin) {
     Using.resource(Files.createTempFile("unitSource", "scala")) { src =>
       Files.write(src, a.getBytes)
       val c = BytecodeTesting.newCompiler(extraArgs = args)
@@ -19,6 +21,8 @@ class QuickfixTest extends BytecodeTesting {
       val f = AbstractFile.getFile(src.toFile.getAbsolutePath)
       r.compileSources(List(new BatchSourceFile(f)))
       assertEquals(b, new String(Files.readAllBytes(src)))
+      for (info <- c.global.reporter.asInstanceOf[StoreReporter].infos)
+        assert(checkInfo(info), info)
     }
   }
 
@@ -80,5 +84,10 @@ class QuickfixTest extends BytecodeTesting {
     testQuickfix(b, c, "-deprecation -quickfix:msg=Auto-application")
     testQuickfix(c, c, "-quickfix:cat=deprecation") // without -deprecation, the warning is not shown and not rewritten
     testQuickfix(c, d, "-deprecation -quickfix:cat=deprecation")
+  }
+
+  @Test def `do not lie about fixing`: Unit = {
+    val a = "import foo.bar"
+    testQuickfix(a, a, "-quickfix:any", !_.msg.contains("[rewritten by -quickfix]"))
   }
 }

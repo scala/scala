@@ -86,23 +86,23 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private val skipRewriteAction = Set(Action.WarningSummary, Action.InfoSummary, Action.Silent)
 
     private def registerTextEdit(m: Message): Boolean =
-      if (quickfixFilters.exists(f => f.matches(m))) {
-        textEdits.addAll(m.actions.flatMap(_.edits))
+      m.actions.exists(_.edits.nonEmpty) &&
+      quickfixFilters.exists(_.matches(m)) && {
+        m.actions.foreach(action => textEdits.addAll(action.edits))
         true
       }
-      else false
 
-    private def registerErrorTextEdit(pos: Position, msg: String, actions: List[CodeAction]): Boolean = {
-      val matches = quickfixFilters.exists({
+    private def registerErrorTextEdit(pos: Position, msg: String, actions: List[CodeAction]): Boolean =
+      actions.exists(_.edits.nonEmpty) &&
+      quickfixFilters.exists {
         case MessageFilter.Any => true
         case mp: MessageFilter.MessagePattern => mp.check(msg)
         case sp: MessageFilter.SourcePattern => sp.check(pos)
         case _ => false
-      })
-      if (matches)
-        textEdits.addAll(actions.flatMap(_.edits))
-      matches
-    }
+      } && {
+        actions.foreach(action => textEdits.addAll(action.edits))
+        true
+      }
 
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
     private val summarizedInfos: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
