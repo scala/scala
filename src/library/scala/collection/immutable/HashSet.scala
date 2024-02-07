@@ -190,10 +190,10 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
     * Stops iterating the first time that f returns `false`.*/
   @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
 
-  def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
+  def subsetOf(that: Set[A]): Boolean = isEmpty || !that.isEmpty && (that match {
     case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
     case _ => super.subsetOf(that)
-  }
+  })
 
   override def equals(that: Any): Boolean =
     that match {
@@ -988,7 +988,7 @@ private final class BitmapIndexedSetNode[A](
               val elementHash = improve(elementUnimprovedHash)
               subNode.contains(payload, elementUnimprovedHash, elementHash, shift + BitPartitionSize)
             }
-          } else {
+          } else ((node.dataMap & bitpos) == 0) && {
             // Node x Node
             val subNode0 = this.getNode(indexFrom(this.nodeMap, bitpos))
             val subNode1 = node.getNode(indexFrom(node.nodeMap, bitpos))
