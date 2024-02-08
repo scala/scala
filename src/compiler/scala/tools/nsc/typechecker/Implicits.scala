@@ -300,8 +300,7 @@ trait Implicits extends splain.SplainData {
       case that: ImplicitInfo =>
           this.name == that.name &&
           this.pre =:= that.pre &&
-          this.sym == that.sym &&
-          this.inPackagePrefix == that.inPackagePrefix
+          this.sym == that.sym
       case _ => false
     }
     override def hashCode = {
