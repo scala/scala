@@ -190,7 +190,11 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
     * Stops iterating the first time that f returns `false`.*/
   @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
 
-  def subsetOf(that: Set[A]): Boolean = isEmpty || !that.isEmpty && (that match {
+  // For binary compatibility, the method used to have this signature by mistake.
+  // protected is public in bytecode.
+  protected def subsetOf(that: Set[A]): Boolean = subsetOf(that: collection.Set[A])
+
+  override def subsetOf(that: collection.Set[A]): Boolean = isEmpty || !that.isEmpty && (that match {
     case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
     case _ => super.subsetOf(that)
   })
