@@ -35,7 +35,7 @@ trait TreeOps { self: TastyUniverse =>
     }
   }
 
-  def showTree(tree: Tree): String = {
+  def showTree(tree: Tree)(implicit ctx: Context): String = {
     // here we want to avoid forcing the symbols of type trees,
     // so instead substitute the type tree with an Identifier
     // of the `showType`, which does not force.
@@ -56,11 +56,11 @@ trait TreeOps { self: TastyUniverse =>
     @inline final def Ident(name: TastyName)(tpe: Type): Tree =
       new TastyIdent(name).setType(tpe)
 
-    @inline final def Select(qual: Tree, name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name, isJava))
+    @inline final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(qual.tpe)(qual.tpe, name))
 
-    @inline final def Select(owner: Type)(qual: Tree, name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
-      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name, isJava))
+    @inline final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => lookupTypeFrom(owner)(qual.tpe, name))
 
     private def selectImpl(qual: Tree, name: TastyName)(lookup: Context => Type)(implicit ctx: Context): Tree = {
 
@@ -158,23 +158,23 @@ trait TreeOps { self: TastyUniverse =>
 
     @inline final def SeqLiteral(trees: List[Tree], tpt: Tree): Tree = u.ArrayValue(tpt, trees).setType(tpt.tpe)
 
-    def AppliedTypeTree(tpt: Tree, args: List[Tree], isJava: Boolean)(implicit ctx: Context): Tree = {
+    def AppliedTypeTree(tpt: Tree, args: List[Tree])(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndTpe) {
         u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(u.intersectionType(args.map(_.tpe)))
       }
-      else if (isJava && u.definitions.isScalaRepeatedParamType(tpt.tpe)) {
+      else if (ctx.isJava && u.definitions.isScalaRepeatedParamType(tpt.tpe)) {
         u.AppliedTypeTree(tpt, args).setType(u.definitions.javaRepeatedType(args.head.tpe))
       }
       else {
-        u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe), isJava))
+        u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe)))
       }
     }
 
-    def Annotated(tpt: Tree, annot: Tree, isJava: Boolean)(implicit ctx: Context): Tree = {
+    def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
       if (annot.tpe.typeSymbol === defn.RepeatedAnnot
           && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
           && tpt.tpe.typeArgs.length == 1) {
-        if (isJava) tpd.TypeTree(u.definitions.javaRepeatedType(tpt.tpe.typeArgs.head))
+        if (ctx.isJava) tpd.TypeTree(u.definitions.javaRepeatedType(tpt.tpe.typeArgs.head))
         else tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
       }
       else {

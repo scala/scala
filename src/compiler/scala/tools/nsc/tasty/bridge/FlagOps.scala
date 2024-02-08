@@ -64,19 +64,19 @@ trait FlagOps { self: TastyUniverse =>
     flags | (if (isJava) ModifierFlags.JAVA else ModifierFlags.SCALA3X)
 
   implicit final class SymbolFlagOps(val sym: Symbol) {
-    def reset(tflags: TastyFlagSet, isJava: Boolean)(implicit ctx: Context): sym.type =
-      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags, isJava))
-    def isOneOf(mask: TastyFlagSet, isJava: Boolean): Boolean =
-      sym.hasFlag(unsafeEncodeTastyFlagSet(mask, isJava))
-    def is(mask: TastyFlagSet, isJava: Boolean): Boolean =
-      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask, isJava))
-    def is(mask: TastyFlagSet, butNot: TastyFlagSet, isJava: Boolean): Boolean =
+    def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
+      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags, ctx.isJava))
+    def isOneOf(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasFlag(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
+    def is(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet)(implicit ctx: Context): Boolean =
       if (!butNot)
-        sym.is(mask, isJava)
+        sym.is(mask)
       else
-        sym.is(mask, isJava) && sym.not(butNot, isJava)
-    def not(mask: TastyFlagSet, isJava: Boolean): Boolean =
-      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask, isJava))
+        sym.is(mask) && sym.not(butNot)
+    def not(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
   }
 
   /** encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.

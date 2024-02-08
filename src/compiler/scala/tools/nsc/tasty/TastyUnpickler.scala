@@ -40,16 +40,23 @@ object TastyUnpickler {
 
     ctx.log(s"Unpickling $filename")
 
+    def enter(treeUnpickler: TreeUnpickler[tasty.type])(implicit ctx: Context): Unit = {
+      treeUnpickler.enterTopLevel(classRoot, objectRoot)
+    }
+
     val unpickler = new TastyUnpickler[tasty.type](new TastyReader(bytes))(tasty)
     unpickler.readHeader()
     unpickler.readNames()
     val Some(astReader) = unpickler.readSection(TastyFormat.ASTsSection): @unchecked
+
     val attributes = unpickler
       .readSection(TastyFormat.AttributesSection)
       .map(AttributeUnpickler.attributes)
       .getOrElse(Attributes.empty)
-    val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef, attributes)(tasty)
-    treeUnpickler.enterTopLevel(classRoot, objectRoot)
+
+    val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef)(tasty)
+    val ctx0 = if (attributes.isJava) ctx.addMode(TastyModes.ReadJava) else ctx
+    enter(treeUnpickler)(ctx0)
   }
 
   private final class Table[T] extends (NameRef => T) {

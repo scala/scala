@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty
 
-import scala.tools.tasty.{Attributes, TastyRefs, TastyReader, TastyName, TastyFormat, TastyFlags}
+import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat, TastyFlags}
 import TastyRefs._, TastyFlags._, TastyFormat._
 import ForceKinds._
 
@@ -36,8 +36,7 @@ import scala.collection.immutable.ArraySeq
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
-    nameAtRef: NameRef => TastyName,
-    attributes: Attributes)(implicit
+    nameAtRef: NameRef => TastyName)(implicit
     val tasty: Tasty) { self =>
   import tasty._
   import TreeUnpickler._
@@ -70,12 +69,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
-
-  /** JAVAattr is necessary to support pipelining in Zinc, we have to set Java erasure semantics if found.
-   * To support this we also need to support TASTy-only classpaths, see https://github.com/lampepfl/dotty/pull/17594
-   * For a test case, see test/tasty/run-pipelined
-   */
-  private[this] val isJava = attributes.isJava
 
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
@@ -118,7 +111,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       reader: TastyReader,
       tflags: TastyFlagSet
   )(implicit ctx: Context)
-      extends TastyCompleter(isClass, tflags, isJava) {
+      extends TastyCompleter(isClass, tflags) {
 
     private val symAddr = reader.currentAddr
 
@@ -391,10 +384,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case TERMREFin =>
-              defn.TermRefIn(name = readTastyName(), prefix = readType(), space = readType(), isJava = isJava)
+              defn.TermRefIn(name = readTastyName(), prefix = readType(), space = readType())
             case TYPEREFin =>
               defn.TypeRefIn(
-                name = readTastyName().toTypeName, prefix = readType(), space = readType(), isJava = isJava)
+                name = readTastyName().toTypeName, prefix = readType(), space = readType())
             case REFINEDtype =>
               var name   = readTastyName()
               val parent = readType()
@@ -402,7 +395,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               ctx.enterRefinement(parent)(refinedCtx =>
                 defn.RefinedType(parent, name, refinedCtx.owner, readType())
               )
-            case APPLIEDtype => defn.AppliedType(readType(), until(end)(readType()), isJava)
+            case APPLIEDtype => defn.AppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
               if (nothingButMods(end)) readVariances(lo)
@@ -423,13 +416,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def readSimpleType(): Type = {
         (tag: @switch) match {
-          case TYPEREFdirect => defn.NamedType(defn.NoPrefix, readSymRef(), isJava)
-          case TERMREFdirect => defn.NamedType(defn.NoPrefix, readSymRef(), isJava)
-          case TYPEREFsymbol | TERMREFsymbol => defn.NamedType(sym = readSymRef(), prefix = readType(), isJava = isJava)
-          case TYPEREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef().objectImplementation, isJava = isJava)
-          case TERMREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef(), isJava = isJava)
-          case TYPEREF => defn.TypeRef(name = readTastyName().toTypeName, prefix = readType(), isJava = isJava)
-          case TERMREF => defn.TermRef(name = readTastyName(), prefix = readType(), isJava = isJava)
+          case TYPEREFdirect => defn.NamedType(defn.NoPrefix, readSymRef())
+          case TERMREFdirect => defn.NamedType(defn.NoPrefix, readSymRef())
+          case TYPEREFsymbol | TERMREFsymbol => defn.NamedType(sym = readSymRef(), prefix = readType())
+          case TYPEREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef().objectImplementation)
+          case TERMREFpkg => defn.NamedType(defn.NoPrefix, sym = readPackageRef())
+          case TYPEREF => defn.TypeRef(name = readTastyName().toTypeName, prefix = readType())
+          case TERMREF => defn.TermRef(name = readTastyName(), prefix = readType())
           case THIS => defn.ThisType(readType())
           case RECtype =>
             typeAtAddr.get(start) match {
@@ -493,11 +486,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         flags |= Method
         if (name.isDefaultName)
           flags |= HasDefault // this corresponds to DEFAULTPARAM
-        if (isJava && !lacksDefinition && ctx.owner.is(Trait, isJava) && !name.isConstructorName)
+        if (ctx.isJava && !lacksDefinition && ctx.owner.is(Trait) && !name.isConstructorName)
           flags |= HasDefault // will be replaced by JAVA_DEFAULTMETHOD
       }
       if (tag === VALDEF) {
-        if (flags.is(Inline) || ctx.owner.is(Trait, isJava))
+        if (flags.is(Inline) || ctx.owner.is(Trait))
           flags |= FieldAccessor
         if (flags.not(Mutable))
           flags |= Stable
@@ -727,14 +720,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val annotStart = currentAddr
       ctx.log(s"$annotStart collected annotation ${showSym(annotSym)}, starting at $start, ending at $end")
       val mkTree = readLaterWithOwner(end, rdr => ctx =>
-        ctx.trace(traceAnnotation(annotStart, annotSym, ctx.owner)) {
+        ctx.trace(traceAnnotation(annotStart, annotSym, ctx.owner)(ctx)) {
           rdr.readTerm()(ctx)
         }
       )(annotCtx.retractMode(IndexScopedStats))
       DeferredAnnotation.fromTree(annotSym)(mkTree)
     }
 
-    private def traceAnnotation(annotStart: Addr, annotSym: Symbol, annotee: Symbol) = TraceInfo[Tree](
+    private def traceAnnotation(annotStart: Addr, annotSym: Symbol, annotee: Symbol)(implicit ctx: Context) = TraceInfo[Tree](
       query = s"reading annotation tree",
       qual = s"${showSym(annotSym)} at $annotStart",
       res = atree => s"annotation of ${showSym(annotee)} = ${showTree(atree)}"
@@ -877,10 +870,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         ctx.setInfo(sym,
           if (repr.tflags.is(FlagSets.SingletonEnum)) {
             ctx.completeEnumSingleton(sym, tpe)
-            defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation, isJava)
+            defn.NamedType(sym.owner.thisPrefix, sym.objectImplementation)
           }
-          else if (isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.Constant(sym))
-          else if (!isJava && sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
+          else if (ctx.isJava && repr.tflags.is(FlagSets.JavaEnumCase)) defn.ConstantType(tpd.Constant(sym))
+          else if (!ctx.isJava && sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
           else if (sym.isMethod) defn.ExprType(tpe)
           else tpe
         )
@@ -907,7 +900,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             else rhs.tpe
           ctx.setInfo(sym, defn.NormalisedBounds(info, sym))
-          if (sym.is(Param, isJava)) sym.reset(Private | Protected, isJava)
+          if (sym.is(Param)) sym.reset(Private | Protected)
         }
       }
 
@@ -915,7 +908,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported | Given))
         val tpt = readTpt()(localCtx)
         ctx.setInfo(sym,
-          if (nothingButMods(end) && sym.not(ParamSetter, isJava)) tpt.tpe
+          if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
           else defn.ExprType(tpt.tpe))
       }
 
@@ -1015,8 +1008,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             nextUnsharedTag match {
               case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentWithOuter).tpe
               case _ => readTpt()(parentCtx).tpe
-            },
-            isJava
+            }
           )
         }
       }
@@ -1048,9 +1040,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           addSelfDef()
         }
         if (nextByte === SPLITCLAUSE) {
-          assert(isJava,  s"unexpected SPLITCLAUSE at $start")
+          assert(ctx.isJava,  s"unexpected SPLITCLAUSE at $start")
         }
-        setInfoWithParents(tparams, ctx.processParents(cls, parents, isJava))
+        setInfoWithParents(tparams, ctx.processParents(cls, parents))
       }
 
       traverseTemplate()
@@ -1119,11 +1111,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (qual.typeIdent, defn.ThisType(qual.tpe))
       }
 
-      def completeSelectType(name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Tree =
-        completeSelect(name, isJava)
+      def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree =
+        completeSelect(name)
 
-      def completeSelect(name: TastyName, isJava: Boolean)(implicit ctx: Context): Tree =
-        tpd.Select(readTerm(), name, isJava)
+      def completeSelect(name: TastyName)(implicit ctx: Context): Tree =
+        tpd.Select(readTerm(), name)
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
         assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
@@ -1136,8 +1128,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case IDENTtpt => tpd.Ident(readTastyName().toTypeName)(readType())
         case SELECT =>
           if (inParentCtor) completeSelectionParent(readTastyName())
-          else completeSelect(readTastyName(), isJava)
-        case SELECTtpt => completeSelectType(readTastyName().toTypeName, isJava)
+          else completeSelect(readTastyName())
+        case SELECTtpt => completeSelectType(readTastyName().toTypeName)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
           tpd.This(qual)(tref)
@@ -1162,7 +1154,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 qual
               }
               else {
-                tpd.Select(readType())(qual, name, isJava)
+                tpd.Select(readType())(qual, name)
               }
             case SUPER =>
               val qual = readTerm()
@@ -1201,8 +1193,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // If we do directly a tpd.AppliedType tree we might get a
               // wrong number of arguments in some scenarios reading F-bounded
               // types. This came up in #137 of collection strawman.
-              tpd.AppliedTypeTree(readTpt(), until(end)(readTpt()), isJava)
-            case ANNOTATEDtpt => tpd.Annotated(readTpt(), readTerm()(ctx.addMode(ReadAnnotTopLevel)), isJava)
+              tpd.AppliedTypeTree(readTpt(), until(end)(readTpt()))
+            case ANNOTATEDtpt => tpd.Annotated(readTpt(), readTerm()(ctx.addMode(ReadAnnotTopLevel)))
             case LAMBDAtpt => tpd.LambdaTypeTree(readParams[NoCycle](TYPEPARAM).map(symFromNoCycle), readTpt())
             case MATCHtpt => matchTypeIsUnsupported
             case TYPEBOUNDStpt =>
@@ -1341,23 +1333,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def findOwner(addr: Addr)(implicit ctx: Context): Symbol = {
       def search(cs: List[OwnerTree], current: Symbol): Symbol =
         try cs match {
-        case ot :: cs1 =>
-          if (ot.addr.index === addr.index) {
-            assert(isSymbol(current), s"no symbol at $addr")
-            current
-          }
-          else if (ot.addr.index < addr.index && addr.index < ot.end.index)
-            search(ot.children, reader.symbolAt(ot.addr))
-          else
-            search(cs1, current)
-        case Nil =>
-          throw new TreeWithoutOwner
-      }
-      catch {
-        case ex: TreeWithoutOwner =>
-          ctx.log(s"no owner for $addr among $cs%, %") // pickling.println
-          throw ex
-      }
+          case ot :: cs1 =>
+            if (ot.addr.index === addr.index) {
+              assert(isSymbol(current), s"no symbol at $addr")
+              current
+            }
+            else if (ot.addr.index < addr.index && addr.index < ot.end.index)
+              search(ot.children, reader.symbolAt(ot.addr))
+            else
+              search(cs1, current)
+          case Nil =>
+            throw new TreeWithoutOwner
+        }
+        catch {
+          case ex: TreeWithoutOwner =>
+            ctx.log(s"no owner for $addr among $cs%, %") // pickling.println
+            throw ex
+        }
       try search(children, noSymbol).tap(owner => ctx.log(s"$addr within owner ${showSym(owner)} do:"))
       catch {
         case ex: TreeWithoutOwner =>

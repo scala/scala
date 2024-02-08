@@ -36,6 +36,8 @@ object TastyModes {
   final val OpaqueTypeDef: TastyMode = TastyMode(1 << 6)
   /** When reading trees of an annotation */
   final val ReadAnnotationCtor: TastyMode = TastyMode(1 << 7)
+  /** When reading a TASTy file produced from a Java source file (file has JAVAattr attribute) */
+  final val ReadJava: TastyMode = TastyMode(1 << 8)
 
   /** The union of `IndexStats` and `InnerScope` */
   final val IndexScopedStats: TastyMode = IndexStats | InnerScope
@@ -63,6 +65,7 @@ object TastyModes {
         if (mode.is(InnerScope))     sb += "InnerScope"
         if (mode.is(OpaqueTypeDef))  sb += "OpaqueTypeDef"
         if (mode.is(ReadAnnotationCtor)) sb += "ReadAnnotationCtor"
+        if (mode.is(ReadJava)) sb += "ReadJava"
         sb.mkString(" | ")
       }
     }

@@ -31,9 +31,9 @@ import scala.util.chaining._
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
-  private def describeOwner(owner: Symbol): String = {
+  private def describeOwner(owner: Symbol)(implicit ctx: Context): String = {
     val kind =
-      if (owner.isOneOf(Param | ParamSetter, isJava = false)) {
+      if (owner.isOneOf(Param | ParamSetter)) {
         if (owner.isType) "type parameter"
         else "parameter"
       }
@@ -43,9 +43,9 @@ trait ContextOps { self: TastyUniverse =>
     s"$kind ${owner.nameString}"
   }
 
-  def boundsString(owner: Symbol): String = {
+  def boundsString(owner: Symbol)(implicit ctx: Context): String = {
     if (owner.isType) s"bounds of $owner"
-    else if (owner.isOneOf(Param | ParamSetter, isJava = false)) s"parameter $owner"
+    else if (owner.isOneOf(Param | ParamSetter)) s"parameter $owner"
     else "result"
   }
 
@@ -63,7 +63,7 @@ trait ContextOps { self: TastyUniverse =>
     s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}."
   }
 
-  final def location(owner: Symbol): String = {
+  final def location(owner: Symbol)(implicit ctx: Context): String = {
     if (!isSymbol(owner))
       "<NoSymbol>"
     else if (owner.isClass || owner.isPackageClass || owner.isPackageObjectOrClass)
@@ -193,6 +193,12 @@ trait ContextOps { self: TastyUniverse =>
 
     protected implicit final def implyThisCtx: thisCtx.type = thisCtx
 
+    /** JAVAattr is necessary to support pipelining in Zinc, we have to set Java erasure semantics if found.
+     * To support this we also need to support TASTy-only classpaths, see https://github.com/lampepfl/dotty/pull/17594
+     * For a test case, see test/tasty/run-pipelined
+     */
+    def isJava: Boolean = mode.is(ReadJava)
+
     /**Associates the annotations with the symbol, and will force their evaluation if not reading statements.*/
     def adjustAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
       if (annots.nonEmpty) {
@@ -285,18 +291,17 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newLocalDummy: Symbol = owner.newLocalDummy(u.NoPosition)
 
-    final def newWildcard(info: Type, isJava: Boolean): Symbol =
+    final def newWildcard(info: Type): Symbol =
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
         newFlags = FlagSets.Creation.wildcard(isJava)
       ).setInfo(info)
 
-    final def newConstructor(owner: Symbol, isJava: Boolean, info: Type): Symbol = unsafeNewSymbol(
+    final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
       owner = owner,
       name  = TastyName.Constructor,
       flags = Method,
-      isJava = isJava,
       info  = info
     )
 
@@ -306,7 +311,6 @@ trait ContextOps { self: TastyUniverse =>
         owner = cls,
         typeName = TastyName.SimpleName(cls.fullName('$') + "$$localSealedChildProxy").toTypeName,
         flags = tflags,
-        isJava = false,
         info = defn.LocalSealedChildProxyInfo(cls, tflags),
         privateWithin = u.NoSymbol
       )
@@ -318,7 +322,6 @@ trait ContextOps { self: TastyUniverse =>
         owner = owner,
         name  = tname,
         flags = flags1,
-        isJava = false,
         info  = defn.LambdaParamInfo(flags1, idx, infoDb)
       )
     }
@@ -359,7 +362,7 @@ trait ContextOps { self: TastyUniverse =>
             case u.PolyType(tparams, res) if res.paramss.isEmpty => u.PolyType(tparams, u.NullaryMethodType(res))
             case _:u.MethodType | _:u.PolyType => tpe
             case _ => // val, which is not stable if structural. Dotty does not support vars
-              if (isOverride && overridden.is(Stable, isJava = false)) flags |= Stable
+              if (isOverride && overridden.is(Stable)) flags |= Stable
               u.NullaryMethodType(tpe)
           }
         }
@@ -368,13 +371,13 @@ trait ContextOps { self: TastyUniverse =>
           tpe
         }
       }
-      unsafeNewSymbol(owner, name, flags, isJava = false, info)
+      unsafeNewSymbol(owner, name, flags, info)
     }
 
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
     final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyCompleter, privateWithin: Symbol = noSymbol): Symbol = {
-      def default() = unsafeNewSymbol(owner, name, completer.tflags, completer.isJava, completer, privateWithin)
+      def default() = unsafeNewSymbol(owner, name, completer.tflags, completer, privateWithin)
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
         if (isSymbol(sourceObject))
@@ -390,7 +393,7 @@ trait ContextOps { self: TastyUniverse =>
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
     final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyCompleter, privateWithin: Symbol): Symbol = {
-      def default() = unsafeNewClassSymbol(owner, typeName, completer.tflags, completer.isJava, completer, privateWithin)
+      def default() = unsafeNewClassSymbol(owner, typeName, completer.tflags, completer, privateWithin)
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
         if (isSymbol(sourceObject))
@@ -431,15 +434,15 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Unsafe to call for creation of a object val, prefer `delayCompletion` if info is a LazyType
       */
-    private def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, isJava: Boolean, info: Type, privateWithin: Symbol = noSymbol): Symbol =
-      unsafeSetInfoAndPrivate(unsafeNewUntypedSymbol(owner, name, flags, isJava), info, privateWithin)
+    private def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
+      unsafeSetInfoAndPrivate(unsafeNewUntypedSymbol(owner, name, flags), info, privateWithin)
 
     /** Unsafe to call for creation of a object class, prefer `delayClassCompletion` if info is a LazyType
       */
-    private def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, isJava: Boolean, info: Type, privateWithin: Symbol): Symbol =
-      unsafeSetInfoAndPrivate(unsafeNewUntypedClassSymbol(owner, typeName, flags, isJava), info, privateWithin)
+    private def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
+      unsafeSetInfoAndPrivate(unsafeNewUntypedClassSymbol(owner, typeName, flags), info, privateWithin)
 
-    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, isJava: Boolean): Symbol = {
+    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol = {
       if (flags.isOneOf(Param | ParamSetter)) {
         if (name.isTypeName) {
           owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
@@ -487,7 +490,7 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
-    private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, isJava: Boolean): Symbol = {
+    private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet): Symbol = {
       if (flags.is(FlagSets.Creation.ObjectClassDef)) {
         log(s"!!! visited module class $typeName first")
         val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.initial(isJava))
@@ -503,7 +506,7 @@ trait ContextOps { self: TastyUniverse =>
     final def enterClassCompletion(): Symbol = {
       val cls = globallyVisibleOwner.asClass
       val assumedSelfSym = {
-        if (cls.is(Object, isJava = false) && cls.owner.isClass) {
+        if (cls.is(Object) && cls.owner.isClass) {
           cls.sourceModule
         }
         else {
@@ -515,7 +518,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     /** sets up value class machinery */
-    final def processParents(cls: Symbol, parentTypes: List[Type], isJava: Boolean): parentTypes.type = {
+    final def processParents(cls: Symbol, parentTypes: List[Type]): parentTypes.type = {
       if (parentTypes.head.typeSymbolDirect === u.definitions.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
         withPhaseNoLater("extmethods") { ctx0 =>
@@ -549,7 +552,7 @@ trait ContextOps { self: TastyUniverse =>
         inheritedAccess = sym.repr.tflags
       )
       val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
-      val ctor = newConstructor(moduleCls, isJava = false, selfTpe)
+      val ctor = newConstructor(moduleCls, selfTpe)
       moduleCls.typeOfThis = selfTpe
       moduleCls.flags = newSymbolFlagSet(moduleClsFlags, isJava = false)
       moduleCls.info = defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, moduleCls)
@@ -557,7 +560,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def redefineSymbol(symbol: Symbol, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
-      symbol.flags = newSymbolFlagSet(completer.tflags, completer.isJava)
+      symbol.flags = newSymbolFlagSet(completer.tflags, isJava)
       unsafeSetInfoAndPrivate(symbol, completer, privateWithin)
     }
 

@@ -40,7 +40,7 @@ trait SymbolOps { self: TastyUniverse =>
       case u.NoSymbol =>
         ctx.log(s"could not retrieve symbol from type ${showType(space)}")
       case termSym if termSym.isTerm =>
-        if (termSym.is(Object, isJava = false)) {
+        if (termSym.is(Object)) {
           termSym.ensureCompleted(SpaceForce)
           termSym.moduleClass.ensureCompleted(DeepForce | SpaceForce)
         }
@@ -137,15 +137,15 @@ trait SymbolOps { self: TastyUniverse =>
       }
     }
 
-  private[bridge] def lookupSymbol(space: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Symbol = {
+  private[bridge] def lookupSymbol(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     deepComplete(space)
     tname match {
       case SignedName(qual, sig, target) => lookupSigned(space, qual, sig.map(_.encode), target)
-      case _                             => lookupSimple(space, tname, isJava)
+      case _                             => lookupSimple(space, tname)
     }
   }
 
-  private def lookupSimple(space: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Symbol = {
+  private def lookupSimple(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
     //    or else filters for non private.
     // There should be an investigation to see what code makes that false, and what is an equivalent check.
@@ -167,7 +167,7 @@ trait SymbolOps { self: TastyUniverse =>
       }
     }
     if (isSymbol(member) && hasType(member)) member
-    else if (isJava && space.termSymbol.isModule && !space.termSymbol.hasPackageFlag) {
+    else if (ctx.isJava && space.termSymbol.isModule && !space.termSymbol.hasPackageFlag) {
       // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
       //   Use heuristic that we are accidentally looking in the static scope for some class/object,
       //   when really we should be looking in the instance scope. In this case, we should be always looking for
@@ -178,7 +178,7 @@ trait SymbolOps { self: TastyUniverse =>
       val space0 = space.typeSymbol.companionClass.typeOfThis
       val tname0 = tname.toTypeName
 
-      val secondTry = lookupSymbol(space0, tname0, isJava)
+      val secondTry = lookupSymbol(space0, tname0)
       if (secondTry.isClass) secondTry // avoid type parameters
       else errorMissing(space0, tname0)
     }

@@ -68,7 +68,7 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
-  def showType(tpe: Type, wrap: Boolean = true): String = {
+  def showType(tpe: Type, wrap: Boolean = true)(implicit ctx: Context): String = {
     def prefixed(prefix: String)(op: => String) = {
       val raw = op
       if (wrap) s"""$prefix"$raw""""
@@ -107,7 +107,7 @@ trait TypeOps { self: TastyUniverse =>
         }
 
       case tpe: u.TypeRef =>
-        if (tpe.sym.is(Object, isJava = false)) prefixed("path") {
+        if (tpe.sym.is(Object)) prefixed("path") {
           s"${tpe.sym.fullName}.type"
         }
         else prefixed("tpelazy") {
@@ -166,9 +166,9 @@ trait TypeOps { self: TastyUniverse =>
     final val ObjectTpe: Type = u.definitions.ObjectTpe
     final val ObjectTpeJava: Type = u.definitions.ObjectTpeJava
 
-    def adjustParent(tp: Type, isJava: Boolean): Type = {
+    def adjustParent(tp: Type)(implicit ctx: Context): Type = {
       val tpe = tp.dealias
-      if (isJava && (tpe eq ObjectTpeJava)) ObjectTpe
+      if (ctx.isJava && (tpe eq ObjectTpeJava)) ObjectTpe
       else if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
       else tpe
     }
@@ -266,7 +266,7 @@ trait TypeOps { self: TastyUniverse =>
       case tpe               => tpe
     }
 
-    def AppliedType(tycon: Type, args: List[Type], isJava: Boolean)(implicit ctx: Context): Type = {
+    def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
 
       def formatFnType(arrow: String, isErased: Boolean, arity: Int, args: List[Type]): String = {
         val len = args.length
@@ -289,7 +289,7 @@ trait TypeOps { self: TastyUniverse =>
         case ErasedFunctionType(n) => erasedFnIsUnsupported(formatFnType("=>", isErased = true, n, args))
         case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", isErased = false, n, args))
         case _ =>
-          if (isJava && tycon.typeSymbol === u.definitions.ArrayClass) {
+          if (ctx.isJava && tycon.typeSymbol === u.definitions.ArrayClass) {
             val arg0 = args.head
             val arg1 =
               arg0 match {
@@ -315,7 +315,7 @@ trait TypeOps { self: TastyUniverse =>
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
         val syms = mutable.ListBuffer.empty[Symbol]
         def bindWildcards(tpe: Type) = tpe match {
-          case tpe: u.TypeBounds   => ctx.newWildcard(tpe, isJava).tap(syms += _).pipe(_.ref)
+          case tpe: u.TypeBounds   => ctx.newWildcard(tpe).tap(syms += _).pipe(_.ref)
           case tpe: LambdaPolyType => tpe.toNested
           case tpe                 => tpe
         }
@@ -332,8 +332,8 @@ trait TypeOps { self: TastyUniverse =>
     def ParamRef(binder: Type, idx: Int): Type =
       binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
 
-    def NamedType(prefix: Type, sym: Symbol, isJava: Boolean): Type = {
-      if (isJava && sym.isClass && sym.isJavaDefined) {
+    def NamedType(prefix: Type, sym: Symbol)(implicit ctx: Context): Type = {
+      if (ctx.isJava && sym.isClass && sym.isJavaDefined) {
         def processInner(tp: Type): Type = tp match {
           case u.TypeRef(pre, sym, args) if !sym.isStatic => u.typeRef(processInner(pre.widen), sym, args)
           case _ => tp
@@ -359,13 +359,13 @@ trait TypeOps { self: TastyUniverse =>
       }
     }
 
-    def TypeRef(prefix: Type, name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Type =
-      TypeRefIn(prefix, prefix, name, isJava)
+    def TypeRef(prefix: Type, name: TastyName.TypeName)(implicit ctx: Context): Type =
+      TypeRefIn(prefix, prefix, name)
 
-    def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName, isJava: Boolean)(implicit ctx: Context): Type = {
+    def TypeRefIn(prefix: Type, space: Type, name: TastyName.TypeName)(implicit ctx: Context): Type = {
       import scala.tools.tasty.TastyName._
 
-      def doLookup = lookupTypeFrom(space)(prefix, name, isJava)
+      def doLookup = lookupTypeFrom(space)(prefix, name)
 
       val preSym = prefix.typeSymbol
 
@@ -390,7 +390,7 @@ trait TypeOps { self: TastyUniverse =>
         }
       }
       else {
-        if (isJava && preSym === u.definitions.JavaLangPackage) {
+        if (ctx.isJava && preSym === u.definitions.JavaLangPackage) {
           name match {
             case TypeName(SimpleName(tpnme.Object)) => ObjectTpeJava // Object =:= scala.Any in Java.
             case _                                  => doLookup
@@ -401,11 +401,11 @@ trait TypeOps { self: TastyUniverse =>
       }
     }
 
-    def TermRef(prefix: Type, name: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
-      TermRefIn(prefix, prefix, name, isJava)
+    def TermRef(prefix: Type, name: TastyName)(implicit ctx: Context): Type =
+      TermRefIn(prefix, prefix, name)
 
-    def TermRefIn(prefix: Type, space: Type, name: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
-      lookupTypeFrom(space)(prefix, name.toTermName, isJava)
+    def TermRefIn(prefix: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
+      lookupTypeFrom(space)(prefix, name.toTermName)
 
   }
 
@@ -568,8 +568,7 @@ trait TypeOps { self: TastyUniverse =>
 
   abstract class TastyCompleter(
       isClass: Boolean,
-      tflags: TastyFlagSet,
-      val isJava: Boolean
+      tflags: TastyFlagSet
   )(implicit capturedCtx: Context)
       extends BaseTastyCompleter(tflags) {
     override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope
@@ -641,8 +640,8 @@ trait TypeOps { self: TastyUniverse =>
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
-  private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName, isJava: Boolean)(implicit ctx: Context): Type =
-    defn.NamedType(pre, lookupSymbol(owner, tname, isJava), isJava)
+  private[bridge] def lookupTypeFrom(owner: Type)(pre: Type, tname: TastyName)(implicit ctx: Context): Type =
+    defn.NamedType(pre, lookupSymbol(owner, tname))
 
   private def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
