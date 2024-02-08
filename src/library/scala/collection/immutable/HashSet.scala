@@ -190,10 +190,10 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
     * Stops iterating the first time that f returns `false`.*/
   @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
 
-  def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
+  def subsetOf(that: Set[A]): Boolean = isEmpty || !that.isEmpty && (that match {
     case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
     case _ => super.subsetOf(that)
-  }
+  })
 
   override def equals(that: Any): Boolean =
     that match {
@@ -606,48 +606,37 @@ private final class BitmapIndexedSetNode[A](
 
       if (element0 == element) {
         if (this.payloadArity == 2 && this.nodeArity == 0) {
-          /*
-           * Create new node with remaining pair. The new node will a) either become the new root
-           * returned, or b) unwrapped and inlined during returning.
-           */
+          // Create new node with remaining pair. The new node will a) either become the new root
+          // returned, or b) unwrapped and inlined during returning.
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(elementHash, 0))
-          if (index == 0)
-            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(1)), Array(originalHashes(1)), size - 1, improve(originalHashes(1)))
-          else
-            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(0)), Array(originalHashes(0)), size - 1, improve(originalHashes(0)))
+          if (index == 0) new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(1)), Array(originalHashes(1)), size - 1, improve(originalHashes(1)))
+          else new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(0)), Array(originalHashes(0)), size - 1, improve(originalHashes(0)))
         }
-        else return copyAndRemoveValue(bitpos, elementHash)
-      } else return this
+        else copyAndRemoveValue(bitpos, elementHash)
+      }
+      else this
     }
-
-    if ((nodeMap & bitpos) != 0) {
+    else if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
-
       val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
 
-      if (subNodeNew eq subNode) return this
-
-      // cache just in case subNodeNew is a hashCollision node, in which in which case a little arithmetic is avoided
-      // in Vector#length
-      val subNodeNewSize = subNodeNew.size
-
-      if (subNodeNewSize == 1) {
-        if (this.size == subNode.size) {
+      if (subNodeNew eq subNode) this
+      // if subNodeNew is a hashCollision node, size has cost in Vector#length
+      else subNodeNew.size match {
+        case 1 =>
           // subNode is the only child (no other data or node children of `this` exist)
           // escalate (singleton or empty) result
-          return subNodeNew.asInstanceOf[BitmapIndexedSetNode[A]]
-        } else {
+          if (this.size == subNode.size) subNodeNew.asInstanceOf[BitmapIndexedSetNode[A]]
           // inline value (move to front)
-          return copyAndMigrateFromNodeToInline(bitpos, elementHash, subNode, subNodeNew)
-        }
-      } else if (subNodeNewSize > 1) {
-        // modify current node (set replacement node)
-        return copyAndSetNode(bitpos, subNode, subNodeNew)
+          else copyAndMigrateFromNodeToInline(bitpos, elementHash, subNode, subNodeNew)
+        case subNodeNewSize if subNodeNewSize > 1 =>
+          // modify current node (set replacement node)
+          copyAndSetNode(bitpos, subNode, subNodeNew)
+        case _ => this
       }
     }
-
-    this
+    else this
   }
   /** Variant of `removed` which will perform mutation on only the top-level node (`this`), rather than return a new
     * node
@@ -999,7 +988,7 @@ private final class BitmapIndexedSetNode[A](
               val elementHash = improve(elementUnimprovedHash)
               subNode.contains(payload, elementUnimprovedHash, elementHash, shift + BitPartitionSize)
             }
-          } else {
+          } else ((node.dataMap & bitpos) == 0) && {
             // Node x Node
             val subNode0 = this.getNode(indexFrom(this.nodeMap, bitpos))
             val subNode1 = node.getNode(indexFrom(node.nodeMap, bitpos))
@@ -1427,6 +1416,8 @@ private final class BitmapIndexedSetNode[A](
 
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
+
+  override def toString: String = f"BitmapIndexedSetNode(size=$size, dataMap=$dataMap%x, nodeMap=$nodeMap%x)" // content=${scala.runtime.ScalaRunTime.stringOf(content)}
 
   override def copy(): BitmapIndexedSetNode[A] = {
     val contentClone = content.clone()
@@ -2077,7 +2068,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
     ensureUnaliased()
     val h = elem.##
     val im = improve(h)
-    update(rootNode, elem, h, im, 0)
+    update(rootNode, elem, originalHash = h, elementHash = im, shift = 0)
     this
   }
 

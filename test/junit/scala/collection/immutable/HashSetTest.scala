@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{ assertThrows => _, _ }
+import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
 import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -9,7 +9,7 @@ import scala.tools.testkit.AllocationTest
 import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])
-class HashSetTest extends AllocationTest {
+class HashSetAllocationTest extends AllocationTest {
 
   @Test
   def t11551(): Unit = {
@@ -303,4 +303,20 @@ class HashSetTest extends AllocationTest {
       }
     }
   }
+}
+class HashSetTest {
+  @Test def `t12944 subset case NxD is false`: Unit = {
+
+    // Bryan Cranston, John Stuart Mill
+    val sets = Seq(
+      (HashSet("ian", "cra"), HashSet("john", "michael", "mills")),
+      (HashSet("ian", "cras"), HashSet("john", "michael", "mills")),
+      (HashSet("ian", "crasto"), HashSet("john", "michael", "mills")),
+      (HashSet("ian", "craston"), HashSet("john", "michael", "mills")),
+    )
+
+    sets.foreach { case (s1, s2) => assertFalse(s"$s1 <= $s2", s1.subsetOf(s2)) }
+  }
+  @Test def `nonempty subset of empty is false`: Unit =
+    assertFalse(HashSet("bryan", "cranston", "john", "stuart", "mill").subsetOf(HashSet.empty[String]))
 }
