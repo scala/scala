@@ -30,7 +30,7 @@ public class InnerClassGen<T> {
   }
 
   public static <T, U> InnerClassGen<T>.Inner<U> createInnerStatic(T outerField, U innerField) {
-    var innerClass = new InnerClassGen<T>();
+    InnerClassGen<T> innerClass = new InnerClassGen<T>();
     return innerClass.new Inner<>(outerField, innerField);
   }
 

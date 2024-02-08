@@ -12,26 +12,65 @@
 
 package scala.tools.tastytest
 
-sealed abstract class SourceKind(val name: String)(val filter: String => Boolean = _.endsWith(name)) { self =>
+import scala.util.Properties
+
+sealed abstract class SourceKind(val name: String){ self =>
+  def permits(file: String): Boolean
+  def shouldValidate: Boolean
+  def validate(options: SourceFile.Options): Boolean
+}
+
+sealed trait PermitByName { self: SourceKind =>
+  def permits(file: String): Boolean = file.endsWith(name)
   def fileOf(name: String) = name + self.name
+}
+
+sealed trait AlwaysValid { self: SourceKind =>
+  def shouldValidate: Boolean = false
+  def validate(options: SourceFile.Options) = true
+}
+
+sealed trait CheckJVM { self: SourceKind =>
+  def shouldValidate: Boolean = true
+  def validate(options: SourceFile.Options) = {
+    import CheckJVM.versionPattern
+    options.data.get("jvm") match {
+      case None => true // nothing to check
+      case Some(value) => value.getOrElse("") match {
+        case versionPattern(raw) => Properties.isJavaAtLeast(raw.toInt)
+        case value => throw new IllegalArgumentException(s"Invalid JVM version: $value")
+      }
+    }
+  }
+
+}
+
+object CheckJVM {
+  val versionPattern: scala.util.matching.Regex = raw"(\d+)\+".r
 }
 
 object SourceKind {
 
-  case object NoSource  extends SourceKind("")(filter = _ => false)
-  case object Scala     extends SourceKind(".scala")()
-  case object ScalaFail extends SourceKind("_fail.scala")()
-  case object ScalaPre  extends SourceKind("_pre.scala")()
-  case object Check     extends SourceKind(".check")()
-  case object SkipCheck extends SourceKind(".skipcheck")()
-  case object Java      extends SourceKind(".java")()
-  case object TastyFile extends SourceKind(".tasty")()
+  case object Scala     extends SourceKind(".scala") with PermitByName with CheckJVM
+  case object ScalaFail extends SourceKind("_fail.scala") with PermitByName with AlwaysValid
+  case object ScalaPre  extends SourceKind("_pre.scala") with PermitByName with AlwaysValid
+  case object Check     extends SourceKind(".check") with PermitByName with AlwaysValid
+  case object SkipCheck extends SourceKind(".skipcheck") with PermitByName with AlwaysValid
+  case object Java      extends SourceKind(".java") with PermitByName with CheckJVM
+  case object TastyFile extends SourceKind(".tasty") with PermitByName with AlwaysValid
 
-  case class ExactFiles(names: String*) extends SourceKind("")(filter = Files.filterByNames(names.toSet)) {
-    override def fileOf(name: String) = names.find(_.startsWith(name)).getOrElse("")
+  final case class ExactFiles(names: String*) extends SourceKind("") with AlwaysValid {
+    override def permits(file: String) = names.contains(file)
   }
 
-  def filterByKind(kinds: Set[SourceKind], paths: String*): Seq[String] =
-    if (kinds.isEmpty) Nil
-    else paths.filter(kinds.foldLeft(NoSource.filter)((filter, kind) => p => kind.filter(p) || filter(p)))
+  def allowByKind(kinds: Set[SourceKind], paths: String*): Seq[String] = {
+    if (kinds.isEmpty) Nil // no kinds, so allow nothing
+    else {
+      val bigPermit = kinds.foldLeft((_: SourceFile) => false) { (permits, kind) =>
+        file =>
+          kind.permits(file.path) && (!kind.shouldValidate || kind.validate(file.options)) || permits(file)
+      }
+      paths.view.map(new SourceFile(_)).filter(bigPermit).map(_.path).toSeq
+    }
+  }
 }

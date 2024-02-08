@@ -71,7 +71,7 @@ object Files {
     }
   }
 
-  def filterByNames(names: Set[String])(elem: String): Boolean = {
+  def allowByNames(names: Set[String])(elem: String): Boolean = {
     val path = JPaths.get(elem)
     val name = path.getFileName.toString
     names.contains(name)

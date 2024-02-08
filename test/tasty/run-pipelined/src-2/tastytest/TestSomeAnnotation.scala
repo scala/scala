@@ -1,6 +1,6 @@
 package tastytest
 
-import lib.SomeAnnotation
+import lib.{SomeAnnotation, SomeAnnotated}
 
 object TestSomeAnnotation extends scala.App {
 
@@ -12,5 +12,9 @@ object TestSomeAnnotation extends scala.App {
 
   @SomeAnnotation(value = "hello", year = 1996, classes = Array(classOf[Long]))
   def method3 = 23
+
+  assert(SomeAnnotated.method == 23)
+  assert(SomeAnnotated.method2 == 23)
+  assert(SomeAnnotated.method3 == 23)
 
 }

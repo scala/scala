@@ -29,7 +29,7 @@ public class InnerClass {
   }
 
   public static <U> InnerClass.Inner<U> createInnerStatic(U innerField) {
-    var innerClass = new InnerClass();
+    InnerClass innerClass = new InnerClass();
     return innerClass.new Inner<>(innerField);
   }
 

@@ -72,11 +72,11 @@ object TastyTest {
     tastyJar                    = outJ/"java-tasty.jar"
     _                          <- dotcPos(outCls, sourceRoot=srcRoot/src/"src-3", pipelineDottyOpts(tastyJar) ++: additionalDottySettings, src3:_*)
     allOuts                    <- getFiles(outCls)
-    relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
+    relTastys                  <- relativize(outCls, allowByKind(Set(TastyFile), allOuts:_*):_*)
     _                          <- copyAll(relTastys, outCls, out)
-    src2Filtered                = testFilter.fold(src2)(kind => filterByKind(Set(kind), src2:_*))
+    src2Filtered                = testFilter.fold(src2)(kind => allowByKind(Set(kind), src2:_*))
     _                          <- scalacPos(out, tastyJar, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2Filtered:_*)
-    _                          <- javacPos(outCls, sourceRoot=srcRoot/src/"src-3", filterByKind(Set(Java), src3:_*):_*)
+    _                          <- javacPos(outCls, sourceRoot=srcRoot/src/"src-3", allowByKind(Set(Java), src3:_*):_*)
     testNames                  <- visibleClasses(out, pkgName, src2Filtered:_*)
     _                          <- runMainOn(classpath(out, outCls), testNames:_*)
   } yield ()
@@ -93,8 +93,8 @@ object TastyTest {
     (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
     _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
-    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
+    _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", allowByKind(Set(Java), pre:_*):_*)
+    _                 <- scalacPos(out, individualCapable=false, sourceRoot=srcRoot/src/"pre", additionalSettings, allowByKind(Set(Scala), pre:_*):_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
     _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
@@ -135,9 +135,9 @@ object TastyTest {
     tastyJar                    = outJ/"java-tasty.jar"
     _                          <- dotcPos(outCls, sourceRoot=srcRoot/src/"src-3", pipelineDottyOpts(tastyJar) ++: additionalDottySettings, src3:_*)
     allOuts                    <- getFiles(outCls)
-    relTastys                  <- relativize(outCls, filterByKind(Set(TastyFile), allOuts:_*):_*)
+    relTastys                  <- relativize(outCls, allowByKind(Set(TastyFile), allOuts:_*):_*)
     _                          <- copyAll(relTastys, outCls, out)
-    src2Filtered                = testFilter.fold(src2)(kind => filterByKind(Set(kind, Check, SkipCheck), src2:_*))
+    src2Filtered                = testFilter.fold(src2)(kind => allowByKind(Set(kind, Check, SkipCheck), src2:_*))
     _                          <- scalacNeg(out, tastyJar, additionalSettings, src2Filtered:_*)
   } yield ()
 
@@ -249,7 +249,7 @@ object TastyTest {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
     val failMap: Map[String, (Option[String], Option[String])] = {
-      val (sources, rest) = files.partition(ScalaFail.filter)
+      val (sources, rest) = files.partition(ScalaFail.permits)
       sources.map({ s =>
         val name = s.stripSuffix(ScalaFail.name)
         val check = Check.fileOf(name)
@@ -265,7 +265,7 @@ object TastyTest {
     }
     def negCompile(source: String): Unit = {
       val (output, compiled) = {
-        if (ScalaFail.filter(source)) {
+        if (ScalaFail.permits(source)) {
           val testName = source.stripSuffix(ScalaFail.name)
           log(s"neg test ${cyan(testName)} started")
           failMap(source) match {
@@ -289,7 +289,7 @@ object TastyTest {
             unexpectedFail += source
             System.err.println(output)
             printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
-          case Some((Some(checkFile), _)) if Check.filter(checkFile) =>
+          case Some((Some(checkFile), _)) if Check.permits(checkFile) =>
             processLines(checkFile) { stream =>
               val checkLines  = stream.iterator().asScala.toSeq
               val outputLines = Diff.splitIntoLines(output)
@@ -311,7 +311,7 @@ object TastyTest {
       }
     }
 
-    val sources = files.filter(Scala.filter).filterNot(ScalaPre.filter)
+    val sources = files.filter(Scala.permits).filterNot(ScalaPre.permits)
     sources.foreach(negCompile)
     successWhen(errors.isEmpty && unexpectedFail.isEmpty) {
       if (unexpectedFail.nonEmpty) {
@@ -360,7 +360,7 @@ object TastyTest {
     for {
       (src2, src3) <- get2And3Sources(root, src2Filters, src3Filters)
       pre          <- getFiles(root/"pre")
-    } yield (filterByKind(preFilters, pre:_*), src2, src3)
+    } yield (allowByKind(preFilters, pre:_*), src2, src3)
   }
 
   private def getMovePreChangeSources(root: String,
@@ -372,7 +372,7 @@ object TastyTest {
     for {
       (src2, src3) <- get2And3Sources(root, src2Filters, src3Filters)
       (preA, preB) <- getPreChangeSources(root, preAFilters, preBFilters)
-    } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*), src2, src3)
+    } yield (allowByKind(preAFilters, preA:_*), allowByKind(preBFilters, preB:_*), src2, src3)
   }
 
   private def get2And3Sources(root: String, src2Filters: Set[SourceKind] /*= Set(Scala)*/,
@@ -381,7 +381,7 @@ object TastyTest {
     for {
       src2 <- getFiles(root/"src-2")
       src3 <- getFiles(root/"src-3")
-    } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3:_*))
+    } yield (allowByKind(src2Filters, src2:_*), allowByKind(src3Filters, src3:_*))
   }
 
   private def getFullCircleSources(root: String, src3upFilters: Set[SourceKind] = Set(Scala),
@@ -393,9 +393,9 @@ object TastyTest {
       src2down <- getFiles(root/"src-2-downstream")
       src3app <- getFiles(root/"src-3-app")
     } yield (
-      filterByKind(src3upFilters, src3up:_*),
-      filterByKind(src2downFilters, src2down:_*),
-      filterByKind(src3appFilters, src3app:_*)
+      allowByKind(src3upFilters, src3up:_*),
+      allowByKind(src2downFilters, src2down:_*),
+      allowByKind(src3appFilters, src3app:_*)
     )
   }
 
@@ -405,7 +405,7 @@ object TastyTest {
     for {
       preA <- getFiles(root/"pre-a")
       preB <- getFiles(root/"pre-b")
-    } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*))
+    } yield (allowByKind(preAFilters, preA:_*), allowByKind(preBFilters, preB:_*))
   }
 
   private def getNegIsolatedSources(root: String, src2Filters: Set[SourceKind] /*= Set(Scala)*/,
@@ -415,7 +415,7 @@ object TastyTest {
       src2  <- getFiles(root/"src-2")
       src3A <- getFiles(root/"src-3-A")
       src3B <- getFiles(root/"src-3-B")
-    } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3A:_*), filterByKind(src3Filters, src3B:_*))
+    } yield (allowByKind(src2Filters, src2:_*), allowByKind(src3Filters, src3A:_*), allowByKind(src3Filters, src3B:_*))
   }
 
   private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {
