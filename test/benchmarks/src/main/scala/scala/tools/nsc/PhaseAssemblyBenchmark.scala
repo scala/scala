@@ -45,7 +45,8 @@ class PhaseAssemblyBenchmark {
   @Benchmark def assemble(): Object = {
     val s = data.asInstanceOf[Data[Global with Singleton]]
     val g = s.global
-    val graph = g.phasesSetToDepGraph(s.components.reverse)
+    implicit val messaging: DependencyGraph.Messaging = DependencyGraph.Messaging.silent
+    val graph = DependencyGraph(s.components.reverse)
     graph.removeDanglingNodes()
     graph.validateAndEnforceHardlinks()
     graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
