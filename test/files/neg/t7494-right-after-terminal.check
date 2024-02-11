@@ -1,2 +1,1 @@
-error: [phase assembly, right after dependency on terminal phase not allowed: rightafterterminal => terminal]
-1 error
+fatal error: Phases form a cycle: terminal -> rightafterterminal -> terminal

@@ -1,2 +1,1 @@
-error: [phase assembly, before dependency on parser phase not allowed: parser => beforeparser]
-1 error
+fatal error: Phases form a cycle: parser -> beforeparser -> parser

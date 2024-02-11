@@ -30,6 +30,7 @@ trait ScaladocGlobalTrait extends Global {
   override lazy val syntaxAnalyzer = new ScaladocSyntaxAnalyzer[outer.type](outer) {
     val runsAfter = List[String]()
     val runsRightAfter = None
+    override val initial = true
   }
 
   override lazy val loaders = new {
@@ -46,11 +47,14 @@ trait ScaladocGlobalTrait extends Global {
 
 // takes a `Reporter`, not `FilteringReporter` for sbt compatibility
 class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with ScaladocGlobalTrait {
-  override protected def computeInternalPhases(): Unit = {
+  override protected def computePhaseDescriptors: List[SubComponent] = {
+    assert(phasesSet.isEmpty, "Scaladoc limits available phases")
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory
     phasesSet += analyzer.packageObjects
     phasesSet += analyzer.typerFactory
+    phasesSet += terminal
+    computePhaseAssembly()
   }
   override def createJavadoc = if (settings.docNoJavaComments.value) false else true
 

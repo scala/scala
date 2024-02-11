@@ -10,11 +10,12 @@ class ThePlugin(val global: Global) extends Plugin {
   import global._
 
   val name = "rafter-before-1"
-  val description = ""
+  val description = "hey it works"
   val components = List[PluginComponent](thePhase1)
 
   private object thePhase1 extends PluginComponent {
     val global = ThePlugin.this.global
+    override def description = ThePlugin.this.description
 
     val runsAfter = List[String]("refchecks")
     override val runsBefore = List[String]("erasure")
