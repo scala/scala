@@ -1,1 +1,1 @@
-fatal error: Multiple phases want to run right after parser; followers: multi1,multi2; created phase-order.dot
+fatal error: Phases multi1 and multi2 both immediately follow parser

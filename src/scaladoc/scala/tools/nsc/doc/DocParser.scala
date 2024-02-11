@@ -29,7 +29,12 @@ class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(setti
   // the usual global initialization
   locally { new Run() }
 
-  override protected def computeInternalPhases(): Unit = phasesSet += syntaxAnalyzer
+  override protected def computePhaseDescriptors: List[SubComponent] = {
+    assert(phasesSet.isEmpty, "Scaladoc limits available phases")
+    phasesSet += syntaxAnalyzer
+    phasesSet += terminal
+    computePhaseAssembly()
+  }
 
   /** Returns a list of `DocParser.Parseds`, which hold the DocDefs found
    *  in the given code along with the surrounding trees.
