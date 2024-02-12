@@ -41,12 +41,13 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends EfficientCla
   protected def emptyFiles: Array[F] // avoids reifying ClassTag[F]
   protected def getSubDir(dirName: String): Option[F]
   protected def listChildren(dir: F, filter: Option[F => Boolean] = None): Array[F]
+  protected def hasChild(dir: F, name: String): Boolean
   protected def getName(f: F): String
   protected def toAbstractFile(f: F): AbstractFile
   protected def isPackage(f: F): Boolean
 
   protected def createFileEntry(file: AbstractFile): FileEntryType
-  protected def isMatchingFile(f: F): Boolean
+  protected def isMatchingFile(f: F, siblingExists: String => Boolean): Boolean
 
   private def getDirectory(forPackage: PackageName): Option[F] = {
     if (forPackage.isRoot) {
@@ -73,7 +74,9 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends EfficientCla
     val dirForPackage = getDirectory(inPackage)
     val files: Array[F] = dirForPackage match {
       case None => emptyFiles
-      case Some(directory) => listChildren(directory, Some(isMatchingFile))
+      case Some(directory) =>
+        val hasCh = hasChild(directory, _)
+        listChildren(directory, Some(f => isMatchingFile(f, hasCh)))
     }
     files.iterator.map(f => createFileEntry(toAbstractFile(f))).toSeq
   }
@@ -83,10 +86,11 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends EfficientCla
     dirForPackage match {
       case None =>
       case Some(directory) =>
+        val hasCh = hasChild(directory, _)
         for (file <- listChildren(directory)) {
           if (isPackage(file))
             onPackageEntry(PackageEntryImpl(inPackage.entryName(getName(file))))
-          else if (isMatchingFile(file))
+          else if (isMatchingFile(file, hasCh))
             onClassesAndSources(createFileEntry(toAbstractFile(file)))
         }
     }
@@ -121,6 +125,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
     java.util.Arrays.sort(listing, (o1: File, o2: File) => o1.getName.compareTo(o2.getName))
     listing
   }
+  protected def hasChild(dir: File, name: String): Boolean = new File(dir, name).isFile
   protected def getName(f: File): String = f.getName
   protected def toAbstractFile(f: File): AbstractFile = new PlainFile(new scala.reflect.io.File(f))
   protected def isPackage(f: File): Boolean = f.isPackage
@@ -328,7 +333,8 @@ case class DirectoryClassPath(dir: File) extends JFileDirectoryLookup[ClassFileE
   }
 
   protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
-  protected def isMatchingFile(f: File): Boolean = f.isClass
+  protected def isMatchingFile(f: File, siblingExists: String => Boolean): Boolean =
+    f.isClass && !(f.getName.endsWith(".class") && siblingExists(f.getName.dropRight(6) + ".tasty"))
 
   private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = files(inPackage)
 }
@@ -337,7 +343,7 @@ case class DirectorySourcePath(dir: File) extends JFileDirectoryLookup[SourceFil
   def asSourcePathString: String = asClassPathString
 
   protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
-  protected def isMatchingFile(f: File): Boolean = endsScalaOrJava(f.getName)
+  protected def isMatchingFile(f: File, siblingExists: String => Boolean): Boolean = endsScalaOrJava(f.getName)
 
   override def findClass(className: String): Option[ClassRepresentation] = findSourceFile(className) map SourceFileEntryImpl
 

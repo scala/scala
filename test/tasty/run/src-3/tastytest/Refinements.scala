@@ -32,14 +32,14 @@ object Refinements {
     }
   }
 
-  class Qux[A, B, F <: FooT with FooU { type T = A; type U = B }] {
+  class Qux[A, B, F <: FooT & FooU { type T = A; type U = B }] {
     def qux(member: F): (member.T, member.U) = {
       (member.fooT, member.fooU)
     }
   }
 
   class Zot[A, B] {
-    def zot[F <: FooT with FooU { type T = A; type U = B } ](member: F): (member.T, member.U) = {
+    def zot[F <: FooT & FooU { type T = A; type U = B } ](member: F): (member.T, member.U) = {
       (member.fooT, member.fooU)
     }
   }
@@ -151,12 +151,12 @@ object Refinements {
   }
 
   class PickOneRefinement_1[S <: SpecialRefinement { def pickOne(as: String*): Option[String] }] {
-    def run(s: S, as: String*): Option[String] = s.pickOne(as:_*)
+    def run(s: S, as: String*): Option[String] = s.pickOne(as*)
   }
 
   class PickOneRefinement_2 {
     def run[S <: SpecialRefinement { def pickOne(as: String*): Option[String] }](s: S, as: String*): Option[String] =
-      s.pickOne(as:_*)
+      s.pickOne(as*)
   }
 
   class Structural1[M <: { val output: Int } ] {
@@ -178,15 +178,15 @@ object Refinements {
   extends scala.Selectable {
     private val map = methods.toMap
 
-    def applyDynamic(name: String, paramClasses: Class[_]*)(args: Any*): Any =
+    def applyDynamic(name: String, paramClasses: Class[?]*)(args: Any*): Any =
       map.get(name, paramClasses) match
         case Some(f) => f(args)
         case None    => throw NoSuchMethodException(s"$name(${paramClasses.mkString(",")})")
 
   }
   object MethodSelectable {
-    type Method = ((String, Seq[Class[_]]), Seq[Any] => Any)
-    def method(name: String, paramClasses: Class[_]*)(impl: Seq[Any] => Any): Method =
+    type Method = ((String, Seq[Class[?]]), Seq[Any] => Any)
+    def method(name: String, paramClasses: Class[?]*)(impl: Seq[Any] => Any): Method =
       ((name, paramClasses), impl)
   }
 

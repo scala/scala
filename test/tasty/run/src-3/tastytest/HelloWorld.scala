@@ -14,13 +14,13 @@ object HelloWorld {
   def the[T](implicit x: T): x.type = x
   def bounded[T >: Null <: String](a: T): String = a + a
   def higher[F[_], G[_]](fInt: F[Int])(implicit ev: F[Int] <:< G[Int]): G[Int] = ev(fInt)
-  def higherBounded[F[_] >: Null <: List[_], A](f: F[A]): F[A] = f
-  def higherBounded2[T <: List[_ <: Int]](f: T): T = f
-  def higherBounded3[T <: List[List[_ <: Int]]](f: T): T = f
-  def higherBounded4[T <: Either[_ <: Int, String]](f: T): T = f
+  def higherBounded[F[_] >: Null <: List[?], A](f: F[A]): F[A] = f
+  def higherBounded2[T <: List[? <: Int]](f: T): T = f
+  def higherBounded3[T <: List[List[? <: Int]]](f: T): T = f
+  def higherBounded4[T <: Either[? <: Int, String]](f: T): T = f
   def higherBounded5[F[+_], A](fa: F[A]): F[A] = fa
   def higherBounded6[F[-_], A](fa: F[A]): F[A] = fa
-  def higherBounded7[F[_] <: Either[_ <: Int, _], A](f: F[A]): f.type = f
+  def higherBounded7[F[_] <: Either[? <: Int, ?], A](f: F[A]): f.type = f
   def repeated(s: String*): String = s.mkString(",")
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x

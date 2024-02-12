@@ -12,6 +12,7 @@
 
 package scala.tools.tasty
 
+// revision: https://github.com/lampepfl/dotty/commit/0938fe5603a17c7c786ac8fc6118a9d5d8b257de
 object TastyFormat {
 
   /** The first four bytes of a TASTy file, followed by four values:
@@ -35,7 +36,7 @@ object TastyFormat {
    *  compatibility, but remains backwards compatible, with all
    *  preceeding `MinorVersion`.
    */
-  final val MinorVersion: Int = 3
+  final val MinorVersion: Int = 4
 
   /** Natural Number. The `ExperimentalVersion` allows for
    *  experimentation with changes to TASTy without committing
@@ -104,6 +105,7 @@ object TastyFormat {
   final val ASTsSection = "ASTs"
   final val PositionsSection = "Positions"
   final val CommentsSection = "Comments"
+  final val AttributesSection = "Attributes"
 
   /** Tags used to serialize names, should update [[TastyFormat$.nameTagToString]] if a new constant is added */
   class NameTags {
@@ -170,9 +172,9 @@ object TastyFormat {
 
   final val SOURCE = 4
 
- // AST tags
-  // Cat. 1:    tag
+  // AST tags
 
+  // Tree Cat. 1:    tag
   final val firstSimpleTreeTag = UNITconst
   // final val ??? = 1
   final val UNITconst = 2
@@ -221,8 +223,8 @@ object TastyFormat {
   final val EMPTYCLAUSE = 45
   final val SPLITCLAUSE = 46
 
-  // Cat. 2:    tag Nat
-
+  // Tree Cat. 2:    tag Nat
+  final val firstNatTreeTag = SHAREDterm
   final val SHAREDterm = 60
   final val SHAREDtype = 61
   final val TERMREFdirect = 62
@@ -241,8 +243,8 @@ object TastyFormat {
   final val IMPORTED = 75
   final val RENAMED = 76
 
-  // Cat. 3:    tag AST
-
+  // Tree Cat. 3:    tag AST
+  final val firstASTTreeTag = THIS
   final val THIS = 90
   final val QUALTHIS = 91
   final val CLASSconst = 92
@@ -256,9 +258,12 @@ object TastyFormat {
   final val RECtype = 100
   final val SINGLETONtpt = 101
   final val BOUNDED = 102
+  final val EXPLICITtpt = 103
+  final val ELIDED = 104
 
-  // Cat. 4:    tag Nat AST
 
+  // Tree Cat. 4:    tag Nat AST
+  final val firstNatASTTreeTag = IDENT
   final val IDENT = 110
   final val IDENTtpt = 111
   final val SELECT = 112
@@ -270,8 +275,8 @@ object TastyFormat {
   final val SELFDEF = 118
   final val NAMEDARG = 119
 
-  // Cat. 5:    tag Length ...
-
+  // Tree Cat. 5:    tag Length ...
+  final val firstLengthTreeTag = PACKAGE
   final val PACKAGE = 128
   final val VALDEF = 129
   final val DEFDEF = 130
@@ -333,10 +338,27 @@ object TastyFormat {
 
   final val HOLE = 255
 
-  final val firstNatTreeTag = SHAREDterm
-  final val firstASTTreeTag = THIS
-  final val firstNatASTTreeTag = IDENT
-  final val firstLengthTreeTag = PACKAGE
+  // Attributes tags
+
+  // Attribute Category 1 (tags 1-32)  :  tag
+  def isBooleanAttrTag(tag: Int): Boolean = 1 <= tag && tag <= 32
+  final val SCALA2STANDARDLIBRARYattr = 1
+  final val EXPLICITNULLSattr = 2
+  final val CAPTURECHECKEDattr = 3
+  final val WITHPUREFUNSattr = 4
+  final val JAVAattr = 5
+  final val OUTLINEattr = 6
+
+  // Attribute Category 2 (tags 33-128): unassigned
+
+  // Attribute Category 3 (tags 129-160):  tag Utf8Ref
+  def isStringAttrTag(tag: Int): Boolean = 129 <= tag && tag <= 160
+  final val SOURCEFILEattr = 129
+
+  // Attribute Category 4 (tags 161-255): unassigned
+
+  // end of Attributes tags
+
 
   /** Useful for debugging */
   def isLegalTag(tag: Int): Boolean =
@@ -344,7 +366,7 @@ object TastyFormat {
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
-    firstLengthTreeTag <= tag && tag <= MATCHtpt ||
+    firstLengthTreeTag <= tag && tag <= MATCHCASEtype ||
     tag == HOLE
 
   def isParamTag(tag: Int): Boolean = tag == PARAM || tag == TYPEPARAM
@@ -404,6 +426,7 @@ object TastyFormat {
        | ANNOTATEDtpt
        | BYNAMEtpt
        | MATCHtpt
+       | EXPLICITtpt
        | BIND => true
     case _ => false
   }
@@ -548,7 +571,19 @@ object TastyFormat {
     case ANNOTATION => "ANNOTATION"
     case PRIVATEqualified => "PRIVATEqualified"
     case PROTECTEDqualified => "PROTECTEDqualified"
+    case EXPLICITtpt => "EXPLICITtpt"
+    case ELIDED => "ELIDED"
     case HOLE => "HOLE"
+  }
+
+  def attributeTagToString(tag: Int): String = tag match {
+    case SCALA2STANDARDLIBRARYattr => "SCALA2STANDARDLIBRARYattr"
+    case EXPLICITNULLSattr => "EXPLICITNULLSattr"
+    case CAPTURECHECKEDattr => "CAPTURECHECKEDattr"
+    case WITHPUREFUNSattr => "WITHPUREFUNSattr"
+    case JAVAattr => "JAVAattr"
+    case OUTLINEattr => "OUTLINEattr"
+    case SOURCEFILEattr => "SOURCEFILEattr"
   }
 
   /** @return If non-negative, the number of leading references (represented as nats) of a length/trees entry.

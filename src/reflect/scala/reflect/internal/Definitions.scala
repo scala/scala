@@ -1336,6 +1336,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val StaticMethodAnnotationClass = getClassIfDefined("scala.annotation.static")
     lazy val PolyFunctionClass           = getClassIfDefined("scala.PolyFunction")
     lazy val ExperimentalAnnotationClass = getClassIfDefined("scala.annotation.experimental")
+    lazy val AnnotationDefaultClass      = getClassIfDefined("scala.annotation.internal.AnnotationDefault")
+    lazy val JavaAnnotationClass         = requiredClass[java.lang.annotation.Annotation]
 
     lazy val BeanPropertyAttr           = requiredClass[scala.beans.BeanProperty]
     lazy val BooleanBeanPropertyAttr    = requiredClass[scala.beans.BooleanBeanProperty]

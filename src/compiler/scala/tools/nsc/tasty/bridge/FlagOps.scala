@@ -42,12 +42,13 @@ trait FlagOps { self: TastyUniverse =>
     object Creation {
       val ObjectDef: TastyFlagSet = Object | Lazy | Final | Stable
       val ObjectClassDef: TastyFlagSet = Object | Final
-      val Wildcard: u.FlagSet = newSymbolFlagSetFromEncoded(Flags.EXISTENTIAL)
-      val Default: u.FlagSet = newSymbolFlagSet(EmptyTastyFlags)
+      def wildcard(isJava: Boolean): u.FlagSet = newSymbolFlagSetFromEncoded(Flags.EXISTENTIAL, isJava)
+      def initial(isJava: Boolean): u.FlagSet = newSymbolFlagSet(EmptyTastyFlags, isJava)
     }
     def withAccess(flags: TastyFlagSet, inheritedAccess: TastyFlagSet): TastyFlagSet =
       flags | (inheritedAccess & (Private | Local | Protected))
     val SingletonEnum: TastyFlagSet = Case | Static | Enum | Stable
+    val JavaEnumCase: TastyFlagSet = Static | Enum // beware overlap with Scala enum
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
     val FieldGetter: TastyFlagSet = FieldAccessor | Stable
     val ParamGetter: TastyFlagSet = FieldGetter | ParamSetter
@@ -56,34 +57,39 @@ trait FlagOps { self: TastyUniverse =>
   }
 
   /** For purpose of symbol initialisation, encode a `TastyFlagSet` as a `symbolTable.FlagSet`. */
-  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet): u.FlagSet =
-    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags))
+  private[bridge] def newSymbolFlagSet(tflags: TastyFlagSet, isJava: Boolean): u.FlagSet =
+    newSymbolFlagSetFromEncoded(unsafeEncodeTastyFlagSet(tflags, isJava), isJava)
 
-  private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet): u.FlagSet =
-    flags | ModifierFlags.SCALA3X
+  private[bridge] def newSymbolFlagSetFromEncoded(flags: u.FlagSet, isJava: Boolean): u.FlagSet =
+    flags | (if (isJava) ModifierFlags.JAVA else ModifierFlags.SCALA3X)
 
   implicit final class SymbolFlagOps(val sym: Symbol) {
     def reset(tflags: TastyFlagSet)(implicit ctx: Context): sym.type =
-      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags))
-    def isOneOf(mask: TastyFlagSet): Boolean =
-      sym.hasFlag(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet): Boolean =
-      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask))
-    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
+      ctx.resetFlag0(sym, unsafeEncodeTastyFlagSet(tflags, ctx.isJava))
+    def isOneOf(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasFlag(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
+    def is(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasAllFlags(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet)(implicit ctx: Context): Boolean =
       if (!butNot)
         sym.is(mask)
       else
         sym.is(mask) && sym.not(butNot)
-    def not(mask: TastyFlagSet): Boolean =
-      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask))
+    def not(mask: TastyFlagSet)(implicit ctx: Context): Boolean =
+      sym.hasNoFlags(unsafeEncodeTastyFlagSet(mask, ctx.isJava))
   }
 
   /** encodes a `TastyFlagSet` as a `symbolTable.FlagSet`, the flags in `FlagSets.TastyOnlyFlags` are ignored.
    *  @note Do not use directly to initialise symbol flags, use `newSymbolFlagSet`
    */
-  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet): u.FlagSet = {
+  private def unsafeEncodeTastyFlagSet(tflags: TastyFlagSet, isJava: Boolean): u.FlagSet = {
     import u.Flag
     var flags = u.NoFlags
+    // JAVA FLAGS
+    if (isJava && tflags.is(Enum)) flags |= ModifierFlags.JAVA_ENUM
+    if (isJava && tflags.is(Trait)) flags |= ModifierFlags.INTERFACE | ModifierFlags.ABSTRACT
+    if (isJava && tflags.is(HasDefault)) flags |= ModifierFlags.JAVA_DEFAULTMETHOD
+    // STANDARD FLAGS
     if (tflags.is(Private)) flags |= Flag.PRIVATE
     if (tflags.is(Protected)) flags |= Flag.PROTECTED
     if (tflags.is(AbsOverride)) flags |= Flag.ABSOVERRIDE
@@ -106,7 +112,7 @@ trait FlagOps { self: TastyUniverse =>
     if (tflags.is(CaseAccessor)) flags |= Flag.CASEACCESSOR
     if (tflags.is(Covariant)) flags |= Flag.COVARIANT
     if (tflags.is(Contravariant)) flags |= Flag.CONTRAVARIANT
-    if (tflags.is(HasDefault)) flags |= Flag.DEFAULTPARAM
+    if (tflags.is(HasDefault) && !isJava) flags |= Flag.DEFAULTPARAM
     if (tflags.is(Stable)) flags |= Flag.STABLE
     if (tflags.is(ParamSetter)) flags |= Flag.PARAMACCESSOR
     if (tflags.is(Param)) flags |= Flag.PARAM

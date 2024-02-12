@@ -24,7 +24,7 @@ object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
     def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.name)
 
-    def isClass: Boolean = !file.isDirectory && (file.hasExtension("class") || file.hasExtension("sig"))
+    def isClass: Boolean = !file.isDirectory && (file.hasExtension("class") || file.hasExtension("sig") || file.hasExtension("tasty"))
 
     def isScalaOrJavaSource: Boolean = !file.isDirectory && (file.hasExtension("scala") || file.hasExtension("java"))
 
@@ -46,6 +46,7 @@ object FileUtils {
   private val SUFFIX_SCALA = ".scala"
   private val SUFFIX_JAVA = ".java"
   private val SUFFIX_SIG = ".sig"
+  private val SUFFIX_TASTY = ".tasty"
 
   def stripSourceExtension(fileName: String): String = {
     if (endsScala(fileName)) stripClassExtension(fileName)
@@ -58,7 +59,7 @@ object FileUtils {
   @inline private def ends (filename:String, suffix:String) = filename.endsWith(suffix) && filename.length > suffix.length
 
   def endsClass(fileName: String): Boolean =
-    ends (fileName, SUFFIX_CLASS) || fileName.endsWith(SUFFIX_SIG)
+    ends (fileName, SUFFIX_CLASS) || fileName.endsWith(SUFFIX_SIG) || fileName.endsWith(SUFFIX_TASTY)
 
   def endsScalaOrJava(fileName: String): Boolean =
     endsScala(fileName) || endsJava(fileName)

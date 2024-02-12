@@ -6,12 +6,12 @@ trait Env[+I] { self =>
 }
 
 object Env {
-  type JVMEnv = AnyHash with AnyClassName
+  type JVMEnv = AnyHash & AnyClassName
   def runPrinter[I,O](printer: => Printer[I, O])(env: Env[I]): O = printer.println(env.env)
 }
 
-trait JVMEnvLive extends Env[AnyClassName with AnyHash] {
-  final val env: AnyClassName with AnyHash = new AnyClassName with AnyHash
+trait JVMEnvLive extends Env[AnyClassName & AnyHash] {
+  final val env: AnyClassName & AnyHash = new AnyClassName with AnyHash
 }
 
 trait AnyHashLive extends Env[AnyHash] {
@@ -23,8 +23,8 @@ trait Printer[-I, +O] {
 }
 
 object Printer {
-  object ObjectToString extends Printer[AnyClassName with AnyHash, Any => String] {
-    def println(in: AnyClassName with AnyHash): Any => String = x =>
+  object ObjectToString extends Printer[AnyClassName & AnyHash, Any => String] {
+    def println(in: AnyClassName & AnyHash): Any => String = x =>
       s"${in.anyClassName(x)}@${in.anyHash(x)}"
   }
   object HashToString extends Printer[AnyHash, Any => String] {

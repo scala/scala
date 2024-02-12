@@ -1,0 +1,15 @@
+TestIsDeprecated_fail.scala:9: warning: method foo in class IsDeprecated is deprecated
+  assert(IsDeprecated.foo == 23) // error: deprecated method foo
+                      ^
+TestIsDeprecated_fail.scala:10: warning: method bar in class IsDeprecated is deprecated
+  assert(iD.bar == 23) // error: deprecated method bar
+            ^
+TestIsDeprecated_fail.scala:12: warning: class Inner in class IsDeprecated is deprecated
+  val iDI = new IsDeprecated.Inner // error: deprecated class Inner
+                             ^
+TestIsDeprecated_fail.scala:14: warning: class Inner in class IsDeprecated is deprecated
+  assert(IsDeprecated.Inner.baz == 23) // error: deprecated class Inner
+                      ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

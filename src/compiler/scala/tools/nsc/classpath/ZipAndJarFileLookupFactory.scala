@@ -73,7 +73,9 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
     override private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = files(inPackage)
 
     override protected def createFileEntry(file: FileZipArchive#Entry): ClassFileEntryImpl = ClassFileEntryImpl(file)
-    override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isClass
+    override protected def isRequiredFileType(file: AbstractFile, siblingExists: String => Boolean): Boolean = {
+      file.isClass && !(file.hasExtension("class") && siblingExists(file.name.dropRight(6) + ".tasty"))
+    }
   }
 
   /**
@@ -182,7 +184,7 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
     override private[nsc] def sources(inPackage: PackageName): Seq[SourceFileEntry] = files(inPackage)
 
     override protected def createFileEntry(file: FileZipArchive#Entry): SourceFileEntryImpl = SourceFileEntryImpl(file)
-    override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isScalaOrJavaSource
+    override protected def isRequiredFileType(file: AbstractFile, siblingExists: String => Boolean): Boolean = file.isScalaOrJavaSource
   }
 
   override protected def createForZipFile(zipFile: AbstractFile, zipSettings: ZipSettings): ClassPath with Closeable = ZipArchiveSourcePath(zipFile.file)

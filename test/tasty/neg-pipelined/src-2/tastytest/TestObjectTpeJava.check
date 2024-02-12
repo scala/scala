@@ -1,0 +1,15 @@
+TestObjectTpeJava_fail.scala:19: error: type mismatch;
+ found   : Array[Int]
+ required: Array[Object]
+Note: Int <: Object, but class Array is invariant in type T.
+You may wish to investigate a wildcard type such as `_ <: Object`. (SLS 3.2.10)
+  newOTJ.meth5(Array[Int](1)) // error: Array[Int] is not a subtype of Array[Object]
+                         ^
+TestObjectTpeJava_fail.scala:20: error: type mismatch;
+ found   : Array[Int]
+ required: Array[Object with ?]
+Note: Int >: Object with ?, but class Array is invariant in type T.
+You may wish to investigate a wildcard type such as `_ >: Object with ?`. (SLS 3.2.10)
+  newOTJ.meth6(Array[Int](1)) // error: Array[Int] is not a subtype of Array[T & Object]
+                         ^
+2 errors

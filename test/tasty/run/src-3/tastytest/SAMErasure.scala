@@ -4,7 +4,7 @@ object SAMErasure {
 
   trait TreeShimSAMApi extends Product
 
-  type TreeShimSAM >: Null <: AnyRef with TreeShimSAMApi
+  type TreeShimSAM >: Null <: AnyRef & TreeShimSAMApi
 
   implicit val TreeShimSAMTag: reflect.ClassTag[TreeShimSAM] =
     reflect.classTag[TreeShimSAMApi].asInstanceOf[reflect.ClassTag[TreeShimSAM]]

@@ -35,7 +35,7 @@ trait TreeOps { self: TastyUniverse =>
     }
   }
 
-  def showTree(tree: Tree): String = {
+  def showTree(tree: Tree)(implicit ctx: Context): String = {
     // here we want to avoid forcing the symbols of type trees,
     // so instead substitute the type tree with an Identifier
     // of the `showType`, which does not force.
@@ -161,7 +161,11 @@ trait TreeOps { self: TastyUniverse =>
     def AppliedTypeTree(tpt: Tree, args: List[Tree])(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndTpe) {
         u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(u.intersectionType(args.map(_.tpe)))
-      } else {
+      }
+      else if (ctx.isJava && u.definitions.isScalaRepeatedParamType(tpt.tpe)) {
+        u.AppliedTypeTree(tpt, args).setType(u.definitions.javaRepeatedType(args.head.tpe))
+      }
+      else {
         u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe)))
       }
     }
@@ -170,7 +174,8 @@ trait TreeOps { self: TastyUniverse =>
       if (annot.tpe.typeSymbol === defn.RepeatedAnnot
           && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
           && tpt.tpe.typeArgs.length == 1) {
-        tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
+        if (ctx.isJava) tpd.TypeTree(u.definitions.javaRepeatedType(tpt.tpe.typeArgs.head))
+        else tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
       }
       else {
         u.Annotated(annot, tpt).setType(defn.AnnotatedType(tpt.tpe, annot))

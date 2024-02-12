@@ -47,6 +47,7 @@ trait NameOps { self: TastyUniverse =>
 
   object tpnme {
 
+    final val Object: String = "Object"
     final val Or: String = "|"
     final val And: String = "&"
     final val AnyKind: String = "AnyKind"

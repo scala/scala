@@ -167,6 +167,21 @@ trait SymbolOps { self: TastyUniverse =>
       }
     }
     if (isSymbol(member) && hasType(member)) member
+    else if (ctx.isJava && space.termSymbol.isModule && !space.termSymbol.hasPackageFlag) {
+      // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
+      //   Use heuristic that we are accidentally looking in the static scope for some class/object,
+      //   when really we should be looking in the instance scope. In this case, we should be always looking for
+      //   the class and not the object, so we convert to type name and look in the companion.
+      //
+      //   we have the added bonus that we are looking for an inner class defined in the same TASTy file,
+      //   so there should be no cross-file issues.
+      val space0 = space.typeSymbol.companionClass.typeOfThis
+      val tname0 = tname.toTypeName
+
+      val secondTry = lookupSymbol(space0, tname0)
+      if (secondTry.isClass) secondTry // avoid type parameters
+      else errorMissing(space0, tname0)
+    }
     else errorMissing(space, tname)
   }
 
@@ -177,14 +192,19 @@ trait SymbolOps { self: TastyUniverse =>
   private def errorMissing[T](space: Type, tname: TastyName)(implicit ctx: Context) = {
     val kind = if (tname.isTypeName) "type" else "term"
     def typeToString(tpe: Type) = {
+      def isPath(pre: Type) =
+        pre.isInstanceOf[u.SingletonType] || pre.termSymbol.isModule || pre.typeSymbol.isModuleClass
       def inner(sb: StringBuilder, tpe: Type): StringBuilder = tpe match {
-        case u.ThisType(cls) => sb append cls.fullNameString
+        case u.ThisType(cls) =>
+          val isPackage = cls.hasPackageFlag
+          sb append cls.fullNameString append (if (isPackage) "" else ".this")
         case u.SingleType(pre, sym) =>
-          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
-          else inner(sb, pre) append '.' append sym.nameString
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString append ".type"
+          else inner(sb, pre) append '.' append sym.nameString append ".type"
         case u.TypeRef(pre, sym, _) =>
+          val sep = if (isPath(pre)) "." else "#"
           if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.nameString
-          else inner(sb, pre) append '.' append sym.nameString
+          else inner(sb, pre) append sep append sym.nameString
         case tpe => sb append tpe
       }
       inner(new StringBuilder(), tpe).toString

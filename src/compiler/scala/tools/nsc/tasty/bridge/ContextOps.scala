@@ -31,7 +31,7 @@ import scala.util.chaining._
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
-  private def describeOwner(owner: Symbol): String = {
+  private def describeOwner(owner: Symbol)(implicit ctx: Context): String = {
     val kind =
       if (owner.isOneOf(Param | ParamSetter)) {
         if (owner.isType) "type parameter"
@@ -43,7 +43,7 @@ trait ContextOps { self: TastyUniverse =>
     s"$kind ${owner.nameString}"
   }
 
-  def boundsString(owner: Symbol): String = {
+  def boundsString(owner: Symbol)(implicit ctx: Context): String = {
     if (owner.isType) s"bounds of $owner"
     else if (owner.isOneOf(Param | ParamSetter)) s"parameter $owner"
     else "result"
@@ -63,7 +63,7 @@ trait ContextOps { self: TastyUniverse =>
     s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}."
   }
 
-  final def location(owner: Symbol): String = {
+  final def location(owner: Symbol)(implicit ctx: Context): String = {
     if (!isSymbol(owner))
       "<NoSymbol>"
     else if (owner.isClass || owner.isPackageClass || owner.isPackageObjectOrClass)
@@ -126,11 +126,11 @@ trait ContextOps { self: TastyUniverse =>
     def lookupChild(childTpe: Type): Symbol = {
       val child = symOfType(childTpe)
       assert(isSymbol(child), s"did not find symbol of sealed child ${showType(childTpe)}")
-      if (child.isClass) {
+      if (child.isClass || child.isJava && child.isJavaEnum) {
         child
       }
       else {
-        assert(child.isModule, s"sealed child was not class or object ${showSym(child)}")
+        assert(child.isModule, s"sealed child was not class, object, or java enum case ${showSym(child)}")
         child.moduleClass
       }
     }
@@ -165,6 +165,11 @@ trait ContextOps { self: TastyUniverse =>
           unsupportedMessage(s"annotation on $sym: @$annot")
         }
       }
+      if (annot.symbol === defn.AnnotationDefaultClass) { // Scala 3 has a different annotation for default values
+        import scala.reflect.internal.ModifierFlags
+        assert(sym.owner.hasAllFlags(ModifierFlags.JAVA | ModifierFlags.JAVA_ANNOTATION))
+        sym.addAnnotation(u.definitions.AnnotationDefaultAttr) // Scala 2 expects this to be present
+      }
     }
     if (problematic.nonEmpty) {
       sym.removeAnnotation(u.definitions.CompileTimeOnlyAttr)
@@ -187,6 +192,12 @@ trait ContextOps { self: TastyUniverse =>
   sealed abstract class Context { thisCtx =>
 
     protected implicit final def implyThisCtx: thisCtx.type = thisCtx
+
+    /** JAVAattr is necessary to support pipelining in Zinc, we have to set Java erasure semantics if found.
+     * To support this we also need to support TASTy-only classpaths, see https://github.com/lampepfl/dotty/pull/17594
+     * For a test case, see test/tasty/run-pipelined
+     */
+    def isJava: Boolean = mode.is(ReadJava)
 
     /**Associates the annotations with the symbol, and will force their evaluation if not reading statements.*/
     def adjustAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
@@ -284,7 +295,7 @@ trait ContextOps { self: TastyUniverse =>
       owner.newTypeParameter(
         name     = u.freshTypeName("_$")(u.currentFreshNameCreator),
         pos      = u.NoPosition,
-        newFlags = FlagSets.Creation.Wildcard
+        newFlags = FlagSets.Creation.wildcard(isJava)
       ).setInfo(info)
 
     final def newConstructor(owner: Symbol, info: Type): Symbol = unsafeNewSymbol(
@@ -370,7 +381,7 @@ trait ContextOps { self: TastyUniverse =>
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject, completer.tflags, completer, privateWithin)
+          redefineSymbol(sourceObject, completer, privateWithin)
         else
           default()
       }
@@ -386,7 +397,7 @@ trait ContextOps { self: TastyUniverse =>
       if (completer.tflags.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
         if (isSymbol(sourceObject))
-          redefineSymbol(sourceObject.objectImplementation, completer.tflags, completer, privateWithin)
+          redefineSymbol(sourceObject.objectImplementation, completer, privateWithin)
         else
           default()
       }
@@ -434,20 +445,20 @@ trait ContextOps { self: TastyUniverse =>
     private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol = {
       if (flags.isOneOf(Param | ParamSetter)) {
         if (name.isTypeName) {
-          owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
+          owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
         }
         else {
           if (owner.isClass && flags.is(FlagSets.FieldGetter)) {
             val fieldFlags = flags &~ FlagSets.FieldGetter | FlagSets.LocalField
             val termName   = encodeTermName(name)
-            val getter     = owner.newMethodSymbol(termName, u.NoPosition, newSymbolFlagSet(flags))
-            val fieldSym   = owner.newValue(termName, u.NoPosition, newSymbolFlagSet(fieldFlags))
+            val getter     = owner.newMethodSymbol(termName, u.NoPosition, newSymbolFlagSet(flags, isJava))
+            val fieldSym   = owner.newValue(termName, u.NoPosition, newSymbolFlagSet(fieldFlags, isJava))
             fieldSym.info  = defn.CopyInfo(getter, fieldFlags)
             owner.rawInfo.decls.enter(fieldSym)
             getter
           }
           else {
-            owner.newValueParameter(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+            owner.newValueParameter(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
           }
         }
       }
@@ -456,36 +467,39 @@ trait ContextOps { self: TastyUniverse =>
         if (!isEnum) {
           log(s"!!! visited module value $name first")
         }
-        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+        val module = owner.newModule(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
         module.moduleClass.info =
           if (isEnum) defn.SingletonEnumClassInfo(module, flags)
           else defn.DefaultInfo
         module
       }
       else if (name.isTypeName) {
-        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
       else if (name === TastyName.Constructor) {
-        owner.newConstructor(u.NoPosition, newSymbolFlagSet(flags &~ Stable))
+        owner.newConstructor(u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
       }
       else if (name === TastyName.MixinConstructor) {
-        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable))
+        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, newSymbolFlagSet(flags &~ Stable, isJava))
+      }
+      else if (isJava && flags.not(Method)) {
+        owner.newValue(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
       else {
-        owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newMethodSymbol(encodeTermName(name), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
     }
 
     private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet): Symbol = {
       if (flags.is(FlagSets.Creation.ObjectClassDef)) {
         log(s"!!! visited module class $typeName first")
-        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.Default)
+        val module = owner.newModule(encodeTermName(typeName), u.NoPosition, FlagSets.Creation.initial(isJava))
         module.info = defn.DefaultInfo
-        module.moduleClass.flags = newSymbolFlagSet(flags)
+        module.moduleClass.flags = newSymbolFlagSet(flags, isJava)
         module.moduleClass
       }
       else {
-        owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, newSymbolFlagSet(flags))
+        owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, newSymbolFlagSet(flags, isJava))
       }
     }
 
@@ -519,6 +533,12 @@ trait ContextOps { self: TastyUniverse =>
           }
         }
       }
+      else if (isJava && parentTypes.exists(_.typeSymbolDirect === defn.JavaAnnotationClass)) {
+        import scala.reflect.internal.ModifierFlags
+        //sys.error(s"Java annotations are not supported in TASTy $cls: $parentTypes, ${parentTypes.map(_.typeSymbolDirect)}, ${parentTypes.map(_.typeSymbol)}")
+        cls.setFlag(ModifierFlags.JAVA_ANNOTATION)
+        cls.info.decls.enter(cls.newClassConstructor(u.NoPosition))
+      }
       parentTypes
     }
 
@@ -534,13 +554,13 @@ trait ContextOps { self: TastyUniverse =>
       val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
       val ctor = newConstructor(moduleCls, selfTpe)
       moduleCls.typeOfThis = selfTpe
-      moduleCls.flags = newSymbolFlagSet(moduleClsFlags)
+      moduleCls.flags = newSymbolFlagSet(moduleClsFlags, isJava = false)
       moduleCls.info = defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, moduleCls)
       moduleCls.privateWithin = sym.privateWithin
     }
 
-    final def redefineSymbol(symbol: Symbol, flags: TastyFlagSet, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
-      symbol.flags = newSymbolFlagSet(flags)
+    final def redefineSymbol(symbol: Symbol, completer: TastyCompleter, privateWithin: Symbol): symbol.type = {
+      symbol.flags = newSymbolFlagSet(completer.tflags, isJava)
       unsafeSetInfoAndPrivate(symbol, completer, privateWithin)
     }
 

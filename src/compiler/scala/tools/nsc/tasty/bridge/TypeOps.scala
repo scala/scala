@@ -68,7 +68,7 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
-  def showType(tpe: Type, wrap: Boolean = true): String = {
+  def showType(tpe: Type, wrap: Boolean = true)(implicit ctx: Context): String = {
     def prefixed(prefix: String)(op: => String) = {
       val raw = op
       if (wrap) s"""$prefix"$raw""""
@@ -146,6 +146,8 @@ trait TypeOps { self: TastyUniverse =>
     final val TargetNameAnnotationClass: Symbol = u.definitions.TargetNameAnnotationClass
     final val StaticMethodAnnotationClass: Symbol = u.definitions.StaticMethodAnnotationClass
     final val ExperimentalAnnotationClass: Symbol = u.definitions.ExperimentalAnnotationClass
+    final val AnnotationDefaultClass: Symbol = u.definitions.AnnotationDefaultClass
+    final val JavaAnnotationClass: Symbol = u.definitions.JavaAnnotationClass
 
     object PolyFunctionType {
 
@@ -161,9 +163,13 @@ trait TypeOps { self: TastyUniverse =>
     final val NoType: Type = u.NoType
     final val NoPrefix: Type = u.NoPrefix
 
-    def adjustParent(tp: Type): Type = {
+    final val ObjectTpe: Type = u.definitions.ObjectTpe
+    final val ObjectTpeJava: Type = u.definitions.ObjectTpeJava
+
+    def adjustParent(tp: Type)(implicit ctx: Context): Type = {
       val tpe = tp.dealias
-      if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
+      if (ctx.isJava && (tpe eq ObjectTpeJava)) ObjectTpe
+      else if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
       else tpe
     }
 
@@ -283,7 +289,27 @@ trait TypeOps { self: TastyUniverse =>
         case ErasedFunctionType(n) => erasedFnIsUnsupported(formatFnType("=>", isErased = true, n, args))
         case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", isErased = false, n, args))
         case _ =>
-          u.appliedType(tycon, args)
+          if (ctx.isJava && tycon.typeSymbol === u.definitions.ArrayClass) {
+            val arg0 = args.head
+            val arg1 =
+              arg0 match {
+                case arg0: u.RefinedType if arg0.parents.exists(_ eq ObjectTpeJava) =>
+                  // TODO [tasty]: in theory we could add more Modes to context to
+                  // detect this situation and not perform the substitution ahead of time,
+                  // however this does not work with SHAREDtype which caches.
+                  val parents1 = arg0.parents.map(tpe =>
+                    if (tpe eq ObjectTpeJava) ObjectTpe else tpe
+                  )
+                  IntersectionType(parents1)
+                case _ =>
+                  arg0
+              }
+
+            val args1 = if (arg1 eq arg0) args else arg1 :: Nil
+            u.appliedType(tycon, args1)
+          } else {
+            u.appliedType(tycon, args)
+          }
       }
 
       if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
@@ -306,12 +332,22 @@ trait TypeOps { self: TastyUniverse =>
     def ParamRef(binder: Type, idx: Int): Type =
       binder.asInstanceOf[LambdaType].lambdaParams(idx).ref
 
-    def NamedType(prefix: Type, sym: Symbol): Type = {
-      if (sym.isType) {
+    def NamedType(prefix: Type, sym: Symbol)(implicit ctx: Context): Type = {
+      if (ctx.isJava && sym.isClass && sym.isJavaDefined) {
+        def processInner(tp: Type): Type = tp match {
+          case u.TypeRef(pre, sym, args) if !sym.isStatic => u.typeRef(processInner(pre.widen), sym, args)
+          case _ => tp
+        }
         prefix match {
-          case tp: u.ThisType if !sym.isTypeParameter => u.typeRef(prefix, sym, Nil)
-          case _:u.SingleType | _:u.RefinedType       => u.typeRef(prefix, sym, Nil)
-          case _                                      => u.appliedType(sym, Nil)
+          case pre: u.TypeRef => processInner(u.typeRef(prefix, sym, Nil)) // e.g. prefix is `Foo[Int]`
+          case _              => processInner(sym.tpeHK) // ignore prefix otherwise
+        }
+      }
+      else if (sym.isType) {
+        prefix match {
+          case tp: u.ThisType if !sym.isTypeParameter     => u.typeRef(prefix, sym, Nil)
+          case _:u.SingleType | _:u.RefinedType           => u.typeRef(prefix, sym, Nil)
+          case _                                          => u.appliedType(sym, Nil)
         }
       }
       else { // is a term
@@ -331,8 +367,10 @@ trait TypeOps { self: TastyUniverse =>
 
       def doLookup = lookupTypeFrom(space)(prefix, name)
 
+      val preSym = prefix.typeSymbol
+
       // we escape some types in the scala package especially
-      if (prefix.typeSymbol === u.definitions.ScalaPackage) {
+      if (preSym === u.definitions.ScalaPackage) {
         name match {
           case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
             case tpnme.And                                                    => AndTpe
@@ -352,7 +390,14 @@ trait TypeOps { self: TastyUniverse =>
         }
       }
       else {
-        doLookup
+        if (ctx.isJava && preSym === u.definitions.JavaLangPackage) {
+          name match {
+            case TypeName(SimpleName(tpnme.Object)) => ObjectTpeJava // Object =:= scala.Any in Java.
+            case _                                  => doLookup
+          }
+        } else {
+          doLookup
+        }
       }
     }
 

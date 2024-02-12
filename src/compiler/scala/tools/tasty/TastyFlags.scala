@@ -65,19 +65,8 @@ object TastyFlags {
 
   case class TastyFlagSet(val toLong: Long) extends AnyVal {
 
-    private[TastyFlags] def shift: Long = {
-      var acc = 0L
-      var curr = toLong
-      while (curr != 0L) {
-        acc += 1L
-        curr = curr >> 1L
-      }
-      acc
-    }
-
-    private[TastyFlags] def next: TastyFlagSet = {
-      TastyFlagSet(1L << shift)
-    }
+    private[TastyFlags] def next: TastyFlagSet =
+      TastyFlagSet(if (toLong == 0) 1 else toLong << 1)
 
     def |(other: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(toLong | other.toLong)
     def &(mask: TastyFlagSet): TastyFlagSet                   = TastyFlagSet(toLong & mask.toLong)

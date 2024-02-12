@@ -1,0 +1,33 @@
+TestBounds_fail.scala:6: error: inferred type arguments [Int] do not conform to method m_ARRAY's type parameter bounds [T <: lib.Bounds.C with lib.Bounds.I]
+  Bounds.m_ARRAY(Array(23)) // error
+         ^
+TestBounds_fail.scala:6: error: type mismatch;
+ found   : Array[Int]
+ required: Array[T]
+  Bounds.m_ARRAY(Array(23)) // error
+                      ^
+TestBounds_fail.scala:7: error: inferred type arguments [String] do not conform to method m_ARRAY's type parameter bounds [T <: lib.Bounds.C with lib.Bounds.I]
+  Bounds.m_ARRAY(Array("abc")) // error
+         ^
+TestBounds_fail.scala:7: error: type mismatch;
+ found   : Array[String]
+ required: Array[T]
+  Bounds.m_ARRAY(Array("abc")) // error
+                      ^
+TestBounds_fail.scala:8: error: inferred type arguments [Int] do not conform to method m's type parameter bounds [T <: lib.Bounds.C with lib.Bounds.I]
+  Bounds.m(23) // error
+         ^
+TestBounds_fail.scala:8: error: type mismatch;
+ found   : Int(23)
+ required: T
+  Bounds.m(23) // error
+           ^
+TestBounds_fail.scala:9: error: inferred type arguments [String] do not conform to method m's type parameter bounds [T <: lib.Bounds.C with lib.Bounds.I]
+  Bounds.m("abc") // error
+         ^
+TestBounds_fail.scala:9: error: type mismatch;
+ found   : String("abc")
+ required: T
+  Bounds.m("abc") // error
+           ^
+8 errors
