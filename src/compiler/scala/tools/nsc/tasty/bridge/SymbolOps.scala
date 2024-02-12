@@ -180,7 +180,7 @@ trait SymbolOps { self: TastyUniverse =>
 
       val secondTry = lookupSymbol(space0, tname0, isJava)
       if (secondTry.isClass) secondTry // avoid type parameters
-      else errorMissing(space0, tname)
+      else errorMissing(space0, tname0)
     }
     else errorMissing(space, tname)
   }
