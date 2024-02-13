@@ -9,6 +9,7 @@ import scala.util.{Try, Failure, Properties}
 import TastyTestJUnit._
 
 class TastyTestJUnit {
+  val isWindows = Properties.isWin
 
   @test def run(): Unit = TastyTest.runSuite(
     src                     = "run",
@@ -19,14 +20,17 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
-  @test def runPipelined(): Unit = TastyTest.runPipelinedSuite(
-    src                     = "run-pipelined",
-    srcRoot                 = assertPropIsSet(propSrc),
-    pkgName                 = assertPropIsSet(propPkgName),
-    outDirs                 = None,
-    additionalSettings      = Nil,
-    additionalDottySettings = Nil
-  ).eval
+  @test def runPipelined(): Unit = {
+    assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
+    TastyTest.runPipelinedSuite(
+      src                     = "run-pipelined",
+      srcRoot                 = assertPropIsSet(propSrc),
+      pkgName                 = assertPropIsSet(propPkgName),
+      outDirs                 = None,
+      additionalSettings      = Nil,
+      additionalDottySettings = Nil
+    ).eval
+  }
 
   @test def pos(): Unit = TastyTest.posSuite(
     src                     = "pos",
@@ -56,14 +60,17 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
-  @test def negPipelined(): Unit = TastyTest.negPipelinedSuite(
-    src                     = "neg-pipelined",
-    srcRoot                 = assertPropIsSet(propSrc),
-    pkgName                 = assertPropIsSet(propPkgName),
-    outDirs                 = None,
-    additionalSettings      = Nil,
-    additionalDottySettings = Nil
-  ).eval
+  @test def negPipelined(): Unit = {
+    assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
+    TastyTest.negPipelinedSuite(
+      src                     = "neg-pipelined",
+      srcRoot                 = assertPropIsSet(propSrc),
+      pkgName                 = assertPropIsSet(propPkgName),
+      outDirs                 = None,
+      additionalSettings      = Nil,
+      additionalDottySettings = Nil
+    ).eval
+  }
 
   @test def negMoveMacros(): Unit = TastyTest.negChangePreSuite(
     src                     = "neg-move-macros",
