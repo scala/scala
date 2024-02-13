@@ -13,7 +13,6 @@ import scala.sys.process._ // test from outside the package to ensure implicits 
 import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.ReleasablePath._
 import scala.util.Try
-import scala.util.Properties._
 import scala.util.Using
 import scala.util.chaining._
 
@@ -21,7 +20,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 class ProcessTest {
-  private def testily(body: => Unit) = if (!isWin) body
 
   private def withIn[A](in: InputStream)(body: => A): A = {
     val saved = System.in
@@ -34,7 +32,7 @@ class ProcessTest {
   // until after the latch, which is after the innocuous process exited,
   // and then attempt to close the process.getOutputStream, which is known
   // to be closed already (because that is how process exit was detected).
-  @Test def t7963(): Unit = testily {
+  @Test def t7963(): Unit = noWin() {
     var exception: Exception = null
     val latch: CountDownLatch = new CountDownLatch(1)
     val inputStream = new ByteArrayInputStream("a".getBytes) {
@@ -54,12 +52,12 @@ class ProcessTest {
     assertNull(exception)
   }
 
-  @Test def t10007(): Unit = testily {
+  @Test def t10007(): Unit = noWin() {
     val res = ("cat" #< new ByteArrayInputStream("lol".getBytes)).!!
     assertEquals("lol\n", res)
   }
   // test non-hanging
-  @Test def t10055(): Unit = testily {
+  @Test def t10055(): Unit = noWin() {
     val res = ("cat" #< ( () => -1 ) ).!
     assertEquals(0, res)
   }
@@ -69,13 +67,13 @@ class ProcessTest {
       (foo, bar) => assertEquals(0, Process.cat(Seq(foo, bar)).!)
     }
 
-  @Test def processApply(): Unit = testily {
+  @Test def processApply(): Unit = noWin() {
     Using.resources(File.createTempFile("foo", "tmp"), File.createTempFile("bar", "tmp")) {
       (foo, bar) => assertEquals(0, Process("cat", Seq(foo, bar).map(_.getAbsolutePath)).!)
     }
   }
 
-  @Test def t10696(): Unit = testily {
+  @Test def t10696(): Unit = noWin() {
     val res1 = Process("false").lazyLines
     assertEquals("LazyList(<not computed>)", res1.toString())
     val ex = Try(res1.head).failed.get
@@ -88,7 +86,7 @@ class ProcessTest {
 
   private def createFile(prefix: String) = createTempFile(prefix, "tmp").tap(f => Files.write(f, List(prefix).asJava, UTF_8))
 
-  @Test def t10823(): Unit = testily {
+  @Test def t10823(): Unit = noWin() {
     Using.resources(createFile("hello"), createFile("world"), createTempFile("out", "tmp")) { (file1, file2, out) =>
       val cat = Process.cat(List(file1, file2).map(_.toFile))
       val p = cat #> out.toFile
@@ -99,7 +97,7 @@ class ProcessTest {
   }
 
   // a test for A && B where A fails and B is not started
-  @Test def t10823_short_circuit(): Unit = testily {
+  @Test def t10823_short_circuit(): Unit = noWin() {
 
     val noFile = Paths.get("total", "junk")
     val p2     = new ProcessMock(error = false)

@@ -235,9 +235,9 @@ abstract class ClassfileWriters {
   }
 
   private final class DirEntryWriter(base: Path) extends FileWriter {
+    import scala.util.Properties.{isWin => isWindows}
     val builtPaths = new ConcurrentHashMap[Path, java.lang.Boolean]()
     val noAttributes = Array.empty[FileAttribute[_]]
-    private val isWindows = scala.util.Properties.isWin
 
     private def checkName(component: Path): Unit = if (isWindows) {
       val specials = raw"(?i)CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]".r

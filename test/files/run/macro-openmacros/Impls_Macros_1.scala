@@ -1,6 +1,7 @@
 // scalac: -Yrangepos:false
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
+import scala.util.Properties.isWin
 
 object Macros {
   def impl(c: Context): c.Expr[Unit] = {
@@ -10,7 +11,6 @@ object Macros {
     def normalizePaths(s: String) = {
       val base = (dir.getCanonicalPath + java.io.File.separator).replace('\\', '/')
       var regex = """\Q%s\E""" format base
-      val isWin = System.getProperty("os.name", "") startsWith "Windows"
       if (isWin) regex = "(?i)" + regex
       s.replace('\\', '/').replaceAll(regex, "")
     }
