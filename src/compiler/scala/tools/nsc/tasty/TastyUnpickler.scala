@@ -71,7 +71,7 @@ object TastyUnpickler {
     /** When Scala 3 is in an RC phase for a new minor version, we put here the TASTy of that Minor,
      * otherwise it should be empty.
      */
-    final val toolOverrides: List[TastyVersion] = List(TastyVersion(28, 4, 1) /* 3.4.0-RC4 */)
+    final val toolOverrides: List[TastyVersion] = Nil
 
     private def asScala3Compiler(version: TastyVersion): String =
       if (version.major == 28) {
