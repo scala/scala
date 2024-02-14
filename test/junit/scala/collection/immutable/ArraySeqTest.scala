@@ -64,12 +64,12 @@ class ArraySeqTest {
   def safeToArray(): Unit = {
     val a = ArraySeq(1,2,3)
     a.toArray.update(0, 100)
-    assertEquals(a, List(1,2,3))
+    assertEquals(List(1,2,3), a)
   }
   @Test
   def copyToArrayReturnsNonNegative(): Unit = {
     val a = ArraySeq(1,2,3)
-    assertEquals(a.copyToArray(Array(1,1,2), 0, -1), 0)
+    assertEquals(0, a.copyToArray(Array(1,1,2), 0, -1))
   }
 
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]): Unit = {
@@ -98,8 +98,8 @@ class ArraySeqTest {
   }
 
   private def assertArraySeqAndType[A](actual: ArraySeq[A], expect: ArraySeq[A], expectedArrayType: Class[_]): Unit = {
-    assertEquals(actual, expect)
-    assertEquals(actual.unsafeArray.getClass(), expectedArrayType)
+    assertEquals(expect, actual)
+    assertEquals(expectedArrayType, actual.unsafeArray.getClass())
   }
 
   @Test
@@ -150,8 +150,8 @@ class ArraySeqTest {
   @Test
   def from(): Unit = {
     val as = ArraySeq("foo", "bar", "baz")
-    assert(ArraySeq.from(as) eq as)
-    assert(ArraySeq(as: _*) eq as)
+    assertSame(as, ArraySeq.from(as))
+    assertSame(as, ArraySeq(as: _*))
   }
 
   private def assertConcat[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Array[_] = {
