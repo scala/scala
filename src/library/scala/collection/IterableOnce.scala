@@ -272,7 +272,9 @@ object IterableOnce {
     * @return the number of elements that will be copied to the destination array
     */
   @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int =
-    math.max(math.min(math.min(len, srcLen), destLen - start), 0)
+    math.max(0,
+      math.min(if (start < 0) destLen else destLen - start,
+        math.min(len, srcLen)))
 
   /** Calls `copyToArray` on the given collection, regardless of whether or not it is an `Iterable`. */
   @inline private[collection] def copyElemsToArray[A, B >: A](elems: IterableOnce[A],
@@ -1035,7 +1037,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
     var i = start
-    val end = start + math.min(len, xs.length - start)
+    val srclen = knownSize match {
+      case -1 => xs.length
+      case  k => k
+    }
+    val end = start + IterableOnce.elemsToCopyToArray(srclen, xs.length, start, len)
     while (i < end && it.hasNext) {
       xs(i) = it.next()
       i += 1
