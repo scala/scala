@@ -43,6 +43,9 @@ warn-unused-params.scala:111: warning: parameter b in method f is never used
 warn-unused-params.scala:134: warning: parameter s in method i is never used
   def i(implicit s: String) = answer           // yes, warn
                  ^
+warn-unused-params.scala:142: warning: parameter s in method f is never used
+  def f(s: Serializable) = toString.nonEmpty  // warn explicit param of marker trait
+        ^
 error: No warnings can be incurred under -Werror.
-15 warnings
+16 warnings
 1 error

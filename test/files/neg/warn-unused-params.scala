@@ -96,7 +96,7 @@ trait Anonymous {
 
   def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
 }
-trait Context[A]
+trait Context[A] { def m(a: A): A = a }
 trait Implicits {
   def f[A](implicit ctx: Context[A]) = answer
   def g[A: Context] = answer
@@ -136,4 +136,8 @@ trait BadMix { _: InterFace =>
 
 class Unequal {
   override def equals(other: Any) = toString.nonEmpty   // no warn non-trivial RHS, required by universal method
+}
+
+class Seriously {
+  def f(s: Serializable) = toString.nonEmpty  // warn explicit param of marker trait
 }
