@@ -1271,7 +1271,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           } else
             skippable || !pd.enabled
         }
-        val phs = phaseDescriptors takeWhile unstoppable filterNot skippable
+        val phs = phaseDescriptors.takeWhile(unstoppable).filterNot(skippable)
         // Ensure there is a terminal phase at the end, since -Ystop may have limited the phases.
         if (phs.isEmpty || !phs.last.terminal) {
           val t = if (phaseDescriptors.last.terminal) phaseDescriptors.last else terminal

@@ -1,0 +1,6 @@
+Client_2.scala:8: warning: local val unusedVariable in value <local Test> is never used
+    id {
+       ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

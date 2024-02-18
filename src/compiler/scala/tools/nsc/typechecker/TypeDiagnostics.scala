@@ -505,12 +505,12 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
   class UnusedPrivates extends Traverser {
     import UnusedPrivates.ignoreNames
     def isEffectivelyPrivate(sym: Symbol): Boolean = false
-    val defnTrees = ListBuffer[MemberDef]()
-    val targets   = mutable.Set[Symbol]()
-    val setVars   = mutable.Set[Symbol]()
-    val treeTypes = mutable.Set[Type]()
-    val params    = mutable.Set[Symbol]()
-    val patvars   = mutable.Set[Symbol]()
+    val defnTrees = ListBuffer.empty[MemberDef]
+    val targets   = mutable.Set.empty[Symbol]
+    val setVars   = mutable.Set.empty[Symbol]
+    val treeTypes = mutable.Set.empty[Type]
+    val params    = mutable.Set.empty[Symbol]
+    val patvars   = mutable.Set.empty[Symbol]
 
     def varsWithoutSetters = defnTrees.iterator.map(_.symbol).filter(t => t.isVar && !isExisting(t.setter))
 
@@ -669,19 +669,45 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
   class checkUnused(typer: Typer) {
 
+    private def isMacroAnnotationExpansion(tree: Tree): Boolean = tree.hasSymbolField && isExpanded(tree.symbol)
+
+    private def isMacroExpansion(tree: Tree): Boolean = hasMacroExpansionAttachment(tree) || isMacroAnnotationExpansion(tree)
+
     object skipMacroCall extends UnusedPrivates {
       override def qualifiesTerm(sym: Symbol): Boolean =
         super.qualifiesTerm(sym) && !sym.isMacro
     }
     object skipMacroExpansion extends UnusedPrivates {
-      override def traverse(t: Tree): Unit =
-        if (!hasMacroExpansionAttachment(t) && !(t.hasSymbolField && isExpanded(t.symbol)))
-          super.traverse(t)
+      override def traverse(tree: Tree): Unit = if (!isMacroExpansion(tree)) super.traverse(tree)
     }
     object checkMacroExpandee extends UnusedPrivates {
-      override def traverse(t: Tree): Unit =
-        if (!(t.hasSymbolField && isExpanded(t.symbol)))
-          super.traverse(if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t)
+      override def traverse(tree: Tree): Unit =
+        if (!isMacroAnnotationExpansion(tree))
+          super.traverse(if (hasMacroExpansionAttachment(tree)) macroExpandee(tree) else tree)
+    }
+    // collect definitions and refs from expandee (and normal trees) but only refs from expanded trees
+    object checkMacroExpandeeAndExpandedRefs extends UnusedPrivates {
+      object refCollector extends Traverser {
+        override def traverse(tree: Tree): Unit = {
+          tree match {
+            case _: RefTree if isExisting(tree.symbol) => targets += tree.symbol
+            case _ =>
+          }
+          if (tree.tpe != null) tree.tpe.prefix.foreach {
+            case SingleType(_, sym) => targets += sym
+            case _ =>
+          }
+          super.traverse(tree)
+        }
+      }
+      override def traverse(tree: Tree): Unit =
+        if (hasMacroExpansionAttachment(tree)) {
+          super.traverse(macroExpandee(tree))
+          refCollector.traverse(tree)
+        }
+        else if (isMacroAnnotationExpansion(tree))
+          refCollector.traverse(tree)
+        else super.traverse(tree)
     }
 
     private def warningsEnabled: Boolean = {
@@ -790,6 +816,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       val body = unit.body
       // TODO the message should distinguish whether the non-usage is before or after macro expansion.
       settings.warnMacros.value match {
+        case "default"=> run(checkMacroExpandeeAndExpandedRefs)(body)
         case "none"   => run(skipMacroExpansion)(body)
         case "before" => run(checkMacroExpandee)(body)
         case "after"  => run(skipMacroCall)(body)
