@@ -74,7 +74,7 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
 
     override protected def createFileEntry(file: FileZipArchive#Entry): ClassFileEntryImpl = ClassFileEntryImpl(file)
     override protected def isRequiredFileType(file: AbstractFile, siblingExists: String => Boolean): Boolean = {
-      file.isClass && !(file.hasExtension("class") && siblingExists(file.name.dropRight(6) + ".tasty"))
+      file.isClass && !(file.hasExtension("class") && siblingExists(classNameToTasty(file.name)))
     }
   }
 
