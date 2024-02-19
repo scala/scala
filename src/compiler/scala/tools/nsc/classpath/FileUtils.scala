@@ -77,9 +77,9 @@ object FileUtils {
     )
     val className =
       if (isStandaloneObjectHeuristic)
-        fileName.dropRight(7)
+        fileName.stripSuffix("$.class")
       else
-        fileName.dropRight(6)
+        fileName.stripSuffix(".class")
     className + SUFFIX_TASTY
   }
 
