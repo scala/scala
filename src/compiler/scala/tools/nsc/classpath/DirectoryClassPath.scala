@@ -334,7 +334,7 @@ case class DirectoryClassPath(dir: File) extends JFileDirectoryLookup[ClassFileE
 
   protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
   protected def isMatchingFile(f: File, siblingExists: String => Boolean): Boolean =
-    f.isClass && !(f.getName.endsWith(".class") && siblingExists(f.getName.dropRight(6) + ".tasty"))
+    f.isClass && !(f.getName.endsWith(".class") && siblingExists(classNameToTasty(f.getName)))
 
   private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = files(inPackage)
 }

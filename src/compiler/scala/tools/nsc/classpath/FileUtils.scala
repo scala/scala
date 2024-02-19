@@ -58,6 +58,31 @@ object FileUtils {
 
   @inline private def ends (filename:String, suffix:String) = filename.endsWith(suffix) && filename.length > suffix.length
 
+  def classNameToTasty(fileName: String): String = {
+    // TODO [tasty]: Dotty really wants to special-case standalone objects
+    // i.e. their classfile will end with `$`, but the tasty file will not.
+    //   however then it needs to escape `Null$`, `Nothing$`, and `$`
+    //   because these are "legitimate" classes with `$` in their name.
+    // It seems its not actually necessary to drop these files,
+    //   as the classfile parser will not complain about them,
+    //   however, it could increase efficiency to follow dotty
+    //   and drop them anyway.
+    // Scala 3 also prevents compilation of `object Foo` and `class Foo$` in the same package
+    // See test/tasty/run/src-2/tastytest/TestRuntimeSpecialClasses.scala for a test case
+    val isStandaloneObjectHeuristic = (
+      fileName.lastIndexOf('$') == fileName.length - 7
+        && fileName != "Null$.class"
+        && fileName != "Nothing$.class"
+        && fileName != "$.class"
+    )
+    val className =
+      if (isStandaloneObjectHeuristic)
+        fileName.stripSuffix("$.class")
+      else
+        fileName.stripSuffix(".class")
+    className + SUFFIX_TASTY
+  }
+
   def endsClass(fileName: String): Boolean =
     ends (fileName, SUFFIX_CLASS) || fileName.endsWith(SUFFIX_SIG) || fileName.endsWith(SUFFIX_TASTY)
 
