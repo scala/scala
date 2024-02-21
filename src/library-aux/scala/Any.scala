@@ -138,13 +138,78 @@ abstract class Any {
    */
   final def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
 
-  /** Cast the receiver object to be of type `T0`.
+  /** Tell the compiler to skip type safety and treat the receiver object to be of type `T0`.
    *
-   *  Note that the success of a cast at runtime is modulo Scala's erasure semantics.
-   *  Therefore the expression `1.asInstanceOf[String]` will throw a `ClassCastException` at
-   *  runtime, while the expression `List(1).asInstanceOf[List[String]]` will not.
-   *  In the latter example, because the type argument is erased as part of compilation it is
-   *  not possible to check whether the contents of the list are of the requested type.
+   *  This method is intended for cases where the compiler isn't able to know or capable to infer `T0` and neither
+   *  is it possible to check the subtype relation at runtime and hence skipping type safety is the only option.
+   *
+   *  DO NOT USE `asInstanceOf` for type checking, it is **not** an alias for something like
+   *  {{{
+   *   this match {
+   *    case x: T0 => x
+   *    case _     => throw ClassCastException("...")
+   *  }}}
+   *  Use pattern matching or [[isInstanceOf]] for type testing instead and act as desired if the subtype
+   *  relation does not hold (e.g. return a [[scala.util.Failure]], throw an Exception etc.).
+   *
+   *  On a language level it merely tells the compiler to forget any type information it has about
+   *  the receiver object and treat it as if it had type `T0`. How the compiler manages to transition from the type 
+   *  of the receiver object to `T0` is unspecified and should be considered an implementation detail of the 
+   *  corresponding compiler backend and can vary between target platform and the target version.
+   *  Transitioning to `T0` might involve inserting conversions (including boxing/unboxing), runtime checks, 
+   *  default values or just no real operation at all.
+   *
+   *  Following the only legitimate usage of `asInstanceOf`:
+   *
+   *  - tell the compiler to treat the receiver object as `T0` because you know for sure that the receiver object
+   *    is indeed an instance of `T0` and we cannot convince the compiler of that knowledge otherwise.
+   *
+   *  This includes cases such as flow analysis fails to deduce `T0` automatically after manual type testing as well as
+   *  down-casting a type parameter or an abstract type member (which cannot be checked at runtime due to type erasure).
+   *  However, whenever you have a slight doubt and you are able to type test, then you should type test instead.
+   *
+   *  Following some examples where the usage of `asInstanceOf` is discouraged:
+   *
+   *  - if `T0` is a primitive type
+   *    -> use pattern matching or  [[isInstanceOf]] for type testing because `asInstanceOf` might insert a conversion
+   *       instead of a type check
+   *    -> use the corresponding x.toT functions (x.toChar, x.toByte etc.) if you want to convert
+   *
+   *  - load a class (e.g. Class.forName, ctx.getBean("bean-name") etc.) dynamically and then use asInstanceOf to tell 
+   *    the compiler what it should be.
+   *    -> use pattern matching or [[isInstanceOf]] for type testing so that you do not depend on implementation details
+   *         
+   *  In general, this method is safe if the subtype relation between the receiver object and `T0` holds
+   *  but should be considered unsafe in terms of type safety otherwise.
+   *
+   *  Following two examples where `asInstanceOf` was not used as intended and the result is most likely not as expected
+   *  {{{
+   *  val anInt = fromThirdPartyLibrary()
+   *  val d = anInt.asInstanceOf[Double]
+   *  //            ^^^ 
+   *  //            skips type safety, converts to double if anInt is a primitive Int,
+   *  //            JDK implementation detail: throws a ClastCastException otherwise
+   *  }}}
+   *  Now, imagine the (Java) third party library returns java.lang.Integer in a new version instead of Int. 
+   *  If anInt.toDouble were used, then the compiler would emit a compile error. However, since we decided to skip 
+   *  type safety, the compiler will not error and instead a runtime exception is thrown. I.e. we introduce a bug 
+   *  if we don't realize this breaking change ourself.
+   *  
+   *  In the second example we would like to type check against a union type.
+   *  {{{
+   *  val emailOrUrl = x.asInstanceOf[ Email | Url ]
+   *  //                 ^^^
+   *  //                 skips type safety, implementation detail: doesn't insert any operation
+   *  //                 x could be something else and will likely blow up in an entirely different place.
+   *  
+   *  // a correct way to achieve the desired logic:
+   *  x match {
+   *     case t: ( Email | Url ) => t
+   *  //          ^^^
+   *  //          inserts a type test `isInstanceOf[Email] || isInstanceOf[Url]`
+   *     case _ => throw IllegalArgumentException(x + " was neither an Email nor an Url")
+   *  }
+   *  }}}
    *
    *  @throws ClassCastException if the receiver object is not an instance of the erasure of type `T0`.
    *  @return the receiver object.
