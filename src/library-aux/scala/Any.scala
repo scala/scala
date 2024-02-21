@@ -138,15 +138,107 @@ abstract class Any {
    */
   final def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
 
-  /** Cast the receiver object to be of type `T0`.
+  /** Tell the compiler to treat the receiver object to be of type `T0`.
    *
-   *  Note that the success of a cast at runtime is modulo Scala's erasure semantics.
-   *  Therefore the expression `1.asInstanceOf[String]` will throw a `ClassCastException` at
-   *  runtime, while the expression `List(1).asInstanceOf[List[String]]` will not.
-   *  In the latter example, because the type argument is erased as part of compilation it is
-   *  not possible to check whether the contents of the list are of the requested type.
+   *  This operation should be considered unsafe and the outcome **undefined**. On a language level it merely 
+   *  tells the compiler to forget any type information it has about the receiver object and treat it as if it
+   *  had type `T0`. How the compiler manages to transition from the type of the receiver object to `T0` is 
+   *  **undefined**.
+   *
+   *  Since the outcome is undefined, it is an implementation detail of the compiler backend whether this call 
+   *  results in an operation in the target bytecode (e.g. Java bytecode) or not. 
+   *  Some backends might emit a conversion, a runtime check or replace the receiver object with a default value.
+   *  The decision to do so is mainly driven by the requirements of the target platform and its version.
+   *  There is **absolutely no guarantee** that a certain implementation stays the same between different compiler 
+   *  versions, especially regarding conversions, runtime checks and default values.
+   *
+   *  For instance, if the target is the JVM with version JDK8, then a conversion or a runtime check is added to
+   *  the bytecode in most cases to comply with the java bytecode requirements. However, in some cases also a 
+   *  *default value might be used instead which in turn could be ignored in the context of literal types.
+   *  If a conversion or a runtime check in the form of a
+   *  [checkcast](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.checkcast) is added,
+   *  then the outcome depends on the implementation of the JVM which should adhere to the rules as in the spec 
+   *  defined in [JLS chapter 5](https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html). 
+   *  This also means that widening and narrowing conversions take place for primitive types and that the scala 
+   *  compiler has to pass erased types to `checkcast`. Furthermore, neither intersection nor union types nor literal
+   *  types are supported in java bytecode. Whether the Scala compiler backend calculates a lowest upper bound in 
+   *  such a case and passes it  to `checkcast` or `java.lang.Object` is used for simplicity reasons is again an 
+   *  implementation detail.
+   *
+   *  It should be clear from that definition that relying on `asInstanceOf` to do type checking is a very bad idea.
+   *  Use [isInstanceOf] instead for type testing and act as desired if the outcome is `false` (e.g. return a 
+   *  [scala.util.Failure], throw an Exception etc.)
+   *
+   *  Following some examples targeting the JVM and JDK8 using Scala 3.4.0. We start off with statements where the
+   *  outcome is most likely as you would expect and continue with more bizarre outcomes -- hoping that you really 
+   *  refrain from using it as type testing utility, use [isInstanceOf] instead.
+   *
+   *  {{{
+   *  // doesn't insert any operation 1 is statically known to be a subtype of Int
+   *  1.asInstanceOf[Int]
+   *  // inserts a narrowing primitive conversion from double to int
+   *  1.0.asInstanceOf[Int]
+   *  // inserts a widening primitive conversion from int to long (which could fail with an OutOfMemoryError)
+   *  1.asInstanceOf[Long]
+   *  // inserts a widening primitive conversion and boxing
+   *  List[Int](1.0.asInstanceOf[Int])
+   *  // inserts boxing and a checkcast to java.lang.Double, this fails as no conversion takes place
+   *  1.asInstanceOf[java.lang.Double]
+   *
+   *  // doesn't insert any operation as B is statically know to be a subtype of A
+   *  B().asInstanceOf[A]
+   *
+   *  // doesn't insert any operation, A is statically known to be a subtype of A
+   *  (B(): A).asInstanceOf[A]
+   *
+   *  // inserts a checkcast to B
+   *  (B(): A).asInstanceOf[B]
+   *
+   *  // inserts boxing but no checkcast because List[Int] and List[String] have both the type `List` after type erasure
+   *  // and as we have seen before, if it is already known that a subtype relation holds, no checkcast is necessary
+   *  (1 :: Nil).asInstanceOf[List[String]]
+   *
+   *  // inserts a checkcast for X which fails
+   *  // as said, no guarantee that this stays this way.
+   *  // also checkcast to java.lang.Object or no operation at all would be have been valid solutions
+   *  "a".asInstanceOf[ Y | Z ]
+   *
+   *  // doesn't insert any operation, outputs "a"
+   *  println("a".asInstanceOf[ Y | Int ])
+   *
+   *  // boxes and inserts a checkcast to java.lang.Object
+   *  1.asInstanceOf [ Y | Float ]
+   *
+   *  // doesn't inserts any operation
+   *  1.asInstanceOf[ String & Int ]
+   *
+   *  // inserts an unboxingToInt which uses a checkcast to java.lang.Integer internally which fails
+   *  "a".asInstanceOf[ String & Int ]
+   *
+   *  // inserts an unboxingToInt where 0 is used as default value
+   *  println(null.asInstanceOf[Int])
+   *
+   *  // inserts an unboxingToInt where 0 is used as default value, prints out 0
+   *  println(null.asInstanceOf[2])
+   *
+   *  // inserts an unboxingToInt where 0 is used as default value
+   *  val two: 2 = null.asInstanceOf[2]
+   *  // value of two is ignored and the compiler computes a constant expression (2 + 1) instead
+   *  // i.e. the result is still 3
+   *  println(two + 1)
+   *
+   *  val twoFromJava: java.lang.Integer = null
+   *  // doesn't insert any operation, outputs `null`
+   *  println(twoFromJava.asInstanceOf[2])
+   *
+   *  // doesn't insert any operation
+   *  val one = 2.asInstanceOf[1]
+   *
+   *  }}}
    *
    *  @throws ClassCastException if the receiver object is not an instance of the erasure of type `T0`.
+   *  @throws OutOfMemoryError if the receiver object is widened and there is not enough memory available.
+   *
    *  @return the receiver object.
    */
   final def asInstanceOf[T0]: T0 = sys.error("asInstanceOf")
