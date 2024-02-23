@@ -1,7 +1,3 @@
-# `-Dsbt.io.jdktimestamps=true` is used to work around
-# this bug in sbt 1.9.8: https://github.com/sbt/sbt/issues/7463
-# we can remove it once we're on an sbt version with a fix.
-
 version: ~> 1.0 # needed for imports
 
 import: scala/scala-dev:travis/default.yml
@@ -44,9 +40,9 @@ jobs:
         name: "JDK 8 pr validation"
         if: type = pull_request
         script:
-          - sbt -Dsbt.io.jdktimestamps=true -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - sbt -Dsbt.io.jdktimestamps=true -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 
       # build the spec using jekyll
       - stage: build
