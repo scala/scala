@@ -712,7 +712,7 @@ lazy val partest = configureAsSubproject(project)
   )
 
 lazy val tastytest = configureAsSubproject(project)
-  .dependsOn(library, reflect, compiler)
+  .dependsOn(library, reflect, compiler, scaladoc)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)

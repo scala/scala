@@ -173,7 +173,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           AnyRefClass
 
           val bytes = in.buf.take(file.sizeOption.get)
-          TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
+          TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path)
         } else {
           parseHeader()
           this.pool = new ConstantPool

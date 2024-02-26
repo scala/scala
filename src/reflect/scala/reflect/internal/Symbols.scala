@@ -2635,7 +2635,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (
         (file eq NoAbstractFile) || {
           val path = file.path
-          path.endsWith(".class") || path.endsWith(".sig")
+          path.endsWith(".class") || path.endsWith(".sig") || path.endsWith(".tasty")
         }) null else file
     }
 
