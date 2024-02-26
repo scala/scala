@@ -261,13 +261,16 @@ trait PhaseAssembly {
       def color(hex: String)  = s""" [color="#$hex"]"""
       def node(n: graph.Node) = s""""${n.allPhaseNames}(${n.level})""""
 
+      val buf = mutable.ListBuffer.empty[String]
+      buf += "digraph G {"
+      buf ++= edges.map(e => s"${node(e.frm)}->${node(e.to)}" + color(if (e.hard) "0000ff" else "000000"))
+      buf ++= extnodes.distinct.map(n => node(n) + color("00ff00"))
+      buf ++= fatnodes.distinct.map(n => node(n) + color("0000ff"))
+      buf += "}"
+
       import scala.reflect.io._
       val f = Path(d.file) / File(filename)
-      f.printlnAll("digraph G {")
-      f.printlnAll(edges.map(e => s"${node(e.frm)}->${node(e.to)}" + color(if (e.hard) "0000ff" else "000000")): _*)
-      f.printlnAll(extnodes.distinct.map(n => node(n) + color("00ff00")): _*)
-      f.printlnAll(fatnodes.distinct.map(n => node(n) + color("0000ff")): _*)
-      f.printlnAll("}")
+      f.printlnAll(buf.toList: _*)
     }
   }
 }
