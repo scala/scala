@@ -51,6 +51,15 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).eval
 
+  @test def posDoctool(): Unit = TastyTest.posDocSuite(
+    src                     = "pos-doctool",
+    srcRoot                 = assertPropIsSet(propSrc),
+    pkgName                 = assertPropIsSet(propPkgName),
+    outDir                  = None,
+    additionalSettings      = Nil,
+    additionalDottySettings = Nil
+  ).eval
+
   @test def neg(): Unit = TastyTest.negSuite(
     src                     = "neg",
     srcRoot                 = assertPropIsSet(propSrc),

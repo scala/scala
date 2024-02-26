@@ -99,7 +99,21 @@ object TastyTest {
     _                 <- scalacPos(out, individualCapable=true, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
-  /**Simulates a Scala 2 application that depends on a Scala 3 library, and is expected to fail compilation.
+
+  /**Simulates running scaladoc on a Scala 2 library that depends on a Scala 3 library.
+   * Steps:
+   *  1) compile all Scala files in `src-3` with scala 3 to `out`, with `out` as the classpath
+   *  2) compile all Scala files in `src-2` with scaladoc (scala 2) to `out`, with `out` as the classpath
+   */
+  def posDocSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String])(implicit cl: Dotc.ClassLoader): Try[Unit] = for {
+    (src2, src3)      <- get2And3Sources(srcRoot/src, src2Filters = Set(Scala), src3Filters = Set(Scala))
+    _                 =  log(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
+    out               <- outDir.fold(tempDir(pkgName))(dir)
+    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
+    _                 <- scaladoc(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+  } yield ()
+
+    /**Simulates a Scala 2 application that depends on a Scala 3 library, and is expected to fail compilation.
    * Steps:
    *  1) compile all Scala files in `src-3` with scala 3 to `out`
    *  2) attempt to compile all Scala files in `src-2` with scala 2 to `out`, with `out` as the classpath.
@@ -223,6 +237,12 @@ object TastyTest {
       }
     }
     successWhen(res)("scalac failed to compile sources.")
+  }
+
+  private def scaladoc(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+    log(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
+    val res = Scaladoc.scaladoc(out, "-Ytasty-reader" +: additionalSettings, sources:_*)
+    successWhen(res)("scaladoc failed to compile resources")
   }
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] =
