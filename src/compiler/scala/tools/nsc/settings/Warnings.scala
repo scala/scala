@@ -121,6 +121,8 @@ trait Warnings {
   val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
   val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
   val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"
+  val warnNamedLiteral     = BooleanSetting("-Wunnamed-boolean-literal", "Warn about unnamed boolean literals if there is more than one or defaults are used, unless parameter has @deprecatedName.")
+  val warnNamedBoolean     = BooleanSetting("-Wunnamed-boolean-literal-strict", "Warn about all unnamed boolean literals, unless parameter has @deprecatedName or the method has a single leading boolean parameter.").enabling(warnNamedLiteral :: Nil)
 
   object PerformanceWarnings extends MultiChoiceEnumeration {
     val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")
@@ -217,7 +219,6 @@ trait Warnings {
     val NumericMethods         = LintWarning("numeric-methods",           "Dubious usages, such as `42.isNaN`.")
     val ArgDiscard             = LintWarning("arg-discard",               "-Wvalue-discard for adapted arguments.")
     val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
-    val NamedBooleans          = LintWarning("named-booleans",            "Boolean literals should be named args unless param is @deprecatedName.")
     val PatternShadow          = LintWarning("pattern-shadow",            "Pattern variable id is also a term in scope.")
     val CloneableObject        = LintWarning("cloneable",                 "Modules (objects) should not be Cloneable.")
 
@@ -256,7 +257,6 @@ trait Warnings {
   def lintNumericMethods         = lint.contains(NumericMethods)
   def lintArgDiscard             = lint.contains(ArgDiscard)
   def lintIntDivToFloat          = lint.contains(IntDivToFloat)
-  def lintNamedBooleans          = lint.contains(NamedBooleans)
   def warnPatternShadow          = lint.contains(PatternShadow)
   def warnCloneableObject        = lint.contains(CloneableObject)
 

@@ -1,4 +1,4 @@
-//> using options -Werror -Wunnamed-boolean-literal-strict
+//> using options -Werror -Wunnamed-boolean-literal
 
 class C {
   def f(n: Int = 42, x: Boolean, y: Boolean) = if (x && y) n else 0
@@ -19,8 +19,8 @@ class C {
 object Test extends App {
   val c = new C
   val b = false
-  val x0 = c.f(17, true, b) // warn
-  val x1 = c.f(17, x = true, b) // nowarn
+  val x0 = c.f(17, true, false) // warn
+  val x1 = c.f(17, true, b) // nowarn
   val x2 = c.f(y = b, n = 17, x = true) // nowarn
   c.b = true
   val y = Some(false)
@@ -57,17 +57,26 @@ class Functions {
   def test = f(true)
 }
 
-case class Klazz(isKlazz: Boolean)
+case class Klazz(isKlazz: Boolean, isWarnable: Boolean)
 
 class Klazzy {
-  def test = Klazz(true) // nowarn case class apply as for ctor
+  def test = Klazz(true, false) // warn case class apply as for ctor
 }
 
 class Defaulting {
   def f(n: Int, up: Boolean = true, down: Boolean = false) = if (up) n+1 else if (down) n-1 else n
-  def g0 = f(42)
-  def g1 = f(42, up=false)
-  def g2 = f(42, up=false, true)
-  def g3 = f(42, false)
-  def g4 = f(42, false, true)
+  def g0 = f(42) // nowarn, all defaults
+  def g1 = f(42, up=false) // nowarn, named or defaults
+  def g2 = f(42, up=false, true) // nowarn, in param order so not a named block, unnamed is last remaining param
+  def g3 = f(42, false) // warn, unnamed could mean either param with default
+  def g4 = f(42, false, true) // warn, swappable
+
+  def rev(n: Int, reverse: Boolean = false, up: Boolean = true, down: Boolean = false) =
+    if (!reverse) f(n, up, down) else if (down) n+1 else if (up) n-1 else n
+  def rev0 = rev(42) // nowarn, all defaults
+  def rev1 = rev(42, up=false) // nowarn, named or defaults
+  def rev2 = rev(42, true, up=false, down=true) // nowarn, in param order so not a named block, unnamed is last remaining param
+  def rev3 = rev(42, reverse=true, false) // warn, unnamed could mean either param with default
+  def rev4 = rev(42, false, true, false) // warn, swappable
+  def rev5 = rev(42, true, down=true) // warn, out of order so it's a named block, otherwise same as rev3
 }
