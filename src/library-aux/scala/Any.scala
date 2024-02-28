@@ -138,107 +138,89 @@ abstract class Any {
    */
   final def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
 
-  /** Tell the compiler to treat the receiver object to be of type `T0`.
+  /** Tell the compiler to skip type safety and treat the receiver object to be of type `T0`.
    *
-   *  This operation should be considered unsafe and the outcome **undefined**. On a language level it merely 
-   *  tells the compiler to forget any type information it has about the receiver object and treat it as if it
-   *  had type `T0`. How the compiler manages to transition from the type of the receiver object to `T0` is 
-   *  **undefined**.
+   *  This method is intended for cases where the compiler isn't able to know or capable to infer `T0` and neither
+   *  is it possible to check the subtype relation at runtime and hence skipping type safety is the only option.
    *
-   *  Since the outcome is undefined, it is an implementation detail of the compiler backend whether this call 
-   *  results in an operation in the target bytecode (e.g. Java bytecode) or not. 
-   *  Some backends might emit a conversion, a runtime check or replace the receiver object with a default value.
-   *  The decision to do so is mainly driven by the requirements of the target platform and its version.
-   *  There is **absolutely no guarantee** that a certain implementation stays the same between different compiler 
-   *  versions, especially regarding conversions, runtime checks and default values.
-   *
-   *  For instance, if the target is the JVM with version JDK8, then a conversion or a runtime check is added to
-   *  the bytecode in most cases to comply with the java bytecode requirements. However, in some cases also a 
-   *  *default value might be used instead which in turn could be ignored in the context of literal types.
-   *  If a conversion or a runtime check in the form of a
-   *  [checkcast](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.checkcast) is added,
-   *  then the outcome depends on the implementation of the JVM which should adhere to the rules as in the spec 
-   *  defined in [JLS chapter 5](https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html). 
-   *  This also means that widening and narrowing conversions take place for primitive types and that the scala 
-   *  compiler has to pass erased types to `checkcast`. Furthermore, neither intersection nor union types nor literal
-   *  types are supported in java bytecode. Whether the Scala compiler backend calculates a lowest upper bound in 
-   *  such a case and passes it  to `checkcast` or `java.lang.Object` is used for simplicity reasons is again an 
-   *  implementation detail.
-   *
-   *  It should be clear from that definition that relying on `asInstanceOf` to do type checking is a very bad idea.
-   *  Use [isInstanceOf] instead for type testing and act as desired if the outcome is `false` (e.g. return a 
-   *  [scala.util.Failure], throw an Exception etc.)
-   *
-   *  Following some examples targeting the JVM and JDK8 using Scala 3.4.0. We start off with statements where the
-   *  outcome is most likely as you would expect and continue with more bizarre outcomes -- hoping that you really 
-   *  refrain from using it as type testing utility, use [isInstanceOf] instead.
-   *
+   *  DON'T USE `asInstanceOf` for type checking, it is **not** an alias for something like
    *  {{{
-   *  // doesn't insert any operation 1 is statically known to be a subtype of Int
-   *  1.asInstanceOf[Int]
-   *  // inserts a narrowing primitive conversion from double to int
-   *  1.0.asInstanceOf[Int]
-   *  // inserts a widening primitive conversion from int to long (which could fail with an OutOfMemoryError)
-   *  1.asInstanceOf[Long]
-   *  // inserts a widening primitive conversion and boxing
-   *  List[Int](1.0.asInstanceOf[Int])
-   *  // inserts boxing and a checkcast to java.lang.Double, this fails as no conversion takes place
-   *  1.asInstanceOf[java.lang.Double]
+   *   this match {
+   *    case x: T0 => x
+   *    case _     => throw ClassCastException("...")
+   *  }}}
+   *  Use pattern matching or [isInstanceOf] for type testing instead and act as desired if the subtype
+   *  relation does not hold (e.g. return a [scala.util.Failure], throw an Exception etc.).
    *
-   *  // doesn't insert any operation as B is statically know to be a subtype of A
-   *  B().asInstanceOf[A]
+   *  On a language level it merely tells the compiler to forget any type information it has about
+   *  the receiver object and treat it as if it had type `T0`. How the compiler manages to transition from the type 
+   *  of the receiver object to `T0` is unspecified and should be considered an implementation detail of the 
+   *  corresponding compiler backend and can vary between target platform and the target version.
+   *  Transitioning to T0 might involve inserting conversions (including boxing/unboxing), casts, default values or
+   *  just no real operation at all.
    *
-   *  // doesn't insert any operation, A is statically known to be a subtype of A
-   *  (B(): A).asInstanceOf[A]
+   *  Following some legitimate usages of `asInstanceOf`:
    *
-   *  // inserts a checkcast to B
-   *  (B(): A).asInstanceOf[B]
+   *  - turn a type into an opaque type (idiomatically done in the apply function of the companion
+   *    object of the opaque type)
    *
-   *  // inserts boxing but no checkcast because List[Int] and List[String] have both the type `List` after type erasure
-   *  // and as we have seen before, if it is already known that a subtype relation holds, no checkcast is necessary
-   *  (1 :: Nil).asInstanceOf[List[String]]
+   *  - tell the compiler to treat the receiver object as `T0` after manual type checking (e.g. if flow analysis 
+   *    fails to deduce `T0` automatically after manual type checking). 
    *
-   *  // inserts a checkcast for X which fails
-   *  // as said, no guarantee that this stays this way.
-   *  // also checkcast to java.lang.Object or no operation at all would be have been valid solutions
-   *  "a".asInstanceOf[ Y | Z ]
+   *  - tell the compiler that a higher-kinded type with a wildcard argument is of a certain type and due to performance
+   *    reasons you don't want to type test every element (type testing if the receiver object is e.g. a `List[Int]` is
+   *    not possible due to type erasure). Be confident that your type reasoning is correct, otherwise you might end up 
+   *    with an undefined outcome which could blow up at other places unexpectedly.
    *
-   *  // doesn't insert any operation, outputs "a"
-   *  println("a".asInstanceOf[ Y | Int ])
+   *  - tell the compiler that the receiver object has the same type as a type parameter or abstract type member in 
+   *    case the compiler is not able to know or infer the relation correctly.
+   *    You should be confident about your type reason. Also in this particular case type testing cannot help you due to
+   *    type erasure. But again, you should be very confident about your type reasoning.
    *
-   *  // boxes and inserts a checkcast to java.lang.Object
-   *  1.asInstanceOf [ Y | Float ]
+   *  Following some examples where the usage of asInstanceOf is discouraged:
    *
-   *  // doesn't inserts any operation
-   *  1.asInstanceOf[ String & Int ]
+   *  - if `T0` is a primitive type
+   *    -> use pattern matching or [isInstanceOf] for type testing because `asInstanceOf` might insert a conversion
+   *       instead of a type check
+   *    -> use the corresponding x.toT functions (x.toChar, x.toByte etc.) if you want to convert
    *
-   *  // inserts an unboxingToInt which uses a checkcast to java.lang.Integer internally which fails
-   *  "a".asInstanceOf[ String & Int ]
+   *  - load a class (e.g. Class.forName, ctx.getBean("bean-name") etc.) dynamically and then use asInstanceOf to tell 
+   *    the compiler what it should be.
+   *    -> use pattern matching or [isInstanceOf] for type testing so that you do not depend on implementation details
+   *         
+   *  In general, this method is safe if the subtype relation between the receiver object and `T0` holds
+   *  but should be considered unsafe in terms of type safety otherwise.
    *
-   *  // inserts an unboxingToInt where 0 is used as default value
-   *  println(null.asInstanceOf[Int])
-   *
-   *  // inserts an unboxingToInt where 0 is used as default value, prints out 0
-   *  println(null.asInstanceOf[2])
-   *
-   *  // inserts an unboxingToInt where 0 is used as default value
-   *  val two: 2 = null.asInstanceOf[2]
-   *  // value of two is ignored and the compiler computes a constant expression (2 + 1) instead
-   *  // i.e. the result is still 3
-   *  println(two + 1)
-   *
-   *  val twoFromJava: java.lang.Integer = null
-   *  // doesn't insert any operation, outputs `null`
-   *  println(twoFromJava.asInstanceOf[2])
-   *
-   *  // doesn't insert any operation
-   *  val one = 2.asInstanceOf[1]
-   *
+   *  Following two examples where `asInstanceOf` was not used as intended and the result is most likely not as expected
+   *  {{{
+   *  val anInt = fromThirdPartyLibrary()
+   *  val d = anInt.asInstanceOf[Double]
+   *  //            ^^^ 
+   *  //            skips type safety, implementation detail: converts to double if 
+   *  //            anInt is a primitive Int, throws a ClastCastException otherwise 
+   *  }}}
+   *  Now, imagine the (Java) third party library returns java.lang.Integer in a new version instead of Int. 
+   *  If anInt.toDouble were used, then the compiler would emit a compile error. However, since we decided to skip 
+   *  type safety, the compiler will not error and instead a runtime exception is thrown. I.e. we introduce a bug 
+   *  if we don't realize this breaking change ourself.
+   *  
+   *  In the second example we would like to type check against a union type.
+   *  {{{
+   *  val emailOrUrl = x.asInstanceOf[ Email | Url ]
+   *  //                 ^^^
+   *  //                 skip type safety, implementation detail: doesn't insert any operation
+   *  //                 x could be something else and will likely blow up in an entirely different place.
+   *  
+   *  // a correct way to achieve the desired logic:
+   *   x match {
+   *     case t: ( Email | Url ) => t
+   *  //          ^^^
+   *  //          inserts a type test `isInstanceOf[Email] || isInstanceOf[Url]`
+   *     case _ => throw IllegalArgumentException("$x was neither an Email nor an Url")
+   *  }
    *  }}}
    *
    *  @throws ClassCastException if the receiver object is not an instance of the erasure of type `T0`.
-   *  @throws OutOfMemoryError if the receiver object is widened and there is not enough memory available.
-   *
    *  @return the receiver object.
    */
   final def asInstanceOf[T0]: T0 = sys.error("asInstanceOf")
