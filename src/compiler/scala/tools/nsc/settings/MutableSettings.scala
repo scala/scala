@@ -216,7 +216,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
   def OutputSetting(default: String) = add(new OutputSetting(default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
-  def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
+  def StringSetting(name: String, arg: String, descr: String, default: String = "", helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None, helpText: Option[String] = None) =
     add(new ScalaVersionSetting(name, arg, descr, initial, default, helpText))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
