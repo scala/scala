@@ -143,50 +143,41 @@ abstract class Any {
    *  This method is intended for cases where the compiler isn't able to know or capable to infer `T0` and neither
    *  is it possible to check the subtype relation at runtime and hence skipping type safety is the only option.
    *
-   *  DON'T USE `asInstanceOf` for type checking, it is **not** an alias for something like
+   *  DO NOT USE `asInstanceOf` for type checking, it is **not** an alias for something like
    *  {{{
    *   this match {
    *    case x: T0 => x
    *    case _     => throw ClassCastException("...")
    *  }}}
-   *  Use pattern matching or [isInstanceOf] for type testing instead and act as desired if the subtype
-   *  relation does not hold (e.g. return a [scala.util.Failure], throw an Exception etc.).
+   *  Use pattern matching or [[isInstanceOf]] for type testing instead and act as desired if the subtype
+   *  relation does not hold (e.g. return a [[scala.util.Failure]], throw an Exception etc.).
    *
    *  On a language level it merely tells the compiler to forget any type information it has about
    *  the receiver object and treat it as if it had type `T0`. How the compiler manages to transition from the type 
    *  of the receiver object to `T0` is unspecified and should be considered an implementation detail of the 
    *  corresponding compiler backend and can vary between target platform and the target version.
-   *  Transitioning to T0 might involve inserting conversions (including boxing/unboxing), casts, default values or
-   *  just no real operation at all.
+   *  Transitioning to `T0` might involve inserting conversions (including boxing/unboxing), runtime checks, 
+   *  default values or just no real operation at all.
    *
-   *  Following some legitimate usages of `asInstanceOf`:
+   *  Following the only legitimate usage of `asInstanceOf`:
    *
-   *  - turn a type into an opaque type (idiomatically done in the apply function of the companion
-   *    object of the opaque type)
+   *  - tell the compiler to treat the receiver object as `T0` because you know for sure that the receiver object
+   *    is indeed an instance of `T0` and we cannot convince the compiler of that knowledge otherwise.
    *
-   *  - tell the compiler to treat the receiver object as `T0` after manual type checking (e.g. if flow analysis 
-   *    fails to deduce `T0` automatically after manual type checking). 
+   *  This includes cases such as flow analysis fails to deduce `T0` automatically after manual type testing as well as
+   *  down-casting a type parameter or an abstract type member (which cannot be checked at runtime due to type erasure).
+   *  However, whenever you have a slight doubt and you are able to type test, then you should type test instead.
    *
-   *  - tell the compiler that a higher-kinded type with a wildcard argument is of a certain type and due to performance
-   *    reasons you don't want to type test every element (type testing if the receiver object is e.g. a `List[Int]` is
-   *    not possible due to type erasure). Be confident that your type reasoning is correct, otherwise you might end up 
-   *    with an undefined outcome which could blow up at other places unexpectedly.
-   *
-   *  - tell the compiler that the receiver object has the same type as a type parameter or abstract type member in 
-   *    case the compiler is not able to know or infer the relation correctly.
-   *    You should be confident about your type reason. Also in this particular case type testing cannot help you due to
-   *    type erasure. But again, you should be very confident about your type reasoning.
-   *
-   *  Following some examples where the usage of asInstanceOf is discouraged:
+   *  Following some examples where the usage of `asInstanceOf` is discouraged:
    *
    *  - if `T0` is a primitive type
-   *    -> use pattern matching or [isInstanceOf] for type testing because `asInstanceOf` might insert a conversion
+   *    -> use pattern matching or  [[isInstanceOf]] for type testing because `asInstanceOf` might insert a conversion
    *       instead of a type check
    *    -> use the corresponding x.toT functions (x.toChar, x.toByte etc.) if you want to convert
    *
    *  - load a class (e.g. Class.forName, ctx.getBean("bean-name") etc.) dynamically and then use asInstanceOf to tell 
    *    the compiler what it should be.
-   *    -> use pattern matching or [isInstanceOf] for type testing so that you do not depend on implementation details
+   *    -> use pattern matching or [[isInstanceOf]] for type testing so that you do not depend on implementation details
    *         
    *  In general, this method is safe if the subtype relation between the receiver object and `T0` holds
    *  but should be considered unsafe in terms of type safety otherwise.
@@ -196,8 +187,8 @@ abstract class Any {
    *  val anInt = fromThirdPartyLibrary()
    *  val d = anInt.asInstanceOf[Double]
    *  //            ^^^ 
-   *  //            skips type safety, implementation detail: converts to double if 
-   *  //            anInt is a primitive Int, throws a ClastCastException otherwise 
+   *  //            skips type safety, converts to double if anInt is a primitive Int,
+   *  //            JDK implementation detail: throws a ClastCastException otherwise
    *  }}}
    *  Now, imagine the (Java) third party library returns java.lang.Integer in a new version instead of Int. 
    *  If anInt.toDouble were used, then the compiler would emit a compile error. However, since we decided to skip 
@@ -208,15 +199,15 @@ abstract class Any {
    *  {{{
    *  val emailOrUrl = x.asInstanceOf[ Email | Url ]
    *  //                 ^^^
-   *  //                 skip type safety, implementation detail: doesn't insert any operation
+   *  //                 skips type safety, implementation detail: doesn't insert any operation
    *  //                 x could be something else and will likely blow up in an entirely different place.
    *  
    *  // a correct way to achieve the desired logic:
-   *   x match {
+   *  x match {
    *     case t: ( Email | Url ) => t
    *  //          ^^^
    *  //          inserts a type test `isInstanceOf[Email] || isInstanceOf[Url]`
-   *     case _ => throw IllegalArgumentException("$x was neither an Email nor an Url")
+   *     case _ => throw IllegalArgumentException(x + " was neither an Email nor an Url")
    *  }
    *  }}}
    *
