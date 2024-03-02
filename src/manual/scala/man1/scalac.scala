@@ -206,7 +206,7 @@ object scalac extends Command {
           CmdOption("Xfull-lubs"),
           "Retain pre 2.10 behavior of less aggressive truncation of least upper bounds."),
         Definition(
-          CmdOption("Xgenerate-phase-graph", Argument("file")),
+          CmdOption("Vphase-graph", Argument("file")),
           "Generate the phase graphs (outputs .dot files) to fileX.dot."),
         Definition(
           CmdOption("Xlint"),
