@@ -28,8 +28,8 @@ object StringOpsTest extends Properties("StringOps") {
     val stripped = s.linesIterator.toList
     val lines    = s.linesWithSeparators.toList
     val zipped   = stripped.zip(lines)
-    def shorter  = zipped.init.forall { case (s, l) => s.length < l.length }
-    def maybe    = zipped.last match { case (s, l) => s.length <= l.length }
+    def shorter  = zipped.init.forall { case (strip, ln) => strip.length < ln.length }
+    def maybe    = zipped.last match { case (strip, ln) => strip.length <= ln.length }
 
     (stripped.length == lines.length && (lines.isEmpty || shorter && maybe))
   }

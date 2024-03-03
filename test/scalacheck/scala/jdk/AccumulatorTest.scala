@@ -12,10 +12,9 @@
 
 package scala.jdk
 
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.{Arbitrary, Properties}
 import Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import scala.util.Random
 
 object AccumulatorTest extends Properties("Accumulators") {
   property("IntAccumulatorConvert") = forAll(

@@ -1,6 +1,5 @@
 package scala.tools.nsc.scaladoc
 
-import java.net.{URLClassLoader, URLDecoder}
 import java.nio.file.{Files, Path, Paths}
 
 import scala.tools.nsc.Settings

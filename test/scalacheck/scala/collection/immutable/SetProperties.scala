@@ -1,6 +1,5 @@
 package scala.collection.immutable
 
-import scala.language.higherKinds
 import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
 import org.scalacheck.commands.Commands
 

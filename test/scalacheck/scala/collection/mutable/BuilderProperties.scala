@@ -1,11 +1,7 @@
 package scala.collection.mutable
 
-class BuilderProperties {
+class BuilderProperties
 
-}
-
-
-import scala.language.higherKinds
 import org.scalacheck.Arbitrary.arbInt
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen

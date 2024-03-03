@@ -57,7 +57,7 @@ class ManMaker {
 
 /** Command line runner for ManMaker which is called from the sbt build. */
 object ManMaker extends App {
-  val Array(commands, htmlout, manout) = args
+  val Array(commands, htmlout, manout) = args: @unchecked
   val mm = new ManMaker
   mm.setCommand(commands)
   mm.setHtmlout(new File(htmlout))

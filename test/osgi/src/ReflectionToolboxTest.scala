@@ -3,7 +3,6 @@ package reflection
 package toolbox
  
 import org.junit.Assert._
-import org.ops4j.pax.exam.CoreOptions._
  
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -11,9 +10,6 @@ import org.ops4j.pax.exam
 import org.ops4j.pax.exam.Configuration
 import org.ops4j.pax.exam.junit.PaxExam
 import org.ops4j.pax.exam.spi.reactors.{ ExamReactorStrategy, PerMethod }
-import org.ops4j.pax.swissbox.tracker.ServiceLookup
-import org.osgi.framework.BundleContext
-
 
 class C {
   val f1 = 2
@@ -35,6 +31,7 @@ class ReflectionToolBoxTest extends ScalaOsgiHelper {
     import scala.tools.reflect.ToolBox
     val cm = runtimeMirror(classOf[C].getClassLoader)
     val tb = cm.mkToolBox()
+    @annotation.unused
     val im = cm.reflect(new C)
     val tree = tb.parse("1 to 3 map (_+1)")
     val eval = tb.eval(tree)

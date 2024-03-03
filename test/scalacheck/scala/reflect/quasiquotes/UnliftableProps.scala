@@ -1,7 +1,6 @@
 package scala.reflect.quasiquotes
 
 import org.junit.Assert.{assertEquals, assertTrue}
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._
 
 @annotation.nowarn("msg=deprecated adaptation")

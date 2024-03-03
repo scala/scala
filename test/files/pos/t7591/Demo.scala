@@ -38,10 +38,10 @@ trait DemoSpec extends Spec with Meta.StdOpts with Interpolation {
 
   heading("Binary options:")
   val optopt          = "str"       / "an optional String"        --|
-  val optoptInt       = ("int"      / "an optional Int") .        --^[Int]
+  //val optoptInt       = ("int"      / "an optional Int") .        --^[Int]
   val optEnv          = "defenv"    / "an optional String"        defaultToEnv  "PATH"
-  val optDefault      = "defstr"    / "an optional String"        defaultTo     "default"
-  val optDefaultInt   = "defint"    / "an optional Int"           defaultTo     -1
+  //val optDefault      = "defstr"    / "an optional String"        defaultTo     "default"
+  //val optDefaultInt   = "defint"    / "an optional Int"           defaultTo     -1
   val optExpand       = "alias"     / "an option which expands"   expandTo      ("--int", "15")
 }
 
