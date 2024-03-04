@@ -66,6 +66,6 @@ object FromString {
    */
   implicit val IntFromString: FromString[Int] = new FromString[Int] {
     override def isDefinedAt(s: String)   = s.toIntOption.isDefined
-    def apply(s: String)                  = s.toInt
+    def apply(s: String)                  = s.toIntOption.getOrElse(0)
   }
 }

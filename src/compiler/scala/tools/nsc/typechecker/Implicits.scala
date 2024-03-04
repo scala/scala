@@ -126,14 +126,19 @@ trait Implicits extends splain.SplainData {
     if (settings.areStatisticsEnabled) statistics.stopCounter(findMemberImpl, findMemberStart)
     if (settings.areStatisticsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
-    val rts = result.tree.symbol
-    if (result.isSuccess && rts != null) {
+    if (result.isSuccess) {
+      val rts = {
+        val infoSym = if (result.implicitInfo != null) result.implicitInfo.sym else NoSymbol
+        infoSym.orElse {
+          val rts0 = result.tree.symbol
+          if (rts0 != null) rts0 else NoSymbol
+        }
+      }
       if (settings.lintImplicitRecursion) {
         val s = if (rts.isAccessor) rts.accessed else if (rts.isModule) rts.moduleClass else rts
         if (s != NoSymbol && context.owner.hasTransOwner(s))
           context.warning(result.tree.pos, s"Implicit resolves to enclosing $rts", WarningCategory.WFlagSelfImplicit)
       }
-
       if (result.inPackagePrefix && currentRun.isScala3) {
         val msg =
           s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3.
