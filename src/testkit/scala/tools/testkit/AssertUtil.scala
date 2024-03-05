@@ -14,6 +14,7 @@ package scala.tools.testkit
 
 import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Assert.{assertFalse, assertTrue}
+import org.junit.Assume.{assumeFalse, assumeTrue}
 
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -22,6 +23,7 @@ import scala.reflect.ClassTag
 import scala.runtime.BoxesRunTime
 import scala.runtime.ScalaRunTime.stringOf
 import scala.util.{Failure, Success, Try}
+import scala.util.Properties.isWin
 import scala.util.chaining._
 import scala.util.control.{ControlThrowable, NonFatal}
 import java.lang.ref.{Reference, ReferenceQueue, SoftReference}
@@ -45,14 +47,19 @@ object AssertUtil {
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)
 
+  def noWin(message: String = "skipping test on Windows")(body: => Unit) = {
+    assumeFalse(message, isWin)
+    body
+  }
+
   private val Bail = new ControlThrowable {}
 
   def bail(): Nothing = throw Bail
 
-  // maybe there is a way to communicate that the test was skipped
+  // if the test bails out, communicate a violated assumption
   def bailable(name: String)(test: => Unit): Unit =
     try test
-    catch { case _: Bail.type => println(s"$name skipped bail!") }
+    catch { case _: Bail.type => assumeTrue(s"$name skipped bail!", false) }
 
   private val printable = raw"\p{Print}".r
 

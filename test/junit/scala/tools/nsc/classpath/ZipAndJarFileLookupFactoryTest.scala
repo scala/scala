@@ -7,14 +7,14 @@ import java.net.{URI, URL}
 import java.nio.file._
 import java.nio.file.attribute.FileTime
 import scala.reflect.io.AbstractFile
+import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.ForDeletion
 import scala.tools.testkit.Releasables._
 import scala.util.chaining._
 import scala.util.Using
 
 class ZipAndJarFileLookupFactoryTest {
-  @Test def cacheInvalidation(): Unit = {
-    if (scala.util.Properties.isWin) return // can't overwrite an open file on windows.
+  @Test def cacheInvalidation(): Unit = noWin() { // can't overwrite an open file on windows.
 
     val f = Files.createTempFile("test-", ".jar")
     Files.delete(f)

@@ -24,9 +24,10 @@ import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
 import scala.reflect.internal.util.ScalaClassLoader, ScalaClassLoader.URLClassLoader
 import scala.sys.process.{Process, ProcessLogger}
-import scala.tools.nsc.Properties.{isWin, propOrEmpty}
+import scala.tools.nsc.Properties.{isAvian, isWin, javaSpecVersion, propOrEmpty}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.util.stackTraceString
 import scala.util.{Failure, Success, Try, Using}
 import scala.util.Properties.isJavaAtLeast
@@ -286,8 +287,6 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  A missing flag evaluates the same as true.
    */
   def filteredCheck: Seq[String] = {
-    import scala.util.Properties.{javaSpecVersion, isAvian, isWin}
-    import scala.tools.nsc.settings.ScalaVersion
     // use lines in block with this label?
     def retainOn(expr0: String) = {
       val expr = expr0.trim

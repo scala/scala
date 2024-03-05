@@ -130,16 +130,16 @@ private[scala] trait PropertiesTrait {
 
   /* Some derived values. */
   /** Returns `true` iff the underlying operating system is a version of Microsoft Windows. */
-  def isWin                 = osName startsWith "Windows"
+  lazy val isWin            = osName.startsWith("Windows")
   // See https://mail.openjdk.java.net/pipermail/macosx-port-dev/2012-November/005148.html for
   // the reason why we don't follow developer.apple.com/library/mac/#technotes/tn2002/tn2110.
   /** Returns `true` iff the underlying operating system is a version of Apple Mac OSX.  */
-  def isMac                 = osName startsWith "Mac OS X"
+  lazy val isMac            = osName.startsWith("Mac OS X")
   /** Returns `true` iff the underlying operating system is a Linux distribution. */
-  def isLinux               = osName startsWith "Linux"
+  lazy val isLinux          = osName.startsWith("Linux")
 
   /* Some runtime values. */
-  private[scala] def isAvian = javaVmName contains "Avian"
+  private[scala] lazy val isAvian = javaVmName.contains("Avian")
 
   private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
     case "auto" => System.console() != null && !isWin

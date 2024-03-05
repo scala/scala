@@ -7,6 +7,7 @@ import java.nio.file.Files
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.ReleasablePath._
 import scala.util.Using
@@ -14,7 +15,7 @@ import scala.util.Using
 class QuickfixTest extends BytecodeTesting {
 
   def testQuickfixs(as: List[String], b: String, args: String, checkInfo: StoreReporter.Info => Boolean = _ => true): Unit =
-    if (!scala.util.Properties.isWin) {
+    noWin() {
       Using.resource(Files.createTempDirectory("quickfixTest")) { tmpDir =>
         val srcs = as.indices.map(i => tmpDir.resolve(s"unitSource$i.scala")).toList
         as.lazyZip(srcs).foreach { case (a, src) => Files.write(src, a.getBytes) }

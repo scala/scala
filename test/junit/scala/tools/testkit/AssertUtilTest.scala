@@ -21,6 +21,7 @@ import AssertUtil._
 import java.lang.ref._
 
 import scala.annotation.unused
+import scala.util.Properties.isWin
 
 @RunWith(classOf[JUnit4])
 class AssertUtilTest {
@@ -142,5 +143,8 @@ class AssertUtilTest {
     assertFails(_ == "expected:<ArraySeq(17)> but was:<ArraySeq(42)>") {
       assertSameElements(Array(17), Array(42))
     }
+  }
+  @Test def `noWin skips test`: Unit = noWin() {
+    assertEquals(false, isWin)
   }
 }
