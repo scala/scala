@@ -1,0 +1,9 @@
+Client_2.scala:10: warning: possible missing interpolator: detected interpolated identifier `$unusedVariable`
+      println("hello, world of $unusedVariable")
+              ^
+Client_2.scala:9: warning: local val unusedVariable in value <local Test> is never used
+      val unusedVariable = "42".toInt
+          ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

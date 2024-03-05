@@ -6017,22 +6017,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // attempt to avoid warning about trees munged by macros
         def isMacroExpansion = {
           // context.tree is not the expandee; it is plain new SC(ps).m(args)
-          //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
+          //context.tree.exists(t => t.pos.includes(lit.pos) && hasMacroExpansionAttachment(t))
           // testing pos works and may suffice
-          //openMacros exists (_.macroApplication.pos includes lit.pos)
+          //openMacros.exists(_.macroApplication.pos.includes(lit.pos))
           // tests whether the lit belongs to the expandee of an open macro
-          openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
-            case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
+          openMacros.exists(_.macroApplication.attachments.get[MacroExpansionAttachment] match {
+            case Some(MacroExpansionAttachment(_, t: Tree)) => t.exists(_ eq lit)
             case _                                          => false
           })
         }
+        val checkMacroExpansion = settings.warnMacros.value match {
+          case "both" | "after" => true
+          case _ => !isMacroExpansion
+        }
         // An interpolation desugars to `StringContext(parts).m(args)`, so obviously not missing.
         // `implicitNotFound` annotations have strings with `${A}`, so never warn for that.
-        // Also don't warn for macro expansion.
+        // Also don't warn for macro expansion unless they ask for it.
         def mightBeMissingInterpolation: Boolean = context.enclosingApply.tree match {
           case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => false
           case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _)     => false
-          case _                                                                => !isMacroExpansion
+          case _                                                                => checkMacroExpansion
         }
         def maybeWarn(s: String): Unit = {
           def warn(message: String) = context.warning(lit.pos, s"possible missing interpolator: $message", WarningCategory.LintMissingInterpolator)
@@ -6074,7 +6078,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedLiteral(tree: Literal) = {
         if (settings.warnMissingInterpolator) warnMissingInterpolator(tree)
 
-        tree setType (if (tree.value.tag == UnitTag) UnitTpe else ConstantType(tree.value))
+        tree.setType(if (tree.value.tag == UnitTag) UnitTpe else ConstantType(tree.value))
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {

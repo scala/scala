@@ -103,13 +103,14 @@ trait Warnings {
     name    = "-Wmacros",
     helpArg = "mode",
     descr   = "Enable lint warnings on macro expansions.",
-    choices = List("none", "before", "after", "both"),
-    default = "before",
+    choices = List("none", "before", "after", "both", "default"),
+    default = "default",
     choicesHelp = List(
       "Do not inspect expansions or their original trees when generating unused symbol warnings.",
       "Only inspect unexpanded user-written code for unused symbols.",
       "Only inspect expanded trees when generating unused symbol warnings.",
-      "Inspect both user-written code and expanded trees when generating unused symbol warnings."
+      "Inspect both user-written code and expanded trees when generating unused symbol warnings.",
+      "Only inspect unexpanded user-written code for unused symbols but include usages in expansions.",
     )
   ) withAbbreviation "-Ywarn-macros"
   val warnDeadCode         = BooleanSetting("-Wdead-code", "Warn when dead code is identified.") withAbbreviation "-Ywarn-dead-code"
