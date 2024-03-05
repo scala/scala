@@ -762,6 +762,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             opc.iterator.exists(_.low == m)
           }
         }
+        def isEmptyMarker(p: Symbol): Boolean = p.info.members.reverseIterator.forall(isUniversalMember(_)) // nonTrivialMembers(p).isEmpty
         def isConvention(p: Symbol): Boolean = (
             p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
           ||
@@ -769,8 +770,10 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         )
         def warningIsOnFor(s: Symbol) =
           if (!s.isImplicit) settings.warnUnusedExplicits
-          else if (!s.isSynthetic) settings.warnUnusedImplicits
-          else settings.warnUnusedSynthetics
+          else {
+            if (!s.isSynthetic) settings.warnUnusedImplicits
+            else settings.warnUnusedSynthetics
+          } && !isEmptyMarker(s)
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
             && !isImplementation(s.owner)
