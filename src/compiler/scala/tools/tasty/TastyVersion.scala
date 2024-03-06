@@ -12,7 +12,7 @@
 
 package scala.tools.tasty
 
-// sourced from: https://github.com/lampepfl/dotty/blob/release-3.4.0/tasty/src/dotty/tools/tasty/TastyVersion.scala
+// sourced from: https://github.com/scala/scala3/blob/release-3.4.0/tasty/src/dotty/tools/tasty/TastyVersion.scala
 
 case class TastyVersion private(major: Int, minor: Int, experimental: Int) {
   def isExperimental: Boolean = experimental > 0

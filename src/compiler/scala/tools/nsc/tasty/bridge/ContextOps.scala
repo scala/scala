@@ -194,7 +194,7 @@ trait ContextOps { self: TastyUniverse =>
     protected implicit final def implyThisCtx: thisCtx.type = thisCtx
 
     /** JAVAattr is necessary to support pipelining in Zinc, we have to set Java erasure semantics if found.
-     * To support this we also need to support TASTy-only classpaths, see https://github.com/lampepfl/dotty/pull/17594
+     * To support this we also need to support TASTy-only classpaths, see https://github.com/scala/scala3/pull/17594
      * For a test case, see test/tasty/run-pipelined
      */
     def isJava: Boolean = mode.is(ReadJava)

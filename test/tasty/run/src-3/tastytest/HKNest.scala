@@ -59,11 +59,11 @@ object HKNest {
   type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
 
   // class HKClass_8[P[F[X <: String]] <: Hoo[StringOrInt]] {
-  //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/lampepfl/dotty/issues/8329
+  //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/scala/scala3/issues/8329
   // }
 
   type OrInt[X] = Either[X, Int]
-  // type StringOrInt[X <: String] = Either[X, Int] https://github.com/lampepfl/dotty/issues/8329
+  // type StringOrInt[X <: String] = Either[X, Int] https://github.com/scala/scala3/issues/8329
 
   class Box[A]
 
@@ -109,7 +109,7 @@ object HKNest {
     override def toString(): String = "Contra"
   }
 
-  // class Hoo[F[X <: String] <: Either[X, Int]] { https://github.com/lampepfl/dotty/issues/8329
+  // class Hoo[F[X <: String] <: Either[X, Int]] { https://github.com/scala/scala3/issues/8329
   //   override def toString(): String = "Hoo"
   // }
 

@@ -27,6 +27,6 @@ object HelloWorld {
   def acceptsOnlyMsg4(m: msg4.type): String = m + m
   final lazy val lzy = "lazy"
   def `1) my long test assertion that 1^3 == 2`: Int = 1^3
-  // def `<init>`: Int = 157 // broken in https://github.com/lampepfl/dotty/issues/7799
+  // def `<init>`: Int = 157 // broken in https://github.com/scala/scala3/issues/7799
 
 }

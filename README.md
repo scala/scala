@@ -3,7 +3,7 @@
 This is the home of the [Scala 2](https://www.scala-lang.org)
 standard library, compiler, and language spec.
 
-If you want to visit the Scala 3 repository, go to the [lampepfl/dotty](https://github.com/lampepfl/dotty).
+For Scala 3, visit [scala/scala3](https://github.com/scala/scala3).
 
 # How to contribute
 

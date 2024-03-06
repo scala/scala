@@ -12,7 +12,7 @@
 
 package scala.tools.tasty
 
-// revision: https://github.com/lampepfl/dotty/commit/0938fe5603a17c7c786ac8fc6118a9d5d8b257de
+// revision: https://github.com/scala/scala3/commit/0938fe5603a17c7c786ac8fc6118a9d5d8b257de
 object TastyFormat {
 
   /** The first four bytes of a TASTy file, followed by four values:

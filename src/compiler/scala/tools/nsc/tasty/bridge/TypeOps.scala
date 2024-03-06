@@ -538,7 +538,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   /** A synthetic type `scala.&` which accepts two type arguments, representing an intersection type
-   * @see https://github.com/lampepfl/dotty/issues/7688
+   * @see https://github.com/scala/scala3/issues/7688
    */
   case object AndTpe extends Type
 

@@ -906,9 +906,9 @@ trait Infer extends Checkable {
           case _ if !currentRun.isScala3ImplicitResolution => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
           case _ =>
             // Backport of fix for https://github.com/scala/bug/issues/2509
-            // from Dotty https://github.com/lampepfl/dotty/commit/89540268e6c49fb92b9ca61249e46bb59981bf5a
+            // from Dotty https://github.com/scala/scala3/commit/89540268e6c49fb92b9ca61249e46bb59981bf5a
             //
-            // Note that as of https://github.com/lampepfl/dotty/commit/b9f3084205bc9fcbd2a5181d3f0e539e2a20253a
+            // Note that as of https://github.com/scala/scala3/commit/b9f3084205bc9fcbd2a5181d3f0e539e2a20253a
             // Dotty flips variances throughout, not just at the top level. We follow that behaviour here.
 
             val e1 = existentialAbstraction(undef1, tpe1)

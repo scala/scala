@@ -168,7 +168,7 @@ trait SymbolOps { self: TastyUniverse =>
     }
     if (isSymbol(member) && hasType(member)) member
     else if (ctx.isJava && space.termSymbol.isModule && !space.termSymbol.hasPackageFlag) {
-      // TODO [tasty]: remove this workaround for https://github.com/lampepfl/dotty/issues/19619
+      // TODO [tasty]: remove this workaround for https://github.com/scala/scala3/issues/19619
       //   Use heuristic that we are accidentally looking in the static scope for some class/object,
       //   when really we should be looking in the instance scope. In this case, we should be always looking for
       //   the class and not the object, so we convert to type name and look in the companion.

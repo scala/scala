@@ -25,6 +25,6 @@ object TestHKNest extends Suite("TestHKNest") {
 
   type OrNothing[I] = Either[Nothing, I]
 
-  // test(assert(new HKClass_8[Boo].foo(new Boo[StringOrInt]) == "Boo"))  blocked by https://github.com/lampepfl/dotty/issues/8329
+  // test(assert(new HKClass_8[Boo].foo(new Boo[StringOrInt]) == "Boo"))  blocked by https://github.com/scala/scala3/issues/8329
 
 }

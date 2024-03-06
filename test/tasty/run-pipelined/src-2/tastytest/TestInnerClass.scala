@@ -51,7 +51,7 @@ object TestInnerClass extends scala.App {
      *   71:           IDENTtpt 13 [U]
      *   73:             SHAREDtype 62 ()
      * So either we do branching to lookup `Inner` in the non-static scope, or we do nothing
-     * and fix the TASTy generation (AKA fix the scala 3 typer, see https://github.com/lampepfl/dotty/issues/19619)
+     * and fix the TASTy generation (AKA fix the scala 3 typer, see https://github.com/scala/scala3/issues/19619)
      */
     val ici_inner3: InnerClass#Inner[Long] = InnerClass.createInnerStatic[Long](47L)
 
