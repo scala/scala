@@ -1,4 +1,4 @@
-// See https://github.com/lampepfl/dotty/issues/2974
+// See https://github.com/scala/scala3/issues/2974
 // scalac: -Yscala3-implicit-resolution
 
 trait Foo[-T]

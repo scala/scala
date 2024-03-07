@@ -60,7 +60,7 @@ class InferencerTests extends BytecodeTesting {
       val ZBwC = typeOf[ZwC[B]]
 
       // https://github.com/scala/bug/issues/2509
-      // See discussion at https://github.com/lampepfl/dotty/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
+      // See discussion at https://github.com/scala/scala3/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
 
       // Covariant
       assertTrue(!typer.infer.isAsSpecific(XA, XB))
@@ -127,7 +127,7 @@ class InferencerTests extends BytecodeTesting {
       val ZBwC = typeOf[ZwC[B]]
 
       // https://github.com/scala/bug/issues/2509
-      // See discussion at https://github.com/lampepfl/dotty/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
+      // See discussion at https://github.com/scala/scala3/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
 
       // Covariant
       assertTrue(!typer.infer.isAsSpecific(XA, XB))

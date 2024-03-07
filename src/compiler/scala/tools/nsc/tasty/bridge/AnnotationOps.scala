@@ -55,7 +55,7 @@ trait AnnotationOps { self: TastyUniverse =>
     }
     tree match {
       case u.New(tpt) =>
-        // this is to handle incorrectly formatted annotations in dotty - https://github.com/lampepfl/dotty/issues/10113
+        // this is to handle incorrectly formatted annotations in dotty - https://github.com/scala/scala3/issues/10113
         u.AnnotationInfo(tpt.tpe, Nil, Nil)
       case _ =>
         go(Nil, Nil, tree)
