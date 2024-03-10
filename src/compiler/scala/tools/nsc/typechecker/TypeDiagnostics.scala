@@ -643,9 +643,13 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         ))
       )
     def sympos(s: Symbol): Int =
-      if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
+      if (s.pos.isDefined) s.pos.point
+      else if (s.isTerm && s.asTerm.referenced.pos.isDefined) s.asTerm.referenced.pos.point
+      else -1
     def treepos(t: Tree): Int =
-      if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
+      if (t.pos.isDefined) t.pos.point
+      else if (t.symbol != null) sympos(t.symbol)
+      else -1
 
     def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
     def unusedTerms = {
