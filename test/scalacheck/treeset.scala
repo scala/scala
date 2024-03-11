@@ -3,7 +3,6 @@ import org.scalacheck._
 import Prop._
 import Gen._
 import Arbitrary._
-import util._
 
 object TreeSetTest extends Properties("TreeSet") {
   def genTreeSet[A: Arbitrary: Ordering]: Gen[TreeSet[A]] =

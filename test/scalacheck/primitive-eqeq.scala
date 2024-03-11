@@ -15,7 +15,7 @@ object PrimitiveEqEqTest extends Properties("==") {
   property("transitivity") = forAll { (x: AnyVal, y: AnyVal, z: AnyVal) => x != y || y != z || x == z }
 
   property("##") = forAll { x: Short =>
-    val anyvals = List(x.toByte, x.toChar, x, x.toInt, x.toLong, x.toFloat, x.toDouble, BigInt(x), BigDecimal(x))
+    val anyvals = List[Any](x.toByte, x.toChar, x, x.toInt, x.toLong, x.toFloat, x.toDouble, BigInt(x), BigDecimal(x))
     val shortAndLarger = anyvals drop 2
 
     (anyvals.lazyZip(anyvals) forall equalObjectsEqualHashcodes) &&

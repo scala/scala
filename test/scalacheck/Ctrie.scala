@@ -5,6 +5,8 @@ import collection._
 import collection.concurrent.TrieMap
 import scala.language.reflectiveCalls
 
+import annotation.unused
+
 case class Wrap(i: Int) {
   override def hashCode = i // * 0x9e3775cd
 }
@@ -101,7 +103,7 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
     val ct = new TrieMap[Wrap, Int]
 
     // checker
-    val checker = spawn {
+    @unused val checker = spawn {
       def check(last: Map[Wrap, Int], iterationsLeft: Int): Boolean = {
         val current = ct.readOnlySnapshot()
         if (!hasGrown(last, current)) false
@@ -187,7 +189,7 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
     val totalInserts = new java.util.concurrent.atomic.AtomicInteger
     val ct = new TrieMap[Wrap, String]
 
-    val results = inParallel(p) {
+    @unused val results = inParallel(p) {
       idx =>
       (0 until sz) foreach {
         i =>

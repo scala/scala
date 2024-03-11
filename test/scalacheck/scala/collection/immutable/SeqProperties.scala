@@ -1,7 +1,5 @@
 package scala.collection.immutable
 
-
-import scala.language.higherKinds
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.commands.Commands
@@ -9,7 +7,6 @@ import org.scalacheck.commands.Commands
 import scala.collection.mutable
 import scala.util.{Success, Try}
 import org.scalacheck.Properties
-
 
 @annotation.nowarn("cat=deprecation&msg=Stream")
 object SeqProperties extends Properties("immutable.Seq builder implementations"){

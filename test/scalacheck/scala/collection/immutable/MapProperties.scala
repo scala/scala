@@ -2,7 +2,6 @@ package scala.collection.immutable
 
 import org.scalacheck.Properties
 
-import scala.language.higherKinds
 import org.scalacheck.Arbitrary.arbInt
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen

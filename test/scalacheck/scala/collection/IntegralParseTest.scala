@@ -1,12 +1,8 @@
 package scala.collection
 
 import scala.util.Try
-import org.scalacheck.{Arbitrary, Gen, Properties}
-import org.scalacheck.Shrink
-import org.scalacheck.Test.Parameters
+import org.scalacheck.{Gen, Properties, Shrink}
 import org.scalacheck.Prop._
-
-import org.scalacheck.Gen
 
 object NumericStringGenerators {
 

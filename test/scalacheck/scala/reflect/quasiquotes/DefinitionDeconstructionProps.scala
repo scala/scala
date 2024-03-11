@@ -1,6 +1,6 @@
 package scala.reflect.quasiquotes
 
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import org.scalacheck._, Prop._, Gen._
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.SyntacticClassDef
 
 object DefinitionDeconstructionProps

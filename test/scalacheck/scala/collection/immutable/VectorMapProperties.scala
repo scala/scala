@@ -1,13 +1,11 @@
 package scala.collection.immutable
 
 import org.scalacheck._
-import Arbitrary.arbitrary
 import Prop._
 import Gen._
 import commands.Commands
 
 import scala.util.Try
-
 
 object VectorMapProperties extends Properties("immutable.VectorMap") {
 

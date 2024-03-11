@@ -1,8 +1,7 @@
 package scala.collection
 
 import scala.util.Try
-import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
-import org.scalacheck.Test.Parameters
+import org.scalacheck.{Arbitrary, Gen, Properties}
 import org.scalacheck.Prop._
 
 object FloatFormatTest extends Properties("FloatFormat") {

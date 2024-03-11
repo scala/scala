@@ -248,7 +248,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
       }
 
       val ys: HashMap[Container, Int] = xs.map { case (k, v) => Container(k) -> v }
-      val zs = ys.filterImpl( { case (k, v) => p((k.inner, v))}, flipped)
+      @annotation.unused val zs = ys.filterImpl( { case (k, v) => p((k.inner, v))}, flipped)
 
       ys.forall(_._1.timesHashed <= 1)
      }

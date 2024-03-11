@@ -160,16 +160,16 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (Compile / doc / target).value,
   run / fork := true,
   run / connectInput := true,
-  // uncomment for ease of development while breaking things
-  //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
-  // work around https://github.com/scala/bug/issues/11534
-  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
-  // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
-  // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
-  Compile / scalacOptions += "-Wconf:cat=optimizer:is",
-  // We use @nowarn for some methods that are deprecated in Java > 8
-  Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s",
-  Compile / scalacOptions ++= Seq("-deprecation", "-feature"),
+  Compile / scalacOptions ++= Seq("-feature", "-Xlint",
+    //"-Xmaxerrs", "5", "-Xmaxwarns", "5", // uncomment for ease of development while breaking things
+    // work around https://github.com/scala/bug/issues/11534
+    "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
+    // optimizer warnings at INFO since `-Werror` may be turned on.
+    // optimizer runs in CI and release builds, though not in local development.
+    "-Wconf:cat=optimizer:is",
+    // we use @nowarn for methods that are deprecated in JDK > 8, but CI/release is under JDK 8
+    "-Wconf:cat=unused-nowarn:s",
+    ),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -412,7 +412,6 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -460,7 +459,6 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
@@ -532,8 +530,6 @@ lazy val compiler = configureAsSubproject(project)
       ).get
     },
     Compile / scalacOptions ++= Seq(
-      "-Xlint",
-      "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(
@@ -574,7 +570,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"),
+    Compile / scalacOptions ++= Seq("-Wconf:cat=deprecation&msg=early initializers:s"),
   )
   .dependsOn(compiler)
 
@@ -582,7 +578,7 @@ lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"))
+  .settings(Compile / scalacOptions ++= Seq("-Wconf:cat=deprecation&msg=early initializers:s"))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-frontend"))
@@ -592,7 +588,6 @@ lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-front
   .settings(
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
-    Compile / scalacOptions ++= Seq("-Xlint"),
   )
   .settings(
     run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `replFrontend/run` works
@@ -612,8 +607,6 @@ lazy val scaladoc = configureAsSubproject(project)
     libraryDependencies ++= ScaladocSettings.webjarResources,
     Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
     Compile / scalacOptions ++= Seq(
-      "-Xlint",
-      "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s",
     ),
   )
@@ -629,8 +622,6 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
     description := "sbt compiler bridge for Scala 2",
     libraryDependencies += compilerInterfaceDep % Provided,
     Compile / scalacOptions ++= Seq(
-      "-Xlint",
-      "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     generateServiceProviderResources("xsbti.compile.CompilerInterface2" -> "scala.tools.xsbt.CompilerBridge"),
@@ -687,7 +678,6 @@ lazy val scalap = configureAsSubproject(project)
       xs filter { x => !excluded(x.getName) }
     },
     Compile / headerResources := Nil,
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
   )
   .dependsOn(compiler)
 
@@ -702,7 +692,6 @@ lazy val partest = configureAsSubproject(project)
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
     Compile / javacOptions ++= Seq("-XDenableSunApiLintControl", "-Xlint") ++
       (if (fatalWarnings.value) Seq("-Werror") else Seq()),
-    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
@@ -720,7 +709,6 @@ lazy val tastytest = configureAsSubproject(project)
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
     libraryDependencies += diffUtilsDep,
-    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
@@ -752,7 +740,6 @@ lazy val specLib = project.in(file("test") / "instrumented")
         patch("ScalaRunTime.scala", "srt.patch")
       )
     }.taskValue,
-    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
   )
 
 // The scala version used by the benchmark suites, leave undefined to use the ambient version.")
@@ -790,7 +777,6 @@ lazy val testkit = configureAsSubproject(project)
   .settings(
     name := "scala-testkit",
     description := "Scala Compiler Testkit",
-    Compile / scalacOptions ++= Seq("-feature", "-Xlint"),
     libraryDependencies ++= Seq(junitDep, asmDep),
     Compile / unmanagedSourceDirectories := List(baseDirectory.value),
     fixPom(
@@ -819,8 +805,7 @@ lazy val junit = project.in(file("test") / "junit")
     (Test / forkOptions) := (Test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     (Test / testOnly / forkOptions) := (Test / testOnly / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     Compile / scalacOptions ++= Seq(
-      "-feature",
-      "-Xlint:-valpattern,_",
+      "-Xlint:-valpattern",
       "-Wconf:msg=match may not be exhaustive:s", // if we missed a case, all that happens is the test fails
       "-Wconf:cat=lint-nullary-unit&site=.*Test:s", // normal unit test style
       "-Ypatmat-exhaust-depth", "40", // despite not caring about patmat exhaustiveness, we still get warnings for this
@@ -869,6 +854,9 @@ lazy val tasty = project.in(file("test") / "tasty")
         s"-Dtastytest.classpaths.scalaReflect=$scalaReflect",
       )
     },
+    Compile / scalacOptions ++= Seq(
+      "-Wconf:cat=lint-nullary-unit&site=.*Test:s", // normal unit test style
+    ),
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
@@ -889,7 +877,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     ),
     libraryDependencies ++= Seq(scalacheckDep, junitDep),
     Compile / unmanagedSourceDirectories := Nil,
-    Test / unmanagedSourceDirectories := List(baseDirectory.value)
+    Test / unmanagedSourceDirectories := List(baseDirectory.value),
+    Compile / scalacOptions ++= Seq(
+      "-Wconf:msg=match may not be exhaustive:s", // if we missed a case, all that happens is the test fails
+      "-Wconf:msg=Classes which cannot access Tree:s", // extension is irrelevant to tests
+    ),
   )
 
 lazy val osgiTestFelix = osgiTestProject(

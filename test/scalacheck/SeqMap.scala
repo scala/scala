@@ -5,8 +5,6 @@ import Arbitrary.arbitrary
 import Prop._
 import Gen._
 
-import scala.collection.mutable.ListBuffer
-
 object SeqMapTest extends Properties("SeqMap") {
 
   property("overrides stringPrefix") = {

@@ -1,7 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._
+import scala.reflect.runtime.universe._
 
 object PatternDeconstructionProps extends QuasiquoteProperties("pattern deconstruction") {
   property("extract bind") = forAll { (bind: Bind) =>

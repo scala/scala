@@ -1,8 +1,8 @@
 package scala.reflect.quasiquotes
 
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import org.scalacheck._, Gen._, Arbitrary._
 import scala.language.implicitConversions
-import scala.reflect.runtime.universe._, internal._, Flag._
+import scala.reflect.runtime.universe._, Flag._
 
 trait ArbitraryTreesAndNames {
   def smallList[T](size: Int, g: Gen[T]) = {
@@ -34,7 +34,7 @@ trait ArbitraryTreesAndNames {
   def genModifiers = for(flagset <- genFlagSet) yield Modifiers(flagset)
 
   def genConstant =
-    for(value <- oneOf(arbitrary[Byte], arbitrary[Short], arbitrary[Char],
+    for (value <- oneOf[Any](arbitrary[Byte], arbitrary[Short], arbitrary[Char],
                        arbitrary[Int], arbitrary[Long], arbitrary[Float],
                        arbitrary[Double], arbitrary[Boolean], arbitrary[String]))
       yield Constant(value)

@@ -104,7 +104,6 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
   property("foreach.inside.range") = forAll(myGen) { r =>
 //    println("foreach.inside.range "+str(r))
     var allValid = true
-    var last: Option[Int] = None
     val cnt = new Counter(r)
     r foreach { x => cnt(x)
       allValid &&= within(r, x)

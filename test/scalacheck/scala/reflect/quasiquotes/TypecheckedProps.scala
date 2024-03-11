@@ -1,7 +1,6 @@
 package scala.reflect.quasiquotes
 
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
+import scala.reflect.runtime.universe._
 
 object TypecheckedProps extends QuasiquoteProperties("typechecked")
                            with TypecheckedTypes {

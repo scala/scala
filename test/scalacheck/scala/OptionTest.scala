@@ -167,7 +167,7 @@ object OptionTest extends Properties("scala.Option") {
         case Some(x) =>
           option.get ?= {
             option match {
-              case Some(x) => x
+              case Some(y) => y
               case None    => throw new Exception
             }
           }

@@ -78,10 +78,10 @@ trait RedBlackTreeInvariants[K, V] {
   import RB._
 
   object RedTree {
-    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isRed) Some(t.key, t.value, t.left, t.right) else None
+    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isRed) Some((t.key, t.value, t.left, t.right)) else None
   }
   object BlackTree {
-    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isBlack) Some(t.key, t.value, t.left, t.right) else None
+    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isBlack) Some((t.key, t.value, t.left, t.right)) else None
   }
 
   implicit def ordering: Ordering[K]
@@ -132,7 +132,7 @@ object TestInsert extends RedBlackTreeTest("RedBlackTree.insert") {
 
   override type ModifyParm = Int
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size + 1)
-  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = update(tree, generateKey(tree, parm), 0, true)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = update(tree, generateKey(tree, parm), 0, overwrite = true)
 
   def generateKey(tree: Tree[String, Int], parm: ModifyParm): String = nodeAt(tree, parm) match {
     case Some((key, _)) => key.init.mkString + "MN"
@@ -155,7 +155,7 @@ object TestModify extends RedBlackTreeTest("RedBlackTree.modify") {
   override type ModifyParm = Int
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size)
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = nodeAt(tree, parm) map {
-    case (key, _) => update(tree, key, newValue, true)
+    case (key, _) => update(tree, key, newValue, overwrite = true)
   } getOrElse tree
 
   property("update modifies values") = forAll(genInput) { case (tree, parm, newTree) =>
@@ -345,9 +345,9 @@ abstract class BulkTest(pName: String) extends RedBlackTreeTest(pName) {
 
   def gen(l1: List[Int], l2: List[Int]) = {
     var t1: Tree[String, Int] = null
-    l1.foreach { case i => t1 = update(t1, ""+i, i, false) }
+    l1.foreach { case i => t1 = update(t1, ""+i, i, overwrite = false) }
     var t2: Tree[String, Int] = null
-    l2.foreach { case i => t2 = update(t2, ""+i, i, false) }
+    l2.foreach { case i => t2 = update(t2, ""+i, i, overwrite = false) }
     val t3 = validate(modify(t1, t2))
     (t1, t2, t3)
   }

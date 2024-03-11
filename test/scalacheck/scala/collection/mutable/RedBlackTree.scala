@@ -33,14 +33,14 @@ abstract class RedBlackTreeTest(tname: String) extends Properties(tname) with Re
   def height(node: Node[_, _]): Int = if (node eq null) 0 else (1 + math.max(height(node.left), height(node.right)))
 
   def RedTree[A, B](k: A, v: B, l: Tree[A, B], r: Tree[A, B]): Tree[A, B] = {
-    val n = new Node(k, v, true, l.root, r.root, null)
+    val n = new Node(k, v, red = true, l.root, r.root, null)
     if(l.root ne null) l.root.parent = n
     if(r.root ne null) r.root.parent = n
     new Tree(n, l.size + r.size + 1)
   }
 
   def BlackTree[A, B](k: A, v: B, l: Tree[A, B], r: Tree[A, B]): Tree[A, B] = {
-    val n = new Node(k, v, false, l.root, r.root, null)
+    val n = new Node(k, v, red = false, l.root, r.root, null)
     if(l.root ne null) l.root.parent = n
     if(r.root ne null) r.root.parent = n
     new Tree(n, l.size + r.size + 1)

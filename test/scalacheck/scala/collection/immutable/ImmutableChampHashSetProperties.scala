@@ -337,7 +337,6 @@ object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
 
 
   property("hs.concat(list) does not mutate hs") = forAll { (hs: HashSet[K], l: List[K]) =>
-    val asList = hs.toList
     val clone = hs.to(List).to(HashSet)
     hs.concat(l)
     hs ?= clone

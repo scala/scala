@@ -2,10 +2,7 @@ package tools.test.osgi
 package reflection
 package basic
 
-import scala.language.higherKinds
-
 import org.junit.Assert._
-import org.ops4j.pax.exam.CoreOptions._
 
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,9 +10,6 @@ import org.ops4j.pax.exam
 import org.ops4j.pax.exam.Configuration
 import org.ops4j.pax.exam.junit.PaxExam
 import org.ops4j.pax.exam.spi.reactors.{ ExamReactorStrategy, PerMethod }
-import org.ops4j.pax.swissbox.tracker.ServiceLookup
-import org.osgi.framework.BundleContext
-
 
 class C {
   val f1 = 2

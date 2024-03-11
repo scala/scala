@@ -1,7 +1,7 @@
 
 package scala.collection.convert
 
-import org.scalacheck.{Properties, Test}
+import org.scalacheck.Properties
 import org.scalacheck.Prop._
 
 import scala.collection.immutable
