@@ -160,17 +160,16 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (Compile / doc / target).value,
   run / fork := true,
   run / connectInput := true,
-  // uncomment for ease of development while breaking things
-  //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
-  // work around https://github.com/scala/bug/issues/11534
-  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
-  // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
-  // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
-  Compile / scalacOptions += "-Wconf:cat=optimizer:is",
-  // We use @nowarn for some methods that are deprecated in Java > 8
-  Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s",
-  Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-Xlint"),
-  //Compile / scalacOptions ++= Seq("-Wnamed-literals", "-Ylinternal"), // future restarr
+  Compile / scalacOptions ++= Seq("-feature", "-Xlint",
+    //"-Xmaxerrs", "5", "-Xmaxwarns", "5", // uncomment for ease of development while breaking things
+    // work around https://github.com/scala/bug/issues/11534
+    "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
+    // optimizer warnings at INFO since `-Werror` may be turned on.
+    // optimizer runs in CI and release builds, though not in local development.
+    "-Wconf:cat=optimizer:is",
+    // we use @nowarn for methods that are deprecated in JDK > 8, but CI/release is under JDK 8
+    "-Wconf:cat=unused-nowarn:s",
+    ),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -876,7 +875,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
       // Full stack trace on failure:
       "-verbosity", "2"
     ),
-    Compile / scalacOptions ++= Seq("-Wmacros:after"),
     libraryDependencies ++= Seq(scalacheckDep, junitDep),
     Compile / unmanagedSourceDirectories := Nil,
     Test / unmanagedSourceDirectories := List(baseDirectory.value),
