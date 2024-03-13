@@ -1117,7 +1117,8 @@ trait Namers extends MethodSynthesis {
             }
           }
         val legacy = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
-        if (inferOverridden && currentRun.isScala3 && !currentRun.isScala3Cross && !(legacy =:= pt)) {
+        // <:< check as a workaround for scala/bug#12968
+        def warnIfInferenceChanged(): Unit = if (!(legacy =:= pt || legacy <:< pt && pt <:< legacy)) {
           val pts = pt.toString
           val leg = legacy.toString
           val help = if (pts != leg) s" instead of $leg" else ""
