@@ -1128,7 +1128,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def adaptApplyInsertion(): Tree = doAdaptApplyInsertion(retry = false)
 
       def doAdaptApplyInsertion(retry: Boolean): Tree =
-        if (currentRun.isScala3Cross && !isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
+        if (!isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
           silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, if (retry) WildcardType else pt)) match {
             case SilentResultValue(applicator) =>
               val arity = definitions.functionArityFromType(applicator.tpe)
@@ -5401,7 +5401,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // If they try C.tupled, make it (C.apply _).tupled
       def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
-        if (currentRun.isScala3Cross && !isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
+        if (!isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
             context.undetparams.isEmpty && fixableFunctionMembers.contains(name)) {
           val t2 = {
             val t = atPos(tree.pos)(Select(qual, nme.apply))
