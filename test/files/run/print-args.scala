@@ -1,24 +1,25 @@
 import java.nio.file.Files
 
+import org.junit.Assert.assertFalse
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util._
 import scala.tools.partest.DirectTest
+import scala.tools.testkit.AssertUtil.assertSameElements
 
 import org.junit.Assert._
 
 object Test extends DirectTest {
   lazy val argfile = testOutput.jfile.toPath().resolve("print-args.txt")
-  override def extraSettings = s"${super.extraSettings} -Xsource:3 -Vprint-args ${argfile}"
+  override def extraSettings = s"${super.extraSettings} -Vprint-args ${argfile}"
   def expected =
     sm"""
     |-usejavacp
     |-d
     |${testOutput.jfile.toPath()}
-    |-Xsource:3.0.0
     |-Vprint-args
     |${testOutput.jfile.toPath().resolve(argfile)}
     |newSource1.scala
-    """
+    """.trim
   def code =
     sm"""
     |class C {
@@ -26,8 +27,7 @@ object Test extends DirectTest {
     |}
     """
   def show() = {
-    assert(!compile())
-    //assertEquals(expected.linesIterator.toList, Files.readAllLines(argfile).asScala.toList)
-    assert(expected.linesIterator.toList.tail.init.sameElements(Files.readAllLines(argfile).asScala))
+    assertFalse(compile())
+    assertSameElements(expected.linesIterator, Files.readAllLines(argfile).asScala)
   }
 }
