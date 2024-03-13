@@ -3487,7 +3487,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (!sym.initialize.hasFlag(IS_ERROR)) {
                 newStats += typedStat(tree) // might add even more synthetics to the scope
                 tree.getAndRemoveAttachment[CaseApplyInheritAccess.type].foreach(_ =>
-                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", Scala3Migration, sym))
+                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)", Scala3Migration, sym))
               }
               context.unit.synthetics -= sym
             case _ => ()
@@ -5683,7 +5683,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (symbol != definitions.StringContextModule)
                   runReporting.warning(
                     tree.pos,
-                    s"String interpolations always use scala.StringContext in Scala 3 (${symbol.fullNameString} is used here)",
+                    s"In Scala 3 (or with -Xsource-features:string-context-scope), String interpolations always use scala.StringContext (${symbol.fullNameString} is used here)",
                     Scala3Migration,
                     context.owner)
               )

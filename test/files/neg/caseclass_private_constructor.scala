@@ -1,4 +1,4 @@
-// scalac: -Xsource:3-cross -Wconf:cat=scala3-migration:s
+//> using options -Xsource:3 -Wconf:cat=scala3-migration:s -Xsource-features:case-apply-copy-access
 
 case class A private (i: Int)
 object A

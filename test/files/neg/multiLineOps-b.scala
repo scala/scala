@@ -1,4 +1,4 @@
-//> using options -Werror -Xsource:3-cross
+//> using options -Werror -Xsource:3 -Xsource-features:leading-infix
 
 class Test {
   val b1 = {

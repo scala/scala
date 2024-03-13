@@ -903,7 +903,8 @@ trait Infer extends Checkable {
       case _                         =>
         tpe2 match {
           case PolyType(tparams2, rtpe2) => isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
-          case _ if !currentRun.isScala3ImplicitResolution => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
+          case _ if !currentRun.sourceFeatures.implicitResolution =>
+            existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
           case _ =>
             // Backport of fix for https://github.com/scala/bug/issues/2509
             // from Dotty https://github.com/scala/scala3/commit/89540268e6c49fb92b9ca61249e46bb59981bf5a

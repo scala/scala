@@ -1,4 +1,4 @@
-warning: -Xsource is deprecated: instead of -Xsource:2.14, use -Xsource:3 or -Xsource:3-cross
+warning: -Xsource is deprecated: instead of -Xsource:2.14, use -Xsource:3 and optionally -Xsource-features
 warning: -Xfuture is deprecated: Not used since 2.13.
 warning: -optimize is deprecated: Since 2.12, enables -opt:inline:**. This can be dangerous.
 warning: -Xexperimental is deprecated: Not used since 2.13.

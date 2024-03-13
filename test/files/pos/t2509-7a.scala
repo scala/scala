@@ -1,4 +1,4 @@
-// scalac: -Yscala3-implicit-resolution
+//> using options -Xsource:3 -Xsource-features:implicit-resolution
 
 class Both[-A, +B]
 

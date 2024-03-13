@@ -25,7 +25,6 @@ import scala.reflect.internal.util.StringOps.countElementsAsString
 import scala.reflect.internal.util.{CodeAction, NoSourceFile, Position, ReplBatchSourceFile, SourceFile, TextEdit}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
-import scala.tools.nsc.settings.NoScalaVersion
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
@@ -43,11 +42,6 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     val rootDirPrefix: String =
       if (settings.rootdir.value.isEmpty) ""
       else Regex.quote(new java.io.File(settings.rootdir.value).getCanonicalPath.replace("\\", "/"))
-    @nowarn("cat=deprecation")
-    val isScala3 = settings.isScala3.value
-    @nowarn("cat=deprecation")
-    val isScala3Cross: Boolean = settings.isScala3Cross.value
-    val isScala3Migration = settings.Xmigration.value != NoScalaVersion
     lazy val wconf = WConf.parse(settings.Wconf.value, rootDirPrefix) match {
       case Left(msgs) =>
         val multiHelp =
@@ -59,11 +53,10 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
       case Right(conf) =>
-        if (isScala3 && !conf.filters.exists(_._1.exists { case MessageFilter.Category(WarningCategory.Scala3Migration) => true case _ => false })) {
-          val migrationAction = if (isScala3Migration) Action.Warning else Action.Error
-          val migrationCategory = MessageFilter.Category(WarningCategory.Scala3Migration) :: Nil
-          WConf(conf.filters :+ (migrationCategory, migrationAction))
-        }
+        // configure cat=scala3-migration if it isn't yet
+        val Migration = MessageFilter.Category(WarningCategory.Scala3Migration)
+        val boost = (settings.isScala3: @nowarn) && !conf.filters.exists(_._1.exists(_ == Migration))
+        if (boost) conf.copy(filters = conf.filters :+ (Migration :: Nil, Action.Error))
         else conf
     }
 
@@ -204,7 +197,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
             case _ => ""
           })
       def scala3migration(isError: Boolean) =
-        if (isError && isScala3 && warning.category == WarningCategory.Scala3Migration)
+        if (isError && warning.category == WarningCategory.Scala3Migration)
           "\nScala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings."
         else ""
       def helpMsg(kind: String, isError: Boolean = false) =

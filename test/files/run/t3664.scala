@@ -1,7 +1,7 @@
-//> using options -Xlint -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:case-companion-function -deprecation
 
 // use -Xsource:3 to warn that implicitly extending Function is deprecated
-// use -Xsource:3-cross for dotty behavior: no extend Function, yes adapt C.apply.tupled
+// use -Xsource-features for dotty behavior: no extend Function, yes adapt C.apply.tupled
 
 case class B(i: Int)
 case class C(i: Int, j: Int)

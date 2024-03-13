@@ -1,10 +1,10 @@
-t12919.scala:24: error: Implicit value aOrd was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3.
+t12919.scala:24: error: Implicit value aOrd was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3 (or with -Xsource-features:package-prefix-implicits).
 For migration, add `import a.aOrd`.
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=b.V.f
     def f(xs: List[a.A]) = xs.sorted // warn
                               ^
-t12919.scala:48: error: Implicit method myClassToSeq was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3.
+t12919.scala:48: error: Implicit method myClassToSeq was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3 (or with -Xsource-features:package-prefix-implicits).
 For migration, add `import a1.a2.myClassToSeq`.
 Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=a1.Main.f

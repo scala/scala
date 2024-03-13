@@ -1,12 +1,16 @@
-t7212.scala:5: warning: under -Xsource:3-cross, the inferred type changes to Object instead of String [quickfixable]
+t7212.scala:5: error: in Scala 3 (or with -Xsource-features:infer-override), the inferred type changes to Object instead of String [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=K.f
 class K extends T { def f = "" }
                         ^
-t7212.scala:11: warning: under -Xsource:3-cross, the inferred type changes to Object instead of String [quickfixable]
+t7212.scala:11: error: in Scala 3 (or with -Xsource-features:infer-override), the inferred type changes to Object instead of String [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=F.f
 class F extends T { val f = "" }
                         ^
-t7212.scala:17: warning: under -Xsource:3-cross, the inferred type changes to Object instead of String [quickfixable]
+t7212.scala:17: error: in Scala 3 (or with -Xsource-features:infer-override), the inferred type changes to Object instead of String [quickfixable]
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=V.f
 trait V extends T { var f = "" }
                         ^
-error: No warnings can be incurred under -Werror.
-3 warnings
-1 error
+3 errors

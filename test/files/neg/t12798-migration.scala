@@ -1,4 +1,4 @@
-// scalac: -Xmigration -Xsource:3
+//> using options -Xsource:3
 
 // Demonstrate migration warnings at typer for -Xsource:3
 

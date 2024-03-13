@@ -39,8 +39,6 @@ class ScalaVersionTest {
     // oh really
     assertEquals(NoScalaVersion, ScalaVersion("none"))
     assertSame(NoScalaVersion, ScalaVersion("none"))
-    assertEquals(Scala3Cross, ScalaVersion("3-cross"))
-    assertSame(Scala3Cross, ScalaVersion("3-cross"))
     assertEquals(AnyScalaVersion, ScalaVersion("any"))
     assertSame(AnyScalaVersion, ScalaVersion("any"))
 

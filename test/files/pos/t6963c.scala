@@ -1,4 +1,4 @@
-// scalac: -Xmigration:2.9 -Xfatal-warnings
+//> using options -Werror -Xmigration:2.9
 //
 import collection.Seq
 object Test {

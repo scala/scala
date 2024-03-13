@@ -1,5 +1,5 @@
-//> using options -Werror -Xlint -Xsource:3-cross
-//
+//> using options -Werror -Xlint -Xsource:3
+
 object Foo {
   List(1,2,3).toSet()
 

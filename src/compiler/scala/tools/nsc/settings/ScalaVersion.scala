@@ -15,9 +15,10 @@
 package scala
 package tools.nsc.settings
 
-/**
- * Represents a single Scala version in a manner that
- * supports easy comparison and sorting.
+/** Represents a single Scala version in a manner that
+ *  supports easy comparison and sorting.
+ *
+ *  A version can be `Specific`, `Maximal`, or `Minimal`.
  */
 sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
   def unparse: String
@@ -26,9 +27,17 @@ sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
 
 /** A scala version that sorts higher than all actual versions. */
 sealed abstract class MaximalScalaVersion extends ScalaVersion {
-  def compare(that: ScalaVersion): Int = that match {
+  final def compare(that: ScalaVersion): Int = that match {
     case _: MaximalScalaVersion => 0
     case _ => 1
+  }
+}
+
+/** A scala version that sorts lower than all actual versions. */
+sealed abstract class MinimalScalaVersion extends ScalaVersion {
+  final def compare(that: ScalaVersion): Int = that match {
+    case _: MinimalScalaVersion => 0
+    case _ => -1
   }
 }
 
@@ -37,22 +46,16 @@ case object NoScalaVersion extends MaximalScalaVersion {
   def unparse = "none"
 }
 
-/** Same as `NoScalaVersion` but with a different toString */
-case object Scala3Cross extends MaximalScalaVersion {
-  def unparse = "3-cross"
-}
-
-/**
- * A specific Scala version, not one of the magic min/max versions. An SpecificScalaVersion
- * may or may not be a released version - i.e. this same class is used to represent
- * final, release candidate, milestone, and development builds. The build argument is used
- * to segregate builds
+/** A specific Scala version, not one of the magic min/max versions.
+ *
+ *  A SpecificScalaVersion may or may not be a released version.
+ *  The `build` parameter specifies final, release candidate, milestone, and development builds.
  */
 case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBuild) extends ScalaVersion {
   def unparse = s"${major}.${minor}.${rev}${build.unparse}"
   override def versionString = s"${major}.${minor}.${rev}"
 
-  def compare(that: ScalaVersion): Int =  that match {
+  final def compare(that: ScalaVersion): Int =  that match {
     case SpecificScalaVersion(thatMajor, thatMinor, thatRev, thatBuild) =>
       // this could be done more cleanly by importing scala.math.Ordering.Implicits, but we have to do these
       // comparisons a lot so I'm using brute force direct style code
@@ -62,26 +65,19 @@ case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBu
       else if (minor > thatMinor) 1
       else if (rev < thatRev) -1
       else if (rev > thatRev) 1
-      else build compare thatBuild
-    case AnyScalaVersion => 1
+      else build.compare(thatBuild)
+    case _: MinimalScalaVersion => 1
     case _: MaximalScalaVersion => -1
   }
 }
 
-/**
- * A Scala version that sorts lower than all actual versions
+/** A Scala version that sorts lower than all actual versions.
  */
-case object AnyScalaVersion extends ScalaVersion {
+case object AnyScalaVersion extends MinimalScalaVersion {
   def unparse = "any"
-
-  def compare(that: ScalaVersion): Int = that match {
-    case AnyScalaVersion => 0
-    case _ => -1
-  }
 }
 
-/**
- * Factory methods for producing ScalaVersions
+/** Factory methods for producing ScalaVersions.
  */
 object ScalaVersion {
   private val dot   = """\."""
@@ -109,12 +105,11 @@ object ScalaVersion {
     }
 
     versionString match {
-      case "none" | "" => NoScalaVersion
-      case "3-cross"   => Scala3Cross
-      case "any"       => AnyScalaVersion
+      case "none" | ""   => NoScalaVersion
+      case "any"         => AnyScalaVersion
       case vpat(majorS, minorS, revS, buildS) =>
         SpecificScalaVersion(toInt(majorS), toInt(minorS), toInt(revS), toBuild(buildS))
-      case _           => error(); AnyScalaVersion
+      case _             => error(); AnyScalaVersion
     }
   }
 
@@ -132,72 +127,61 @@ object ScalaVersion {
   }
 }
 
-/**
- * Represents the data after the dash in major.minor.rev-build
+/** Represents the data after the dash in major.minor.rev-build.
+ *
+ *  In order, Development, Final, RC, Milestone. The order is "newest to oldest".
  */
-abstract class ScalaBuild extends Ordered[ScalaBuild] {
-  /**
-   * Return a version of this build information that can be parsed back into the
-   * same ScalaBuild
-   */
+sealed abstract class ScalaBuild extends Ordered[ScalaBuild] {
+  /** Return a version of this build information that can be parsed back into the same ScalaBuild.  */
   def unparse: String
+
+  final def compare(that: ScalaBuild) = buildOrdering.compare(this, that)
 }
-/**
- * A development, test, integration, snapshot or other "unofficial" build
+private object buildOrdering extends Ordering[ScalaBuild] {
+  override def compare(x: ScalaBuild, y: ScalaBuild): Int =
+    x match {
+      case Development(id) =>
+        y match {
+          // sorting by id is pragmatic but not meaningful, such as "cross" < "migration"
+          case Development(thatId) => id.compare(thatId)
+          case _ => 1 // otherwise, newer than official builds, which is incorrect on the "build timeline"
+        }
+      case Milestone(n) =>
+        y match {
+          case Milestone(thatN) => n - thatN // compare two milestones based on their milestone numbers
+          case _ => -1 // a milestone is older than anything other than another milestone
+        }
+      case RC(n) =>
+        y match {
+          case RC(thatN) => n - thatN // compare two rcs based on their RC numbers
+          case Milestone(_) => 1 // an rc is older than anything other than a milestone or another rc
+          case _ => -1
+        }
+      case Final =>
+        y match {
+          case Final => 0 // a final is newer than anything other than a development build or another final
+          case Development(_) => -1
+          case _ => 1
+        }
+    }
+}
+/** A development, test, integration, snapshot or other "unofficial" build.
  */
 case class Development(id: String) extends ScalaBuild {
   def unparse = s"-${id}"
-
-  def compare(that: ScalaBuild) = that match {
-    // sorting two development builds based on id is reasonably valid for two versions created with the same schema
-    // otherwise it's not correct, but since it's impossible to put a total ordering on development build versions
-    // this is a pragmatic compromise
-    case Development(thatId) => id compare thatId
-    // assume a development build is newer than anything else, that's not really true, but good luck
-    // mapping development build versions to other build types
-    case _ => 1
-  }
 }
-/**
- * A final final
+/** A final final.
  */
 case object Final extends ScalaBuild {
   def unparse = ""
-
-  def compare(that: ScalaBuild) = that match {
-    case Final => 0
-    // a final is newer than anything other than a development build or another final
-    case Development(_) => -1
-    case _ => 1
-  }
 }
-
-/**
- * A candidate for final release
+/** A candidate for final release.
  */
 case class RC(n: Int) extends ScalaBuild {
   def unparse = s"-RC${n}"
-
-  def compare(that: ScalaBuild) = that match {
-    // compare two rcs based on their RC numbers
-    case RC(thatN) => n - thatN
-    // an rc is older than anything other than a milestone or another rc
-    case Milestone(_) => 1
-    case _ => -1
-  }
 }
-
-/**
- * An intermediate release
+/** An intermediate release.
  */
 case class Milestone(n: Int) extends ScalaBuild {
   def unparse = s"-M${n}"
-
-  def compare(that: ScalaBuild) = that match {
-    // compare two milestones based on their milestone numbers
-    case Milestone(thatN) => n - thatN
-    // a milestone is older than anything other than another milestone
-    case _ => -1
-
-  }
 }

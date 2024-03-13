@@ -1,5 +1,4 @@
-
-// scalac: -Xsource:3-cross -Xmigration
+//> using options -Xsource:3 -Xsource-features:infer-override
 
 class ScalaThing extends JavaThing {
   override def remove() = ???

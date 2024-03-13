@@ -1,5 +1,4 @@
-
-//> using options -Xmigration -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:infer-override
 
 trait T { def f: Object }
 class K extends T { def f = "" }

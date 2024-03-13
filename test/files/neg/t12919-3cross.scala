@@ -1,4 +1,4 @@
-// scalac: -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:package-prefix-implicits
 
 package object a {
   implicit val aOrd: Ordering[A] = null

@@ -1,5 +1,5 @@
 
-//> using options -Werror -Xmigration -Xsource:3
+//> using options -Xsource:3
 
 trait T { def f: Object }
 class K extends T { def f = "" }

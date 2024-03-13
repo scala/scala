@@ -46,10 +46,10 @@ trait FastStringInterpolator extends FormatInterpolator {
                     lit.pos.withShift(diffindex)
                   }
                   def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
-                  if (currentRun.isScala3Cross)
+                  if (currentRun.sourceFeatures.unicodeEscapesRaw)
                     stringVal
                   else if (currentRun.isScala3) {
-                    runReporting.warning(pos, msg("ignored in Scala 3"), Scala3Migration, c.internal.enclosingOwner)
+                    runReporting.warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), Scala3Migration, c.internal.enclosingOwner)
                     processed
                   }
                   else {

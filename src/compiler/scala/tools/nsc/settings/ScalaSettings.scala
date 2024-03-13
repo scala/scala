@@ -125,14 +125,17 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   private val XsourceHelp =
-    sm"""|-Xsource:3 is for migrating a codebase, -Xsource:3-cross is for cross-building.
+    sm"""|-Xsource:3 is for migrating a codebase, -Xsource-features can be added for
+         |cross-building to adopt certain Scala 3 behavior.
+         |
+         |See also "Scala 2 with -Xsource:3" on docs.scala-lang.org.
          |
          |-Xsource:3 issues migration warnings in category `cat=scala3-migration`,
-         |  which by default are promoted to errors under the `-Wconf` configuration.
-         |  Examples of promoted warnings:
+         |which are promoted to errors by default using a `-Wconf` configuration.
+         |Examples of promoted warnings:
          |  * Implicit definitions must have an explicit type
          |  * (x: Any) + "" is deprecated
-         |  * Args not adapted to unit value
+         |  * An empty argument list is not adapted to the unit value
          |  * Member classes cannot shadow a same-named class defined in a parent
          |  * Presence or absence of parentheses in overrides must match exactly
          |
@@ -144,31 +147,75 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
          |  * import p.{given, *}
          |  * Eta-expansion `x.m` of methods without trailing `_`
          |
-         |The following constructs emit a migration warning under -Xsource:3. With
-         |-Xsource:3-cross the semantics change to match Scala 3 and no warning is issued.
-         |  * Unicode escapes in raw interpolations and triple-quoted strings
-         |  * Leading infix operators continue the previous line
-         |  * Interpolator must be selectable from `scala.StringContext`
-         |  * Case class copy and apply have the same access modifier as the constructor
-         |  * The inferred type of an override is taken from the member it overrides
+         |The following constructs emit a migration warning under -Xsource:3. To adopt
+         |Scala 3 semantics, see `-Xsource-features:help`.
+         |${sourceFeatures.values.toList.collect { case c: sourceFeatures.Choice if c.expandsTo.isEmpty => c.help }.map(h => s"  * $h").mkString("\n")}
          |"""
   @nowarn("cat=deprecation")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable warnings and features for a future version.", initial = ScalaVersion("2.13"), helpText = Some(XsourceHelp)).withPostSetHook { s =>
-    if (s.value >= ScalaVersion("3")) {
-      isScala3.value = true
-      if (s.value > ScalaVersion("3"))
-        isScala3Cross.value = true
-    }
-    else if (s.value >= ScalaVersion("2.14"))
-      s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3 or -Xsource:3-cross").value = ScalaVersion("3")
-    else if (s.value < ScalaVersion("2.13"))
-      errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
+  val source = ScalaVersionSetting ("-Xsource", "version", "Enable warnings and features for a future version.", initial = ScalaVersion("2.13"), helpText = Some(XsourceHelp)).withPostSetHook { s =>
+    if (s.value.unparse == "3.0.0-cross")
+      XsourceFeatures.tryToSet(List("_"))
+    if (s.value < ScalaVersion("3"))
+      if (s.value >= ScalaVersion("2.14"))
+        s.withDeprecationMessage("instead of -Xsource:2.14, use -Xsource:3 and optionally -Xsource-features").value = ScalaVersion("3")
+      else if (s.value < ScalaVersion("2.13"))
+        errorFn.apply(s"-Xsource must be at least the current major version (${ScalaVersion("2.13").versionString})")
   }
+
+  private val scala3Version = ScalaVersion("3")
   @deprecated("Use currentRun.isScala3 instead", since="2.13.9")
-  val isScala3           = BooleanSetting      ("isScala3", "Is -Xsource Scala 3?").internalOnly()
-  @deprecated("Use currentRun.isScala3Cross instead", since="2.13.13")
-  val isScala3Cross      = BooleanSetting      ("isScala3Cross", "Is -Xsource > Scala 3?").internalOnly()
-  // The previous "-Xsource" option is intended to be used mainly though ^ helper
+  def isScala3 = source.value >= scala3Version
+
+  // buffet of features available under -Xsource:3
+  object sourceFeatures extends MultiChoiceEnumeration {
+    // Changes affecting binary encoding
+    val caseApplyCopyAccess = Choice("case-apply-copy-access", "Constructor modifiers are used for apply / copy methods of case classes. [bin]")
+    val caseCompanionFunction  = Choice("case-companion-function", "Synthetic case companion objects no longer extend FunctionN. [bin]")
+    val inferOverride = Choice("infer-override", "Inferred type of member uses type of overridden member. [bin]")
+
+    // Other semantic changes
+    val any2StringAdd          = Choice("any2stringadd", "Implicit `any2stringadd` is never inferred.")
+    val unicodeEscapesRaw      = Choice("unicode-escapes-raw", "Don't process unicode escapes in triple quoted strings and raw interpolations.")
+    val stringContextScope     = Choice("string-context-scope", "String interpolations always desugar to scala.StringContext.")
+    val leadingInfix           = Choice("leading-infix", "Leading infix operators continue the previous line.")
+    val packagePrefixImplicits = Choice("package-prefix-implicits", "The package prefix p is no longer part of the implicit search scope for type p.A.")
+    val implicitResolution     = Choice("implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see github.com/scala/scala/pull/6037).")
+
+    val v13_13_choices = List(caseApplyCopyAccess, caseCompanionFunction, inferOverride, any2StringAdd, unicodeEscapesRaw, stringContextScope, leadingInfix, packagePrefixImplicits)
+
+    val v13_13 = Choice(
+      "v2.13.13",
+      v13_13_choices.mkString("", ",", "."),
+      expandsTo = v13_13_choices)
+
+    val v13_14_choices = implicitResolution :: v13_13_choices
+
+    val v13_14 = Choice(
+      "v2.13.14",
+      "v2.13.13 plus implicit-resolution",
+      expandsTo = v13_14_choices)
+  }
+  val XsourceFeatures = MultiChoiceSetting(
+    name = "-Xsource-features",
+    helpArg = "feature",
+    descr = "Enable Scala 3 features under -Xsource:3: `-Xsource-features:help` for details.",
+    domain = sourceFeatures,
+    helpText = Some(
+      sm"""Enable Scala 3 features under -Xsource:3.
+          |
+          |Instead of `-Xsource-features:_`, it is recommended to enable specific features, for
+          |example `-Xsource-features:v2.13.14,-case-companion-function` (-x to exclude x).
+          |This way, new semantic changes in future Scala versions are not silently adopted;
+          |new features can be enabled after auditing the corresponding migration warnings.
+          |
+          |`-Xsource:3-cross` is a shorthand for `-Xsource:3 -Xsource-features:_`.
+          |
+          |Features marked with [bin] affect the binary encoding. Enabling them in a project
+          |with existing releases for Scala 2.13 can break binary compatibility.
+          |
+          |Available features:
+          |""")
+  )
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
 
@@ -311,7 +358,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YpickleWrite = StringSetting("-Ypickle-write", "directory|jar", "destination for generated .sig files containing type signatures.", "", None).internalOnly()
   val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
   val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.", default = true)
-  val Yscala3ImplicitResolution = BooleanSetting("-Yscala3-implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see https://github.com/scala/bug/issues/12437).", default = false)
+  val Yscala3ImplicitResolution = BooleanSetting("-Yscala3-implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see github.com/scala/scala/pull/6037).")
+    .withDeprecationMessage("Use -Xsource:3 -Xsource-features:implicit-resolution instead")
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {
@@ -619,16 +667,13 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   }
 
   def conflictWarning: Option[String] = {
-    // See cd878232b5 for an example how to warn about conflicting settings
+    @nowarn("cat=deprecation")
+    def sourceFeatures: Option[String] =
+      Option.when(XsourceFeatures.value.nonEmpty && !isScala3)(s"${XsourceFeatures.name} requires -Xsource:3")
 
-    /*
-    def checkSomeConflict: Option[String] = ...
-
-    List(/* checkSomeConflict, ... */).flatten match {
+    List(sourceFeatures).flatten match {
       case Nil => None
       case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
     }
-    */
-    None
   }
 }

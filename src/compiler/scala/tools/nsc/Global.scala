@@ -1180,12 +1180,22 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val profiler: Profiler = Profiler(settings)
     keepPhaseStack = settings.log.isSetByUser
 
-    // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
-    @nowarn("cat=deprecation")
-    val isScala3: Boolean = settings.isScala3.value // reporting.isScala3
-    @nowarn("cat=deprecation")
-    val isScala3Cross: Boolean = settings.isScala3Cross.value // reporting.isScala3Cross
-    val isScala3ImplicitResolution: Boolean = settings.Yscala3ImplicitResolution.value
+    val isScala3: Boolean = settings.isScala3: @nowarn
+
+    object sourceFeatures {
+      private val s = settings
+      private val o = s.sourceFeatures
+      import s.XsourceFeatures.contains
+      def caseApplyCopyAccess    = isScala3 && contains(o.caseApplyCopyAccess)
+      def caseCompanionFunction  = isScala3 && contains(o.caseCompanionFunction)
+      def inferOverride          = isScala3 && contains(o.inferOverride)
+      def any2StringAdd          = isScala3 && contains(o.any2StringAdd)
+      def unicodeEscapesRaw      = isScala3 && contains(o.unicodeEscapesRaw)
+      def stringContextScope     = isScala3 && contains(o.stringContextScope)
+      def leadingInfix           = isScala3 && contains(o.leadingInfix)
+      def packagePrefixImplicits = isScala3 && contains(o.packagePrefixImplicits)
+      def implicitResolution     = isScala3 && contains(o.implicitResolution) || settings.Yscala3ImplicitResolution.value
+    }
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings

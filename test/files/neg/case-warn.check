@@ -1,0 +1,9 @@
+case-warn.scala:6: warning: access modifiers for `copy` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)
+case class C private (c: Int)
+           ^
+case-warn.scala:6: warning: access modifiers for `apply` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)
+case class C private (c: Int)
+           ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
