@@ -1416,7 +1416,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (settings.logImplicitConv.value)
               context.echo(qual.pos, s"applied implicit conversion from ${qual.tpe} to ${searchTemplate} = ${coercion.symbol.defString}")
 
-            typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+            if (currentRun.isScala3 && coercion.symbol == currentRun.runDefinitions.Predef_any2stringaddMethod) {
+              if (currentRun.sourceFeatures.any2StringAdd) qual
+              else {
+                runReporting.warning(qual.pos, s"Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).", Scala3Migration, coercion.symbol)
+                typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+              }
+            }
+            else typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         }
       }
       else qual

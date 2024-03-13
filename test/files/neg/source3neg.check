@@ -34,6 +34,9 @@ source3neg.scala:44: warning: Implicit definition must have explicit type (infer
 source3neg.scala:43: warning: Implicit definition must have explicit type (inferred Int) [quickfixable]
   implicit val i = 0 // error
                ^
+source3neg.scala:47: warning: Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).
+object AnyPlus { def f(xs: List[Int]) = xs + ";" }
+                                        ^
 source3neg.scala:47: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
 object AnyPlus { def f(xs: List[Int]) = xs + ";" }
                                         ^

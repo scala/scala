@@ -1072,11 +1072,6 @@ trait Contexts { self: Analyzer =>
     private def isQualifyingImplicit(name: Name, sym: Symbol, pre: Type, imported: Boolean) =
       sym.isImplicit &&
       isAccessible(sym, pre) &&
-      !(
-        // [eed3si9n] ideally I'd like to do this: val fd = currentRun.isScala3 && sym.isDeprecated
-        // but implicit caching currently does not report sym.isDeprecated correctly.
-        currentRun.isScala3Cross && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
-      ) &&
       !(imported && {
         val e = scope.lookupEntry(name)
         (e ne null) && (e.owner == scope) && e.sym.exists
