@@ -1293,9 +1293,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields),
           //  but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
           adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
-        else if (tree.tpe <:< pt)
+        else if (tree.tpe <:< pt) {
+          val sym = tree.symbol
+          if (sym != null && !isPastTyper && currentRun.isScala3 && isFunctionType(pt) && sym.isModule && sym.isSynthetic && sym.companion.isCase)
+            context.warning(tree.pos, s"Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use ${sym.name}.apply instead.", Scala3Migration)
           tree
-        else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
+        } else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
           tree
         else {
           val constFolded = constfold(tree, pt, context.owner)
@@ -5714,8 +5717,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // to avoid inference errors in pattern matching.
                 stabilize(tree2, pre2, mode, pt).modifyType(dropIllegalStarTypes)
               }
-            if (!isPastTyper && currentRun.isScala3 && !currentRun.isScala3Cross && isFunctionType(pt) && symbol.isModule && symbol.isSynthetic && symbol.companion.isCase)
-              context.deprecationWarning(tree.pos, symbol, s"Synthetic case companion used as a Function, use explicit object with Function parent", "2.13.13")
             onSuccess.setAttachments(tree.attachments)
         }
       }
