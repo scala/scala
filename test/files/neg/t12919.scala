@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Werror
+//> using options -Xsource:3 -Werror
 
 package object a {
   implicit val aOrd: Ordering[A] = null
@@ -34,3 +34,17 @@ package c {
   }
 }
 
+package a1 {
+
+  package object a2 {
+    implicit def myClassToSeq[A](a: MyClass[A]): Seq[A] = a.values
+  }
+
+  package a2 {
+    case class MyClass[A](values: Seq[A])
+  }
+
+  object Main {
+    def f[A](x: Seq[a1.a2.MyClass[A]]): Seq[A] = x.flatten
+  }
+}
