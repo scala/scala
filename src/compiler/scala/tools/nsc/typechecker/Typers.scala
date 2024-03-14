@@ -1908,7 +1908,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val sameSourceFile = context.unit.source.file == psym.sourceFile
 
           if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation &&
-            !sameSourceFile && !context.owner.ownerChain.exists(_.isDeprecated)) {
+            !sameSourceFile && !context.owner.ownersIterator.exists(_.isDeprecated)) {
             val version = psym.deprecatedInheritanceVersion.getOrElse("")
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = psym.deprecatedInheritanceMessage.map(msg => s": $msg").getOrElse("")
@@ -2493,7 +2493,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   DeprecatedParamNameError(p, alt)
             }
 
-          if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated) && !meth.isSynthetic)
+          if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownersIterator.exists(_.isDeprecated) && !meth.isSynthetic)
             meth.paramss match {
               case (h :: _ :: _) :: Nil if !h.isImplicit && Chars.isOperatorPart(meth.name.decoded.head) =>
                 warnMultiargInfix(ddef)

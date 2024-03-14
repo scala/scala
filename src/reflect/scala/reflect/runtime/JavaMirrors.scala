@@ -254,7 +254,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
     private def ensuringNotFree(sym: Symbol)(body: => Any): Unit = {
-      val freeType = sym.ownerChain find (_.isFreeType)
+      val freeType = sym.ownersIterator.find(_.isFreeType)
       freeType match {
         case Some(freeType) => ErrorFree(sym, freeType)
         case _ => body

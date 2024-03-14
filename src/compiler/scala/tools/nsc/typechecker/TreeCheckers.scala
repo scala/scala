@@ -71,7 +71,7 @@ abstract class TreeCheckers extends Analyzer {
     case s: Symbol => s.shortSymbolClass
     case x         => shortClassOfInstance(x.asInstanceOf[AnyRef])
   }
-  private def nonPackageOwners(s: Symbol) = s.ownerChain drop 1 takeWhile (!_.hasPackageFlag)
+  private def nonPackageOwners(s: Symbol) = s.ownerChain.drop(1).takeWhile(!_.hasPackageFlag)
   private def nonPackageOwnersPlusOne(s: Symbol) = nonPackageOwners(s) ::: (s.ownerChain dropWhile (!_.hasPackageFlag) take 1)
   private def ownersString(s: Symbol) = nonPackageOwnersPlusOne(s) match {
     case Nil => "NoSymbol"

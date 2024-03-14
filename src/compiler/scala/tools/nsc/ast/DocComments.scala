@@ -446,25 +446,23 @@ trait DocComments { self: Global =>
 
     def expandedDefs(sym: Symbol, site: Symbol): List[Symbol] = {
 
-      def select(site: Type, name: Name, orElse: => Type): Type = {
+      def select(site: Type, name: Name): Type = {
         val member = site.nonPrivateMember(name)
         if (member.isTerm) singleType(site, member)
         else if (member.isType) site.memberType(member)
-        else orElse
+        else NoType
       }
 
       def getSite(name: Name): Type = {
-        def findIn(sites: List[Symbol]): Type = sites match {
-          case site1 :: sites1 => select(site1.thisType, name, findIn(sites1))
-          case _ => NoType
-        }
-        // Previously, searching was taking place *only* in the current package and in the root package
-        // now we're looking for it everywhere in the hierarchy, so we'll be able to link variable expansions like
-        // immutable.Seq in package immutable
-        //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
-        //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
-        //findIn(sites)
-        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
+        def findIn(sites: Iterator[Symbol]): Type =
+          if (sites.hasNext) {
+            val tp = select(sites.next().thisType, name)
+            if (tp ne NoType) tp
+            else findIn(sites)
+          }
+          else NoType
+
+        findIn(site.ownersIterator ++ Iterator.single(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {
@@ -486,14 +484,14 @@ trait DocComments { self: Global =>
         val (start, rest) = parts match {
           case "this" :: _      => (site.thisType, partnames.tail)
           case _ :: "this" :: _ =>
-            site.ownerChain.find(_.name == partnames.head) match {
+            site.ownersIterator.find(_.name == partnames.head) match {
               case Some(clazz)  => (clazz.thisType, partnames drop 2)
               case _            => (NoType, Nil)
             }
           case _ =>
             (getSite(partnames.head), partnames.tail)
         }
-        val result = rest.foldLeft(start)(select(_, _, NoType))
+        val result = rest.foldLeft(start)(select(_, _))
         if (result == NoType)
           runReporting.warning(
             comment.codePos,

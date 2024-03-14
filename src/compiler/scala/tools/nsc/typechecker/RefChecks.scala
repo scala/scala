@@ -567,7 +567,7 @@ abstract class RefChecks extends Transform {
         }
 
         def checkOverrideDeprecated(): Unit = {
-          if (other.hasDeprecatedOverridingAnnotation && !(member.hasDeprecatedOverridingAnnotation || member.ownerChain.exists(_.isDeprecated))) {
+          if (other.hasDeprecatedOverridingAnnotation && !(member.hasDeprecatedOverridingAnnotation || member.ownersIterator.exists(_.isDeprecated))) {
             val version = other.deprecatedOverridingVersion.getOrElse("")
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
@@ -1332,14 +1332,14 @@ abstract class RefChecks extends Transform {
         if (changed)
           refchecksWarning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}", WarningCategory.OtherMigration)
       }
-      if (sym.isExperimental && !currentOwner.ownerChain.exists(x => x.isExperimental)) {
+      if (sym.isExperimental && !currentOwner.ownersIterator.exists(_.isExperimental)) {
         val msg =
           s"${sym.fullLocationString} is marked @experimental and therefore its enclosing scope must be experimental."
         reporter.error(pos, msg)
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       // async/await is expanded after erasure
-      if (sym.isCompileTimeOnly && !inAnnotation && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
+      if (sym.isCompileTimeOnly && !inAnnotation && !currentOwner.ownersIterator.exists(_.isCompileTimeOnly)) {
         if (!async.deferCompileTimeOnlyError(sym)) {
           def defaultMsg =
             sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,

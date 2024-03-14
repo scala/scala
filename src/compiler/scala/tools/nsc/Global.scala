@@ -1081,11 +1081,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   @inline final def enteringUncurry[T](op: => T): T       = enteringPhase(currentRun.uncurryPhase)(op)
 
   // Owners which aren't package classes.
-  private def ownerChainString(sym: Symbol): String = (
+  private def ownerChainString(sym: Symbol): String =
     if (sym == null) ""
-    else sym.ownerChain takeWhile (!_.isPackageClass) mkString " -> "
-  )
-
+    else sym.ownersIterator.takeWhile(!_.isPackageClass).mkString(" -> ")
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.

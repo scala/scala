@@ -621,8 +621,8 @@ trait MacroAnnotationNamers { self: Analyzer =>
       if (!currentRun.compiles(owner) &&
           // NOTE: the following three lines of code are added to work around #7
           !owner.enclosingTopLevelClass.isRefinementClass &&
-          !owner.ownerChain.exists(_.isLocalDummy) &&
-          owner.ownerChain.forall(!currentRun.compiles(_))) {
+          !owner.ownersIterator.exists(_.isLocalDummy) &&
+          owner.ownersIterator.forall(!currentRun.compiles(_))) {
         owner.initialize
       }
       original.companionSymbol orElse {

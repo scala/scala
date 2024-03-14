@@ -76,7 +76,7 @@ trait MemberLookup extends base.MemberLookupBase {
     Option(s.associatedFile).flatMap(_.underlyingSource).map { src =>
       val path = src.canonicalPath
       if(path.endsWith(".class")) { // Individual class file -> Classpath entry is root dir
-        val nesting = s.ownerChain.count(_.hasPackageFlag)
+        val nesting = s.ownersIterator.count(_.hasPackageFlag)
         if(nesting > 0) {
           val p = 0.until(nesting).foldLeft(src) {
             case (null, _) => null

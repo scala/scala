@@ -68,7 +68,7 @@ trait TraceSymbolActivity {
     show(dashes(s1), ss map dashes: _*)
   }
   private def showSym(sym: Symbol): Unit = {
-    def prefix = ("  " * (sym.ownerChain.length - 1)) + sym.id
+    def prefix = ("  " * (sym.ownersIterator.size - 1)) + sym.id
     try println("%s#%s %s".format(prefix, sym.accurateKindString, sym.name.decode))
     catch {
       case x: Throwable => println(prefix + " failed: " + x)
@@ -111,7 +111,7 @@ trait TraceSymbolActivity {
     println("")
 
     showHeader("descendants", "symbol")
-    showFreq(allSymbols.values flatMap (_.ownerChain drop 1))(_.id, symbolStr)
+    showFreq(allSymbols.values.flatMap(_.ownersIterator.drop(1)))(_.id, symbolStr)
 
     showHeader("children", "symbol")
     showMapFreq(allChildren)(symbolStr)

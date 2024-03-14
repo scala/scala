@@ -210,8 +210,8 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   }
 
   private def flattenedOwner(g: Global)(sym: g.Symbol): g.Symbol = {
-    val chain = sym.owner.ownerChain.dropWhile(o => o.isClass && !o.hasPackageFlag)
-    if (chain.isEmpty) g.NoSymbol else chain.head
+    val chain = sym.owner.ownersIterator.dropWhile(o => o.isClass && !o.hasPackageFlag)
+    if (!chain.hasNext) g.NoSymbol else chain.next()
   }
 
   private def flattenedName(g: Global)(sym: g.Symbol): g.Name = {
