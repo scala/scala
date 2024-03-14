@@ -1,5 +1,5 @@
 // See https://github.com/scala/scala3/issues/2974
-// scalac: -Yscala3-implicit-resolution
+//> using options -Xsource:3 -Xsource-features:implicit-resolution
 
 trait Foo[-T]
 

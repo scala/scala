@@ -1,28 +1,26 @@
-source3neg.scala:16: warning: Unicode escapes in triple quoted strings are ignored in Scala 3; use the literal character instead
+source3neg.scala:16: warning: Unicode escapes in triple quoted strings are ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw); use the literal character instead
   def inTripleQuoted = """\u0041""" // error
                           ^
-source3neg.scala:28: warning: Line starts with an operator that in future
-will be taken as an infix expression continued from the previous line.
-To force the previous interpretation as a separate statement,
-add an explicit `;`, add an empty line, or remove spaces after the operator.
+source3neg.scala:28: warning: Lines starting with an operator are taken as an infix expression continued from the previous line in Scala 3 (or with -Xsource-features:leading-infix).
+To force the current interpretation as a separate statement, add an explicit `;`, add an empty line, or remove spaces after the operator.
     `x` (42) // error
     ^
-source3neg.scala:12: warning: String interpolations always use scala.StringContext in Scala 3 (SC1.StringContext is used here)
+source3neg.scala:12: warning: In Scala 3 (or with -Xsource-features:string-context-scope), String interpolations always use scala.StringContext (SC1.StringContext is used here)
   def test = s"hello, $name" // error
              ^
-source3neg.scala:17: warning: Unicode escapes in raw interpolations are ignored in Scala 3; use literal characters instead
+source3neg.scala:17: warning: Unicode escapes in raw interpolations are ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw); use literal characters instead
   def inRawInterpolation = raw"\u0041" // error
                                ^
-source3neg.scala:18: warning: Unicode escapes in raw interpolations are ignored in Scala 3; use literal characters instead
+source3neg.scala:18: warning: Unicode escapes in raw interpolations are ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw); use literal characters instead
   def inRawTripleQuoted = raw"""\u0041""" // error
                                 ^
-source3neg.scala:32: warning: access modifiers for `copy` method are copied from the case class constructor
+source3neg.scala:32: warning: access modifiers for `copy` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)
 case class CaseCompanionMods private (x: Int) // 2 errors
            ^
-source3neg.scala:32: warning: access modifiers for `apply` method are copied from the case class constructor
+source3neg.scala:32: warning: access modifiers for `apply` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)
 case class CaseCompanionMods private (x: Int) // 2 errors
            ^
-source3neg.scala:36: warning: under -Xsource:3-cross, the inferred type changes to Object instead of String [quickfixable]
+source3neg.scala:36: warning: in Scala 3 (or with -Xsource-features:infer-override), the inferred type changes to Object instead of String [quickfixable]
 object InferredSub extends InferredBase { def f = "a" } // error
                                               ^
 source3neg.scala:42: warning: Implicit definition must have explicit type (inferred String => Option[Int]) [quickfixable]
@@ -34,6 +32,9 @@ source3neg.scala:44: warning: Implicit definition must have explicit type (infer
 source3neg.scala:43: warning: Implicit definition must have explicit type (inferred Int) [quickfixable]
   implicit val i = 0 // error
                ^
+source3neg.scala:47: warning: Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).
+object AnyPlus { def f(xs: List[Int]) = xs + ";" }
+                                        ^
 source3neg.scala:47: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
 object AnyPlus { def f(xs: List[Int]) = xs + ";" }
                                         ^
@@ -41,5 +42,5 @@ source3neg.scala:51: warning: shadowing a nested class of a parent is deprecated
   class B extends A { class X; def f = new X }
                             ^
 error: No warnings can be incurred under -Werror.
-13 warnings
+14 warnings
 1 error

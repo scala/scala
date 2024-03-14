@@ -1,4 +1,4 @@
-// scalac: -Xmigration -Werror
+//> using options -Werror -Xmigration
 object Test {
   val f = Equiv[Float]
   val d = Equiv[Double]

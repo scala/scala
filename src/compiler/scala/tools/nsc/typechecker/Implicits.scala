@@ -141,7 +141,7 @@ trait Implicits extends splain.SplainData {
       }
       if (result.inPackagePrefix && currentRun.isScala3) {
         val msg =
-          s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3.
+          s"""Implicit $rts was found in a package prefix of the required type, which is not part of the implicit scope in Scala 3 (or with -Xsource-features:package-prefix-implicits).
              |For migration, add `import ${rts.fullNameString}`.""".stripMargin
         context.warning(result.tree.pos, msg, WarningCategory.Scala3Migration)
       }
@@ -1346,7 +1346,7 @@ trait Implicits extends splain.SplainData {
                 if (sym.isPackageClass) (sym.packageObject.typeOfThis, true)
                 else (singleType(pre, companionSymbolOf(sym, context)), false)
               val preInfos = {
-                if (currentRun.isScala3Cross && inPackagePrefix) Iterator.empty
+                if (currentRun.sourceFeatures.packagePrefixImplicits && inPackagePrefix) Iterator.empty
                 else pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem, inPackagePrefix = inPackagePrefix))
               }
               val mergedInfos = if (symInfos.isEmpty) preInfos else {

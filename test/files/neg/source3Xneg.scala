@@ -1,4 +1,4 @@
-//> using options -deprecation -Xsource:3-cross -Wconf:cat=scala3-migration:w -Werror
+//> using options -deprecation -Xsource:3 -Xsource-features:_ -Wconf:cat=scala3-migration:w -Werror
 
 // StringContext hygiene
 class SC1 {

@@ -528,13 +528,12 @@ trait Scanners extends ScannersCommon {
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
         if (pastBlankLine()) insertNL(NEWLINES)
         else if (!isLeadingInfixOperator) insertNL(NEWLINE)
-        else if (!currentRun.isScala3Cross) {
-          val msg = """|Line starts with an operator that in future
-                       |will be taken as an infix expression continued from the previous line.
-                       |To force the previous interpretation as a separate statement,
-                       |add an explicit `;`, add an empty line, or remove spaces after the operator."""
-          if (currentRun.isScala3) warning(offset, msg.stripMargin, Scala3Migration)
-          else if (infixMigration) deprecationWarning(msg.stripMargin, "2.13.2")
+        else if (!currentRun.sourceFeatures.leadingInfix) {
+          val msg =
+            sm"""Lines starting with an operator are taken as an infix expression continued from the previous line in Scala 3 (or with -Xsource-features:leading-infix).
+                |To force the current interpretation as a separate statement, add an explicit `;`, add an empty line, or remove spaces after the operator."""
+          if (currentRun.isScala3) warning(offset, msg, Scala3Migration)
+          else if (infixMigration) deprecationWarning(msg, "2.13.2")
           insertNL(NEWLINE)
         }
       }
@@ -966,19 +965,19 @@ trait Scanners extends ScannersCommon {
       if (strVal != null)
         try {
           val processed = StringContext.processUnicode(strVal)
-          if (processed != strVal && !currentRun.isScala3Cross) {
+          if (processed != strVal && !currentRun.sourceFeatures.unicodeEscapesRaw) {
             val diffPosition = processed.zip(strVal).zipWithIndex.collectFirst { case ((r, o), i) if r != o => i }.getOrElse(processed.length - 1)
             val pos = offset + 3 + diffPosition
             def msg(what: String) = s"Unicode escapes in triple quoted strings are $what; use the literal character instead"
             if (currentRun.isScala3)
-              warning(pos, msg("ignored in Scala 3"), WarningCategory.Scala3Migration)
+              warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), WarningCategory.Scala3Migration)
             else
               deprecationWarning(pos, msg("deprecated"), since="2.13.2")
             strVal = processed
           }
         } catch {
           case ue: StringContext.InvalidUnicodeEscapeException =>
-            if (!currentRun.isScala3Cross)
+            if (!currentRun.sourceFeatures.unicodeEscapesRaw)
               syntaxError(offset + 3 + ue.index, ue.getMessage())
         }
 

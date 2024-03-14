@@ -1,9 +1,10 @@
-
 import java.nio.file.Files
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util._
 import scala.tools.partest.DirectTest
+
+import org.junit.Assert._
 
 object Test extends DirectTest {
   lazy val argfile = testOutput.jfile.toPath().resolve("print-args.txt")
@@ -26,6 +27,7 @@ object Test extends DirectTest {
     """
   def show() = {
     assert(!compile())
+    //assertEquals(expected.linesIterator.toList, Files.readAllLines(argfile).asScala.toList)
     assert(expected.linesIterator.toList.tail.init.sameElements(Files.readAllLines(argfile).asScala))
   }
 }

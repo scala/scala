@@ -1,4 +1,4 @@
-// scalac: -Xmigration -Werror
+//> using options -Xmigration -Werror
 object Test {
   val f = Ordering[Float]
   val d = Ordering[Double]

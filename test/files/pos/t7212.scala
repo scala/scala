@@ -1,5 +1,4 @@
-
-// scalac: -Xsource:3-cross -Xmigration
+//> using options -Xsource:3 -Xsource-features:infer-override
 
 class A {
   def f: Option[String] = Some("hello, world")

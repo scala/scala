@@ -1128,7 +1128,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def adaptApplyInsertion(): Tree = doAdaptApplyInsertion(retry = false)
 
       def doAdaptApplyInsertion(retry: Boolean): Tree =
-        if (currentRun.isScala3Cross && !isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
+        if (!isPastTyper && tree.symbol != null && tree.symbol.isModule && tree.symbol.companion.isCase && isFunctionType(pt))
           silent(_.typed(atPos(tree.pos)(Select(tree, nme.apply)), mode, if (retry) WildcardType else pt)) match {
             case SilentResultValue(applicator) =>
               val arity = definitions.functionArityFromType(applicator.tpe)
@@ -1293,9 +1293,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields),
           //  but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
           adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
-        else if (tree.tpe <:< pt)
+        else if (tree.tpe <:< pt) {
+          val sym = tree.symbol
+          if (sym != null && !isPastTyper && currentRun.isScala3 && isFunctionType(pt) && sym.isModule && sym.isSynthetic && sym.companion.isCase)
+            context.warning(tree.pos, s"Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use ${sym.name}.apply instead.", Scala3Migration)
           tree
-        else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
+        } else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
           tree
         else {
           val constFolded = constfold(tree, pt, context.owner)
@@ -1416,7 +1419,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (settings.logImplicitConv.value)
               context.echo(qual.pos, s"applied implicit conversion from ${qual.tpe} to ${searchTemplate} = ${coercion.symbol.defString}")
 
-            typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+            if (currentRun.isScala3 && coercion.symbol == currentRun.runDefinitions.Predef_any2stringaddMethod) {
+              if (currentRun.sourceFeatures.any2StringAdd) qual
+              else {
+                runReporting.warning(qual.pos, s"Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).", Scala3Migration, coercion.symbol)
+                typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+              }
+            }
+            else typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         }
       }
       else qual
@@ -3477,7 +3487,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (!sym.initialize.hasFlag(IS_ERROR)) {
                 newStats += typedStat(tree) // might add even more synthetics to the scope
                 tree.getAndRemoveAttachment[CaseApplyInheritAccess.type].foreach(_ =>
-                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor", Scala3Migration, sym))
+                  runReporting.warning(tree.pos, "access modifiers for `apply` method are copied from the case class constructor under Scala 3 (or with -Xsource-features:case-apply-copy-access)", Scala3Migration, sym))
               }
               context.unit.synthetics -= sym
             case _ => ()
@@ -5394,7 +5404,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // If they try C.tupled, make it (C.apply _).tupled
       def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
-        if (currentRun.isScala3Cross && !isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
+        if (!isPastTyper && qual.symbol != null && qual.symbol.isModule && qual.symbol.companion.isCase &&
             context.undetparams.isEmpty && fixableFunctionMembers.contains(name)) {
           val t2 = {
             val t = atPos(tree.pos)(Select(qual, nme.apply))
@@ -5673,7 +5683,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (symbol != definitions.StringContextModule)
                   runReporting.warning(
                     tree.pos,
-                    s"String interpolations always use scala.StringContext in Scala 3 (${symbol.fullNameString} is used here)",
+                    s"In Scala 3 (or with -Xsource-features:string-context-scope), String interpolations always use scala.StringContext (${symbol.fullNameString} is used here)",
                     Scala3Migration,
                     context.owner)
               )
@@ -5707,8 +5717,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // to avoid inference errors in pattern matching.
                 stabilize(tree2, pre2, mode, pt).modifyType(dropIllegalStarTypes)
               }
-            if (!isPastTyper && currentRun.isScala3 && !currentRun.isScala3Cross && isFunctionType(pt) && symbol.isModule && symbol.isSynthetic && symbol.companion.isCase)
-              context.deprecationWarning(tree.pos, symbol, s"Synthetic case companion used as a Function, use explicit object with Function parent", "2.13.13")
             onSuccess.setAttachments(tree.attachments)
         }
       }

@@ -1,4 +1,4 @@
-// scalac: -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:leading-infix
 
 class K { def x(y: Int) = 0 }
 

@@ -1,4 +1,4 @@
-//> using options -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:_
 
 // StringContext hygiene
 class SC1 {

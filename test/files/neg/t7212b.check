@@ -1,14 +1,14 @@
-t7212b.scala:8: error: type mismatch;
+t7212b.scala:7: error: type mismatch;
  found   : Object
  required: String
   val s: String = k.f
                     ^
-t7212b.scala:14: error: type mismatch;
+t7212b.scala:13: error: type mismatch;
  found   : Object
  required: String
   val s: String = f.f
                     ^
-t7212b.scala:21: error: type mismatch;
+t7212b.scala:20: error: type mismatch;
  found   : Object
  required: String
   val s: String = w.f

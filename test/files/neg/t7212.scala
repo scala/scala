@@ -1,5 +1,5 @@
 
-//> using options -Werror -Xmigration -Xsource:3
+//> using options -Xsource:3
 
 trait T { def f: Object }
 class K extends T { def f = "" }
@@ -19,4 +19,13 @@ class W extends V
 object W {
   val w = new W
   val s: String = w.f
+}
+
+object refinement {
+  trait X { def f: Int }
+  trait T { def f: X }
+  // inferred:    RefinedType(List(T, AnyRef), Nil)
+  // parent type: TypeRef(T)
+  // `=:=` is false, but `<:<` is true in both directions
+  class C extends T { def f = new X { def f = 1 } }
 }

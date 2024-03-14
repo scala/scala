@@ -1,0 +1,4 @@
+source3cross.scala:4: error: value + is not a member of Any
+  def f(a: Any) = a + ""
+                    ^
+1 error

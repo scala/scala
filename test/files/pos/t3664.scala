@@ -1,5 +1,4 @@
-
-//> using options -Werror -Xlint -Xsource:3-cross
+//> using options -Werror -Xlint -Xsource:3
 
 import language.implicitConversions
 

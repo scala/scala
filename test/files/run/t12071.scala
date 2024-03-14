@@ -1,4 +1,4 @@
-//> using options -Werror -Xlint -Xsource:3-cross
+//> using options -Werror -Xlint -Xsource:3 -Xsource-features:_
 
 class C {
   def `c c`(n: Int): Int = n + 1

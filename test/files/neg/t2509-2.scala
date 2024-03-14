@@ -1,4 +1,4 @@
-// scalac: -Yscala3-implicit-resolution
+//> using options -Xsource:3 -Xsource-features:implicit-resolution
 class A
 class B extends A
 class C extends B

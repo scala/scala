@@ -2,7 +2,7 @@ package scala.tools.nsc
 package typechecker
 
 import org.junit.Assert.assertTrue
-import org.junit.{After, Before, Test}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -23,21 +23,14 @@ trait ZwC[-T] extends Z[T] with C
 
 @RunWith(classOf[JUnit4])
 class InferencerTests extends BytecodeTesting {
-  import compiler.global._, analyzer._
+  import compiler.global._
+  import analyzer._
 
-  var storedYscala3ImplicitResolution: Boolean = false
-  @Before
-  def storeYscala3ImplicitResolution(): Unit = {
-    storedYscala3ImplicitResolution = settings.Yscala3ImplicitResolution.value
-  }
-  @After
-  def restoreYscala3ImplicitResolution(): Unit = {
-    settings.Yscala3ImplicitResolution.value = storedYscala3ImplicitResolution
-  }
+  override def compilerArgs: String = "-Xsource:3"
 
   @Test
   def isAsSpecificScala2(): Unit = {
-    settings.Yscala3ImplicitResolution.value = false
+    settings.XsourceFeatures.clear()
     val run = new global.Run
 
     enteringPhase(run.typerPhase) {
@@ -103,7 +96,8 @@ class InferencerTests extends BytecodeTesting {
 
   @Test
   def isAsSpecificScala3(): Unit = {
-    settings.Yscala3ImplicitResolution.value = true
+    settings.XsourceFeatures.clear()
+    settings.XsourceFeatures.tryToSet(List("implicit-resolution"))
 
     val run = new global.Run
 

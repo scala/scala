@@ -1,4 +1,4 @@
-//> using options -deprecation -Xmigration -Werror
+//> using options -deprecation -Werror -Xmigration
 
 object UnicodeEscapes {
   def inTripleQuoted = """\u0041""" // deprecation

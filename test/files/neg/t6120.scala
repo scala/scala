@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xmigration:2.10 -Xfatal-warnings
+//> using options -deprecation -Werror -Xmigration:2.10
 //
 // showing that multiple warnings at same location are reported
 //

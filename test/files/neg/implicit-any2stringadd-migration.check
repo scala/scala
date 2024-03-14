@@ -1,0 +1,6 @@
+implicit-any2stringadd-migration.scala:4: error: Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).
+Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=scala.Predef.any2stringadd
+  true + "what"
+  ^
+1 error

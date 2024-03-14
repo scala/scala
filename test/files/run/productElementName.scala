@@ -1,4 +1,4 @@
-//> using options -Xsource:3-cross
+//> using options -Xsource:3 -Xsource-features:leading-infix
 
 import scala.tools.testkit.AssertUtil.assertThrown
 import scala.util.chaining.*

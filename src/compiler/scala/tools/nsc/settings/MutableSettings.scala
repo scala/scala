@@ -212,8 +212,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String, default: List[String] = Nil, helpText: Option[String] = None, prepend: Boolean = false) =
     add(new MultiStringSetting(name, arg, descr, default, helpText, prepend))
-  def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
-    add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
+  def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None, helpText: Option[String] = None) =
+    add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default, helpText))
   def OutputSetting(default: String) = add(new OutputSetting(default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String = "", helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
@@ -609,7 +609,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     val helpArg: String,
     descr: String,
     val domain: E,
-    val default: Option[List[String]]
+    val default: Option[List[String]],
+    val helpText: Option[String]
   ) extends Setting(name, descr) with Clearable {
 
     withHelpSyntax(s"$name:<${helpArg}s>")
@@ -780,7 +781,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
         case _ => default
       }
       val orelse = verboseDefault.map(_.mkString(f"%nDefault: ", ", ", f"%n")).getOrElse("")
-      choices.zipAll(descriptions, "", "").map(describe).mkString(f"${descr}%n", f"%n", orelse)
+      choices.zipAll(descriptions, "", "").map(describe).mkString(f"${helpText.getOrElse(descr)}%n", f"%n", orelse)
     }
 
     def clear(): Unit = {

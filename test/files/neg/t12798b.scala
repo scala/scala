@@ -1,4 +1,4 @@
-// scalac: -Wconf:cat=scala3-migration:e -Xmigration -Xsource:3
+//> using options -Xsource:3
 
 // Demonstrate migration warnings at refchecks for -Xsource:3
 

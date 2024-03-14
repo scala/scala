@@ -17,6 +17,6 @@ trait Parent {
   def tsChild: T[String]
 }
 trait Child extends Parent {
-  implicit val tsChild = new T[String] {}     // nowarn because inferred from overridden
+  implicit val tsChild = new T[String] {}     // warn (no warn with -Xsource-features:infer-override)
   def f = new C[String]
 }

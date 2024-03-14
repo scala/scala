@@ -40,7 +40,7 @@ object ShellConfig {
       val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
-      @nowarn def xsource: String = if (settings.isScala3.value) settings.source.value.versionString else ""
+      def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
     case _ => new ShellConfig {
       val filesToPaste: List[String] = Nil
@@ -50,7 +50,7 @@ object ShellConfig {
       val doCompletion: Boolean = !settings.noCompletion.value
       val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
       override val viMode = super.viMode || settings.Xjline.value == "vi"
-      @nowarn def xsource: String = if (settings.isScala3.value) settings.source.value.versionString else ""
+      def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
   }
 }

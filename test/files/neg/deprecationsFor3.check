@@ -1,10 +1,8 @@
 deprecationsFor3.scala:4: warning: Unicode escapes in triple quoted strings are deprecated; use the literal character instead
   def inTripleQuoted = """\u0041""" // deprecation
                           ^
-deprecationsFor3.scala:16: warning: Line starts with an operator that in future
-will be taken as an infix expression continued from the previous line.
-To force the previous interpretation as a separate statement,
-add an explicit `;`, add an empty line, or remove spaces after the operator.
+deprecationsFor3.scala:16: warning: Lines starting with an operator are taken as an infix expression continued from the previous line in Scala 3 (or with -Xsource-features:leading-infix).
+To force the current interpretation as a separate statement, add an explicit `;`, add an empty line, or remove spaces after the operator.
     `x` (42) // migration
     ^
 deprecationsFor3.scala:5: warning: Unicode escapes in raw interpolations are deprecated; use literal characters instead
