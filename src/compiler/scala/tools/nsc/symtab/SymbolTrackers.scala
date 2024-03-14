@@ -49,7 +49,7 @@ trait SymbolTrackers {
     def containsSymbol(t: Tree) = t.symbol != null && t.symbol != NoSymbol
 
     // This is noise reduction only.
-    def dropSymbol(sym: Symbol) = sym.ownerChain exists (_ hasFlag Flags.SPECIALIZED)
+    def dropSymbol(sym: Symbol) = sym.ownersIterator.exists(_.hasFlag(Flags.SPECIALIZED))
 
     def symbolSnapshot(unit: CompilationUnit): Map[Symbol, Set[Tree]] = {
       if (unit.body == null) Map.empty
@@ -84,7 +84,7 @@ trait SymbolTrackers {
         def descendents(s: Symbol) = (syms - s) filter (_ hasTransOwner s)
         def rooted(root: Symbol)   = new Node(root, nodes(descendents(root)))
 
-        val roots    = syms filterNot (_.ownerChain drop 1 exists syms)
+        val roots    = syms.filterNot(_.ownersIterator.drop(1).exists(syms))
         val deep     = roots map rooted
         val deepSyms = deep flatMap (_.flatten)
 

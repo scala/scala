@@ -83,7 +83,7 @@ trait GenSymbols {
        *    object B { object B } => selectType(staticModule("B"), "B")
        *    object B { package B } => impossible
        */
-      val hasPackagelessParent = sym.ownerChain.tail.tail exists (_.isEmptyPackageClass)
+      val hasPackagelessParent = sym.ownersIterator.drop(2).exists(_.isEmptyPackageClass)
       if (sym.isStatic && (sym.isClass || sym.isModule) && !hasPackagelessParent) {
         // scala/bug#6238: if applicable, emit references to StandardDefinitions instead of staticClass/staticModule calls
         val resolver = if (sym.isType) nme.staticClass else nme.staticModule

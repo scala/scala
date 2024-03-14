@@ -454,6 +454,7 @@ trait DocComments { self: Global =>
       }
 
       def getSite(name: Name): Type = {
+        /*
         def findIn(sites: List[Symbol]): Type = sites match {
           case site1 :: sites1 => select(site1.thisType, name, findIn(sites1))
           case _ => NoType
@@ -465,6 +466,18 @@ trait DocComments { self: Global =>
         //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
         //findIn(sites)
         findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
+        */
+
+        (site.ownersIterator ++ Iterator.single(rootMirror.EmptyPackage))
+          .map { sym =>
+            val tp = sym.thisType
+            val member = tp.nonPrivateMember(name)
+            if (member.isTerm) singleType(tp, member)
+            else if (member.isType) tp.memberType(member)
+            else NoType
+          }
+          .find(_ ne NoType)
+          .getOrElse(NoType)
       }
 
       def getType(str: String, variable: String): Type = {
@@ -486,7 +499,7 @@ trait DocComments { self: Global =>
         val (start, rest) = parts match {
           case "this" :: _      => (site.thisType, partnames.tail)
           case _ :: "this" :: _ =>
-            site.ownerChain.find(_.name == partnames.head) match {
+            site.ownersIterator.find(_.name == partnames.head) match {
               case Some(clazz)  => (clazz.thisType, partnames drop 2)
               case _            => (NoType, Nil)
             }

@@ -16,7 +16,6 @@ package model
 
 import base._
 import diagram._
-import scala.annotation.nowarn
 import scala.collection.{immutable, mutable}
 
 /** This trait extracts all required information for documentation from compilation units */
@@ -119,36 +118,27 @@ trait ModelFactoryTypeSupport {
           // type is inherited from one template to another. There may be multiple symbols with the same name in scope,
           // but we won't show the prefix if our symbol is among them, only if *it's not* -- that's equal to showing
           // the prefix only for ambiguous references, not for overloaded ones.
-          @nowarn("cat=lint-nonlocal-return")
-          def needsPrefix: Boolean = {
-            if ((owner != bSym.owner || preSym.isRefinementClass) && (normalizeTemplate(owner) != inTpl.sym))
-              return true
+          def needsPrefix: Boolean =
+            ((owner != bSym.owner || preSym.isRefinementClass) && normalizeTemplate(owner) != inTpl.sym) || (
             // don't get tricked into prefixing method type params and existentials:
             // I tried several tricks BUT adding the method for which I'm creating the type => that simply won't scale,
             // as ValueParams are independent of their parent member, and I really don't want to add this information to
             // all terms, as we're already over the allowed memory footprint
-            if (aSym.isTypeParameterOrSkolem || aSym.isExistentiallyBound /* existential or existential skolem */)
-              return false
+            !(aSym.isTypeParameterOrSkolem || aSym.isExistentiallyBound /* existential or existential skolem */) &&
 
-            for (tpl <- inTpl.sym.ownerChain) {
-              tpl.info.member(bSym.name) match {
-                case NoSymbol =>
-                  // No syms with that name, look further inside the owner chain
-                case sym =>
-                  // Symbol found -- either the correct symbol, another one OR an overloaded alternative
-                  if (sym == bSym)
-                    return false
-                  else sym.info match {
-                    case OverloadedType(owner, alternatives) =>
-                      return alternatives.contains(bSym)
-                    case _ =>
-                      return true
+            inTpl.sym.ownersIterator
+              .map(_.info.member(bSym.name))
+              .collectFirst {
+                // the correct symbol, another one OR an overloaded alternative
+                case `bSym` => false
+                case sym if sym ne NoSymbol =>
+                  sym.info match {
+                    case OverloadedType(_, alternatives) => alternatives.contains(bSym)
+                    case _ => true
                   }
               }
-            }
-            // if it's not found in the owner chain, we can safely leave out the prefix
-            false
-          }
+              .getOrElse(false) // if it's not found in the owner chain, we can safely leave out the prefix
+          )
 
           val prefix =
             if (!settings.docNoPrefixes.value && needsPrefix && (bSym != AnyRefClass /* which we normalize */)) {
