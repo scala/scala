@@ -51,6 +51,12 @@ object C {
     val l: Long = r3.l
     val s: String = r3.s
 
+    locally {
+      val i: Int = r3.i()
+      val l: Long = r3.l()
+      val s: String = r3.s()
+    }
+
     // method
     val l2: Long = r3.l(43L, 44L)
 
