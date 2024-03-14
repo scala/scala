@@ -881,7 +881,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
       val accessors = generateAccessors
         .map { case (name, (tpt, annots)) =>
-          DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
+          DefDef(Modifiers(Flags.JAVA).withAnnotations(annots), name, tparams = Nil, vparamss = ListOfNil, tpt.duplicate, blankExpr)
         }
         .toList
 
