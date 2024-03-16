@@ -1,5 +1,5 @@
 nested-class-shadowing-removal.scala:9: error: shadowing a nested class of a parent is deprecated but class Status shadows class Status defined in trait Core; rename the class to something else
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Ext.Status
   class Status extends super.Status
         ^

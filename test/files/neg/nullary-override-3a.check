@@ -1,24 +1,24 @@
 nullary-override-3a.scala:4: error: method with a single empty parameter list overrides method x in class A defined without a parameter list
 def x: Int (defined in class A) [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=B
 class B extends A { override def x(): Int = 4 }
                                  ^
 nullary-override-3a.scala:16: error: method with a single empty parameter list overrides method x in trait T1 defined without a parameter list
 def x: String (defined in trait T1) [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Mix12b
 class Mix12b extends T1 with T2 { override def x() = "12b" }
                                                ^
 nullary-override-3a.scala:18: error: method without a parameter list overrides method x in trait T2 defined with a single empty parameter list
 def x(): String (defined in trait T2) [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Mix21a
 class Mix21a extends T2 with T1 { override def x   = "21a" }
                                                ^
 nullary-override-3a.scala:19: error: method with a single empty parameter list overrides method x in trait T1 defined without a parameter list
 def x: String (defined in trait T1) [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Mix21b
 class Mix21b extends T2 with T1 { override def x() = "21b" }
                                                ^

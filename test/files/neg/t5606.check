@@ -5,22 +5,22 @@ t5606.scala:23: error: using `?` as a type name requires backticks. [quickfixabl
   def regress_?[F[?]]   = 2
                   ^
 t5606.scala:3: error: Top-level wildcard is not allowed
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 case class CaseTest[_](someData: String)
                     ^
 t5606.scala:8: error: Top-level wildcard is not allowed
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 case class CaseTest2[_, _](someData: String)
                      ^
 t5606.scala:8: error: Top-level wildcard is not allowed
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
 case class CaseTest2[_, _](someData: String)
                         ^
 t5606.scala:11: error: Top-level wildcard is not allowed
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f[_](x: Int) = ???
         ^
