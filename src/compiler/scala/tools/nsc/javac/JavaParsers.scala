@@ -871,17 +871,12 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val interfaces = interfacesOpt()
       val (statics, body) = typeBody(RECORD)
 
-      // Generate accessors, if not already manually specified
-      var generateAccessors = header
-        .view
-        .map { case ValDef(mods, name, tpt, _) => (name, (tpt, mods.annotations)) }
-        .toMap
-      for (DefDef(_, name, List(), List(params), _, _) <- body if generateAccessors.contains(name) && params.isEmpty)
-        generateAccessors -= name
-
-      val accessors = generateAccessors
-        .map { case (name, (tpt, annots)) =>
-          DefDef(Modifiers(Flags.JAVA) withAnnotations annots, name, List(), List(), tpt.duplicate, blankExpr)
+      // Generate accessors, if not already explicitly specified. Record bodies tend to be trivial.
+      val existing = body.iterator.collect { case DefDef(_, name, Nil, ListOfNil, _, _) => name }.toSet
+      val accessors = header.iterator
+        .collect {
+          case ValDef(mods, name, tpt, _) if !existing(name) =>
+            DefDef(Modifiers(Flags.JAVA).withAnnotations(mods.annotations), name, tparams = Nil, vparamss = ListOfNil, tpt.duplicate, blankExpr)
         }
         .toList
 
