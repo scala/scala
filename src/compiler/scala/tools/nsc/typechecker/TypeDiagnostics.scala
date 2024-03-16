@@ -842,19 +842,20 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     /** Returns Some(msg) if the given tree is untyped apparently due
      *  to a cyclic reference, and None otherwise.
      */
-    def cyclicReferenceMessage(sym: Symbol, tree: Tree, trace: List[Symbol], pos: Position) = {
+    def cyclicReferenceMessage(sym: Symbol, tree: Tree, trace: Array[Symbol], pos: Position) = {
       def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
       def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
 
-      val badsym = if (!sym.isSynthetic) sym else trace.filter(!_.isSynthetic) match {
-        case badsym :: Nil => badsym
-        case Nil           => sym
-        case baddies       => baddies.find(_.pos.focus == pos.focus).getOrElse(baddies.head)
+      val badsym = if (!sym.isSynthetic) sym else {
+        val organics = trace.filter(!_.isSynthetic)
+        if (organics.length == 0) sym
+        else if (organics.length == 1) organics(0)
+        else organics.find(_.pos.focus == pos.focus).getOrElse(organics(0))
       }
       condOpt(tree) {
         case ValDef(_, _, TypeTree(), _)       => s"recursive $badsym needs type"
         case DefDef(_, _, _, _, TypeTree(), _) => s"${cyclicAdjective(badsym)} $badsym needs result type"
-        case Import(expr, selectors)           =>
+        case Import(_, _)                      =>
           sm"""encountered unrecoverable cycle resolving import.
               |Note: this is often due in part to a class depending on a definition nested within its companion.
               |If applicable, you may wish to try moving some members into another object."""

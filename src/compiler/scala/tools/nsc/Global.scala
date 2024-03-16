@@ -90,7 +90,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   override def settings = currentSettings
 
-  override def isSymbolLockTracingEnabled = settings.cyclic
+  override def isSymbolLockTracingEnabled = settings.cyclic.value
 
   private[this] var currentReporter: FilteringReporter = null
   locally { reporter = reporter0 }

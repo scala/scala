@@ -18,12 +18,12 @@ package scala
 package reflect
 package internal
 
-import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, Stack}
-import util.{ ReusableInstance, Statistics, shortClassOfInstance }
-import Flags._
 import scala.annotation.tailrec
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
+
+import util.{ReusableInstance, Statistics, shortClassOfInstance}
+import Flags._
 import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
@@ -36,15 +36,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   protected def nextId() = { ids += 1; ids }
 
   /** Used to keep track of the recursion depth on locked symbols */
-  private[this] var _recursionTable = immutable.Map.empty[Symbol, Int]
+  private[this] var _recursionTable = Map.empty[Symbol, Int]
   def recursionTable = _recursionTable
-  def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
+  def recursionTable_=(value: Map[Symbol, Int]) = _recursionTable = value
 
   private[this] var _lockedCount = 0
   def lockedCount = this._lockedCount
   def lockedCount_=(i: Int) = _lockedCount = i
 
-  private[this] val _lockingTrace = Stack.empty[Symbol]
+  private[this] val _lockingTrace = ArrayBuffer.empty[Symbol]
   private[this] val lockTracing: Boolean = self.isSymbolLockTracingEnabled
 
   @deprecated("Global existential IDs no longer used", "2.12.1")
@@ -568,7 +568,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
     private[scala] def lock(handler: => Unit): Boolean = {
-      if (lockTracing) _lockingTrace.push(this)
+      if (lockTracing) _lockingTrace.addOne(this)
       if ((_rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable.get(this) match {
@@ -599,7 +599,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if ((_rawflags & LOCKED) != 0L) {
         _rawflags &= ~LOCKED
         if (lockTracing && !_lockingTrace.isEmpty)
-          _lockingTrace.remove(idx = 0, count = 1)
+          _lockingTrace.remove(index = _lockingTrace.size - 1, count = 1) // dropRightInPlace(1)
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
       }
@@ -1565,14 +1565,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo(ErrorType)
           val trace =
             if (lockTracing) {
-              val t = _lockingTrace.toList
+              val t = _lockingTrace.toArray
               _lockingTrace.clear()
               t
-            } else Nil
+            } else CyclicReference.emptyTrace
           throw CyclicReference(this, tp, trace)
         }
       } else {
-        if (lockTracing) _lockingTrace.push(this)
+        if (lockTracing) _lockingTrace.addOne(this)
         _rawflags |= LOCKED
       }
       val current = phase
@@ -3849,9 +3849,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     else closestEnclMethod(from.owner)
 
   /** An exception for cyclic references of symbol definitions */
-  case class CyclicReference(sym: Symbol, info: Type, trace: List[Symbol] = Nil)
+  case class CyclicReference(sym: Symbol, info: Type, trace: Array[Symbol] = CyclicReference.emptyTrace)
   extends TypeError(s"illegal cyclic reference involving $sym") {
     if (settings.isDebug) printStackTrace()
+  }
+  object CyclicReference {
+    val emptyTrace: Array[Symbol] = Array.empty[Symbol]
   }
 
   /** A class for type histories */
