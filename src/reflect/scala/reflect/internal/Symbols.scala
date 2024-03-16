@@ -45,7 +45,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def lockedCount_=(i: Int) = _lockedCount = i
 
   private[this] val _lockingTrace = Stack.empty[Symbol]
-
+  private[this] val lockTracing: Boolean = self.isSymbolLockTracingEnabled
 
   @deprecated("Global existential IDs no longer used", "2.12.1")
   private[this] var existentialIds = 0
@@ -568,7 +568,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
     private[scala] def lock(handler: => Unit): Boolean = {
-      _lockingTrace.push(this)
+      if (lockTracing) _lockingTrace.push(this)
       if ((_rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable.get(this) match {
@@ -598,7 +598,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[scala] def unlock(): Unit =
       if ((_rawflags & LOCKED) != 0L) {
         _rawflags &= ~LOCKED
-        if (!_lockingTrace.isEmpty)
+        if (lockTracing && !_lockingTrace.isEmpty)
           _lockingTrace.remove(idx = 0, count = 1)
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
@@ -1563,12 +1563,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
         lock {
           setInfo(ErrorType)
-          val trace = _lockingTrace.toList
-          _lockingTrace.clear()
+          val trace =
+            if (lockTracing) {
+              val t = _lockingTrace.toList
+              _lockingTrace.clear()
+              t
+            } else Nil
           throw CyclicReference(this, tp, trace)
         }
       } else {
-        _lockingTrace.push(this)
+        if (lockTracing) _lockingTrace.push(this)
         _rawflags |= LOCKED
       }
       val current = phase
