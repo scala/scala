@@ -40,7 +40,7 @@ class PhaseAssemblyTest {
 
   @Test def multipleRunsRightAfter: Unit = {
     val settings = new Settings
-    settings.verbose.tryToSet(Nil)
+    //settings.verbose.tryToSet(Nil)
     val global = new Global(settings)
     val N = 16 * 4096 // 65536 ~ 11-21 secs, 256 ~ 1-2 secs
     //val N = 256
@@ -124,6 +124,7 @@ class PhaseAssemblyTest {
   //specialize, explicitouter, erasure, posterasure, lambdalift, constructors, flatten,
   //mixin, cleanup, delambdafy, jvm, xsbt-analyzer, terminal)
   // phasesSet is a hash set, so order of inputs should not matter.
+  // this test was to debug ths initial CI failure, a bug in handling runsRightAfter.
   @Test def `constraints under sbt`: Unit = {
     val settings = new Settings
     val global = new Global(settings)
@@ -190,5 +191,22 @@ class PhaseAssemblyTest {
       "terminal",
       ),
       result.map(_.phaseName))
+  }
+}
+
+class SubComponentTest {
+  @Test def `SubComponent has consistent hashCode and equals`: Unit = {
+    var counter = 0
+    def next() = { counter += 1; counter }
+    case class MyComponent(id: Int) extends SubComponent {
+      val global: scala.tools.nsc.Global = null
+      def newPhase(prev: scala.tools.nsc.Phase): scala.tools.nsc.Phase = ???
+      val phaseName: String = s"c${next()}"
+      val runsAfter: List[String] = Nil
+      val runsRightAfter: Option[String] = None
+    }
+    val c0 = MyComponent(0) // inadvertently equal
+    val c1 = MyComponent(0)
+    assert(c0 != c1 || c0.hashCode == c1.hashCode)
   }
 }
