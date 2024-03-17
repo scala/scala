@@ -187,21 +187,21 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         else warning.msg
       }
 
-      def ifNonEmpty(kind: String, filter: String) = if (filter.nonEmpty) s", $kind=$filter" else ""
-      def filterHelp =
-        s"msg=<part of the message>, cat=${warning.category.name}" +
-          ifNonEmpty("site", warning.site) +
-          (warning match {
-            case Message.Deprecation(_, _, _, origin, version, _) =>
-              ifNonEmpty("origin", origin) + ifNonEmpty("version", version.filterString)
-            case _ => ""
-          })
-      def scala3migration(isError: Boolean) =
-        if (isError && warning.category == WarningCategory.Scala3Migration)
-          "\nScala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings."
-        else ""
-      def helpMsg(kind: String, isError: Boolean = false) =
-        s"$quickfixed${scala3migration(isError)}\nApplicable -Wconf / @nowarn filters for this $kind: $filterHelp"
+      def helpMsg(level: String, isError: Boolean = false) = {
+        def ifNonEmpty(kind: String, filter: String) = if (filter.nonEmpty) s", $kind=$filter" else ""
+        def maybeSite = ifNonEmpty("site", warning.site)
+        def maybeOrigin = warning match {
+          case Message.Deprecation(_, _, _, origin, version, _) =>
+            ifNonEmpty("origin", origin) + ifNonEmpty("version", version.filterString)
+          case _ => ""
+        }
+        def filterHelp = s"msg=<part of the message>, cat=${warning.category.name}${maybeSite}${maybeOrigin}"
+        def scala3migration =
+          if (isError && warning.category == WarningCategory.Scala3Migration)
+            "\nScala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress."
+          else ""
+        s"$quickfixed$scala3migration\nApplicable -Wconf / @nowarn filters for this $level: $filterHelp"
+      }
 
       action match {
         case Action.Error => reporter.error(warning.pos, helpMsg("fatal warning", isError = true), warning.actions)

@@ -2,7 +2,7 @@ t8035-removed.scala:4: error: adaptation of an empty argument list by inserting 
         signature: SetOps.apply(elem: A): Boolean
   given arguments: <none>
  after adaptation: SetOps((): Unit)
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=scala.collection.SetOps.apply
   List(1,2,3).toSet()
                    ^
@@ -13,7 +13,7 @@ t8035-removed.scala:7: error: adaptation of an empty argument list by inserting 
         signature: A(x: T): Foo.A[T]
   given arguments: <none>
  after adaptation: new A((): Unit)
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Foo.A.<init>
   new A
   ^
@@ -21,7 +21,7 @@ t8035-removed.scala:11: error: adaptation of an empty argument list by inserting
         signature: Format.format(x$1: Object): String
   given arguments: <none>
  after adaptation: Format.format((): Unit)
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=java.text.Format.format
   sdf.format()
             ^

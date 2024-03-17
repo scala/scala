@@ -3,7 +3,7 @@ it is both defined in the enclosing object O and inherited in the enclosing clas
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.TT`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t2.O.D.n.x
       def n(x: TT) = x // ambiguous
                ^
@@ -12,7 +12,7 @@ it is both defined in the enclosing class B and inherited in the enclosing anony
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.c`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t4.B.a
       def n = c // ambiguous
               ^
@@ -21,7 +21,7 @@ it is both defined in the enclosing method m and inherited in the enclosing anon
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t6.Test.m
       println(name)
               ^
@@ -30,7 +30,7 @@ it is both defined in the enclosing method m and inherited in the enclosing anon
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
 Such references are ambiguous in Scala 3. To continue using the inherited symbol, write `this.name`.
 Or use `-Wconf:msg=legacy-binding:s` to silence this warning. [quickfixable]
-Scala 3 migration messages are errors under -Xsource:3. Use -Wconf / @nowarn to filter them or add -Xmigration to demote them to warnings.
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t7.Test.m
       println(name)
               ^
