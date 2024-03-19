@@ -18,13 +18,12 @@ A simple annotation has the form `@´c´` or `@´c(a_1 , \ldots , a_n)´`.
 Here, ´c´ is a constructor of a class ´C´, which must conform
 to the class `scala.Annotation`.
 
-Annotations may apply to definitions or declarations, types, or
-expressions.  An annotation of a definition or declaration appears in
-front of that definition.  An annotation of a type appears after
-that type. An annotation of an expression ´e´ appears after the
-expression ´e´, separated by a colon. More than one annotation clause
-may apply to an entity. The order in which these annotations are given
-does not matter.
+Annotations may apply to definitions, types, or expressions.
+An annotation of a definition appears in front of that definition.
+An annotation of a type appears after that type.
+An annotation of an expression appears after that expression, separated by a colon.
+More than one annotation clause may apply to an entity.
+The order in which these annotations are given does not matter.
 
 Examples:
 
@@ -37,15 +36,13 @@ String @local                               // Type annotation
 
 ## Predefined Annotations
 
-Predefined annotations are found in the `scala.annotation` package,
-and also in the `scala` package.
+Predefined annotations are found in the `scala.annotation` package, and also in the `scala` package.
 
 ### Scala Compiler Annotations
 
   * `@tailrec` Marks a method which must be transformed by the compiler
     to eliminate self-recursive invocations in tail position.
-    It is an error if there are no such invocations, or a recursive call
-    not in tail position.
+    It is an error if there are no such invocations, or a recursive call not in tail position.
 
   * `@switch` Marks the expression submitted to a match as "switchable",
     such that the match can be compiled to an efficient form.
@@ -64,11 +61,9 @@ and also in the `scala` package.
     val Some(y) = x: @unchecked
     ```
 
-    Without the `@unchecked` annotation, a Scala compiler could
-    infer that the pattern match is non-exhaustive, and could produce a
-    warning because `Option` is a `sealed` class.
+    Without the `@unchecked` annotation, a Scala compiler could infer that the pattern match is non-exhaustive and issue a warning because `Option` is a `sealed` class.
 
-  * `@uncheckedStable` When applied a value declaration or definition, it allows the defined
+  * `@uncheckedStable` When applied to a value definition, it allows the defined
     value to appear in a path, even if its type is [volatile](03-types.html#volatile-types).
     For instance, the following member definitions are legal:
 
@@ -83,11 +78,9 @@ and also in the `scala` package.
     would not be a path since its type `A with B` is volatile. Hence,
     the reference `x.T` would be malformed.
 
-    When applied to value declarations or definitions that have non-volatile
-    types, the annotation has no effect.
+    When applied to value definitions that have no volatile types, the annotation has no effect.
 
-  * `@specialized` When applied to the definition of a type parameter,
-    this annotation causes the compiler to generate specialized definitions for primitive types.
+  * `@specialized` When applied to the definition of a type parameter, this annotation causes the compiler to generate definitions that are specialized for primitive types.
     An optional list of primitive types may be given, in which case specialization
     takes into account only those types.
     For instance, the following code would generate specialized traits for
@@ -100,7 +93,7 @@ and also in the `scala` package.
     ```
 
     Whenever the static type of an expression matches a specialized variant of
-    a definition, the compiler will instead use the specialized version.
+    a definition, the compiler will use the specialized version instead.
     See the [specialization SID](https://docs.scala-lang.org/sips/scala-specialization.html) for more details of the implementation.
     
 ### Deprecation Annotations
