@@ -323,7 +323,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
       else if (targetLen < 0)
         throw new Exception(s"Overflow while resizing array of array-backed collection. Requested length: $targetLen; current length: $arrayLen; increase: ${targetLen - arrayLen}")
 
-    if (targetLen > 0 && targetLen <= arrayLen) -1
+    if (targetLen >= 0 && targetLen <= arrayLen) -1
     else {
       checkArrayLengthLimit()
       if (arrayLen > VM_MaxArraySize / 2) VM_MaxArraySize
