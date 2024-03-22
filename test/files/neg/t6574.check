@@ -1,4 +1,4 @@
-t6574.scala:4: error: could not optimize @tailrec annotated method notTailPos$extension: it contains a recursive call not in tail position
-    println("tail")
-    ^
+t6574.scala:3: error: could not optimize @tailrec annotated method notTailPos$extension: it contains a recursive call not in tail position
+    this.notTailPos[Z](a)(b)
+                         ^
 1 error

@@ -1,0 +1,4 @@
+t4649.scala:12: error: @tailrec annotated method contains no recursive calls
+  @tailrec final def remove(idx: Int, count: Int): Unit =
+                     ^
+1 error

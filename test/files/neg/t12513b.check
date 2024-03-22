@@ -1,4 +1,4 @@
 t12513b.scala:8: error: could not optimize @tailrec annotated method f: it contains a recursive call not in tail position
   @T def f: Int = { f ; 42 }  // the annotation worked: error, f is not tail recursive
-         ^
+                    ^
 1 error
