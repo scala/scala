@@ -206,26 +206,6 @@ trait Namers extends MethodSynthesis {
       else innerNamer
     }
 
-    // FIXME - this logic needs to be thoroughly explained
-    // and justified.  I know it's wrong with respect to package
-    // objects, but I think it's also wrong in other ways.
-    protected def conflict(newS: Symbol, oldS: Symbol) = (
-       (   !oldS.isSourceMethod
-        || nme.isSetterName(newS.name)
-        || newS.isTopLevel
-       ) &&
-      !(   // @M: allow repeated use of `_` for higher-order type params
-           (newS.owner.isTypeParameter || newS.owner.isAbstractType)
-           // FIXME: name comparisons not successful, are these underscores
-           // sometimes nme.WILDCARD and sometimes tpnme.WILDCARD?
-        && (newS.name string_== nme.WILDCARD)
-       )
-    )
-
-    private def allowsOverload(sym: Symbol) = (
-      sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel
-    )
-
     private def inCurrentScope(m: Symbol): Boolean = {
       if (owner.isClass) owner == m.owner
       else context.scope.lookupSymbolEntry(m) match {
@@ -237,44 +217,42 @@ trait Namers extends MethodSynthesis {
     /** Enter symbol into context's scope and return symbol itself */
     def enterInScope(sym: Symbol): sym.type = enterInScope(sym, context.scope)
 
+    // There is nothing which reconciles a package's scope with
+    // the package object's scope.  This is the source of many bugs
+    // with e.g. defining a case class in a package object.  When
+    // compiling against classes, the class symbol is created in the
+    // package and in the package object, and the conflict is undetected.
+    // There is also a non-deterministic outcome for situations like
+    // an object with the same name as a method in the package object.
     /** Enter symbol into given scope and return symbol itself */
     def enterInScope(sym: Symbol, scope: Scope): sym.type = {
-      // FIXME - this is broken in a number of ways.
-      //
-      // 1) If "sym" allows overloading, that is not itself sufficient to skip
-      // the check, because "prev.sym" also must allow overloading.
-      //
-      // 2) There is nothing which reconciles a package's scope with
-      // the package object's scope.  This is the source of many bugs
-      // with e.g. defining a case class in a package object.  When
-      // compiling against classes, the class symbol is created in the
-      // package and in the package object, and the conflict is undetected.
-      // There is also a non-deterministic outcome for situations like
-      // an object with the same name as a method in the package object.
-
-      // allow for overloaded methods
-      if (!allowsOverload(sym)) {
-        val prev = scope.lookupEntry(sym.name)
-        if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
-          if (sym.isSynthetic || prev.sym.isSynthetic) {
-            handleSyntheticNameConflict(sym, prev.sym)
-            handleSyntheticNameConflict(prev.sym, sym)
-          }
-          DoubleDefError(sym, prev.sym)
-          sym setInfo ErrorType
-          scope unlink prev.sym // let them co-exist...
-          // FIXME: The comment "let them co-exist" is confusing given that the
-          // line it comments unlinks one of them.  What does it intend?
-        }
-      }
       if (sym.isModule && sym.isSynthetic && sym.owner.isClass && !sym.isTopLevel) {
         val entry = scope.lookupEntry(sym.name.toTypeName)
         if (entry eq null)
           scope enter sym
         else
           scope.enterBefore(sym, entry)
-      } else
-        scope enter sym
+      } else {
+        val disallowsOverload = !(sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel)
+        if (disallowsOverload) {
+          val prev = scope.lookupEntry(sym.name)
+          val dde =
+            (prev ne null) && prev.owner == scope &&
+            (!prev.sym.isSourceMethod || nme.isSetterName(sym.name) || sym.isTopLevel) &&
+            !((sym.owner.isTypeParameter || sym.owner.isAbstractType) && (sym.name string_== nme.WILDCARD))
+            // @M: allow repeated use of `_` for higher-order type params
+          if (dde) {
+            if (sym.isSynthetic || prev.sym.isSynthetic) {
+              handleSyntheticNameConflict(sym, prev.sym)
+              handleSyntheticNameConflict(prev.sym, sym)
+            }
+            DoubleDefError(sym, prev.sym)
+            sym.setInfo(ErrorType)
+            scope.unlink(prev.sym) // retain the new erroneous symbol in scope (was for IDE); see #scala/bug#2779
+          }
+        }
+        scope.enter(sym)
+      }
     }
 
     /** Logic to handle name conflicts of synthetically generated symbols

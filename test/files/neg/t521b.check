@@ -1,0 +1,5 @@
+t521b.scala:15: error: method path is defined twice;
+  the conflicting value path was defined at line 14:30
+    override def path = "";
+                 ^
+1 error
