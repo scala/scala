@@ -25,7 +25,7 @@ sealed abstract class ArrayBuilder[T]
   extends ReusableBuilder[T, Array[T]]
     with Serializable {
   protected[this] var capacity: Int = 0
-  protected[this] def elems: Array[T]
+  protected[this] def elems: Array[T] // may not be allocated at size = capacity = 0
   protected var size: Int = 0
 
   /** Current number of elements. */
@@ -45,14 +45,16 @@ sealed abstract class ArrayBuilder[T]
 
   protected[this] def resize(size: Int): Unit
 
-  /** Add all elements of an array */
+  /** Add all elements of an array. */
   def addAll(xs: Array[_ <: T]): this.type = addAll(xs, 0, xs.length)
 
-  /** Add a slice of an array */
+  /** Add a slice of an array. */
   def addAll(xs: Array[_ <: T], offset: Int, length: Int): this.type = {
-    ensureSize(this.size + length)
-    Array.copy(xs, offset, elems, this.size, length)
-    size += length
+    if (length > 0) {
+      ensureSize(this.size + length)
+      Array.copy(xs, offset, elems, this.size, length)
+      size += length
+    }
     this
   }
 

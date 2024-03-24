@@ -392,6 +392,9 @@ class ArrayBufferTest {
 
     // check termination and correctness
     assertTrue(7 < ArrayBuffer.DefaultInitialSize) // condition of test
+    assertEquals(-1, resizeUp(7, 0))
+    assertEquals(-1, resizeUp(Int.MaxValue, 0))
+    assertEquals(ArrayBuffer.DefaultInitialSize, resizeUp(-1, 0)) // no check of arrayLen
     assertEquals(ArrayBuffer.DefaultInitialSize, resizeUp(7, 10))
     assertEquals(VM_MaxArraySize, resizeUp(Int.MaxValue / 2, Int.MaxValue / 2 + 1)) // `MaxValue / 2` cannot be doubled
     assertEquals(VM_MaxArraySize / 2 * 2, resizeUp(VM_MaxArraySize / 2, VM_MaxArraySize / 2 + 1)) // `VM_MaxArraySize / 2` can be doubled
