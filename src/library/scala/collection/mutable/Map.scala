@@ -128,11 +128,11 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   /** If given key is already in this map, returns associated value.
    *
-   *  Otherwise, computes value from given expression `op`, stores with key
+   *  Otherwise, computes value from given expression `defaultValue`, stores with key
    *  in map and returns that value.
    *
-   *  Concurrent map implementations may evaluate the expression `op`
-   *  multiple times, or may evaluate `op` without inserting the result.
+   *  Concurrent map implementations may evaluate the expression `defaultValue`
+   *  multiple times, or may evaluate `defaultValue` without inserting the result.
    *
    *  @param  key the key to test
    *  @param  defaultValue  the computation yielding the value to associate with `key`, if
