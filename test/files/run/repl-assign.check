@@ -11,4 +11,7 @@ scala> x = 12
 scala> y = 13
 // mutated y
 
+scala> x += 30
+// mutated x
+
 scala> :quit

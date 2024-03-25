@@ -19,9 +19,9 @@ import java.net.URL
 import scala.collection.mutable, mutable.ListBuffer
 import scala.language.implicitConversions
 import scala.reflect.{ClassTag, classTag}
+import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase, Precedence}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, ReplBatchSourceFile, SourceFile}
-import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
@@ -813,6 +813,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case init :+ tree =>
         def loop(scrut: Tree): Tree = scrut match {
           case _: Assign                => tree
+          case Apply(Select(_, op), _) if Precedence(op.decoded).level == 0 => tree
           case _: RefTree | _: TermTree => storeInVal(tree)
           case Annotated(_, arg)        => loop(arg)
           case _                        => tree
