@@ -13,7 +13,7 @@ class CompletionTest {
 
   def newIMain(classBased: Boolean = false): IMain = {
     val settings = new Settings()
-    settings.Xjline.value = "off"
+    settings.Xnojline.value = true
     settings.usejavacp.value = true
     settings.Yreplclassbased.value = classBased
 

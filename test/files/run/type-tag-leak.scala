@@ -19,7 +19,7 @@ object Test extends Test {
   def main(args: Array[String]): Unit = {
     for (i <- 1 to 16) {
       val settings = new scala.tools.nsc.Settings
-      settings.Xjline.value = "off"
+      settings.Xnojline.value = true
       settings.usejavacp.value = true
 
       val intp = new IMain(settings, new shell.ReplReporterImpl(settings, new PrintWriter(new StringWriter)))

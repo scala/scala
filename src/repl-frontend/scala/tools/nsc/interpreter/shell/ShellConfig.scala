@@ -38,8 +38,7 @@ object ShellConfig {
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
       val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
-      val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
-      override val viMode = super.viMode || settings.Xjline.value == "vi"
+      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
     case _ => new ShellConfig {
@@ -48,8 +47,7 @@ object ShellConfig {
       val batchText: String = ""
       val batchMode: Boolean = false
       val doCompletion: Boolean = !settings.noCompletion.value
-      val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
-      override val viMode = super.viMode || settings.Xjline.value == "vi"
+      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
   }
@@ -62,7 +60,6 @@ trait ShellConfig {
   def batchMode: Boolean
   def doCompletion: Boolean
   def haveInteractiveConsole: Boolean
-  def viMode: Boolean = envOrNone("SHELLOPTS").map(_.split(":").contains("vi")).getOrElse(false)
 
   // source compatibility, i.e., -Xsource
   def xsource: String
