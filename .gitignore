@@ -67,3 +67,4 @@ jitwatch.out
 project/**/metals.sbt
 
 .bsp
+.history
