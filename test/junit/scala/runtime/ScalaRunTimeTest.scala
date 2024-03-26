@@ -25,7 +25,7 @@ class ScalaRunTimeTest {
     assertEquals("""Array(1, 2, 3)""", stringOf(Array(1, 2, 3)))
     assertEquals("""Array(a, "", " c", null)""", stringOf(Array("a", "", " c", null)))
     assertEquals("""Array(Array("", 1, Array(5)), Array(1))""",
-        stringOf(Array(Array("", 1, Array(5)), Array(1))))
+        stringOf(Array[Any](Array[Any]("", 1, Array(5)), Array(1))))
 
     val map = Map(1->"", 2->"a", 3->" a", 4->null)
     assertEquals(s"""Map(1 -> "", 2 -> a, 3 -> " a", 4 -> null)""", stringOf(map))

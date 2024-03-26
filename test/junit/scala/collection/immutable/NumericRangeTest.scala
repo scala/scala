@@ -395,8 +395,8 @@ class NumericRangeTest {
     assertEquals(300 / 5, NumericRange(BigInt(0), BigInt(Int.MaxValue), BigInt(5)).lastIndexOf(BigInt(300)))
 
     // indexOf different type returns -1
-    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).indexOf(300))
-    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).lastIndexOf(300))
+    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).indexOf[AnyVal](300))
+    assertEquals(-1, NumericRange(0L, Int.MaxValue.toLong, 5L).lastIndexOf[AnyVal](300))
 
     /* Attempting an indexOf of a Range with more than Int.MaxValue elements always throws an error.
     Not ideal, but this tests whether backwards compatibility is conserved. */

@@ -416,9 +416,9 @@ class IteratorTest {
   // scala/bug#8552
   @Test def indexOfShouldWorkForTwoParams(): Unit = {
     assertEquals(1, List(1, 2, 3).iterator.indexOf(2, 0))
-    assertEquals(-1, List(5 -> 0).iterator.indexOf(5, 0))
+    assertEquals(-1, List(5 -> 0).iterator.indexOf[Any](5, 0))
     assertEquals(0, List(5 -> 0).iterator.indexOf((5, 0)))
-    assertEquals(-1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9, 2))
+    assertEquals(-1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf[Any](9, 2))
     assertEquals(1, List(5 -> 0, 9 -> 2, 0 -> 3).iterator.indexOf(9 -> 2))
   }
   // scala/bug#9332
