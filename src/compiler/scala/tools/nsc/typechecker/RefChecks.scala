@@ -1891,7 +1891,7 @@ abstract class RefChecks extends Transform {
             }
           case _ => t
         }
-        def msg = s"unused value of type ${where.tpe} (add `: Unit` to discard silently)"
+        def msg = s"unused value of type ${where.tpe}"
         refchecksWarning(where.pos, msg, WarningCategory.OtherPureStatement)
         true
       }
