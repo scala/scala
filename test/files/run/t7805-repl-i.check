@@ -1,5 +1,0 @@
-
-scala> Console println Try(8)
-Success(8)
-
-scala> :quit
