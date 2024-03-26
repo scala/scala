@@ -87,6 +87,7 @@ abstract class TailCalls extends Transform {
    * </p>
    */
   class TailCallElimination(unit: CompilationUnit) extends AstTransformer {
+    private val strict        = settings.strictTailRec.value
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]().withDefault(_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]().withDefaultValue(defaultReason)
@@ -172,10 +173,10 @@ abstract class TailCalls extends Transform {
           case Apply(fun, args) =>
             if (isRecursiveCall(fun.symbol)) detected.addOne(tree)
             traverse(fun)
-            for ((p, a) <- fun.symbol.paramLists.head.lazyZip(args) if !p.isByNameParam)
+            for ((p, a) <- fun.symbol.paramLists.head.lazyZip(args) if strict || !p.isByNameParam)
               traverse(a)
-          case _: DefDef if ignore(tree.symbol) =>
-          case Function(_, _) =>
+          case _: DefDef if !strict && ignore(tree.symbol) =>
+          case Function(_, _) if !strict =>
           case _ => super.traverse(tree)
         }
         def recursiveCalls(t: Tree): List[Tree] = {
