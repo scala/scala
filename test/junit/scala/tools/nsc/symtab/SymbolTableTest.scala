@@ -64,9 +64,20 @@ class SymbolTableTest {
     // Ends up in `throw GlbFailure` in glb => Null
     assertTrue(definitions.NullTpe =:= glb(t1 :: t2 :: Nil))
   }
+
+  @Test def invariantLub(): Unit = {
+    import SymbolTableTest.invariantLub._
+    import symbolTable._
+    val l = lub(typeOf[C[String]] :: typeOf[C[Nothing]] :: Nil)
+    assertTrue(s"$l", l =:= typeOf[C[String]])
+  }
 }
 
 object SymbolTableTest {
+  object invariantLub {
+    class C[T]
+  }
+
   object t12702 {
     import scala.language.existentials
     trait MFSS[X <: MFSS[_]]

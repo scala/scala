@@ -5118,7 +5118,7 @@ trait Types
                   else {
                     val l = lub(asKinded, depth.decr)
                     val g = glb(asKinded, depth.decr)
-                    if (l <:< g) l
+                    if (l <:< g || g.isNothing) l
                     else {
                       // @M this has issues with f-bounds, see #2251
                       // Martin: Not sure there is a good way to fix it. For the moment we
