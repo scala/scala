@@ -2004,7 +2004,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       currentRun.profiler.beforeTypedImplDef(clazz)
       try {
 
-        val typedMods = typedModifiers(mdef.mods)
+        val typedMods = {
+          val mods = typedModifiers(mdef.mods)
+          if (currentRun.isScala3) {
+            if (mods.isFinal)
+              context.warning(mdef.pos, "Modifier final is redundant for this definition", WarningCategory.Other)
+            mods | FINAL
+          }
+          else mods
+        }
         assert(clazz != NoSymbol, mdef)
         val noSerializable = (
           (linkedClass eq NoSymbol)
