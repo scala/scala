@@ -1,0 +1,47 @@
+i20006.scala:8: error: method next is defined twice;
+  the conflicting value next was defined at line 6:7
+  override def next(): T = { // error
+               ^
+i20006.scala:7: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 5:7
+  override def hasNext: Boolean = first || hasNext(acc) // error
+               ^
+i20006.scala:22: error: method next is defined twice;
+  the conflicting value next was defined at line 18:65
+  override def next(): T = { // error
+               ^
+i20006.scala:21: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 18:42
+  override def hasNext: Boolean = first || hasNext(acc) // error
+               ^
+i20006.scala:36: error: method next is defined twice;
+  the conflicting value next was defined at line 32:65
+  def next(): T = { // error
+      ^
+i20006.scala:35: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 32:42
+  def hasNext: Boolean = first || hasNext(acc) // error
+      ^
+i20006.scala:47: error: x is already defined as value x
+  val x: String = "member" // error
+      ^
+i20006.scala:50: error: variable x is defined twice;
+  the conflicting value x was defined at line 49:9
+  private var x: Int = 42 // error
+              ^
+i20006.scala:53: error: x is already defined as value x
+  private[this] var x: Int = 42 // error
+                    ^
+i20006.scala:56: error: method x is defined twice;
+  the conflicting value x was defined at line 55:9
+  def x(): Int = 42 // error
+      ^
+i20006.scala:63: error: method x is defined twice;
+  the conflicting value x was defined at line 62:21
+  def x(): Int = 42 // error
+      ^
+i20006.scala:67: error: method x is defined twice;
+  the conflicting method x was defined at line 66:21
+  def x(): Int = 42 // error
+      ^
+12 errors
