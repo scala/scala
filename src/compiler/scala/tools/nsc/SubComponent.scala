@@ -53,6 +53,11 @@ abstract class SubComponent {
   /** SubComponents are added to a HashSet and two phases are the same if they have the same name. */
   override def hashCode() = phaseName.hashCode()
 
+  override def equals(other: Any) = other match {
+    case other: SubComponent => phaseName.equals(other.phaseName)
+    case _ => false
+  }
+
   /** New flags defined by the phase which are not valid before */
   def phaseNewFlags: Long = 0
 

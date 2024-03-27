@@ -1,1 +1,27 @@
-fatal error: Phase erasure can't follow explicitouter, created phase-order.dot
+     phase name  id  description
+     ----------  --  -----------
+         parser   1  parse source into ASTs, perform simple desugaring
+          namer   2  resolve names, attach symbols to named trees
+ packageobjects   3  load package objects
+          typer   4  the meat and potatoes: type the trees
+ superaccessors   5  add super accessors in traits and nested classes
+     extmethods   6  add extension methods for inline classes
+        pickler   7  serialize symbol tables
+      refchecks   8  reference/override checking, translate nested objects
+         patmat   9  translate match expressions
+rafter-before-1  10  hey it works
+        uncurry  11  uncurry, translate function values to anonymous classes
+         fields  12  synthesize accessors and fields, add bitmaps for lazy vals
+      tailcalls  13  replace tail calls by jumps
+     specialize  14  @specialized-driven class and method specialization
+  explicitouter  15  this refs to outer pointers
+        erasure  16  erase types, add interfaces for traits
+    posterasure  17  clean up erased inline classes
+     lambdalift  18  move nested functions to top level
+   constructors  19  move field definitions into constructors
+        flatten  20  eliminate inner classes
+          mixin  21  mixin composition
+        cleanup  22  platform-specific cleanups, generate reflective calls
+     delambdafy  23  remove lambdas
+            jvm  24  generate JVM bytecode
+       terminal  25  the last phase during a compilation run

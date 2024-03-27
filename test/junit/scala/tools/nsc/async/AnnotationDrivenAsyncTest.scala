@@ -682,7 +682,8 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
       }
     }
 
-    override val runsAfter: List[String] = "refchecks" :: "patmat" :: Nil
+    override val runsAfter: List[String] = "refchecks" :: Nil
+    override val runsRightAfter: Option[String] = Some("patmat")
     override val phaseName: String = "postpatmat"
 
   })
