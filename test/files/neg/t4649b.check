@@ -1,0 +1,7 @@
+t4649b.scala:8: error: could not optimize @tailrec annotated method lazyFilter: it contains a recursive call not in tail position
+    case h #:: t => if (p(h)) h #:: lazyFilter(t, p) else lazyFilter(t, p) // error
+                                              ^
+t4649b.scala:21: error: could not optimize @tailrec annotated method f: it contains a recursive call not in tail position
+      val g: Int => Int = f(_) // error
+                           ^
+2 errors

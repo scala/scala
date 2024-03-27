@@ -121,6 +121,7 @@ trait Warnings {
   val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
   val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
   val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"
+  val strictTailRec        = BooleanSetting("-Wstrict-tailrec", "@tailrec warns on calls in functions or by-name args.")
 
   object PerformanceWarnings extends MultiChoiceEnumeration {
     val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")
