@@ -29,43 +29,6 @@ object Test extends App {
   }
 }
 
-/* Session tests without special init code should reside in simple script files.
- * Also, provide filters such as for `(bound to C@74f7d1d2)`.
-
-import scala.tools.partest.SessionTest
-
-object Test extends SessionTest {
-//Welcome to Scala version 2.11.6 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_40).
-  def session =
-    s"""|Type in expressions to have them evaluated.
-        |Type :help for more information.
-        |
-        |scala> import reflect.runtime._, universe._
-        |import reflect.runtime._
-        |import universe._
-        |
-        |scala> class C { def f(i: Int, j: => Int) = i + j }
-        |defined class C
-        |
-        |scala> typeOf[C].member(TermName("f"))
-        |res0: reflect.runtime.universe.Symbol = method f
-        |
-        |scala> .asMethod
-        |res1: reflect.runtime.universe.MethodSymbol = method f
-        |
-        |scala> currentMirror reflect (new C)
-        |res2: reflect.runtime.universe.InstanceMirror = instance mirror for C@74f7d1d2
-        |
-        |scala> res2 reflectMethod res1
-        |res3: reflect.runtime.universe.MethodMirror = method mirror for def f(i: scala.Int,j: => scala.Int): scala.Int (bound to C@74f7d1d2)
-        |
-        |scala> res3(2,3)
-        |res4: Any = 5
-        |
-        |scala> :quit"""
-}
-*/
-
 /* was:
 scala> res3(2,3)
 java.lang.IllegalArgumentException
@@ -78,4 +41,3 @@ java.lang.IllegalArgumentException
   at scala.reflect.runtime.JavaMirrors$JavaMirror$JavaTransformingMethodMirror.apply(JavaMirrors.scala:436)
   ... 33 elided
 */
-
