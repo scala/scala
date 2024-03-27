@@ -454,17 +454,17 @@ trait DocComments { self: Global =>
       }
 
       def getSite(name: Name): Type = {
-        def findIn(sites: List[Symbol]): Type = sites match {
-          case site1 :: sites1 => select(site1.thisType, name, findIn(sites1))
-          case _ => NoType
-        }
-        // Previously, searching was taking place *only* in the current package and in the root package
-        // now we're looking for it everywhere in the hierarchy, so we'll be able to link variable expansions like
-        // immutable.Seq in package immutable
-        //val (classes, pkgs) = site.ownerChain.span(!_.isPackageClass)
-        //val sites = (classes ::: List(pkgs.head, rootMirror.RootClass)))
-        //findIn(sites)
-        findIn(site.ownerChain ::: List(rootMirror.EmptyPackage))
+        def findIn(sites: Iterator[Symbol]): Type =
+          if (sites.hasNext) {
+            val tp = sites.next().thisType
+            val member = tp.nonPrivateMember(name)
+            if (member.isTerm) singleType(tp, member)
+            else if (member.isType) tp.memberType(member)
+            else findIn(sites)
+          }
+          else NoType
+
+        findIn(site.ownersIterator ++ Iterator.single(rootMirror.EmptyPackage))
       }
 
       def getType(str: String, variable: String): Type = {
@@ -486,7 +486,7 @@ trait DocComments { self: Global =>
         val (start, rest) = parts match {
           case "this" :: _      => (site.thisType, partnames.tail)
           case _ :: "this" :: _ =>
-            site.ownerChain.find(_.name == partnames.head) match {
+            site.ownersIterator.find(_.name == partnames.head) match {
               case Some(clazz)  => (clazz.thisType, partnames drop 2)
               case _            => (NoType, Nil)
             }

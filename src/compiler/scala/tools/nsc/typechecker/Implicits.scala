@@ -1015,8 +1015,10 @@ trait Implicits extends splain.SplainData {
           if (sym.hasAccessorFlag) {
             val symAcc = sym.accessed // #3373
             symAcc.pos.pointOrElse(0) < ownerPos &&
-            !(owner.ownerChain exists (o => (o eq sym) || (o eq symAcc))) // probably faster to iterate only once, don't feel like duplicating hasTransOwner for this case
-          } else !(owner hasTransOwner sym)) // faster than owner.ownerChain contains sym
+            !owner.ownersIterator.exists(o => (o eq sym) || (o eq symAcc)) // probably faster to iterate only once, don't feel like duplicating hasTransOwner for this case
+          }
+          else !owner.hasTransOwner(sym)
+        )
       }
 
       sym.isInitialized || {
