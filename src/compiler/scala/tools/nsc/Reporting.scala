@@ -515,6 +515,7 @@ object Reporting {
     def includes(o: WarningCategory): Boolean = this eq o
     def summaryCategory: WarningCategory = this
     lazy val name: String = WarningCategory.nameOf(this)
+    override def toString = name
   }
 
   object WarningCategory {
@@ -715,7 +716,7 @@ object Reporting {
   }
 
   object MessageFilter {
-    object Any extends MessageFilter {
+    case object Any extends MessageFilter {
       def matches(message: Message): Boolean = true
     }
 
@@ -761,7 +762,9 @@ object Reporting {
     }
   }
 
-  sealed trait Action
+  sealed trait Action {
+    override def toString = s"Action[${getClass.getSimpleName.stripSuffix("$")}]"
+  }
 
   object Action {
     object Error extends Action

@@ -82,8 +82,13 @@ trait Warnings {
          |The default configuration is:
          |  -Wconf:${WconfDefault.mkString(",")}
          |
-         |User-defined configurations are added to the left. The leftmost rule matching
-         |a warning message defines the action.
+         |Under -Xsource:3-cross, the category of scala3-migration warnings are errors by default:
+         |  -Wconf:cat=scala3-migration:e
+         |Under -Xsource:3-migration, they are warnings:
+         |  -Wconf:cat=scala3-migration:w
+         |
+         |User-defined configurations override previous settings, such that the last matching
+         |configuration defines the action for a given diagnostic message.
          |
          |Examples:
          |  - change every warning into an error: -Wconf:any:error
