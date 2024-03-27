@@ -19,9 +19,9 @@ import java.net.URL
 import scala.collection.mutable, mutable.ListBuffer
 import scala.language.implicitConversions
 import scala.reflect.{ClassTag, classTag}
+import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase, Precedence}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, ReplBatchSourceFile, SourceFile}
-import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
@@ -621,16 +621,14 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
 
   /** Here is where we:
-    *
-    *  1) Read some source code, and put it in the "read" object.
-    *  2) Evaluate the read object, and put the result in the "eval" object.
-    *  3) Create a String for human consumption, and put it in the "print" object.
-    *
-    *  Read! Eval! Print! Some of that not yet centralized here.
-    */
-  class ReadEvalPrint(val lineId: Int) {
-    def this() = this(freshLineId())
-
+   *
+   *  1) Read some source code, and put it in the "read" object.
+   *  2) Evaluate the read object, and put the result in the "eval" object.
+   *  3) Create a String for human consumption, and put it in the "print" object.
+   *
+   *  Read! Eval! Print! Some of that not yet centralized here.
+   */
+  class ReadEvalPrint(val lineId: Int = freshLineId()) {
     val packageName = sessionNames.packageName(lineId)
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
@@ -813,6 +811,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case init :+ tree =>
         def loop(scrut: Tree): Tree = scrut match {
           case _: Assign                => tree
+          case Apply(Select(_, op), _) if Precedence(op.decoded).level == 0 => tree
           case _: RefTree | _: TermTree => storeInVal(tree)
           case Annotated(_, arg)        => loop(arg)
           case _                        => tree
@@ -823,7 +822,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
     /** handlers for each tree in this request */
-    val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
+    val handlers: List[MemberHandler] = trees.map(memberHandlers.chooseHandler(_))
     val definesValueClass = handlers.exists(_.definesValueClass)
 
     val isClassBased = IMain.this.isClassBased && !definesValueClass
@@ -967,7 +966,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
 
     /** Compile the object file.  Returns whether the compilation succeeded.
-      *  If all goes well, the "types" map is computed. */
+     *  If all goes well, the "types" map is computed.
+     */
     def compile: Boolean = {
 
       // compile the object containing the user's code

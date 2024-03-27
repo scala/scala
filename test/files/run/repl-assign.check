@@ -1,14 +1,14 @@
 
-scala> var x = 10
-var x: Int = 10
+scala> var x = 42
+var x: Int = 42
 
-scala> var y = 11
-var y: Int = 11
-
-scala> x = 12
+scala> x = 17
 // mutated x
 
-scala> y = 13
-// mutated y
+scala> x += 10
+// mutated x
+
+scala> x
+val res0: Int = 27
 
 scala> :quit
