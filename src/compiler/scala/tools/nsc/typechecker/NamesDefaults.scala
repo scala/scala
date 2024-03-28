@@ -55,20 +55,24 @@ trait NamesDefaults { self: Analyzer =>
     qual:       Option[Tree],
     targs:      List[Tree],
     vargss:     List[List[Tree]],
-    blockTyper: Typer
-  ) { }
+    blockTyper: Typer,
+    original:   Tree,
+  )
   object NamedApplyBlock {
     private[this] val tag = reflect.classTag[NamedApplyInfo]
+    def namedApplyInfo(t: Tree): Option[NamedApplyInfo] = t.attachments.get[NamedApplyInfo](tag)
     def unapply(b: Tree): Option[NamedApplyInfo] = b match {
-      case _: Block => b.attachments.get[NamedApplyInfo](tag)
+      case _: Block => namedApplyInfo(b)
       case _ => None
     }
+    def apply(stats: List[Tree], expr: Tree)(nai: NamedApplyInfo): Block =
+      Block(stats, expr.updateAttachment(nai)).updateAttachment(nai)
   }
 
   private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case NamedArg(Ident(name), _) => name }
   def isNamedArg(arg: Tree) = arg match {
     case NamedArg(Ident(_), _) => true
-    case _                             => false
+    case _                     => false
   }
 
   /** @param pos maps indices from old to new */
@@ -81,7 +85,7 @@ trait NamesDefaults { self: Analyzer =>
   /** @param pos maps indices from new to old (!) */
   private def reorderArgsInv[T: ClassTag](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
-    (argsArray.indices map (i => argsArray(pos(i)))).toList
+    argsArray.indices.map(i => argsArray(pos(i))).toList
   }
 
   /** returns `true` if every element is equal to its index */
@@ -203,17 +207,14 @@ trait NamesDefaults { self: Analyzer =>
           else TypeApply(f, funTargs).setType(baseFun.tpe)
         }
 
-        val b = Block(List(vd), baseFunTransformed)
-                  .setType(baseFunTransformed.tpe).setPos(baseFun.pos.makeTransparent)
-        b.updateAttachment(NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper))
-        b
+        NamedApplyBlock(List(vd), baseFunTransformed)(NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper, tree))
+          .setType(baseFunTransformed.tpe)
+          .setPos(baseFun.pos.makeTransparent)
       }
 
-      def blockWithoutQualifier(defaultQual: Option[Tree]) = {
-        val b = atPos(baseFun.pos)(Block(Nil, baseFun).setType(baseFun.tpe))
-        b.updateAttachment(NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper))
-        b
-      }
+      def blockWithoutQualifier(defaultQual: Option[Tree]) =
+        atPos(baseFun.pos)(NamedApplyBlock(Nil, baseFun)(NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper, tree)))
+          .setType(baseFun.tpe)
 
       def moduleQual(pos: Position, classType: Type) = {
         // prefix does 'normalize', which fixes #3384
@@ -345,7 +346,7 @@ trait NamesDefaults { self: Analyzer =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
         else {
-          val NamedApplyBlock(NamedApplyInfo(qual, targs, vargss, blockTyper)) = transformedFun: @unchecked
+          val NamedApplyBlock(NamedApplyInfo(qual, targs, vargss, blockTyper, _)) = transformedFun: @unchecked
           val Block(stats, funOnly) = transformedFun: @unchecked
 
           // type the application without names; put the arguments in definition-site order
@@ -373,16 +374,16 @@ trait NamesDefaults { self: Analyzer =>
                     tpe.typeSymbol match {
                       case ByNameParamClass   => Apply(ref, Nil)
                       case RepeatedParamClass => Typed(ref, Ident(tpnme.WILDCARD_STAR))
-                      case _                  => ref
+                      case _                  => origArg.attachments.get[UnnamedArg.type].foreach(ref.updateAttachment); ref
                     }
                   }
               })
               // cannot call blockTyper.typedBlock here, because the method expr might be partially applied only
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
-              val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
-              block.updateAttachment(NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper))
-              block
+              NamedApplyBlock(stats ::: valDefs.flatten, res)(NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper, tree))
+                .setType(res.tpe)
+                .setPos(tree.pos.makeTransparent)
             case _ => tree
           }
         }

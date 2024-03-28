@@ -36,3 +36,8 @@ object Types {
     (new Bippy): Something
   }
 }
+
+// breakage: local val x$1 in method skolemize is never used
+case class SymbolKind(accurate: String, sanitized: String, abbreviation: String) {
+  def skolemize: SymbolKind = copy(accurate = s"$accurate skolem", abbreviation = s"$abbreviation#SKO")
+}

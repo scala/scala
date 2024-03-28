@@ -1,21 +1,30 @@
-named-booleans.scala:22: warning: Boolean literals should be passed using named argument syntax for parameter x.
+named-booleans.scala:22: warning: Boolean literals should be passed using named argument syntax for parameter x. [quickfixable]
   val x0 = c.f(17, true, b) // warn
                    ^
-named-booleans.scala:38: warning: Boolean literals should be passed using named argument syntax for parameter b.
+named-booleans.scala:38: warning: Boolean literals should be passed using named argument syntax for parameter b. [quickfixable]
   val ss = c.fs(42)("hello", true)
                              ^
-named-booleans.scala:39: warning: Boolean literals should be passed using named argument syntax for parameter b.
+named-booleans.scala:39: warning: Boolean literals should be passed using named argument syntax for parameter b. [quickfixable]
   val tt = c.gs(42)("hello", true)
                              ^
-named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter cond.
+named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter cond. [quickfixable]
   c.uncheck(false, "OK", true)
             ^
-named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter flag.
+named-booleans.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter flag. [quickfixable]
   c.uncheck(false, "OK", true)
                          ^
-named-booleans.scala:63: warning: Boolean literals should be passed using named argument syntax for parameter isKlazz.
-  def test = Klazz(true) // warn case class apply as for ctor
-                   ^
+named-booleans.scala:70: warning: Boolean literals should be passed using named argument syntax for parameter down. [quickfixable]
+  def g2 = f(42, up=false, true)
+                           ^
+named-booleans.scala:71: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def g3 = f(42, false)
+                 ^
+named-booleans.scala:72: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def g4 = f(42, false, true)
+                 ^
+named-booleans.scala:72: warning: Boolean literals should be passed using named argument syntax for parameter down. [quickfixable]
+  def g4 = f(42, false, true)
+                        ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+9 warnings
 1 error
