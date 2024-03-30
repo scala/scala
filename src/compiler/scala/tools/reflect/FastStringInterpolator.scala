@@ -36,9 +36,9 @@ trait FastStringInterpolator extends FormatInterpolator {
         try
           parts.mapConserve {
             case lit @ Literal(Constant(stringVal: String)) =>
-              def asRaw = {
+              def asRaw = if (currentRun.sourceFeatures.unicodeEscapesRaw) stringVal else {
                 val processed = StringContext.processUnicode(stringVal)
-                if (processed != stringVal) {
+                if (processed == stringVal) stringVal else {
                   val pos = {
                     val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
                       case ((p, o), i) if p != o => i
@@ -46,18 +46,12 @@ trait FastStringInterpolator extends FormatInterpolator {
                     lit.pos.withShift(diffindex)
                   }
                   def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
-                  if (currentRun.sourceFeatures.unicodeEscapesRaw)
-                    stringVal
-                  else if (currentRun.isScala3) {
+                  if (currentRun.isScala3)
                     runReporting.warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), Scala3Migration, c.internal.enclosingOwner)
-                    processed
-                  }
-                  else {
+                  else
                     runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")
-                    processed
-                  }
+                  processed
                 }
-                else stringVal
               }
               val value =
                 if (isRaw) asRaw
