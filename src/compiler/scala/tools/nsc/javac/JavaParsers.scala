@@ -445,16 +445,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       }
     }
 
-    def modifiers(inInterface: Boolean): Modifiers = {
+    def modifiers(inInterface: Boolean, annots0: List[Tree] = Nil): Modifiers = {
       var flags: Long = Flags.JAVA
       // assumed true unless we see public/private/protected
       var isPackageAccess = true
-      var annots: List[Tree] = Nil
+      var annots: List[Tree] = annots0
       def addAnnot(sym: Symbol) = annots :+= New(sym.tpe)
 
       while (true) {
         in.token match {
-          case AT if (in.lookaheadToken != INTERFACE) =>
+          case AT if in.lookaheadToken != INTERFACE =>
             in.nextToken()
             val annot = annotation()
             if (annot.nonEmpty) annots :+= annot
@@ -1086,28 +1086,34 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       else Some(Constant(l))
     }
 
-    /** CompilationUnit ::= [package QualId semi] TopStatSeq
+    /** CompilationUnit ::= [[Annotation] package QualId semi] {Import} {TypeDecl} //TopStatSeq
      */
     def compilationUnit(): Tree = {
+      val buf = ListBuffer.empty[Tree]
       var pos = in.currentPos
+      val leadingAnnots = if (in.token == AT) annotations() else Nil
       val pkg: RefTree =
-        if (in.token == AT || in.token == PACKAGE) {
-          annotations() // TODO: put these somewhere?
-          pos = in.currentPos
+        if (in.token == PACKAGE) {
+          if (!leadingAnnots.isEmpty) { // TODO: put these somewhere?
+            //if (unit.source.file.name != "package-info.java")
+            //  syntaxError(pos, "package annotations must be in file package-info.java")
+            pos = in.currentPos
+          }
           accept(PACKAGE)
-          val pkg = qualId().asInstanceOf[RefTree]
-          accept(SEMI)
-          pkg
-        } else {
+          qualId().asInstanceOf[RefTree].tap(_ => accept(SEMI))
+        }
+        else {
+          if (!leadingAnnots.isEmpty)
+            buf ++= typeDecl(modifiers(inInterface = false, annots0 = leadingAnnots))
           Ident(nme.EMPTY_PACKAGE_NAME)
         }
       thisPackageName = gen.convertToTypeName(pkg) match {
         case Some(t)  => t.name.toTypeName
         case _        => tpnme.EMPTY
       }
-      val buf = new ListBuffer[Tree]
-      while (in.token == IMPORT)
-        buf ++= importDecl()
+      if (buf.isEmpty)
+        while (in.token == IMPORT)
+          buf ++= importDecl()
       while (in.token != EOF && in.token != RBRACE) {
         while (in.token == SEMI) in.nextToken()
         if (in.token != EOF)
