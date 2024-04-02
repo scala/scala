@@ -381,7 +381,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = tree.symbol
           generatedType = symInfoTK(sym)
           val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
-          def genLoadQualUnlessElidable(): Unit = { if (!qualSafeToElide) { genLoadQualifier(tree) } }
+          def genLoadQualUnlessElidable(): Unit = { if (!qualSafeToElide) { genLoadQualifier(tree, drop = true) } }
           // receiverClass is used in the bytecode to access the field. using sym.owner may lead to IllegalAccessError, scala/bug#4283
           def receiverClass = qualifier.tpe.typeSymbol
           if (sym.isModule) {
@@ -1054,10 +1054,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emit code to Load the qualifier of `tree` on top of the stack. */
-    def genLoadQualifier(tree: Tree): Unit = {
+    def genLoadQualifier(tree: Tree, drop: Boolean = false): Unit = {
       lineNumber(tree)
       tree match {
-        case Select(qualifier, _) => genLoad(qualifier)
+        case Select(qualifier, _) => genLoad(qualifier, if (drop) UNIT else tpeTK(qualifier))
         case _                    => abort(s"Unknown qualifier $tree")
       }
     }
