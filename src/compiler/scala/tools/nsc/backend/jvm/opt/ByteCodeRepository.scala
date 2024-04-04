@@ -56,7 +56,8 @@ abstract class ByteCodeRepository extends PerRunInit {
    * Note - although this is typed a mutable.Map, individual simple get and put operations are threadsafe as the
    * underlying data structure is synchronized.
    */
-  val parsedClasses: mutable.Map[InternalName, Either[ClassNotFound, ClassNode]] = recordPerRunCache(LruMap[InternalName, Either[ClassNotFound, ClassNode]](maxCacheSize, threadsafe = true))
+  val parsedClasses: mutable.Map[InternalName, Either[ClassNotFound, ClassNode]] =
+    recordPerRunCache(FifoCache[InternalName, Either[ClassNotFound, ClassNode]](maxCacheSize, threadsafe = true))
 
   /**
    * Contains the internal names of all classes that are defined in Java source files of the current

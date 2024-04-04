@@ -12,6 +12,7 @@ import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testkit.ASMConverters.convertMethod
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
@@ -42,9 +43,9 @@ class CallGraphTest extends BytecodeTesting {
     val callsite = callGraph.callsites(callsiteMethod)(call)
     try {
       assert(callsite.callsiteInstruction == call)
-      assert(callsite.callsiteMethod == callsiteMethod)
+      assert(convertMethod(callsite.callsiteMethod) == convertMethod(callsiteMethod))
       val callee = callsite.callee.get
-      assert(callee.callee == target)
+      assert(convertMethod(callee.callee) == convertMethod(target))
       assert(callee.calleeDeclarationClass == calleeDeclClass)
       assertEquals("safeToInline", safeToInline, callee.safeToInline)
       assert(callee.annotatedInline == atInline)
