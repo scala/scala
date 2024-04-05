@@ -1717,7 +1717,7 @@ abstract class RefChecks extends Transform {
     /** Check that boolean literals are passed as named args.
      *  The rule is enforced when the type of the parameter is `Boolean`,
      *  and there is more than one parameter with an unnamed argument.
-     *  The stricter internal lint warns for any unnamed argument,
+     *  The stricter lint warns for any unnamed argument,
      *  except that the rule is relaxed when the method has exactly one boolean parameter
      *  and it is the first parameter, such as `assert(false, msg)`.
      */
@@ -1731,40 +1731,40 @@ abstract class RefChecks extends Transform {
           }
         loop(fn, 0)
       }
-      if (settings.warnNamedLiteral.value && !sym.isJavaDefined && !args.isEmpty) {
-        def isUnnamedArg(t: Tree) = t.hasAttachment[UnnamedArg.type]
-        def isDefaultArg(t: Tree) = t.symbol != null && (
-          t.symbol.isDefaultGetter || t.symbol.name.startsWith(nme.NAMEDARG_PREFIX) && {
-            analyzer.NamedApplyBlock.namedApplyInfo(currentApplication) match {
-              case Some(analyzer.NamedApplyInfo(_, _, _, _, original)) =>
-                val treeInfo.Applied(_, _, argss) = original
-                val orig = argss.head(t.symbol.name.decoded.stripPrefix(nme.NAMEDARG_PREFIX).toInt - 1)
-                orig.symbol != null && orig.symbol.isDefaultGetter
-              case _ => false
-            }
-          }
-        )
+      if (settings.warnUnnamedBoolean.value && !sym.isJavaDefined && !args.isEmpty) {
+        val strictly = settings.warnUnnamedStrict.value // warn about any unnamed boolean arg, modulo "assert"
         val params = sym.paramLists(applyDepth)
         val numBools = params.count(_.tpe == BooleanTpe)
         def onlyLeadingBool = numBools == 1 && params.head.tpe == BooleanTpe
-        val checkable = if (settings.warnNamedBoolean.value) numBools > 0 && !onlyLeadingBool else numBools >= 2
+        val checkable = if (strictly) numBools > 0 && !onlyLeadingBool else numBools >= 2
         if (checkable) {
-          val (unnamed, numSuspicious) = args.lazyZip(params).iterator
-            .foldLeft((List.empty[(Tree, Symbol)], 0)) { (acc, ap) =>
-              ap match {
-                case (arg, param) if param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
-                  arg match {
-                    case Literal(Constant(_: Boolean)) =>
-                      if (isUnnamedArg(arg)) (ap :: acc._1, acc._2 + 1) else acc
-                    case _ =>
-                      if (isDefaultArg(arg)) (acc._1, acc._2 + 1) else acc
-                  }
-                case _ => acc
-              }
+          def isUnnamedArg(t: Tree) = t.hasAttachment[UnnamedArg.type]
+          def isNameableBoolean(param: Symbol) = param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME)
+          val unnamed = args.lazyZip(params).filter {
+            case (arg @ Literal(Constant(_: Boolean)), param) => isNameableBoolean(param) && isUnnamedArg(arg)
+            case _ => false
+          }
+          def numSuspicious = unnamed.length + {
+            analyzer.NamedApplyBlock.namedApplyInfo(currentApplication) match {
+              case Some(analyzer.NamedApplyInfo(_, _, _, _, original)) =>
+                val treeInfo.Applied(_, _, argss) = original
+                argss match {
+                  case h :: _ =>
+                    val allParams = sym.paramLists.flatten
+                    h.count {
+                      case treeInfo.Applied(getter, _, _) if getter.symbol != null && getter.symbol.isDefaultGetter =>
+                        val (_, i) = nme.splitDefaultGetterName(getter.symbol.name)
+                        isNameableBoolean(allParams(i-1))
+                      case _ => false
+                    }
+                  case _ => 0
+                }
+              case _ => args.count(arg => arg.symbol != null && arg.symbol.isDefaultGetter)
             }
-          val warn = !unnamed.isEmpty && (settings.warnNamedBoolean.value || numSuspicious >= 2)
+          }
+          val warn = !unnamed.isEmpty && (strictly || numSuspicious >= 2)
           if (warn)
-            unnamed.reverse.foreach {
+            unnamed.foreach {
               case (arg, param) =>
                 val msg = s"Boolean literals should be passed using named argument syntax for parameter ${param.name}."
                 val action = runReporting.codeAction("name boolean literal", arg.pos.focusStart, s"${param.name} = ", msg)

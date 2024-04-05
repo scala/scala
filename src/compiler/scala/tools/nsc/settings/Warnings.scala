@@ -121,8 +121,8 @@ trait Warnings {
   val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
   val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
   val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"
-  val warnNamedLiteral     = BooleanSetting("-Wunnamed-boolean-literal", "Warn about unnamed boolean literals if there is more than one or defaults are used, unless parameter has @deprecatedName.")
-  val warnNamedBoolean     = BooleanSetting("-Wunnamed-boolean-literal-strict", "Warn about all unnamed boolean literals, unless parameter has @deprecatedName or the method has a single leading boolean parameter.").enabling(warnNamedLiteral :: Nil)
+  val warnUnnamedBoolean   = BooleanSetting("-Wunnamed-boolean-literal", "Warn about unnamed boolean literals if there is more than one or defaults are used, unless parameter has @deprecatedName.")
+  val warnUnnamedStrict    = BooleanSetting("-Wunnamed-boolean-literal-strict", "Warn about all unnamed boolean literals, unless parameter has @deprecatedName or the method has a single leading boolean parameter.").enabling(warnUnnamedBoolean :: Nil)
 
   object PerformanceWarnings extends MultiChoiceEnumeration {
     val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")

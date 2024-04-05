@@ -80,3 +80,19 @@ class Defaulting {
   def rev4 = rev(42, false, true, false) // warn, swappable
   def rev5 = rev(42, true, down=true) // warn, out of order so it's a named block, otherwise same as rev3
 }
+
+class Printers {
+  def needsParentheses(parent: String)(insideIf: Boolean = true, insideMatch: Boolean = true, insideTry: Boolean = true, insideAnnotated: Boolean = true, insideBlock: Boolean = true, insideLabelDef: Boolean = true, insideAssign: Boolean = true): Boolean = true
+
+  def f(x: Boolean, y: String = "hi", z: Int = 2, b: Boolean = false) = if (x && b) y+z else y*z
+}
+object TestPrinters {
+  val p = new Printers
+  def ok(s: String) = p.needsParentheses(s)(insideLabelDef = false)
+  def sus(s: String) = p.needsParentheses(s)(false) // warn
+  def pick(s: String) = p.needsParentheses(s)(true, insideAssign=false, insideLabelDef=false, insideBlock=false, insideAnnotated=false, insideTry=false, insideMatch=false)
+
+  def f = p.f(true, z=42) // warn
+  def g = p.f(x=true, b=true) // nowarn, no unnamed
+  def h = p.f(true, b=true) // nowarn, one unnamed but other boolean is named; defaults are non-boolean
+}

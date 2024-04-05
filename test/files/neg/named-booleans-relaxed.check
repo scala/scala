@@ -40,6 +40,12 @@ named-booleans-relaxed.scala:80: warning: Boolean literals should be passed usin
 named-booleans-relaxed.scala:81: warning: Boolean literals should be passed using named argument syntax for parameter reverse. [quickfixable]
   def rev5 = rev(42, true, down=true) // warn, out of order so it's a named block, otherwise same as rev3
                      ^
+named-booleans-relaxed.scala:92: warning: Boolean literals should be passed using named argument syntax for parameter insideIf. [quickfixable]
+  def sus(s: String) = p.needsParentheses(s)(false) // warn
+                                             ^
+named-booleans-relaxed.scala:95: warning: Boolean literals should be passed using named argument syntax for parameter x. [quickfixable]
+  def f = p.f(true, z=42) // warn
+              ^
 error: No warnings can be incurred under -Werror.
-14 warnings
+16 warnings
 1 error
