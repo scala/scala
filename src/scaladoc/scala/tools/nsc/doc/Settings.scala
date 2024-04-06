@@ -249,8 +249,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
   )
 
   // For improved help output.
-  def scaladocSpecific = Set[Settings#Setting](
-    docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent,
+  def scalaDocSpecific = Set[Settings#Setting](
+    outdir, docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent,
     docExternalDoc,
     docAuthor, docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
@@ -258,8 +258,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups, docNoJavaComments
-  ).map(s => s.withAbbreviation("-" + s.name))
-  val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
+  ).map(s => s.withAbbreviation(s"-${s.name}"))
+  val isScaladocSpecific: String => Boolean = scalaDocSpecific.map(_.name)
 
   override def isScaladoc = true
 
