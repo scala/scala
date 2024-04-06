@@ -1754,7 +1754,7 @@ abstract class RefChecks extends Transform {
                     h.count {
                       case treeInfo.Applied(getter, _, _) if getter.symbol != null && getter.symbol.isDefaultGetter =>
                         val (_, i) = nme.splitDefaultGetterName(getter.symbol.name)
-                        isNameableBoolean(allParams(i-1))
+                        i > 0 && isNameableBoolean(allParams(i-1))
                       case _ => false
                     }
                   case _ => 0

@@ -96,3 +96,12 @@ object TestPrinters {
   def g = p.f(x=true, b=true) // nowarn, no unnamed
   def h = p.f(true, b=true) // nowarn, one unnamed but other boolean is named; defaults are non-boolean
 }
+
+object Testy {
+  class V(val x: Boolean) extends AnyVal {
+    def combo(y: Boolean = true, z: Boolean = false) = x&&y&&z
+  }
+
+  def v = new V(true)
+  def w = new V(true).combo(false)
+}

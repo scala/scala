@@ -46,6 +46,9 @@ named-booleans-relaxed.scala:92: warning: Boolean literals should be passed usin
 named-booleans-relaxed.scala:95: warning: Boolean literals should be passed using named argument syntax for parameter x. [quickfixable]
   def f = p.f(true, z=42) // warn
               ^
+named-booleans-relaxed.scala:106: warning: Boolean literals should be passed using named argument syntax for parameter y. [quickfixable]
+  def w = new V(true).combo(false)
+                            ^
 error: No warnings can be incurred under -Werror.
-16 warnings
+17 warnings
 1 error

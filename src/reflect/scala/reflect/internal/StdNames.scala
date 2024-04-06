@@ -551,7 +551,12 @@ trait StdNames {
           case -1  => (name.toTermName, -1)
           case idx => (name.toTermName.take(idx), idx + DEFAULT_GETTER_STRING.length)
         }
-      if (i >= 0) (n, name.encoded.substring(i).toInt) else (n, -1)
+      if (i < 0) (n, -1)
+      else {
+        val j = name.indexOf('$', i) // f$default$7$extension
+        val idx = name.subSequence(i, if (j < 0) name.length else j)
+        (n, idx.toString.toInt)
+      }
     }
 
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
