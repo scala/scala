@@ -363,7 +363,7 @@ trait DocComments { self: Global =>
                 case Some(replacement) => replaceWith(replacement)
                 case None              =>
                   val pos = docCommentPos(sym)
-                  val loc = pos withPoint (pos.start + vstart + 1)
+                  val loc = if (pos.isDefined) pos.withPoint(pos.start + vstart + 1) else NoPosition
                   runReporting.warning(loc, s"Variable $vname undefined in comment for $sym in $site", WarningCategory.Scaladoc, sym)
               }
             }
