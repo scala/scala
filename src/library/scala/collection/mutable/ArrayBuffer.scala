@@ -192,7 +192,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
           //     the previous line
           //   - `copyElemsToArray` will call `System.arraycopy`
           //   - `System.arraycopy` will effectively "read" all the values before
-          //     overwriting any of them when two arrays are the the same reference
+          //     overwriting any of them when two arrays are the same reference
           val actual = IterableOnce.copyElemsToArray(elems, array.asInstanceOf[Array[Any]], index, elemsLength)
           if (actual != elemsLength) throw new IllegalStateException(s"Copied $actual of $elemsLength")
           size0 = len + elemsLength // update size AFTER the copy, in case we're inserting a proxy

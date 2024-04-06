@@ -312,7 +312,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
               buildStateAndOpenNextState(afterLabelState, style = StateTransitionStyle.None)
             }
           } else if (containsAwait(rhs)) {
-            // A while loop containing an await. We assuming that the the backward branch is reachable across the async
+            // A while loop containing an await. We assuming that the backward branch is reachable across the async
             // code path and create a state for the `while` label.
             //
             // In theory we could avoid creating this state in code like:
@@ -632,7 +632,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       }
     }
 
-    /** Update the state variable and jump to the the while loop that encloses the state machine. */
+    /** Update the state variable and jump to the while loop that encloses the state machine. */
     case object UpdateAndContinue extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState

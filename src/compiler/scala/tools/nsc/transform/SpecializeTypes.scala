@@ -607,7 +607,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // scala/bug#5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
       // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
       // evaluating the info after creating the specialized class will mess the specialized class signature, so we'd
-      // better unlink the the class-file backed symbol before creating the new class symbol
+      // better unlink the class-file backed symbol before creating the new class symbol
       val bytecodeClazz = clazz.owner.info.decl(clazzName)
       // debuglog("Specializing " + clazz + ", but found " + bytecodeClazz + " already there")
       def unlink(sym: Symbol): Unit = if (sym != NoSymbol) {

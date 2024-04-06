@@ -268,7 +268,7 @@ abstract class ClassfileWriters {
       checkName(filePath.getFileName())
     }
 
-    // the common case is that we are are creating a new file, and on MS Windows the create and truncate is expensive
+    // the common case is that we are creating a new file, and on MS Windows the create and truncate is expensive
     // because there is not an options in the windows API that corresponds to this so the truncate is applied as a separate call
     // even if the file is new.
     // as this is rare, its best to always try to create a new file, and it that fails, then open with truncate if that fails
