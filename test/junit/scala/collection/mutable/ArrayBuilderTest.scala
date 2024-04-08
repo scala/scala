@@ -32,4 +32,11 @@ class ArrayBuilderTest {
     // expect an exception when trying to grow larger than maximum size by addAll(array)
     assertThrows[Exception](ab.addAll(arr))
   }
+
+  // avoid allocating "default size" for empty, and especially avoid doubling capacity for empty
+  @Test def `addAll allocates elems more lazily`: Unit = {
+    val builder = ArrayBuilder.make[String]
+    (1 to 100).foreach(_ => builder.addAll(Array.empty[String]))
+    assertEquals(0, builder.knownSize)
+  }
 }
