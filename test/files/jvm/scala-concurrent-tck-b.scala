@@ -1,6 +1,7 @@
 // javaVersion: 9+
 import scala.concurrent.{
   TimeoutException,
+  ExecutionContext,
   ExecutionContextExecutorService,
   Await,
   Awaitable,
@@ -76,29 +77,8 @@ class ReportingExecutionContext extends TestBase {
     val minRun = 1 // minimumRunnable for liveness
     val saturate: Predicate[ForkJoinPool] = (fjp: ForkJoinPool) => false // whether to continue after blocking at maxSize
     val keepAlive = 2000L
-    val fjp = this.getClass.getClassLoader.create[ForkJoinPool](path, _ => ())(n, factory, ueh, async, coreSize, maxSize, minRun, saturate, keepAlive, Milliseconds)
-    //ForkJoinPool(int parallelism, ForkJoinPool.ForkJoinWorkerThreadFactory factory, Thread.UncaughtExceptionHandler handler, boolean asyncMode, int corePoolSize, int maximumPoolSize, int minimumRunnable, Predicate<? super ForkJoinPool> saturate, long keepAliveTime, TimeUnit unit)
-    new ExecutionContextExecutorService {
-      // Members declared in scala.concurrent.ExecutionContext
-      def reportFailure(cause: Throwable): Unit = report(null, cause)
-
-      // Members declared in java.util.concurrent.Executor
-      def execute(r: Runnable): Unit = fjp.execute(r)
-
-      // Members declared in java.util.concurrent.ExecutorService
-      def awaitTermination(x$1: Long, x$2: java.util.concurrent.TimeUnit): Boolean = ???
-      def invokeAll[T](x$1: java.util.Collection[_ <: java.util.concurrent.Callable[T]], x$2: Long, x$3: java.util.concurrent.TimeUnit): java.util.List[java.util.concurrent.Future[T]] = ???
-      def invokeAll[T](x$1: java.util.Collection[_ <: java.util.concurrent.Callable[T]]): java.util.List[java.util.concurrent.Future[T]] = ???
-      def invokeAny[T](x$1: java.util.Collection[_ <: java.util.concurrent.Callable[T]], x$2: Long, x$3: java.util.concurrent.TimeUnit): T = ???
-      def invokeAny[T](x$1: java.util.Collection[_ <: java.util.concurrent.Callable[T]]): T = ???
-      def isShutdown(): Boolean = fjp.isShutdown
-      def isTerminated(): Boolean = fjp.isTerminated
-      def shutdown(): Unit = fjp.shutdown()
-      def shutdownNow(): java.util.List[Runnable] = fjp.shutdownNow()
-      def submit(r: Runnable): java.util.concurrent.Future[_] = fjp.submit(r)
-      def submit[T](task: Runnable, res: T): java.util.concurrent.Future[T] = fjp.submit(task, res)
-      def submit[T](task: java.util.concurrent.Callable[T]): java.util.concurrent.Future[T] = fjp.submit(task)
-    }
+    val fjp = new ForkJoinPool(n, factory, ueh, async, coreSize, maxSize, minRun, saturate, keepAlive, Milliseconds)
+    ExecutionContext.fromExecutorService(fjp, report(null, _))
   }
 
   def testUncaughtExceptionReporting(ec: ExecutionContextExecutorService): Unit = once {
