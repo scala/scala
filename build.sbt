@@ -430,7 +430,10 @@ lazy val library = configureAsSubproject(project)
     // Include *.txt files in source JAR:
     Compile / packageSrc / mappings ++= {
       val base = (Compile / unmanagedResourceDirectories).value
-      base ** "*.txt" pair Path.relativeTo(base)
+      (base ** "*.txt" pair Path.relativeTo(base)) ++ {
+        val auxBase = (ThisBuild / baseDirectory).value / "src/library-aux"
+        auxBase ** ("*.scala" || "*.java") pair Path.relativeTo(auxBase)
+      }
     },
     Osgi.headers += "Import-Package" -> "sun.misc;resolution:=optional, *",
     Osgi.jarlist := true,
