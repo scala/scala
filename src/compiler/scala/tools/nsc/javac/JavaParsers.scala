@@ -375,7 +375,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      *  // We only support a subset of the Java syntax that can form constant expressions.
      *  //   https://docs.oracle.com/javase/specs/jls/se14/html/jls-15.html#jls-15.29
      *  //
-     *  // Luckily, we can just parse matching `(` and `)` to find our way to the end of the the argument list.
+     *  // Luckily, we can just parse matching `(` and `)` to find our way to the end of the argument list.
      *  // and drop the arguments until we implement full support for Java constant expressions
      *  //
      *  ConditionalExpressionSubset := Literal

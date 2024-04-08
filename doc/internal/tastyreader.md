@@ -99,7 +99,7 @@ In the above, relative paths will be calculated from the working directory of `t
 
 Because these commands are run from sbt, incremental changes can be made to the code for the TASTy reader and then step `2` can be immediately re-run to observe new behaviour of the compiler.
 
-In the output of the above step `2`, you will see the the following snippet, showing progress in traversing TASTy and understanding the definition of `trait Dull`:
+In the output of the above step `2`, you will see the following snippet, showing progress in traversing TASTy and understanding the definition of `trait Dull`:
 ```scala
 #[trait Dull]: Addr(4) completing Symbol(trait Dull, #6286):
 #[trait Dull]: Addr(7) No symbol found at current address, ensuring one exists:
