@@ -14,7 +14,6 @@ package scala.tools.nsc.interpreter
 package jline
 
 import org.jline.builtins.InputRC
-import org.jline.keymap.KeyMap
 import org.jline.reader.Parser.ParseContext
 import org.jline.reader._
 import org.jline.reader.impl.{CompletionMatcherImpl, DefaultParser, LineReaderImpl}
@@ -150,8 +149,6 @@ object Reader {
       case NonFatal(_) =>
     } //ignore
 
-    val keyMap = reader.getKeyMaps.get("main")
-
     object ScalaShowType {
       val Name = "scala-show-type"
       private var lastInvokeLocation: Option[(String, Int)] = None
@@ -180,13 +177,6 @@ object Reader {
     }
     reader.getWidgets().put(ScalaShowType.Name, () => ScalaShowType())
 
-    locally {
-      import LineReader._
-      // VIINS, VICMD, EMACS
-      val keymap = if (config.viMode) VIINS else EMACS
-      reader.getKeyMaps.put(MAIN, reader.getKeyMaps.get(keymap));
-      keyMap.bind(new Reference(ScalaShowType.Name), KeyMap.alt(KeyMap.ctrl('t')))
-    }
     def secure(p: java.nio.file.Path): Unit = {
       try scala.reflect.internal.util.OwnerOnlyChmod.chmodFileOrCreateEmpty(p)
       catch { case scala.util.control.NonFatal(e) =>

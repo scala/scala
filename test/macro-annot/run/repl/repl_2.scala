@@ -4,7 +4,7 @@ import scala.tools.nsc.interpreter.shell._
 object Test extends App {
   private def repl(code: String): String = {
     val s = new Settings
-    s.Xjline.value = "off"
+    s.Xnojline.value = true
     s.usejavacp.value = false
     s.classpath.value = sys.props("sbt.paths.tests.classpath")
     s.plugin.value = List(sys.props("sbt.paths.plugin.jar"))
