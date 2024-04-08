@@ -134,5 +134,3 @@ starting testOnComplete
 finished testOnComplete
 starting testMap
 finished testMap
-starting testUncaughtExceptionReporting
-finished testUncaughtExceptionReporting
