@@ -1,0 +1,4 @@
+JTest.java:3: error: illegal start of type declaration
+import java.util.*;
+       ^
+1 error
