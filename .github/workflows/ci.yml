@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        java: [8, 11, 17, 21]
+        java: [8, 11, 17, 21, 22]
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
