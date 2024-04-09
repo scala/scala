@@ -1703,6 +1703,7 @@ abstract class RefChecks extends Transform {
 
           transform(qual)
       case Apply(fn, args) =>
+        currentApplication = tree
         // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
         // analyses in the pattern matcher
         if (!inPattern) {
@@ -1710,13 +1711,14 @@ abstract class RefChecks extends Transform {
           checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
           checkNamedBooleanArgs(fn, args)
         }
-        currentApplication = tree
         tree
     }
 
     /** Check that boolean literals are passed as named args.
-     *  The rule is enforced when the type of the parameter is `Boolean`.
-     *  The rule is relaxed when the method has exactly one boolean parameter
+     *  The rule is enforced when the type of the parameter is `Boolean`,
+     *  and there is more than one parameter with an unnamed argument.
+     *  The stricter lint warns for any unnamed argument,
+     *  except that the rule is relaxed when the method has exactly one boolean parameter
      *  and it is the first parameter, such as `assert(false, msg)`.
      */
     private def checkNamedBooleanArgs(fn: Tree, args: List[Tree]): Unit = {
@@ -1724,26 +1726,52 @@ abstract class RefChecks extends Transform {
       def applyDepth: Int = {
         def loop(t: Tree, d: Int): Int =
           t match {
-            case Apply(f, _) => loop(f, d+1)
+            case Apply(t, _) => loop(t, d+1)
             case _ => d
           }
         loop(fn, 0)
       }
-      def isAssertParadigm(params: List[Symbol]): Boolean = !sym.isConstructor && !sym.isCaseApplyOrUnapply && {
-        params match {
-          case h :: t => h.tpe == BooleanTpe && !t.exists(_.tpe == BooleanTpe)
-          case _ => false
-        }
-      }
-      if (settings.lintNamedBooleans && !sym.isJavaDefined && !args.isEmpty) {
+      if (settings.warnUnnamedBoolean.value && !sym.isJavaDefined && !args.isEmpty) {
+        val strictly = settings.warnUnnamedStrict.value // warn about any unnamed boolean arg, modulo "assert"
         val params = sym.paramLists(applyDepth)
-        if (!isAssertParadigm(params))
-          foreach2(args, params)((arg, param) => arg match {
-            case Literal(Constant(_: Boolean))
-            if arg.hasAttachment[UnnamedArg.type] && param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
-              runReporting.warning(arg.pos, s"Boolean literals should be passed using named argument syntax for parameter ${param.name}.", WarningCategory.LintNamedBooleans, sym)
-            case _ =>
-          })
+        val numBools = params.count(_.tpe == BooleanTpe)
+        def onlyLeadingBool = numBools == 1 && params.head.tpe == BooleanTpe
+        val checkable = if (strictly) numBools > 0 && !onlyLeadingBool else numBools >= 2
+        if (checkable) {
+          def isUnnamedArg(t: Tree) = t.hasAttachment[UnnamedArg.type]
+          def isNameableBoolean(param: Symbol) = param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME)
+          val unnamed = args.lazyZip(params).filter {
+            case (arg @ Literal(Constant(_: Boolean)), param) => isNameableBoolean(param) && isUnnamedArg(arg)
+            case _ => false
+          }
+          def numSuspicious = unnamed.length + {
+            analyzer.NamedApplyBlock.namedApplyInfo(currentApplication) match {
+              case Some(analyzer.NamedApplyInfo(_, _, _, _, original)) =>
+                val treeInfo.Applied(_, _, argss) = original
+                argss match {
+                  case h :: _ =>
+                    val allParams = sym.paramLists.flatten
+                    h.count {
+                      case treeInfo.Applied(getter, _, _) if getter.symbol != null && getter.symbol.isDefaultGetter =>
+                        val (_, i) = nme.splitDefaultGetterName(getter.symbol.name)
+                        i > 0 && isNameableBoolean(allParams(i-1))
+                      case _ => false
+                    }
+                  case _ => 0
+                }
+              case _ => args.count(arg => arg.symbol != null && arg.symbol.isDefaultGetter)
+            }
+          }
+          val warn = !unnamed.isEmpty && (strictly || numSuspicious >= 2)
+          if (warn)
+            unnamed.foreach {
+              case (arg, param) =>
+                val msg = s"Boolean literals should be passed using named argument syntax for parameter ${param.name}."
+                val action = runReporting.codeAction("name boolean literal", arg.pos.focusStart, s"${param.name} = ", msg)
+                runReporting.warning(arg.pos, msg, WarningCategory.WFlagNamedLiteral, sym, action)
+              case _ =>
+            }
+        }
       }
     }
 

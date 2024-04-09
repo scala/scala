@@ -149,4 +149,20 @@ class QuickfixTest extends BytecodeTesting {
         |""".stripMargin
     testQuickfixs(a2s, b2, "-Xsource:3 -quickfix:any")
   }
+
+  @Test def `named boolean literal lint has a fix`: Unit = {
+    val a =
+      sm"""|class C {
+           |  def f(hasState: Boolean, isMutable: Boolean): Boolean = hasState && isMutable
+           |  def test = f(true, false)
+           |}
+           |"""
+    val b =
+      sm"""|class C {
+           |  def f(hasState: Boolean, isMutable: Boolean): Boolean = hasState && isMutable
+           |  def test = f(hasState = true, isMutable = false)
+           |}
+           |"""
+    testQuickfix(a, b, "-Wunnamed-boolean-literal -quickfix:any")
+  }
 }

@@ -169,6 +169,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-Wconf:cat=optimizer:is",
     // we use @nowarn for methods that are deprecated in JDK > 8, but CI/release is under JDK 8
     "-Wconf:cat=unused-nowarn:s",
+    //"-Wunnamed-boolean-literal-strict",
     ),
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",

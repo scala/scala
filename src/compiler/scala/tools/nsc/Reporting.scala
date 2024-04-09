@@ -571,6 +571,7 @@ object Reporting {
         WFlagExtraImplicit,
         WFlagNumericWiden,
         WFlagSelfImplicit,
+        WFlagNamedLiteral,
         WFlagValueDiscard
       = wflag()
 
@@ -623,8 +624,7 @@ object Reporting {
         LintPerformance,
         LintIntDivToFloat,
         LintUniversalMethods,
-        LintNumericMethods,
-        LintNamedBooleans
+        LintNumericMethods
       = lint()
 
     sealed class Feature extends WarningCategory {

@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:named-booleans
+//> using options -Werror -Wunnamed-boolean-literal-strict
 
 class C {
   def f(n: Int = 42, x: Boolean, y: Boolean) = if (x && y) n else 0
@@ -60,5 +60,14 @@ class Functions {
 case class Klazz(isKlazz: Boolean)
 
 class Klazzy {
-  def test = Klazz(true) // warn case class apply as for ctor
+  def test = Klazz(true) // nowarn case class apply as for ctor
+}
+
+class Defaulting {
+  def f(n: Int, up: Boolean = true, down: Boolean = false) = if (up) n+1 else if (down) n-1 else n
+  def g0 = f(42)
+  def g1 = f(42, up=false)
+  def g2 = f(42, up=false, true)
+  def g3 = f(42, false)
+  def g4 = f(42, false, true)
 }

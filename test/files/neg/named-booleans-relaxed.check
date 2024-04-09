@@ -1,0 +1,54 @@
+named-booleans-relaxed.scala:22: warning: Boolean literals should be passed using named argument syntax for parameter x. [quickfixable]
+  val x0 = c.f(17, true, false) // warn
+                   ^
+named-booleans-relaxed.scala:22: warning: Boolean literals should be passed using named argument syntax for parameter y. [quickfixable]
+  val x0 = c.f(17, true, false) // warn
+                         ^
+named-booleans-relaxed.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter cond. [quickfixable]
+  c.uncheck(false, "OK", true)
+            ^
+named-booleans-relaxed.scala:44: warning: Boolean literals should be passed using named argument syntax for parameter flag. [quickfixable]
+  c.uncheck(false, "OK", true)
+                         ^
+named-booleans-relaxed.scala:63: warning: Boolean literals should be passed using named argument syntax for parameter isKlazz. [quickfixable]
+  def test = Klazz(true, false) // warn case class apply as for ctor
+                   ^
+named-booleans-relaxed.scala:63: warning: Boolean literals should be passed using named argument syntax for parameter isWarnable. [quickfixable]
+  def test = Klazz(true, false) // warn case class apply as for ctor
+                         ^
+named-booleans-relaxed.scala:71: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def g3 = f(42, false) // warn, unnamed could mean either param with default
+                 ^
+named-booleans-relaxed.scala:72: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def g4 = f(42, false, true) // warn, swappable
+                 ^
+named-booleans-relaxed.scala:72: warning: Boolean literals should be passed using named argument syntax for parameter down. [quickfixable]
+  def g4 = f(42, false, true) // warn, swappable
+                        ^
+named-booleans-relaxed.scala:79: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def rev3 = rev(42, reverse=true, false) // warn, unnamed could mean either param with default
+                                   ^
+named-booleans-relaxed.scala:80: warning: Boolean literals should be passed using named argument syntax for parameter reverse. [quickfixable]
+  def rev4 = rev(42, false, true, false) // warn, swappable
+                     ^
+named-booleans-relaxed.scala:80: warning: Boolean literals should be passed using named argument syntax for parameter up. [quickfixable]
+  def rev4 = rev(42, false, true, false) // warn, swappable
+                            ^
+named-booleans-relaxed.scala:80: warning: Boolean literals should be passed using named argument syntax for parameter down. [quickfixable]
+  def rev4 = rev(42, false, true, false) // warn, swappable
+                                  ^
+named-booleans-relaxed.scala:81: warning: Boolean literals should be passed using named argument syntax for parameter reverse. [quickfixable]
+  def rev5 = rev(42, true, down=true) // warn, out of order so it's a named block, otherwise same as rev3
+                     ^
+named-booleans-relaxed.scala:92: warning: Boolean literals should be passed using named argument syntax for parameter insideIf. [quickfixable]
+  def sus(s: String) = p.needsParentheses(s)(false) // warn
+                                             ^
+named-booleans-relaxed.scala:95: warning: Boolean literals should be passed using named argument syntax for parameter x. [quickfixable]
+  def f = p.f(true, z=42) // warn
+              ^
+named-booleans-relaxed.scala:106: warning: Boolean literals should be passed using named argument syntax for parameter y. [quickfixable]
+  def w = new V(true).combo(false)
+                            ^
+error: No warnings can be incurred under -Werror.
+17 warnings
+1 error
