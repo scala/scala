@@ -129,7 +129,7 @@ abstract class Any {
    *    will return true for any value of `x`.
    *
    *  This is exactly equivalent to the type pattern `_: T0`
-   * 
+   *
    *  @note due to the unexpectedness of `List(1, 2, 3).isInstanceOf[List[String]]` returning true and
    *  `x.isInstanceOf[A]` where `A` is a type parameter or abstract member returning true,
    *  these forms issue a warning.
@@ -138,15 +138,36 @@ abstract class Any {
    */
   final def isInstanceOf[T0]: Boolean = sys.error("isInstanceOf")
 
-  /** Cast the receiver object to be of type `T0`.
+  /** Forces the compiler to treat the receiver object as having type `T0`,
+   *  even though doing so may violate type safety.
    *
-   *  Note that the success of a cast at runtime is modulo Scala's erasure semantics.
-   *  Therefore the expression `1.asInstanceOf[String]` will throw a `ClassCastException` at
-   *  runtime, while the expression `List(1).asInstanceOf[List[String]]` will not.
-   *  In the latter example, because the type argument is erased as part of compilation it is
-   *  not possible to check whether the contents of the list are of the requested type.
+   *  This method is useful when you believe you have type information the compiler doesn't,
+   *  and it also isn't possible to check the type at runtime.
+   *  In such situations, skipping type safety is the only option.
    *
-   *  @throws ClassCastException if the receiver object is not an instance of the erasure of type `T0`.
+   *  It is platform dependent whether `asInstanceOf` has any effect at runtime.
+   *  It might do a runtime type test on the erasure of `T0`,
+   *  insert a conversion (such as boxing/unboxing), fill in a default value, or do nothing at all.
+   *
+   *  In particular, `asInstanceOf` is not a type test. It does **not** mean:
+   *  {{{
+   *   this match {
+   *    case x: T0 => x
+   *    case _     => throw ClassCastException("...")
+   *  }}}
+   *  Use pattern matching or [[isInstanceOf]] for type testing instead.
+   *
+   *  Situations where `asInstanceOf` is useful:
+   *  - when flow analysis fails to deduce `T0` automatically
+   *  - when down-casting a type parameter or an abstract type member (which cannot be checked at runtime due to type erasure)
+   *  If there is any doubt and you are able to type test instead, you should do so.
+   *
+   *  Be careful of using `asInstanceOf` when `T0` is a primitive type.
+   *  When `T0` is primitive, `asInstanceOf` may insert a conversion instead of a type test.
+   *  If your intent is to convert, use a `toT` method (`x.toChar`, `x.toByte`, etc.).
+   *
+   *  @throws ClassCastException if the receiver is not an instance of the erasure of `T0`,
+   *    if that can be checked on this platform
    *  @return the receiver object.
    */
   final def asInstanceOf[T0]: T0 = sys.error("asInstanceOf")
