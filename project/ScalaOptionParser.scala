@@ -126,5 +126,5 @@ object ScalaOptionParser {
   private def scaladocPathSettingNames = List("-doc-root-content", "-diagrams-dot-path")
   private def scaladocMultiStringSettingNames = List("-doc-external-doc")
 
-  private val targetSettingNames = (5 to 22).flatMap(v => s"$v" :: s"jvm-1.$v" :: s"jvm-$v" :: s"1.$v" :: Nil).toList
+  private val targetSettingNames = (5 to 23).flatMap(v => s"$v" :: s"jvm-1.$v" :: s"jvm-$v" :: s"1.$v" :: Nil).toList
 }
