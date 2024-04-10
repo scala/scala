@@ -18,7 +18,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def runPipelined(): Unit = {
     assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
@@ -29,7 +29,7 @@ class TastyTestJUnit {
       outDirs                 = None,
       additionalSettings      = Nil,
       additionalDottySettings = Nil
-    ).eval
+    ).eval()
   }
 
   @test def pos(): Unit = TastyTest.posSuite(
@@ -39,7 +39,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   /** false positives that should fail, but work when annotations are not read */
   @test def posFalseNoAnnotations(): Unit = TastyTest.posSuite(
@@ -49,7 +49,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Seq("-Ytasty-no-annotations"),
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def posDoctool(): Unit = TastyTest.posDocSuite(
     src                     = "pos-doctool",
@@ -58,7 +58,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def neg(): Unit = TastyTest.negSuite(
     src                     = "neg",
@@ -67,7 +67,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def negPipelined(): Unit = {
     assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
@@ -78,7 +78,7 @@ class TastyTestJUnit {
       outDirs                 = None,
       additionalSettings      = Nil,
       additionalDottySettings = Nil
-    ).eval
+    ).eval()
   }
 
   @test def negMoveMacros(): Unit = TastyTest.negChangePreSuite(
@@ -88,7 +88,7 @@ class TastyTestJUnit {
     outDirs                 = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def negIsolated(): Unit = TastyTest.negSuiteIsolated(
     src                     = "neg-isolated",
@@ -97,7 +97,7 @@ class TastyTestJUnit {
     outDirs                 = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   @test def negFullCircle(): Unit = TastyTest.negFullCircleSuite(
     src                     = "neg-full-circle",
@@ -106,7 +106,7 @@ class TastyTestJUnit {
     outDir                  = None,
     additionalSettings      = Nil,
     additionalDottySettings = Nil
-  ).eval
+  ).eval()
 
   val propSrc     = "tastytest.src"
   val propPkgName = "tastytest.packageName"
@@ -135,7 +135,7 @@ object TastyTestJUnit {
   }
 
   final implicit class TryOps(val op: Try[Unit]) extends AnyVal {
-    def eval: Unit = op match {
+    def eval(): Unit = op match {
       case Failure(err) => fail(err.getMessage)
       case _ => ()
     }
