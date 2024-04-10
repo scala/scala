@@ -1,0 +1,6 @@
+t12984.scala:12: warning: class D is deprecated (since 2.0): Will be phased out eventually someday.
+  def d = new D
+              ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

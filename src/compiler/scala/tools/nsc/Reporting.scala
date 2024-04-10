@@ -53,11 +53,22 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
       case Right(conf) =>
-        // configure cat=scala3-migration if it isn't yet
+        // configure cat=scala3-migration:e and if -deprecation cat=deprecation:w or s (instead of default ws)
+        val adjusted =
+          if (settings.deprecation.isSetByUser) {
+            val (user, defaults) = conf.filters.splitAt(conf.filters.length - settings.WconfDefault.length)
+            val Deprecation = MessageFilter.Category(WarningCategory.Deprecation)
+            val action = if (settings.deprecation.value) Action.Warning else Action.Silent
+            val fixed = defaults.map {
+              case (cat @ Deprecation :: Nil, Action.WarningSummary) => cat -> action
+              case other => other
+            }
+            conf.copy(filters = user ::: fixed)
+          }
+          else conf
         val Migration = MessageFilter.Category(WarningCategory.Scala3Migration)
         val boost = (settings.isScala3: @nowarn) && !conf.filters.exists(_._1.exists(_ == Migration))
-        if (boost) conf.copy(filters = conf.filters :+ (Migration :: Nil, Action.Error))
-        else conf
+        if (boost) adjusted.copy(filters = adjusted.filters :+ (Migration :: Nil, Action.Error)) else adjusted
     }
 
     private lazy val quickfixFilters = {

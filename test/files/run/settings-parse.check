@@ -12,55 +12,46 @@
 
 3) List(-cp, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 4) List(-cp, , , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 5) List(-cp, , -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 6) List(, -cp, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 7) List(-cp, , -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 8) List(-cp, , , -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 9) List(-cp, , -deprecation, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 10) List(-cp, , -deprecation, foo.scala, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 11) List(, -cp, , -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
@@ -82,115 +73,96 @@
 
 16) List(-cp, , foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 17) List(-cp, , , foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 18) List(-cp, , foo.scala, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 19) List(-cp, , foo.scala, -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 20) List(, -cp, , foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 21) List(-deprecation, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 22) List(, -deprecation, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 23) List(-deprecation, -cp, , ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 24) List(-deprecation, , -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 25) List(-deprecation, -cp, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 26) List(, -deprecation, -cp, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 27) List(-deprecation, -cp, , , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 28) List(-deprecation, -cp, , foo.scala, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 29) List(-deprecation, , -cp, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 30) List(-deprecation, foo.scala, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 31) List(, -deprecation, foo.scala, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 32) List(-deprecation, , foo.scala, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 33) List(-deprecation, foo.scala, -cp, , ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 34) List(-deprecation, foo.scala, , -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
@@ -212,61 +184,51 @@
 
 39) List(foo.scala, -cp, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 40) List(, foo.scala, -cp, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 41) List(foo.scala, -cp, , , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 42) List(foo.scala, -cp, , -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 43) List(foo.scala, , -cp, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 44) List(foo.scala, -deprecation, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 45) List(, foo.scala, -deprecation, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 46) List(foo.scala, , -deprecation, -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 47) List(foo.scala, -deprecation, -cp, , ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
 48) List(foo.scala, -deprecation, , -cp, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = ""
 }
 
@@ -284,55 +246,46 @@
 
 3) List(-cp, /tmp:/bippy, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 4) List(-cp, /tmp:/bippy, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 5) List(-cp, /tmp:/bippy, -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 6) List(, -cp, /tmp:/bippy, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 7) List(-cp, /tmp:/bippy, -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 8) List(-cp, /tmp:/bippy, , -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 9) List(-cp, /tmp:/bippy, -deprecation, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 10) List(-cp, /tmp:/bippy, -deprecation, foo.scala, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 11) List(, -cp, /tmp:/bippy, -deprecation, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
@@ -354,115 +307,96 @@
 
 16) List(-cp, /tmp:/bippy, foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 17) List(-cp, /tmp:/bippy, , foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 18) List(-cp, /tmp:/bippy, foo.scala, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 19) List(-cp, /tmp:/bippy, foo.scala, -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 20) List(, -cp, /tmp:/bippy, foo.scala, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 21) List(-deprecation, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 22) List(, -deprecation, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 23) List(-deprecation, -cp, /tmp:/bippy, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 24) List(-deprecation, , -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 25) List(-deprecation, -cp, /tmp:/bippy, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 26) List(, -deprecation, -cp, /tmp:/bippy, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 27) List(-deprecation, -cp, /tmp:/bippy, , foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 28) List(-deprecation, -cp, /tmp:/bippy, foo.scala, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 29) List(-deprecation, , -cp, /tmp:/bippy, foo.scala) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 30) List(-deprecation, foo.scala, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 31) List(, -deprecation, foo.scala, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 32) List(-deprecation, , foo.scala, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 33) List(-deprecation, foo.scala, -cp, /tmp:/bippy, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 34) List(-deprecation, foo.scala, , -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
@@ -484,61 +418,51 @@
 
 39) List(foo.scala, -cp, /tmp:/bippy, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 40) List(, foo.scala, -cp, /tmp:/bippy, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 41) List(foo.scala, -cp, /tmp:/bippy, , -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 42) List(foo.scala, -cp, /tmp:/bippy, -deprecation, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 43) List(foo.scala, , -cp, /tmp:/bippy, -deprecation) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 44) List(foo.scala, -deprecation, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 45) List(, foo.scala, -deprecation, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 46) List(foo.scala, , -deprecation, -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 47) List(foo.scala, -deprecation, -cp, /tmp:/bippy, ) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
 48) List(foo.scala, -deprecation, , -cp, /tmp:/bippy) ==> Settings {
   -deprecation = true
-  -Wconf = List(cat=deprecation:w, cat=deprecation:ws, cat=feature:ws, cat=optimizer:ws)
   -classpath = /tmp:/bippy
 }
 
