@@ -61,7 +61,8 @@ object StreamCapture {
     extra.foreach { case (k, v) => modified.setProperty(k, v) }
     // Trying to avoid other threads seeing the new properties object prior to the new entries
     // https://github.com/scala/scala/pull/6391#issuecomment-371346171
-    UnsafeAccess.U.storeFence()
+    // (JDK 22 deprecates `storeFence`; once we drop JDK 8 we can use the VarHandles one instead)
+    UnsafeAccess.U.storeFence(): @annotation.nowarn("cat=deprecation")
     System.setProperties(modified)
     try {
       action
