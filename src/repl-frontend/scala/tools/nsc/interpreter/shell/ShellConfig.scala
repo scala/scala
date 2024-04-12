@@ -25,6 +25,7 @@ import scala.tools.nsc.Properties.{
   shellBannerString, shellInterruptedString, shellPromptString, shellWelcomeString,
   userHome, versionString, versionNumberString,
 }
+import scala.util.Properties.isJavaAtLeast
 
 object ShellConfig {
   val EDITOR = envOrNone("EDITOR")
@@ -38,7 +39,7 @@ object ShellConfig {
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
       val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
-      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
+      override val haveInteractiveConsole: Boolean = super.haveInteractiveConsole && !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
     case _ => new ShellConfig {
@@ -47,7 +48,7 @@ object ShellConfig {
       val batchText: String = ""
       val batchMode: Boolean = false
       val doCompletion: Boolean = !settings.noCompletion.value
-      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
+      override val haveInteractiveConsole: Boolean = super.haveInteractiveConsole && !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
   }
@@ -59,7 +60,15 @@ trait ShellConfig {
   def batchText: String
   def batchMode: Boolean
   def doCompletion: Boolean
-  def haveInteractiveConsole: Boolean
+  def haveInteractiveConsole: Boolean = System.console != null && consoleIsTerminal
+
+  // false if JDK 22 and the system console says !isTerminal
+  def consoleIsTerminal: Boolean = {
+    def isTerminal: Boolean =
+      try classOf[java.io.Console].getMethod("isTerminal", null).invoke(System.console).asInstanceOf[Boolean]
+      catch { case _: NoSuchMethodException => false }
+    !isJavaAtLeast(22) || isTerminal
+  }
 
   // source compatibility, i.e., -Xsource
   def xsource: String
@@ -68,7 +77,7 @@ trait ShellConfig {
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
-  val colorOk = coloredOutputEnabled
+  val colorOk = coloredOutputEnabled && haveInteractiveConsole
 
   val historyFile = s"$userHome/.scala_history_jline3"
 
