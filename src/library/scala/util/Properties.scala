@@ -141,8 +141,22 @@ private[scala] trait PropertiesTrait {
   /* Some runtime values. */
   private[scala] lazy val isAvian = javaVmName.contains("Avian")
 
+  /* As per scala/scala-dev#867, we need to do this differently on JDK 22+ */
+  private[scala] def isTerminal(): Boolean = {
+    val console = System.console()
+    console != null && {
+      type HasIsTerminal = { def isTerminal(): Boolean }
+      import scala.language.reflectiveCalls
+      try console.asInstanceOf[HasIsTerminal].isTerminal()
+      catch {
+        case ex: NoSuchMethodException =>
+          true
+      }
+    }
+  }
+
   private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
-    case "auto" => System.console() != null && !isWin
+    case "auto" => isTerminal() && !isWin
     case s      => s == "" || "true".equalsIgnoreCase(s)
   }
 
