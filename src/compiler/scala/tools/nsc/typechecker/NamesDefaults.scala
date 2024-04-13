@@ -188,11 +188,12 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(freshTermName(nme.QUAL_PREFIX)(typer.fresh), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
+        val sym = blockTyper.context.owner.newValue(freshTermName(nme.QUAL_PREFIX)(typer.fresh), newFlags = ARTIFACT)
+                  .setInfo(uncheckedBounds(qual.tpe))
+                  .setPos(qual.pos.makeTransparent)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
-        // it stays in Vegas: scala/bug#5720, scala/bug#5727
-        qual.changeOwner(blockTyper.context.owner, sym)
+        qual.changeOwner(blockTyper.context.owner, sym) // scala/bug#5720, scala/bug#5727
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
         val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
@@ -200,7 +201,9 @@ trait NamesDefaults { self: Analyzer =>
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, scala/bug#5259.
           val selectPos =
-            if(qual.pos.isRange && baseFun1.pos.isRange) qual.pos.union(baseFun1.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end))
+            if (qual.pos.isRange && baseFun1.pos.isRange)
+              if (qual.pos == baseFun1.pos) qual.pos
+              else qual.pos.union(baseFun1.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end)) // range that does not overlap
             else baseFun1.pos
           val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol).setPos(selectPos))
           if (funTargs.isEmpty) f

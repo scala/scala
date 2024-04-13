@@ -1354,7 +1354,6 @@ self =>
     def selector(start: Offset, t0: Tree): Tree = {
       val t = stripParens(t0)
       val point = if (isIdent) in.offset else in.lastOffset //scala/bug#8459
-      //assert(t.pos.isDefined, t)
       if (t != EmptyTree)
         Select(t, ident(skipIt = false)) setPos r2p(start, point, in.lastOffset)
       else

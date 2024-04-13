@@ -7,4 +7,7 @@ trait X {
     f"a\vc",
     f"\v$x%.4s, Fred",
   )
+  def s = Seq(
+    s"She said, $x. And then \s.",
+  )
 }

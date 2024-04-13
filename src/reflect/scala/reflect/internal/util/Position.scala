@@ -37,9 +37,11 @@ object Position {
   final val tabInc = 8
 
   private def validate[T <: Position](pos: T): T = {
-    if (pos.isRange)
-      assert(pos.start <= pos.end, s"bad position: ${pos.show}")
-
+    if (pos.isRange) {
+      import pos.{pos => _, _}
+      assert(start <= end, s"bad position: ${pos.show}")
+      //assert(start <= point && point < end, s"bad position: point $point out of range $start..$end: ${pos.show}")
+    }
     pos
   }
 

@@ -13,6 +13,9 @@
 package scala.tools
 package reflect
 
+import scala.StringContext.{InvalidEscapeException, InvalidUnicodeEscapeException, processEscapes, processUnicode}
+import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.Position
 import nsc.Reporting.WarningCategory.{Scala3Migration, WFlagTostringInterpolated}
 
 trait FastStringInterpolator extends FormatInterpolator {
@@ -26,45 +29,46 @@ trait FastStringInterpolator extends FormatInterpolator {
   // rewrite a tree like `scala.StringContext.apply("hello \\n ", " ", "").s("world", Test.this.foo)`
   // to `"hello \n world ".+(Test.this.foo)`
   private def interpolated(macroApp: Tree, isRaw: Boolean): Tree = macroApp match {
-    case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), _interpol@_), args) if
-      stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
-      treeInfo.isQualifierSafeToElide(qualSC) &&
-      parts.forall(treeInfo.isLiteralString) &&
-      parts.length == (args.length + 1) =>
+    case Apply(Select(Apply(stringCtx @ Select(qualSC, _), parts), _interpol@_), args)
+    if stringCtx.symbol == currentRun.runDefinitions.StringContext_apply
+    && treeInfo.isQualifierSafeToElide(qualSC)
+    && parts.forall(treeInfo.isLiteralString)
+    && parts.length == (args.length + 1) =>
 
-      val treated = 
-        try
-          parts.mapConserve {
-            case lit @ Literal(Constant(stringVal: String)) =>
-              def asRaw = if (currentRun.sourceFeatures.unicodeEscapesRaw) stringVal else {
-                val processed = StringContext.processUnicode(stringVal)
-                if (processed == stringVal) stringVal else {
-                  val pos = {
-                    val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
-                      case ((p, o), i) if p != o => i
-                    }.getOrElse(processed.length - 1)
-                    lit.pos.withShift(diffindex)
-                  }
-                  def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
-                  if (currentRun.isScala3)
-                    runReporting.warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), Scala3Migration, c.internal.enclosingOwner)
-                  else
-                    runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")
-                  processed
-                }
+      def adjustedEscPos(p: Position, delta: Int) = {
+        val start = p.start + delta
+        Position.range(p.source, start = start, point = start, end = start + 2)
+      }
+      val treated = parts.mapConserve {
+        case lit @ Literal(Constant(stringVal: String)) =>
+          def asRaw = if (currentRun.sourceFeatures.unicodeEscapesRaw) stringVal else {
+            val processed = processUnicode(stringVal)
+            if (processed == stringVal) stringVal else {
+              val pos = {
+                val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
+                  case ((p, o), i) if p != o => i
+                }.getOrElse(processed.length - 1)
+                lit.pos.withShift(diffindex)
               }
-              val value =
-                if (isRaw) asRaw
-                else StringContext.processEscapes(stringVal)
-              val k = Constant(value)
-              // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
-              treeCopy.Literal(lit, k).setType(ConstantType(k))
-            case x => throw new MatchError(x)
+              def msg(fate: String) = s"Unicode escapes in raw interpolations are $fate; use literal characters instead"
+              if (currentRun.isScala3)
+                runReporting.warning(pos, msg("ignored in Scala 3 (or with -Xsource-features:unicode-escapes-raw)"), Scala3Migration, c.internal.enclosingOwner)
+              else
+                runReporting.deprecationWarning(pos, msg("deprecated"), "2.13.2", "", "")
+              processed
+            }
           }
-        catch {
-          case ie: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(ie.index), ie.getMessage)
-          case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
-        }
+          val value =
+            try if (isRaw) asRaw else processEscapes(stringVal)
+            catch {
+              case ie: InvalidEscapeException => c.abort(adjustedEscPos(lit.pos, ie.index), ie.getMessage)
+              case iue: InvalidUnicodeEscapeException => c.abort(adjustedEscPos(lit.pos, iue.index), iue.getMessage)
+            }
+          val k = Constant(value)
+          // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
+          treeCopy.Literal(lit, k).setType(ConstantType(k))
+        case x => throw new MatchError(x)
+      }
 
       if (args.forall(treeInfo.isLiteralString)) {
         val it1 = treated.iterator
@@ -95,7 +99,7 @@ trait FastStringInterpolator extends FormatInterpolator {
 
   def concatenate(parts: List[Tree], args: List[Tree]): Tree = {
     val argsIndexed = args.toVector
-    val concatArgs = collection.mutable.ListBuffer[Tree]()
+    val concatArgs = ListBuffer.empty[Tree]
     val numLits = parts.length
     foreachWithIndex(parts.tail) { (lit, i) =>
       val treatedContents = lit.asInstanceOf[Literal].value.stringValue
@@ -116,11 +120,11 @@ trait FastStringInterpolator extends FormatInterpolator {
 
     var result: Tree = parts.head
     val chunkSize = 32
-    if (concatArgs.lengthCompare(chunkSize) <= 0) {
+    if (concatArgs.lengthCompare(chunkSize) <= 0)
       concatArgs.foreach { t =>
         result = mkConcat(t.pos, result, t)
       }
-    } else {
+    else
       concatArgs.toList.grouped(chunkSize).foreach {
         case group =>
           var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
@@ -129,7 +133,6 @@ trait FastStringInterpolator extends FormatInterpolator {
           }
           result = mkConcat(chunkResult.pos, result, chunkResult)
       }
-    }
 
     result
   }
