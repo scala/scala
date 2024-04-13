@@ -39,6 +39,9 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
+    // private[scala] member used by Properties and by REPL
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.consoleIsTerminal"),
+
   )
 
   override val buildSettings = Seq(

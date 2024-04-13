@@ -21,11 +21,10 @@ import scala.sys.Prop._
 
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
 import scala.tools.nsc.Properties.{
-  coloredOutputEnabled, envOrNone, javaVersion, javaVmName,
+  coloredOutputEnabled, consoleIsTerminal, envOrNone, javaVersion, javaVmName,
   shellBannerString, shellInterruptedString, shellPromptString, shellWelcomeString,
   userHome, versionString, versionNumberString,
 }
-import scala.util.Properties.isJavaAtLeast
 
 object ShellConfig {
   val EDITOR = envOrNone("EDITOR")
@@ -60,15 +59,7 @@ trait ShellConfig {
   def batchText: String
   def batchMode: Boolean
   def doCompletion: Boolean
-  def haveInteractiveConsole: Boolean = System.console != null && consoleIsTerminal
-
-  // false if JDK 22 and the system console says !isTerminal
-  def consoleIsTerminal: Boolean = {
-    def isTerminal: Boolean =
-      try classOf[java.io.Console].getMethod("isTerminal", null).invoke(System.console).asInstanceOf[Boolean]
-      catch { case _: NoSuchMethodException => false }
-    !isJavaAtLeast(22) || isTerminal
-  }
+  def haveInteractiveConsole: Boolean = consoleIsTerminal
 
   // source compatibility, i.e., -Xsource
   def xsource: String
@@ -77,7 +68,7 @@ trait ShellConfig {
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
-  val colorOk = coloredOutputEnabled && haveInteractiveConsole
+  val colorOk = coloredOutputEnabled
 
   val historyFile = s"$userHome/.scala_history_jline3"
 
