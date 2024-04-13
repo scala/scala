@@ -15,7 +15,7 @@ protected-constructors.scala:18: error: constructor Foo2 in class Foo2 cannot be
  enclosing object P in package hungus is not a subclass of
  class Foo2 in package dingus where target is defined
     val foo2 = new Foo2("abc")
-               ^
+                   ^
 protected-constructors.scala:19: error: class Foo3 in object Ding cannot be accessed as a member of object dingus.Ding from object P in package hungus
  Access to protected class Foo3 not permitted because
  enclosing object P in package hungus is not a subclass of

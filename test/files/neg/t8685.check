@@ -27,7 +27,7 @@ t8685.scala:50: warning: class C is deprecated (since now): class C is depr
               ^
 t8685.scala:51: warning: constructor D in class D is deprecated (since now): ctor D is depr
   def g = new D(42)
-          ^
+              ^
 t8685.scala:52: warning: class E is deprecated (since now): class E is depr
   def h = new E(42)
               ^

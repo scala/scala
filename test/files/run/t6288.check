@@ -21,7 +21,7 @@
           [89][89]case6()
       };
       [64:66]case6(){
-        [122:145][122]matchEnd4([122]throw [128][128][128]new [132]scala.MatchError([143]x1))
+        [122:145][122]matchEnd4([122]throw [128][132][132]new [132]scala.MatchError([143]x1))
       };
       [64:66]matchEnd4(x: [NoPosition]Unit){
         [64:66]x
@@ -49,7 +49,7 @@
           [246][246]case6()
       };
       [221:223]case6(){
-        [279:302][279]matchEnd4([279]throw [285][285][285]new [289]scala.MatchError([300]x1))
+        [279:302][279]matchEnd4([279]throw [285][289][289]new [289]scala.MatchError([300]x1))
       };
       [221:223]matchEnd4(x: [NoPosition]Unit){
         [221:223]x
@@ -77,7 +77,7 @@
           [390][390]case6()
       };
       [365:367]case6(){
-        [419:442][419]matchEnd4([419]throw [425][425][425]new [429]scala.MatchError([440]x1))
+        [419:442][419]matchEnd4([419]throw [425][429][429]new [429]scala.MatchError([440]x1))
       };
       [365:367]matchEnd4(x: [NoPosition]Unit){
         [365:367]x

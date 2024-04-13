@@ -10,10 +10,10 @@
   [87:209]class C extends [94:209][151:159]Greeting {
     [119:139]val nameElse = _;
     [95:101]<paramaccessor> private[this] val i: [98:101]Int = _;
-    <95:139>def <init>(<95:101>i: [98]Int) = <95:139>{
+    <94:139>def <init>(<95:101>i: [98]Int) = <94:139>{
       <119:139>val nameElse = <134:139>"Bob";
       [NoPosition][NoPosition][NoPosition]super.<init>();
-      <95:139>()
+      <94:139>()
     };
     [168:184]val name = [179:184]"avc";
     [191:203][191:198]println([199:202]msg)

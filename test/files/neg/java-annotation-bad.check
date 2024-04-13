@@ -3,13 +3,13 @@ Test_1.scala:12: error: Java annotation Ann_0 is abstract; cannot be instantiate
                  ^
 Test_1.scala:13: error: Java annotation Ann_0 is abstract; cannot be instantiated
   val b: Ann_0 = new Ann_0(Array()) // nok
-                 ^
+                     ^
 Test_1.scala:14: error: Java annotation Ann_1 is abstract; cannot be instantiated
   val c: Ann_1 = new Ann_1          // nok
                  ^
 Test_1.scala:15: error: Java annotation Ann_1 is abstract; cannot be instantiated
   val d: Ann_1 = new Ann_1(Array()) // nok
-                 ^
+                     ^
 Test_1.scala:18: error: type mismatch;
  found   : ann.Ann_0
  required: scala.annotation.Annotation

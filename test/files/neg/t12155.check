@@ -1,4 +1,4 @@
 t12155.scala:6: error: class Node in class C1 cannot be accessed as a member of C1[A,_$1] from package <empty>
 class D[A, C](val x: C1[A, _]#Node[C]) {
-                              ^
+                     ^
 1 error

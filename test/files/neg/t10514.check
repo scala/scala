@@ -4,7 +4,7 @@ argument expression's type is not compatible with formal parameter type;
  found   : Some[C[Foo[Option,Test.this.Id]]]
  required: ?F[C[?G[Foo[?F,?G]]]]
   new Foo(Some(new C(new Foo[Option, Id](None))))
-  ^
+      ^
 t10514.scala:8: error: type mismatch;
  found   : Some[C[Foo[Option,Test.this.Id]]]
  required: F[C[G[Foo[F,G]]]]

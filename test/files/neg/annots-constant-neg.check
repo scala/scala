@@ -3,7 +3,7 @@ Test.scala:12: error: class Ann1 cannot have auxiliary constructors because it e
       ^
 Test.scala:14: error: class Ann2 needs to have exactly one argument list because it extends ConstantAnnotation
 class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
-                                   ^
+          ^
 Test.scala:27: error: annotation argument needs to be a constant; found: Test.this.nonConst
   @JAnn(nonConst) def t3 = 0 // err
         ^
@@ -68,7 +68,7 @@ Test.scala:66: error: annotation argument needs to be a constant; found: java.la
 Test.scala:69: error: Java annotation SuppressWarnings is abstract; cannot be instantiated
 Error occurred in an application involving default arguments.
   @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err
-                            ^
+                                ^
 Test.scala:69: error: not found: value value
 Error occurred in an application involving default arguments.
   @Ann(value = 0, c = Array(new SuppressWarnings(value = Array("")))) def u17 = 0 // err

@@ -46,23 +46,35 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  Otherwise returns default position that is either focused or not.
    */
   def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, focus = true)
-  def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = {
-    if (useOffsetPositions) default else {
-      val accum = new WrappingPosAccumulator()
-      var rest = trees
-      while (rest ne Nil) {
-        val head = rest.head
-        rest = rest.tail
-        // TODO: a tree's range position should cover the positions of all trees it "includes"
-        // (inclusion mostly refers to subtrees, but also other attributes reached through the tree, such as its annotations/modifiers);
-        // concretely, a MemberDef's position should cover its annotations (scala/bug#11060)
-        // Workaround, which explicitly includes annotations of traversed trees, can be removed when TODO above is resolved:
-        head match { case md: MemberDef => rest = md.mods.annotations ::: rest  case _ => }
 
-        accum(head)
-      }
-      accum.result(default, focus)
+  /** If the default point falls outside the calculated range, widen the result to include it.
+   */
+  def wideningPos(default: Position, trees: List[Tree]): Position = {
+    val res = wrappingPos(default, trees)
+    val pointed = default.isDefined && default.start <= default.point && default.point <= default.end // has a point
+    if (pointed && (default.point < res.start || default.point > res.end)) {
+      val start = Math.min(res.start, default.point)
+      val end   = Math.max(res.end, default.point)
+      Position.range(default.source, start = start, point = default.point, end = end)
     }
+    else res
+  }
+  def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = if (useOffsetPositions) default else {
+    // TODO: a tree's range position should cover the positions of all trees it "includes"
+    // (inclusion mostly refers to subtrees, but also other attributes reached through the tree, such as its annotations/modifiers);
+    // concretely, a MemberDef's position should cover its annotations (scala/bug#11060)
+    // Workaround, which explicitly includes annotations of traversed trees, can be removed when TODO above is resolved:
+    val accum = new WrappingPosAccumulator()
+    def loop(trees: List[Tree]): Position = trees match {
+      case head :: rest =>
+        accum(head)
+        head match {
+          case md: MemberDef => loop(md.mods.annotations ::: rest)
+          case _ => loop(rest)
+        }
+      case _ => accum.result(default, focus)
+    }
+    loop(trees)
   }
   private final class WrappingPosAccumulator extends (Tree => Boolean) {
     private[this] var min: Int = _
@@ -72,11 +84,16 @@ trait Positions extends api.Positions { self: SymbolTable =>
       max = Int.MinValue
     }
     reset()
-    def result(default: Position, focus: Boolean): Position = {
-      if (min > max)
-        if (focus) default.focus else default //there are no ranges
-      else Position.range(default.source, min, default.pointOrElse(min), max)
-    }
+    def result(default: Position, focus: Boolean): Position =
+      if (min > max) // there are no ranges
+        if (focus) default.focus else default
+      else { // ignore default.point not included by range min..max
+        val pointed = default.isDefined && default.start <= default.point && default.point <= default.end // has a point
+        val point =
+          if (pointed && min <= default.point && default.point <= max) default.point
+          else min
+        Position.range(default.source, start = min, point = point, end = max)
+      }
     override def apply(v1: Tree): Boolean = {
       val pos = v1.pos
       if (pos.isRange) {
@@ -103,9 +120,8 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *  shortening the range, assigning TransparentPositions
    *  to some of the nodes in `tree` or focusing on the position.
    */
-  def ensureNonOverlapping(tree: Tree, others: List[Tree]): Unit ={ ensureNonOverlapping(tree, others, focus = true) }
-  def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean): Unit = {
-    if (useOffsetPositions) return
+  def ensureNonOverlapping(tree: Tree, others: List[Tree]): Unit = ensureNonOverlapping(tree, others, focus = true)
+  def ensureNonOverlapping(tree: Tree, others: List[Tree], focus: Boolean): Unit = if (!useOffsetPositions) {
 
     def isOverlapping(pos: Position) =
       pos.isRange && (others exists (pos overlaps _.pos))
@@ -305,7 +321,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def set(pos: Position, parent: Tree): Unit = {
       wrappingPosAccumulator.reset()
       this.pos = pos
-      try parent.foreachChild(this)
+      try parent.foreachChild(apply)
       finally {
         this.pos = null
       }
@@ -313,7 +329,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def apply(tree: Tree): Boolean = {
       wrappingPosAccumulator.reset()
       if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
-        tree.foreachChild(this)
+        tree.foreachChild(apply)
         tree.foreachChild(wrappingPosAccumulator)
         val wrappingPos = wrappingPosAccumulator.result(pos, focus = true)
         tree setPos wrappingPos

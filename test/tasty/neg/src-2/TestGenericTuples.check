@@ -15,7 +15,7 @@ TestGenericTuples_fail.scala:10: error: Unsupported Scala 3 generic tuple type s
                             ^
 TestGenericTuples_fail.scala:11: error: Unsupported Scala 3 generic tuple type scala.Tuple in parameter value t; found in parameter t in class tastytest.GenericTuples.ConsumeTuple.
   val test8 = new GenericTuples.ConsumeTuple(???) // error
-              ^
+                  ^
 TestGenericTuples_fail.scala:12: error: Unsupported Scala 3 generic tuple type scala.Tuple in bounds of type T; found in class tastytest.GenericTuples.ConsumeTupleGen.
   val test9 = new GenericTuples.ConsumeTupleGen[(Int, String)](???) // error
                                 ^

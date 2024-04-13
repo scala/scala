@@ -1,19 +1,19 @@
 t5696.scala:6: error: too many argument lists for constructor invocation
   new G(1)(2) {}
-      ^
+        ^
 t5696.scala:14: error: too many argument lists for constructor invocation
   new G()(2) {}
-      ^
+          ^
 t5696.scala:22: error: too many argument lists for constructor invocation
   new G[Int]()(2) {}
-      ^
+               ^
 t5696.scala:30: error: too many argument lists for constructor invocation
   new G[Int]()(2)(3) {}
-      ^
+               ^
 t5696.scala:38: error: too many argument lists for constructor invocation
   new G[Int]()()(2) {}
-      ^
+                 ^
 t5696.scala:46: error: too many argument lists for constructor invocation
   object x extends G(1)(2) {}
-                   ^
+                     ^
 6 errors
