@@ -203,7 +203,7 @@ trait NamesDefaults { self: Analyzer =>
           val selectPos =
             if (qual.pos.isRange && baseFun1.pos.isRange)
               if (qual.pos == baseFun1.pos) qual.pos
-              else qual.pos.union(baseFun1.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end)) // range that does not overlap
+              else baseFun1.pos.union(qual.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end)) // use basefun point; why isn't start always qual.pos.end
             else baseFun1.pos
           val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol).setPos(selectPos))
           if (funTargs.isEmpty) f
