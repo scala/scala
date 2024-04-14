@@ -664,8 +664,14 @@ abstract class TreeGen {
      * the limits given by pat and body.
      */
     def makeClosure(pos: Position, pat: Tree, body: Tree): Tree = {
-      def wrapped  = wrappingPos(List(pat, body))
-      def splitpos = (if (pos != NoPosition) wrapped.withPoint(pos.point) else pos).makeTransparent
+      val splitpos = {
+        val wrapped = wrappingPos(List(pat, body))
+        // ignore proposed point if not in range
+        val res =
+          if (pos != NoPosition && wrapped.start <= pos.point && pos.point < wrapped.end) wrapped.withPoint(pos.point)
+          else pos
+        res.makeTransparent
+      }
       matchVarPattern(pat) match {
         case Some((name, tpt)) =>
           val p = atPos(pat.pos) {
