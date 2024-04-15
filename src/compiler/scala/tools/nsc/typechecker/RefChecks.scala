@@ -1768,7 +1768,7 @@ abstract class RefChecks extends Transform {
               case (arg, param) =>
                 val msg = s"Boolean literals should be passed using named argument syntax for parameter ${param.name}."
                 val action = runReporting.codeAction("name boolean literal", arg.pos.focusStart, s"${param.name} = ", msg)
-                runReporting.warning(arg.pos, msg, WarningCategory.WFlagNamedLiteral, sym, action)
+                runReporting.warning(arg.pos, msg, WarningCategory.WFlagUnnamedBooleanLiteral, sym, action)
               case _ =>
             }
         }
