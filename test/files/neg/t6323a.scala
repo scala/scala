@@ -1,4 +1,4 @@
-// scalac: -Vimplicits
+//> using options -Vimplicits
 //
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror => m}

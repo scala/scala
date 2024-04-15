@@ -142,8 +142,17 @@ private[scala] trait PropertiesTrait {
   private[scala] lazy val isAvian = javaVmName.contains("Avian")
 
   private[scala] def coloredOutputEnabled: Boolean = propOrElse("scala.color", "auto") match {
-    case "auto" => System.console() != null && !isWin
-    case s      => s == "" || "true".equalsIgnoreCase(s)
+    case "auto" => !isWin && consoleIsTerminal
+    case s      => "" == s || "true".equalsIgnoreCase(s)
+  }
+
+  /** System.console.isTerminal, or just check for null console on JDK < 22 */
+  private[scala] lazy val consoleIsTerminal: Boolean = {
+    val console = System.console
+    def isTerminal: Boolean =
+      try classOf[java.io.Console].getMethod("isTerminal", null).invoke(console).asInstanceOf[Boolean]
+      catch { case _: NoSuchMethodException => false }
+    console != null && (!isJavaAtLeast("22") || isTerminal)
   }
 
   // This is looking for javac, tools.jar, etc.
