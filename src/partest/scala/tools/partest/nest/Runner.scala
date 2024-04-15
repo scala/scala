@@ -225,7 +225,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
     nextTestAction(runCommand(cmd, logFile)) {
       case false =>
-        _transcript append EOL + logFile.fileContents
+        appendTranscript(EOL + logFile.fileContents)
         genFail("non-zero exit code")
     }
   }
@@ -414,7 +414,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
           else
             gitRunner.flatMap(_ => withTempFile(outDir, fileBase, filteredCheck)(f =>
                 gitDiff(f, logFile))).getOrElse(diff)
-        _transcript append bestDiff
+        appendTranscript(bestDiff)
         genFail("output differs")
     }
   }
@@ -434,7 +434,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def attemptCompile(sources: List[File], extraFlags: List[String] = Nil): TestState =
     newCompiler.compile(flagsForCompilation(sources) ::: extraFlags, sources).tap { state =>
-      if (!state.isOk) _transcript.append("\n" + logFile.fileContents)
+      if (!state.isOk) appendTranscript(EOL + logFile.fileContents)
     }
 
   // all sources in a round may contribute flags via // scalac: -flags
@@ -482,7 +482,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
             else ToolName.named(scope)
           }.toOption
           named match {
-            case None => Nil
+            case None =>
+              suiteRunner.verbose(s"ignoring pragma with unknown scope '$scope': $line")
+              Nil
             case Some(name) =>
               val settings =
                 if (plural == null) List(rest.trim)
@@ -581,20 +583,19 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def runNegTest(): TestState = {
     // a "crash test" passes if the error is not FatalError and there is a check file to compare.
     // a neg test passes if the log compares same to check file.
-    // under "//> using test.option --recompile=-some-flags", also check compilation after adding the extra flags.
+    // under "//> using retest.option -some-flags", also check pos compilation after adding the extra flags.
     def checked(r: TestState) = r match {
       case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
       case _ =>
         val negRes = diffIsOk
-        toolArgs(ToolName.test) match {
-          case s :: Nil if s.startsWith("--recompile=") && !negRes.isSkipped && negRes.isOk =>
-            // assume -Werror and that testFile is a regular file; transcript visible under partest --verbose or failure
-            val extraFlags = List(s.stripPrefix("--recompile="))
+        toolArgs(ToolName.retest) match {
+          case extraFlags if extraFlags.nonEmpty && !negRes.isSkipped && negRes.isOk =>
+            // transcript visible under partest --verbose or after failure
             val debug = s"recompile $testIdent with extra flags ${extraFlags.mkString(" ")}"
             suiteRunner.verbose(s"% $debug")
             pushTranscript(debug)
-            attemptCompile(List(testFile), extraFlags = extraFlags)
+            attemptCompile(sources(testFile), extraFlags = extraFlags)
           case _ => negRes
         }
     }
@@ -745,8 +746,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     def pass(s: String) = bold(green("% ")) + s
     def fail(s: String) = bold(red("% ")) + s
     _transcript.toList match {
-      case Nil  => Nil
-      case xs   => (xs.init map pass) :+ fail(xs.last)
+      case init :+ last => init.map(pass) :+ fail(last)
+      case _            => Nil
     }
   }
 }
@@ -824,9 +825,10 @@ object ToolName {
   case object javac extends ToolName
   case object java extends ToolName
   case object javaVersion extends ToolName
+  case object test extends ToolName
+  case object retest extends ToolName
   case object filter extends ToolName
   case object hide extends ToolName
-  case object test extends ToolName
-  val values = Array(scalac, javac, java, javaVersion, filter, hide, test)
+  val values = Array(scalac, javac, java, javaVersion, test, retest, filter, hide)
   def named(s: String): ToolName = values.find(_.toString.equalsIgnoreCase(s)).getOrElse(throw new IllegalArgumentException(s))
 }
