@@ -558,7 +558,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   }
 
   /** Set the output directory for all sources. */
-  class OutputSetting private[nsc](default: String) extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None)
+  class OutputSetting private[nsc](default: String) extends StringSetting("-d", "directory|jar", "Destination for generated artifacts.", default, None)
 
   /**
    * Each [[MultiChoiceSetting]] takes a MultiChoiceEnumeration as domain. The enumeration may
