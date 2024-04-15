@@ -1,4 +1,4 @@
-cloneable.scala:6: warning: object X should not extend Cloneable.
+cloneable.scala:7: warning: object X should not extend Cloneable.
 object X extends Base
        ^
 error: No warnings can be incurred under -Werror.
