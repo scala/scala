@@ -29,6 +29,7 @@ import io.AbstractFile
 import scala.concurrent.{Await, Future}
 import java.io.BufferedReader
 
+import scala.util.Properties.consoleIsTerminal
 import scala.util.{Try, Success, Failure}
 
 import Completion._
@@ -905,7 +906,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
    *  supplied as a `() => Completion`; the Completion object provides a concrete Completer.
    */
   def chooseReader(settings: Settings): InteractiveReader = {
-    if (settings.Xnojline) SimpleReader()
+    if (settings.Xnojline || !consoleIsTerminal) SimpleReader()
     else {
       type Completer = () => Completion
       type ReaderMaker = Completer => InteractiveReader
