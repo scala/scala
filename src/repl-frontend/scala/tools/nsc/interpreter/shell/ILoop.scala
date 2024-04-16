@@ -1009,7 +1009,7 @@ object ILoop {
     def batchText: String = delegate.batchText
     def batchMode: Boolean = delegate.batchMode
     def doCompletion: Boolean = delegate.doCompletion
-    override def haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
+    def haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
 
     def xsource: String = ""
 

@@ -21,7 +21,7 @@ import scala.sys.Prop._
 
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
 import scala.tools.nsc.Properties.{
-  coloredOutputEnabled, consoleIsTerminal, envOrNone, javaVersion, javaVmName,
+  coloredOutputEnabled, envOrNone, javaVersion, javaVmName,
   shellBannerString, shellInterruptedString, shellPromptString, shellWelcomeString,
   userHome, versionString, versionNumberString,
 }
@@ -38,7 +38,7 @@ object ShellConfig {
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
       val doCompletion: Boolean = !(settings.noCompletion.value || batchMode)
-      override val haveInteractiveConsole: Boolean = super.haveInteractiveConsole && !settings.Xnojline.value
+      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
     case _ => new ShellConfig {
@@ -47,7 +47,7 @@ object ShellConfig {
       val batchText: String = ""
       val batchMode: Boolean = false
       val doCompletion: Boolean = !settings.noCompletion.value
-      override val haveInteractiveConsole: Boolean = super.haveInteractiveConsole && !settings.Xnojline.value
+      val haveInteractiveConsole: Boolean = !settings.Xnojline.value
       def xsource: String = if (settings.isScala3: @nowarn) settings.source.value.versionString else ""
     }
   }
@@ -59,7 +59,7 @@ trait ShellConfig {
   def batchText: String
   def batchMode: Boolean
   def doCompletion: Boolean
-  def haveInteractiveConsole: Boolean = consoleIsTerminal
+  def haveInteractiveConsole: Boolean
 
   // source compatibility, i.e., -Xsource
   def xsource: String

@@ -148,9 +148,10 @@ private[scala] trait PropertiesTrait {
 
   /** System.console.isTerminal, or just check for null console on JDK < 22 */
   private[scala] lazy val consoleIsTerminal: Boolean = {
+    import language.reflectiveCalls
     val console = System.console
     def isTerminal: Boolean =
-      try classOf[java.io.Console].getMethod("isTerminal", null).invoke(console).asInstanceOf[Boolean]
+      try console.asInstanceOf[{ def isTerminal(): Boolean }].isTerminal()
       catch { case _: NoSuchMethodException => false }
     console != null && (!isJavaAtLeast("22") || isTerminal)
   }
