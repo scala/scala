@@ -474,7 +474,9 @@ class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm
   }
 
   override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[SourceValue], exceptionType: Type): SourceValue = {
-    val handlerStackTop = handlerFrame.stackTop + 1 // +1 because this value is about to be pushed onto `handlerFrame`.
+    // -1 to go from the number of locals to the (0-based) index of the last local
+    // +1 because this value is about to be pushed onto `handlerFrame`
+    val handlerStackTop = handlerFrame.getLocals - 1 + 1
     new SourceValue(1, ExceptionProducer(tryCatchBlockNode.handler, handlerStackTop))
   }
 }
