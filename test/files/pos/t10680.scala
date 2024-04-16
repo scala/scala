@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 object MyEnum extends Enumeration {
   val e1 = Value("e1")
   val e2 = Value("e2")

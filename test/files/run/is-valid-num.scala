@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror
+//> using options -Xlint -Werror
 @annotation.nowarn("cat=deprecation&msg=isWhole")
 object Test {
   def x = BigInt("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")

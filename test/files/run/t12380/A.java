@@ -1,4 +1,4 @@
-// filter: unchecked
+//> using filter unchecked
 
 package p;
 

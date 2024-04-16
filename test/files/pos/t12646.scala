@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Wunused:params
+//> using options -Werror -Wunused:params
 
 trait T {
   private var x: String = _

@@ -1,8 +1,8 @@
 
 // skalac: -Werror -Xsource:3
 
-//> using option -Werror
-//> using option -Xsource:3
+//> using options -Werror
+//> using options -Xsource:3
 
 class C {
   def f = 42

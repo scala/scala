@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 //
 class Test {
   object severity extends Enumeration

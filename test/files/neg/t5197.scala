@@ -1,5 +1,5 @@
 
-// scalac: -Werror -feature
+//> using options -Werror -feature
 
 // Periodic reminder that the feature is not required for implicit function values.
 //import scala.language.implicitConversions

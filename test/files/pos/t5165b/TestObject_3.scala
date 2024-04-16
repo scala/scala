@@ -1,3 +1,3 @@
-// scalac: -Werror
+//> using options -Werror
 object TestObject extends TestTrait
 

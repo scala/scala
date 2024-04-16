@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 class K { def x(y: Int) = 0 }
 

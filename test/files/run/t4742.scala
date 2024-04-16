@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 trait T { val x: Int = 0 }
 object O extends T { override final val x = 1 }

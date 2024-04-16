@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror -Wvalue-discard
+//> using options -Xlint -Werror -Wvalue-discard
 //
 object Whatever {
   override def equals(x: Any) = true

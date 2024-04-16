@@ -1,4 +1,4 @@
-// scalac: -Werror -Wperformance
+//> using options -Werror -Wperformance
 object Test {
   var a, b = 0 // ok
   def mkStrangeCounter(): Int => Int = {

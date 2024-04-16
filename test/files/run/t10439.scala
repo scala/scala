@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 object Test {
   private var s: String = _

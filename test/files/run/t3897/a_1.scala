@@ -1,4 +1,4 @@
-// scalac: -Ydelambdafy:inline
+//> using options -Ydelambdafy:inline
 class One {
   private val messages = new collection.mutable.ListBuffer[String]
   List("a") foreach { messages += _ }

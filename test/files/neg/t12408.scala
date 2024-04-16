@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 package t12408 {
   class Renderer[A]

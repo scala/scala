@@ -1,4 +1,4 @@
-// scalac: -opt:inline:** -Wopt:none -Werror -deprecation:false
+//> using options -opt:inline:** -Wopt:none -Werror -deprecation:false
 //
 
 object Test extends App {

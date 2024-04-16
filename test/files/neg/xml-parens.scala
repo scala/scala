@@ -1,4 +1,4 @@
-// scalac: -Ystop-after:typer
+//> using options -Ystop-after:typer
 //
 object Test {
   <e></e>()

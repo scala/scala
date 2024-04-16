@@ -1,4 +1,4 @@
-// scalac: -Xlint -Xfatal-warnings
+//> using options -Xlint -Xfatal-warnings
 //
 // https://github.com/scala/bug/issues/4762
 

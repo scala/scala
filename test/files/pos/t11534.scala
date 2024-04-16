@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 object Test1 {
     val g: scala.tools.nsc.Global = ???
     import g._

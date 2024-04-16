@@ -1,4 +1,4 @@
-// scalac: -Ypickle-java
+//> using options -Ypickle-java
 
 package bar
 

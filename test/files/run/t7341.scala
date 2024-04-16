@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 object Obj {
   private var cache: Any = ()

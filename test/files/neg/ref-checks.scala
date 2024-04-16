@@ -1,4 +1,4 @@
-// scalac: -deprecation -Werror
+//> using options -deprecation -Werror
 import scala.annotation.{StaticAnnotation, nowarn}
 import scala.reflect.internal.annotations.uncheckedBounds
 

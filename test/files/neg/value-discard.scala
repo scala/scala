@@ -1,4 +1,4 @@
-// scalac: -Wvalue-discard -Werror
+//> using options -Wvalue-discard -Werror
 final class UnusedTest {
   import scala.collection.mutable
 

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:infer-any
+//> using options -Xfatal-warnings -Xlint:infer-any
 //
 trait Foo[-A <: AnyRef, +B <: AnyRef] {
   def run[U](x: A)(action: B => U): Boolean = ???

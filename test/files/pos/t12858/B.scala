@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 trait B1 extends A { def f: Int }
 trait C1 { def f = 2 }

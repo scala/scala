@@ -1,4 +1,4 @@
-// scalac: -language:higherKinds
+//> using options -language:higherKinds
 //
 object Test {
   case class Foo[CC[_], D <: CC[Int]](d: D, cc: CC[Int])

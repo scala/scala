@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 sealed trait Exh
 final case class Foo(xs: String*) extends Exh
 final case class Bar(x: String)   extends Exh

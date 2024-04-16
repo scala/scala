@@ -1,4 +1,4 @@
-// scalac: -language:experimental.macros
+//> using options -language:experimental.macros
 //
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{universe => ru}

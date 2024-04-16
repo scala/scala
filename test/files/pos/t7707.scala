@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 
 // uses apply default, ctor default is unused
 object O { O() ; def f(): Unit = O() }

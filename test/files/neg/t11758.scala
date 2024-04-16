@@ -1,4 +1,4 @@
-// scalac: -Xlint:deprecation -Wunused:imports -Werror
+//> using options -Xlint:deprecation -Wunused:imports -Werror
 
 import language.higherKinds
 

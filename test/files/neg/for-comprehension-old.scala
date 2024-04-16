@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 //
 class A {
   for (x <- 1 to 5 ; y = x) yield x+y           // ok

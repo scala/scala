@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 import scala.collection.{ mutable, immutable }
 import collection.Seq
 

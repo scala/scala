@@ -1,4 +1,4 @@
-// scalac: -language:dynamics
+//> using options -language:dynamics
 //
 abstract class Prova2 extends Dynamic {
   def applyDynamic(m: String)(): Unit

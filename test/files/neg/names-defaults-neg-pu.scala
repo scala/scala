@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 //
 object Test extends App {
   // TESTS

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 class A {
   def f(x: Any with AnyRef, y: Any with AnyRef) = x eq y

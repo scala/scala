@@ -1,4 +1,4 @@
-// scalac: -Werror -Wperformance -Wconf:cat=lint-performance:s
+//> using options -Werror -Wperformance -Wconf:cat=lint-performance:s
 
 class C {
   var x = 0

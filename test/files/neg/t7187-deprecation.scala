@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -deprecation -Werror
+//> using options -Xsource:3 -deprecation -Werror
 //
 trait AcciSamZero { def apply(): Int }
 

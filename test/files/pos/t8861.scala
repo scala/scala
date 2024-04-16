@@ -1,4 +1,4 @@
-// scalac: -Xlint:infer-any -Xfatal-warnings
+//> using options -Xlint:infer-any -Xfatal-warnings
 //
 
 trait Test {

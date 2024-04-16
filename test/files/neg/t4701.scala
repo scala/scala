@@ -1,4 +1,4 @@
-// scalac: -Yrangepos
+//> using options -Yrangepos
 trait HL[A]
 object HN {
   def :: [A](x: A): HL[A] = new HL[A] {}

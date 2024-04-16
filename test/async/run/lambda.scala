@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import scala.tools.partest.async.OptionAwait._
 //import org.junit.Assert._

@@ -1,4 +1,4 @@
-// scalac: -unchecked
+//> using options -unchecked
 import scala.util.Try
 
 object Test {

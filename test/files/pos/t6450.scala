@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 object ExhaustivityWarnBugReportMinimal {
   //sealed is needed for the warning
   sealed trait FoundNode[T]/*presence of parameters is irrelevant*/

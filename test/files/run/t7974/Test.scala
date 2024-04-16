@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit:false
+//> using options -Xcheckinit:false
 import java.io.PrintWriter
 
 import scala.tools.partest.BytecodeTest

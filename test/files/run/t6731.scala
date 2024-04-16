@@ -1,4 +1,4 @@
-// scalac: -Yrangepos:false -deprecation
+//> using options -Yrangepos:false -deprecation
 //
 import scala.language.dynamics
 import scala.reflect.{ ClassTag, classTag }

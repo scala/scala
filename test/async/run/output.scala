@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import scala.tools.partest.async.{OutputAwait, Output}
 import scala.collection.immutable

@@ -1,4 +1,4 @@
-// scalac: -Xlint:adapted-args -Xfatal-warnings -deprecation
+//> using options -Xlint:adapted-args -Xfatal-warnings -deprecation
 //
 object Test {
   val x1 = new J

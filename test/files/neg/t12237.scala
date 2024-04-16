@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 sealed trait PathAndQuery
 sealed trait Path  extends PathAndQuery
 sealed trait Query extends PathAndQuery

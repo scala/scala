@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 sealed trait Foo
 sealed trait Bar extends Foo

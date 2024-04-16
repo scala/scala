@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror
+//> using options -Xlint -Werror
 
 trait Test {
   def f = List("").map(_.isInstanceOf)

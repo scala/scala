@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xfatal-warnings
+//> using options -deprecation -Xfatal-warnings
 //
 object LeftOrRight {
   def unapply[A](value: Either[A, A]): Option[A] = value match {

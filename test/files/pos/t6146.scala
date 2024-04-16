@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 // No unreachable or exhaustiveness warnings, please.
 

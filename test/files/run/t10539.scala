@@ -1,4 +1,4 @@
-// scalac: -Xdev
+//> using options -Xdev
 //
 class A {
   def ==(a: A) = "LOL"

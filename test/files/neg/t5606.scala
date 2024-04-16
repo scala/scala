@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 // was: _ taken as ident of type param, but poor interactions below
 case class CaseTest[_](someData: String)
 

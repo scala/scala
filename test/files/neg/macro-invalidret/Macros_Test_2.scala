@@ -1,4 +1,4 @@
-// scalac: -Xlint:deprecation -Werror
+//> using options -Xlint:deprecation -Werror
 import language.experimental.macros
 
 object Macros {

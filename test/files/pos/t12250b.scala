@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 sealed case class Sub1(str: String)
 final  case class Sup1(str: String) extends Sup0

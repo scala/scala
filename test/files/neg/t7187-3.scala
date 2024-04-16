@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Xlint:eta-zero
+//> using options -Xsource:3 -Xlint:eta-zero
 //
 trait AcciSamZero { def apply(): Int }
 

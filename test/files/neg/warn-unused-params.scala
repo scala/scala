@@ -1,4 +1,4 @@
-// scalac: -Wunused:params -Werror
+//> using options -Wunused:params -Werror
 //
 
 import Answers._

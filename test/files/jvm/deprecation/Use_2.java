@@ -1,5 +1,5 @@
 
-// javac: -Xlint:deprecation
+//> using javacOpt -Xlint:deprecation
 
 class Use_2 {
     public int test() {

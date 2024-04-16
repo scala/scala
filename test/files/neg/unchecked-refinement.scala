@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 // a.scala
 // Thu Sep 27 09:42:16 PDT 2012

@@ -1,4 +1,4 @@
-// scalac: -Werror -deprecation
+//> using options -Werror -deprecation
 //
 object Test {
   val original = """\/ \/ /\"""

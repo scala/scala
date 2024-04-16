@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:strict-unsealed-patmat
+//> using options -Werror -Xlint:strict-unsealed-patmat
 object Bug {
   object Perhaps {
     def unapply[A](oa: Option[A]): Some[Option[A]] = Some(oa)

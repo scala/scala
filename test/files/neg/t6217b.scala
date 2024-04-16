@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 package p
 package _root_
 object Test {

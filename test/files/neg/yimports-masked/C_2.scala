@@ -1,4 +1,4 @@
-// scalac: -Yimports:scala,hello.world.minidef
+//> using options -Yimports:scala,hello.world.minidef
 
 // import at top level or top of package disables implicit import.
 // the import can appear at any statement position, here, end of package.

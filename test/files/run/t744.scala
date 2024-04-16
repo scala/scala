@@ -1,4 +1,4 @@
-// scalac: -Xlint:deprecation
+//> using options -Xlint:deprecation
 //
 
 trait Linked {

@@ -1,4 +1,4 @@
-// javaVersion: 9+
+//> using jvm 9+
 
 import java.util.concurrent._
 import scala.jdk.FutureConverters._

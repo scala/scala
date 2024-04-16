@@ -1,4 +1,4 @@
-// scalac: -Ycheck:_
+//> using options -Ycheck:_
 //
 // /scala/trac/z1730/a.scala
 // Wed May 23 07:41:25 PDT 2012

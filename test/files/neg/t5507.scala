@@ -1,5 +1,5 @@
 //
-// scalac: -Xlint:unit-special -Werror
+//> using options -Xlint:unit-special -Werror
 
 // warn once
 final class C[@specialized A, @specialized B](a: A, b: B)

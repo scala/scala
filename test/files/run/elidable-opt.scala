@@ -1,4 +1,4 @@
-// scalac: -Xelide-below 900 -deprecation -Xmaxwarns 0
+//> using options -Xelide-below 900 -deprecation -Xmaxwarns 0
 //
 import annotation._
 import elidable._

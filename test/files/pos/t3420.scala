@@ -1,5 +1,5 @@
 
-// scalac: -opt:inline:** -Wopt -Werror
+//> using options -opt:inline:** -Wopt -Werror
 //
 class C {
     val cv = Map[Int, Int](1 -> 2)

@@ -1,4 +1,4 @@
-// scalac: -Yrangepos
+//> using options -Yrangepos
 //
 object TestDep {
   class Ops(val g: scala.reflect.api.JavaUniverse) {

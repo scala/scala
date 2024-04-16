@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xfatal-warnings
+//> using options -deprecation -Xfatal-warnings
 //
 class A {
   val `enum`: Int = 1

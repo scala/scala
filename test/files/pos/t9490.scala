@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:inaccessible
+//> using options -Werror -Xlint:inaccessible
 
 package ws {
   private[ws] trait Foo

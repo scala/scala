@@ -1,4 +1,4 @@
-// scalac: -Xlog-implicit-conversions
+//> using options -Xlog-implicit-conversions
 //
 class A {
   def f(xs: Array[Byte]) = xs.size

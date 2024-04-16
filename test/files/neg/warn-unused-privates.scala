@@ -1,5 +1,5 @@
 //
-// scalac: -deprecation -Wunused:privates -Xfatal-warnings
+//> using options -deprecation -Wunused:privates -Xfatal-warnings
 //
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn

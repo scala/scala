@@ -1,5 +1,5 @@
-// javaVersion: 11+
-// scalac: -release:11
+//> using jvm 11+
+//> using options -release:11
 
 import java.lang.invoke._, MethodType.methodType
 

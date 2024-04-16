@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 sealed trait A2[T1]
 final class B2[T1, T2] extends A2[T1]

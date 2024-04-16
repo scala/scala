@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:imports
+//> using options -Werror -Wunused:imports
 
 import language._
 

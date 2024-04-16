@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 class C {
   def lazyMap[A, B](coll: Iterable[A], f: A => B) =

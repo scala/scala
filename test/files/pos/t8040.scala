@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Ywarn-unused:params
+//> using options -Xfatal-warnings -Ywarn-unused:params
 //
 
 object Test {

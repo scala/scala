@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 //
 import java.lang.Thread.State
 import java.lang.Thread.State._

@@ -1,4 +1,4 @@
-// scalac: -Xplugin:. -Xplugin-require:unplugged -d testy.jar
+//> using options -Xplugin:. -Xplugin-require:unplugged -d testy.jar
 package sample
 
 // The unplugged plugin pre-emptively creates a read-only testy.jar.

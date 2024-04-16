@@ -1,4 +1,4 @@
-// scalac: '-Wconf:msg=shadowing a nested class of a parent is deprecated:s'
+//> using options '-Wconf:msg=shadowing a nested class of a parent is deprecated:s'
 
 package a {
   trait Test {

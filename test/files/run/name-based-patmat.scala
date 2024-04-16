@@ -1,4 +1,4 @@
-// scalac: -Xlint:stars-align
+//> using options -Xlint:stars-align
 final class MiniSome[T](val get: T) extends AnyVal { def isEmpty = false }
 
 package p0 {

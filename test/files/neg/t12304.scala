@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 // variant of pos/t12304
 // that does warn as desired

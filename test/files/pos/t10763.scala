@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Wunused
+//> using options -Werror -Wunused
 
 class Test {
   def xsUnused = {

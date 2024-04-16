@@ -1,4 +1,4 @@
-// scalac: -opt:inline:** -Werror
+//> using options -opt:inline:** -Werror
 //
 // scala/bug#6102 Wrong bytecode in lazyval + no-op finally clause
 

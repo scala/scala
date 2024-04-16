@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 
 class C {
   val u = ()

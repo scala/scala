@@ -1,4 +1,4 @@
-// scalac: -explaintypes
+//> using options -explaintypes
 //
 trait A {
   type T <: A;

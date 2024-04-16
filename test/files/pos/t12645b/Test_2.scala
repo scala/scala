@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 object Test extends App {
   Foo.ctx.quote(42).ast.id

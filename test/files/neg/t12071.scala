@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xmigration:2.13
+//> using options -Werror -Xlint -Xmigration:2.13
 
 class C {
   def `c c`(n: Int): Int = n + 1

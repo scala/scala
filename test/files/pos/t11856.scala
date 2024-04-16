@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:params
+//> using options -Werror -Wunused:params
 
 class C {
   def answer: 42 = 42

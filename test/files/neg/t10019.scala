@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 object Bug {
   sealed case class Foo(e: Option[Int])
 

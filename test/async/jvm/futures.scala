@@ -1,4 +1,4 @@
-// scalac: -Xasync -deprecation
+//> using options -Xasync -deprecation
 
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.futures.FutureSpec])
 

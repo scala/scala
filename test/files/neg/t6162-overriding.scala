@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -deprecation
+//> using options -Xfatal-warnings -deprecation
 //
 package scala.t6162
 

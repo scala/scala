@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -deprecation
+//> using options -Xfatal-warnings -deprecation
 import scala.annotation.StaticAnnotation
 
 @deprecated("class!", "") class A extends StaticAnnotation

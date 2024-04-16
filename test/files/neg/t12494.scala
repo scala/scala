@@ -1,4 +1,4 @@
-// scalac: -Ylog:superaccessors -Ydebug
+//> using options -Ylog:superaccessors -Ydebug
 object X {
   def m: Int = {
     trait C {

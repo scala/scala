@@ -1,4 +1,4 @@
-// scalac: -opt:inline:**
+//> using options -opt:inline:**
 //
 // scala/bug#6188 Optimizer incorrectly removes method invocations containing throw expressions
 

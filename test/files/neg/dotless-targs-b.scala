@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xsource:3 -Yrangepos:false
+//> using options -Werror -Xlint -Xsource:3 -Yrangepos:false
 class A {
   def fn1 = List apply 1
   def fn2 = List apply[Int] 2

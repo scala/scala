@@ -1,5 +1,5 @@
 
-// scalac: -Xlint
+//> using options -Xlint
 
 import example._
 

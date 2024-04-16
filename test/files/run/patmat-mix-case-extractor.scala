@@ -1,4 +1,4 @@
-// scalac: -Xmaxwarns 0
+//> using options -Xmaxwarns 0
 trait CaseClass
 trait ProdCaseClass extends CaseClass { def x: Int }
 trait SeqCaseClass extends CaseClass { def xs: Seq[Int] }

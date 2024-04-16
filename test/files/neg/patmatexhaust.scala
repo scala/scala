@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Ypatmat-exhaust-depth off
+//> using options -Xfatal-warnings -Ypatmat-exhaust-depth off
 //
 class TestSealedExhaustive { // compile only
     sealed abstract class Foo

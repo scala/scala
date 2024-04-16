@@ -1,4 +1,4 @@
-// scalac: -Ywarn-value-discard -Xfatal-warnings
+//> using options -Ywarn-value-discard -Xfatal-warnings
 //
 trait ValueDiscard[@specialized U] {
   def u: U

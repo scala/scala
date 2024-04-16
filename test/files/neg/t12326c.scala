@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:imports -Wconf:origin=scala.collection.mutable.*:s
+//> using options -Werror -Wunused:imports -Wconf:origin=scala.collection.mutable.*:s
 
 package p
 

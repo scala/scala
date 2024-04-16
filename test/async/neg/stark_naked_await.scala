@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import scala.tools.testkit.async.Async._
 import scala.concurrent.{ExecutionContext, Future}

@@ -1,4 +1,4 @@
-// scalac: -Xmaxerrs 3 -Xfatal-warnings -deprecation
+//> using options -Xmaxerrs 3 -Xfatal-warnings -deprecation
 //
 
 object X {

@@ -1,4 +1,4 @@
-// scalac: -Wunused:patvars -Werror
+//> using options -Wunused:patvars -Werror
 
 case class C(a: Int, b: Int, c: Int, d: Int)
 

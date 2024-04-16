@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xno-patmat-analysis
+//> using options -Xfatal-warnings -Xno-patmat-analysis
 //
 // test that none of these warn due to -Xno-patmat-analysis
 // tests taken from test/files/neg/patmatexhaust.scala, test/files/neg/pat_unreachable.scala

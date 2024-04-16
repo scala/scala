@@ -1,4 +1,4 @@
-// scalac: -Wconf:msg=legacy-binding:s -Xsource:3
+//> using options -Wconf:msg=legacy-binding:s -Xsource:3
 
 class C {
   def lazyMap[A, B](coll: Iterable[A], f: A => B) =

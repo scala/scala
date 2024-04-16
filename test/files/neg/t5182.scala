@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 class test {
   @java.lang.Deprecated(qwe = "wer") def ok(q:Int) = 1

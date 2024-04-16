@@ -1,6 +1,6 @@
-// java: -Dneeds.forked.jvm.for.windows
+//> using javaOpt -Dneeds.forked.jvm.for.windows
 // filter out absolute path to java
-// filter: hello.Hello
+//> using filter hello.Hello
 
 import java.io.File
 import scala.tools.partest.ReplTest

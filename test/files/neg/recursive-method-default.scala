@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:recurse-with-default
+//> using options -Werror -Xlint:recurse-with-default
 object Test {
   def rec1(a: Any, b: Any = "".reverse): Any = {
     rec1(0, 0)  // okay

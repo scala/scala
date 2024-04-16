@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint
+//> using options -Xfatal-warnings -Xlint
 //
 object Foo { def eq(x: Int) = x }
 

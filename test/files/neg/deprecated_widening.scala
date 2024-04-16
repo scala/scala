@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:deprecation
+//> using options -Werror -Xlint:deprecation
 //
 object Test {
   def foo(i: Int, l: Long): Unit = {

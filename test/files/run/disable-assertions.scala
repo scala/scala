@@ -1,4 +1,4 @@
-// scalac: -Xdisable-assertions
+//> using options -Xdisable-assertions
 //
 
 object Elided {

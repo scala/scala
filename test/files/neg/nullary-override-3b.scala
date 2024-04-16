@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:nowarn -Xsource:3
+//> using options -Werror -Wunused:nowarn -Xsource:3
 //
 // P has parens
 class P { def x(): Int = 3 }

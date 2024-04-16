@@ -1,5 +1,5 @@
 
-// scalac: -Ycheck:typer
+//> using options -Ycheck:typer
 //
 class A {
   class C[x]

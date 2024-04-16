@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 class Foo {
   def foo(l: List[Int]): Int = {

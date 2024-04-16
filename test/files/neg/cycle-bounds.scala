@@ -1,4 +1,4 @@
-// scalac: -Ybreak-cycles
+//> using options -Ybreak-cycles
 //
 // This should be allowed
 class Ok[T <: Comparable[_ >: T]]

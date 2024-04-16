@@ -1,5 +1,5 @@
 
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 object Test extends App {
   val resolver = new ValueResolver

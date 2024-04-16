@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -deprecation
+//> using options -Xfatal-warnings -deprecation
 //
 import scala.annotation.switch
 

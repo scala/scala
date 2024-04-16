@@ -1,3 +1,3 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 case class C(placeholder: Unit)

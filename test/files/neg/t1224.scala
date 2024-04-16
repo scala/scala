@@ -1,4 +1,4 @@
-// scalac: -Ybreak-cycles
+//> using options -Ybreak-cycles
 //
 trait C[T] {}
 

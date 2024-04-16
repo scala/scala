@@ -1,4 +1,4 @@
-// scalac: -Ydelambdafy:inline
+//> using options -Ydelambdafy:inline
 //
 class C(a: Any)
 object F {

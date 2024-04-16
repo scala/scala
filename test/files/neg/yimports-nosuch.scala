@@ -1,3 +1,3 @@
-// scalac: -Yimports:skala,scala.Predeff
+//> using options -Yimports:skala,scala.Predeff
 //
 class C

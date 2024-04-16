@@ -1,4 +1,4 @@
-// scalac: -Yrangepos
+//> using options -Yrangepos
 import scala.reflect.runtime.universe._
 
 class A {

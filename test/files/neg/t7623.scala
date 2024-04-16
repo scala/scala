@@ -1,4 +1,4 @@
-// scalac: -Xlint:stars-align -Xfatal-warnings
+//> using options -Xlint:stars-align -Xfatal-warnings
 //
 
 

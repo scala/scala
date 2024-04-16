@@ -1,4 +1,4 @@
-// scalac: -opt:inline:**
+//> using options -opt:inline:**
 //
 object Test {
   def monitor(x: AnyRef): Unit = {x.synchronized(()); ()}

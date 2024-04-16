@@ -1,4 +1,4 @@
-// scalac: -Ydebug -Xfatal-warnings
+//> using options -Ydebug -Xfatal-warnings
 //
 object bar {
 	def foo: Unit = {

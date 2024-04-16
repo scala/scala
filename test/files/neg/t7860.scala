@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Ywarn-unused:privates
+//> using options -Xfatal-warnings -Ywarn-unused:privates
 //
 
 class Test

@@ -1,4 +1,4 @@
-// scalac: -Xlint:option-implicit -Xfatal-warnings
+//> using options -Xlint:option-implicit -Xfatal-warnings
 //
 class A
 class B

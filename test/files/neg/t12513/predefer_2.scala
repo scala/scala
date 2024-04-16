@@ -1,4 +1,4 @@
-// scalac: -Yimports:p.MyPredef,scala.Predef,scala
+//> using options -Yimports:p.MyPredef,scala.Predef,scala
 
 package p {
   object Test extends App {

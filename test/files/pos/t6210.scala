@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 abstract sealed trait AST
 abstract sealed trait AExpr                  extends AST

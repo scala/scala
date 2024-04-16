@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Xlint -Xsource:3
+//> using options -Werror -Xlint -Xsource:3
 
 import annotation.*
 

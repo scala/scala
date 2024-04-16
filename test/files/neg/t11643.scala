@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Wunused:params
+//> using options -Werror -Wunused:params
 
 trait T {
   def f(implicit i: Int) = i

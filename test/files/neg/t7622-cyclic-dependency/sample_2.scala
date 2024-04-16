@@ -1,4 +1,4 @@
-// scalac: -Xplugin:. -Xplugin-require:cyclicdependency
+//> using options -Xplugin:. -Xplugin-require:cyclicdependency
 package sample
 
 // just a sample that is compiled with the sample plugin enabled

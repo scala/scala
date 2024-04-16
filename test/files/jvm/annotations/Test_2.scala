@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 //
 import scala.tools.partest.Util.ArrayDeep
 import scala.language.reflectiveCalls

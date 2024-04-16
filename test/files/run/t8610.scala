@@ -1,4 +1,4 @@
-// scalac: -Xlint:adapted-args
+//> using options -Xlint:adapted-args
 //
 
 // flags don't warn on u

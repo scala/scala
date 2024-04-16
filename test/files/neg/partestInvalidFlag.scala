@@ -1,3 +1,3 @@
-// scalac: -badCompilerFlag notAFlag -opt:badChoice
+//> using options -badCompilerFlag notAFlag -opt:badChoice
 //
 class C

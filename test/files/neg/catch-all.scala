@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 //
 object CatchAll {
   try { "warn" } catch { case _ => }

@@ -1,5 +1,5 @@
 
-// scalac: -no-specialization
+//> using options -no-specialization
 
 object Test {
   // val fixesCompile = Array(1, 2, 3)

@@ -1,4 +1,4 @@
-// scalac: -Werror -Ystop-after:patmat -Ypatmat-exhaust-depth 30
+//> using options -Werror -Ystop-after:patmat -Ypatmat-exhaust-depth 30
 sealed trait Phantom[A] {}
 
 object Phantom {

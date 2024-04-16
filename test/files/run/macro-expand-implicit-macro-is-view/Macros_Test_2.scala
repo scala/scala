@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 
 object Macros {
   import scala.language.experimental.macros

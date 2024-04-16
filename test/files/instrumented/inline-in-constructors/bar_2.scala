@@ -1,4 +1,4 @@
-// scalac: -opt:inline:**
+//> using options -opt:inline:**
 package instrumented
 
 /** Class that uses assert compiled in previous compiler run so we check if

@@ -1,4 +1,4 @@
-// scalac: -feature -language:implicitConversions -language:higherKinds -language:-implicitConversions -Xfatal-warnings
+//> using options -feature -language:implicitConversions -language:higherKinds -language:-implicitConversions -Xfatal-warnings
 // showing that multiple settings are respected, and explicit enablement has precedence
 class X {
   def hk[M[_]] = ???

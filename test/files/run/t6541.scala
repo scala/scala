@@ -1,4 +1,4 @@
-// scalac: -feature -Werror
+//> using options -feature -Werror
 //
 class A
 class B[T](x: T)

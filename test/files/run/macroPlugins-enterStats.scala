@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 //
 import scala.tools.partest._
 import scala.tools.nsc._

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 class Unchecked[C] {
   def nowarn[T] = (null: Any) match { case _: Some[T]      => } // warn (did not warn due to scala/bug#8597)

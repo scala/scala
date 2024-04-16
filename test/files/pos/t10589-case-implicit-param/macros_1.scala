@@ -1,4 +1,4 @@
-// scalac: -Ymacro-annotations
+//> using options -Ymacro-annotations
 
 import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros

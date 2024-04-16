@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xfatal-warnings
+//> using options -deprecation -Xfatal-warnings
 //
 object Test {
   val a: Int ⇒ Int = x ⇒ x

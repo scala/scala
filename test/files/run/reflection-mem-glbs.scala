@@ -1,4 +1,4 @@
-// java: -Xmx512m
+//> using javaOpt -Xmx512m
 
 import scala.tools.partest.MemoryTest
 

@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.anf.AnfTransformSpec])
 

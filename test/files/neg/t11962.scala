@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror -Ystop-after:refchecks
+//> using options -Xlint -Werror -Ystop-after:refchecks
 trait T extends Any {
   def f = println()
 }

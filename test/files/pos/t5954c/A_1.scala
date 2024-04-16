@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 package object A {
   // these used to should be prevented by the implementation restriction
   // but are now allowed

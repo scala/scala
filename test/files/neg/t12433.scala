@@ -1,4 +1,4 @@
-// scalac: -Wunused:nowarn
+//> using options -Wunused:nowarn
 import annotation.nowarn
 object T {
   @deprecated def f = 1

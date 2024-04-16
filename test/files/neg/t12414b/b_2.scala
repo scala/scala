@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 object Test extends App {
   def test(x: Trait1): Unit =

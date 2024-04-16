@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 class A {
     val a1 = 1

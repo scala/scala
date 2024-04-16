@@ -1,4 +1,4 @@
-// scalac: -Yrangepos
+//> using options -Yrangepos
 //
 class LazyList[+A](expr: => LazyList.Evaluated[A]) {
   def #:: [B >: A](elem: => B): LazyList[B] = new LazyList(Some((elem, this)))

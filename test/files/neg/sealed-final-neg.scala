@@ -1,4 +1,4 @@
-// scalac: -Werror -opt:inline:** -Wopt
+//> using options -Werror -opt:inline:** -Wopt
 //
 package neg1 {
   sealed abstract class Foo {

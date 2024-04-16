@@ -1,4 +1,4 @@
-// scalac: -Wopt
+//> using options -Wopt
 import scala.math.Ordering
 
 /** The heart of the problem - we want to retain the ordering when

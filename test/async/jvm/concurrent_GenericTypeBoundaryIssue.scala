@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import Test.test
 

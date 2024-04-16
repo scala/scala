@@ -1,4 +1,4 @@
-// scalac: -opt:inline:** -Wopt:none
+//> using options -opt:inline:** -Wopt:none
 import java.lang.Thread.holdsLock
 import scala.collection.mutable.StringBuilder
 

@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.13
+//> using options -Xsource:2.13
 import q.X._
 
 package p {

@@ -1,4 +1,4 @@
-// scalac: -Vphases
+//> using options -Vphases
 //
 
 // testing compiler flag output only

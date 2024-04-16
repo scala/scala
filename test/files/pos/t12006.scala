@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 // see https://github.com/scala/bug/issues/12006
 // java.io.InputStream looks like a SAM (read method),

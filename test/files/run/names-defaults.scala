@@ -1,4 +1,4 @@
-// scalac: -Xlint
+//> using options -Xlint
 import scala.language.existentials
 
 object Test extends App {

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:-missing-interpolator -Xlint
+//> using options -Xfatal-warnings -Xlint:-missing-interpolator -Xlint
 //
 
 class Named(var name: String)

@@ -1,4 +1,4 @@
-// scalac: -Xmaxwarns 0
+//> using options -Xmaxwarns 0
 
 /* ================================================================================
          Automatically generated on 2011-05-11. Do Not Edit (unless you have to).

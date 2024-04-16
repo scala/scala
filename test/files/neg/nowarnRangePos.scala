@@ -1,4 +1,4 @@
-// scalac: -deprecation -Wunused:nowarn -Yrangepos:true -Werror
+//> using options -deprecation -Wunused:nowarn -Yrangepos:true -Werror
 import scala.annotation._
 
 class ann(a: Any) extends Annotation

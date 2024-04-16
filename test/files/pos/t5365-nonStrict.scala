@@ -1,4 +1,4 @@
-// scalac: -Werror -Xnon-strict-patmat-analysis
+//> using options -Werror -Xnon-strict-patmat-analysis
 //
 // copy of neg/t5365.scala, which under -Xnon-strict-patmat-analysis gives no warnings
 class C {

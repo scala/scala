@@ -1,5 +1,5 @@
-// javaVersion: 11+
-// scalac: -release:11
+//> using jvm 11+
+//> using options -release:11
 
 // this a sequel to t7965. that one only tests MethodHandle. JDK 11 added
 // signature polymorphic methods to VarHandle, so let's test that too

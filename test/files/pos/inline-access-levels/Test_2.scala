@@ -1,4 +1,4 @@
-// scalac: -opt:inline:** -Wopt -Werror
+//> using options -opt:inline:** -Wopt -Werror
 package test
 
 object Test {

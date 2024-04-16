@@ -1,4 +1,4 @@
-// scalac: -Werror -Wvalue-discard
+//> using options -Werror -Wvalue-discard
 object UnitOfTrust {
   import scala.util._
 

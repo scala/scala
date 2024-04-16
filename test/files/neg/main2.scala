@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xmain-class p.X
+//> using options -Xfatal-warnings -Xmain-class p.X
 //
 
 // emit a warning

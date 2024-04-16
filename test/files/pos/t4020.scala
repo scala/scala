@@ -1,5 +1,5 @@
 
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 class A {
     sealed trait Foo

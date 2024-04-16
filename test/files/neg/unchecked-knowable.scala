@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 /** Knowable - only final leaves */
 sealed abstract class A1

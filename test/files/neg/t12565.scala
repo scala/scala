@@ -1,5 +1,5 @@
-// scalac: -Werror --release 8
-// javaVersion: 9+
+//> using options -Werror --release 8
+//> using jvm 9+
 
 class C {
   def f = new java.time.Instant

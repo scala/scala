@@ -1,5 +1,5 @@
-// java: -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt
-// filter: scala.runtime.BoxesRunTime.{1,2}unboxToInt
+//> using javaOpt -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt
+//> using filter scala.runtime.BoxesRunTime.{1,2}unboxToInt
 //
 // noise from -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt
 // CompilerOracle: exclude scala/runtime/BoxesRunTime.unboxToInt

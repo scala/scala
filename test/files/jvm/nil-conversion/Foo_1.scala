@@ -1,4 +1,4 @@
-// scalac: -opt:none
+//> using options -opt:none
 class Foo_1 {
   def foo: List[Int] = List()
 

@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 sealed trait Expr
 final case class Foo(other: Option[String]) extends Expr
 final case class Bar(someConstant: String) extends Expr
