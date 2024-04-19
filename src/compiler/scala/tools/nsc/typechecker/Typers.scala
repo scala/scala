@@ -3161,6 +3161,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // because I don't see how we could recurse after the `setError(vparam)` call below
             if (vparam.tpt.isEmpty) {
               if (isFullyDefined(argpt)) vparam.tpt setType argpt
+              else if (vparam.hasAttachment[BooleanParameterType.type]) vparam.tpt.setType(definitions.BooleanTpe) // `if (_)`
               else paramsMissingType += vparam
 
               if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
