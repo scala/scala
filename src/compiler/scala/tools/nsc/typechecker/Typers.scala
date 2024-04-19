@@ -5524,7 +5524,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               context.pendingStabilizers ::= vdef
               qual.changeOwner(context.owner -> vsym)
               val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
-              return typedSelect(tree, newQual, name)
+              return typedSelect(tree, newQual, name).modifyType(_.map {
+                // very specific fix for scala/bug#12987 (details in the ticket)
+                case t: AliasTypeRef if t.pre.termSymbol == vsym && context.undetparams.contains(t.normalize.typeSymbol) =>
+                  t.normalize
+                case t => t
+              })
             }
 
             val tree1 = tree match {
