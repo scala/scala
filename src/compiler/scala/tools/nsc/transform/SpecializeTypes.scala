@@ -263,7 +263,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Symbol is a specialized accessor for the `target` field. */
-  case class SpecializedAccessor(target: Symbol) extends SpecializedInfo { }
+  case class SpecializedAccessor(target: Symbol) extends SpecializedInfo
 
   /** Symbol is a specialized method whose body should be the target's method body. */
   case class Implementation(target: Symbol) extends SpecializedInfo
@@ -602,7 +602,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        * was both already used for a map and mucho long.  So "sClass" is the
        * specialized subclass of "clazz" throughout this file.
        */
-
       val clazzName = specializedName(clazz, env0).toTypeName
       // scala/bug#5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
       // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
@@ -844,7 +843,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               info(origGetter) = Forward(specGetter)
               enterMember(specGetter)
               enterMember(origGetter)
-              debuglog("specialize accessor in %s: %s -> %s".format(sClass.name.decode, origGetter.name.decode, specGetter.name.decode))
+              debuglog(s"specialize accessor in ${sClass.name.decode}: ${origGetter.name.decode} -> ${specGetter.name.decode}")
 
               clazz.caseFieldAccessors.find(_.name.startsWith(m.name)) foreach { cfa =>
                 val cfaGetter = overrideIn(sClass, cfa)
@@ -1995,14 +1994,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               )
             )
             // param accessors for private members (the others are inherited from the generic class)
-            if (m.isPrimaryConstructor) {
-              for (param <- vparams ; if sClass.info.nonPrivateMember(param.name) == NoSymbol) {
+            if (m.isPrimaryConstructor)
+              for (param <- vparams if sClass.info.nonPrivateMember(param.name) == NoSymbol) {
                 val acc = param.cloneSymbol(sClass, param.flags | PARAMACCESSOR | PrivateLocal)
                 sClass.info.decls.enter(acc)
                 mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
               }
-            }
-
             // ctor
             mbrs += DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef.apply), EmptyTree)
           } else {

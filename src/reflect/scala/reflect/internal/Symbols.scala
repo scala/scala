@@ -2136,8 +2136,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  argument in the first parameter list of the primary constructor.
      *  The empty list for all other classes.
      *
-     * This list will be sorted to correspond to the declaration order
-     * in the constructor parameter
+     *  This list will be sorted to correspond to the declaration order
+     *  in the constructor parameter
      */
     final def caseFieldAccessors: List[Symbol] = {
       // We can't rely on the ordering of the case field accessors within decls --
@@ -2148,22 +2148,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       //
       // The slightly more principled approach of using the paramss of the
       // primary constructor leads to cycles in, for example, pos/t5084.scala.
-      val primaryNames = constrParamAccessors map (_.name.dropLocal)
-      def nameStartsWithOrigDollar(name: Name, prefix: Name) =
-        name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
-
-      def rec(remaningAccessors: List[Symbol], foundAccessors: List[(Symbol, Int)], remainingNames: List[(Name, Int)]): List[Symbol] = {
-        remaningAccessors match {
-          case Nil => foundAccessors.sortBy(_._2).map(_._1)
-          case acc :: tail => {
-            val i = remainingNames.collectFirst { case (name, i) if acc.name == name || nameStartsWithOrigDollar(acc.name, name) => i}
-            rec(tail, (acc, i.get) :: foundAccessors, remainingNames.filterNot { case (_, ii) => Some(ii) == i} )
-          }
-        }
+      val primaryNames = constrParamAccessors.map { p =>
+        if (p.hasFlag(EXPANDEDNAME)) p.unexpandedName.dropLocal
+        else p.name.dropLocal
       }
 
-      rec(caseFieldAccessorsUnsorted.sortBy(s => -s.name.length), Nil, primaryNames.zipWithIndex.sortBy{ case (n, _) => -n.length})
+      def loop(remainingAccessors: List[Symbol], foundAccessors: List[(Symbol, Int)], remainingNames: List[(Name, Int)]): List[Symbol] =
+        remainingAccessors match {
+          case Nil => foundAccessors.sortBy(_._2).map(_._1)
+          case acc :: remainingAccessors =>
+            def nameStartsWithOrigDollar(name: Name, prefix: Name) =
+              name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
+            remainingNames.collectFirst {
+              case (name, i) if acc.name == name || nameStartsWithOrigDollar(acc.name, name) => i
+            } match {
+              case Some(i) => loop(remainingAccessors, (acc, i) :: foundAccessors, remainingNames.filter(_._2 != i))
+              case x => throw new MatchError(x)
+            }
+        }
 
+      loop(caseFieldAccessorsUnsorted.sortBy(-_.name.length), foundAccessors = Nil, primaryNames.zipWithIndex.sortBy(-_._1.length))
     }
     private final def caseFieldAccessorsUnsorted: List[Symbol] = info.decls.toList.filter(_.isCaseAccessorMethod)
 
