@@ -55,7 +55,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
    *
    * Given that CleanUp delivers trees that produce values on the stack,
    * the entry-point to all-things instruction-emit is `genLoad()`.
-   * There, an operation taking N arguments results in recursively emitting instructions to lead each of them,
+   * There, an operation taking N arguments results in recursively emitting instructions to load each of them,
    * followed by emitting instructions to process those arguments (to be found at run-time on the operand-stack).
    *
    * In a few cases the above recipe deserves more details, as provided in the documentation for:
@@ -124,7 +124,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       thisBTypeDescriptor = thisBType.descriptor
       cnode = new ClassNode1()
 
-      initJClass(cnode)
+      initJClass()
       val cd = if (isCZStaticModule) {
         // Move statements from the primary constructor following the superclass constructor call to
         // a newly synthesised tree representing the "<clinit>", which also assigns the MODULE$ field.
@@ -182,7 +182,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     /*
      * must-single-thread
      */
-    private def initJClass(@unused jclass: asm.ClassVisitor): Unit = {
+    private def initJClass(): Unit = {
 
       val bType = classBTypeFromSymbol(claszSymbol)
       val superClass = bType.info.get.superClass.getOrElse(ObjectRef).internalName
@@ -198,6 +198,16 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       if (emitSource) {
         cnode.visitSource(cunit.source.toString, null /* SourceDebugExtension */)
       }
+
+      if (currentRun.isJDK11)
+        claszSymbol.attachments.get[NestHost] match {
+          case Some(NestHost(host)) => cnode.visitNestHost(internalName(host))
+          case None =>
+            claszSymbol.attachments.get[NestMembers] match {
+              case Some(NestMembers(members)) => for (m <- members) cnode.visitNestMember(internalName(m))
+              case None =>
+            }
+        }
 
       enclosingMethodAttribute(claszSymbol, internalName, methodBTypeFromSymbol(_).descriptor) match {
         case Some(EnclosingMethodEntry(className, methodName, methodDescriptor)) =>

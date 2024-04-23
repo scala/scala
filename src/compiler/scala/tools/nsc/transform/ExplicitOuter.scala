@@ -434,6 +434,13 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
+          // c0 belongs to same "nest" as c1 if c0 is enclosed by c1,
+          // or more generally their top enclosing classes are either identical or companions
+          def isNestable(c0: Symbol, c1: Symbol): Boolean = currentRun.isJDK11 && {
+            val top0 = c0.enclosingTopLevelClass
+            val top1 = c1.enclosingTopLevelClass
+            top0 == top1 || top0.linkedClassOfClass == top1
+          }
           // make not private symbol accessed from inner classes, as well as
           // symbols accessed from @inline methods
           //
@@ -442,7 +449,7 @@ abstract class ExplicitOuter extends InfoTransform
           def enclMethodIsInline = closestEnclMethod(currentOwner) hasAnnotation ScalaInlineClass
           // scala/bug#8710 The extension method condition reflects our knowledge that a call to `new Meter(12).privateMethod`
           //         with later be rewritten (in erasure) to `Meter.privateMethod$extension(12)`.
-          if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension)
+          if ((currentClass != sym.owner || enclMethodIsInline) && !sym.isMethodWithExtension && !isNestable(currentClass, sym.owner))
             sym.makeNotPrivate(sym.owner)
 
           val qsym = qual.tpe.widen.typeSymbol

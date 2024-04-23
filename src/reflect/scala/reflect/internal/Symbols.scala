@@ -2336,9 +2336,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @tailrec
     final def originalEnclosingTopLevelClassOrDummy: Symbol =
       if (this eq NoSymbol) this
-      else if (isTopLevel) {
+      else if (originalOwner.isPackageClass) {
         if (isClass) this else moduleClass.orElse(this)
-      } else originalOwner.originalEnclosingTopLevelClassOrDummy
+      }
+      else originalOwner.originalEnclosingTopLevelClassOrDummy
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = {
