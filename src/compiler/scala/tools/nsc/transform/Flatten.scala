@@ -146,6 +146,21 @@ abstract class Flatten extends InfoTransform {
           if (tree.symbol.sourceModule.isStaticModule)
             removeSymbolInCurrentScope(tree.symbol.sourceModule)
           EmptyTree
+        case ClassDef(_, _, _, _) if !tree.symbol.isModuleClass => // !tree.symbol.isNestedClass
+          val sym = tree.symbol
+          val module = sym.companion.moduleClass
+          if (module.exists) {
+            module.attachments.get[NestHost] match {
+              case Some(NestHost(host)) => assert(host == sym, s"bad $module host $host != $sym")
+              case None => module.updateAttachment(NestHost(sym))
+            }
+            val members = sym.attachments.get[NestMembers] match {
+              case Some(NestMembers(members)) => module :: members
+              case None => module :: Nil
+            }
+            sym.updateAttachment(NestMembers(members))
+          }
+          tree.transform(this)
         case _ =>
           tree.transform(this)
       }
@@ -173,6 +188,26 @@ abstract class Flatten extends InfoTransform {
       val stats1 = super.transformStats(stats, exprOwner)
       if (currentOwner.isPackageClass) {
         val lifted = liftedDefs.remove(currentOwner).toList.flatten
+        for (d <- lifted) {
+          val sym = d.symbol
+          val top = {
+            val tlc = sym.originalEnclosingTopLevelClassOrDummy
+            if (tlc.isModuleClass) {
+              val cmp = tlc.linkedClassOfClass
+              if (cmp.exists) cmp else tlc
+            }
+            else tlc
+          }
+          sym.attachments.get[NestHost] match {
+            case Some(NestHost(host)) => assert(host == top, s"bad $sym host $host != $top")
+            case None => sym.updateAttachment(NestHost(top))
+          }
+          val members = top.attachments.get[NestMembers] match {
+            case Some(NestMembers(members)) => sym :: members
+            case None => sym :: Nil
+          }
+          top.updateAttachment(NestMembers(members))
+        }
         stats1 ::: lifted
       }
       else stats1

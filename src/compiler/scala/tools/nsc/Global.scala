@@ -1180,6 +1180,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     keepPhaseStack = settings.log.isSetByUser
 
     val isScala3: Boolean = settings.isScala3: @nowarn
+    val isJDK11: Boolean = settings.targetValue.toInt >= 11
 
     object sourceFeatures {
       private val s = settings

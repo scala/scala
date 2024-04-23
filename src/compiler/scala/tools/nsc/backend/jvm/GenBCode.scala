@@ -97,12 +97,8 @@ abstract class GenBCode extends SubComponent {
       generatedClassHandler = GeneratedClassHandler(global)
       statistics.stopTimer(statistics.bcodeInitTimer, initStart)
     }
-    def writeOtherFiles(): Unit = {
-      global.plugins foreach {
-        plugin =>
-          plugin.writeAdditionalOutputs(postProcessor.classfileWriter)
-      }
-    }
+
+    def writeOtherFiles(): Unit = global.plugins.foreach(_.writeAdditionalOutputs(postProcessor.classfileWriter))
 
     private def close(): Unit =
       List[AutoCloseable](

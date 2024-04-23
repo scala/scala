@@ -92,6 +92,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DiscardedExpr
     this.BooleanParameterType
     this.VarAlias
+    this.NestMembers
+    this.NestHost
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

@@ -711,13 +711,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             generatedType = genPrimitiveOp(app, expectedType)
           } else { // normal method call
             def isTraitSuperAccessorBodyCall = app.hasAttachment[UseInvokeSpecial.type]
+            def isPrivateSpecial = sym.isPrivate && (claszSymbol.info <:< sym.owner.info)
             val invokeStyle =
               if (sym.isStaticMember)
                 InvokeStyle.Static
-              else if (sym.isPrivate || sym.isClassConstructor) InvokeStyle.Special
-              else if (isTraitSuperAccessorBodyCall)
+              else if (isPrivateSpecial || sym.isClassConstructor || isTraitSuperAccessorBodyCall)
                 InvokeStyle.Special
-              else InvokeStyle.Virtual
+              else
+                InvokeStyle.Virtual
 
             if (invokeStyle.hasInstance) genLoadQualifier(fun)
             genLoadArguments(args, paramTKs(app))
