@@ -14,7 +14,7 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
   *
@@ -210,7 +210,6 @@ final class VectorMap[K, +V] private (
    *
    *  @return  a [[Vector]] of the keys contained by this map.
    */
-  @nowarn("msg=overriding method keys")
   override def keys: Vector[K] = keysIterator.toVector
 
   override def values: Iterable[V] = new Iterable[V] with IterableFactoryDefaults[V, Iterable] {

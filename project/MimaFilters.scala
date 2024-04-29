@@ -58,6 +58,11 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.defaultArg"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superArg"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superFwdArg"),
+
+    // scala/scala#10766
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.SeqMap#EmptySeqMap.keys"),
+
+    // IMPROVE YOUR KARMA use trailing comma
   )
 
   override val buildSettings = Seq(

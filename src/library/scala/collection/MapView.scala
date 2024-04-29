@@ -27,7 +27,6 @@ trait MapView[K, +V]
    *
    *  @return the keys of this map as a view.
    */
-  @nowarn("msg=overriding method keys")
   override def keys: Iterable[K] = new MapView.Keys(this)
 
   // Ideally this returns a `View`, but bincompat

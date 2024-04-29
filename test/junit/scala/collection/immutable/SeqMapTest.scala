@@ -4,6 +4,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 
 import scala.collection.mutable
+import scala.tools.testkit.AssertUtil.assertSameElements
 
 class SeqMapTest {
   private def checkClass(map: SeqMap[_, _], simpleName: String): Unit = {
@@ -38,5 +39,22 @@ class SeqMapTest {
 
     // `addAll`
     checkClass(build(_ ++= List(1 -> 1)), "SeqMap1")
+  }
+
+  @Test def `keys are iteration order`: Unit = {
+    val pairs = List.tabulate(6)(i => s"k$i" -> i)
+    for (elems <- pairs.tails) {
+      val vm = elems.to(VectorMap)
+      val sm = elems.to(SeqMap)
+      val lm = elems.to(ListMap)
+      val keys = elems.map(_._1)
+      assertSameElements(keys, vm.keys)
+      assertSameElements(keys, sm.keys)
+      assertSameElements(keys.iterator, vm.keys.iterator)
+      assertSameElements(keys.iterator, sm.keys.iterator)
+      assertSameElements(vm.keys, sm.keys)
+      assertEquals(vm.keys, sm.keys)
+      assertEquals(lm.keys, sm.keys)
+    }
   }
 }

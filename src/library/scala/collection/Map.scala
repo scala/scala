@@ -181,7 +181,12 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** A set representing the keys contained by this map.
    *
-   *  For efficiency the resulting set may be a view (maintaining a reference to the map and reflecting modifications
+   *  By default, the set uses `keysIterator` for iteration and delegates `contains` to the `Map`.
+   *
+   *  For `Map` implementations with ordered but not sorted keys, such as a `SeqMap`,
+   *  `keys` may efficiently build a representation that preserves order.
+   *
+   *  For efficiency, the resulting set may be a view (maintaining a reference to the map and reflecting modifications
    *  to the map), but it may also be a strict collection without reference to the map.
    *
    *   - To ensure an independent strict collection, use `m.keysIterator.toSet`
@@ -191,8 +196,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
    */
   def keySet: Set[K] = new KeySet
 
-  /** The implementation class of the set returned by `keySet`.
-    */
+  /** The implementation class of the set returned by `keySet`. */
   protected class KeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
     def diff(that: Set[K]): Set[K] = fromSpecific(this.view.filterNot(that))
   }
@@ -208,6 +212,16 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** An [[Iterable]] collection of the keys contained by this map.
    *
+   *  The default implementation returns `keySet`.
+   *
+   *  For `Map` implementations with ordered but not sorted keys, such as a `SeqMap`,
+   *  `keys` may efficiently build a representation that preserves order.
+   *
+   *  Its iterator respects the iteration order of `keysIterator`, such that
+   *  ```
+   *  keys.iterator.sameElements(keySet.iterator)
+   *  ```
+   *
    *  For efficiency the resulting collection may be a view (maintaining a reference to the map and reflecting
    *  modifications to the map), but it may also be a strict collection without reference to the map.
    *
@@ -216,7 +230,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
    *
    *  @return an [[Iterable]] collection of the keys contained by this map
    */
-  @deprecatedOverriding("This method should be an alias for keySet", since="2.13.13")
   def keys: Iterable[K] = keySet
 
   /** Collects all values of this map in an iterable collection.
@@ -230,6 +243,11 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** An [[Iterator]] of the keys contained by this map.
    *
+   *  If the collection maintains ordered keys, then `keysIterator` respects that order.
+   *
+   *  The default implementation uses the iterator of this `Map`,
+   *  but may be overridden for efficiency.
+   *
    *  @return an [[Iterator]] of the keys contained by this map
    */
   def keysIterator: Iterator[K] = new AbstractIterator[K] {
@@ -239,9 +257,12 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   }
 
   /** Creates an iterator for all values in this map.
-    *
-    *  @return an iterator over all values that are associated with some key in this map.
-    */
+   *
+   *  The default implementation uses the iterator of this `Map`,
+   *  but may be overridden for efficiency.
+   *
+   *  @return an iterator over all values that are associated with some key in this map.
+   */
   def valuesIterator: Iterator[V] = new AbstractIterator[V] {
     val iter = MapOps.this.iterator
     def hasNext = iter.hasNext
