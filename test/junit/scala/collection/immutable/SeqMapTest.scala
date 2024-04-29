@@ -39,4 +39,16 @@ class SeqMapTest {
     // `addAll`
     checkClass(build(_ ++= List(1 -> 1)), "SeqMap1")
   }
+
+  @Test def `keys are seqs`: Unit = {
+    val pairs = List.tabulate(6)(i => s"k$i" -> i)
+    for (elems <- pairs.tails) {
+      val vm = elems.to(VectorMap)
+      val sm = elems.to(SeqMap)
+      val keys = elems.map(_._1)
+      assertEquals(keys, vm.keys)
+      assertEquals(keys, sm.keys)
+      assertEquals(vm.keys, sm.keys)
+    }
+  }
 }
