@@ -1234,7 +1234,10 @@ object LazyList extends SeqFactory[LazyList] {
     newLL(rangeImpl(start, end, step = Integral[A].one))
 
   override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
-    newLL(rangeImpl(start, end, step))
+    newLL {
+      if (ev.equiv(step, ev.zero)) throw new IllegalArgumentException("step cannot be 0.")
+      else rangeImpl(start, end, step)
+    }
 
   private[this] def rangeImpl[A](start: A, end: A, step: A)(implicit ev: Integral[A]): State[A] =
     if (ev.lt(start, end)) sCons(start, newLL(rangeImpl(ev.plus(start, step), end, step)))
