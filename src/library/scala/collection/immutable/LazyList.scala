@@ -1231,7 +1231,7 @@ object LazyList extends SeqFactory[LazyList] {
   }
 
   override def range[A: Integral](start: A, end: A): LazyList[A] =
-    range(start, end, step = Integral[A].one)
+    newLL(rangeImpl(start, end, step = Integral[A].one))
 
   override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
     newLL(rangeImpl(start, end, step))
