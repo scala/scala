@@ -444,6 +444,18 @@ class LazyListTest {
     LazyList(1).lazyAppendedAll({ count += 1; Seq(2)}).toList
     assertEquals(1, count)
   }
+
+  @Test
+  def lazyRangeAllowsMoreThanIntMaxValue(): Unit = {
+    val totalElements: Long = Int.MaxValue.toLong + 2L
+    val count: Long =
+      LazyList
+        .range(start = 0L, end = totalElements)
+        .foldLeft(0L) { case (acc, _) =>
+          acc + 1L
+        }
+    assertEquals(totalElements, count)
+  }
 }
 
 object LazyListTest {
