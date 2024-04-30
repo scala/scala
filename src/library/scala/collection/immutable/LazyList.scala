@@ -1231,17 +1231,19 @@ object LazyList extends SeqFactory[LazyList] {
   }
 
   override def range[A: Integral](start: A, end: A): LazyList[A] =
-    newLL(rangeImpl(start, end, step = Integral[A].one))
+    newLL(rangeImpl(start, end, step = Integral[A].one, sign = true))
 
   override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
     newLL {
       if (ev.equiv(step, ev.zero)) throw new IllegalArgumentException("step cannot be 0.")
-      else rangeImpl(start, end, step)
+      else rangeImpl(start, end, step, sign = ev.sign(step) == ev.one)
     }
 
-  private[this] def rangeImpl[A](start: A, end: A, step: A)(implicit ev: Integral[A]): State[A] =
-    if (ev.lt(start, end)) sCons(start, newLL(rangeImpl(ev.plus(start, step), end, step)))
+  private[this] def rangeImpl[A](start: A, end: A, step: A, sign: Boolean)(implicit ev: Integral[A]): State[A] = {
+    val check = if (sign) ev.lt(start, end) else ev.gt(start, end)
+    if (check) sCons(start, newLL(rangeImpl(ev.plus(start, step), end, step, sign)))
     else State.Empty
+  }
 
   // significantly simpler than the iterator returned by Iterator.unfold
   override def unfold[A, S](init: S)(f: S => Option[(A, S)]): LazyList[A] =
