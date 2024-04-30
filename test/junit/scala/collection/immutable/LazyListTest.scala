@@ -447,14 +447,15 @@ class LazyListTest {
 
   @Test
   def lazyRangeAllowsMoreThanIntMaxValue(): Unit = {
-    val totalElements: Long = Int.MaxValue.toLong + 2L
-    val count: Long =
-      LazyList
-        .range(start = 0L, end = totalElements)
-        .foldLeft(0L) { case (acc, _) =>
-          acc + 1L
-        }
-    assertEquals(totalElements, count)
+    // We use a reverse range to avoid computing a lot of elements.
+    val maxValue = Int.MaxValue.toLong
+    val lazyList = LazyList.range(
+      start = maxValue * 2L,
+      end = 0,
+      step = -1L
+    )
+    val nums = lazyList.take(10)
+    assert(nums.forall(_ > maxValue))
   }
 }
 
