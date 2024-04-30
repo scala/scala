@@ -968,17 +968,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   */
 @SerialVersionUID(3L)
 object LazyList extends SeqFactory[LazyList] {
-  // Override SeqFactory methods.
-  override def range[A: Integral](start: A, end: A): LazyList[A] =
-    range(start, end, step = Integral[A].one)
-
-  override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
-    newLL(rangeImpl(start, end, step))
-
-  private[this] def rangeImpl[A](start: A, end: A, step: A)(implicit ev: Integral[A]): State[A] =
-    if (ev.lt(start, end)) sCons(start, newLL(rangeImpl(ev.plus(start, step), end, step)))
-    else State.Empty
-
   // Eagerly evaluate cached empty instance
   private[this] val _empty = newLL(State.Empty).force
 
@@ -1240,6 +1229,16 @@ object LazyList extends SeqFactory[LazyList] {
 
     at(0)
   }
+
+  override def range[A: Integral](start: A, end: A): LazyList[A] =
+    range(start, end, step = Integral[A].one)
+
+  override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
+    newLL(rangeImpl(start, end, step))
+
+  private[this] def rangeImpl[A](start: A, end: A, step: A)(implicit ev: Integral[A]): State[A] =
+    if (ev.lt(start, end)) sCons(start, newLL(rangeImpl(ev.plus(start, step), end, step)))
+    else State.Empty
 
   // significantly simpler than the iterator returned by Iterator.unfold
   override def unfold[A, S](init: S)(f: S => Option[(A, S)]): LazyList[A] =
