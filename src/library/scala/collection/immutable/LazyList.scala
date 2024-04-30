@@ -968,6 +968,13 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   */
 @SerialVersionUID(3L)
 object LazyList extends SeqFactory[LazyList] {
+  // Override SeqFactory methods.
+  override def range[A: Integral](start: A, end: A): LazyList[A] =
+    range(start, end, step = Integral[A].one)
+
+  override def range[A](start: A, end: A, step: A)(implicit ev: Integral[A]): LazyList[A] =
+    LazyList.iterate(start)(ev.plus(_, step)).takeWhile(ev.lt(_, end))
+
   // Eagerly evaluate cached empty instance
   private[this] val _empty = newLL(State.Empty).force
 
