@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.13"),
+    mimaReferenceVersion := Some("2.13.14"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -38,9 +38,6 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
-
-    // private[scala] member used by Properties and by REPL
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.consoleIsTerminal"),
 
   )
 
