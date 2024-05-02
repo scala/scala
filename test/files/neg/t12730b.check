@@ -1,0 +1,6 @@
+t12730b.scala:10: warning: package object p in package p is deprecated (since recently): package delivery
+  def f = p.m
+            ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

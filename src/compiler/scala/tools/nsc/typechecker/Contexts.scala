@@ -67,7 +67,7 @@ trait Contexts { self: Analyzer =>
     def checkDeprecatedElementInPath(selector: ImportSelector, info: ImportInfo): String = {
       def badName(name: Name) =
         info.qual.tpe.member(name) match {
-          case m if m.isDeprecated => Some(s" of deprecated $m${msg(m)}")
+          case m if m.isDeprecated => Some(s" of $m${msg(m)}")
           case _ => None
         }
       val badSelected =
@@ -75,7 +75,7 @@ trait Contexts { self: Analyzer =>
         else None
       def badFrom = {
         val sym = info.qual.symbol
-        if (sym.isDeprecated) Some(s" from deprecated $sym${msg(sym)}") else None
+        if (sym.isDeprecated) Some(s" from $sym${msg(sym)}") else None
       }
       badSelected.orElse(badFrom).getOrElse("")
     }

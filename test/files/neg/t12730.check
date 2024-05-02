@@ -1,0 +1,5 @@
+t12730.scala:3: error: not enough arguments for deprecated method formatted: (fmtstr: String): String.
+Unspecified value parameter fmtstr.
+  def f = 42.formatted()
+                      ^
+1 error

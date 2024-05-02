@@ -18,7 +18,7 @@ object Test extends App {
       case meth: MethodSymbol => meth.paramLists.flatten.map(_.info)
       case _                  => throw new MatchError(sym)
     }
-    s"$sym: ${sym.info}"
+    s"${sym.toString.stripPrefix("deprecated ")}: ${sym.info}"
   }
 
   def convert(value: Any, tpe: Type) = {

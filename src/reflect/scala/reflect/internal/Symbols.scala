@@ -2789,17 +2789,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
-    override def toString: String = {
+    override def toString: String =
+      if (isDeprecated) compose("deprecated", undeprecatedString) else undeprecatedString
+
+    def undeprecatedString: String = {
       val simplifyNames = !settings.isDebug
       if (isPackageObjectOrClass && simplifyNames) s"package object ${owner.decodedName}"
       else {
         val kind = kindString
-        val _name: String =
+        val name: String =
           if (hasMeaninglessName) owner.decodedName + idString
-          else if (simplifyNames && (kind == "variable" || kind == "value")) unexpandedName.getterName.decode.toString // TODO: make condition less gross?
+          else if (simplifyNames && (kind == "variable" || kind == "value")) unexpandedName.getterName.decode.toString
           else nameString
 
-        compose(kind, _name)
+        compose(kind, name)
       }
     }
 
@@ -3339,7 +3342,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
 
     override def nameString: String =
-      if ((settings.isDebug)) (super.nameString + "&" + level)
+      if (settings.isDebug) s"${super.nameString}&${level}"
       else super.nameString
   }
 

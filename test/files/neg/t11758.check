@@ -10,7 +10,7 @@ t11758.scala:21: warning: Unused import of deprecated object inner: no inner
 t11758.scala:25: warning: Unused import of deprecated class C: no see
   import nest.C
               ^
-t11758.scala:23: warning: object inner in object outer is deprecated (since 2.0): no inner
+t11758.scala:23: warning: object inner in deprecated object outer is deprecated (since 2.0): no inner
   def f = inner
           ^
 t11758.scala:23: warning: object outer is deprecated (since 1.0): no outer
