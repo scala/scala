@@ -1,0 +1,4 @@
+t7879b.scala:5: error: value copy is not a member of C
+  def f(c: C): C = c.copy(42)(Seq(9, 9, 9): _*)
+                     ^
+1 error

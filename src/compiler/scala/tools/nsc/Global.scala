@@ -1188,6 +1188,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       import s.XsourceFeatures.contains
       def caseApplyCopyAccess    = isScala3 && contains(o.caseApplyCopyAccess)
       def caseCompanionFunction  = isScala3 && contains(o.caseCompanionFunction)
+      def caseCopyByName         = isScala3 && contains(o.caseCopyByName)
       def inferOverride          = isScala3 && contains(o.inferOverride)
       def any2StringAdd          = isScala3 && contains(o.any2StringAdd)
       def unicodeEscapesRaw      = isScala3 && contains(o.unicodeEscapesRaw)

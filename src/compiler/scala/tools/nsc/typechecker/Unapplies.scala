@@ -27,8 +27,8 @@ trait Unapplies extends ast.TreeDSL {
 
   import global._
   import definitions._
-  import CODE.{ CASE => _, _ }
-  import treeInfo.{ isRepeatedParamType, isByNameParamType }
+  import CODE.{CASE => _, _}
+  import treeInfo.{isByNameParamType, isRepeatedParamType}
 
   private def unapplyParamName = nme.x_0
   private def caseMods         = Modifiers(SYNTHETIC | CASE)
@@ -265,11 +265,16 @@ trait Unapplies extends ast.TreeDSL {
    * ClassDef of the case class.
    */
   def caseClassCopyMeth(cdef: ClassDef): Option[DefDef] = {
-    def isDisallowed(vd: ValDef) = isRepeatedParamType(vd.tpt) || isByNameParamType(vd.tpt)
-    val classParamss  = constrParamss(cdef)
-
-    if (cdef.symbol.hasAbstractFlag || mexists(classParamss)(isDisallowed)) None
-    else {
+    val classParamss = constrParamss(cdef)
+    def copyOK = {
+      def warn() = if (currentRun.isScala3) runReporting.warning(cdef.namePos, "case `copy` method is allowed to have by-name parameters under Scala 3 (or with -Xsource-features:case-copy-by-name)", Scala3Migration, cdef.symbol)
+      def isAllowed(vd: ValDef) = {
+        def checkByName = currentRun.sourceFeatures.caseCopyByName || !isByNameParamType(vd.tpt).tap(if (_) warn())
+        !isRepeatedParamType(vd.tpt) && checkByName
+      }
+      !cdef.symbol.hasAbstractFlag && mforall(classParamss)(isAllowed)
+    }
+    def synthesizeCopy = {
       def makeCopyParam(vd: ValDef, putDefault: Boolean) = {
         val rhs = if (putDefault) toIdent(vd) else EmptyTree
         val flags = PARAM | (vd.mods.flags & IMPLICIT) | (if (putDefault) DEFAULTPARAM else 0)
@@ -277,14 +282,12 @@ trait Unapplies extends ast.TreeDSL {
         val tpt = atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt)
         treeCopy.ValDef(vd, Modifiers(flags), vd.name, tpt, rhs)
       }
-
       val tparams = constrTparamsInvariant(cdef)
       val paramss = classParamss match {
         case Nil => Nil
         case ps :: pss =>
           ps.map(makeCopyParam(_, putDefault = true)) :: mmap(pss)(makeCopyParam(_, putDefault = false))
       }
-
       val classTpe = classType(cdef, tparams)
       val argss = mmap(paramss)(toIdent)
       val body: Tree = New(classTpe, argss)
@@ -301,10 +304,10 @@ trait Unapplies extends ast.TreeDSL {
           }
         }
         else synth
-      val copyDefDef = atPos(cdef.pos.focus)(
+      atPos(cdef.pos.focus)(
         DefDef(copyMods, nme.copy, tparams, paramss, TypeTree(), body)
       )
-      Some(copyDefDef)
     }
+    if (copyOK) Some(synthesizeCopy) else None
   }
 }

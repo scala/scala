@@ -125,8 +125,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   private val XsourceHelp =
-    sm"""|-Xsource:3 is for migrating a codebase, -Xsource-features can be added for
-         |cross-building to adopt certain Scala 3 behavior.
+    sm"""|-Xsource:3 is for migrating a codebase. -Xsource-features can be added for
+         |cross-building to adopt certain Scala 3 behaviors.
          |
          |See also "Scala 2 with -Xsource:3" on docs.scala-lang.org.
          |
@@ -169,9 +169,10 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   // buffet of features available under -Xsource:3
   object sourceFeatures extends MultiChoiceEnumeration {
     // Changes affecting binary encoding
-    val caseApplyCopyAccess = Choice("case-apply-copy-access", "Constructor modifiers are used for apply / copy methods of case classes. [bin]")
+    val caseApplyCopyAccess    = Choice("case-apply-copy-access", "Constructor modifiers are used for apply / copy methods of case classes. [bin]")
     val caseCompanionFunction  = Choice("case-companion-function", "Synthetic case companion objects no longer extend FunctionN. [bin]")
-    val inferOverride = Choice("infer-override", "Inferred type of member uses type of overridden member. [bin]")
+    val caseCopyByName         = Choice("case-copy-by-name", "Synthesize case copy method with by-name parameters. [bin]")
+    val inferOverride          = Choice("infer-override", "Inferred type of member uses type of overridden member. [bin]")
 
     // Other semantic changes
     val any2StringAdd          = Choice("any2stringadd", "Implicit `any2stringadd` is never inferred.")
@@ -203,10 +204,11 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     helpText = Some(
       sm"""Enable Scala 3 features under -Xsource:3.
           |
-          |Instead of `-Xsource-features:_`, it is recommended to enable specific features, for
-          |example `-Xsource-features:v2.13.14,-case-companion-function` (-x to exclude x).
-          |This way, new semantic changes in future Scala versions are not silently adopted;
-          |new features can be enabled after auditing the corresponding migration warnings.
+          |Instead of `-Xsource-features:_`, it is recommended to enable individual features.
+          |Features can also be removed from a feature group by prefixing with `-`;
+          |for example, `-Xsource-features:v2.13.14,-case-companion-function`.
+          |Listing features explicitly ensures new semantic changes in future Scala versions are
+          |not silently adopted; new features can be enabled after auditing migration warnings.
           |
           |`-Xsource:3-cross` is a shorthand for `-Xsource:3 -Xsource-features:_`.
           |
