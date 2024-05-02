@@ -1,0 +1,23 @@
+
+scala> import concurrent.duration._
+import concurrent.duration._
+
+scala> 60.seconds
+val res0: scala.concurrent.duration.FiniteDuration = 60 seconds
+
+scala> class C
+class C
+
+scala> implicit def cv(s: String): C = new C
+warning: 1 feature warning; for details, enable `:setting -feature` or `:replay -feature`
+def cv(s: String): C
+
+scala> "hello, world"
+val res1: String = hello, world
+
+scala> { import concurrent.duration._; "adios, amigos" }
+                                    ^
+       warning: Unused import
+val res2: String = adios, amigos
+
+scala> :quit

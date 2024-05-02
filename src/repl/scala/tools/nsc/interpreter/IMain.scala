@@ -362,10 +362,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
   }
   private def makeClassLoader(): AbstractFileClassLoader =
-    new TranslatingClassLoader({
-      _runtimeClassLoader = new URLClassLoader(compilerClasspath, parentClassLoader)
-      _runtimeClassLoader
-    })
+    new TranslatingClassLoader(new URLClassLoader(compilerClasspath, parentClassLoader).tap(_runtimeClassLoader_=))
 
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames.map(_.decode).sorted
@@ -400,9 +397,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     replScope enter sym
   }
 
-  def recordRequest(req: Request): Unit = {
-    if (req == null)
-      return
+  def recordRequest(req: Request): Unit = if (req != null) {
 
     prevRequests += req
 
@@ -969,9 +964,18 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
      *  If all goes well, the "types" map is computed.
      */
     def compile: Boolean = {
+      val compiledOK =
+        if (origTrees.forall(_.isInstanceOf[Import])) {
+          //settings.Wconf.value ::= "cat=unused-imports:s" // alternatively, suppression is effective
+          val saved = settings.warnUnused.value
+          settings.warnUnused.value -= settings.UnusedWarnings.Imports
+          try lineRep.compile(mkUnit)
+          finally settings.warnUnused.value = saved
+        }
+        else lineRep.compile(mkUnit)
 
       // compile the object containing the user's code
-      lineRep.compile(mkUnit) && {
+      compiledOK && {
         // extract and remember types
         typeOf
         typesOfDefinedTerms
@@ -1100,11 +1104,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   /** It's a bit of a shotgun approach, but for now we will gain in
-    *  robustness. Try a symbol-producing operation at phase typer, and
-    *  if that is NoSymbol, try again at phase flatten. I'll be able to
-    *  lose this and run only from exitingTyper as soon as I figure out
-    *  exactly where a flat name is sneaking in when calculating imports.
-    */
+   *  robustness. Try a symbol-producing operation at phase typer, and
+   *  if that is NoSymbol, try again at phase flatten. I'll be able to
+   *  lose this and run only from exitingTyper as soon as I figure out
+   *  exactly where a flat name is sneaking in when calculating imports.
+   */
   def tryTwice(op: => Symbol): Symbol = exitingTyper(op) orElse exitingFlatten(op)
 
   def symbolOfIdent(id: String): Symbol  = symbolOfType(id) orElse symbolOfTerm(id)

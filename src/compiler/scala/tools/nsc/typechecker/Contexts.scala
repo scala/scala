@@ -732,7 +732,7 @@ trait Contexts { self: Analyzer =>
 
     def makeImportContext(tree: Import): Context =
       make(tree).tap { ctx =>
-        if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport)
+        if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport && !ctx.outer.owner.isInterpreterWrapper)
           allImportInfos(ctx.unit) ::= ctx.importOrNull -> ctx.owner
       }
 
@@ -1355,14 +1355,14 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-    private def isReplImportWrapperImport(tree: Tree): Boolean = {
+    // detect magic REPL imports (used to manage visibility)
+    private def isReplImportWrapperImport(tree: Tree): Boolean =
       tree match {
         case Import(expr, selector :: Nil) =>
           // Just a syntactic check to avoid forcing typechecking of imports
           selector.name.string_==(nme.INTERPRETER_IMPORT_LEVEL_UP) && owner.enclosingTopLevelClass.isInterpreterWrapper
         case _ => false
       }
-    }
 
   } //class Context
 
