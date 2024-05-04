@@ -61,6 +61,9 @@ warn-unused-privates.scala:154: warning: private method x in class OtherNames is
 warn-unused-privates.scala:155: warning: private method y_= in class OtherNames is never used
   private def y_=(i: Int): Unit = ()
               ^
+warn-unused-privates.scala:269: warning: private val n in class t12992 enclosing def is unused is never used
+  private val n = 42
+              ^
 warn-unused-privates.scala:121: warning: private class Bar1 in object Types is never used
   private class Bar1 // warn
                 ^
@@ -80,5 +83,5 @@ warn-unused-privates.scala:114: warning: local var x in method f2 is never updat
     var x = 100 // warn about it being a var
         ^
 error: No warnings can be incurred under -Werror.
-27 warnings
+28 warnings
 1 error

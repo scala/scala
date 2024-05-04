@@ -115,6 +115,7 @@ class InterpreterLoop {
         }
 
         // for 2.8 compatibility
+        @annotation.unused
         final class Compat {
           def bindValue(id: String, value: Any) =
             interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)

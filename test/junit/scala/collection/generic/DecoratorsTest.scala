@@ -1,12 +1,13 @@
 package scala.collection.generic
 
 import org.junit.Test
+import org.junit.Assert.{assertEquals, assertTrue}
 
 import scala.AdaptedArrowAssocWorkaround.Tx
-import scala.annotation.unused
 import scala.collection.immutable.{BitSet, IntMap, LongMap, TreeMap, TreeSet}
 import scala.collection.{BuildFrom, View, mutable}
 import scala.language.implicitConversions
+import scala.tools.testkit.AssertUtil.assertSameElements
 
 class DecoratorsTest {
 
@@ -26,11 +27,13 @@ class DecoratorsTest {
 
     val xs1 = Iterator(1, 2, 3, 4, 5)
     val xs2 = xs1.filterMap(f)
-    @unused val xs2T: Iterator[Int] = xs2
+    val xs2T: Iterator[Int] = xs2
+    assertSameElements(List(2, 4), xs2T)
 
     val xs3 = Array(1, 2, 3, 4, 5)
     val xs4 = xs3.filterMap(f)
-    @unused val xs4T: Array[Int] = xs4
+    val xs4T: Array[Int] = xs4
+    assertSameElements(List(2, 4), xs4T)
   }
 
   @Test
@@ -50,47 +53,68 @@ class DecoratorsTest {
     val i: Int => Option[Int] = x => if (x % 2 == 0) Some(2 * x) else None
 
     val xs1 = List(1, 2, 3).filterMap(f)
-    @unused val xs1T: List[String] = xs1
+    val xs1T: List[String] = xs1
+    assertSameElements(List("2"), xs1T)
     val xs2 = List(1, 2, 3).view.filterMap(f)
-    @unused val xs2T: View[String] = xs2
+    val xs2T: View[String] = xs2
+    assertSameElements(List("2"), xs2T)
     val xs3 = Vector(1, 2, 3).filterMap(f)
-    @unused val xs3T: Vector[String] = xs3
+    val xs3T: Vector[String] = xs3
+    assertSameElements(List("2"), xs3T)
     val xs4 = Vector(1, 2, 3).view.filterMap(f)
-    @unused val xs4T: View[String] = xs4
+    val xs4T: View[String] = xs4
+    assertSameElements(List("2"), xs4T)
     val xs5 = (1 to 10).filterMap(f)
-    @unused val xs5T: IndexedSeq[String] = xs5
+    val xs5T: IndexedSeq[String] = xs5
+    assertSameElements(List(2,4,6,8,10).map(_.toString), xs5T)
     val xs6 = (1 to 10).view.filterMap(f)
-    @unused val xs6T: View[String] = xs6
+    val xs6T: View[String] = xs6
+    assertSameElements(List(2,4,6,8,10).map(_.toString), xs6T)
     val xs7 = Array(1, 2, 3).filterMap(f)
-    @unused val xs7T: Array[String] = xs7
+    val xs7T: Array[String] = xs7
+    assertSameElements(List("2"), xs7T)
     val xs8 = Array(1, 2, 3).view.filterMap(f)
-    @unused val xs8T: View[String] = xs8
+    val xs8T: View[String] = xs8
+    assertSameElements(List("2"), xs8T)
     val xs9 = "foo".filterMap(g)
-    @unused val xs9T: IndexedSeq[Int] = xs9
+    val xs9T: IndexedSeq[Int] = xs9
+    assertTrue(xs9T.isEmpty)
     val xs10 = "foo".view.filterMap(g)
-    @unused val xs10T: View[Int] = xs10
+    val xs10T: View[Int] = xs10
+    assertTrue(xs10T.isEmpty)
     val xs11 = Map(1 -> "foo").filterMap(h)
-    @unused val xs11T: Map[String, Int] = xs11
+    val xs11T: Map[String, Int] = xs11
+    assertTrue(xs11T.isEmpty)
     val xs12 = Map(1 -> "foo").view.filterMap(h)
-    @unused val xs12T: View[(String, Int)] = xs12
+    val xs12T: View[(String, Int)] = xs12
+    assertTrue(xs12T.isEmpty)
     val xs13 = TreeMap(1 -> "foo").filterMap(h)
-    @unused val xs13T: TreeMap[String, Int] = xs13
+    val xs13T: TreeMap[String, Int] = xs13
+    assertTrue(xs13T.isEmpty)
     val xs14 = TreeMap(1 -> "foo").view.filterMap(h)
-    @unused val xs14T: View[(String, Int)] = xs14
+    val xs14T: View[(String, Int)] = xs14
+    assertTrue(xs14T.isEmpty)
     val xs15 = BitSet(1, 2, 3).filterMap(i)
-    @unused val xs15T: BitSet = xs15
+    val xs15T: BitSet = xs15
+    assertSameElements(List(4), xs15T)
     val xs16 = BitSet(1, 2, 3).view.filterMap(i)
-    @unused val xs16T: View[Int] = xs16
+    val xs16T: View[Int] = xs16
+    assertSameElements(List(4), xs16T)
     val xs17 = Set(1, 2, 3).filterMap(f)
-    @unused val xs17T: Set[String] = xs17
+    val xs17T: Set[String] = xs17
+    assertSameElements(List("2"), xs17T)
     val xs18 = Set(1, 2, 3).view.filterMap(f)
-    @unused val xs18T: View[String] = xs18
+    val xs18T: View[String] = xs18
+    assertSameElements(List("2"), xs18T)
     val xs19 = TreeSet(1, 2, 3).filterMap(f)
-    @unused val xs19T: TreeSet[String] = xs19
+    val xs19T: TreeSet[String] = xs19
+    assertSameElements(List("2"), xs19T)
     val xs20 = TreeSet(1, 2, 3).view.filterMap(f)
-    @unused val xs20T: View[String] = xs20
+    val xs20T: View[String] = xs20
+    assertSameElements(List("2"), xs20T)
     val xs21 = TreeSet(1, 2, 3).filterMap(f)
-    @unused val xs21T: TreeSet[String] = xs21
+    val xs21T: TreeSet[String] = xs21
+    assertSameElements(List("2"), xs21T)
   }
 
   @Test
@@ -118,7 +142,7 @@ class DecoratorsTest {
           lastTestResult match {
             case None =>
               currentGroup.addOne(elem)
-            case Some(lastTest) if currentTest == lastTest =>
+            case Some(`currentTest`) =>
               currentGroup.addOne(elem)
             case Some(_) =>
               groups.addOne(currentGroup.result())
@@ -134,25 +158,35 @@ class DecoratorsTest {
 
     val p: Int => Boolean = _ % 2 == 0
     val xs = List(1, 2, 3).groupedWith(p)
-    @unused val xsT: List[List[Int]] = xs
+    val xsT: List[List[Int]] = xs
+    assertEquals(List(1, 2, 3).map(List(_)), xsT)
     val xs2 = List(1, 2, 3).view.groupedWith(p)
-    @unused val xs2T: View[View[Int]] = xs2
+    val xs2T: View[View[Int]] = xs2
+    assertSameElements(List(1, 2, 3).map(List(_)), xs2T.map(_.toList))
     val xs3 = Vector(1, 2, 3).groupedWith(p)
-    @unused val xs3T: Vector[Vector[Int]] = xs3
+    val xs3T: Vector[Vector[Int]] = xs3
+    assertEquals(Vector(1, 2, 3).map(Vector(_)), xs3T)
     val xs4 = Vector(1, 2, 3).view.groupedWith(p)
-    @unused val xs4T: View[View[Int]] = xs4
+    val xs4T: View[View[Int]] = xs4
+    assertSameElements(Vector(1, 2, 3).map(Vector(_)), xs4T.map(_.toVector))
     val xs5 = (1 to 10).groupedWith(p)
-    @unused val xs5T: IndexedSeq[IndexedSeq[Int]] = xs5
+    val xs5T: IndexedSeq[IndexedSeq[Int]] = xs5
+    assertSameElements((1 to 10).toVector.map(Vector(_)), xs5T.map(_.toVector))
     val xs6 = (1 to 10).view.groupedWith(p)
-    @unused val xs6T: View[View[Int]] = xs6
+    val xs6T: View[View[Int]] = xs6
+    assertSameElements((1 to 10).toVector.map(Vector(_)), xs6T.map(_.toVector))
     val xs7 = Array(1, 2, 3).groupedWith(p)
-    @unused val xs7T: Array[Array[Int]] = xs7
+    val xs7T: Array[Array[Int]] = xs7
+    assertSameElements(Vector(1, 2, 3).map(Vector(_)), xs7T.map(_.toVector))
     val xs8 = Array(1, 2, 3).view.groupedWith(p)
-    @unused val xs8T: View[View[Int]] = xs8
+    val xs8T: View[View[Int]] = xs8
+    assertSameElements(Vector(1, 2, 3).map(Vector(_)), xs8T.map(_.toVector))
     val xs9 = "foo".groupedWith(_.isLower)
-    @unused val xs9T: IndexedSeq[String] = xs9
+    val xs9T: IndexedSeq[String] = xs9
+    assertEquals(List("foo"), xs9T)
     val xs10 = "foo".view.groupedWith(_.isLower)
-    @unused val xs10T: View[View[Char]] = xs10
+    val xs10T: View[View[Char]] = xs10
+    assertEquals(Vector("foo".toVector), xs10T.toVector.map(_.toVector))
   }
 
   @Test
@@ -180,63 +214,83 @@ class DecoratorsTest {
 
     val map = Map(1 -> "foo")
     val mapLJoin = map.leftOuterJoin(Map(1 -> "bar"))
-    @unused val mapLJoinT: Map[Int, (String, Option[String])] = mapLJoin
+    val mapLJoinT: Map[Int, (String, Option[String])] = mapLJoin
+    assertEquals(Map(1 -> ("foo" -> Some("bar"))), mapLJoinT)
     val mapRJoin = map.rightOuterJoin(Map(1 -> "bar"))
-    @unused val mapRJoinT: Map[Int, (Option[String], String)] = mapRJoin
+    val mapRJoinT: Map[Int, (Option[String], String)] = mapRJoin
+    assertEquals(Map(1 -> (Some("foo") -> "bar")), mapRJoinT)
 
     val mapView = Map(1 -> "foo").view
     val mapViewLJoin = mapView.leftOuterJoin(Map(1 -> "bar"))
-    @unused val mapViewLJoinT: View[(Int, (String, Option[String]))] = mapViewLJoin
+    val mapViewLJoinT: View[(Int, (String, Option[String]))] = mapViewLJoin
+    assertSameElements(List(1 -> ("foo" -> Some("bar"))), mapViewLJoinT)
     val mapViewRJoin = mapView.rightOuterJoin(Map(1 -> "bar"))
-    @unused val mapViewRJoinT: View[(Int, (Option[String], String))] = mapViewRJoin
+    val mapViewRJoinT: View[(Int, (Option[String], String))] = mapViewRJoin
+    assertSameElements(List(1 -> (Some("foo") -> "bar")), mapViewRJoinT)
 
     val treemap = TreeMap(1 -> "foo")
     val treemapLJoin = treemap.leftOuterJoin(Map(1 -> "bar"))
-    @unused val treemapLJoinT: TreeMap[Int, (String, Option[String])] = treemapLJoin
+    val treemapLJoinT: TreeMap[Int, (String, Option[String])] = treemapLJoin
+    assertEquals(Map(1 -> ("foo" -> Some("bar"))), treemapLJoinT)
     val treemapRJoin = treemap.rightOuterJoin(Map(1 -> "bar"))
-    @unused val treemapRJoinT: TreeMap[Int, (Option[String], String)] = treemapRJoin
+    val treemapRJoinT: TreeMap[Int, (Option[String], String)] = treemapRJoin
+    assertEquals(Map(1 -> (Some("foo") -> "bar")), treemapRJoinT)
 
     val treemapView = TreeMap(1 -> "foo").view
     val treemapViewLJoin = treemapView.leftOuterJoin(Map(1 -> "bar"))
-    @unused val treemapViewLJoinT: View[(Int, (String, Option[String]))] = treemapViewLJoin
+    val treemapViewLJoinT: View[(Int, (String, Option[String]))] = treemapViewLJoin
+    assertSameElements(List(1 -> ("foo" -> Some("bar"))), treemapViewLJoinT)
     val treemapViewRJoin = treemapView.rightOuterJoin(Map(1 -> "bar"))
-    @unused val treemapViewRJoinT: View[(Int, (Option[String], String))] = treemapViewRJoin
+    val treemapViewRJoinT: View[(Int, (Option[String], String))] = treemapViewRJoin
+    assertSameElements(List(1 -> (Some("foo") -> "bar")), treemapViewRJoinT)
 
     val mmap = mutable.Map(1 -> "foo")
     val mmapLJoin = mmap.leftOuterJoin(Map(1 -> "bar"))
-    @unused val mmapLJoinT: mutable.Map[Int, (String, Option[String])] = mmapLJoin
+    val mmapLJoinT: mutable.Map[Int, (String, Option[String])] = mmapLJoin
+    assertEquals(Map(1 -> ("foo" -> Some("bar"))), mmapLJoinT)
     val mmapRJoin = mmap.rightOuterJoin(Map(1 -> "bar"))
-    @unused val mmapRJoinT: mutable.Map[Int, (Option[String], String)] = mmapRJoin
+    val mmapRJoinT: mutable.Map[Int, (Option[String], String)] = mmapRJoin
+    assertEquals(Map(1 -> (Some("foo") -> "bar")), mmapRJoinT)
 
     val mmapView = mutable.Map(1 -> "foo").view
     val mmapViewLJoin = mmapView.leftOuterJoin(Map(1 -> "bar"))
-    @unused val mmapViewLJoinT: View[(Int, (String, Option[String]))] = mmapViewLJoin
+    val mmapViewLJoinT: View[(Int, (String, Option[String]))] = mmapViewLJoin
+    assertSameElements(List(1 -> ("foo" -> Some("bar"))), mmapViewLJoinT)
     val mmapViewRJoin = mmapView.rightOuterJoin(Map(1 -> "bar"))
-    @unused val mmapViewRJoinT: View[(Int, (Option[String], String))] = mmapViewRJoin
+    val mmapViewRJoinT: View[(Int, (Option[String], String))] = mmapViewRJoin
+    assertSameElements(List(1 -> (Some("foo") -> "bar")), mmapViewRJoinT)
 
     val anyrefmap = mutable.AnyRefMap("foo" -> 1)
     val anyrefmapLJoin = anyrefmap.leftOuterJoin(Map("bar" -> true))
-    @unused val anyrefmapLJoinT: mutable.AnyRefMap[String, (Int, Option[Boolean])] = anyrefmapLJoin
+    val anyrefmapLJoinT: mutable.AnyRefMap[String, (Int, Option[Boolean])] = anyrefmapLJoin
+    assertEquals(Map("foo" -> (1 -> None)), anyrefmapLJoinT)
     val anyrefmapRJoin = anyrefmap.rightOuterJoin(Map("bar" -> true))
-    @unused val anyrefmapRJoinT: mutable.AnyRefMap[String, (Option[Int], Boolean)] = anyrefmapRJoin
+    val anyrefmapRJoinT: mutable.AnyRefMap[String, (Option[Int], Boolean)] = anyrefmapRJoin
+    assertEquals(Map("bar" -> (None -> true)), anyrefmapRJoinT)
 
     val intmap = IntMap(1 -> "foo")
     val intmapLJoin = intmap.leftOuterJoin(Map(1 -> "bar"))
-    @unused val intmapLJoinT: IntMap[(String, Option[String])] = intmapLJoin
+    val intmapLJoinT: IntMap[(String, Option[String])] = intmapLJoin
+    assertEquals(Map(1 -> ("foo" -> Some("bar"))), intmapLJoinT)
     val intmapRJoin = intmap.rightOuterJoin(Map(1 -> "bar"))
-    @unused val intmapRJoinT: IntMap[(Option[String], String)] = intmapRJoin
+    val intmapRJoinT: IntMap[(Option[String], String)] = intmapRJoin
+    assertEquals(Map(1 -> (Some("foo") -> "bar")), intmapRJoinT)
 
     val longmap = LongMap(1L -> "foo")
     val longmapLJoin = longmap.leftOuterJoin(Map(1L -> "bar"))
-    @unused val longmapLJoinT: LongMap[(String, Option[String])] = longmapLJoin
+    val longmapLJoinT: LongMap[(String, Option[String])] = longmapLJoin
+    assertEquals(Map(1L -> ("foo" -> Some("bar"))), longmapLJoinT)
     val longmapRJoin = longmap.rightOuterJoin(Map(1L -> "bar"))
-    @unused val longmapRJoinT: LongMap[(Option[String], String)] = longmapRJoin
+    val longmapRJoinT: LongMap[(Option[String], String)] = longmapRJoin
+    assertEquals(Map(1L -> (Some("foo") -> "bar")), longmapRJoinT)
 
     val mlongmap = mutable.LongMap(1L -> "foo")
     val mlongmapLJoin = mlongmap.leftOuterJoin(Map(1L -> "bar"))
-    @unused val mlongmapLJoinT: mutable.LongMap[(String, Option[String])] = mlongmapLJoin
+    val mlongmapLJoinT: mutable.LongMap[(String, Option[String])] = mlongmapLJoin
+    assertEquals(Map(1L -> ("foo" -> Some("bar"))), mlongmapLJoinT)
     val mlongmapRJoin = mlongmap.rightOuterJoin(Map(1L -> "bar"))
-    @unused val mlongmapRJoinT: mutable.LongMap[(Option[String], String)] = mlongmapRJoin
+    val mlongmapRJoinT: mutable.LongMap[(Option[String], String)] = mlongmapRJoin
+    assertEquals(Map(1L -> (Some("foo") -> "bar")), mlongmapRJoinT)
   }
 
 }

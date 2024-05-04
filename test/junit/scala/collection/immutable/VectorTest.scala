@@ -391,7 +391,7 @@ class VectorTest {
     assertEquals(Vector(1,2,3), v)
 
 
-    val f: Any => Unit = println
+    val f: Any => Unit = _ => ()
 
     // test that type info is not lost
     @unused val x: Vector[Char] = Vector[Char]().tapEach(f)

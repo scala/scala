@@ -1,10 +1,9 @@
 package scala.util
 
 import org.junit.Test
-import org.junit.Assert._
+import org.junit.Assert.{assertEquals, assertSame, assertTrue}
 
-import scala.annotation.unused
-import scala.tools.testkit.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.{assertThrows, fail}
 
 class TryTest {
   /* Test Try's withFilter method, which was added along with the fix for scala/bug#6455 */
@@ -140,7 +139,7 @@ class TryTest {
 
   @Test def testForeachFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    t.foreach(x => fail())
+    t.foreach(x => fail(t.toString))
   }
 
   @Test def testFlatMapSuccess(): Unit = {
@@ -151,7 +150,8 @@ class TryTest {
 
   @Test def testFlatMapFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    @unused val n = t.flatMap{ x => fail(); Try(()) }
+    val n = t.flatMap { x => fail(t.toString); Try(()) }
+    assertTrue(n.isFailure)
   }
 
   @Test def testMapSuccess(): Unit = {
@@ -162,7 +162,7 @@ class TryTest {
 
   @Test def testMapFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    t.map(x => fail()): Unit
+    t.map(x => fail(t.toString)): Unit
   }
 
   @Test def testFilterSuccessTrue(): Unit = {
@@ -175,59 +175,60 @@ class TryTest {
     val t = Success(1)
     val n = t.filter(x => x < 0)
     n match {
-      case Success(_) => fail()
+      case Success(_) => fail(n.toString)
       case Failure(_: NoSuchElementException) => ()
-      case _          => fail()
+      case _          => fail(n.toString)
     }
   }
 
   @Test def testFilterFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    @unused val n = t.filter{ x => fail() ; true }
+    val n = t.filter { x => fail(t.toString) ; true }
+    assertTrue(n.isFailure)
   }
 
   @Test def testRescueSuccess(): Unit = {
     val t = Success(1)
-    t.recoverWith{ case x => fail() ; Try(-1) }
+    t.recoverWith { case x => fail(t.toString) ; Try(-1) }
   }
 
   @Test def testRescueFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    val n = t.recoverWith{ case x => Try(1) }
+    val n = t.recoverWith { case x => Try(1) }
     assertEquals(1, n.get)
   }
 
   @Test def testRecoverSuccess(): Unit = {
     val t = Success(1)
-    val n = t.recover{ case x => assert(false); 99 }
+    val n = t.recover { case x => fail(t.toString); 99 }
     assertEquals(1, n.get)
   }
 
   @Test def testRecoverWithSuccess(): Unit = {
     val t = Success(1)
-    val n = t recoverWith { case _ => assert(false); Success(99) }
+    val n = t recoverWith { case _ => fail(t.toString); Success(99) }
     assertEquals(1, n.get)
   }
 
   @Test def testRecoverFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    val n = t.recover{ case x => 1 }
+    val n = t.recover { case x => 1 }
     assertEquals(1, n.get)
   }
 
   @Test def testRecoverWithFailure(): Unit = {
     val t = Failure(new Exception("foo"))
     val recovered = Failure(new Exception("bar"))
-    val n = t.recoverWith{ case _ => Success(1) }
+    val n = t.recoverWith { case _ => Success(1) }
     assertEquals(1, n.get)
-    val Failure(f) = t.recoverWith{ case _ => recovered}: @unchecked
+    val Failure(f) = t.recoverWith { case _ => recovered}: @unchecked
     assertSame(recovered.exception, f)
   }
 
   @Test def testFlattenSuccess(): Unit = {
     val f = Failure(new Exception("foo"))
     val t = Success(f)
-    assertEquals(t.flatten, f)
+    assertEquals(f, t.flatten)
   }
 
   @Test def testFailedSuccess(): Unit = {
@@ -235,7 +236,7 @@ class TryTest {
     val n = t.failed
     n match {
       case Failure(_: UnsupportedOperationException) =>
-      case _ => fail()
+      case _ => fail(n.toString)
     }
   }
 
@@ -244,7 +245,7 @@ class TryTest {
     val n = t.failed
     n match {
       case Success(_: Exception) =>
-      case _ => fail()
+      case _ => fail(n.toString)
     }
   }
 

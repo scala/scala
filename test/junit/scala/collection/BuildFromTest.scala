@@ -1,10 +1,11 @@
 package scala.collection
 
 import org.junit.Test
+import org.junit.Assert.{assertEquals, assertTrue}
 
-import scala.annotation.unused
-import scala.collection.mutable.Builder
 import scala.math.Ordering
+
+import mutable.{ArrayBuffer, Builder}
 
 class BuildFromTest {
 
@@ -43,57 +44,68 @@ class BuildFromTest {
 
   @Test
   def optionSequence1Test(): Unit = {
-    val xs1 = immutable.List(Some(1), None, Some(2))
+    val xs1 = List(Some(1), None, Some(2))
     val o1 = optionSequence1(xs1)
-    @unused val o1t: Option[immutable.List[Int]] = o1
+    val o1t: Option[List[Int]] = o1
+    assertTrue(o1t.isEmpty)
 
     val xs2: immutable.TreeSet[Option[String]] = immutable.TreeSet(Some("foo"), Some("bar"), None)
     val o2 = optionSequence1(xs2)
-    @unused val o2t: Option[immutable.Set[String]] = o2
+    val o2t: Option[immutable.Set[String]] = o2
+    assertTrue(o2t.isEmpty)
 
-    val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
+    val xs4 = List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
     val o4 = optionSequence1(xs4)
-    @unused val o4t: Option[immutable.List[(Int, String)]] = o4
-    @unused val o5: Option[immutable.TreeMap[Int, String]] = o4.map(_.to(immutable.TreeMap))
+    val o4t: Option[List[(Int, String)]] = o4
+    assertEquals(Some(List(1 -> "a", 2 -> "b")), o4t)
+    val o5: Option[immutable.TreeMap[Int, String]] = o4.map(_.to(immutable.TreeMap))
+    assertEquals(Some(immutable.TreeMap(1 -> "a", 2 -> "b")), o5)
   }
 
   @Test
   def optionSequence2Test(): Unit = {
-    val xs1 = immutable.List(Some(1), None, Some(2))
+    val xs1 = List(Some(1), None, Some(2))
     val o1 = optionSequence2(xs1)
-    @unused val o1t: Option[immutable.List[Int]] = o1
+    val o1t: Option[immutable.List[Int]] = o1
+    assertTrue(o1t.isEmpty)
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
     val o2 = optionSequence2(xs2)
-    @unused val o2t: Option[immutable.TreeSet[String]] = o2
+    val o2t: Option[immutable.TreeSet[String]] = o2
+    assertTrue(o2t.isEmpty)
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
-    val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
+    val xs4 = List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
     val o4 = optionSequence2(xs4)(immutable.TreeMap) // same syntax as in `.to`
-    @unused val o4t: Option[immutable.TreeMap[Int, String]] = o4
+    val o4t: Option[immutable.TreeMap[Int, String]] = o4
+    assertEquals(Some(immutable.TreeMap(1 -> "a", 2 -> "b")), o4t)
   }
 
   @Test
   def optionSequence3Test(): Unit = {
     val xs1 = immutable.List(Some(1), None, Some(2))
     val o1 = optionSequence3(xs1)
-    @unused val o1t: Option[immutable.List[Int]] = o1
+    val o1t: Option[immutable.List[Int]] = o1
+    assertTrue(o1t.isEmpty)
 
     val xs2 = immutable.TreeSet(Some("foo"), Some("bar"), None)
     val o2 = optionSequence3(xs2)
-    @unused val o2t: Option[immutable.TreeSet[String]] = o2
+    val o2t: Option[immutable.TreeSet[String]] = o2
+    assertTrue(o2t.isEmpty)
 
     // Breakout-like use case from https://github.com/scala/scala/pull/5233:
     val xs4 = immutable.List[Option[(Int, String)]](Some((1 -> "a")), Some((2 -> "b")))
     val o4 = optionSequence3(xs4)(immutable.TreeMap) // same syntax as in `.to`
-    @unused val o4t: Option[immutable.TreeMap[Int, String]] = o4
+    val o4t: Option[immutable.TreeMap[Int, String]] = o4
+    assertEquals(Some(immutable.TreeMap(1 -> "a", 2 -> "b")), o4t)
   }
 
   @Test
   def eitherSequenceTest(): Unit = {
     val xs3 = mutable.ListBuffer(Right("foo"), Left(0), Right("bar"))
     val e1 = eitherSequence(xs3)
-    @unused val e1t: Either[Int, mutable.ListBuffer[String]] = e1
+    val e1t: Either[Int, mutable.ListBuffer[String]] = e1
+    assertTrue(e1t.isLeft)
   }
 
   // From https://github.com/scala/collection-strawman/issues/44
@@ -118,34 +130,42 @@ class BuildFromTest {
 
   @Test
   def flatCollectTest(): Unit = {
-    val xs1 = immutable.List(1, 2, 3)
-    val xs2 = flatCollect(xs1) { case 2 => mutable.ArrayBuffer("foo", "bar") }
-    @unused val xs3: immutable.List[String] = xs2
+    val xs1 = List(1, 2, 3)
+    val xs2 = flatCollect(xs1) { case 2 => ArrayBuffer("foo", "bar") }
+    val xs3: List[String] = xs2
+    assertEquals(List("foo", "bar"), xs3)
 
     val xs4 = immutable.TreeMap((1, "1"), (2, "2"))
     val xs5 = flatCollect(xs4) { case (2, v) => immutable.List((v, v)) }
-    @unused val xs6: immutable.TreeMap[String, String] = xs5
+    val xs6: immutable.TreeMap[String, String] = xs5
+    assertEquals(immutable.TreeMap("2" -> "2"), xs6)
 
     val xs7 = immutable.HashMap((1, "1"), (2, "2"))
     val xs8 = flatCollect(xs7) { case (2, v) => immutable.List((v, v)) }
-    @unused val xs9: immutable.HashMap[String, String] = xs8
+    val xs9: immutable.HashMap[String, String] = xs8
+    assertEquals(immutable.HashMap("2" -> "2"), xs9)
 
     val xs10 = immutable.TreeSet(1, 2, 3)
     val xs11 = flatCollect(xs10) { case 2 => immutable.List("foo", "bar") }
-    @unused val xs12: immutable.TreeSet[String] = xs11
+    val xs12: immutable.TreeSet[String] = xs11
+    assertEquals(immutable.TreeSet("foo", "bar"), xs12)
   }
 
   @Test
   def partitionMapTest(): Unit = {
-    val xs1 = immutable.List(1, 2, 3)
+    val xs1 = List(1, 2, 3)
     val (xs2, xs3) = partitionMap(xs1)(x => if (x % 2 == 0) Left(x) else Right(x.toString))
-    @unused val xs4: immutable.List[Int] = xs2
-    @unused val xs5: immutable.List[String] = xs3
+    val xs4: List[Int] = xs2
+    assertEquals(List(2), xs4)
+    val xs5: List[String] = xs3
+    assertEquals(List("1", "3"), xs5)
 
     val xs6 = immutable.TreeMap((1, "1"), (2, "2"))
     val (xs7, xs8) = partitionMap(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
-    @unused val xs9: immutable.TreeMap[String, Int] = xs7
-    @unused val xs10: immutable.TreeMap[Int, Boolean] = xs8
+    val xs9: immutable.TreeMap[String, Int] = xs7
+    assertEquals(immutable.TreeMap(("1", 1), ("2", 2)), xs9)
+    val xs10: immutable.TreeMap[Int, Boolean] = xs8
+    assertTrue(xs10.isEmpty)
   }
 
   @Test
@@ -190,8 +210,8 @@ class BuildFromTest {
     implicitly[collection.BuildFrom[Seq[Any], (Int, HCons[ExtendsOrdered, HNil]), Seq[(Int, HCons[ExtendsOrdered, HNil])]]]
 
     //
-    // In Scala 2.12, buildFromSortedSetOps is not a candidate because if it is in the companion object of
-    // the SortedSet heirarchy, which is not part of the implicit scope for this search.
+    // In Scala 2.12, buildFromSortedSetOps is not a candidate because it is in the companion object of
+    // the SortedSet hierarchy, which is not part of the implicit scope for this search.
     // In 2.13, the implicit was moved to `object BuildFrom`, so _is_ considered
     //
     // The dependent implicit search:

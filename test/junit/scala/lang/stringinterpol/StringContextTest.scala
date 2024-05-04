@@ -114,13 +114,9 @@ class StringContextTest {
 
   @Test def `f interpolator baseline`(): Unit = {
 
-    // ignore spurious warning scala/bug#11946
-    type ignore = annotation.unused
-    @ignore def ignore: ignore = ???  // ignore that ignore looks unused
-
-    @ignore implicit def stringToBoolean(s: String): Boolean = java.lang.Boolean.parseBoolean(s)
-    @ignore implicit def stringToChar(s: String): Char = s(0)
-    @ignore implicit def str2fmt(s: String): java.util.Formattable = new java.util.Formattable {
+    implicit def stringToBoolean(s: String): Boolean = java.lang.Boolean.parseBoolean(s)
+    implicit def stringToChar(s: String): Char = s(0)
+    implicit def str2fmt(s: String): java.util.Formattable = new java.util.Formattable {
       def formatTo(f: java.util.Formatter, g: Int, w: Int, p: Int) = f.format("%s", s)
     }
 
@@ -140,7 +136,7 @@ class StringContextTest {
     import java.util.{Calendar, Locale}
     val c = Calendar.getInstance(Locale.US)
     c.set(2012, Calendar.MAY, 26)
-    @ignore implicit def strToDate(x: String): Calendar = c
+    implicit def strToDate(x: String): Calendar = c
 
     val ss = List[(String, String)] (
       // 'b' / 'B' (category: general)
@@ -225,8 +221,8 @@ class StringContextTest {
 
       f"Just want to say ${"hello, world"}%#s..." -> "Just want to say hello, world...",
 
-      { @ignore implicit val strToShort = (s: String) => java.lang.Short.parseShort(s) ; f"${"120"}%d" } -> "120",
-      { @ignore implicit val strToInt = (s: String) => 42 ; f"${"120"}%d" } -> "42",
+      { implicit val strToShort = (s: String) => java.lang.Short.parseShort(s) ; f"${"120"}%d" } -> "120",
+      { implicit val strToInt = (s: String) => 42 ; f"${"120"}%d" } -> "42",
 
       // 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A' (category: floating point)
       // ------------------------------------------------------------------
