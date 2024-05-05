@@ -224,7 +224,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val XmixinForceForwarders = ChoiceSetting(
     name    = "-Xmixin-force-forwarders",
     helpArg = "mode",
-    descr   = "Generate forwarder methods in classes inhering concrete methods from traits.",
+    descr   = "Generate forwarder methods in classes inheriting concrete methods from traits.",
     choices = List("true", "junit", "false"),
     default = "true",
     choicesHelp = List(

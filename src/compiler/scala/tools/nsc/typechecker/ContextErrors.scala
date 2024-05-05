@@ -330,9 +330,10 @@ trait ContextErrors extends splain.SplainErrors {
       def AmbiguousIdentError(tree: Tree, name: Name, msg: String) =
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
-      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context, inPattern: Boolean) = {
-        def help = if (inPattern && name.isTermName) s"\nIdentifiers ${if (name.charAt(0).isUpper) "that begin with uppercase" else "enclosed in backticks"} are not pattern variables but match the value in scope." else ""
-        NormalTypeError(tree, s"not found: ${decodeWithKind(name, owner)}$help")
+      def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, inPattern: Boolean, hidden: Boolean) = {
+        val help = if (inPattern && name.isTermName) s"\nIdentifiers ${if (name.charAt(0).isUpper) "that begin with uppercase" else "enclosed in backticks"} are not pattern variables but match the value in scope." else ""
+        val path = if (hidden) s"\nA ${if (name.isTermName) "value" else "class"} on the class path is shadowed by a companion artifact currently compiled; companions must be compiled together." else ""
+        NormalTypeError(tree, s"not found: ${decodeWithKind(name, owner)}$help$path")
       }
 
       // typedAppliedTypeTree

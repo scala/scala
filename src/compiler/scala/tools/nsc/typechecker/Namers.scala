@@ -467,7 +467,7 @@ trait Namers extends MethodSynthesis {
       if (existingModule.isModule && !existingModule.hasPackageFlag && inCurrentScope(existingModule) && (currentRun.canRedefine(existingModule) || existingModule.isSynthetic)) {
         updatePosFlags(existingModule, tree.pos, moduleFlags)
         setPrivateWithin(tree, existingModule)
-        existingModule.moduleClass andAlso (setPrivateWithin(tree, _))
+        existingModule.moduleClass.andAlso(setPrivateWithin(tree, _))
         context.unit.synthetics -= existingModule
         tree.symbol = existingModule
       }

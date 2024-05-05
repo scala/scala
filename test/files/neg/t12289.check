@@ -1,0 +1,5 @@
+c_2.scala:6: error: not found: type T
+A class on the class path is shadowed by a companion artifact currently compiled; companions must be compiled together.
+  class C extends T
+                  ^
+1 error
