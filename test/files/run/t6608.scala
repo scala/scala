@@ -11,6 +11,7 @@ object Test extends App {
     .toList
     .filter(_.name.toString.endsWith("yyy"))
     .map(x => (x.name, x.isPrivate))
-  println(access.head)
+  val Expected = TermName("C$$yyy")
+  assert(access.head == (Expected, true))
 }
 
