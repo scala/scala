@@ -141,3 +141,13 @@ class Unequal {
 class Seriously {
   def f(s: Serializable) = toString.nonEmpty  // warn explicit param of marker trait
 }
+
+class TryStart(start: String) {
+  def FINALLY(end: END.type) = start
+}
+
+object END
+
+class Nested {
+  @annotation.unused private def actuallyNotUsed(fresh: Int, stale: Int) = fresh
+}

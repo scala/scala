@@ -544,11 +544,12 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
               if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
             case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
+              if (isSuppressed(sym)) return
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
               else if (sym.isSynthetic && sym.isImplicit) return
               else if (!sym.isConstructor && !sym.isVar && !isTrivial(rhs))
-                for (vs <- vparamss) params ++= vs.map(_.symbol)
+                for (vs <- vparamss; v <- vs) if (!isSingleType(v.symbol.tpe)) params += v.symbol
               defnTrees += m
             case TypeDef(mods@_, name@_, tparams@_, rhs@_) =>
               if (!sym.isAbstract && !sym.isDeprecated)

@@ -264,3 +264,8 @@ trait `short comings` {
 class `issue 12600 ignore abstract types` {
   type Abs
 }
+
+class `t12992 enclosing def is unused` {
+  private val n = 42
+  @annotation.unused def f() = n + 2 // unused code uses n
+}
