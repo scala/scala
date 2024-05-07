@@ -216,7 +216,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
    *
    *  @return an [[Iterable]] collection of the keys contained by this map
    */
-  @deprecatedOverriding("This method should be an alias for keySet", since="2.13.13")
   def keys: Iterable[K] = this match { case _: SeqMap[_, _] => keysIterator.toSeq case _ => keySet }
 
   /** Collects all values of this map in an iterable collection.
