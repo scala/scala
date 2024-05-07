@@ -12,11 +12,12 @@
 
 package scala.tools.reflect
 
-import scala.reflect.macros.runtime.Context
-import scala.collection.mutable.ListBuffer
 import scala.PartialFunction.cond
-import scala.util.chaining._
+import scala.collection.mutable.ListBuffer
+import scala.reflect.macros.runtime.Context
+import scala.tools.nsc.Reporting.WarningCategory, WarningCategory.WFlagTostringInterpolated
 import scala.util.matching.Regex.Match
+import scala.util.chaining._
 
 import java.util.Formattable
 
@@ -30,6 +31,14 @@ abstract class FormatInterpolator {
   import c.universe.{Match => _, _}
   import definitions._
   import treeInfo.Applied
+
+  protected var linting = settings.warnToString.value
+
+  protected final def withoutLinting[A](body: => A): A = {
+    val linted = linting
+    linting = false
+    try body finally linting = linted
+  }
 
   private def bail(msg: String) = global.abort(msg)
 
@@ -87,8 +96,9 @@ abstract class FormatInterpolator {
 
     def argType(argi: Int, types: Type*): Type = {
       val tpe = argTypes(argi)
-      types.find(t => argConformsTo(argi, tpe, t))
-        .orElse(types.find(t => argConvertsTo(argi, tpe, t)))
+      types.find(t => t != AnyTpe && argConformsTo(argi, tpe, t))
+        .orElse(types.find(t => t != AnyTpe && argConvertsTo(argi, tpe, t)))
+        .orElse(types.find(t => t == AnyTpe && argConformsTo(argi, tpe, t)))
         .getOrElse {
           val msg = "type mismatch" + {
             val req = raw"required: (.*)".r.unanchored
@@ -120,7 +130,7 @@ abstract class FormatInterpolator {
     // Check the % fields in this part.
     def loop(remaining: List[Tree], n: Int): Unit =
       remaining match {
-        case part0 :: more =>
+        case part0 :: remaining =>
           val part1 = part0 match {
             case Literal(Constant(x: String)) => x
             case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
@@ -130,14 +140,17 @@ abstract class FormatInterpolator {
 
           def insertStringConversion(): Unit = {
             amended += "%s" + part
-            convert += Conversion(formatPattern.findAllMatchIn("%s").next(), part0.pos, argc)  // improve
-            argType(n-1, AnyTpe)
+            val cv = Conversion(part0.pos, argc)
+            cv.accepts(argType(n-1, AnyTpe))
+            convert += cv
+            cv.lintToString(argTypes(n-1))
           }
           def errorLeading(op: Conversion) = op.errorAt(Spec)(s"conversions must follow a splice; ${Conversion.literalHelp}")
           def accept(op: Conversion): Unit = {
             if (!op.isLeading) errorLeading(op)
             op.accepts(argType(n-1, op.acceptableVariants: _*))
             amended += part
+            op.lintToString(argTypes(n-1))
           }
 
           if (n == 0) amended += part
@@ -164,7 +177,7 @@ abstract class FormatInterpolator {
             else if (!cv.isLiteral && !cv.isIndexed) errorLeading(cv)
             formatting = true
           }
-          loop(more, n = n + 1)
+          loop(remaining, n = n + 1)
         case Nil =>
       }
     loop(parts, n = 0)
@@ -178,7 +191,11 @@ abstract class FormatInterpolator {
     val format = amended.mkString
     if (actuals.isEmpty && !formatting) constantly(format)
     else if (!reported && actuals.forall(treeInfo.isLiteralString)) constantly(format.format(actuals.map(_.asInstanceOf[Literal].value.value).toIndexedSeq: _*))
-    else if (!formatting) concatenate(amended.map(p => constantly(p.stripPrefix("%s"))).toList, actuals.toList)
+    else if (!formatting) {
+      withoutLinting { // already warned
+        concatenate(amended.map(p => constantly(p.stripPrefix("%s"))).toList, actuals.toList)
+      }
+    }
     else {
       val scalaPackage = Select(Ident(nme.ROOTPKG), TermName("scala"))
       val newStringOps = Select(
@@ -218,6 +235,7 @@ abstract class FormatInterpolator {
         case ErrorXn                     => op(0)
         case DateTimeXn if op.length > 1 => op(1)
         case DateTimeXn                  => '?'
+        case StringXn if op.isEmpty      => 's' // accommodate the default %s
         case _ => op(0)
       }
 
@@ -295,13 +313,19 @@ abstract class FormatInterpolator {
           }
         case _ => true
       }
+    def lintToString(arg: Type): Unit =
+      if (linting && kind == StringXn && !(arg =:= StringTpe))
+        if (arg.typeSymbol eq UnitClass)
+          warningAt(CC)("interpolated Unit value", WFlagTostringInterpolated)
+        else if (!definitions.isPrimitiveValueType(arg))
+          warningAt(CC)("interpolation uses toString", WFlagTostringInterpolated)
 
     // what arg type if any does the conversion accept
     def acceptableVariants: List[Type] =
       kind match {
         case StringXn if hasFlag('#') => FormattableTpe :: Nil
         case StringXn                 => AnyTpe :: Nil
-        case BooleanXn                => BooleanTpe :: NullTpe :: Nil
+        case BooleanXn                => BooleanTpe :: NullTpe :: AnyTpe :: Nil // warn if not boolean
         case HashXn                   => AnyTpe :: Nil
         case CharacterXn              => CharTpe :: ByteTpe :: ShortTpe :: IntTpe :: Nil
         case IntegralXn               => IntTpe :: LongTpe :: ByteTpe :: ShortTpe :: BigIntTpe :: Nil
@@ -331,7 +355,7 @@ abstract class FormatInterpolator {
 
     def groupPosAt(g: SpecGroup, i: Int) = pos.withPoint(pos.point + descriptor.offset(g, i))
     def errorAt(g: SpecGroup, i: Int = 0)(msg: String)   = c.error(groupPosAt(g, i), msg).tap(_ => reported = true)
-    def warningAt(g: SpecGroup, i: Int = 0)(msg: String) = c.warning(groupPosAt(g, i), msg)
+    def warningAt(g: SpecGroup, i: Int = 0)(msg: String, cat: WarningCategory = WarningCategory.Other) = c.callsiteTyper.context.warning(groupPosAt(g, i), msg, cat, Nil)
   }
 
   object Conversion {
@@ -356,6 +380,9 @@ abstract class FormatInterpolator {
         case None     => new Conversion(m, p, ErrorXn, argc).tap(_.errorAt(Spec)(s"Missing conversion operator in '${m.matched}'; $literalHelp"))
       }
     }
+    // construct a default %s conversion
+    def apply(p: Position, argc: Int): Conversion =
+      new Conversion(formatPattern.findAllMatchIn("%").next(), p, StringXn, argc)
     val literalHelp = "use %% for literal %, %n for newline"
   }
 

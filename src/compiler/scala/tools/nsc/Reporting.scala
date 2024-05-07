@@ -572,6 +572,7 @@ object Reporting {
         WFlagNumericWiden,
         WFlagSelfImplicit,
         WFlagUnnamedBooleanLiteral,
+        WFlagTostringInterpolated,
         WFlagValueDiscard
       = wflag()
 

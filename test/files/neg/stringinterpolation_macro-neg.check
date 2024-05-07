@@ -10,11 +10,6 @@ stringinterpolation_macro-neg.scala:15: error: too many arguments for interpolat
 stringinterpolation_macro-neg.scala:16: error: too few arguments for interpolated string
   new StringContext("", "").f()
                              ^
-stringinterpolation_macro-neg.scala:19: error: type mismatch;
- found   : String
- required: Boolean, Null
-  f"$s%b"
-     ^
 stringinterpolation_macro-neg.scala:20: error: type mismatch;
  found   : String
  required: Char, Byte, Short, Int
@@ -162,6 +157,9 @@ stringinterpolation_macro-neg.scala:77: error: Missing conversion operator in '%
 stringinterpolation_macro-neg.scala:80: error: conversions must follow a splice; use %% for literal %, %n for newline
   f"${d}random-leading-junk%d"
                            ^
+stringinterpolation_macro-neg.scala:19: warning: Boolean format is null test for non-Boolean
+  f"$s%b"
+       ^
 stringinterpolation_macro-neg.scala:63: warning: Index is not this arg
   f"${8}%d ${9}%1$$d"
                 ^
@@ -171,5 +169,5 @@ stringinterpolation_macro-neg.scala:64: warning: Argument index ignored if '<' f
 stringinterpolation_macro-neg.scala:65: warning: Index is not this arg
   f"$s%s $s%1$$s"
             ^
-3 warnings
-46 errors
+4 warnings
+45 errors

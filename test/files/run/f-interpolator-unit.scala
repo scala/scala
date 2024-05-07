@@ -33,7 +33,7 @@ object Test extends App {
   final val tester = "hello"
   final val number = "42"  // strings only, alas
 
-  def assertEquals(s0: String, s1: String) = assert(s0 == s1, s"$s0 == $s1")
+  def assertEquals(s0: String, s1: String, i: Int = -1) = assert(s0 == s1, s"$s0 == $s1${if (i >= 0) " at " + i.toString else ""}")
 
   def noEscape() = {
     val s = "string"
@@ -134,7 +134,7 @@ object Test extends App {
       f"${null}%b"  -> "false",
       f"${false}%b" -> "false",
       f"${true}%b"  -> "true",
-      f"${true && false}%b"                 -> "false",
+      f"${true && false}%b"                     -> "false",
       f"${java.lang.Boolean.valueOf(false)}%b"  -> "false",
       f"${java.lang.Boolean.valueOf(true)}%b"   -> "true",
 
@@ -255,7 +255,7 @@ object Test extends App {
       f"z" -> "z"
     )
 
-    for ((f, s) <- ss) assertEquals(s, f)
+    for (((f, s), i) <- ss.zipWithIndex) assertEquals(s, f, i)
   }
 
   noEscape()

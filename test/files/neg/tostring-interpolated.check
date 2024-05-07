@@ -1,0 +1,41 @@
+tostring-interpolated.scala:7: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.f
+  def f = f"$c" // warn
+             ^
+tostring-interpolated.scala:8: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.s
+  def s = s"$c" // warn
+             ^
+tostring-interpolated.scala:9: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.r
+  def r = raw"$c" // warn
+               ^
+tostring-interpolated.scala:11: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.format
+  def format = f"${c.x}%d in $c or $c%s" // warn using c.toString // warn
+                              ^
+tostring-interpolated.scala:11: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.format
+  def format = f"${c.x}%d in $c or $c%s" // warn using c.toString // warn
+                                      ^
+tostring-interpolated.scala:13: warning: Boolean format is null test for non-Boolean
+  def bool = f"$c%b" // warn just a null check
+                  ^
+tostring-interpolated.scala:15: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.oops
+  def oops = s"${null} slipped thru my fingers" // warn
+                 ^
+tostring-interpolated.scala:20: error: interpolation uses toString
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.greeting
+  def greeting = s"$sb, world" // warn
+                    ^
+tostring-interpolated.scala:31: error: interpolated Unit value
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=Mitigations.unitized
+  def unitized = s"unfortunately $shown" // warn accidental unit value
+                                  ^
+tostring-interpolated.scala:32: error: interpolated Unit value
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=Mitigations.funitized
+  def funitized = f"unfortunately $shown" // warn accidental unit value
+                                       ^
+1 warning
+9 errors
