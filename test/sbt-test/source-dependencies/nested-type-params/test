@@ -5,8 +5,7 @@
 $ copy-file changes/Providers.scala Providers.scala
 $ copy-file changes/Bar.scala Bar.scala
 
-# This should compile
--> compile
+> compile
 > clean
 # Make sure that clean compile is fine
 > compile
