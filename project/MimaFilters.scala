@@ -39,6 +39,7 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.SeqMap#EmptySeqMap.keys")
   )
 
   override val buildSettings = Seq(

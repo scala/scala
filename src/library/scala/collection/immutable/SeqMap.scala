@@ -71,6 +71,7 @@ object SeqMap extends MapFactory[SeqMap] {
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     def updated [V1] (key: Any, value: V1): SeqMap[Any, V1] = new SeqMap1(key, value)
     def removed(key: Any): SeqMap[Any, Nothing] = this
+    override def keys: Seq[Any] = Vector.empty[Any]
   }
 
   @SerialVersionUID(3L)
@@ -95,6 +96,7 @@ object SeqMap extends MapFactory[SeqMap] {
     override def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key1, value1)
     }
+    override def keys: Seq[K] = Vector(key1)
   }
 
   @SerialVersionUID(3L)
@@ -130,6 +132,7 @@ object SeqMap extends MapFactory[SeqMap] {
       f(key1, value1)
       f(key2, value2)
     }
+    override def keys: Seq[K] = Vector(key1, key2)
   }
 
   @SerialVersionUID(3L)
@@ -171,6 +174,7 @@ object SeqMap extends MapFactory[SeqMap] {
       f(key2, value2)
       f(key3, value3)
     }
+    override def keys: Seq[K] = Vector(key1, key2, key3)
   }
 
   @SerialVersionUID(3L)
@@ -230,6 +234,7 @@ object SeqMap extends MapFactory[SeqMap] {
       f(key3, value3)
       f(key4, value4)
     }
+    override def keys: Seq[K] = Vector(key1, key2, key3, key4)
 
     private[SeqMap] def buildTo[V1 >: V](builder: Builder[(K, V1), SeqMap[K, V1]]): builder.type =
       builder.addOne((key1, value1)).addOne((key2, value2)).addOne((key3, value3)).addOne((key4, value4))
