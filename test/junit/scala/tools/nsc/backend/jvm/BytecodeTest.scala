@@ -1003,4 +1003,46 @@ class BytecodeTest extends BytecodeTesting {
     val lines = compileMethod(c1).instructions.collect { case l: LineNumber => l }
     assertSameCode(List(LineNumber(2, Label(0))), lines)
   }
+
+
+  @Test
+  def t12990(): Unit = {
+    val komp = BytecodeTesting.newCompiler(extraArgs = "-Xasync")
+    val code =
+      """import scala.tools.nsc.OptionAwait._
+        |
+        |class C {
+        |  def sw1(i: Int) = optionally {
+        |    i match {
+        |      case 11 if value(Some(430)) > 42 => 22
+        |      case p => p
+        |    }
+        |  }
+        |  def sw2(i: Int) = optionally {
+        |    i match {
+        |      case 11 => if (value(Some(430)) > 42) 22 else i
+        |      case p => p
+        |    }
+        |  }
+        |  def sw3(i: Int) = optionally {
+        |    i match {
+        |      case 11 => if (value(Some(430)) > 42) 22 else i
+        |      case 22 | 33 => 44
+        |      case p => p
+        |    }
+        |  }
+        |}
+        |""".stripMargin
+    val cs = komp.compileClasses(code)
+
+    val sm1 = getMethod(cs.find(_.name == "C$stateMachine$async$1").get, "apply")
+    assertSame(1, sm1.instructions.count(_.opcode == TABLESWITCH))
+
+    val sm2 = getMethod(cs.find(_.name == "C$stateMachine$async$2").get, "apply")
+    assertSame(2, sm2.instructions.count(_.opcode == TABLESWITCH))
+
+    val sm3 = getMethod(cs.find(_.name == "C$stateMachine$async$3").get, "apply")
+    assertSame(1, sm3.instructions.count(_.opcode == TABLESWITCH))
+    assertSame(1, sm3.instructions.count(_.opcode == LOOKUPSWITCH))
+  }
 }
