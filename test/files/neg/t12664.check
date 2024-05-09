@@ -1,0 +1,11 @@
+t12664.scala:4: warning: side-effecting nullary methods are discouraged: suggest defining as `def f()` instead [quickfixable]
+  def f: Unit = 42
+      ^
+t12664.scala:4: warning: a pure expression does nothing in statement position
+  def f: Unit = 42
+                ^
+warning: 1 deprecation (since 1.0); re-run enabling -deprecation for details, or try -help
+warning: 1 lint warning; change -Wconf for cat=lint to display individual messages
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

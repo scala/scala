@@ -45,7 +45,9 @@ trait StandardScalaSettings { _: MutableSettings =>
   }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help" withAbbreviation("-h")
-  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s.value) maxwarns.value = 0 }
+  val nowarn =         BooleanSetting("-nowarn", "Silence warnings. (-Wconf:any:s)")
+                        .withAbbreviation("--no-warnings")
+                        .withPostSetHook(s => if (s.value) maxwarns.value = 0)
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
   val quickfix =       MultiStringSetting(

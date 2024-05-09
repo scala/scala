@@ -122,8 +122,8 @@ abstract class Reporter {
 
   private def filteredInfo(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit = {
     val f = filter(pos, msg, severity)
-    if (f <= 1) increment(severity)
-    if (f == 0) doReport(pos, msg, severity, actions)
+    if (f < Reporter.Suppress) increment(severity)
+    if (f == Reporter.Display) doReport(pos, msg, severity, actions)
   }
 
   def increment(severity: Severity): Unit = severity match {
