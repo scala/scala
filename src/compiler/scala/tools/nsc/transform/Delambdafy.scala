@@ -110,7 +110,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
       // no need for adaptation when the implemented sam is of a specialized built-in function type
       val lambdaTarget = if (isSpecialized) target else createBoxingBridgeMethodIfNeeded(fun, target, functionalInterface, sam)
-      val isSerializable = samUserDefined == NoSymbol || samUserDefined.owner.isNonBottomSubClass(definitions.JavaSerializableClass)
+      val isSerializable = samUserDefined == NoSymbol || functionalInterface.isNonBottomSubClass(definitions.JavaSerializableClass)
       val addScalaSerializableMarker = samUserDefined == NoSymbol
 
       val samBridges = logResultIf[List[Symbol]](s"will add SAM bridges for $fun", _.nonEmpty) {
