@@ -63,7 +63,17 @@ trait PatternMatching extends Transform
   def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
 
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    private var inAsync = false
+
     override def transform(tree: Tree): Tree = tree match {
+      case dd: DefDef if async.hasAsyncAttachment(dd) =>
+        val wasInAsync = inAsync
+        try {
+          inAsync = true
+          super.transform(dd)
+        } finally
+          inAsync = wasInAsync
+
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
@@ -95,7 +105,7 @@ trait PatternMatching extends Transform
     // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
     // as this is the only time TypingTransformer changes it
     def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
-      new OptimizingMatchTranslator(localTyper, selectorPos)
+      new OptimizingMatchTranslator(localTyper, selectorPos, inAsync)
     }
   }
 
@@ -104,10 +114,11 @@ trait PatternMatching extends Transform
     def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
   }
 
-  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position) extends MatchTranslator
-                                                             with MatchOptimizer
-                                                             with MatchAnalyzer
-                                                             with Solver
+  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position, val inAsync: Boolean)
+    extends MatchTranslator
+      with MatchOptimizer
+      with MatchAnalyzer
+      with Solver
 }
 
 trait Debugging {

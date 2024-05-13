@@ -31,6 +31,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
                                            stateDiagram: ((Symbol, Tree) => Option[String => Unit]),
                                            allowExceptionsToPropagate: Boolean) extends PlainAttachment
 
+  def hasAsyncAttachment(dd: DefDef) = dd.hasAttachment[AsyncAttachment]
+
   // Optimization: avoid the transform altogether if there are no async blocks in a unit.
   private val sourceFilesToTransform = perRunCaches.newSet[SourceFile]()
   private val awaits: mutable.Set[Symbol] = perRunCaches.newSet[Symbol]()
