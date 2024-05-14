@@ -1,13 +1,13 @@
-byname-implicit.scala:84: warning: Implicits applied to block expressions after overload resolution may have unexpected semantics
+byname-implicit.scala:84: warning: Overloaded implicit conversions that take a by-name parameter are applied to the entire block, not just the result expression.
   Foo.bar { println("barring"); 0 }  // warn
           ^
-byname-implicit.scala:14: warning: Block result was adapted via implicit conversion (method ints are strs) taking a by-name parameter
+byname-implicit.scala:14: warning: Block result expression was adapted via implicit conversion (method ints are strs) taking a by-name parameter; only the result was passed, not the entire block.
       42                      // warn
       ^
-byname-implicit.scala:25: warning: Block result was adapted via implicit conversion (method bools are strs) taking a by-name parameter
+byname-implicit.scala:25: warning: Block result expression was adapted via implicit conversion (method bools are strs) taking a by-name parameter; only the result was passed, not the entire block.
       true                    // warn
       ^
-byname-implicit.scala:68: warning: Block result was adapted via implicit conversion (method fromBooleanCheck) taking a by-name parameter
+byname-implicit.scala:68: warning: Block result expression was adapted via implicit conversion (method fromBooleanCheck) taking a by-name parameter; only the result was passed, not the entire block.
     false                  // warn
     ^
 error: No warnings can be incurred under -Werror.

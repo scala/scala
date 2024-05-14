@@ -994,7 +994,7 @@ abstract class RefChecks extends Transform {
     }
 
     def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.warnOptionImplicit) (fn, args) match {
-      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
+      case (TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
         refchecksWarning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.", WarningCategory.LintOptionImplicit) // scala/bug#6567
       case _ =>
     }
@@ -2060,15 +2060,20 @@ abstract class RefChecks extends Transform {
             stats.foreach { t => if (!checkInterestingResultInStatement(t)) checkPure(t, supple = false) }
             if (result0.nonEmpty) checkPure(result0, supple = true)
 
-            def checkImplicitlyAdaptedBlockResult(t: Tree): Unit =
-              expr match {
-                case treeInfo.Applied(f, _, _) if f.symbol != null && f.symbol.isImplicit =>
-                  f.symbol.paramLists match {
-                    case (p :: Nil) :: _ if p.isByNameParam => refchecksWarning(t.pos, s"Block result was adapted via implicit conversion (${f.symbol}) taking a by-name parameter", WarningCategory.LintBynameImplicit)
-                    case _ =>
-                  }
-                case _ =>
-              }
+            def checkImplicitlyAdaptedBlockResult(t: Tree): Unit = {
+              def loop(t: Tree): Unit =
+                t match {
+                  case Apply(coercion, _) if t.isInstanceOf[ApplyImplicitView] =>
+                    coercion.symbol.paramLists match {
+                      case (p :: Nil) :: _ if p.isByNameParam => refchecksWarning(t.pos, s"Block result expression was adapted via implicit conversion (${coercion.symbol}) taking a by-name parameter; only the result was passed, not the entire block.", WarningCategory.LintBynameImplicit)
+                      case _ =>
+                    }
+                  case TypeApply(fun, _) => loop(fun)
+                  case Apply(fun, _)     => loop(fun)
+                  case _                 =>
+                }
+              loop(t)
+            }
             if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr)
 
             tree
