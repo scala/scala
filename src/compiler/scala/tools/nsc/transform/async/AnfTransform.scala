@@ -91,8 +91,10 @@ private[async] trait AnfTransform extends TransformUtils {
           val simpleApply              = treeCopy.Apply(tree, simpleFun, argExprss)
           simpleApply.attachments.remove[ContainsAwait.type]
           if (isAwait(fun)) {
-            val valDef = defineVal(transformState.name.await(), treeCopy.Apply(tree, fun, argExprss), tree.pos)
-            val ref    = gen.mkAttributedStableRef(valDef.symbol).setType(tree.tpe)
+            val valDef = defineVal(transformState.name.await(), treeCopy.Apply(tree, fun, argExprss), tree.pos, isLocalVar = true)
+            val ref    = gen.mkAttributedStableRef(valDef.symbol)
+                            .setType(tree.tpe)
+                            .updateAttachment(ResRef)
             currentStats += valDef
             atPos(tree.pos)(ref)
           } else {
@@ -101,13 +103,15 @@ private[async] trait AnfTransform extends TransformUtils {
 
         case Block(stats, expr) =>
           // First, transform the block contents into a separate List[Tree]
-          val (trees, _) = withNewControlFlowBlock {
-            stats.foreach(stat => {
-              val expr = transform(stat);
-              if (!isLiteralUnit(expr)) currentStats += expr
-            })
+          val (trees, _) = withNewControlFlowBlock[Unit] {
+            for (stat <- stats)
+              transform(stat) match {
+                case t0 if t0.hasAttachment[ResRef.type] =>
+                  currentStats += typedPos(t0.pos)(Assign(t0, gen.mkZero(t0.symbol.info)))
+                case t0 if !isLiteralUnit(t0) => currentStats += t0
+                case _ =>
+              }
             currentStats += transform(expr)
-            ()
           }
 
           // Identify groups of statements compiled from pattern matches and process them separately to
@@ -125,7 +129,7 @@ private[async] trait AnfTransform extends TransformUtils {
 
           // However, we let `onTail` add the expr to `currentStats` (that was more efficient than using `ts.dropRight(1).foreach(addToStats)`)
           // Compensate by removing it from the buffer and returning the expr.
-          // If the expr it itself a unit-typed LabelDef, move it to the stats and leave a Unit expression in its place
+          // If the expr is itself a unit-typed LabelDef, move it to the stats and leave a Unit expression in its place
           // to make life easier for transformMatchOrIf
           currentStats.remove(currentStats.size - 1) match {
             case ld: LabelDef if ld.tpe.typeSymbol == definitions.BoxedUnitClass =>
@@ -222,7 +226,7 @@ private[async] trait AnfTransform extends TransformUtils {
     // after the preceding sibling, but rather will be the target of a control flow jump.
     private def transformNewControlFlowBlock(tree: Tree): Tree = {
       val savedStats = currentStats
-      this.currentStats = new ListBuffer[Tree]
+      this.currentStats = ListBuffer.empty[Tree]
       try transform(tree) match {
         case b@Block(stats, expr) =>
           treeCopy.Block(b, currentStats.prependToList(stats), expr)
@@ -237,7 +241,7 @@ private[async] trait AnfTransform extends TransformUtils {
 
     private def withNewControlFlowBlock[T](f: => T): (List[Tree], T) = {
       val savedStats = currentStats
-      this.currentStats = new ListBuffer[Tree]
+      this.currentStats = ListBuffer.empty[Tree]
       try {
         val result = f
         (currentStats.toList, result)
@@ -355,8 +359,9 @@ private[async] trait AnfTransform extends TransformUtils {
       } else t
     }
 
-    def defineVal(name: global.TermName, rhs: global.Tree, pos: Position): ValDef = {
-      val sym = currentOwner.newTermSymbol(name, pos, Flags.SYNTHETIC).setInfo(rhs.tpe)
+    def defineVal(name: global.TermName, rhs: global.Tree, pos: Position, isLocalVar: Boolean = false): ValDef = {
+      val flags = if (isLocalVar) Flags.MUTABLE | Flags.SYNTHETIC else Flags.SYNTHETIC
+      val sym = currentOwner.newTermSymbol(name, pos, flags).setInfo(rhs.tpe)
       ValDef(sym, rhs.changeOwner((currentOwner, sym))).setType(NoType)
     }
 
@@ -364,6 +369,8 @@ private[async] trait AnfTransform extends TransformUtils {
       val sym = currentOwner.newTermSymbol(name, pos, Flags.MUTABLE | Flags.SYNTHETIC).setInfo(tp)
       ValDef(sym, gen.mkZero(tp).setPos(pos)).setType(NoType)
     }
+
+    private object ResRef extends PlainAttachment
   }
 
   private def typedAssign(lhs: Tree, varSym: Symbol) =
