@@ -450,8 +450,9 @@ class AnnotationDrivenAsyncTest {
             |tr = self.getCompleted(awaitable$async)
             |self.state_=(1)
             |if (null.!=(tr))\n  while$()\nelse\n  {\n    self.onComplete(awaitable$async);\n    return ()\n  }
-            |<synthetic> val await$1: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
-            |self.x = scala.Int.unbox(await$1)
+            |<synthetic> var await$1: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
+            |<synthetic> val x$1: Object = await$1
+            |self.x = scala.Int.unbox(x$1)
             |
             |
             |val y = id(2)
@@ -460,8 +461,9 @@ class AnnotationDrivenAsyncTest {
             |tr = self.getCompleted(awaitable$async)
             |self.state_=(2)
             |if (null.!=(tr))\n  while$()\nelse\n  {\n    self.onComplete(awaitable$async);\n    return ()\n  }
-            |<synthetic> val await$2: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
-            |val y: Int = scala.Int.unbox(await$2)
+            |<synthetic> var await$2: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
+            |<synthetic> val x$2: Object = await$2
+            |val y: Int = scala.Int.unbox(x$2)
             |
             |
             |x.$plus(y)

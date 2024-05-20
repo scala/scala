@@ -12,8 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 
 trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   import global._
@@ -57,7 +56,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     override def toString: String = mkToString //+ " (was: " + initToString + ")"
     // private val initToString = mkToString
     def insertNullAssignments(preNulls: Iterator[Symbol], postNulls: Iterator[Symbol]): Unit = {
-      val stats1 = mutable.ListBuffer[Tree]()
+      val stats1 = ListBuffer.empty[Tree]
       def addNullAssigments(syms: Iterator[Symbol]): Unit = {
         for (fieldSym <- syms) {
           stats1 += typedCurrentPos(Assign(currentTransformState.memberRef(fieldSym), gen.mkZero(fieldSym.info)))
