@@ -1,3 +1,6 @@
+t12441.scala:6: warning: a type was inferred to be `Any`; this may indicate a programming error.
+  def f: Any = Option.empty[String].contains(1234)
+                                    ^
 t12441.scala:7: warning: a type was inferred to be `Any`; this may indicate a programming error.
   def g = Option.empty[String].contains(1234)
                                ^
@@ -17,5 +20,5 @@ t12441.scala:14: warning: a type was inferred to be `Any`; this may indicate a p
   def peskier = p == (42, List(17, ""))
                           ^
 error: No warnings can be incurred under -Werror.
-5 warnings
+6 warnings
 1 error

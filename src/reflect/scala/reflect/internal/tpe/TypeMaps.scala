@@ -1105,9 +1105,6 @@ private[internal] trait TypeMaps {
     }
     override protected def pred(sym1: Symbol): Boolean = sym1 == sym
   }
-  class ContainsAnyCollector(syms: List[Symbol]) extends ExistsTypeRefCollector {
-    override protected def pred(sym1: Symbol): Boolean = syms.contains(sym1)
-  }
   class ContainsAnyKeyCollector(symMap: mutable.HashMap[Symbol, _]) extends ExistsTypeRefCollector {
     override protected def pred(sym1: Symbol): Boolean = symMap.contains(sym1)
   }

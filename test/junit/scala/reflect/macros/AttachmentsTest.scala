@@ -1,5 +1,6 @@
 package scala.reflect.macros
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -30,8 +31,8 @@ class AttachmentsTest {
 
     object theBar extends Bar
     atts = atts.update(theBar)
-    assert(!atts.isEmpty)
-    assert(atts.all == Set(Foo(0), theBar))
+    assertFalse(atts.isEmpty)
+    assertEquals(Set[Any](Foo(0), theBar), atts.all)
     assert(atts.get[Foo] == Some(Foo(0)))
     assert(atts.get[Bar] == Some(theBar))
     assert(atts.get[theBar.type] == Some(theBar))

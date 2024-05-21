@@ -143,15 +143,15 @@ class ArraySeqTest {
   @Test
   def foldAny(): Unit = {
     val a = ArraySeq[Any](1, "3")
-    assertEquals(a.foldLeft("")(_ + _), "13")
-    assertEquals(a.foldRight(List.empty[Any])(_ :: _), List(1, "3"))
+    assertEquals("13", a.foldLeft("")(_ + _))
+    assertEquals(List[Any](1, "3"), a.foldRight(List.empty[Any])(_ :: _))
   }
 
   @Test
   def from(): Unit = {
     val as = ArraySeq("foo", "bar", "baz")
-    assert(ArraySeq.from(as) eq as)
-    assert(ArraySeq(as: _*) eq as)
+    assertSame(as, ArraySeq.from(as))
+    assertSame(as, ArraySeq(as: _*))
   }
 
   private def assertConcat[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Array[_] = {
