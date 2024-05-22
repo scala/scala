@@ -1,0 +1,25 @@
+
+scala> case class C(i: Int)(j: => Int) { def sum = i + j }
+class C
+
+scala> def z = 27.tap(println)
+def z: Int
+
+scala> val c = C(42)(z)
+val c: C = C(42)
+
+scala> c.sum
+27
+val res0: Int = 69
+
+scala> def y = 28.tap(println)
+def y: Int
+
+scala> c.copy()(y)
+val res1: C = C(42)
+
+scala> c.copy()(y).sum
+28
+val res2: Int = 70
+
+scala> :quit

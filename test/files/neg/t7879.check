@@ -1,0 +1,6 @@
+t7879.scala:2: error: case `copy` method is allowed to have by-name parameters under Scala 3 (or with -Xsource-features:case-copy-by-name)
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C
+case class C(i: Int)(j: => Int)(k: => Int) { def sum = i + j + k }
+           ^
+1 error

@@ -1,0 +1,4 @@
+t7879c.scala:6: error: value copy is not a member of C
+    C(42)(27)(1).copy()
+                 ^
+1 error
