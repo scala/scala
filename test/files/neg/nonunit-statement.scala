@@ -1,4 +1,4 @@
-// scalac: -Werror -Wnonunit-statement -Wnonunit-if:false -Wvalue-discard
+//> using options -Werror -Wnonunit-statement -Wnonunit-if:false -Wvalue-discard
 // debug: -Vprint:refchecks -Yprint-trees:format
 import collection.ArrayOps
 import collection.mutable.{ArrayBuilder, LinkedHashSet, ListBuffer}
@@ -196,4 +196,8 @@ class Depends {
     f(d)
     ()
   }
+}
+// some uninteresting expressions may warn for other reasons
+class NotMultiline {
+  null // warn for purity, but <init> does not cause multiline clause
 }

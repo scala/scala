@@ -1,0 +1,6 @@
+discard-advice-c.scala:11: warning: discarded pure expression does nothing
+    true
+    ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

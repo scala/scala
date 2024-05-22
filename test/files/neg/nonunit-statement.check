@@ -1,39 +1,42 @@
-nonunit-statement.scala:13: warning: unused value of type scala.concurrent.Future[Int] (add `: Unit` to discard silently)
+nonunit-statement.scala:13: warning: unused value of type scala.concurrent.Future[Int]
     improved              // warn
     ^
-nonunit-statement.scala:20: warning: unused value of type String (add `: Unit` to discard silently)
+nonunit-statement.scala:20: warning: unused value of type String
     new E().toString      // warn
             ^
-nonunit-statement.scala:26: warning: unused value of type scala.concurrent.Future[Int] (add `: Unit` to discard silently)
+nonunit-statement.scala:26: warning: unused value of type scala.concurrent.Future[Int]
   Future(42)              // warn
         ^
-nonunit-statement.scala:30: warning: unused value of type K (add `: Unit` to discard silently)
+nonunit-statement.scala:30: warning: unused value of type K
   copy()                  // warn
       ^
-nonunit-statement.scala:37: warning: unused value of type List[Int] (add `: Unit` to discard silently)
+nonunit-statement.scala:37: warning: unused value of type List[Int]
   27 +: xs                // warn
      ^
 nonunit-statement.scala:44: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   null                    // warn for purity
   ^
-nonunit-statement.scala:79: warning: unused value of type Int (add `: Unit` to discard silently)
+nonunit-statement.scala:79: warning: unused value of type Int
       g   // warn block statement
       ^
-nonunit-statement.scala:86: warning: unused value of type Int (add `: Unit` to discard silently)
+nonunit-statement.scala:86: warning: unused value of type Int
       g   // warn
       ^
-nonunit-statement.scala:84: warning: unused value of type Int (add `: Unit` to discard silently)
+nonunit-statement.scala:84: warning: unused value of type Int
       g   // warn
       ^
-nonunit-statement.scala:96: warning: unused value of type Int (add `: Unit` to discard silently)
+nonunit-statement.scala:96: warning: unused value of type Int
     if (b) {          // warn, at least one branch looks interesting
     ^
-nonunit-statement.scala:116: warning: unused value of type scala.collection.mutable.LinkedHashSet[A] (add `: Unit` to discard silently)
+nonunit-statement.scala:116: warning: unused value of type scala.collection.mutable.LinkedHashSet[A]
     set += a     // warn because cannot know whether the `set` was supposed to be consumed or assigned
         ^
-nonunit-statement.scala:146: warning: unused value of type String (add `: Unit` to discard silently)
+nonunit-statement.scala:146: warning: unused value of type String
     while (it.hasNext) it.next()  // warn
                               ^
+nonunit-statement.scala:202: warning: a pure expression does nothing in statement position
+  null // warn for purity, but <init> does not cause multiline clause
+  ^
 error: No warnings can be incurred under -Werror.
-12 warnings
+13 warnings
 1 error

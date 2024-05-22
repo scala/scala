@@ -1,0 +1,9 @@
+discard-advice-b.scala:7: warning: discarded non-Unit value of type scala.concurrent.Future[Int]
+    Future(42)
+          ^
+discard-advice-b.scala:11: warning: discarded non-Unit value of type Boolean(true)
+    true
+    ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

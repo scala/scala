@@ -4,16 +4,10 @@ patmatnew.scala:673: warning: This catches all Throwables. If this is really int
 patmatnew.scala:354: warning: a pure expression does nothing in statement position
         case 1 => "OK"
                   ^
-patmatnew.scala:355: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+patmatnew.scala:355: warning: discarded pure expression does nothing
         case 2 => assert(false); "KO"
                                  ^
-patmatnew.scala:355: warning: a pure expression does nothing in statement position
-        case 2 => assert(false); "KO"
-                                 ^
-patmatnew.scala:356: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-        case 3 => assert(false); "KO"
-                                 ^
-patmatnew.scala:356: warning: a pure expression does nothing in statement position
+patmatnew.scala:356: warning: discarded pure expression does nothing
         case 3 => assert(false); "KO"
                                  ^
 patmatnew.scala:178: warning: match may not be exhaustive.

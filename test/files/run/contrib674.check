@@ -1,6 +1,3 @@
-contrib674.scala:15: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-    1
-    ^
-contrib674.scala:15: warning: a pure expression does nothing in statement position
+contrib674.scala:15: warning: discarded pure expression does nothing
     1
     ^

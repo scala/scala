@@ -1,6 +1,3 @@
-toughtype.scala:175: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-              identity[A] _
-                      ^
-toughtype.scala:175: warning: a pure expression does nothing in statement position
+toughtype.scala:175: warning: discarded pure expression does nothing
               identity[A] _
                       ^

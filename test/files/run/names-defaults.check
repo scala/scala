@@ -22,10 +22,7 @@ names-defaults.scala:280: warning: local val v in method foo is never used
 names-defaults.scala:280: warning: local val u in method foo is never used
   class A2489x2 { def foo(): Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
                                                                                                   ^
-names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-    spawn(b = { val ttt = 1; ttt }, a = 0)
-                             ^
-names-defaults.scala:269: warning: a pure expression does nothing in statement position
+names-defaults.scala:269: warning: discarded pure expression does nothing
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
 1: @
