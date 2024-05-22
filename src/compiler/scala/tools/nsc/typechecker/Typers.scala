@@ -6306,7 +6306,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case ex: TypeError =>
           tree.clearType()
           // The only problematic case are (recoverable) cyclic reference errors which can pop up almost anywhere.
-          typingStack.printTyping(tree, "caught %s: while typing %s".format(ex, tree)) //DEBUG
+          typingStack.printTyping(tree, s"caught $ex: while typing $tree")
           reportTypeError(context, tree.pos, ex)
           setError(tree)
         case ex: Exception =>

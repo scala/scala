@@ -1,0 +1,4 @@
+t7808b.scala:5: error: recursive value x$1 needs type; value x$1 is synthetic; use -Vcyclic to find which definition needs an explicit type
+    val (ls, rs) = z match {
+         ^
+1 error

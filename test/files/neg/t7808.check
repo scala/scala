@@ -1,0 +1,4 @@
+t7808.scala:5: error: recursive value ls needs type
+    val (ls, rs) = z match {
+         ^
+1 error
