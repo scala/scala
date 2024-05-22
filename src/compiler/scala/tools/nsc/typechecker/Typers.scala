@@ -3698,12 +3698,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     argss.find {
                       case (aiv: ApplyImplicitView) :: Nil =>
                         aiv.args match {
-                          case Block(_, _) :: Nil => true
+                          case Block(_ :: _, _) :: Nil => true
                           case _ => false
                         }
                       case _ => false
                     }
-                  needsAdjust.foreach(ts => context.warning(ts.head.pos, "Implicits applied to block expressions after overload resolution may have unexpected semantics", WarningCategory.LintBynameImplicit))
+                  needsAdjust.foreach(ts => context.warning(ts.head.pos, "Overloaded implicit conversions that take a by-name parameter are applied to the entire block, not just the result expression.", WarningCategory.LintBynameImplicit))
                 }
               inferMethodAlternative(fun, undetparams, argTpes.toList, pt)
               doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt).tap(checkConversionsToBlockArgs)

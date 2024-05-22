@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:byname-implicit
+//> using options -Werror -Xlint:byname-implicit
 
 import language._
 
@@ -84,3 +84,11 @@ object FooTest extends App {
   Foo.bar { println("barring"); 0 }  // warn
 }
 
+class Nowarn {
+  implicit def cv(n: => Int): String = n.toString
+
+  def show(s: String) = println(s"[$s]")
+
+  def f(): Unit = show(cv(42))  // nowarn because it only warns if statements
+  def g(): Unit = show { println(); cv(42) }  // nowarn anymore because explicit call by user
+}
