@@ -78,14 +78,12 @@ object Files {
   }
 
   def processLines[A](file: String)(op: ju.stream.Stream[String] => A): A = {
-    var stream: java.util.stream.Stream[String] = null
-    try {
-      stream = JFiles.lines(JPaths.get(file))
+    val stream: java.util.stream.Stream[String] = JFiles.lines(JPaths.get(file))
+    try
       op(stream)
-    }
-    finally if (stream != null) {
+    finally
       stream.close()
-    }
+
   }
 
   def use[T](resource: String)(op: jl.Iterable[String] => Try[T]): Try[T] = Try {

@@ -311,7 +311,7 @@ object TastyTest {
             printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
           case Some((Some(checkFile), _)) if Check.permits(checkFile) =>
             processLines(checkFile) { stream =>
-              val checkLines  = stream.iterator().asScala.toSeq
+              val checkLines  = Diff.splitIntoLines(stream)
               val outputLines = Diff.splitIntoLines(output)
               val diff        = Diff.compareContents(outputLines, checkLines)
               if (diff.nonEmpty) {

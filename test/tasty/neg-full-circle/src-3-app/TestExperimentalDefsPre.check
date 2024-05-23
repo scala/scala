@@ -1,17 +1,41 @@
 -- Error: TestExperimentalDefsPre_fail.scala:1:18
 1 |import downstream.ExperimentalDefsPre.*
   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+  |       Experimental definition may only be used under experimental mode:
+  |         1. in a definition marked as @experimental, or
+  |         2. compiling with the -experimental compiler flag, or
+  |         3. with a nightly or snapshot version of the compiler.
+  |
+  |       object ExperimentalDefsPre is marked @experimental
+  |
 -- Error: TestExperimentalDefsPre_fail.scala:4:10
 4 |  def test = new SubExperimentalNotExperimental
   |          ^
-  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+  |         Experimental definition may only be used under experimental mode:
+  |           1. in a definition marked as @experimental, or
+  |           2. compiling with the -experimental compiler flag, or
+  |           3. with a nightly or snapshot version of the compiler.
+  |
+  |         object ExperimentalDefsPre is marked @experimental
+  |
 -- Error: TestExperimentalDefsPre_fail.scala:4:17
 4 |  def test = new SubExperimentalNotExperimental
   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+  |         Experimental definition may only be used under experimental mode:
+  |           1. in a definition marked as @experimental, or
+  |           2. compiling with the -experimental compiler flag, or
+  |           3. with a nightly or snapshot version of the compiler.
+  |
+  |         object ExperimentalDefsPre is marked @experimental
+  |
 -- Error: TestExperimentalDefsPre_fail.scala:6:35
 6 |  class SubSubExperimental extends SubExperimentalNotExperimental
   |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |object ExperimentalDefsPre is marked @experimental and therefore may only be used in an experimental scope.
+  |         Experimental definition may only be used under experimental mode:
+  |           1. in a definition marked as @experimental, or
+  |           2. compiling with the -experimental compiler flag, or
+  |           3. with a nightly or snapshot version of the compiler.
+  |
+  |         object ExperimentalDefsPre is marked @experimental
+  |
 4 errors found

@@ -1,22 +1,22 @@
 TestRawTypes_fail.scala:15: error: type mismatch;
  found   : lib.RawTypes#C[String]#D[String]
  required: lib.RawTypes#C[T]#D[_]
-Note: String <: Object, but Java-defined class D is invariant in type U.
-You may wish to investigate a wildcard type such as `_ <: Object`. (SLS 3.2.10)
+Note: String <: Any, but Java-defined class D is invariant in type U.
+You may wish to investigate a wildcard type such as `_ <: Any`. (SLS 3.2.10)
   RawTypes.mii_Raw_Raw(cd_ii) // error
                        ^
 TestRawTypes_fail.scala:16: error: type mismatch;
  found   : lib.RawTypes#C[String]#D[String]#E[String]
  required: lib.RawTypes#C[T]#D[U]#E[_]
-Note: String <: Object, but Java-defined class E is invariant in type V.
-You may wish to investigate a wildcard type such as `_ <: Object`. (SLS 3.2.10)
+Note: String <: Any, but Java-defined class E is invariant in type V.
+You may wish to investigate a wildcard type such as `_ <: Any`. (SLS 3.2.10)
   RawTypes.miii_Raw_Raw_Raw(cde_iii) // error
                             ^
 TestRawTypes_fail.scala:18: error: type mismatch;
  found   : lib.RawTypes.CStatic[String]#D[String]
  required: lib.RawTypes.CStatic[T]#D[_]
-Note: String <: Object, but Java-defined class D is invariant in type U.
-You may wish to investigate a wildcard type such as `_ <: Object`. (SLS 3.2.10)
+Note: String <: Any, but Java-defined class D is invariant in type U.
+You may wish to investigate a wildcard type such as `_ <: Any`. (SLS 3.2.10)
   RawTypes.msi_Raw_Raw(cd_si) // error
                        ^
 3 errors
