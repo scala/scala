@@ -1,5 +1,4 @@
-// scalac: -Xsource:3
-//
+//> using options -Xsource:3
 
 import java.io as jio
 import scala.{collection as c}
@@ -30,4 +29,18 @@ object starring {
 
   val f = Future(42)
   val r = Await.result(f, D.Inf)
+}
+
+trait T[A] {
+  def t: A
+}
+object T {
+  implicit def tInt: T[Int] = new T[Int] {
+    def t: Int = 42
+  }
+  def f[A](implicit t: T[A]): A = t.t
+}
+object X {
+  import T.given
+  def g = T.f[Int] // was given is not a member
 }

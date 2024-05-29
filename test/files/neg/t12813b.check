@@ -22,7 +22,4 @@ import O.{given, toString, a, _}    // error 3
 t12813b.scala:18: error: duplicate wildcard selector
 import O.{a, given, *, _} // error 3
                     ^
-t12813b.scala:19: error: given requires a wildcard selector
-import O.{a, given}       // error 3
-             ^
-9 errors
+8 errors

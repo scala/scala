@@ -512,20 +512,22 @@ trait Trees extends api.Trees {
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi {
     assert(isWildcard || rename != null, s"Bad import selector $name => $rename")
     def isWildcard = name == nme.WILDCARD && rename == null
-    def isMask = name != nme.WILDCARD && rename == nme.WILDCARD
+    def isGiven    = name == nme.WILDCARD && rename == nme.`given`
+    def isMask     = name != nme.WILDCARD && rename == nme.WILDCARD
+    def isRename   = name != rename && rename != null && rename != nme.WILDCARD
     def isSpecific = !isWildcard
-    def isRename = rename != null && rename != nme.WILDCARD && name != rename
     private def isLiteralWildcard = name == nme.WILDCARD && rename == nme.WILDCARD
     private def sameName(name: Name, other: Name) =  (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
     def hasName(other: Name) = sameName(name, other)
     def introduces(target: Name) =
       if (target == nme.WILDCARD) isLiteralWildcard
-      else target != null && sameName(rename, target)
+      else target != null && !isGiven && sameName(rename, target)
   }
   object ImportSelector extends ImportSelectorExtractor {
     private val wild = ImportSelector(nme.WILDCARD, -1, null, -1)
     val wildList = List(wild) // OPT This list is shared for performance. Used for unpositioned synthetic only.
     def wildAt(pos: Int) = ImportSelector(nme.WILDCARD, pos, null, -1)
+    def givenAt(pos: Int) = ImportSelector(nme.WILDCARD, pos, nme.`given`, -1)
     def mask(name: Name) = ImportSelector(name, -1, nme.WILDCARD, -1)
   }
 
