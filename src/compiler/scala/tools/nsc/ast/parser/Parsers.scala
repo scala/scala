@@ -2811,20 +2811,22 @@ self =>
         case h :: t =>
           // wildcards must come last, and for -Xsource:3, accept trailing given and/or *, converting {given, *} to *
           if (isWilder(h)) {
-            if (t.exists(!isWilder(_))) {
-              syntaxError(h.namePos, "wildcard import must be in last position")
-              h :: Nil
-            }
-            else t match {
-              case Nil => h :: Nil
-              case other :: rest =>
-                if (!rest.isEmpty || h.isWildcard && other.isWildcard || h.isGiven && other.isGiven) {
-                  syntaxError(other.namePos, "duplicate wildcard selector")
-                  h :: Nil
-                }
-                else if (h.isWildcard) h :: Nil
-                else other :: Nil
-            }
+            val wildcard =
+              if (t.exists(!isWilder(_))) {
+                syntaxError(h.namePos, "wildcard import must be in last position")
+                h
+              }
+              else t match {
+                case Nil => h
+                case other :: Nil if h.isWildcard != other.isWildcard =>
+                  if (h.isWildcard) h else other
+                case _ =>
+                  val (wilds, givens) = xs.partition(_.isWildcard)
+                  val dupes = if (wilds.length > 1) wilds else givens
+                  syntaxError(dupes(1).namePos, "duplicate wildcard selector")
+                  h
+              }
+            wildcard :: Nil
           }
           else {
             if (!h.isMask)

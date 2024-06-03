@@ -21,5 +21,5 @@ import O.{given, toString, a, _}    // error 3
           ^
 t12813b.scala:18: error: duplicate wildcard selector
 import O.{a, given, *, _} // error 3
-                    ^
+                       ^
 8 errors

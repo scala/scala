@@ -1914,8 +1914,6 @@ trait Contexts { self: Analyzer =>
       case bad              => throw new FatalError(s"symbol ${tree.symbol} has bad type: ${bad}")
     }
 
-    def isGivenImport: Boolean = tree.selectors.exists(_.isGiven)
-
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): Boolean = tree.selectors.exists(_.introduces(name))
 
