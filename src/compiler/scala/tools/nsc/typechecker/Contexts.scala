@@ -1102,7 +1102,7 @@ trait Contexts { self: Analyzer =>
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
           List()
-        case sel :: _ if sel.isWildcard =>
+        case sel :: _ if sel.isWildcard || sel.isGiven =>
           // Using pre.implicitMembers seems to exposes a problem with out-dated symbols in the IDE,
           // see the example in https://www.assembla.com/spaces/scala-ide/tickets/1002552#/activity/ticket
           // I haven't been able to boil that down the an automated test yet.
@@ -1950,6 +1950,11 @@ trait Contexts { self: Analyzer =>
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)
           result = maybeNonLocalMember(name)
+        else if (current.isGiven && !requireExplicit) {
+          val maybe = maybeNonLocalMember(name)
+          if (maybe.isImplicit)
+            result = maybe
+        }
 
         if (result == NoSymbol)
           selectors = selectors.tail

@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 
 object O { val a = 1 }
 
@@ -16,4 +16,4 @@ import O.{given, toString, a, _}    // error 3
 import O.{a, given, *}    // ok
 import O.{a, *, given}    // ok
 import O.{a, given, *, _} // error 3
-import O.{a, given}       // error 3
+import O.{a, given}       // ok

@@ -1,4 +1,13 @@
 import-future.scala:15: error: not found: value unrelated
     unrelated(1) // error
     ^
-1 error
+import-future.scala:40: error: not found: value f
+  def g = f[Int] // error no f, was given is not a member
+          ^
+import-future.scala:44: error: could not find implicit value for parameter t: T[Int]
+  def g = f[Int] // implicit unavailable
+           ^
+import-future.scala:48: error: could not find implicit value for parameter t: T[Int]
+  def g = f[Int] // implicit unavailable
+           ^
+4 errors

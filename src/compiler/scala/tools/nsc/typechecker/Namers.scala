@@ -574,7 +574,7 @@ trait Namers extends MethodSynthesis {
           lookup(original.toTermName) != NoSymbol || lookup(original.toTypeName) != NoSymbol
         }
 
-        if (!s.isWildcard && base != ErrorType) {
+        if (!s.isWildcard && !s.isGiven && base != ErrorType) {
           val okay = isValid(from, base) || context.unit.isJava && (      // Java code...
                (nme.isModuleName(from) && isValid(from.dropModule, base)) // - importing Scala module classes
             || isValid(from, base.companion)                              // - importing type members from types
