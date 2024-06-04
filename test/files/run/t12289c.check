@@ -1,0 +1,2 @@
+pos: source-newSource1.scala,line-3,offset=41 not found: type T
+A class on the class path is shadowed by a companion artifact currently compiled; companions must be compiled together. ERROR

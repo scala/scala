@@ -5674,7 +5674,32 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupInaccessible(symbol, msg) => issue(AccessError(tree, symbol, context, msg))
           case LookupNotFound =>
             asTypeName orElse inEmptyPackage orElse lookupInRoot(name) match {
-              case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext, mode.in(all = PATTERNmode, none = APPSELmode | TYPEPATmode)))
+              case NoSymbol =>
+                def hasOutput = settings.outputDirs.getSingleOutput.isDefined || settings.outputDirs.outputs.nonEmpty
+                val hidden = !unit.isJava && hasOutput && {
+                  startContext.lookupSymbol(name.companionName, _ => true) match {
+                    case LookupSucceeded(qualifier, symbol) if symbol.owner.hasPackageFlag && symbol.sourceFile != null =>
+                      symbol.owner.info.decls.lookupAll(name).toList match {
+                        case other :: Nil if other.sourceFile == null =>
+                          val nameString = name.toString
+                          classPath.classes(symbol.owner.fullNameString).find(_.name == nameString).exists { repr =>
+                            settings.outputDirs.getSingleOutput match {
+                              // is the class file not in the output directory, so it's a dependency not a stale symbol
+                              case Some(out) => repr.binary.exists(!_.path.startsWith(out.path))
+                              // is the class file not in any output directory
+                              case _ => repr.binary.exists { bin =>
+                                !settings.outputDirs.outputs.exists { case (_, out) =>
+                                  bin.path.startsWith(out.path)
+                                }
+                              }
+                            }
+                          }
+                        case _ => false
+                      }
+                    case _ => false
+                  }
+                }
+                issue(SymbolNotFoundError(tree, name, context.owner, inPattern = mode.in(all = PATTERNmode, none = APPSELmode | TYPEPATmode), hidden = hidden))
               case oksymbol => typed1(tree.setSymbol(oksymbol), mode, pt)
             }
           case LookupSucceeded(qual, symbol) =>

@@ -111,7 +111,9 @@ class DirectCompiler(val runner: Runner) {
     val global       = newGlobal(testSettings, reporter)
     def errorCount   = reporter.errorCount
 
-    testSettings.outputDirs.setSingleOutput(outDir.getPath)
+    // usually, -d outDir, but don't override setting by the test
+    if (!testSettings.outdir.isSetByUser)
+      testSettings.outputDirs.setSingleOutput(outDir.getPath)
 
     def reportError(s: String): Unit = reporter.error(NoPosition, s)
 

@@ -1,0 +1,5 @@
+c_2.scala:7: error: not found: value T
+A value on the class path is shadowed by a companion artifact currently compiled; companions must be compiled together.
+    def companion: AnyRef = T
+                            ^
+1 error
