@@ -135,6 +135,8 @@ jobs:
         - gem install bundler -v "< 2.5" #scala-dev#857
         - bundler --version
         - bundle install --path vendor/bundle
+        # https://travis-ci.community/t/travis-focal-ubuntu-image-uses-now-expired-mongodb-4-4-package/14293/3
+        - wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
         # cribbed from https://github.com/SebastiaanKlippert/go-wkhtmltopdf/blob/master/.travis.yml
         - sudo apt-get update
         - sudo apt-get install -y build-essential xorg xfonts-75dpi libpng16-16 libssl1.1
