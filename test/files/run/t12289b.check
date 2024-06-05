@@ -1,0 +1,2 @@
+pos: RangePosition(newSource1.scala, 72, 72, 73) not found: value T
+A value on the class path is shadowed by a companion artifact currently compiled; companions must be compiled together. ERROR
