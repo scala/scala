@@ -1,6 +1,7 @@
 
-import scala.tools.partest.StoreReporterDirectTest
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc._
+import scala.tools.partest.StoreReporterDirectTest
 import scala.util.chaining._
 
 object Test extends StoreReporterDirectTest {
@@ -15,13 +16,14 @@ object Test extends StoreReporterDirectTest {
   def code = rounds(round).tap(_ => round += 1)
   // intercept the settings created for compile()
   override def newSettings(args: List[String]) = {
-    val outDir = testOutput.parent / testOutput / s"test-output-$round"
-    def prevOutDir = testOutput.parent / testOutput / s"test-output-${round - 1}"
-    outDir.createDirectory()
+    val outDir = testOutput / s"test-output-$round"
+    def prevOutDir = testOutput / s"test-output-${round - 1}"
+    outDir.createDirectory(force = true)
+    val af = AbstractFile.getDirectory(outDir)
     // put the previous round on the class path
-    val args1 = "-d" :: outDir.path :: args
-    val args2 = if (round > 0) "-cp" :: prevOutDir.path :: args1 else args1
-    super.newSettings(args2)
+    val args1 = if (round > 0) "-cp" :: prevOutDir.path :: args else args
+    super.newSettings(args1)
+      .tap(_.outputDirs.setSingleOutput(af))
   }
   // avoid setting -d
   override def newCompiler(args: String*): Global = {
