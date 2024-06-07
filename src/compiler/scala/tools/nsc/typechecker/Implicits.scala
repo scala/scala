@@ -1040,7 +1040,9 @@ trait Implicits extends splain.SplainData {
 
       private def isIneligible(info: ImplicitInfo) = (
            info.isCyclicOrErroneous
-        || isView && ((info.sym eq Predef_conforms) || (info.sym eq SubType_refl)) // as implicit conversions, Predef.$conforms and <:<.refl are no-op, so exclude them
+        || isView && ((info.sym eq Predef_conforms) || (info.sym eq SubType_refl) ||
+              currentRun.sourceFeatures.any2StringAdd && (info.sym eq currentRun.runDefinitions.Predef_any2stringaddMethod)
+          ) // as implicit conversions, Predef.$conforms and <:<.refl are no-op, so exclude them
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
 
