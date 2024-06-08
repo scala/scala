@@ -18,10 +18,11 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.reflect.io.AbstractFile
-import scala.tools.asm.ClassWriter
+import scala.tools.asm.{ByteVector, ClassVisitor, ClassWriter, MethodVisitor, Opcodes}
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
+import scala.util.control.NonFatal
 
 /**
  * Implements late stages of the backend that don't depend on a Global instance, i.e.,
@@ -77,6 +78,7 @@ abstract class PostProcessor extends PerRunInit {
         // TODO fail fast rather than continuing to write the rest of the class files?
         if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
         backendReporting.error(NoPosition, s"Error while emitting $internalName\n${ex.getMessage}")
+        if (NonFatal(ex)) checkConformance(classNode)
         null
     }
 
@@ -86,6 +88,37 @@ abstract class PostProcessor extends PerRunInit {
 
       classfileWriter.writeClass(internalName, bytes, sourceFile)
     }
+  }
+
+  // Provide more useful messaging when class writing fails. -Xverify verifies always.
+  private def checkConformance(classNode: ClassNode): Unit = {
+    val visitor = new ClassVisitor(Opcodes.ASM9) {
+      override def visitMethod(access: Int, name: String, descriptor: String, signature: String, exceptions: Array[String]) = {
+        val site = s"Method $name"
+        checkString(site, "name")(name)
+        checkString(site, "descriptor")(descriptor)
+        checkString(site, "signature")(signature)
+        new MethodVisitor(Opcodes.ASM9) {
+          override def visitLdcInsn(value: Object): Unit = {
+            value match {
+              case value: String =>
+                checkString(site, "String constant")(value)
+              case _ =>
+            }
+          }
+        }
+      }
+      private final val max = 0xFFFF
+      private final val threshold = 0xFFFF / 6 // char never expands to more than 6 bytes
+      private def checkString(site: String, which: String)(s: String): Unit = if (s != null && s.length > threshold) {
+        def fail() = backendReporting.error(NoPosition, s"$site in class ${classNode.name} has a bad $which of length ${s.length}${ if (frontendAccess.compilerSettings.debug) s":\n$s" else "" }")
+        if (s.length > max) fail()
+        else
+          try new ByteVector(s.length).putUTF8(s)
+          catch { case _: IllegalArgumentException => fail() }
+      }
+    }
+    classNode.accept(visitor)
   }
 
   private def warnCaseInsensitiveOverwrite(clazz: GeneratedClass): Unit = {

@@ -1,0 +1,4 @@
+error: Error while emitting C
+UTF8 string too large
+error: Method crash in class C has a bad signature of length 124243
+2 errors
