@@ -1233,7 +1233,7 @@ abstract class RefChecks extends Transform {
 // Transformation ------------------------------------------------------------
 
     /* Convert a reference to a case factory of type `tpe` to a new of the class it produces. */
-    def toConstructor(pos: Position, tpe: Type): Tree = {
+    def toConstructor(pos: Position, tpe: Type, checkTarget: Boolean): Tree = {
       val rtpe = tpe.finalResultType
       assert(rtpe.typeSymbol hasFlag CASE, tpe)
       val tree = localTyper.typedOperator {
@@ -1241,7 +1241,8 @@ abstract class RefChecks extends Transform {
           Select(New(TypeTree(rtpe)), rtpe.typeSymbol.primaryConstructor)
         }
       }
-      checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
+      if (checkTarget)
+        checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
       checkUndesiredProperties(rtpe.typeSymbol.primaryConstructor, tree.pos)
       tree
     }
@@ -1667,8 +1668,7 @@ abstract class RefChecks extends Transform {
         case x => throw new MatchError(x)
       }
       sym.name == nme.apply &&
-        !sym.hasStableFlag && // ???
-        sym.isCase &&
+        sym.isCase && // only synthetic case apply methods
         isClassTypeAccessible(tree) &&
         !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
     }
@@ -1689,7 +1689,12 @@ abstract class RefChecks extends Transform {
         case _ =>
       }
       loop(tree)
-      toConstructor(tree.pos, tree.tpe)
+      def qualIsModule(t: Tree): Boolean = t match {
+        case TypeApply(qual, _) => qualIsModule(qual)
+        case Select(qual, _) => qual.symbol == tree.symbol.owner.module
+        case _ => true
+      }
+      toConstructor(tree.pos, tree.tpe, qualIsModule(tree))
     }
 
     private def transformApply(tree: Apply): Tree = tree match {
