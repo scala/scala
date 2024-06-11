@@ -19,6 +19,12 @@ t13006.scala:23: warning: constructor D in class D is deprecated
 t13006.scala:24: warning: constructor D in class D is deprecated
   def u4 = new D(10)     // warn
            ^
+t13006.scala:34: warning: class C in object oho is deprecated
+  def t1 = oho.C(10) // warn
+               ^
+t13006.scala:35: warning: constructor D in class D is deprecated
+  def t2 = oho.D(10) // warn
+               ^
 error: No warnings can be incurred under -Werror.
-7 warnings
+9 warnings
 1 error

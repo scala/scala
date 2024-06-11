@@ -24,3 +24,13 @@ class T {
   def u4 = new D(10)     // warn
   def u5(d: D) = 10      // no warn
 }
+
+object oho {
+  @deprecated case class C private[oho] (x: Int)
+  case class D @deprecated() private[oho] (x: Int)
+}
+
+class T1 {
+  def t1 = oho.C(10) // warn
+  def t2 = oho.D(10) // warn
+}
