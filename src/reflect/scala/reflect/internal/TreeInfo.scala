@@ -910,6 +910,19 @@ abstract class TreeInfo {
       unapply(dissectApplied(tree))
   }
 
+  /**
+   * Deconstructs an application into fun (typically a Select), targs and argss.
+   * Unlike `Applied`, only matches if the tree is actually an application (Apply and / or TypeApply).
+   */
+  object Application {
+    def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])] = {
+      val ap = new Applied(tree)
+      val core = ap.core
+      if (core eq tree) None
+      else Some((core, ap.targs, ap.argss))
+    }
+  }
+
   /** Does list of trees start with a definition of
    *  a class or module with given name (ignoring imports)
    */
