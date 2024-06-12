@@ -1,0 +1,7 @@
+t13004c.scala:9: applied implicit conversion from Money to ?{def + : ?} = final implicit def any2stringadd[A](self: A): any2stringadd[A]
+    Money(3.14) + " is a lotta dough!"
+         ^
+t13004c.scala:9: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
+    Money(3.14) + " is a lotta dough!"
+         ^
+Money(3.14) is a lotta dough!
