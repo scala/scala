@@ -81,8 +81,9 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
   }
 
   private val defaultApplyPreferredMaxLength: Int =
-    try System.getProperty("scala.collection.immutable.Vector.defaultApplyPreferredMaxLength",
-      "250").toInt
+    // explicit StringOps to avoid initialization cycle with Predef (scala/bug#13009)
+    try new StringOps(System.getProperty("scala.collection.immutable.Vector.defaultApplyPreferredMaxLength",
+      "250")).toInt
     catch {
       case _: SecurityException => 250
     }
