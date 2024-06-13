@@ -1,0 +1,9 @@
+t13004b.scala:14: applied implicit conversion from Money to ?{def + : ?} = final implicit def any2stringadd[A](self: A): any2stringadd[A]
+    Money(3.14) + Money(1.7)
+         ^
+t13004b.scala:14: error: type mismatch;
+ found   : Money
+ required: String
+    Money(3.14) + Money(1.7)
+                       ^
+1 error

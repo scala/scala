@@ -173,9 +173,14 @@ trait Contexts { self: Analyzer =>
     else RootImports.completeList
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) =>
-      c.make(gen.mkWildcardImport(sym), unit = unit)
-    )
+    val rootImportsContext = rootImports(unit).foldLeft(startContext) { (c, sym) =>
+      val imp =
+        if ((sym eq PredefModule) && currentRun.sourceFeatures.any2StringAdd)
+          gen.mkImportFromSelector(sym, ImportSelector.mask(nme.any2stringadd) :: ImportSelector.wildList)
+        else
+          gen.mkWildcardImport(sym)
+      c.make(tree = imp, unit = unit)
+    }
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)

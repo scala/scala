@@ -1,0 +1,4 @@
+t13004.scala:12: applied implicit conversion from Money to ?{def + : ?} = implicit def MoneySyntax(self: Money): Money.MoneySyntax
+    Money(3.14) + Money(1.7)
+         ^
+Money(4.84)
