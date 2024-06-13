@@ -4,10 +4,10 @@ t8685.scala:37: warning: class C is deprecated (since now): class C is depr
 t8685.scala:38: warning: constructor D in class D is deprecated (since now): ctor D is depr
   def g = D(42)
           ^
-t8685.scala:39: warning: object E is deprecated (since now): module E is depr
+t8685.scala:39: warning: class E is deprecated (since now): class E is depr
   def h = E(42)
           ^
-t8685.scala:39: warning: class E is deprecated (since now): class E is depr
+t8685.scala:39: warning: object E is deprecated (since now): module E is depr
   def h = E(42)
           ^
 t8685.scala:40: warning: object F is deprecated (since now): module F is depr

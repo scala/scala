@@ -993,8 +993,8 @@ abstract class RefChecks extends Transform {
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
-    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.warnOptionImplicit) (fn, args) match {
-      case (TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
+    def checkImplicitViewOptionApply(pos: Position, fun: Tree, argss: List[List[Tree]]): Unit = if (settings.warnOptionImplicit) argss match {
+      case List(List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
         refchecksWarning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.", WarningCategory.LintOptionImplicit) // scala/bug#6567
       case _ =>
     }
@@ -1211,11 +1211,13 @@ abstract class RefChecks extends Transform {
     }
 
     /** Sensibility check examines flavors of equals. */
-    def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
-      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
-        checkSensibleEquals(pos, qual, name, fn.symbol, args.head)
-      case Select(qual, name @ nme.equals_) if args.length == 1 && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
-        checkSensibleAnyEquals(pos, qual, name, fn.symbol, args.head)
+    def checkSensible(pos: Position, fn: Tree, argss: List[List[Tree]]) = (fn, argss) match {
+      case (Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)), List(List(arg)))
+        if isObjectOrAnyComparisonMethod(fn.symbol) && (!currentOwner.isSynthetic || currentOwner.isAnonymousFunction) =>
+        checkSensibleEquals(pos, qual, name, fn.symbol, arg)
+      case (Select(qual, name @ nme.equals_), List(List(arg)))
+        if !currentOwner.isSynthetic || currentOwner.isAnonymousFunction =>
+        checkSensibleAnyEquals(pos, qual, name, fn.symbol, arg)
       case _ =>
     }
 
@@ -1231,20 +1233,6 @@ abstract class RefChecks extends Transform {
       }
 
 // Transformation ------------------------------------------------------------
-
-    /* Convert a reference to a case factory of type `tpe` to a new of the class it produces. */
-    def toConstructor(pos: Position, tpe: Type): Tree = {
-      val rtpe = tpe.finalResultType
-      assert(rtpe.typeSymbol hasFlag CASE, tpe)
-      val tree = localTyper.typedOperator {
-        atPos(pos) {
-          Select(New(TypeTree(rtpe)), rtpe.typeSymbol.primaryConstructor)
-        }
-      }
-      checkUndesiredProperties(rtpe.typeSymbol, tree.pos)
-      checkUndesiredProperties(rtpe.typeSymbol.primaryConstructor, tree.pos)
-      tree
-    }
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       pushLevel()
@@ -1653,65 +1641,64 @@ abstract class RefChecks extends Transform {
       }
     }
 
-    private def isSimpleCaseApply(tree: Tree): Boolean = {
-      val sym = tree.symbol
-      def isClassTypeAccessible(tree: Tree): Boolean = tree match {
-        case TypeApply(fun, targs) =>
-          isClassTypeAccessible(fun)
-        case Select(module, apply) =>
-          // scala/bug#4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
-          //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
-          treeInfo.isQualifierSafeToElide(module) &&
+    private def isSimpleCaseApply(fun: Tree): Boolean = {
+      val sym = fun.symbol
+      def isClassTypeAccessible = {
+        val Select(module, _) = fun: @unchecked
+        // scala/bug#4859 `CaseClass1().InnerCaseClass2()` must not be rewritten to `new InnerCaseClass2()`;
+        //          {expr; Outer}.Inner() must not be rewritten to `new Outer.Inner()`.
+        treeInfo.isQualifierSafeToElide(module) &&
           // scala/bug#5626 Classes in refinement types cannot be constructed with `new`.
           !module.exists { case t @ Select(_, _) => t.symbol != null && t.symbol.isStructuralRefinementMember case _ => false }
-        case x => throw new MatchError(x)
+
       }
       sym.name == nme.apply &&
-        !sym.hasStableFlag && // ???
-        sym.isCase &&
-        isClassTypeAccessible(tree) &&
-        !tree.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(tree.symbol)
+        sym.isCase && // only synthetic case apply methods
+        isClassTypeAccessible &&
+        !fun.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(sym)
     }
 
-    private def transformCaseApply(tree: Tree) = {
-      def loop(t: Tree): Unit = t match {
-        case Ident(_) =>
-          checkUndesiredProperties(t.symbol, t.pos)
-        case Select(qual, _) =>
-          checkUndesiredProperties(t.symbol, t.pos)
-          loop(qual)
-        case _ =>
-      }
-
-      tree foreach {
-        case i@Ident(_) =>
-          enterReference(i.pos, i.symbol) // scala/bug#5390 need to `enterReference` for `a` in `a.B()`
-        case _ =>
-      }
-      loop(tree)
-      toConstructor(tree.pos, tree.tpe)
-    }
-
-    private def transformApply(tree: Apply): Tree = tree match {
-      case Apply(
-        Select(qual, nme.withFilter),
-        List(Function(
-          List(ValDef(_, pname, tpt, _)),
-          Match(_, CaseDef(pat1, _, _) :: _))))
-        if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
-            isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
-
-          transform(qual)
-      case Apply(fn, args) =>
-        currentApplication = tree
-        // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
-        // analyses in the pattern matcher
-        if (!inPattern) {
-          checkImplicitViewOptionApply(tree.pos, fn, args)
-          checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
-          checkNamedBooleanArgs(fn, args)
+    private def transformCaseApply(tpe: Type, pos: Position) = {
+      val rtpe = tpe.finalResultType
+      assert(rtpe.typeSymbol hasFlag CASE, tpe)
+      localTyper.typedOperator {
+        atPos(pos) {
+          Select(New(TypeTree(rtpe)), rtpe.typeSymbol.primaryConstructor)
         }
-        tree
+      }
+    }
+
+    private def transformApplication(tree: Tree, fun: Tree, targs: List[Tree], argss: List[List[Tree]]): Tree = {
+      (fun, argss) match {
+        case (
+          Select(qual, nme.withFilter),
+          List(List(Function(
+            List(ValDef(_, pname, tpt, _)),
+            Match(_, CaseDef(pat1, _, _) :: _)))))
+          if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
+            isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
+          qual
+        case _ =>
+          currentApplication = tree
+          // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
+          // analyses in the pattern matcher
+          if (!inPattern) {
+            checkImplicitViewOptionApply(tree.pos, fun, argss)
+            checkSensible(tree.pos, fun, argss) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
+            checkNamedBooleanArgs(fun, argss)
+          }
+          if (isSimpleCaseApply(fun)) {
+            transform(fun)
+            val callee = new treeInfo.Applied(tree).callee
+            val fun1 = transformCaseApply(callee.tpe, callee.pos)
+            def res(t: Tree): Tree = t match {
+              case Apply(f, args) => treeCopy.Apply(t, res(f), args)
+              case _ => fun1
+            }
+            res(tree)
+          } else
+            tree
+      }
     }
 
     /** Check that boolean literals are passed as named args.
@@ -1721,56 +1708,49 @@ abstract class RefChecks extends Transform {
      *  except that the rule is relaxed when the method has exactly one boolean parameter
      *  and it is the first parameter, such as `assert(false, msg)`.
      */
-    private def checkNamedBooleanArgs(fn: Tree, args: List[Tree]): Unit = {
+    private def checkNamedBooleanArgs(fn: Tree, argss: List[List[Tree]]): Unit = {
       val sym = fn.symbol
-      def applyDepth: Int = {
-        def loop(t: Tree, d: Int): Int =
-          t match {
-            case Apply(t, _) => loop(t, d+1)
-            case _ => d
-          }
-        loop(fn, 0)
-      }
-      if (settings.warnUnnamedBoolean.value && !sym.isJavaDefined && !args.isEmpty) {
-        val strictly = settings.warnUnnamedStrict.value // warn about any unnamed boolean arg, modulo "assert"
-        val params = sym.paramLists(applyDepth)
-        val numBools = params.count(_.tpe == BooleanTpe)
-        def onlyLeadingBool = numBools == 1 && params.head.tpe == BooleanTpe
-        val checkable = if (strictly) numBools > 0 && !onlyLeadingBool else numBools >= 2
-        if (checkable) {
-          def isUnnamedArg(t: Tree) = t.hasAttachment[UnnamedArg.type]
-          def isNameableBoolean(param: Symbol) = param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME)
-          val unnamed = args.lazyZip(params).filter {
-            case (arg @ Literal(Constant(_: Boolean)), param) => isNameableBoolean(param) && isUnnamedArg(arg)
-            case _ => false
-          }
-          def numSuspicious = unnamed.length + {
-            analyzer.NamedApplyBlock.namedApplyInfo(currentApplication) match {
-              case Some(analyzer.NamedApplyInfo(_, _, _, _, original)) =>
-                val treeInfo.Applied(_, _, argss) = original
-                argss match {
-                  case h :: _ =>
-                    val allParams = sym.paramLists.flatten
-                    h.count {
-                      case treeInfo.Applied(getter, _, _) if getter.symbol != null && getter.symbol.isDefaultGetter =>
-                        val (_, i) = nme.splitDefaultGetterName(getter.symbol.name)
-                        i > 0 && isNameableBoolean(allParams(i-1))
-                      case _ => false
-                    }
-                  case _ => 0
-                }
-              case _ => args.count(arg => arg.symbol != null && arg.symbol.isDefaultGetter)
+      if (settings.warnUnnamedBoolean.value && !sym.isJavaDefined) {
+        for ((params, args) <- sym.paramLists.zip(argss) if args.nonEmpty) {
+          val strictly = settings.warnUnnamedStrict.value // warn about any unnamed boolean arg, modulo "assert"
+          val numBools = params.count(_.tpe == BooleanTpe)
+          def onlyLeadingBool = numBools == 1 && params.head.tpe == BooleanTpe
+          val checkable = if (strictly) numBools > 0 && !onlyLeadingBool else numBools >= 2
+          if (checkable) {
+            def isUnnamedArg(t: Tree) = t.hasAttachment[UnnamedArg.type]
+            def isNameableBoolean(param: Symbol) = param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME)
+            val unnamed = args.lazyZip(params).filter {
+              case (arg @ Literal(Constant(_: Boolean)), param) => isNameableBoolean(param) && isUnnamedArg(arg)
+              case _ => false
             }
-          }
-          val warn = !unnamed.isEmpty && (strictly || numSuspicious >= 2)
-          if (warn)
-            unnamed.foreach {
-              case (arg, param) =>
-                val msg = s"Boolean literals should be passed using named argument syntax for parameter ${param.name}."
-                val action = runReporting.codeAction("name boolean literal", arg.pos.focusStart, s"${param.name} = ", msg)
-                runReporting.warning(arg.pos, msg, WarningCategory.WFlagUnnamedBooleanLiteral, sym, action)
-              case _ =>
+            def numSuspicious = unnamed.length + {
+              analyzer.NamedApplyBlock.namedApplyInfo(currentApplication) match {
+                case Some(analyzer.NamedApplyInfo(_, _, _, _, original)) =>
+                  val treeInfo.Applied(_, _, argss) = original
+                  argss match {
+                    case h :: _ =>
+                      val allParams = sym.paramLists.flatten
+                      h.count {
+                        case treeInfo.Applied(getter, _, _) if getter.symbol != null && getter.symbol.isDefaultGetter =>
+                          val (_, i) = nme.splitDefaultGetterName(getter.symbol.name)
+                          i > 0 && isNameableBoolean(allParams(i-1))
+                        case _ => false
+                      }
+                    case _ => 0
+                  }
+                case _ => args.count(arg => arg.symbol != null && arg.symbol.isDefaultGetter)
+              }
             }
+            val warn = !unnamed.isEmpty && (strictly || numSuspicious >= 2)
+            if (warn)
+              unnamed.foreach {
+                case (arg, param) =>
+                  val msg = s"Boolean literals should be passed using named argument syntax for parameter ${param.name}."
+                  val action = runReporting.codeAction("name boolean literal", arg.pos.focusStart, s"${param.name} = ", msg)
+                  runReporting.warning(arg.pos, msg, WarningCategory.WFlagUnnamedBooleanLiteral, sym, action)
+                case _ =>
+              }
+          }
         }
       }
     }
@@ -1792,25 +1772,20 @@ abstract class RefChecks extends Transform {
         // term should have been eliminated by super accessors
         assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
-      // Rewrite eligible calls to monomorphic case companion apply methods to the equivalent constructor call.
-      //
-      // Note: for generic case classes the rewrite needs to be handled at the enclosing `TypeApply` to transform
-      // `TypeApply(Select(C, apply), targs)` to `Select(New(C[targs]), <init>)`. In case such a `TypeApply`
-      // was deemed ineligible for transformation (e.g. the case constructor was private), the refchecks transform
-      // will recurse to this point with `Select(C, apply)`, which will have a type `[T](...)C[T]`.
-      //
-      // We don't need to perform the check on the Select node, and `!isHigherKinded will guard against this
-      // redundant (and previously buggy, scala/bug#9546) consideration.
-      if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
-        transformCaseApply(tree)
-      } else {
-        qual match {
-          case Super(_, mix)  => checkSuper(mix)
-          case _              =>
-        }
-        tree
+      qual match {
+        case Super(_, mix)  => checkSuper(mix)
+        case _              =>
       }
+
+      if (sym.name == nme.apply && sym.isCase && qual.symbol == sym.owner.module) {
+        val clazz = sym.tpe.finalResultType.typeSymbol
+        checkUndesiredProperties(clazz, tree.pos)
+        checkUndesiredProperties(clazz.primaryConstructor, tree.pos)
+      }
+
+      tree
     }
+
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
@@ -1955,7 +1930,7 @@ abstract class RefChecks extends Transform {
               if (!sym.isConstructor && !sym.isEffectivelyFinalOrNotOverridden && !sym.owner.isSealed && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
             }
-            tree match {
+            val r = tree match {
               case dd: DefDef if sym.hasAnnotation(NativeAttr) =>
                 if (sym.owner.isTrait) {
                   reporter.error(tree.pos, "A trait cannot define a native method.")
@@ -1968,8 +1943,9 @@ abstract class RefChecks extends Transform {
                   tree
               case _ => tree
             }
+            r.transform(this)
 
-          case Template(parents, self, body) =>
+          case Template(_, _, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
             for (stat <- body)
               if (!checkInterestingResultInStatement(stat) && treeInfo.isPureExprForWarningPurposes(stat)) {
@@ -1986,9 +1962,12 @@ abstract class RefChecks extends Transform {
             checkAnyValSubclass(currentOwner)
             if (currentOwner.isDerivedValueClass)
               currentOwner.primaryConstructor makeNotPrivate NoSymbol // scala/bug#6601, must be done *after* pickler!
-            if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
+            val res = if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
+            res.transform(this)
 
-          case _: TypeTreeWithDeferredRefCheck => abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
+          case _: TypeTreeWithDeferredRefCheck =>
+            abort("adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc")
+
           case tpt@TypeTree() =>
             if(tpt.original != null) {
               tpt.original foreach {
@@ -1999,28 +1978,24 @@ abstract class RefChecks extends Transform {
               }
             }
 
-            tree.setType(RefCheckTypeMap.check(tree.tpe, tree, inPattern))
+            tree.setType(RefCheckTypeMap.check(tree.tpe, tree, inPattern)).transform(this)
 
-          case TypeApply(fn, args) =>
-            checkBounds(tree, NoPrefix, NoSymbol, fn.tpe.typeParams, args map (_.tpe))
-            if (isSimpleCaseApply(tree))
-              transformCaseApply(tree)
-            else
-              tree
-
-          case x @ Apply(_, _)  =>
-            transformApply(x)
+          case treeInfo.Application(fun, targs, argss) =>
+            if (targs.nonEmpty)
+              checkBounds(tree, NoPrefix, NoSymbol, fun.tpe.typeParams, targs map (_.tpe))
+            val res = transformApplication(tree, fun, targs, argss)
+            res.transform(this)
 
           case x @ If(_, _, _)  =>
-            transformIf(x)
+            transformIf(x).transform(this)
 
           case New(tpt) =>
             enterReference(tree.pos, tpt.tpe.typeSymbol)
-            tree
+            tree.transform(this)
 
           case treeInfo.WildcardStarArg(_) =>
             checkRepeatedParamArg(tree)
-            tree
+            tree.transform(this)
 
           case Ident(name) =>
             checkUndesiredProperties(sym, tree.pos)
@@ -2028,20 +2003,20 @@ abstract class RefChecks extends Transform {
               assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
               enterReference(tree.pos, sym)
             }
-            tree
+            tree.transform(this)
 
           case x @ Select(_, _) =>
-            transformSelect(x)
+            transformSelect(x).transform(this)
 
           case Literal(Constant(tpe: Type)) =>
             RefCheckTypeMap.check(tpe, tree)
-            tree
+            tree.transform(this)
 
           case UnApply(fun, args) =>
             transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
                            // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
                            // probably not, until we allow parameterised extractors
-            tree
+            tree.transform(this)
 
           case blk @ Block(stats, expr) =>
             // diagnostic info
@@ -2086,7 +2061,8 @@ abstract class RefChecks extends Transform {
             }
             if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr)
 
-            tree
+            tree.transform(this)
+
           case Match(selector, cases) =>
             // only warn if it could be put in backticks in a pattern
             def isWarnable(sym: Symbol): Boolean =
@@ -2160,33 +2136,32 @@ abstract class RefChecks extends Transform {
             }
             // check the patterns for unfriendly shadowing, patvars bearing PatShadowAttachment
             if (settings.warnPatternShadow) for (cdef <- cases) checkPattern(cdef.pat)
-            tree
-          case _ => tree
-        }
+            tree.transform(this)
 
-        // skip refchecks in patterns....
-        val result1 = result match {
+          // skip refchecks in patterns....
           case CaseDef(pat, guard, body) =>
             val pat1 = savingInPattern {
               inPattern = true
               transform(pat)
             }
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+
           case _ =>
-            result.transform(this)
+            tree.transform(this)
         }
-        result1 match {
+
+        result match {
           case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) | ModuleDef(_, _, _) =>
-            if (result1.symbol.isLocalToBlock || result1.symbol.isTopLevel)
-              varianceValidator.traverse(result1)
+            if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
+              varianceValidator.traverse(result)
           case tt @ TypeTree() if tt.original != null =>
             varianceValidator.validateVarianceOfPolyTypesIn(tt.tpe)
           case _ =>
         }
 
-        checkUnexpandedMacro(result1)
+        checkUnexpandedMacro(result)
 
-        result1
+        result
       } catch {
         case ex: TypeError =>
           if (settings.isDebug) ex.printStackTrace()
