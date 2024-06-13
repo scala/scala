@@ -1,0 +1,10 @@
+Test.scala:9: error: Unable to emit reference to method j in class J, class J is not accessible in trait T
+  def t4 = j()
+           ^
+Test.scala:10: error: Unable to emit reference to method j in class J, class J is not accessible in trait T
+  def t5 = this.j()
+                ^
+Test.scala:11: error: Unable to emit reference to method j in class J, class J is not accessible in trait T
+  def t6 = self.j()
+                ^
+3 errors

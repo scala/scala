@@ -1,0 +1,9 @@
+Test.scala:8: error: Implementation restriction: trait T accesses protected method j inside a concrete trait method.
+Add an accessor in a class extending class J as a workaround.
+  def t4 = j()
+           ^
+Test.scala:9: error: Implementation restriction: trait T accesses protected method j inside a concrete trait method.
+Add an accessor in a class extending class J as a workaround.
+  def t5 = this.j()
+                ^
+2 errors

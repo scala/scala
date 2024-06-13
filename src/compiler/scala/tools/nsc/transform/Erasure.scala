@@ -1287,9 +1287,11 @@ abstract class Erasure extends InfoTransform
 
             if (qualSym != owner)
               tree.updateAttachment(new QualTypeSymAttachment(qualSym))
-          } else if (!isJvmAccessible(owner, context)) {
+          } else if (!isJvmAccessible(owner, context) ||
+            // scala/bug#13007: isJvmAccessible is true for a protected java method, even if accessed through erased self type
+            sym.isJavaDefined && sym.isProtected && !qual.tpe.typeSymbol.isSubClass(sym.owner)) {
             val qualSym = qual.tpe.typeSymbol
-            if (qualSym != owner && isJvmAccessible(qualSym, context) && definesMemberAfterErasure(qualSym, sym))
+            if (qualSym != owner && isJvmAccessible(qualSym, context) && (definesMemberAfterErasure(qualSym, sym) || sym.overridingSymbol(qualSym).exists))
               tree.updateAttachment(new QualTypeSymAttachment(qualSym))
             else
               reporter.error(tree.pos, s"Unable to emit reference to ${sym.fullLocationString}, $owner is not accessible in ${context.enclClass.owner}")
