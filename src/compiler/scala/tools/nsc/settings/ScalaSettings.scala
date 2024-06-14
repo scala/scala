@@ -420,13 +420,16 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
 
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
-  val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
-    .withPostSetHook(s => if (s.value.nonEmpty) StatisticsStatics.enableColdStatsAndDeoptimize())
+  val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases (implies `-Ycollect-statistics`)", "parser,typer,patmat,erasure,cleanup,jvm")
+    .withPostSetHook(s => if (s.value.nonEmpty) YcollectStatistics.value = true)
+
+  val YcollectStatistics = BooleanSetting("-Ycollect-statistics", "Collect cold statistics (quietly, unless `-Ystatistics` is set)")
+    .withPostSetHook(s => if (s.value) StatisticsStatics.enableColdStatsAndDeoptimize())
 
   val YhotStatistics = BooleanSetting("-Yhot-statistics-enabled", s"Enable `${Ystatistics.name}` to print hot statistics.")
     .withPostSetHook(s => if (s && YstatisticsEnabled) StatisticsStatics.enableHotStatsAndDeoptimize())
 
-  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
+  override def YstatisticsEnabled = YcollectStatistics.value
   override def YhotStatisticsEnabled = YhotStatistics.value
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
