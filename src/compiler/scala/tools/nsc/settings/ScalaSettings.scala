@@ -607,12 +607,14 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     .withAbbreviation("-Yshow-symkinds")
   val Yshowsymowners  = BooleanSetting    ("-Vshow-symowners", "Print owner identifiers next to symbol names.")
     .withAbbreviation("-Yshow-symowners")
-  val Ystatistics = PhasesSetting("-Vstatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
-    .withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
+  val Ystatistics = PhasesSetting("-Vstatistics", "Print compiler statistics for specific phases (implies `-Ycollect-statistics`)", "parser,typer,patmat,erasure,cleanup,jvm")
+    .withPostSetHook(s => if (s.value.nonEmpty) YstatisticsEnabled.value = true)
     .withAbbreviation("-Ystatistics")
   val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly().withPostSetHook(s => if (s.value) StatisticsStatics.enableColdStatsAndDeoptimize())
   val YhotStatisticsEnabled = BooleanSetting("-Vhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
     .withAbbreviation("-Yhot-statistics").withPostSetHook(s => if (s.value && YstatisticsEnabled.value) StatisticsStatics.enableHotStatsAndDeoptimize())
+  val YcollectStatistics = BooleanSetting("-Ycollect-statistics", "Collect cold statistics (quietly, unless `-Vstatistics` is set)")
+    .withPostSetHook(s => if (s.value) YstatisticsEnabled.value = true)
   val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
   val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
   val Vimplicits            = BooleanSetting("-Vimplicits", "Print dependent missing implicits.").withAbbreviation("-Xlog-implicits")
