@@ -1,0 +1,3 @@
+error: Error while emitting C
+UTF8 string too large
+error: Method s in class C has a bad String constant of length 393210
