@@ -78,7 +78,11 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   private val _transcript = new TestTranscript
 
+  // start log event
   def pushTranscript(msg: String) = _transcript.add(msg)
+
+  // append to last log in transcript
+  def appendTranscript(log: String) = _transcript.append(log)
 
   lazy val outDir = { outFile.mkdirs() ; outFile }
 
@@ -221,7 +225,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
     nextTestAction(runCommand(cmd, logFile)) {
       case false =>
-        _transcript append EOL + logFile.fileContents
+        appendTranscript(EOL + logFile.fileContents)
         genFail("non-zero exit code")
     }
   }
@@ -410,7 +414,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
           else
             gitRunner.flatMap(_ => withTempFile(outDir, fileBase, filteredCheck)(f =>
                 gitDiff(f, logFile))).getOrElse(diff)
-        _transcript append bestDiff
+        appendTranscript(bestDiff)
         genFail("output differs")
     }
   }
@@ -428,14 +432,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   def newCompiler = new DirectCompiler(this)
 
-  def attemptCompile(sources: List[File]): TestState = {
-    val badflags = (testFile :: (if (testFile.isDirectory) sources else Nil)).map(_.changeExtension("flags")).find(_.exists)
-    if (badflags.isDefined) genFail(s"unexpected flags file ${badflags.get} (use source comment // scalac: -Werror)")
-    else
-      newCompiler.compile(flagsForCompilation(sources), sources).tap { state =>
-        if (!state.isOk) _transcript.append("\n" + logFile.fileContents)
-      }
-  }
+  def attemptCompile(sources: List[File], extraFlags: List[String] = Nil): TestState =
+    newCompiler.compile(flagsForCompilation(sources) ::: extraFlags, sources).tap { state =>
+      if (!state.isOk) appendTranscript(EOL + logFile.fileContents)
+    }
 
   // all sources in a round may contribute flags via // scalac: -flags
   // under --realeasy, if a javaVersion isn't specified, require the minimum viable using -release 8
@@ -455,42 +455,64 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   // for each file, cache the args for each tool
   private val fileToolArgs = new mutable.HashMap[Path, Map[ToolName, List[String]]]
+  private val optionsPattern = raw"\s*//>\s*using\s+(?:([^.]+)\.)?option(s)?\s+(.*)".r
 
   // Inspect given files for tool args in header line comments of the form `// tool: args`.
-  // If the line comment starts `//>`, accept `scalac:` options in the form of using pragmas.
+  // If the line comment starts `//>`, accept `using option` or `using options` pragmas
+  // to define options to`scalac`. Or take `using test.options`, where test scope is used for test options.
+  // (`test` scope is not used that way by scala-cli, where framework args are passed on command line.)
+  // (One could imagine `using test.testOpt` for framework args.)
   // If `filter:`, return entire line as if quoted, else parse the args string as command line.
-  // Currently, we look for scalac, javac, java, javaVersion, filter, hide.
+  // Currently, we look for scalac, javac, java, javaVersion, filter, hide, test.
   //
   def toolArgsFor(files: List[File])(tool: ToolName): List[String] = {
     def argsFor(f: File): List[String] = fileToolArgs.getOrElseUpdate(f.toPath, readToolArgs(f)).apply(tool)
     def readToolArgs(f: File): Map[ToolName, List[String]] = {
       val header = readHeaderFrom(f)
+      val options = optionsFromHeader(header)
+      if (options.isEmpty) oldStyle(header)
+      else options
+    }
+    def optionsFromHeader(header: List[String]) = {
+      import scala.sys.process.Parser.tokenize
+      def matchLine(line: String): List[(ToolName, List[String])] = line match {
+        case optionsPattern(scope, plural, rest) =>
+          val named = Try {
+            if (scope == null) ToolName.scalac
+            else ToolName.named(scope)
+          }.toOption
+          named match {
+            case None =>
+              suiteRunner.verbose(s"ignoring pragma with unknown scope '$scope': $line")
+              Nil
+            case Some(name) =>
+              val settings =
+                if (plural == null) List(rest.trim)
+                else tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
+              if (settings.isEmpty) Nil
+              else (name, settings) :: Nil
+          }
+        case _ => Nil
+      }
+      header.flatMap(matchLine).toMap.withDefaultValue(List.empty[String])
+    }
+    def oldStyle(header: List[String]) =
       ToolName.values.toList
         .map(name => name -> fromHeader(name, header))
         .filterNot(_._2.isEmpty)
         .toMap[ToolName, List[String]]
         .withDefaultValue(List.empty[String])
-    }
-    def fromHeader(name: ToolName, header: List[String]) = {
+    def fromHeader(name: ToolName, header: List[String]): List[String] = {
       import scala.sys.process.Parser.tokenize
       val namePattern = raw"\s*//\s*$name:\s*(.*)".r
-      val optionsPattern = raw"\s*//>\s*using\s+option(s)?\s+(.*)".r
-      def matchLine(line: String): List[String] =
-        line match {
-          case namePattern(rest) => if (name == ToolName.filter) List(rest.trim) else tokenize(rest)
-          case _ if name == ToolName.scalac =>
-            line match {
-              case optionsPattern(plural, rest) =>
-                if (plural == null) List(rest.trim)
-                else tokenize(rest).filter(_ != ",").map(_.stripSuffix(","))
-              case _ => Nil
-            }
-          case _ => Nil
-        }
+      def matchLine(line: String): List[String] = line match {
+        case namePattern(rest) => if (name == ToolName.filter) List(rest.trim) else tokenize(rest)
+        case _ => Nil
+      }
       header.flatMap(matchLine)
     }
     def readHeaderFrom(f: File): List[String] =
-      Using.resource(Files.lines(f.toPath, codec.charSet))(stream => stream.limit(10).toArray()).toList.map(_.toString)
+      Using.resource(Files.lines(f.toPath, codec.charSet))(_.limit(10).toArray()).toList.map(_.toString)
     files.flatMap(argsFor)
   }
 
@@ -559,14 +581,24 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     else runTestCommon()()
 
   def runNegTest(): TestState = {
-    // pass if it checks and didn't crash the compiler
-    // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
+    // a "crash test" passes if the error is not FatalError and there is a check file to compare.
+    // a neg test passes if the log compares same to check file.
+    // under "//> using retest.option -some-flags", also check pos compilation after adding the extra flags.
     def checked(r: TestState) = r match {
       case s: Skip => s
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
-      case _ => diffIsOk
+      case _ =>
+        val negRes = diffIsOk
+        toolArgs(ToolName.retest) match {
+          case extraFlags if extraFlags.nonEmpty && !negRes.isSkipped && negRes.isOk =>
+            // transcript visible under partest --verbose or after failure
+            val debug = s"recompile $testIdent with extra flags ${extraFlags.mkString(" ")}"
+            suiteRunner.verbose(s"% $debug")
+            pushTranscript(debug)
+            attemptCompile(sources(testFile), extraFlags = extraFlags)
+          case _ => negRes
+        }
     }
-
     runTestCommon(checked, expectCompile = false)(identity)
   }
 
@@ -714,8 +746,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     def pass(s: String) = bold(green("% ")) + s
     def fail(s: String) = bold(red("% ")) + s
     _transcript.toList match {
-      case Nil  => Nil
-      case xs   => (xs.init map pass) :+ fail(xs.last)
+      case init :+ last => init.map(pass) :+ fail(last)
+      case _            => Nil
     }
   }
 }
@@ -786,15 +818,17 @@ final class TestTranscript {
   def toList = buf.toList
 }
 
-// Tool names in test file header: scalac, javac, java, javaVersion, filter, hide.
+// Tool names in test file header: scalac, javac, java, javaVersion, filter, hide, test.
 sealed trait ToolName
 object ToolName {
   case object scalac extends ToolName
   case object javac extends ToolName
   case object java extends ToolName
   case object javaVersion extends ToolName
+  case object test extends ToolName
+  case object retest extends ToolName
   case object filter extends ToolName
   case object hide extends ToolName
-  val values = Array(scalac, javac, java, javaVersion, filter, hide)
+  val values = Array(scalac, javac, java, javaVersion, test, retest, filter, hide)
   def named(s: String): ToolName = values.find(_.toString.equalsIgnoreCase(s)).getOrElse(throw new IllegalArgumentException(s))
 }

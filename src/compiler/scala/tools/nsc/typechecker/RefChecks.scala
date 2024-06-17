@@ -902,7 +902,7 @@ abstract class RefChecks extends Transform {
           }
         }
         if (warnCloneable && baseClass.eq(JavaCloneableClass))
-          reporter.warning(clazz.pos, s"$clazz should not extend Cloneable.")
+          refchecksWarning(clazz.pos, s"$clazz should not extend Cloneable.", WarningCategory.LintCloneable)
         val remaining = tp.parents.filterNot(seenParents)
         seenParents ++= remaining
         remaining.foreach(register)
