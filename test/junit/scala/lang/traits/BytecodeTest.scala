@@ -278,6 +278,22 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   @Test
+  def sd143a(): Unit = {
+    val code =
+      """trait A { def m = 1 }
+        |class B extends A { override def m = 2 }
+        |trait T extends A
+        |class C extends B with T {
+        |  override def m = super[T].m
+        |}
+      """.stripMargin
+
+    val List(a, b, c, t) = compileClasses(code)
+    val ins = getInstructions(c, "m")
+    assert(ins contains Invoke(INVOKESTATIC, "A", "m$", "(LA;)I", itf = true), ins.stringLines)
+  }
+
+  @Test
   def sd143b(): Unit = {
     val jCode = List("interface A { default int m() { return 1; } }" -> "A.java")
     val code =

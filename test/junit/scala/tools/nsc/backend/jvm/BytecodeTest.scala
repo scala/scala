@@ -1045,4 +1045,36 @@ class BytecodeTest extends BytecodeTesting {
     assertSame(1, sm3.instructions.count(_.opcode == TABLESWITCH))
     assertSame(1, sm3.instructions.count(_.opcode == LOOKUPSWITCH))
   }
+
+  @Test def t13007(): Unit = {
+    val jc =
+      """package j;
+        |public class J {
+        |  protected boolean i() { return false; }
+        |  public boolean k() { return false; }
+        |}
+        |""".stripMargin
+
+    val code =
+      """package s
+        |trait T { self: j.J =>
+        |  override def i(): Boolean = true
+        |  def t1 = i()
+        |  def t2 = this.i()
+        |  def t3 = self.i()
+        |
+        |  def t4 = k()
+        |  def t5 = this.k()
+        |  def t6 = self.k()
+        |}
+        |""".stripMargin
+
+    val List(t) = compileClasses(code, List((jc, "J.java")))
+    assertInvoke(getMethod(t, "t1"), "s/T", "i")
+    assertInvoke(getMethod(t, "t2"), "s/T", "i")
+    assertInvoke(getMethod(t, "t3"), "s/T", "i")
+    assertInvoke(getMethod(t, "t4"), "j/J", "k")
+    assertInvoke(getMethod(t, "t5"), "j/J", "k")
+    assertInvoke(getMethod(t, "t6"), "j/J", "k")
+  }
 }
