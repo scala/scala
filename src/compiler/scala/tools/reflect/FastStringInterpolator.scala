@@ -13,7 +13,7 @@
 package scala.tools
 package reflect
 
-import nsc.Reporting.WarningCategory.Scala3Migration
+import nsc.Reporting.WarningCategory.{Scala3Migration, WFlagTostringInterpolated}
 
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
@@ -101,11 +101,15 @@ trait FastStringInterpolator extends FormatInterpolator {
       val treatedContents = lit.asInstanceOf[Literal].value.stringValue
       val emptyLit = treatedContents.isEmpty
       if (i < numLits - 1) {
-        concatArgs += argsIndexed(i)
-        if (!emptyLit) concatArgs += lit
-      } else if (!emptyLit) {
-        concatArgs += lit
+        val arg = argsIndexed(i)
+        if (linting && !(arg.tpe =:= definitions.StringTpe))
+          if (arg.tpe.typeSymbol eq definitions.UnitClass)
+            runReporting.warning(arg.pos, "interpolated Unit value", WFlagTostringInterpolated, c.internal.enclosingOwner)
+          else if (!definitions.isPrimitiveValueType(arg.tpe))
+            runReporting.warning(arg.pos, "interpolation uses toString", WFlagTostringInterpolated, c.internal.enclosingOwner)
+        concatArgs += arg
       }
+      if (!emptyLit) concatArgs += lit
     }
     def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
       atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
