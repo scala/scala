@@ -42,7 +42,7 @@ val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-par
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"           % "4.12"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface" % "0.11"                            % Test
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"      % "1.17.0"                          % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"      % "1.18.0"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"        % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"           % versionProps("jline.version")
