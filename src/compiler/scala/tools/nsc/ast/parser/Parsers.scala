@@ -1624,8 +1624,8 @@ self =>
         accept(RPAREN)
         if (isWildcard(r))
           placeholderParams.head.tpt match {
-            case tpt @ TypeTree() => tpt.setType(definitions.BooleanTpe)
-            case _                =>
+            case TypeTree() => placeholderParams.head.updateAttachment(BooleanParameterType)
+            case _          =>
           }
         r
       } else {

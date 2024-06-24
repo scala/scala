@@ -181,4 +181,6 @@ trait StdAttachments {
   case object DiscardedValue extends PlainAttachment
   /** Discarded pure expression observed at refchecks. */
   case object DiscardedExpr extends PlainAttachment
+  /** Anonymous parameter of `if (_)` may be inferred as Boolean. */
+  case object BooleanParameterType extends PlainAttachment
 }
