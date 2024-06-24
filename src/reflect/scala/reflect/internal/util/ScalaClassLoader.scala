@@ -51,17 +51,28 @@ final class RichClassLoader(private val self: JClassLoader) extends AnyVal {
     tryToInitializeClass[AnyRef](path).map(_.getConstructor().newInstance()).orNull
 
   /** Create an instance with ctor args, or invoke errorFn before throwing. */
-  def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T = {
+  def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: Any*): T = {
     def fail(msg: String) = error(msg, new IllegalArgumentException(msg))
-    def error(msg: String, e: Throwable) = { errorFn(msg) ; throw e }
+    def error(msg: String, e: Throwable) = { errorFn(msg); throw e }
     try {
       val clazz = Class.forName(path, /*initialize =*/ true, /*loader =*/ self)
-      if (classTag[T].runtimeClass isAssignableFrom clazz) {
+      if (classTag[T].runtimeClass.isAssignableFrom(clazz)) {
         val ctor = {
-          val maybes = clazz.getConstructors filter (c => c.getParameterCount == args.size &&
-            (c.getParameterTypes zip args).forall { case (k, a) => k isAssignableFrom a.getClass })
+          val bySize = clazz.getConstructors.filter(_.getParameterCount == args.size)
+          if (bySize.isEmpty) fail(s"No constructor takes ${args.size} parameters.")
+          def isAssignable(k: Class[?], a: Any): Boolean =
+            if (k == classOf[Int]) a.isInstanceOf[Integer]
+            else if (k == classOf[Boolean]) a.isInstanceOf[java.lang.Boolean]
+            else if (k == classOf[Long]) a.isInstanceOf[java.lang.Long]
+            else k.isAssignableFrom(a.getClass)
+          val maybes = bySize.filter(c => c.getParameterTypes.zip(args).forall { case (k, a) => isAssignable(k, a) })
           if (maybes.size == 1) maybes.head
-          else fail(s"Constructor must accept arg list (${args map (_.getClass.getName) mkString ", "}): ${path}")
+          else if (bySize.size == 1)
+            fail(s"One constructor takes ${args.size} parameters but ${
+              bySize.head.getParameterTypes.zip(args).collect { case (k, a) if !isAssignable(k, a) => s"$k != ${a.getClass}" }.mkString("; ")
+            }.")
+          else
+            fail(s"Constructor must accept arg list (${args.map(_.getClass.getName).mkString(", ")}): ${path}")
         }
         (ctor.newInstance(args: _*)).asInstanceOf[T]
       } else {
