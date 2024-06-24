@@ -116,7 +116,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
   private final val InterpolatorCodeRegex  = """\$\{\s*(.*?)\s*\}""".r
-  private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
+  private final val InterpolatorIdentRegex = """\$[\w]+""".r // note that \w doesn't include $
 
   /** Check that type of given tree does not contain local or private
    *  components.
@@ -6100,8 +6100,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // short-circuit on leading ${}
             if (!exprs.head.isEmpty && exprs.exists(warnableExpr))
               warn("detected an interpolated expression") // "${...}"
-          } else
-            suspiciousIdents.find(id => isPlausible(id.substring(1))).foreach(id => warn(s"detected interpolated identifier `$id`"))
+          } else suspiciousIdents.toList match {
+            case Nil =>
+            case id :: Nil => if (isPlausible(id.substring(1))) warn(s"detected interpolated identifier `$id`")
+            case all => if (all.forall(id => isPlausible(id.substring(1)))) warn(all.mkString("detected interpolated identifiers `", "`, `", "`"))
+          }
         }
         lit match {
           case Literal(Constant(s: String)) if mightBeMissingInterpolation => maybeWarn(s)

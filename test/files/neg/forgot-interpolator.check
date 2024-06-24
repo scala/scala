@@ -1,4 +1,4 @@
-forgot-interpolator.scala:6: warning: possible missing interpolator: detected interpolated identifier `$bippy`
+forgot-interpolator.scala:6: warning: possible missing interpolator: detected interpolated identifiers `$bippy`, `$bippy`
   def f = "Put the $bippy in the $bippy!" // warn 1
           ^
 forgot-interpolator.scala:16: warning: possible missing interpolator: detected an interpolated expression
@@ -25,6 +25,48 @@ forgot-interpolator.scala:92: warning: possible missing interpolator: detected i
 forgot-interpolator.scala:126: warning: possible missing interpolator: detected an interpolated expression
   @deprecated("${myProperty}")
               ^
+forgot-interpolator.scala:144: warning: possible missing interpolator: detected interpolated identifier `$foo`
+    "An important $foo message!"                              // warn on ident in scope
+    ^
+forgot-interpolator.scala:148: warning: possible missing interpolator: detected an interpolated expression
+    "A doubly important ${foo * 2} message!"                  // warn on some expr, see below
+    ^
+forgot-interpolator.scala:151: warning: possible missing interpolator: detected interpolated identifier `$bar`
+  def i = s"Try using '${ "$bar" }' instead."                 // was: no warn on space test
+                          ^
+forgot-interpolator.scala:152: warning: possible missing interpolator: detected interpolated identifier `$bar`
+  def j = s"Try using '${ "something like $bar" }' instead."  // warn
+                          ^
+forgot-interpolator.scala:158: warning: possible missing interpolator: detected an interpolated expression
+  def v = "${baz}${bar}"                                      // warn on second expr
+          ^
+forgot-interpolator.scala:159: warning: possible missing interpolator: detected an interpolated expression
+  def w = "${ op_* }"                                         // warn, only cheap ident parsing
+          ^
+forgot-interpolator.scala:160: warning: possible missing interpolator: detected an interpolated expression
+  def x = "${ bar }"                                          // warn, a cheap ident in scope
+          ^
+forgot-interpolator.scala:162: warning: possible missing interpolator: detected an interpolated expression
+  def z = "${ baz * 3}"                                       // warn, no expr parsing
+          ^
+forgot-interpolator.scala:164: warning: possible missing interpolator: detected interpolated identifier `$this`
+  def thisly = "$this"
+               ^
+forgot-interpolator.scala:165: warning: possible missing interpolator: detected an interpolated expression
+  def exprly = "${this}"
+               ^
+forgot-interpolator.scala:170: warning: possible missing interpolator: detected interpolated identifier `$s`
+  val t = "$s"
+          ^
+forgot-interpolator.scala:171: warning: possible missing interpolator: detected an interpolated expression
+  val u = "a${s}b"
+          ^
+forgot-interpolator.scala:172: warning: possible missing interpolator: detected interpolated identifier `$s`
+  val v = "a$s b"
+          ^
+forgot-interpolator.scala:177: warning: possible missing interpolator: detected interpolated identifiers `$foo`, `$bar`
+  def s = "$foo$bar"
+          ^
 error: No warnings can be incurred under -Werror.
-9 warnings
+23 warnings
 1 error

@@ -1567,7 +1567,7 @@ trait Scanners extends ScannersCommon {
     case COMMA => "','"
     case CASECLASS => "case class"
     case CASEOBJECT => "case object"
-    case XMLSTART => "$XMLSTART$<"
+    case XMLSTART => s"$$XMLSTART$$<"
     case _ =>
       (token2name get token) match {
         case Some(name) => "'" + name + "'"
