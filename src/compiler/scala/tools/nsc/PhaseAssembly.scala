@@ -35,7 +35,7 @@ trait PhaseAssembly {
     val graph = DependencyGraph(phasesSet)
     for (n <- settings.genPhaseGraph.valueSetByUser; d <- settings.outputDirs.getSingleOutput if !d.isVirtual)
       DependencyGraph.graphToDotFile(graph, Path(d.file) / File(s"$n.dot"))
-    graph.compilerPhaseList()
+    graph.compilerPhaseList().tap(_ => graph.warnings.foreach(msg => reporter.warning(NoPosition, msg)))
   }
 }
 
@@ -47,6 +47,10 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
   import DependencyGraph.{FollowsNow, Weight}
 
   //private final val debugging = false
+
+  private var messages: List[String] = Nil
+  def warning(message: String): Unit = messages ::= message
+  def warnings: List[String] = messages.reverse.tap(_ => messages = Nil)
 
   /** For ith vertex, its outgoing edges. */
   private val adjacency: Array[List[Edge]] = Array.fill(order)(Nil)
@@ -231,20 +235,21 @@ object DependencyGraph {
       .getOrElse(throw new AssertionError("Missing terminal component"))
     new DependencyGraph(phases.size, start.phaseName, phases.map(p => p.phaseName -> p).toMap).tap { graph =>
       for (p <- phases) {
-        val name = p.phaseName
-        require(!name.isEmpty, "Phase name must be non-empty.")
-        for (after <- p.runsRightAfter if !after.isEmpty)
-          graph.addEdge(after, name, FollowsNow)
-        for (after <- p.runsAfter.filterNot(p.runsRightAfter.contains) if !after.isEmpty)
-          graph.addEdge(after, name, Follows)
-        for (before <- p.runsBefore if !before.isEmpty)
-          graph.addEdge(name, before, Follows)
+        require(p.phaseName.nonEmpty, "Phase name must be non-empty.")
+        def checkConstraint(name: String, constraint: String): Boolean =
+          phases.exists(_.phaseName == name).tap(ok => if (!ok) graph.warning(s"No phase `$name` for ${p.phaseName}.$constraint"))
+        for (after <- p.runsRightAfter if after.nonEmpty && checkConstraint(after, "runsRightAfter"))
+          graph.addEdge(after, p.phaseName, FollowsNow)
+        for (after <- p.runsAfter if after.nonEmpty && !p.runsRightAfter.contains(after) && checkConstraint(after, "runsAfter"))
+          graph.addEdge(after, p.phaseName, Follows)
+        for (before <- p.runsBefore if before.nonEmpty && checkConstraint(before, "runsBefore"))
+          graph.addEdge(p.phaseName, before, Follows)
         if (p != start && p != end)
           if (p.runsRightAfter.find(!_.isEmpty).isEmpty && p.runsAfter.find(!_.isEmpty).isEmpty)
-            graph.addEdge(start.phaseName, name, Follows)
+            graph.addEdge(start.phaseName, p.phaseName, Follows)
         if (p != end || p == end && p == start)
           if (!p.runsBefore.contains(end.phaseName))
-            graph.addEdge(name, end.phaseName, Follows)
+            graph.addEdge(p.phaseName, end.phaseName, Follows)
       }
     }
   }
