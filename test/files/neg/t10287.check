@@ -1,0 +1,24 @@
+t10287.scala:5: warning: pattern var x in method unused_patvar is never used
+    Some(42) match { case x => 27 } // warn
+                          ^
+t10287.scala:12: warning: parameter x in anonymous function is never used
+      x <- Some(42) // warn
+      ^
+t10287.scala:16: warning: parameter x in anonymous function is never used
+      x <- Some(42) // warn
+      ^
+t10287.scala:22: warning: parameter y in anonymous function is never used
+      y <- Some(27) // warn
+      ^
+t10287.scala:27: warning: pattern var y in value $anonfun is never used
+      y = 3 // warn
+      ^
+t10287.scala:31: warning: parameter x in anonymous function is never used
+      x <- Some(42) // warn
+      ^
+t10287.scala:37: warning: pattern var y in value $anonfun is never used
+      y = 3 // warn
+      ^
+error: No warnings can be incurred under -Werror.
+7 warnings
+1 error

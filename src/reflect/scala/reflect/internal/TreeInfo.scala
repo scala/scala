@@ -53,7 +53,7 @@ abstract class TreeInfo {
     case EmptyTree                     => true
     case Import(_, _)                  => true
     case TypeDef(_, _, _, _)           => true
-    case DefDef(mods, _, _, _, _, __)  => mods.isDeferred
+    case DefDef(mods, _, _, _, _, _)   => mods.isDeferred
     case ValDef(mods, _, _, _)         => mods.isDeferred
     case _ => false
   }
@@ -360,7 +360,7 @@ abstract class TreeInfo {
       tree.tpe match {
         case ThisType(sym) =>
           sym == receiver.symbol
-        case SingleType(p, sym) =>
+        case SingleType(_, sym) =>
           sym == receiver.symbol || argss.exists(_.exists(sym == _.symbol))
         case _ =>
           def checkSingle(sym: Symbol): Boolean =
@@ -524,7 +524,7 @@ abstract class TreeInfo {
         case _ => false
       }
       case md: MemberDef => !md.mods.isSynthetic
-      case tree => true
+      case _ => true
     }
 
     def lazyValDefRhs(body: Tree) =
@@ -545,7 +545,7 @@ abstract class TreeInfo {
             copyValDef(vd)(mods = vdMods, name = dname, rhs = vdRhs)
         }.getOrElse(vd)
       // for abstract and some lazy val/vars
-      case dd @ DefDef(mods, name, _, _, tpt, rhs) if mods.hasAccessorFlag =>
+      case DefDef(mods, name, _, _, tpt, rhs) if mods.hasAccessorFlag =>
         // transform getter mods to field
         val vdMods = (if (!mods.hasStableFlag) mods | Flags.MUTABLE else mods &~ Flags.STABLE) &~ Flags.ACCESSOR
         ValDef(vdMods, name, tpt, rhs)
@@ -688,7 +688,7 @@ abstract class TreeInfo {
   def catchesThrowable(cdef: CaseDef) = (
     cdef.guard.isEmpty && (unbind(cdef.pat) match {
       case Ident(nme.WILDCARD) => true
-      case i@Ident(name)       => hasNoSymbol(i)
+      case i@Ident(_)          => hasNoSymbol(i)
       case _                   => false
     })
   )
@@ -1040,7 +1040,7 @@ abstract class TreeInfo {
   final def isNullaryInvocation(tree: Tree): Boolean =
     tree.symbol != null && tree.symbol.isMethod && (tree match {
       case TypeApply(fun, _) => isNullaryInvocation(fun)
-      case tree: RefTree => true
+      case _: RefTree => true
       case _ => false
     })
 
@@ -1106,7 +1106,7 @@ trait MacroAnnotionTreeInfo { self: TreeInfo =>
           } yield AnnotationZipper(ann, vparam1, PatchedSyntacticClassDef(mods, name, tparams, constrMods, vparamss1, earlyDefs, parents, selfdef, body))
           czippers ++ tzippers ++ vzippers
         }
-      case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
+      case SyntacticTraitDef(mods, name@_, tparams, earlyDefs@_, parents@_, selfdef@_, body@_) =>
         val tdef = tree.asInstanceOf[ClassDef]
         val czippers = mods.annotations.map(ann => {
           val annottee = tdef.copy(mods = mods.mapAnnotations(_ diff List(ann)))

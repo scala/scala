@@ -1548,10 +1548,9 @@ trait Infer extends Checkable {
       def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
       // Alternatives which conform to bounds
       def checkWithinBounds(sym: Symbol): Unit = sym.alternatives match {
-        case Nil if argtypes.exists(_.isErroneous) =>
-        case Nil                                   => fail()
-        case alt :: Nil                            => finish(alt, pre memberType alt)
-        case alts @ (hd :: _)                      =>
+        case Nil            => if (!argtypes.exists(_.isErroneous)) fail()
+        case alt :: Nil     => finish(alt, pre memberType alt)
+        case alts @ hd :: _ =>
           log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
           // Multiple alternatives which are within bounds; spin up an
           // overloaded type which carries an "AntiPolyType" as a prefix.
@@ -1561,7 +1560,7 @@ trait Infer extends Checkable {
           finish(sym setInfo tpe, tpe)
       }
       matchingLength.alternatives match {
-        case Nil => fail()
+        case Nil        => fail()
         case alt :: Nil => finish(alt, pre memberType alt)
         case _ =>
           checkWithinBounds(matchingLength.filter { alt =>

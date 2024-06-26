@@ -5916,8 +5916,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           tree
         }
 
-
-        val Try(block, catches, fin) = tree
+        val Try(block, catches, finalizer) = tree
         val block1   = typed(block, pt)
         val cases    = catches match {
           case CaseDef(EmptyTree, EmptyTree, catchExpr) :: Nil =>
@@ -5932,7 +5931,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _ => catches
         }
         val catches1 = typedCases(cases, ThrowableTpe, pt)
-        val fin1     = if (fin.isEmpty) fin else typed(fin, UnitTpe)
+        val fin1     = if (finalizer.isEmpty) finalizer else typed(finalizer, UnitTpe)
 
         def finish(ownType: Type) = treeCopy.Try(tree, block1, catches1, fin1) setType ownType
 

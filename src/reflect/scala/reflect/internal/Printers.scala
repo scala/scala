@@ -232,7 +232,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printValDef(tree: ValDef, resultName: => String)(printTypeSignature: => Unit)(printRhs: => Unit) = {
-      val ValDef(mods, name, tp, rhs) = tree
+      val ValDef(mods, _, _, _) = tree
       printAnnotations(tree)
       printModifiers(tree, mods)
       print(if (mods.isMutable) "var " else "val ", resultName)
@@ -241,7 +241,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printDefDef(tree: DefDef, resultName: => String)(printTypeSignature: => Unit)(printRhs: => Unit) = {
-      val DefDef(mods, name, tparams, vparamss, tp, rhs) = tree
+      val DefDef(mods, _, tparams, vparamss, _, _) = tree
       printAnnotations(tree)
       printModifiers(tree, mods)
       print("def " + resultName)
@@ -252,7 +252,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printTypeDef(tree: TypeDef, resultName: => String) = {
-      val TypeDef(mods, name, tparams, rhs) = tree
+      val TypeDef(mods, _, tparams, rhs) = tree
       if (mods hasFlag (PARAM | DEFERRED)) {
         printAnnotations(tree)
         printModifiers(tree, mods)
@@ -268,7 +268,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printImport(tree: Import, resSelect: => String) = {
-      val Import(expr, selectors) = tree
+      val Import(_, selectors) = tree
 
       def selectorToString(s: ImportSelector): String = {
         def selectorName(n: Name): String = if (s.isWildcard) nme.WILDCARD.decoded else quotedName(n)
@@ -297,7 +297,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printFunction(tree: Function)(printValueParams: => Unit) = {
-      val Function(vparams, body) = tree
+      val Function(_, body) = tree
       print("(")
       printValueParams
       print(" => ", body, ")")
@@ -824,7 +824,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case md @ ModuleDef(mods, name, impl) =>
           printAnnotations(md)
           printModifiers(tree, mods)
-          val Template(parents, self, methods) = impl
+          val Template(parents, _, _) = impl
           val parWithoutAnyRef = removeDefaultClassesFromList(parents)
           print("object " + printedName(name), if (parWithoutAnyRef.nonEmpty) " extends " else "", impl)
 
@@ -849,12 +849,12 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
         case LabelDef(name, params, rhs) =>
           if (name.startsWith(nme.WHILE_PREFIX)) {
-            val If(cond, thenp, elsep) = rhs: @unchecked
+            val If(cond, thenp, _) = rhs: @unchecked
             print("while (", cond, ") ")
             val Block(list, wh) = thenp: @unchecked
             printColumn(list, "", ";", "")
           } else if (name.startsWith(nme.DO_WHILE_PREFIX)) {
-            val Block(bodyList, ifCond @ If(cond, thenp, elsep)) = rhs: @unchecked
+            val Block(bodyList, If(cond, _, _)) = rhs: @unchecked
             print("do ")
             printColumn(bodyList, "", ";", "")
             print(" while (", cond, ") ")

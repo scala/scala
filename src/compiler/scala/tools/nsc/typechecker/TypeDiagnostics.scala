@@ -13,14 +13,13 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.annotation.{nowarn, tailrec}
+import scala.collection.mutable, mutable.ListBuffer
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction.{cond, condOpt}
-import scala.annotation.{nowarn, tailrec}
-import scala.tools.nsc.Reporting.WarningCategory
 
 /** An interface to enable higher configurability of diagnostic messages
  *  regarding type errors.  This is barely a beginning as error messages are
@@ -88,7 +87,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
   }
 
   // Bind of pattern var was `x @ _`
-  private def atBounded(t: Tree) = t.hasAttachment[NoWarnAttachment.type]
+  private def nowarn(t: Tree) = t.hasAttachment[NoWarnAttachment.type]
 
   // ValDef was a PatVarDef `val P(x) = ???`
   private def wasPatVarDef(t: Tree) = t.hasAttachment[PatVarDefAttachment.type]
@@ -511,8 +510,15 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val treeTypes = mutable.Set.empty[Type]
     val params    = mutable.Set.empty[Symbol]
     val patvars   = mutable.Set.empty[Symbol]
+    val aliases   = mutable.Map.empty[Symbol, Symbol]
 
-    def varsWithoutSetters = defnTrees.iterator.map(_.symbol).filter(t => t.isVar && !isExisting(t.setter))
+    def aliasOf(sym: Symbol): Symbol = aliases.getOrElse(sym, sym)
+    def followVarAlias(tree: Tree): Symbol =
+      tree.attachments.get[VarAlias] match {
+        case Some(VarAlias(original)) => followVarAlias(original)
+        case _ => tree.symbol
+      }
+    def recordReference(sym: Symbol): Unit = targets.addOne(aliasOf(sym))
 
     def qualifiesTerm(sym: Symbol) = (
       (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || isEffectivelyPrivate(sym))
@@ -539,11 +545,20 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     override def traverse(t: Tree): Unit = {
       val sym = t.symbol
       t match {
+        case treeInfo.Applied(fun, _, _) if t.hasAttachment[ForAttachment.type] && fun.symbol != null && isTupleSymbol(fun.symbol.owner.companion) =>
+          return // ignore tupling of assignments
         case m: MemberDef if qualifies(sym) && !t.isErrorTyped =>
           t match {
-            case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
-              if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
-            case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
+            case t: ValDef =>
+              if (wasPatVarDef(t)) {
+                if (settings.warnUnusedPatVars && !nowarn(t))
+                  if (t.hasAttachment[VarAlias])
+                    aliases += sym -> followVarAlias(t)
+                  else
+                    patvars += sym
+              }
+              else defnTrees += m
+            case DefDef(_, _, _, vparamss, _, rhs) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
               if (isSuppressed(sym)) return
               if (sym.isPrimaryConstructor)
                 for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
@@ -551,21 +566,39 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
               else if (!sym.isConstructor && !sym.isVar && !isTrivial(rhs))
                 for (vs <- vparamss; v <- vs) if (!isSingleType(v.symbol.tpe)) params += v.symbol
               defnTrees += m
-            case TypeDef(mods@_, name@_, tparams@_, rhs@_) =>
+            case TypeDef(_, _, _, _) =>
               if (!sym.isAbstract && !sym.isDeprecated)
                 defnTrees += m
             case _ =>
               defnTrees += m
           }
-        case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars && !t.isErrorTyped =>
-          pat.foreach {
-            case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
+        case CaseDef(pat, _, _) if settings.warnUnusedPatVars && !t.isErrorTyped =>
+          pat match {
+            case Apply(_, args) =>
+              treeInfo.dissectApplied(pat).core.tpe match {
+                case MethodType(ps, _) =>
+                  foreach2(ps, args) { (p, x) =>
+                    x match {
+                      case Bind(n, _) if p.name == n => x.updateAttachment(NoWarnAttachment)
+                      case _ =>
+                    }
+                  }
+                case _ =>
+              }
             case _ =>
           }
-        case _: RefTree => if (isExisting(sym) && !currentOwner.hasTransOwner(sym)) targets += sym
+          pat.foreach {
+            case b @ Bind(n, _) if !nowarn(b) && n != nme.DEFAULT_CASE =>
+              if (b.hasAttachment[VarAlias])
+                aliases += b.symbol -> followVarAlias(b)
+              else
+                patvars += b.symbol
+            case _ =>
+          }
+        case _: RefTree => if (isExisting(sym) && !currentOwner.hasTransOwner(sym)) recordReference(sym)
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
-        case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
-          ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+        case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped =>
+          params ++= ps.filterNot(p => nowarn(p) || p.symbol.isSynthetic).map(_.symbol)
         case Literal(_) =>
           t.attachments.get[OriginalTreeAttachment].foreach(ota => traverse(ota.original))
         case tt: TypeTree =>
@@ -600,7 +633,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         }
         // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
         t.tpe.prefix foreach {
-          case SingleType(_, sym) => targets += sym
+          case SingleType(_, sym) => recordReference(sym)
           case _                  => ()
         }
       }
@@ -643,33 +676,26 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
         ))
       )
-    def sympos(s: Symbol): Int =
-      if (s.pos.isDefined) s.pos.point
-      else if (s.isTerm && s.asTerm.referenced.pos.isDefined) s.asTerm.referenced.pos.point
-      else -1
-    def treepos(t: Tree): Int =
-      if (t.pos.isDefined) t.pos.point
-      else if (t.symbol != null) sympos(t.symbol)
-      else -1
-
-    def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
+    def unusedTypes = defnTrees.iterator.filter(t => isUnusedType(t.symbol))
     def unusedTerms = {
-      val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
-
       // is this a getter-setter pair? and why is this a difficult question for traits?
       def sameReference(g: Symbol, s: Symbol) =
         if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
-        else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
+        else g.owner == s.owner && g.setterName == s.name
 
+      val all = defnTrees.iterator.filter(v => isUnusedTerm(v.symbol)).toSet
       // filter out setters if already warning for getter.
       val clean = all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && sameReference(g.symbol, v.symbol)))
-      clean.sortBy(treepos)
+      clean.iterator
     }
     // local vars which are never set, except those already returned in unused
-    def unsetVars = varsWithoutSetters.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).toList.sortBy(sympos)
-    def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
+    def unsetVars = {
+      def varsWithoutSetters = defnTrees.iterator.map(_.symbol).filter(t => t.isVar && !isExisting(t.setter))
+      varsWithoutSetters.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v))
+    }
+    def unusedParams = params.iterator.filter(isUnusedParam)
     def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
-    def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
+    def unusedPatVars = patvars.iterator.filter(p => isUnusedTerm(p) && !inDefinedAt(p))
   }
 
   class checkUnused(typer: Typer) {
@@ -695,11 +721,11 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       object refCollector extends Traverser {
         override def traverse(tree: Tree): Unit = {
           tree match {
-            case _: RefTree if isExisting(tree.symbol) => targets += tree.symbol
+            case _: RefTree if isExisting(tree.symbol) => recordReference(tree.symbol)
             case _ =>
           }
           if (tree.tpe != null) tree.tpe.prefix.foreach {
-            case SingleType(_, sym) => targets += sym
+            case SingleType(_, sym) => recordReference(sym)
             case _ =>
           }
           super.traverse(tree)
@@ -723,7 +749,17 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
 
     // `checkUnused` is invoked after type checking. we have to avoid using `typer.context.warning`, which uses
     // `context.owner` as the `site` of the warning, but that's the root symbol at this point.
-    def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit = runReporting.warning(pos, msg, category, site)
+    private val unusedWarnings = ListBuffer.empty[(Position, String, WarningCategory, Symbol)]
+    private def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      unusedWarnings.addOne((pos, msg, category, site))
+    private def reportAll(): Unit = {
+      implicit val ordering = new Ordering[Position] {
+        def posOf(p: Position): Int = if (p.isDefined) p.point else -1
+        override def compare(x: Position, y: Position): Int = posOf(x) - posOf(y)
+      }
+      unusedWarnings.toArray.sortBy(_._1).foreach { case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site) }
+      unusedWarnings.clear()
+    }
 
     def run(unusedPrivates: UnusedPrivates)(body: Tree): Unit = {
       unusedPrivates.traverse(body)
@@ -776,7 +812,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
       }
       if (settings.warnUnusedPatVars) {
         for (v <- unusedPrivates.unusedPatVars)
-          emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars, v)
+          emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used", WarningCategory.UnusedPatVars, v)
       }
       if (settings.warnUnusedParams) {
         // don't warn unused args of overriding methods (or methods matching in self-type)
@@ -830,6 +866,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
         case "after"  => run(skipMacroCall)(body)
         case "both"   => run(checkMacroExpandee)(body) ; run(skipMacroCall)(body)
       }
+      reportAll()
     }
   }
 

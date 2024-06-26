@@ -1729,12 +1729,13 @@ self =>
             if (in.token == LBRACE) inBracesOrNil(enumerators())
             else inParensOrNil(enumerators())
           newLinesOpt()
-          if (in.token == YIELD) {
-            in.nextToken()
-            gen.mkFor(enums, gen.Yield(expr()))
-          } else {
-            gen.mkFor(enums, expr())
-          }
+          val body =
+            if (in.token == YIELD) {
+              in.nextToken()
+              gen.Yield(expr())
+            } else
+              expr()
+          gen.mkFor(enums, body)
         }
         def adjustStart(tree: Tree) =
           if (tree.pos.isRange && start < tree.pos.start)

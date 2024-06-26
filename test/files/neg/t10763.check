@@ -1,4 +1,4 @@
-t10763.scala:6: warning: pattern var x in value $anonfun is never used: use a wildcard `_` or suppress this warning with `x@_`
+t10763.scala:6: warning: pattern var x in value $anonfun is never used
   for (x @ 1 <- List(1.0)) ()
        ^
 error: No warnings can be incurred under -Werror.
