@@ -29,9 +29,10 @@ trait PhaseAssembly {
    */
   def computePhaseAssembly(): List[SubComponent] = {
     require(phasesSet.exists(phase => phase.initial || phase.phaseName == DependencyGraph.Parser), "Missing initial phase")
-    if (!phasesSet.exists(phase => phase.terminal || phase.phaseName == DependencyGraph.Terminal))
-      if (phasesSet.add(terminal))
-        reporter.warning(NoPosition, "Added default terminal phase")
+    if (!phasesSet.exists(phase => phase.terminal || phase.phaseName == DependencyGraph.Terminal)) {
+      phasesSet.add(terminal)
+      reporter.warning(NoPosition, "Added default terminal phase")
+    }
     val graph = DependencyGraph(phasesSet)
     for (n <- settings.genPhaseGraph.valueSetByUser; d <- settings.outputDirs.getSingleOutput if !d.isVirtual)
       DependencyGraph.graphToDotFile(graph, Path(d.file) / File(s"$n.dot"))
@@ -60,8 +61,8 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
 
   // phase names and their vertex index
   private val nodeCount = new AtomicInteger
-  private val nodes = mutable.HashMap.empty[String, Int]
-  private val names = Array.ofDim[String](order)
+  private val nodes = mutable.HashMap.empty[String, Int] // name to index
+  private val names = Array.ofDim[String](order)         // index to name
 
   /** Add the edge between named phases, where `to` follows `from`.
    */
@@ -74,11 +75,11 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
     }
     val v = getNode(from)
     val w = getNode(to)
-    adjacency(v).find(e => e.from == v && e.to == w) match {
+    adjacency(v).find(_.to == w) match {
       case None =>
         adjacency(v) ::= Edge(from = v, to = w, weight)
-      case Some(e) if weight == FollowsNow => // retain runsRightAfter if there is a competing constraint
-        adjacency(v) = Edge(from = v, to = w, weight) :: adjacency(v).filterNot(e => e.from == v && e.to == w)
+      case Some(_) if weight == FollowsNow => // retain runsRightAfter if there is a competing constraint
+        adjacency(v) = Edge(from = v, to = w, weight) :: adjacency(v).filterNot(_.to == w)
       case _ =>
     }
   }
@@ -157,9 +158,11 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
         //if (debugging) println(s"deq ${names(v)}")
         for (e <- adjacency(v)) {
           val w = e.to
+          /* cannot happen as `runsRightAfter: Option[String]` is the only way to introduce a `FollowsNow`
           val e2 = edgeTo(w)
           if (e.weight == FollowsNow && e2 != null && e2.weight == FollowsNow && e.from != e2.from)
             throw new FatalError(s"${names(w)} cannot follow right after both ${names(e.from)} and ${names(e2.from)}")
+          */
           if (distance(w) < distance(v) + e.weight) {
             distance(w) = distance(v) + e.weight
             edgeTo(w) = e
@@ -172,36 +175,38 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
     }
     /** Put the vertices in a linear order.
      *
+     *  `Follows` edges increase the level, `FollowsNow` don't.
      *  Partition by "level" or distance from start.
-     *  Partition the level into "anchors" that follow a node in the previous level, and "followers".
-     *  Starting with the "ends", which are followers without a follower in the level,
-     *  construct paths back to the anchors. The anchors are sorted by name only.
+     *  Partition the level into "anchors" that follow a node in the previous level, and "followers" (nodes
+     *    with a `FollowsNow` edge).
+     *  Starting at the "ends", build the chains of `FollowsNow` nodes within the level. Each chain leads to an anchor.
+     *  The anchors are sorted by name, then the chains are flattened.
      */
     def traverse(): List[SubComponent] = {
       def componentOf(i: Int) = components(names(i))
       def sortComponents(c: SubComponent, d: SubComponent): Boolean =
+        // sort by name only, like the old implementation (pre scala/scala#10687)
         /*c.internal && !d.internal ||*/ c.phaseName.compareTo(d.phaseName) < 0
       def sortVertex(i: Int, j: Int): Boolean = sortComponents(componentOf(i), componentOf(j))
 
       distance.zipWithIndex.groupBy(_._1).toList.sortBy(_._1)
       .flatMap { case (d, dis) =>
         val vs = dis.map { case (_, i) => i }
-        val (anchors, followers) = vs.partition(v => edgeTo(v) == null || distance(edgeTo(v).from) != d)
+        val (anchors, followers) = vs.partition(v => edgeTo(v) == null || edgeTo(v).weight != FollowsNow)
         //if (debugging) println(s"d=$d, anchors=${anchors.toList.map(n => names(n))}, followers=${followers.toList.map(n => names(n))}")
         if (followers.isEmpty)
           anchors.toList.map(componentOf).sortWith(sortComponents)
         else {
-          // find phases which are not the source of an edgeTo, then construct paths at this level distance
           val froms = followers.map(v => edgeTo(v).from).toSet
           val ends = followers.iterator.filterNot(froms).toList
-          val followed: Array[ArrayDeque[Int]] = anchors.map(ArrayDeque(_))
+          val chains: Array[ArrayDeque[Int]] = anchors.map(ArrayDeque(_))
           def drill(v: Int, path: List[Int]): Unit =
             edgeTo(v) match {
-              case e if e != null && distance(e.from) == d => drill(e.from, v :: path)
-              case _ => followed.find(_.apply(0) == v).foreach(deque => path.foreach(deque.append))
+              case e if e != null && e.weight == FollowsNow => drill(e.from, v :: path)
+              case _ => chains.find(_.apply(0) == v).foreach(deque => path.foreach(deque.append))
             }
           ends.foreach(drill(_, Nil))
-          followed.sortWith((p, q) => sortVertex(p(0), q(0))).toList.flatten.map(componentOf)
+          chains.sortWith((p, q) => sortVertex(p(0), q(0))).toList.flatten.map(componentOf)
         }
       }
     }
@@ -237,7 +242,7 @@ object DependencyGraph {
       for (p <- phases) {
         require(p.phaseName.nonEmpty, "Phase name must be non-empty.")
         def checkConstraint(name: String, constraint: String): Boolean =
-          phases.exists(_.phaseName == name).tap(ok => if (!ok) graph.warning(s"No phase `$name` for ${p.phaseName}.$constraint"))
+          graph.components.contains(name).tap(ok => if (!ok) graph.warning(s"No phase `$name` for ${p.phaseName}.$constraint"))
         for (after <- p.runsRightAfter if after.nonEmpty && checkConstraint(after, "runsRightAfter"))
           graph.addEdge(after, p.phaseName, FollowsNow)
         for (after <- p.runsAfter if after.nonEmpty && !p.runsRightAfter.contains(after) && checkConstraint(after, "runsAfter"))
@@ -245,10 +250,10 @@ object DependencyGraph {
         for (before <- p.runsBefore if before.nonEmpty && checkConstraint(before, "runsBefore"))
           graph.addEdge(p.phaseName, before, Follows)
         if (p != start && p != end)
-          if (p.runsRightAfter.find(!_.isEmpty).isEmpty && p.runsAfter.find(!_.isEmpty).isEmpty)
+          if (p.runsRightAfter.forall(_.isEmpty) && p.runsAfter.forall(_.isEmpty))
             graph.addEdge(start.phaseName, p.phaseName, Follows)
         if (p != end || p == end && p == start)
-          if (!p.runsBefore.contains(end.phaseName))
+          if (p.runsBefore.forall(_.isEmpty))
             graph.addEdge(p.phaseName, end.phaseName, Follows)
       }
     }

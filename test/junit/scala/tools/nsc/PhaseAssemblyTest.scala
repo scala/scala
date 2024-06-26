@@ -24,7 +24,7 @@ class PhaseAssemblyTest {
     phaseName: String,
     override val runsRightAfter: Option[String],
     override val runsAfter: List[String],
-    override val runsBefore: List[String],
+    override val runsBefore: List[String] = List("terminal"),
   ) extends SubComponent {
     override val initial: Boolean = phaseName == "parser"
     override val terminal: Boolean = phaseName == "terminal"
@@ -42,9 +42,7 @@ class PhaseAssemblyTest {
     val settings = new Settings
     //settings.verbose.tryToSet(Nil)
     val global = new Global(settings)
-    val N = 16 * 4096 // 65536 ~ 11-21 secs, 256 ~ 1-2 secs
-    //val N = 256
-    //val N = 16
+    val N = 64 * 4096 // 262'144 ~ 1.6sec
     val random = new scala.util.Random(123502L)
     val names = Array.tabulate(N)(n => s"phase_${n+1}_${random.nextInt(1024)}")
     val beforeTerminal = List("terminal")
@@ -118,6 +116,22 @@ class PhaseAssemblyTest {
     val graph = DependencyGraph(components)
     val result: List[SubComponent] = graph.compilerPhaseList()
     assertEquals(List("parser", "phooey", "kerfuffle", "konflikt", "erasure", "posterasure", "terminal"), result.map(_.phaseName))
+  }
+
+  @Test def `strict chains`: Unit = {
+    val settings = new Settings
+    val global = new Global(settings)
+    val components =
+      component(global, "p1", None, List("parser")) ::
+      component(global, "p2", Some("p1"), Nil) ::
+      component(global, "p3", Some("p2"), Nil) ::
+      component(global, "u1", None, List("parser")) ::
+      component(global, "u2", Some("u1"), Nil) ::
+      component(global, "u3", Some("u2"), Nil) ::
+      parserAndTerminal(global)
+    val graph = DependencyGraph(components)
+    val result: List[SubComponent] = graph.compilerPhaseList()
+    assertEquals(List("parser", "p1", "p2", "p3", "u1", "u2", "u3", "terminal"), result.map(_.phaseName))
   }
   //phaseList: List(parser, namer, packageobjects, typer, superaccessors, extmethods,
   //pickler, xsbt-api, xsbt-dependency, refchecks, patmat, uncurry, fields, tailcalls,
