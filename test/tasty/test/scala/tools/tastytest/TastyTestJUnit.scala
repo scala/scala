@@ -2,14 +2,12 @@ package scala.tools.tastytest
 
 import org.junit.{Test => test, BeforeClass => setup, AfterClass => teardown}
 import org.junit.Assert._
-import org.junit.Assume._
 
 import scala.util.{Try, Failure, Properties}
 
 import TastyTestJUnit._
 
 class TastyTestJUnit {
-  val isWindows = Properties.isWin
 
   @test def run(): Unit = TastyTest.runSuite(
     src                     = "run",
@@ -21,7 +19,6 @@ class TastyTestJUnit {
   ).eval()
 
   @test def runPipelined(): Unit = {
-    assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
     TastyTest.runPipelinedSuite(
       src                     = "run-pipelined",
       srcRoot                 = assertPropIsSet(propSrc),
@@ -70,7 +67,6 @@ class TastyTestJUnit {
   ).eval()
 
   @test def negPipelined(): Unit = {
-    assumeFalse("Disabled on Windows due to bug in jar format", isWindows)
     TastyTest.negPipelinedSuite(
       src                     = "neg-pipelined",
       srcRoot                 = assertPropIsSet(propSrc),
