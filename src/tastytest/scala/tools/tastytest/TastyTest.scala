@@ -268,6 +268,7 @@ object TastyTest {
   private def negTestImpl(compile: String => (String, Try[Boolean]))(files: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
+    val crashes = mutable.ArrayBuffer.empty[String]
     val failMap: Map[String, (Option[String], Option[String])] = {
       val (sources, rest) = files.partition(ScalaFail.permits)
       sources.map({ s =>
@@ -297,51 +298,61 @@ object TastyTest {
         }
         compile(source)
       }
-      if (compiled.getOrElse(false)) {
-        if (failMap.contains(source)) {
-          errors += source
-          printerrln(s"ERROR: $source successfully compiled.")
-        }
-      }
-      else {
-        failMap.get(source) match {
-          case None =>
-            unexpectedFail += source
-            System.err.println(output)
-            printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
-          case Some((Some(checkFile), _)) if Check.permits(checkFile) =>
-            processLines(checkFile) { stream =>
-              val checkLines  = Diff.splitIntoLines(stream)
-              val outputLines = Diff.splitIntoLines(output)
-              val diff        = Diff.compareContents(outputLines, checkLines)
-              if (diff.nonEmpty) {
-                errors += source
-                printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
+      compiled match {
+        case Failure(exception) =>
+          crashes += source
+          printerrln(s"ERROR: fatal error running compiler for $source: $exception")
+        case Success(true) =>
+          if (failMap.contains(source)) {
+            errors += source
+            printerrln(s"ERROR: $source successfully compiled when expected to fail.")
+          }
+        case Success(false) =>
+          failMap.get(source) match {
+            case None =>
+              unexpectedFail += source
+              System.err.println(output)
+              printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
+            case Some((Some(checkFile), _)) if Check.permits(checkFile) =>
+              processLines(checkFile) { stream =>
+                val checkLines  = Diff.splitIntoLines(stream)
+                val outputLines = Diff.splitIntoLines(output)
+                assert(outputLines.filterNot(_.isEmpty()).nonEmpty, s"outputLines should not be empty: $outputLines")
+                val diff        = Diff.compareContents(outputLines, checkLines)
+                if (diff.nonEmpty) {
+                  errors += source
+                  printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
+                }
               }
-            }
-          case Some((Some(skipCheckFile), _)) =>
-            printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
-          case Some((None, _)) =>
-            if (output.nonEmpty) {
-              errors += source
-              val diff = Diff.compareContents(output, "")
-              printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
-            }
-        }
+            case Some((Some(skipCheckFile), _)) =>
+              printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
+            case Some((None, _)) =>
+              if (output.nonEmpty) {
+                errors += source
+                val diff = Diff.compareContents(output, "")
+                printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
+              }
+          }
       }
     }
 
     val sources = files.filter(Scala.permits).filterNot(ScalaPre.permits)
     sources.foreach(negCompile)
-    successWhen(errors.isEmpty && unexpectedFail.isEmpty) {
-      if (unexpectedFail.nonEmpty) {
+    successWhen(errors.isEmpty && unexpectedFail.isEmpty && crashes.isEmpty) {
+      var msgs = List.empty[String]
+      if (crashes.nonEmpty) {
+        val str = if (crashes.size == 1) "file" else "files"
+        msgs ::= s"${crashes.length} $str fatally crashed the compiler: ${crashes.mkString(", ")}."
+      }
+      else if (unexpectedFail.nonEmpty) {
         val str = if (unexpectedFail.size == 1) "file" else "files"
-        s"${unexpectedFail.length} $str did not compile when expected to: ${unexpectedFail.mkString(", ")}."
+        msgs ::= s"${unexpectedFail.length} $str did not compile when expected to: ${unexpectedFail.mkString(", ")}."
       }
-      else {
+      else if (errors.nonEmpty) {
         val str = if (errors.size == 1) "error" else "errors"
-        s"${errors.length} $str. These sources either compiled or had an incorrect or missing check file: ${errors.mkString(", ")}."
+        msgs ::= s"Found ${errors.length} $str. These sources either compiled or had an incorrect or missing check file: ${errors.mkString(", ")}."
       }
+      msgs.mkString(System.lineSeparator())
     }
   }
 
@@ -354,7 +365,7 @@ object TastyTest {
   }
 
   private def pipelineDottyOpts(tastyJar: String): Seq[String] =
-    Seq("-Yjava-tasty", "-Yjava-tasty-output", tastyJar)
+    Seq("-Xjava-tasty", "-Xearly-tasty-output", tastyJar)
 
   private def dotcNeg(out: String, additionalSettings: Seq[String], files: String*)(implicit cl: Dotc.ClassLoader): Try[Unit] = {
     def compile(source: String, writer: OutputStream) = {

@@ -60,6 +60,7 @@ object TastyFlags {
   final val ParamAlias            = Open.next
   final val Infix                 = ParamAlias.next
   final val Invisible             = Infix.next
+  final val Tracked               = Invisible.next
 
   def optFlag(cond: Boolean)(flag: TastyFlagSet): TastyFlagSet = if (cond) flag else EmptyTastyFlags
 
@@ -125,6 +126,7 @@ object TastyFlags {
         if (is(ParamAlias))    sb += "ParamAlias"
         if (is(Infix))         sb += "Infix"
         if (is(Invisible))     sb += "Invisible"
+        if (is(Tracked))       sb += "Tracked"
         sb.mkString(" | ")
       }
     }

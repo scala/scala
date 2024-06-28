@@ -409,6 +409,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case METHODtype => readMethodic(MethodTermLambda, FlagSets.parseMethod, id)
             case TYPELAMBDAtype => readMethodic(HKTypeLambda, FlagSets.addDeferred, _.toTypeName)
             case PARAMtype => defn.ParamRef(readTypeRef(), readNat()) // reference to a parameter within a LambdaType
+            case FLEXIBLEtype =>
+              // dotty would wrap the inner type in FlexibleType (with lower bound >: tpe | Null),
+              // but we can leave as-is - as Scala 2 does not have explicit nulls.
+              readType()
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
@@ -694,6 +698,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case EXPORTED => addFlag(Exported)
           case OPEN => addFlag(Open)
           case INVISIBLE => addFlag(Invisible)
+          case TRACKED => addFlag(Tracked)
           case PRIVATEqualified =>
             readByte()
             privateWithin = readWithin(ctx)
@@ -882,7 +887,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def TypeDef(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
         val allowedShared = Enum | Opaque | Infix | Given
         val allowedTypeFlags = allowedShared | Exported
-        val allowedClassFlags = allowedShared | Open | Transparent
+        val allowedClassFlags = allowedShared | Open | Transparent | Tracked
         if (sym.isClass) {
           checkUnsupportedFlags(repr.unsupportedFlags &~ allowedClassFlags)
           sym.owner.ensureCompleted(CompleteOwner)
@@ -905,7 +910,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
       def TermParam(repr: TastyRepr, localCtx: Context)(implicit ctx: Context): Unit = {
-        checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported | Given))
+        checkUnsupportedFlags(repr.unsupportedFlags &~ (ParamAlias | Exported | Given | Tracked))
         val tpt = readTpt()(localCtx)
         ctx.setInfo(sym,
           if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
@@ -1220,19 +1225,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 exprReader.readTerm()
               }
               else unsupportedTermTreeError("block expression")
-            case ASSIGN      => unsupportedTermTreeError("assignment expression")
-            case LAMBDA      => unsupportedTermTreeError("anonymous function literal")
-            case MATCH       => unsupportedTermTreeError("match expression")
-            case RETURN      => unsupportedTermTreeError("return statement")
-            case WHILE       => unsupportedTermTreeError("loop statement")
-            case TRY         => unsupportedTermTreeError("try expression")
-            case BIND        => unsupportedTermTreeError("bind pattern")
-            case ALTERNATIVE => unsupportedTermTreeError("pattern alternative")
-            case UNAPPLY     => unsupportedTermTreeError("unapply pattern")
-            case INLINED     => unsupportedTermTreeError("inlined expression")
-            case SELECTouter => metaprogrammingIsUnsupported // only within inline
-            case HOLE        => abortMacroHole
-            case _           => readPathTerm()
+            case ASSIGN        => unsupportedTermTreeError("assignment expression")
+            case LAMBDA        => unsupportedTermTreeError("anonymous function literal")
+            case MATCH         => unsupportedTermTreeError("match expression")
+            case RETURN        => unsupportedTermTreeError("return statement")
+            case WHILE         => unsupportedTermTreeError("loop statement")
+            case TRY           => unsupportedTermTreeError("try expression")
+            case BIND          => unsupportedTermTreeError("bind pattern")
+            case ALTERNATIVE   => unsupportedTermTreeError("pattern alternative")
+            case UNAPPLY       => unsupportedTermTreeError("unapply pattern")
+            case INLINED       => unsupportedTermTreeError("inlined expression")
+            case SELECTouter   => metaprogrammingIsUnsupported // only within inline
+            case QUOTE         => abortQuote
+            case SPLICE        => abortSplice
+            case QUOTEPATTERN  => abortQuotePattern
+            case SPLICEPATTERN => abortSplicePattern
+            case HOLE          => abortMacroHole
+            case _             => readPathTerm()
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
@@ -1265,6 +1274,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       * A HOLE should never appear in TASTy for a top level class, only in quotes.
       */
     private def abortMacroHole[T]: T = abortWith(msg = "Scala 3 macro hole in pickled TASTy")
+    private def abortQuote[T]: T = abortWith(msg = "Scala 3 quoted expression in pickled TASTy")
+    private def abortSplice[T]: T = abortWith(msg = "Scala 3 quoted splice in pickled TASTy")
+    private def abortQuotePattern[T]: T = abortWith(msg = "Scala 3 quoted pattern in pickled TASTy")
+    private def abortSplicePattern[T]: T = abortWith(msg = "Scala 3 quoted pattern splice in pickled TASTy")
 
     private def signaturePolymorphicIsUnsupported[T](implicit ctx: Context): T =
       unsupportedTermTreeError("signature polymorphic application")
