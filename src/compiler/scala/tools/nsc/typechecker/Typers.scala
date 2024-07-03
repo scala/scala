@@ -2247,15 +2247,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     /** Analyze the super constructor call to record information used later to compute parameter aliases */
-    def analyzeSuperConstructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = {
+    def analyzeSuperConstructor(meth: Symbol, vparamss: List[List[ValDef]], rhs: Tree): Unit = if (!rhs.isErrorTyped) {
       val clazz = meth.owner
       debuglog(s"computing param aliases for $clazz:${clazz.primaryConstructor.tpe}:$rhs")
       val pending = ListBuffer[AbsTypeError]()
 
       // !!! This method is redundant with other, less buggy ones.
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
-        case _ if call.isErrorTyped => // e.g. scala/bug#7636
-          (call, Nil)
         case Apply(fn, args) =>
           // an object cannot be allowed to pass a reference to itself to a superconstructor
           // because of initialization issues; scala/bug#473, scala/bug#3913, scala/bug#6928.
