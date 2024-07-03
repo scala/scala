@@ -97,11 +97,17 @@ abstract class RefChecks extends Transform {
     private val checkedCombinations = mutable.Map[List[Symbol], (Symbol, Type)]()
     private def notYetCheckedOrAdd(rt: RefinedType, currentBase: Symbol) = {
       val seen = checkedCombinations.get(rt.parents.map(_.typeSymbol)).exists {
-        case (prevBase, prevTp) => currentBase.isSubClass(prevBase) && rt =:= prevTp.asSeenFrom(currentBase.thisType, prevBase)
+        case (prevBase, prevTp) =>
+          val isSub = (currentBase, prevBase) match {
+            case (cRef: RefinementClassSymbol, pRef: RefinementClassSymbol) =>
+              cRef.info.parents.map(_.typeSymbol) == pRef.info.parents.map(_.typeSymbol)
+            case _ =>
+              currentBase.isSubClass(prevBase)
+          }
+          val sameTp = rt =:= prevTp.asSeenFrom(currentBase.thisType, prevBase)
+          isSub && sameTp
       }
-
       if (!seen) checkedCombinations.addOne((rt.parents.map(_.typeSymbol), (currentBase, rt)))
-
       !seen
     }
 
