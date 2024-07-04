@@ -15,6 +15,7 @@ package scala.tools.nsc.classpath
 import java.io.{Closeable, File}
 import java.net.{URI, URL}
 import java.nio.file._
+import java.util.Collections
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.JDK9Reflectors
@@ -137,9 +138,9 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 }
 
 object JrtClassPath {
-  private val jrtClassPathCache = new FileBasedCache[Unit, JrtClassPath]()
+  private val jrtClassPathCache = new FileBasedCache[Option[String], JrtClassPath]()
   private val ctSymClassPathCache = new FileBasedCache[String, CtSymClassPath]()
-  def apply(release: Option[String], unsafe: Option[List[String]], closeableRegistry: CloseableRegistry): List[ClassPath] =
+  def apply(release: Option[String], systemPath: Option[String], unsafe: Option[List[String]], closeableRegistry: CloseableRegistry): List[ClassPath] =
     if (!isJavaAtLeast("9")) Nil
     else {
       // TODO escalate errors once we're sure they are fatal
@@ -155,14 +156,14 @@ object JrtClassPath {
           val ct = createCt(version, closeableRegistry)
           unsafe match {
             case Some(pkgs) if pkgs.nonEmpty =>
-              createJrt(closeableRegistry) match {
+              createJrt(systemPath, closeableRegistry) match {
                 case Nil  => ct
                 case jrts => ct.appended(new FilteringJrtClassPath(jrts.head, pkgs: _*))
               }
             case _ => ct
           }
         case _ =>
-          createJrt(closeableRegistry)
+          createJrt(systemPath, closeableRegistry)
       }
     }
   private def createCt(v: String, closeableRegistry: CloseableRegistry): List[ClassPath] =
@@ -176,10 +177,15 @@ object JrtClassPath {
     } catch {
       case NonFatal(_) => Nil
     }
-  private def createJrt(closeableRegistry: CloseableRegistry): List[JrtClassPath] =
+  private def createJrt(systemPath: Option[String], closeableRegistry: CloseableRegistry): List[JrtClassPath] =
     try {
-      val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-      val classPath = jrtClassPathCache.getOrCreate((), Nil, () => new JrtClassPath(fs), closeableRegistry, checkStamps = false)
+      val classPath = jrtClassPathCache.getOrCreate(systemPath, Nil, () => {
+        val fs = systemPath match {
+          case Some(javaHome) => FileSystems.newFileSystem(URI.create("jrt:/"), Collections.singletonMap("java.home", javaHome))
+          case None => FileSystems.getFileSystem(URI.create("jrt:/"))
+        }
+        new JrtClassPath(fs, systemPath.isDefined)
+      }, closeableRegistry, checkStamps = false)
       List(classPath)
     } catch {
       case _: ProviderNotFoundException | _: FileSystemNotFoundException => Nil
@@ -207,7 +213,7 @@ final class FilteringJrtClassPath(delegate: JrtClassPath, allowed: String*) exte
   *
   * The implementation assumes that no classes exist in the empty package.
   */
-final class JrtClassPath(fs: FileSystem) extends ClassPath with NoSourcePaths {
+final class JrtClassPath(fs: FileSystem, closeFS: Boolean) extends ClassPath with NoSourcePaths with Closeable {
   type F = Path
   private val dir: Path = fs.getPath("/packages")
 
@@ -253,6 +259,9 @@ final class JrtClassPath(fs: FileSystem) extends ClassPath with NoSourcePaths {
       }.take(1).toList.headOption
     }
   }
+
+  def close(): Unit =
+    if (closeFS) fs.close()
 }
 
 /**
