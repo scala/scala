@@ -581,7 +581,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // phaseName = "specialize"
   object specializeTypes extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("")
+    val runsAfter = Nil
     val runsRightAfter = Some("tailcalls")
   } with SpecializeTypes
 
@@ -595,14 +595,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // phaseName = "erasure"
   override object erasure extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("explicitouter")
+    val runsAfter = Nil
     val runsRightAfter = Some("explicitouter")
   } with Erasure
 
   // phaseName = "posterasure"
   override object postErasure extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("erasure")
+    val runsAfter = Nil
     val runsRightAfter = Some("erasure")
   } with PostErasure
 
@@ -667,7 +667,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val global: Global.this.type = Global.this
   } with SubComponent {
     val phaseName = "terminal"
-    val runsAfter = List("jvm")
+    val runsAfter = Nil
     val runsRightAfter = None
     override val terminal = true
 
@@ -696,10 +696,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   /** Add the internal compiler phases to the phases set.
    *  This implementation creates a description map at the same time.
    */
-  protected def computeInternalPhases(): Unit = {
+  protected def computeInternalPhases(): Unit =
     // Note: this fits -Xshow-phases into 80 column width, which is
     // desirable to preserve.
-    val phs = List(
+    List(
       syntaxAnalyzer          -> "parse source into ASTs, perform simple desugaring",
       analyzer.namerFactory   -> "resolve names, attach symbols to named trees",
       analyzer.packageObjects -> "load package objects",
@@ -724,9 +724,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       cleanup                 -> "platform-specific cleanups, generate reflective calls",
       terminal                -> "the last phase during a compilation run"
     )
+    .foreach((addToPhasesSet _).tupled)
 
-    phs foreach (addToPhasesSet _).tupled
-  }
   // This is slightly inelegant but it avoids adding a new member to SubComponent,
   // and attractive -Vphases output is unlikely if the descs span 20 files anyway.
   private val otherPhaseDescriptions = Map(
@@ -734,9 +733,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     "jvm"      -> "generate JVM bytecode"
   ) withDefaultValue ""
 
-  protected def computePlatformPhases() = platform.platformPhases foreach { sub =>
-    addToPhasesSet(sub, otherPhaseDescriptions(sub.phaseName))
-  }
+  protected def computePlatformPhases() = platform.platformPhases.foreach(p => addToPhasesSet(p, otherPhaseDescriptions(p.phaseName)))
 
   // sequences the phase assembly
   protected def computePhaseDescriptors: List[SubComponent] = {
@@ -769,7 +766,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   /** The names of the phases. */
   lazy val phaseNames = {
     new Run // force some initialization
-    phaseDescriptors map (_.phaseName)
+    phaseDescriptors.map(_.phaseName)
   }
 
   /** A description of the phases that will run in this configuration, or all if -Vdebug. */
@@ -1292,10 +1289,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         } else phs
       }
       // Create phases and link them together. We supply the previous, and the ctor sets prev.next.
-      val last  = components.foldLeft(NoPhase: Phase)((prev, c) => c newPhase prev)
-      val phaseList = Iterator.iterate(last)(_.prev).takeWhile(_ != NoPhase).toList.reverse
-      val maxId = phaseList.map(_.id).max
-      nextFrom = Array.tabulate(maxId)(i => infoTransformers.nextFrom(i))
+      val phaseList = {
+        val last  = components.foldLeft(NoPhase: Phase)((prev, c) => c.newPhase(prev))
+        Iterator.iterate(last)(_.prev).takeWhile(_ != NoPhase).toList.reverse
+      }
+      nextFrom = Array.tabulate(phaseList.maxBy(_.id).id)(infoTransformers.nextFrom(_))
+      //println(s"nextFrom: ${scala.runtime.ScalaRunTime.stringOf(nextFrom.map(_.pid))}")
+      //println(s"phaseList: ${scala.runtime.ScalaRunTime.stringOf(phaseList.map(_.name))}")
       val first = phaseList.head
       val ss    = settings
 

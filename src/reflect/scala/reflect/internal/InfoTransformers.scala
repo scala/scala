@@ -38,7 +38,7 @@ trait InfoTransformers {
       } else if (next.pid <= that.pid && next.pid != NoPhase.id) {
         next insert that
       } else {
-        log("Inserting info transformer %s following %s".format(phaseOf(that.pid), phaseOf(this.pid)))
+        log(s"Inserting info transformer ${phaseOf(that.pid)} following ${phaseOf(this.pid)}")
         that.next = next
         that.prev = this
         next.prev = that
