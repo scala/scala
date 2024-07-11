@@ -35,6 +35,8 @@ class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(setti
     phasesSet += syntaxAnalyzer
     phasesSet += terminal
   }
+  override protected def computePluginPhases(): Unit = ()
+
   override lazy val platform: ThisPlatform =
     new JavaPlatform {
       lazy val global: self.type = self
