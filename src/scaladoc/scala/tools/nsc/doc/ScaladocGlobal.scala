@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package doc
 
+import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.typechecker.MacroAnnotationNamers
 
@@ -47,15 +48,21 @@ trait ScaladocGlobalTrait extends Global {
 
 // takes a `Reporter`, not `FilteringReporter` for sbt compatibility
 class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with ScaladocGlobalTrait {
-  override protected def computePhaseDescriptors: List[SubComponent] = {
-    assert(phasesSet.isEmpty, "Scaladoc limits available phases")
+  self =>
+  override protected def computeInternalPhases(): Unit = {
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory
     phasesSet += analyzer.packageObjects
     phasesSet += analyzer.typerFactory
     phasesSet += terminal
-    computePhaseAssembly()
   }
+
+  override lazy val platform: ThisPlatform =
+    new JavaPlatform {
+      lazy val global: self.type = self
+      override def platformPhases = Nil // used by computePlatformPhases
+    }
+
   override def createJavadoc = if (settings.docNoJavaComments.value) false else true
 
   override lazy val analyzer =
