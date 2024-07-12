@@ -41,11 +41,11 @@ class ScalaDoc {
     else if (docSettings.showPlugins.value)
       reporter.warning(null, "Plugins are not available when using Scaladoc")
     else if (docSettings.showPhases.value)
-      reporter.warning(null, "Phases are restricted when using Scaladoc")
+      reporter.warning(null, s"Phases are restricted when using Scaladoc.\n${new DocFactory(reporter, docSettings).compiler.phaseDescriptions}")
     else if (docSettings.help.value || !hasFiles)
       reporter.echo(command.usageMsg)
     else
-      try { new DocFactory(reporter, docSettings) document command.files }
+      try new DocFactory(reporter, docSettings).document(command.files)
       catch {
         case ex @ FatalError(msg) =>
           if (docSettings.isDebug) ex.printStackTrace()

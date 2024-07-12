@@ -735,7 +735,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   protected def computePlatformPhases() = platform.platformPhases.foreach(p => addToPhasesSet(p, otherPhaseDescriptions(p.phaseName)))
 
-  // sequences the phase assembly
+  // compute the order in which phases will run; subclasses may override the template methods used here.
   protected def computePhaseDescriptors: List[SubComponent] = {
     /* Allow phases to opt out of the phase assembly. */
     def cullPhases(phases: List[SubComponent]) = {
