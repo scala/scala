@@ -1,0 +1,5 @@
+t13014.scala:2: error: could not find implicit value for parameter blup: String
+Error occurred in an application involving default arguments.
+class D extends C(y = 1)
+                ^
+1 error
