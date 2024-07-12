@@ -1052,7 +1052,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
       def adaptConstant(value: Constant): Tree = {
         val sym = tree.symbol
-        if (sym != null && sym.isDeprecated)
+        if (sym != null && !context.unit.isJava && sym.isDeprecated)
           context.deprecationWarning(tree.pos, sym)
         tree match {
           case Literal(`value`) => tree
