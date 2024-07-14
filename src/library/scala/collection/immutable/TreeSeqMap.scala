@@ -411,8 +411,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
     }
 
     object Iterator {
-      val Empty = new Iterator[Nothing](Ordering.empty[Nothing])
-      def empty[V]: Iterator[V] = Empty.asInstanceOf[Iterator[V]]
+      def empty[V]: Iterator[V] = new Iterator(Ordering.empty)
     }
 
     case object Zero extends Ordering[Nothing] {
