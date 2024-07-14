@@ -7,6 +7,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.util.Try
+
 @RunWith(classOf[JUnit4])
 class TreeSeqMapTest {
   @Test
@@ -173,6 +175,13 @@ class TreeSeqMapTest {
       val e3 = e2.tail
       assertEquals(s"modification empty from instance keeps modification order", List(1 -> 3, 3 -> 4), e3.toList)
     }
+  }
+
+  @Test
+  def t13019(): Unit = {
+    val m = Try(TreeSeqMap.empty.iterator.next())
+    assertTrue(m.isFailure)
+    assertFalse("empty iterator does not have next", TreeSeqMap.empty.iterator.hasNext)
   }
 }
 object TreeSeqMapTest extends App {
