@@ -16,8 +16,18 @@ import scala.jdk.CollectionConverters._
 import com.github.difflib.{DiffUtils, UnifiedDiffUtils}
 
 object Diff {
+  def removeTrailing(str: String): String = {
+    val lastWhitespace = str.reverseIterator.indexWhere(!_.isWhitespace)
+    if (lastWhitespace == -1) str
+    else str.dropRight(lastWhitespace)
+  }
+
+
   def splitIntoLines(string: String): Seq[String] =
-    string.trim.linesIterator.toSeq
+    string.linesIterator.map(removeTrailing).toSeq
+
+  def splitIntoLines(stream: java.util.stream.Stream[String]): Seq[String] =
+    stream.map(removeTrailing).iterator().asScala.toSeq
 
   def compareContents(output: String, check: String): String =
     compareContents(splitIntoLines(output), splitIntoLines(check))
