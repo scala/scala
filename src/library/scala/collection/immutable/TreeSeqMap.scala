@@ -392,10 +392,11 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
 
       if (it != Zero) push(it)
 
-      def hasNext = index != 0
+      def hasNext = index > 0
       @tailrec
       def next(): V =
-        pop match {
+        if (!hasNext) scala.collection.Iterator.empty.next()
+        else pop match {
           case Bin(_,_, Tip(_, v), right) =>
             push(right)
             v
