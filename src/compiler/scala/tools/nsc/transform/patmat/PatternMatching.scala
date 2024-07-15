@@ -80,7 +80,7 @@ trait PatternMatching extends Transform
         if guard.isEmpty && qual.symbol == definitions.NonFatalModule =>
         transform(treeCopy.CaseDef(
           tree,
-          bind,
+          treeCopy.Bind(bind, bind.name, Typed(Ident(nme.WILDCARD), TypeTree(definitions.ThrowableTpe)).setType(definitions.ThrowableTpe)),
           localTyper.typed(atPos(tree.pos)(Apply(gen.mkAttributedRef(definitions.NonFatal_apply), List(Ident(bind.symbol))))),
           body))
 
