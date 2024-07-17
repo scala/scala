@@ -54,7 +54,7 @@ object Array {
   /**
    * Returns a new [[scala.collection.mutable.ArrayBuilder]].
    */
-  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
+  def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](using t)
 
   /** Build an array from the iterable collection.
    *

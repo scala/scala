@@ -42,13 +42,13 @@ sealed abstract class ArraySeq[T]
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[T]): ArraySeq[T] = {
-    val b = ArrayBuilder.make(elemTag).asInstanceOf[ArrayBuilder[T]]
+    val b = ArrayBuilder.make(using elemTag).asInstanceOf[ArrayBuilder[T]]
     b.sizeHint(coll, delta = 0)
     b ++= coll
     ArraySeq.make(b.result())
   }
-  override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(elemTag).asInstanceOf[Builder[T, ArraySeq[T]]]
-  override def empty: ArraySeq[T] = ArraySeq.empty(elemTag.asInstanceOf[ClassTag[T]])
+  override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(using elemTag).asInstanceOf[Builder[T, ArraySeq[T]]]
+  override def empty: ArraySeq[T] = ArraySeq.empty(using elemTag.asInstanceOf[ClassTag[T]])
 
   /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype

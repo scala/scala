@@ -766,7 +766,7 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
   @SerialVersionUID(3L)
   private final class DeserializationFactory[K, V](val tableLength: Int, val loadFactor: Double, val ordering: Ordering[K]) extends Factory[(K, V), CollisionProofHashMap[K, V]] with Serializable {
     def fromSpecific(it: IterableOnce[(K, V)]): CollisionProofHashMap[K, V] = new CollisionProofHashMap[K, V](tableLength, loadFactor)(ordering) ++= it
-    def newBuilder: Builder[(K, V), CollisionProofHashMap[K, V]] = CollisionProofHashMap.newBuilder(tableLength, loadFactor)(ordering)
+    def newBuilder: Builder[(K, V), CollisionProofHashMap[K, V]] = CollisionProofHashMap.newBuilder(tableLength, loadFactor)(using ordering)
   }
 
   @unused @`inline` private def compare[K, V](key: K, hash: Int, node: LLNode[K, V])(implicit ord: Ordering[K]): Int = {

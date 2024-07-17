@@ -589,7 +589,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     val len = xs.length
     def boxed = if(len < ArrayOps.MaxStableSortLength) {
       val a = xs.clone()
-      Sorting.stableSort(a)(ord.asInstanceOf[Ordering[A]])
+      Sorting.stableSort(a)(using ord.asInstanceOf[Ordering[A]])
       a
     } else {
       val a = Array.copyAs[AnyRef](xs, len)(ClassTag.AnyRef)
@@ -1299,7 +1299,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     val bb = new ArrayBuilder.ofRef[Array[B]]()(ClassTag[Array[B]](aClass))
     if (xs.length == 0) bb.result()
     else {
-      def mkRowBuilder() = ArrayBuilder.make[B](ClassTag[B](aClass.getComponentType))
+      def mkRowBuilder() = ArrayBuilder.make[B](using ClassTag[B](aClass.getComponentType))
       val bs = new ArrayOps(asArray(xs(0))).map((x: B) => mkRowBuilder())
       for (xs <- this) {
         var i = 0
