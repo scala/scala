@@ -28,7 +28,7 @@ abstract class Driver {
 
   /** Forward errors to the (current) reporter. */
   protected def scalacError(msg: String): Unit = {
-    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
+    reporter.error(FakePos("scalac"), s"$msg\n  scalac -help gives more information")
   }
 
   /** True to continue compilation. */
