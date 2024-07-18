@@ -1,4 +1,4 @@
-// scalac: -Ywarn-unused:-patvars,_ -Xfatal-warnings
+//> using options -Ywarn-unused:-patvars,_ -Xfatal-warnings
 //
 
 // verify no warning when -Ywarn-unused:-patvars

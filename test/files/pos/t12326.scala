@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:imports -Wconf:origin=scala.collection.mutable._:s,origin=scala.concurrent.ExecutionContext.Implicits._:s
+//> using options -Werror -Wunused:imports -Wconf:origin=scala.collection.mutable._:s,origin=scala.concurrent.ExecutionContext.Implicits._:s
 
 import scala.collection.mutable._
 

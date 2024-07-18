@@ -1,4 +1,4 @@
-// filter: (\s*)at(.*)
+//> using filter (\s*)at(.*)
 
 import scala.tools.partest._
 

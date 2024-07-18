@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused
+//> using options -Werror -Wunused
 
 import annotation.unused
 

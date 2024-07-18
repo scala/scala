@@ -1,4 +1,4 @@
-// scalac: -Ywarn-extra-implicit
+//> using options -Ywarn-extra-implicit
 //
 
 

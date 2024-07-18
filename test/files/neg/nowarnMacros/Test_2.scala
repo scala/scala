@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 import language.experimental.macros
 import scala.annotation.nowarn

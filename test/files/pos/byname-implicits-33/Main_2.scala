@@ -1,4 +1,4 @@
-// scalac: -Ycheck:_
+//> using options -Ycheck:_
 object Test {
   util.lazily[Functor[Rec]]
 }

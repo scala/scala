@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 sealed trait PowerSource
 case object Petrol extends PowerSource
 case object Pedal  extends PowerSource

@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.13
+//> using options -Xsource:2.13
 //
 class C {
   def f1(x: Unit): Int = 0

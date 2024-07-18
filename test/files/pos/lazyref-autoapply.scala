@@ -1,4 +1,4 @@
-// scalac: -Werror -Xsource:3 -Xlint
+//> using options -Werror -Xsource:3 -Xlint
 
 object Test {
   def doti(i: Int): Product = {

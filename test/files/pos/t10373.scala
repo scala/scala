@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 sealed abstract class Foo {
     def bar(): Unit = this match {
         case Foo_1() => //do something

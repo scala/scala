@@ -1,4 +1,4 @@
-// scalac: -Werror -Wnonunit-statement -Wnonunit-if:true -Wvalue-discard
+//> using options -Werror -Wnonunit-statement -Wnonunit-if:true -Wvalue-discard
 // debug: -Vprint:refchecks -Yprint-trees:format
 import collection.ArrayOps
 import collection.mutable.{ArrayBuilder, LinkedHashSet, ListBuffer}

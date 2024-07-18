@@ -1,4 +1,4 @@
-// scalac: -Yimports:java.lang,scala,scala.Predef,scala.util.chaining
+//> using options -Yimports:java.lang,scala,scala.Predef,scala.util.chaining
 
 class C {
   def f = 42.tap(println)

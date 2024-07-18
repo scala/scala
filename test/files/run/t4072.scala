@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 import scala.tools.nsc._
 

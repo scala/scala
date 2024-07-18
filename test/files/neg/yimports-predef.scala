@@ -1,4 +1,4 @@
-// scalac: -Yimports:scala,scala.Predef
+//> using options -Yimports:scala,scala.Predef
 //
 import Predef.{any2stringadd => _, _}
 

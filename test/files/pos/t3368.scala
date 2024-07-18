@@ -1,5 +1,5 @@
 
-// scalac: -Ystop-after:parser
+//> using options -Ystop-after:parser
 //
 trait X {
   // error: in XML literal: name expected, but char '!' cannot start a name

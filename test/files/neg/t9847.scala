@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:deprecation -Ywarn-value-discard
+//> using options -Werror -Xlint:deprecation -Ywarn-value-discard
 //
 
 trait T {

@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -Xreporter:scala.tools.partest.nest.PlainReporter
+//> using options -Werror -Xlint -Xreporter:scala.tools.partest.nest.PlainReporter
 
 class UnusedMethod {
   private def m: String =

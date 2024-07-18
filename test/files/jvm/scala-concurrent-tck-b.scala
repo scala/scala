@@ -1,4 +1,4 @@
-// javaVersion: 9+
+//> using jvm 9+
 import scala.concurrent.{
   TimeoutException,
   ExecutionContext,

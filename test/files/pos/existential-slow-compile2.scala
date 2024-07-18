@@ -1,4 +1,4 @@
-// scalac: -Ystop-after:refchecks -Yrangepos
+//> using options -Ystop-after:refchecks -Yrangepos
 class C {
   class L[+A]
   def test = {

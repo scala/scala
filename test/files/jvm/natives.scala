@@ -1,4 +1,4 @@
-// java: -Dneeds.to.fork
+//> using javaOpt -Dneeds.to.fork
 
 object Test {
 

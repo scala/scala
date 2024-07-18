@@ -1,4 +1,4 @@
-// scalac: -Werror -Wconf:msg=legacy-binding:s -Xsource:3
+//> using options -Werror -Wconf:msg=legacy-binding:s -Xsource:3
 
 object test1 {
 

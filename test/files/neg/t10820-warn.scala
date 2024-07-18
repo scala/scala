@@ -1,4 +1,4 @@
-// scalac: -Werror -Wperformance
+//> using options -Werror -Wperformance
 //
 
 import util.Try

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:strict-unsealed-patmat
+//> using options -Xfatal-warnings -Xlint:strict-unsealed-patmat
 object C {
   trait Z
   final case class Q(i: Int) extends Z

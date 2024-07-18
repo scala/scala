@@ -1,6 +1,6 @@
-// scalac: -Xlint:deprecation
-// java: -Ddummy=fresh_jvm_needed_to_test_security_manager
-// filter: WARNING.*
+//> using options -Xlint:deprecation
+//> using javaOpt -Ddummy=fresh_jvm_needed_to_test_security_manager
+//> using filter WARNING.*
 // for now, ignore warnings due to reflective invocation
 import java.security._
 

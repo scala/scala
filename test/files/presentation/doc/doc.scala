@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror
+//> using options -Xlint -Werror
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base._

@@ -1,4 +1,4 @@
-//scalac: -Werror -Xlint:multiarg-infix,unit-special,unused
+//> using options -Werror -Xlint:multiarg-infix,unit-special,unused
 
 import annotation.nowarn
 

@@ -1,4 +1,4 @@
-// java: -Dneeds.forked.jvm
+//> using javaOpt -Dneeds.forked.jvm
 
 object Test {
   scala.sys.addShutdownHook {

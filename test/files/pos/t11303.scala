@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 object Test {
   sealed trait Gadt[F[_], O, R]

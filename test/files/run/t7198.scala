@@ -1,4 +1,4 @@
-// filter: Over the moon
+//> using filter "Over the moon"
 /* spew a few lines
  */
 object Test extends App {

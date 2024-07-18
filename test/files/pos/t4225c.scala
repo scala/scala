@@ -1,5 +1,5 @@
 
-// scalac: -Yrangepos
+//> using options -Yrangepos
 //
 trait A
 trait B

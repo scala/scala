@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 import scala.annotation.unchecked.uncheckedVariance
 

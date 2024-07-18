@@ -1,4 +1,4 @@
-// scalac: -Werror -Wnonunit-statement
+//> using options -Werror -Wnonunit-statement
 
 import scala.reflect.macros._
 

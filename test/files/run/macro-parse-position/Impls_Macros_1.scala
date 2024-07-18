@@ -1,4 +1,4 @@
-// scalac: -Yrangepos:false
+//> using options -Yrangepos:false
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 

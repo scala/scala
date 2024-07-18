@@ -1,4 +1,4 @@
-// scalac: -Xasync -Werror -Wnonunit-statement
+//> using options -Xasync -Werror -Wnonunit-statement
 
 import scala.tools.partest.async.OptionAwait._
 import org.junit.Assert._

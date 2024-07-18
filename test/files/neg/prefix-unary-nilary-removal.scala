@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 //
 class Foo {
   def unary_~() : Foo = this

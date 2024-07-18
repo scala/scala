@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Werror
+//> using options -Xsource:3 -Werror
 
 class C {
   def f(j: J): Int = j.f(42)

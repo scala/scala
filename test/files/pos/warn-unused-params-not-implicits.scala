@@ -1,4 +1,4 @@
-// scalac: -Ywarn-unused:params,-implicits -Xfatal-warnings
+//> using options -Ywarn-unused:params,-implicits -Xfatal-warnings
 //
 
 trait InterFace {

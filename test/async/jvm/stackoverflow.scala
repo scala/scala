@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import scala.concurrent._
 import scala.concurrent.duration._

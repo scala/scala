@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -deprecation
+//> using options -Xfatal-warnings -deprecation
 //
 class FooMapView extends collection.MapView[Int,Int] {
   def iterator: Iterator[(Int,Int)] = ???

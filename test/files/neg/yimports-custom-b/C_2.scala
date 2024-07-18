@@ -1,4 +1,4 @@
-// scalac: -Yimports:hello.world.minidef
+//> using options -Yimports:hello.world.minidef
 
 import hello.{world => hw}
 import hw.minidef.{Magic => Answer}

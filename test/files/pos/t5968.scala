@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 object X {
   def f(e: Either[Int, X.type]) = e match {

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint nullary-unit
+//> using options -Xfatal-warnings -Xlint nullary-unit
 //
 
 class Named(var name: String)

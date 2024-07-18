@@ -1,4 +1,4 @@
-// scalac: -Yrangepos:false -language:dynamics
+//> using options -Yrangepos:false -language:dynamics
 //
 object Test extends App {
   object stubUpdate {

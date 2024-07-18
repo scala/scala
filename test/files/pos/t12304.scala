@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 class Foo
 class Test {

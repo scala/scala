@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Werror
+//> using options -Xsource:3 -Werror
 
 package p {
   object c

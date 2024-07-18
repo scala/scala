@@ -1,4 +1,4 @@
-// scalac: -Ymacro-annotations
+//> using options -Ymacro-annotations
 trait T[A]
 
 @macid

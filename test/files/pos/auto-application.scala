@@ -1,4 +1,4 @@
-// scalac: -Werror -deprecation -Xsource:3
+//> using options -Werror -deprecation -Xsource:3
 //
 class Test {
   def a1(xs: List[String]): Int = xs.hashCode

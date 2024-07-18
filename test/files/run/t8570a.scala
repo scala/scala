@@ -1,4 +1,4 @@
-// scalac: -Xcheckinit
+//> using options -Xcheckinit
 //
 trait Trait40_1 {
   val value37_2 = ()

@@ -1,4 +1,4 @@
-// scalac: -opt:inline:** -Wopt
+//> using options -opt:inline:** -Wopt
 //
 class A extends Cloneable {
   @inline final def foo = clone()

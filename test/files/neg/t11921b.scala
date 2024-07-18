@@ -1,4 +1,4 @@
-// scalac: -Werror -Xsource:3
+//> using options -Werror -Xsource:3
 
 object test1 {
 

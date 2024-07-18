@@ -1,4 +1,4 @@
-// scalac: -Xplugin:. -Xplugin-require:afterterminal
+//> using options -Xplugin:. -Xplugin-require:afterterminal
 package sample
 
 // just a sample that is compiled with the sample plugin enabled

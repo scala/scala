@@ -1,4 +1,4 @@
-// scalac: -Ywarn-numeric-widen -Xfatal-warnings
+//> using options -Ywarn-numeric-widen -Xfatal-warnings
 //
 trait Foo
 

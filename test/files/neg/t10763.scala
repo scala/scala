@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused
+//> using options -Werror -Wunused
 
 object Test extends App {
   // cf test/files/pos/t10763.scala test/files/run/t11938.scala

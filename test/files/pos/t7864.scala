@@ -1,4 +1,4 @@
-// scalac: -Xlint
+//> using options -Xlint
 //
 object Test {
   val f = 0;

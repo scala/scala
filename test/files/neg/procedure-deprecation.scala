@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:deprecation
+//> using options -Werror -Xlint:deprecation
 //
 abstract class Foo {
   def bar {}

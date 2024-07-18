@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:implicits
+//> using options -Werror -Wunused:implicits
 //
 
 trait InterFace {

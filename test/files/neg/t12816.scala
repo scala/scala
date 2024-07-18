@@ -1,4 +1,4 @@
-// scalac: -Xsource:3 -Werror
+//> using options -Xsource:3 -Werror
 
 trait U {
   def a: Int = 0

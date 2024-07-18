@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:imports -Ymacro-annotations
+//> using options -Werror -Wunused:imports -Ymacro-annotations
 //
 class Bippo {
   def length: Int = 123

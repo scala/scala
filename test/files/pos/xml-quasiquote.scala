@@ -1,4 +1,4 @@
-// scalac: -Ystop-after:typer
+//> using options -Ystop-after:typer
 //
 import reflect.runtime.universe._
 

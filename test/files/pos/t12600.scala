@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:_
+//> using options -Werror -Wunused:_
 class Private {
   private type Curry[A] = { type T[B] = Either[A, B] }
   def m2[T[A]]: Unit = ()

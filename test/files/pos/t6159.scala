@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 trait A {
   sealed abstract class X
   private class X1 extends X with X2 { }

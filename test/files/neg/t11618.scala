@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:deprecation
+//> using options -Werror -Xlint:deprecation
 
 // warn about introducing Unit-valued fields instead of merely side-effecting.
 // warn about implicit not introducing any implicits

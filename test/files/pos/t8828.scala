@@ -1,4 +1,4 @@
-// scalac: -Xlint:inaccessible -Xfatal-warnings
+//> using options -Xlint:inaccessible -Xfatal-warnings
 //
 
 package outer

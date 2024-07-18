@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 case object A ; case object B
 object C {
 // inferred refinement type `Product with Serializable` of val `objs` has owner `C`

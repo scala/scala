@@ -1,4 +1,4 @@
-// scalac: -Ystop-after:parser
+//> using options -Ystop-after:parser
 //
 object foo {
   val bar = "baz"

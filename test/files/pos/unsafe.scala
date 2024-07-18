@@ -1,5 +1,5 @@
 
-// scalac: --release:8 -Yrelease:sun.misc
+//> using options --release:8 -Yrelease:sun.misc
 
 import sun.misc.Unsafe
 

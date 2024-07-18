@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 // aka t12438.scala
 

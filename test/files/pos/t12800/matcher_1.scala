@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Xsource:3
+//> using options -Werror -Xsource:3
 
 import JetBrains.*
 

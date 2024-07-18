@@ -1,5 +1,5 @@
 
-// scalac: -Xlint:deprecation
+//> using options -Xlint:deprecation
 
 class Test {
   def test: Unit = {

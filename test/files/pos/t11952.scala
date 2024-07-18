@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint -nowarn
+//> using options -Werror -Xlint -nowarn
 //
 // nowarn should mean no warnings are emitted,
 // irrespective of other flags, and also no

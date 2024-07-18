@@ -1,4 +1,4 @@
-// scalac: -Wunused:explicits -Werror
+//> using options -Wunused:explicits -Werror
 //
 trait Context[A]
 trait ExplicitsOnly {

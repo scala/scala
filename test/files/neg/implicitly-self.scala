@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:implicit-recursion
+//> using options -Werror -Xlint:implicit-recursion
 //
 
 trait TC[A] { def ix: Int }

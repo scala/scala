@@ -1,2 +1,2 @@
-// scalac: -Ypickle-java
+//> using options -Ypickle-java
 class Test

@@ -1,4 +1,4 @@
-// java: -Dneeds.forked.jvm.maybe.because.context.classloader
+//> using javaOpt -Dneeds.forked.jvm.maybe.because.context.classloader
 
 /**
  * Checks that serialization of hash-based collections works correctly if the hashCode

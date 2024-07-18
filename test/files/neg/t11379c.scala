@@ -1,4 +1,4 @@
-// scalac: -Werror -Wvalue-discard
+//> using options -Werror -Wvalue-discard
 class OneTypeParam[B](value: B) {
   def map[B1](fn: B => B1): OneTypeParam[B1] = new OneTypeParam(fn(value))
 

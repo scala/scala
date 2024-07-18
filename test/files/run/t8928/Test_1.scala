@@ -1,4 +1,4 @@
-// java: -Dneeds.forked.jvm
+//> using javaOpt -Dneeds.forked.jvm
 import test._
 
 object Test extends App {

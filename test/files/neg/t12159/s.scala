@@ -1,4 +1,4 @@
-// javaVersion: 17+
+//> using jvm 17+
 
 package p
 

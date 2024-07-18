@@ -1,4 +1,4 @@
-// java: -Xmx5M -Xms5M
+//> using javaOpt -Xmx5M -Xms5M
 
 import scala.collection.immutable._
 

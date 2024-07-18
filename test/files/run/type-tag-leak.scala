@@ -1,4 +1,4 @@
-// java: -Xmx192M -XX:+ExitOnOutOfMemoryError
+//> using javaOpt -Xmx192M -XX:+ExitOnOutOfMemoryError
 
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._

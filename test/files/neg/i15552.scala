@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 class C {
   val ctx: C = new C()
   def f() = g(42)(using ctx)  // error: no g

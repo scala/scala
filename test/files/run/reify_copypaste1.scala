@@ -1,4 +1,4 @@
-// java: -Dneeds.forked.jvm
+//> using javaOpt -Dneeds.forked.jvm
 
 import scala.reflect.runtime._
 import scala.reflect.runtime.universe._

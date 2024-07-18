@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 
 object Hmm {
   def zxc(b: Int*)(implicit x: Int = 3) = "" + b + x

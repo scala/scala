@@ -1,4 +1,4 @@
-// javaVersion: 15+
+//> using jvm 15+
 /* Using `valueOf` is a way to check that the Java string literals were properly
  * parsed, since the parsed value is what the Scala compiler will use when
  * resolving the singleton types

@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 sealed trait Trait1
 sealed trait Trait2

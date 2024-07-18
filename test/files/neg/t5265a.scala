@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 trait T[A]
 
 class C[A: T]

@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 final case class Foo(value: String)
 
 object Foo {

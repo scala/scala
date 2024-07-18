@@ -1,5 +1,5 @@
 
-// scalac: -opt:inline:<sources> -Wopt -Werror
+//> using options -opt:inline:<sources> -Wopt -Werror
 // skalac: -opt:inline:<sources> -Vopt:C -Wopt -Werror
 
 // > using scala 2.13.nightly

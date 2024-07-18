@@ -1,4 +1,4 @@
-// scalac: -deprecation -Werror
+//> using options -deprecation -Werror
 
 class Test {
   ("": Any).##()

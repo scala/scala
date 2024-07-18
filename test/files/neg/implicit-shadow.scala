@@ -1,4 +1,4 @@
-// scalac: -Vimplicits
+//> using options -Vimplicits
 //
 object Test {
 	import B._, C._

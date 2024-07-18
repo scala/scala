@@ -1,5 +1,5 @@
 
-// scalac: -Xsource:2.13
+//> using options -Xsource:2.13
 
 object Test {
 

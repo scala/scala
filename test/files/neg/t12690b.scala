@@ -1,5 +1,5 @@
 
-// scalac: -Wunused:imports -Werror
+//> using options -Wunused:imports -Werror
 
 object X {
   val v = 27

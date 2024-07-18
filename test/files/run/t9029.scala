@@ -1,4 +1,4 @@
-// scalac: -deprecation
+//> using options -deprecation
 //
 class Y(val _2: Int, val _1: String)
 

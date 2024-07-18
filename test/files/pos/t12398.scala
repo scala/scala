@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 import scala.reflect.api.Universe
 
 object Test {

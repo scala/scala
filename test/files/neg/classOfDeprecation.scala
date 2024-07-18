@@ -1,4 +1,4 @@
-// scalac: -deprecation -Werror
+//> using options -deprecation -Werror
 
 @deprecated("no no!", "like, forever") class C
 class ann(x: Any) extends annotation.Annotation

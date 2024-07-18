@@ -1,4 +1,4 @@
-// scalac: -Xmaxwarns 3 -Xfatal-warnings -deprecation
+//> using options -Xmaxwarns 3 -Xfatal-warnings -deprecation
 //
 
 object X {

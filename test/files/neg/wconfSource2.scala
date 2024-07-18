@@ -1,4 +1,4 @@
-// scalac: -Wconf:src=test/files/neg/wconfSource2.scala&cat=deprecation:e,src=test/.*&msg=statement:i,src=/neg/.*&cat=feature-reflective-calls:i
+//> using options -Wconf:src=test/files/neg/wconfSource2.scala&cat=deprecation:e,src=test/.*&msg=statement:i,src=/neg/.*&cat=feature-reflective-calls:i
 
 class C {
   @deprecated("", "") def dep = 0

@@ -1,4 +1,4 @@
-// java: -Dforked.test=yes.please
+//> using javaOpt -Dforked.test=yes.please
 
 import scala.sys.process._
 import scala.util.Try

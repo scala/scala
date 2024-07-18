@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 class Out {
   sealed trait P
   case class K(x: Int) extends P

@@ -1,4 +1,4 @@
-// filter: unchecked
+//> using filter unchecked
 package a;
 
 class B<T extends B<T>> {

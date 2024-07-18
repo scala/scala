@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global

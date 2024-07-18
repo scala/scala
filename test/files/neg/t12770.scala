@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 
 object Test {
   def doesntWarn(input: String) = input match {

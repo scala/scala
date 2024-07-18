@@ -1,5 +1,5 @@
-// javaVersion: 17+
-// scalac: -Werror
+//> using jvm 17+
+//> using options -Werror
 package p
 
 class C {

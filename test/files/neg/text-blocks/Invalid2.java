@@ -1,4 +1,4 @@
-// javaVersion: 15+
+//> using jvm 15+
 class Invalid2 {
 
     // Closing delimiter is first three eligible `"""`, not last

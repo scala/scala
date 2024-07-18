@@ -1,4 +1,4 @@
-// scalac: -Ydelambdafy:method
+//> using options -Ydelambdafy:method
 //
 class C {
   final def resume: Any = (this: Any) match {

@@ -1,5 +1,5 @@
 
-// scalac: -Werror -release 8
+//> using options -Werror -release 8
 
 import scala.jdk.CollectionConverters._
 //import jdk.CollectionConverters._  // scala/bug/issues/12566

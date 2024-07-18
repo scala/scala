@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 //
 class C {
   def m(xs: List[String]) = xs match {

@@ -1,4 +1,4 @@
-// scalac: -feature -language:_ -Xfatal-warnings
+//> using options -feature -language:_ -Xfatal-warnings
 // showing that all are set
 class X {
   def hk[M[_]] = ???

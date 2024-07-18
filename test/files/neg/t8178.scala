@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 sealed trait Fails
 case class VarArgs1(a: String*) extends Fails
 case class FailsChild2(a: Seq[String]) extends Fails

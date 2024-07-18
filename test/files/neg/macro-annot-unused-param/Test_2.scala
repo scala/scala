@@ -1,4 +1,4 @@
-// scalac: -Ymacro-annotations -Wunused:params -Wmacros:after -Werror
+//> using options -Ymacro-annotations -Wunused:params -Wmacros:after -Werror
 @mymacro
 class X
 

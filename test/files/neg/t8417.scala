@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:adapted-args
+//> using options -Xfatal-warnings -Xlint:adapted-args
 //
 
 

@@ -1,4 +1,4 @@
-// scalac: -language:higherKinds,existentials -Xfatal-warnings
+//> using options -language:higherKinds,existentials -Xfatal-warnings
 class Functor[F[_]]
 object Functor {
   val someF: Functor[F] forSome { type F[_] } = new Functor[Option]

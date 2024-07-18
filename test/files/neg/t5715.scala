@@ -1,5 +1,5 @@
 
-// scalac: -Xlint -Werror
+//> using options -Xlint -Werror
 
 package example
 

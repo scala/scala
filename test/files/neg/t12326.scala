@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:imports -Wconf:site=p.T:s
+//> using options -Werror -Wunused:imports -Wconf:site=p.T:s
 
 package p
 

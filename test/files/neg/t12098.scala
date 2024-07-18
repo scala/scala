@@ -1,5 +1,5 @@
 //xlint supersedes default Wconf setting, which is ws warn-summary for deprecation
-//scalac: -Werror -Wconf:cat=lint-missing-interpolator:ws -Xlint
+//> using options -Werror -Wconf:cat=lint-missing-interpolator:ws -Xlint
 
 class C(i: Int) {
   def p() = println("hi $i")

@@ -1,5 +1,5 @@
 //
-// scalac: -Wunused:privates -Werror
+//> using options -Wunused:privates -Werror
 //
 package com
 

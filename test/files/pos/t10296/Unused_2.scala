@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:unused
+//> using options -Xfatal-warnings -Xlint:unused
 
 import scala.language.experimental.macros
 

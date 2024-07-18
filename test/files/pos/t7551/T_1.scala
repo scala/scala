@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 package p
 
 @A(subInterface = classOf[T.S])

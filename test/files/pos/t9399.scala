@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 sealed abstract class TA
 sealed abstract class TB extends TA

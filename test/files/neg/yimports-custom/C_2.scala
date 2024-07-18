@@ -1,4 +1,4 @@
-// scalac: -Yimports:hello.world.minidef
+//> using options -Yimports:hello.world.minidef
 
 class C {
   val v: Numb = Magic

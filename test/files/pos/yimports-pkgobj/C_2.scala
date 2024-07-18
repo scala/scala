@@ -1,4 +1,4 @@
-// scalac: -Yimports:scala,scala.Predef,hello.world
+//> using options -Yimports:scala,scala.Predef,hello.world
 //
 import hello.world.{Numb => _, _}  // no effect, world isPackage
 

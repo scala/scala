@@ -1,4 +1,4 @@
-// javaVersion: 16+
+//> using jvm 16+
 object C {
 
   def useR0: Unit = {

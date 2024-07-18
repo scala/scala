@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 
 // this is remodeling of the scala package object and scala.collection.immutable.{ List, ::, Nil }
 // in order to:

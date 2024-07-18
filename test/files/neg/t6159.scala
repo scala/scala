@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 // like test/files/pos/t6159.scala
 // but with T2 not private
 trait A {

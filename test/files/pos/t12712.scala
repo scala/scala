@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 object T {
   private sealed trait T
   private object O extends T

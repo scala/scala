@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xlint:strict-unsealed-patmat
+//> using options -Xfatal-warnings -Xlint:strict-unsealed-patmat
 //
 
 object Test {

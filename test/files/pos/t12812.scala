@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Xsource:3 -language:postfixOps -Xlint
+//> using options -Werror -Xsource:3 -language:postfixOps -Xlint
 
 class C {
   def foo(max: Int) = (1 to max).map(1 to).foreach(r => println(r.mkString(",")))

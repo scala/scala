@@ -1,4 +1,4 @@
-// scalac: -language:_
+//> using options -language:_
 import scala.util.chaining._
 
 class A(var x: Int)

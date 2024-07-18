@@ -1,4 +1,4 @@
-// scalac: -Yimports:scala
+//> using options -Yimports:scala
 //
 package hello
 

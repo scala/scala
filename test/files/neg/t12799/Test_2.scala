@@ -1,6 +1,6 @@
 
-// scalac: -Werror -Xlint
-// javaVersion: 9+
+//> using options -Werror -Xlint
+//> using jvm 9+
 
 import example._
 

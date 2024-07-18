@@ -1,4 +1,4 @@
-// scalac: -Yno-predef
+//> using options -Yno-predef
 
 import scala.Predef.implicitly
 

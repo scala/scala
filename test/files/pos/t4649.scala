@@ -1,5 +1,5 @@
 
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 object Test {
   // @annotation.tailrec

@@ -1,4 +1,4 @@
-// scalac: -Woctal-literal -Werror -deprecation
+//> using options -Woctal-literal -Werror -deprecation
 trait RejectedLiterals {
 
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero

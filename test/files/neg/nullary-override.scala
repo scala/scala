@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:nowarn
+//> using options -Werror -Wunused:nowarn
 //
 class A { def x: Int = 3 }
 class B extends A { override def x(): Int = 4 }

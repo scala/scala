@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Ywarn-unused:imports
+//> using options -Xfatal-warnings -Ywarn-unused:imports
 
 object Main extends App {
 

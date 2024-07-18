@@ -1,4 +1,4 @@
-// scalac: -Ypatmat-exhaust-depth off
+//> using options -Ypatmat-exhaust-depth off
 object Test extends App {
   virtMatch()
   def virtMatch() = {

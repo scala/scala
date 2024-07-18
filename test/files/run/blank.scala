@@ -1,4 +1,4 @@
-// javaVersion: 11+
+//> using jvm 11+
 //
 // skalac: --release:8
 // trivial manual test for partest --realeasy, which sets --release:8.

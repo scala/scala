@@ -1,4 +1,4 @@
-// java: -Xss128M
+//> using javaOpt -Xss128M
 
 import scala.tools.partest.ReplTest
 

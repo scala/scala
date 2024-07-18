@@ -1,4 +1,4 @@
-// scalac: -feature
+//> using options -feature
 
 trait T {
   def f(): scala.xxx.XXX[_, _] = ???

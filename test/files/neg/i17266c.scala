@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint:universal-methods
+//> using options -Werror -Xlint:universal-methods
 
 object X
 

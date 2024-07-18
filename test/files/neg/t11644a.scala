@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 //
 // eta-expansion to SAM type always warns in Scala 3 world
 

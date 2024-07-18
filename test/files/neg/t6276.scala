@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+//> using options -Xfatal-warnings
 //
 object Test {
   def foo(a: Int, b: Int, c: Int): Unit = {

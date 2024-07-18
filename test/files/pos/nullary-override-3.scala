@@ -1,4 +1,4 @@
-// scalac: -Werror -Wunused:nowarn -Xsource:3
+//> using options -Werror -Wunused:nowarn -Xsource:3
 //
 class C extends java.lang.CharSequence {
   def charAt(x$1: Int): Char = ???

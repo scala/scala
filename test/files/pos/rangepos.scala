@@ -1,5 +1,5 @@
 
-// scalac: -Yrangepos
+//> using options -Yrangepos
 class Foo(val x: Double) extends AnyVal { }
 
 object Pretty {

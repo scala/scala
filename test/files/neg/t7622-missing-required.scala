@@ -1,4 +1,4 @@
-// scalac: -Xplugin-require:special-plugin
+//> using options -Xplugin-require:special-plugin
 //
 
 // the amazing features of this trait

@@ -1,4 +1,4 @@
-// scalac: -Werror -Xlint
+//> using options -Werror -Xlint
 //
 abstract class Foo {
   def bar {}

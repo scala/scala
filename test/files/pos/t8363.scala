@@ -1,4 +1,4 @@
-// scalac: -Ydelambdafy:method
+//> using options -Ydelambdafy:method
 //
 class C(a: Any)
 class Test {  

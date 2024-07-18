@@ -1,4 +1,4 @@
-// scalac: -Werror
+//> using options -Werror
 import annotation.switch
 import util.Try
 

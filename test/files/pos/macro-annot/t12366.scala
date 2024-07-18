@@ -1,4 +1,4 @@
-// scalac: -Ymacro-annotations
+//> using options -Ymacro-annotations
 object Test extends App {
 
   @deprecated

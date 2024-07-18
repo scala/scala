@@ -1,4 +1,4 @@
-// scalac: -Xmaxwarns 0
+//> using options -Xmaxwarns 0
 object Test extends App {
 
   lazy val w = 10

@@ -1,20 +1,20 @@
-[WARNING] [RangePosition(t12735c.scala, 109, 109, 110)]: private val v in class UnusedVal is never used
-[WARNING] [RangePosition(t12735c.scala, 207, 207, 208)]: private val v in class UnusedVals is never used
-[WARNING] [RangePosition(t12735c.scala, 210, 210, 211)]: private val w in class UnusedVals is never used
-[WARNING] [RangePosition(t12735c.scala, 213, 213, 214)]: private val x in class UnusedVals is never used
-[WARNING] [RangePosition(t12735c.scala, 216, 216, 217)]: private val y in class UnusedVals is never used
-[WARNING] [RangePosition(t12735c.scala, 219, 219, 220)]: private val z in class UnusedVals is never used
-[WARNING] [RangePosition(t12735c.scala, 319, 319, 320)]: private val v in class UnusedIdents is never used
-[WARNING] [RangePosition(t12735c.scala, 322, 322, 323)]: private val w in class UnusedIdents is never used
-[WARNING] [RangePosition(t12735c.scala, 325, 325, 326)]: private val x in class UnusedIdents is never used
-[WARNING] [RangePosition(t12735c.scala, 328, 328, 329)]: private val y in class UnusedIdents is never used
-[WARNING] [RangePosition(t12735c.scala, 331, 331, 332)]: private val z in class UnusedIdents is never used
-[WARNING] [RangePosition(t12735c.scala, 424, 424, 427)]: private type int in object UnusedAlias is never used
-[WARNING] [RangePosition(t12735c.scala, 125, 129, 132)]: match may not be exhaustive.
+[WARNING] [RangePosition(t12735c.scala, 116, 116, 117)]: private val v in class UnusedVal is never used
+[WARNING] [RangePosition(t12735c.scala, 214, 214, 215)]: private val v in class UnusedVals is never used
+[WARNING] [RangePosition(t12735c.scala, 217, 217, 218)]: private val w in class UnusedVals is never used
+[WARNING] [RangePosition(t12735c.scala, 220, 220, 221)]: private val x in class UnusedVals is never used
+[WARNING] [RangePosition(t12735c.scala, 223, 223, 224)]: private val y in class UnusedVals is never used
+[WARNING] [RangePosition(t12735c.scala, 226, 226, 227)]: private val z in class UnusedVals is never used
+[WARNING] [RangePosition(t12735c.scala, 326, 326, 327)]: private val v in class UnusedIdents is never used
+[WARNING] [RangePosition(t12735c.scala, 329, 329, 330)]: private val w in class UnusedIdents is never used
+[WARNING] [RangePosition(t12735c.scala, 332, 332, 333)]: private val x in class UnusedIdents is never used
+[WARNING] [RangePosition(t12735c.scala, 335, 335, 336)]: private val y in class UnusedIdents is never used
+[WARNING] [RangePosition(t12735c.scala, 338, 338, 339)]: private val z in class UnusedIdents is never used
+[WARNING] [RangePosition(t12735c.scala, 431, 431, 434)]: private type int in object UnusedAlias is never used
+[WARNING] [RangePosition(t12735c.scala, 132, 136, 139)]: match may not be exhaustive.
 It would fail on the following input: List(_)
-[WARNING] [source-t12735c.scala,line-12,offset=239]: match may not be exhaustive.
+[WARNING] [source-t12735c.scala,line-12,offset=246]: match may not be exhaustive.
 It would fail on the following input: List(_)
-[WARNING] [source-t12735c.scala,line-19,offset=343]: match may not be exhaustive.
+[WARNING] [source-t12735c.scala,line-19,offset=350]: match may not be exhaustive.
 It would fail on the following input: List(_)
 [ERROR] [NoPosition]: No warnings can be incurred under -Werror.
 15 warnings

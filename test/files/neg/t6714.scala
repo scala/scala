@@ -1,4 +1,4 @@
-// scalac: -Yrangepos
+//> using options -Yrangepos
 //
 
 case class A(a: Int, index: Int) {

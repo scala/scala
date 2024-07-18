@@ -1,4 +1,4 @@
-// scalac: -nowarn
+//> using options -nowarn
 //
 
 import tools.partest.DirectTest

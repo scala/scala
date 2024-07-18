@@ -1,4 +1,4 @@
-// scalac: -Wconf:src=.*Source.*&cat=deprecation:e,src=Source1.scala&msg=statement:e,src=wconfSource1&msg=statement:e,src=wconfSource1.scala&msg=statement:i
+//> using options -Wconf:src=.*Source.*&cat=deprecation:e,src=Source1.scala&msg=statement:e,src=wconfSource1&msg=statement:e,src=wconfSource1.scala&msg=statement:i
 
 // src=Source1.scala doesn't match: the pattern needs to start at a path segment (after `/`)
 // src=wconfSource1 doesn't match: the pattern needs to match to the end of the path (.scala)

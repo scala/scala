@@ -1,5 +1,5 @@
 
-// scalac: -Xfatal-warnings -Xlint:unused
+//> using options -Xfatal-warnings -Xlint:unused
 //
 
 object `package` {

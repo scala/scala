@@ -1,4 +1,4 @@
-// scalac: -opt:unreachable-code
+//> using options -opt:unreachable-code
 //
 // See comment in BCodeBodyBuilder
 

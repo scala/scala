@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Xsource:3 -Xlint:universal-methods
+//> using options -Werror -Xsource:3 -Xlint:universal-methods
 
 // Dotty has top-level defs, so the reference is linted based on context.
 // For Scala 2, check result of looking up the identifier.

@@ -1,4 +1,4 @@
-// scalac: -Yno-predef
+//> using options -Yno-predef
 //
 class NoPredef {
   def f1 = 5L: java.lang.Long

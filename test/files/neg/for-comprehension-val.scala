@@ -1,4 +1,4 @@
-// scalac: -Xsource:3
+//> using options -Xsource:3
 //
 class A {
   for (x <- 1 to 5 ; y = x) yield x+y           // ok

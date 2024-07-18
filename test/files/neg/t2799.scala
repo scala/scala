@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror
+//> using options -Xlint -Werror
 
 @deprecated("other mother", "")
 trait T[A]

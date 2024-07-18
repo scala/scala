@@ -1,4 +1,4 @@
-// scalac: -language:dynamics
+//> using options -language:dynamics
 //
 
 

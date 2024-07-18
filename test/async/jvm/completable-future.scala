@@ -1,4 +1,4 @@
-// scalac: -Xasync
+//> using options -Xasync
 
 import java.util.concurrent._
 import scala.tools.partest.async.CompletableFutureAwait._

@@ -1,4 +1,4 @@
-// scalac: -Xlint:type-parameter-shadow -language:higherKinds -Xfatal-warnings
+//> using options -Xlint:type-parameter-shadow -language:higherKinds -Xfatal-warnings
 //
 class B {
 

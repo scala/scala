@@ -1,4 +1,4 @@
-// scalac: -Xlint:valpattern -Xfatal-warnings
+//> using options -Xlint:valpattern -Xfatal-warnings
 //
 sealed trait T
 case class C(i: Int) extends T

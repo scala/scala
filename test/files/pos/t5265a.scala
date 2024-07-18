@@ -1,4 +1,4 @@
-// scalac: -Werror -Wconf:cat=other-implicit-type:s
+//> using options -Werror -Wconf:cat=other-implicit-type:s
 trait T[A]
 
 class C[A: T]

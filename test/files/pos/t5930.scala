@@ -1,4 +1,4 @@
-// scalac: -Ywarn-dead-code -Xfatal-warnings
+//> using options -Ywarn-dead-code -Xfatal-warnings
 //
 // should not warn about dead code (`matchEnd(throw new MatchError)`)
  class Test {

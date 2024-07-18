@@ -1,4 +1,4 @@
-// scalac: -Xlint -Xfatal-warnings
+//> using options -Xlint -Xfatal-warnings
 
 class C {
   def f = 1
