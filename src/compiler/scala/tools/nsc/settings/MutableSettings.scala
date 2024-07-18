@@ -701,7 +701,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     }
 
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
-    def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    def tryToSetColon(args: List[String])             = tryToSetArgs(args, halting = false)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     /** Try to set args, handling "help" and default.
@@ -823,12 +823,12 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
         case Nil                                  => (seen, Nil)
       }
       val (seen, rest) = loop(Nil, args)
-      if (prepend) value = value.prependedAll(seen.reverse)
+      if (prepend) value = value.prependedAll(seen)
       else value = value.appendedAll(seen.reverse)
       Some(rest)
     }
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
-    def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    def tryToSetColon(args: List[String])             = tryToSetArgs(args, halting = false)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     def clear(): Unit         = (v = Nil)
