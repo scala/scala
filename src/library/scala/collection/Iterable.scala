@@ -518,7 +518,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *          element (which may be the only element) will be smaller
     *          if there are fewer than `size` elements remaining to be grouped.
     *  @example `List(1, 2, 3, 4, 5).sliding(2, 2) = Iterator(List(1, 2), List(3, 4), List(5))`
-    *  @example `List(1, 2, 3, 4, 5, 6).sliding(2, 3) = Iterator(List(1, 2), List(4, 5))` 
+    *  @example `List(1, 2, 3, 4, 5, 6).sliding(2, 3) = Iterator(List(1, 2), List(4, 5))`
     */
   def sliding(size: Int, step: Int): Iterator[C] =
     iterator.sliding(size, step).map(fromSpecific)
@@ -708,7 +708,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this $coll to an [[scala.util.Either]]
     *
-    *  @return     a pair of ${coll}s: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of ${coll}s: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]].
     */
   def partitionMap[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
@@ -982,9 +982,9 @@ trait SortedSetFactoryDefaults[+A,
     +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Set[x]] extends SortedSetOps[A @uncheckedVariance, CC, CC[A @uncheckedVariance]] {
   self: IterableOps[A, WithFilterCC, _] =>
 
-  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance]    = sortedIterableFactory.from(coll)(ordering)
-  override protected def newSpecificBuilder: mutable.Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = sortedIterableFactory.newBuilder[A](ordering)
-  override def empty: CC[A @uncheckedVariance] = sortedIterableFactory.empty(ordering)
+  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance]    = sortedIterableFactory.from(coll)(using ordering)
+  override protected def newSpecificBuilder: mutable.Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = sortedIterableFactory.newBuilder[A](using ordering)
+  override def empty: CC[A @uncheckedVariance] = sortedIterableFactory.empty(using ordering)
 
   override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, WithFilterCC, CC] =
     new SortedSetOps.WithFilter[A, WithFilterCC, CC](this, p)
@@ -1036,9 +1036,9 @@ trait SortedMapFactoryDefaults[K, +V,
     +UnsortedCC[x, y] <: Map[x, y]] extends SortedMapOps[K, V, CC, CC[K, V @uncheckedVariance]] with MapOps[K, V, UnsortedCC, CC[K, V @uncheckedVariance]] {
   self: IterableOps[(K, V), WithFilterCC, _] =>
 
-  override def empty: CC[K, V @uncheckedVariance] = sortedMapFactory.empty(ordering)
-  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = sortedMapFactory.from(coll)(ordering)
-  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = sortedMapFactory.newBuilder[K, V](ordering)
+  override def empty: CC[K, V @uncheckedVariance] = sortedMapFactory.empty(using ordering)
+  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = sortedMapFactory.from(coll)(using ordering)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = sortedMapFactory.newBuilder[K, V](using ordering)
 
   override def withFilter(p: ((K, V)) => Boolean): collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC] =
     new collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC](this, p)

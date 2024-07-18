@@ -26,7 +26,7 @@ trait FlagOps { self: TastyUniverse =>
 
     val TastyOnlyFlags: TastyFlagSet = (
       Erased | Inline | InlineProxy | Opaque | Extension | Given | Exported | Transparent
-        | Enum | Infix | Open | ParamAlias | Invisible
+        | Enum | Infix | Open | ParamAlias | Invisible | Tracked
     )
 
     type FlagParser = TastyFlagSet => Context => TastyFlagSet
@@ -139,6 +139,7 @@ trait FlagOps { self: TastyUniverse =>
       if (flags.is(ParamAlias))  sb += "<paramalias>"
       if (flags.is(Infix))       sb += "infix"
       if (flags.is(Invisible))   sb += "<invisible>"
+      if (flags.is(Tracked))     sb += "<tracked>"
       sb.mkString(" | ")
     }
   }

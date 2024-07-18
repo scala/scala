@@ -12,7 +12,7 @@
 
 package scala.tools.tasty
 
-// revision: https://github.com/scala/scala3/commit/0938fe5603a17c7c786ac8fc6118a9d5d8b257de
+// revision: https://github.com/scala/scala3/commit/5189e6854ad1dacc3454542c2f124f5bcb7e2a9c
 object TastyFormat {
 
   /** The first four bytes of a TASTy file, followed by four values:
@@ -34,9 +34,9 @@ object TastyFormat {
   /** Natural number. Each increment of the `MinorVersion`, within
    *  a series declared by the `MajorVersion`, breaks forward
    *  compatibility, but remains backwards compatible, with all
-   *  preceeding `MinorVersion`.
+   *  preceding `MinorVersion`.
    */
-  final val MinorVersion: Int = 4
+  final val MinorVersion: Int = 5
 
   /** Natural Number. The `ExperimentalVersion` allows for
    *  experimentation with changes to TASTy without committing
@@ -222,6 +222,7 @@ object TastyFormat {
   final val INVISIBLE = 44
   final val EMPTYCLAUSE = 45
   final val SPLITCLAUSE = 46
+  final val TRACKED = 47
 
   // Tree Cat. 2:    tag Nat
   final val firstNatTreeTag = SHAREDterm
@@ -260,7 +261,6 @@ object TastyFormat {
   final val BOUNDED = 102
   final val EXPLICITtpt = 103
   final val ELIDED = 104
-
 
   // Tree Cat. 4:    tag Nat AST
   final val firstNatASTTreeTag = IDENT
@@ -327,14 +327,17 @@ object TastyFormat {
   final val TYPEREFin = 175
   final val SELECTin = 176
   final val EXPORT = 177
-  // final val ??? = 178
-  // final val ??? = 179
+  final val QUOTE = 178
+  final val SPLICE = 179
   final val METHODtype = 180
   final val APPLYsigpoly = 181
+  final val QUOTEPATTERN = 182
+  final val SPLICEPATTERN = 183
 
   final val MATCHtype = 190
   final val MATCHtpt = 191
   final val MATCHCASEtype = 192
+  final val FLEXIBLEtype = 193
 
   final val HOLE = 255
 
@@ -366,7 +369,7 @@ object TastyFormat {
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
-    firstLengthTreeTag <= tag && tag <= MATCHCASEtype ||
+    firstLengthTreeTag <= tag && tag <= FLEXIBLEtype ||
     tag == HOLE
 
   def isParamTag(tag: Int): Boolean = tag == PARAM || tag == TYPEPARAM
@@ -411,7 +414,8 @@ object TastyFormat {
        | INVISIBLE
        | ANNOTATION
        | PRIVATEqualified
-       | PROTECTEDqualified => true
+       | PROTECTEDqualified
+       | TRACKED => true
     case _ => false
   }
 
@@ -568,11 +572,16 @@ object TastyFormat {
     case MATCHCASEtype => "MATCHCASEtype"
     case MATCHtpt => "MATCHtpt"
     case PARAMtype => "PARAMtype"
+    case FLEXIBLEtype => "FLEXIBLEtype"
     case ANNOTATION => "ANNOTATION"
     case PRIVATEqualified => "PRIVATEqualified"
     case PROTECTEDqualified => "PROTECTEDqualified"
     case EXPLICITtpt => "EXPLICITtpt"
     case ELIDED => "ELIDED"
+    case QUOTE => "QUOTE"
+    case SPLICE => "SPLICE"
+    case QUOTEPATTERN => "QUOTEPATTERN"
+    case SPLICEPATTERN => "SPLICEPATTERN"
     case HOLE => "HOLE"
   }
 

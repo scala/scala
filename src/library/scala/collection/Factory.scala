@@ -667,16 +667,16 @@ object ClassTagIterableFactory {
     * sound depending on the use of the `ClassTag` by the collection implementation. */
   @SerialVersionUID(3L)
   class AnyIterableDelegate[CC[_]](delegate: ClassTagIterableFactory[CC]) extends IterableFactory[CC] {
-    def empty[A]: CC[A] = delegate.empty(ClassTag.Any).asInstanceOf[CC[A]]
-    def from[A](it: IterableOnce[A]): CC[A] = delegate.from[Any](it)(ClassTag.Any).asInstanceOf[CC[A]]
-    def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder(ClassTag.Any).asInstanceOf[Builder[A, CC[A]]]
-    override def apply[A](elems: A*): CC[A] = delegate.apply[Any](elems: _*)(ClassTag.Any).asInstanceOf[CC[A]]
-    override def iterate[A](start: A, len: Int)(f: A => A): CC[A] = delegate.iterate[A](start, len)(f)(ClassTag.Any.asInstanceOf[ClassTag[A]])
-    override def unfold[A, S](init: S)(f: S => Option[(A, S)]): CC[A] = delegate.unfold[A, S](init)(f)(ClassTag.Any.asInstanceOf[ClassTag[A]])
-    override def range[A](start: A, end: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end)(i, ClassTag.Any.asInstanceOf[ClassTag[A]])
-    override def range[A](start: A, end: A, step: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end, step)(i, ClassTag.Any.asInstanceOf[ClassTag[A]])
-    override def fill[A](n: Int)(elem: => A): CC[A] = delegate.fill[Any](n)(elem)(ClassTag.Any).asInstanceOf[CC[A]]
-    override def tabulate[A](n: Int)(f: Int => A): CC[A] = delegate.tabulate[Any](n)(f)(ClassTag.Any).asInstanceOf[CC[A]]
+    def empty[A]: CC[A] = delegate.empty(using ClassTag.Any).asInstanceOf[CC[A]]
+    def from[A](it: IterableOnce[A]): CC[A] = delegate.from[Any](it)(using ClassTag.Any).asInstanceOf[CC[A]]
+    def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder(using ClassTag.Any).asInstanceOf[Builder[A, CC[A]]]
+    override def apply[A](elems: A*): CC[A] = delegate.apply[Any](elems: _*)(using ClassTag.Any).asInstanceOf[CC[A]]
+    override def iterate[A](start: A, len: Int)(f: A => A): CC[A] = delegate.iterate[A](start, len)(f)(using ClassTag.Any.asInstanceOf[ClassTag[A]])
+    override def unfold[A, S](init: S)(f: S => Option[(A, S)]): CC[A] = delegate.unfold[A, S](init)(f)(using ClassTag.Any.asInstanceOf[ClassTag[A]])
+    override def range[A](start: A, end: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end)(using i, ClassTag.Any.asInstanceOf[ClassTag[A]])
+    override def range[A](start: A, end: A, step: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end, step)(using i, ClassTag.Any.asInstanceOf[ClassTag[A]])
+    override def fill[A](n: Int)(elem: => A): CC[A] = delegate.fill[Any](n)(elem)(using ClassTag.Any).asInstanceOf[CC[A]]
+    override def tabulate[A](n: Int)(f: Int => A): CC[A] = delegate.tabulate[Any](n)(f)(using ClassTag.Any).asInstanceOf[CC[A]]
   }
 }
 

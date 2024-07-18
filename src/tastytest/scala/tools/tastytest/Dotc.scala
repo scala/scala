@@ -81,10 +81,14 @@ object Dotc extends Script.Command {
 
   private def makeConsoleReporter(stream: OutputStream)(implicit cl: Dotc.ClassLoader): Try[AnyRef] = Try {
     val consoleReporterCls = loadClass("dotty.tools.dotc.reporting.ConsoleReporter")
-    val ctor = consoleReporterCls.getConstructor(classOf[BufferedReader], classOf[PrintWriter])
+    val ctor = consoleReporterCls.getConstructor(
+      /* reader: BufferedReader */classOf[BufferedReader],
+      /* writer: PrintWriter */classOf[PrintWriter],
+      /* echoer: PrintWriter */classOf[PrintWriter] // since 3.5.0-RC2
+    )
     val pwriter = new PrintWriter(stream, true)
     inClassloader[AnyRef] {
-      ctor.newInstance(Console.in, pwriter)
+      ctor.newInstance(/* reader = */Console.in, /* writer = */pwriter, /* echoer= */pwriter)
     }
   }
 
