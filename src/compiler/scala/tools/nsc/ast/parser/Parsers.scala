@@ -2727,7 +2727,7 @@ self =>
         case Nil => Nil
         case t :: rest =>
           // The first import should start at the position of the keyword.
-          t.setPos(t.pos.withStart(offset))
+          if (t.pos.isRange) t.setPos(t.pos.withStart(offset))
           t :: rest
       }
     }

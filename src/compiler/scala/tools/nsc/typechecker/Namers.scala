@@ -567,8 +567,10 @@ trait Namers extends MethodSynthesis {
           //       so don't warn for them. There is a corresponding special treatment
           //       in the shadowing rules in typedIdent to (scala/bug#7232). In any case,
           //       we shouldn't be emitting warnings for .java source files.
-          if (!context.unit.isJava)
-            checkNotRedundant(tree.pos withPoint fromPos, from, to)
+          if (!context.unit.isJava) {
+            val at = if (tree.pos.isRange) tree.pos.withPoint(fromPos) else tree.pos
+            checkNotRedundant(at, from, to)
+          }
         }
       }
       selectors.foreach(checkSelector)

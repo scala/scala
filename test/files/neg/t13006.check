@@ -12,13 +12,13 @@ t13006.scala:21: warning: constructor D in class D is deprecated
                ^
 t13006.scala:22: warning: constructor D in class D is deprecated
   def u2 = new A.Y(10)   // warn
-           ^
+               ^
 t13006.scala:23: warning: constructor D in class D is deprecated
   def u3 = D.apply(10)   // warn
              ^
 t13006.scala:24: warning: constructor D in class D is deprecated
   def u4 = new D(10)     // warn
-           ^
+               ^
 t13006.scala:34: warning: class C in object oho is deprecated
   def t1 = oho.C(10) // warn
                ^

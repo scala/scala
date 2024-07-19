@@ -40,7 +40,8 @@ object Position {
     if (pos.isRange) {
       import pos.{pos => _, _}
       assert(start <= end, s"bad position: ${pos.show}")
-      //assert(start <= point && point < end, s"bad position: point $point out of range $start..$end: ${pos.show}")
+      //assert(start <= point && point <= end, s"bad position: point $point out of range $start..$end: ${pos.show}")
+      //assert(start <= point && point <= end, s"bad position: point $point out of range $start..$end: ${pos.show}\n${pos.lineContent}\n${pos.lineCaret}")
     }
     pos
   }
