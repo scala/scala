@@ -573,18 +573,19 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
               defnTrees += m
           }
         case CaseDef(pat, _, _) if settings.warnUnusedPatVars && !t.isErrorTyped =>
-          pat match {
-            case Apply(_, args) =>
-              treeInfo.dissectApplied(pat).core.tpe match {
-                case MethodType(ps, _) =>
-                  foreach2(ps, args) { (p, x) =>
-                    x match {
-                      case Bind(n, _) if p.name == n => x.updateAttachment(NoWarnAttachment)
-                      case _ =>
-                    }
+          def absolveVariableBindings(app: Apply, args: List[Tree]): Unit =
+            treeInfo.dissectApplied(app).core.tpe match {
+              case MethodType(ps, _) =>
+                foreach2(ps, args) { (p, x) =>
+                  x match {
+                    case Bind(n, _) if p.name == n => x.updateAttachment(NoWarnAttachment)
+                    case _ =>
                   }
-                case _ =>
-              }
+                }
+              case _ =>
+            }
+          pat.foreach {
+            case app @ Apply(_, args) => absolveVariableBindings(app, args)
             case _ =>
           }
           pat.foreach {
@@ -597,8 +598,17 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
           }
         case _: RefTree => if (isExisting(sym) && !currentOwner.hasTransOwner(sym)) recordReference(sym)
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
-        case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped =>
-          params ++= ps.filterNot(p => nowarn(p) || p.symbol.isSynthetic).map(_.symbol)
+        case Function(ps, _) if !t.isErrorTyped =>
+          for (p <- ps)
+            if (wasPatVarDef(p)) {
+              if (settings.warnUnusedPatVars && !nowarn(p))
+                if (p.hasAttachment[VarAlias])
+                  aliases += p.symbol -> followVarAlias(p)
+                else
+                  patvars += p.symbol
+            }
+            else if (settings.warnUnusedParams && !nowarn(p) && !p.symbol.isSynthetic)
+              params += p.symbol
         case Literal(_) =>
           t.attachments.get[OriginalTreeAttachment].foreach(ota => traverse(ota.original))
         case tt: TypeTree =>

@@ -13,7 +13,7 @@
 package scala.reflect.reify
 package phases
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.tools.nsc.symtab.Flags._
 
 trait Reshape {
@@ -192,7 +192,7 @@ trait Reshape {
 
     @tailrec
     private def toPreTyperTypedOrAnnotated(tree: Tree): Tree = tree match {
-      case ty @ Typed(expr1, tpt) =>
+      case ty @ Typed(_, tpt) =>
         if (reifyDebug) println("reify typed: " + tree)
         val original = tpt match {
           case tt @ TypeTree() => tt.original
@@ -201,11 +201,10 @@ trait Reshape {
         val annotatedArg = {
           @tailrec
           def loop(tree: Tree): Tree = tree match {
-            case annotated1 @ Annotated(ann, annotated2 @ Annotated(_, _)) => loop(annotated2)
-            case annotated1 @ Annotated(ann, arg) => arg
+            case Annotated(_, annotated2 @ Annotated(_, _)) => loop(annotated2)
+            case Annotated(_, arg) => arg
             case _ => EmptyTree
           }
-
           loop(original)
         }
         if (annotatedArg != EmptyTree) {
@@ -220,7 +219,7 @@ trait Reshape {
           if (reifyDebug) println("verdict: wasn't annotated, reify as usual")
           ty
         }
-      case at @ Annotated(annot, arg) =>
+      case at @ Annotated(_, arg) =>
         if (reifyDebug) println("reify type annotations for: " + tree)
         assert(at.tpe.isInstanceOf[AnnotatedType], "%s (%s)".format(at.tpe, at.tpe.kind))
         val annot1 = toPreTyperAnnotation(at.tpe.asInstanceOf[AnnotatedType].annotations(0))
@@ -251,7 +250,7 @@ trait Reshape {
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
-    private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
+    private def trimAccessors(@unused deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
       val accessors = scala.collection.mutable.Map[ValDef, List[DefDef]]()
       stats collect { case ddef: DefDef => ddef } foreach (defdef => {
@@ -311,7 +310,7 @@ trait Reshape {
       stats1
     }
 
-    private def trimSyntheticCaseClassMembers(deff: Tree, stats: List[Tree]): List[Tree] =
+    private def trimSyntheticCaseClassMembers(@unused deff: Tree, stats: List[Tree]): List[Tree] =
       stats filterNot (memberDef => memberDef.isDef && {
         val isSynthetic = memberDef.symbol.isSynthetic
         // this doesn't work for local classes, e.g. for ones that are top-level to a quasiquote (see comments to companionClass)

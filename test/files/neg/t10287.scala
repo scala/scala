@@ -43,6 +43,11 @@ class C {
       y = x * 2
       _ = println(x)
     } yield y
+  def i(xs: List[Int]) =
+    for {
+      x <- xs
+      if x > 42
+    } println(".")
 }
 
 case class K[A](a: A, i: Int)

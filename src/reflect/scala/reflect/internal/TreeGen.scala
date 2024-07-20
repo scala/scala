@@ -673,7 +673,12 @@ abstract class TreeGen {
         case Some((name, tpt)) =>
           val p = atPos(pat.pos) {
             ValDef(Modifiers(PARAM), name.toTermName, tpt, EmptyTree)
-              .tap(p => varAliasTo(pat, propagatePatVarDefAttachments(pat, p)))
+              .tap { p =>
+                if (pat.hasAttachment[VarAlias])
+                  varAliasTo(propagatePatVarDefAttachments(pat, p), pat)
+                else
+                  varAliasTo(pat, propagatePatVarDefAttachments(pat, p))
+              }
           }
           Function(List(p), body).setPos(splitpos)
         case None =>
@@ -720,7 +725,7 @@ abstract class TreeGen {
       case (t @ ValFrom(pat, rhs)) :: (rest @ (ValFrom(_, _) :: _)) =>
         makeCombination(closurePos(t.pos), flatMapName, rhs, pat, body = mkFor(rest, sugarBody))
       case (t @ ValFrom(pat, rhs)) :: Filter(test) :: rest =>
-        mkFor(ValFrom(pat, makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, patternAlias(pat), test)).setPos(t.pos) :: rest, sugarBody)
+        mkFor(ValFrom(patternAlias(pat), makeCombination(rhs.pos | test.pos, nme.withFilter, rhs, pat, test)).setPos(t.pos) :: rest, sugarBody)
       case (t @ ValFrom(pat, rhs)) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(ValEq.unapply(_).nonEmpty)
         assert(!valeqs.isEmpty, "Missing ValEq")

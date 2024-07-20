@@ -89,7 +89,7 @@ abstract class NodePrinters {
       tree match {
         case SelectFromTypeTree(qual, name) => showRefTreeName(qual) + "#" + showName(name)
         case Select(qual, name)             => showRefTreeName(qual) + "." + showName(name)
-        case id @ Ident(name)               => showNameAndPos(id)
+        case id: Ident                      => showNameAndPos(id)
         case _                              => "" + tree
       }
     }
@@ -358,7 +358,7 @@ abstract class NodePrinters {
           tree match {
             case t: RefTree               => println(showRefTree(t))
             case t if t.productArity == 0 => println(treePrefix(t))
-            case t                        => printMultiline(tree)(tree.productIterator foreach traverseAny)
+            case _                        => printMultiline(tree)(tree.productIterator foreach traverseAny)
           }
       }
     }

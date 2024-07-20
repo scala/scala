@@ -23,6 +23,6 @@ trait GenPositions {
   // but I can hardly imagine when one would need a position that points to the reified code
   // usually reified trees are used to compose macro expansions or to be fed to the runtime compiler
   // however both macros and toolboxes have their own means to report errors in synthetic trees
-  def reifyPosition(pos: Position): Tree =
-    reifyMirrorObject(NoPosition)
+  @annotation.nowarn
+  def reifyPosition(pos: Position): Tree = reifyMirrorObject(NoPosition)
 }

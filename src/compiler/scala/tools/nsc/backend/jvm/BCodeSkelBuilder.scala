@@ -14,9 +14,10 @@ package scala.tools.nsc
 package backend
 package jvm
 
+import scala.annotation.unused
 import scala.collection.{immutable, mutable}
-import scala.tools.nsc.symtab._
 import scala.tools.asm
+import scala.tools.nsc.symtab._
 import GenBCode._
 import BackendReporting._
 
@@ -181,7 +182,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     /*
      * must-single-thread
      */
-    private def initJClass(jclass: asm.ClassVisitor): Unit = {
+    private def initJClass(@unused jclass: asm.ClassVisitor): Unit = {
 
       val bType = classBTypeFromSymbol(claszSymbol)
       val superClass = bType.info.get.superClass.getOrElse(ObjectRef).internalName
@@ -710,7 +711,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
      *
      *  TODO document, explain interplay with `fabricateStaticInit()`
      */
-    private def appendToStaticCtor(dd: DefDef): Unit = {
+    private def appendToStaticCtor(@unused dd: DefDef): Unit = {
 
       def insertBefore(
             location: asm.tree.AbstractInsnNode,

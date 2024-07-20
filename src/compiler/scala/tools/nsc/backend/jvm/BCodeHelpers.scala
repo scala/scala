@@ -15,14 +15,13 @@ package tools.nsc
 package backend.jvm
 
 import scala.PartialFunction.cond
-import scala.annotation.tailrec
-import scala.tools.asm
-import scala.tools.asm.{ClassWriter, Label}
+import scala.annotation.{tailrec, unused}
+import scala.tools.asm, asm.{ClassWriter, Label}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.NoReporter
-import scala.util.chaining.scalaUtilChainingOps
+import scala.util.chaining._
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -266,7 +265,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def apply(sym: Symbol, csymCompUnit: CompilationUnit, mainClass: Option[String]): Boolean = sym.hasModuleFlag && {
+    def apply(sym: Symbol, @unused csymCompUnit: CompilationUnit, mainClass: Option[String]): Boolean = sym.hasModuleFlag && {
       val warn = mainClass.fold(true)(_ == sym.fullNameString)
       def warnBadMain(msg: String, pos: Position): Unit = if (warn) runReporting.warning(pos,
         s"""|not a valid main method for ${sym.fullName('.')},
@@ -429,7 +428,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      *  must-single-thread
      */
-    def getAnnotPickle(jclassName: String, sym: Symbol): Option[AnnotationInfo] = {
+    def getAnnotPickle(@unused jclassName: String, sym: Symbol): Option[AnnotationInfo] = {
       currentRun.symData get sym match {
         case Some(pickle) if !sym.isModuleClass => // pickles for module classes are in the companion / mirror class
           val scalaAnnot = {
@@ -830,7 +829,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    def addForwarders(jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol): Unit = {
+    def addForwarders(jclass: asm.ClassVisitor, @unused jclassName: String, moduleClass: Symbol): Unit = {
       assert(moduleClass.isModuleClass, moduleClass)
 
       val linkedClass = moduleClass.companionClass

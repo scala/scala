@@ -376,7 +376,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[InternalReporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
-      catch { case ex: Throwable =>
+      catch { case _: Throwable =>
         globalError("exception while trying to instantiate source reader '" + name + "'")
         None
       }
@@ -1651,7 +1651,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case _: InterruptedException => reporter.cancelled = true
         case ex: IOException => globalError(ex.getMessage())
       }
     }
@@ -1672,7 +1672,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case _: InterruptedException => reporter.cancelled = true
         case ex: IOException => globalError(ex.getMessage())
       }
     }

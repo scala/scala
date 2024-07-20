@@ -94,7 +94,7 @@ trait Anonymous {
 
   def f2: Int => Int = _ + 1  // no warn placeholder syntax (a fresh name and synthetic parameter)
 
-  def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
+  def g = for (i <- List(1)) yield answer    // no warn patvar elaborated as map.(i => 42)
 }
 trait Context[A] { def m(a: A): A = a }
 trait Implicits {

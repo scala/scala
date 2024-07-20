@@ -538,6 +538,7 @@ lazy val compiler = configureAsSubproject(project)
       ).get
     },
     Compile / scalacOptions ++= Seq(
+      //"-Wunused", "-Wnonunit-statement",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(

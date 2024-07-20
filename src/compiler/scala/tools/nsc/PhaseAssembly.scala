@@ -190,7 +190,7 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
       def sortVertex(i: Int, j: Int): Boolean = sortComponents(componentOf(i), componentOf(j))
 
       distance.zipWithIndex.groupBy(_._1).toList.sortBy(_._1)
-      .flatMap { case (d, dis) =>
+      .flatMap { case (_, dis) =>
         val vs = dis.map { case (_, i) => i }
         val (anchors, followers) = vs.partition(v => edgeTo(v) == null || edgeTo(v).weight != FollowsNow)
         //if (debugging) println(s"d=$d, anchors=${anchors.toList.map(n => names(n))}, followers=${followers.toList.map(n => names(n))}")

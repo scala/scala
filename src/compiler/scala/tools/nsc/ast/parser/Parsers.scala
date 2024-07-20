@@ -1286,7 +1286,7 @@ self =>
         val parents = ListBuffer.empty[Tree]
         var otherInfixOp: Tree = EmptyTree
         def collect(tpt: Tree): Unit = tpt match {
-          case AppliedTypeTree(op @ Ident(tpnme.AND), List(left, right)) =>
+          case AppliedTypeTree(Ident(tpnme.AND), List(left, right)) =>
             collect(left)
             collect(right)
           case AppliedTypeTree(op, args) if args.exists(arg => arg.pos.start < op.pos.point) =>
@@ -3090,8 +3090,8 @@ self =>
           }
           def warnNilary() = migrationWarning(nameOffset, unaryMsg("deprecated"), unaryMsg("unsupported"), since = "2.13.4", actions = action)
           vparamss match {
-            case List(List())                               => warnNilary()
-            case List(List(), x :: xs) if x.mods.isImplicit => warnNilary()
+            case List(List())                              => warnNilary()
+            case List(List(), x :: _) if x.mods.isImplicit => warnNilary()
             case _ => // ok
           }
         }

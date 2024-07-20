@@ -13,6 +13,7 @@
 package scala.reflect.reify
 package utils
 
+import scala.annotation.unused
 import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import java.lang.System.{lineSeparator => EOL}
 
@@ -89,7 +90,7 @@ trait SymbolTables {
       new SymbolTable(newSymtab, newAliases)
     }
 
-    def add(sym: Symbol, name0: TermName, reification: Tree): SymbolTable = {
+    def add(@unused sym: Symbol, name0: TermName, reification: Tree): SymbolTable = {
       def freshName(name0: TermName): TermName = {
         var name = name0.toString
         name = name.replace(".type", "$type")

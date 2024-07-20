@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.collection.AbstractIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -767,7 +767,7 @@ abstract class BoxUnbox {
       }
     }
 
-    def checkRefConsumer(insn: AbstractInsnNode, kind: Ref, prodCons: ProdConsAnalyzer): Option[BoxConsumer] = insn match {
+    def checkRefConsumer(insn: AbstractInsnNode, kind: Ref, @unused prodCons: ProdConsAnalyzer): Option[BoxConsumer] = insn match {
       case fi: FieldInsnNode if fi.owner == kind.refClass && fi.name == "elem" =>
         if (fi.getOpcode == GETFIELD) Some(StaticGetterOrInstanceRead(fi))
         else if (fi.getOpcode == PUTFIELD) Some(StaticSetterOrInstanceWrite(fi))

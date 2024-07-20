@@ -62,8 +62,8 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo with MacroAnnoti
     // new B(v). Returns B and v.
     object Box {
       def unapply(t: Tree): Option[(Tree, Type)] = t match {
-        case Apply(sel @ Select(New(tpt), nme.CONSTRUCTOR), v :: Nil) => Some((v, tpt.tpe.finalResultType))
-        case _                                                        => None
+        case Apply(Select(New(tpt), nme.CONSTRUCTOR), v :: Nil) => Some((v, tpt.tpe.finalResultType))
+        case _                                                  => None
       }
     }
     // (new B(v)).unbox. returns v.

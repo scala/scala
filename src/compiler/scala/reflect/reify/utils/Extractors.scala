@@ -242,8 +242,8 @@ trait Extractors {
 
   object TypeRefToFreeType {
     def unapply(tree: Tree): Option[TermName] = tree match {
-      case Apply(Select(Select(uref @ Ident(_), typeRef), apply), List(Select(_, noSymbol), Ident(freeType: TermName), nil))
-      if (uref.name == nme.UNIVERSE_SHORT && typeRef == nme.TypeRef && noSymbol == nme.NoSymbol && freeType.startsWith(nme.REIFY_FREE_PREFIX)) =>
+      case Apply(Select(Select(Ident(nme.UNIVERSE_SHORT), nme.TypeRef), apply@_), List(Select(_, nme.NoSymbol), Ident(freeType: TermName), _))
+      if freeType.startsWith(nme.REIFY_FREE_PREFIX) =>
         Some(freeType)
       case _ =>
         None

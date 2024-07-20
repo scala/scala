@@ -27,9 +27,6 @@ newSource1.scala:22: warning: local var unset*** in method forgone*** is never u
 newSource1.scala:23: warning: local val z*** in method forgone*** is never used
     val z = unset
         ^
-newSource1.scala:24: warning: parameter y*** in anonymous function is never used
-    for (x <- Option(42); y <- Option(27) if x < i; res = x - y) yield res
-                          ^
 newSource1.scala:27: warning: private var misbegotten*** in class Test*** is never used
   private var misbegotten: Int = 42
               ^

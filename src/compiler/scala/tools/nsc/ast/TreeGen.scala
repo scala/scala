@@ -13,12 +13,11 @@
 package scala.tools.nsc
 package ast
 
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import scala.collection.mutable.ListBuffer
-import symtab.Flags._
-import scala.reflect.internal.util.FreshNameCreator
-import scala.reflect.internal.util.ListOfNil
+import scala.reflect.internal.util.{FreshNameCreator, ListOfNil}
 import scala.util.chaining._
+import symtab.Flags._
 
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
@@ -304,7 +303,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     * @param name name for the new method
     * @param additionalFlags flags to be put on the method in addition to FINAL
     */
-  private def mkMethodForFunctionBody(localTyper: analyzer.Typer)
+  private def mkMethodForFunctionBody(@unused localTyper: analyzer.Typer)
                                      (owner: Symbol, fun: Function, name: TermName)
                                      (methParamProtos: List[Symbol] = fun.vparams.map(_.symbol),
                                       resTp: Type = functionResultType(fun.tpe),
