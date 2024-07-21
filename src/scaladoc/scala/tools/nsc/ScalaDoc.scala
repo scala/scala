@@ -21,27 +21,30 @@ import scala.reflect.internal.util.{FakePos, Position}
  *  that generates documentation from source files.
  */
 class ScalaDoc {
+  import ScalaDoc._
   val versionMsg = s"Scaladoc ${Properties.versionString} -- ${Properties.copyrightString}"
 
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
-    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
+    val docSettings = new doc.Settings(msg => reporter.error(NoDocPos, s"$msg\n  scaladoc -help gives more information"),
                                        msg => reporter.echo(msg),
                                        DefaultPathFactory)
     reporter = new ScalaDocReporter(docSettings)
-    val command = new ScalaDoc.Command(args.toList, docSettings)
+    val command = new Command(args.toList, docSettings)
     def hasFiles = command.files.nonEmpty || docSettings.uncompilableFiles.nonEmpty
 
-    if (docSettings.version.value)
+    if (!command.ok)
+      ()
+    else if (docSettings.version.value)
       reporter.echo(versionMsg)
     else if (docSettings.Xhelp.value)
       reporter.echo(command.xusageMsg)
     else if (docSettings.Yhelp.value)
       reporter.echo(command.yusageMsg)
     else if (docSettings.showPlugins.value)
-      reporter.warning(null, "Plugins are not available when using Scaladoc")
+      reporter.warning(NoDocPos, "Plugins are not available when using Scaladoc")
     else if (docSettings.showPhases.value)
-      reporter.warning(null, s"Phases are restricted when using Scaladoc.\n${new DocFactory(reporter, docSettings).compiler.phaseDescriptions}")
+      reporter.warning(NoDocPos, s"Phases are restricted when using Scaladoc.\n${new DocFactory(reporter, docSettings).compiler.phaseDescriptions}")
     else if (docSettings.help.value || !hasFiles)
       reporter.echo(command.usageMsg)
     else
@@ -49,7 +52,7 @@ class ScalaDoc {
       catch {
         case ex @ FatalError(msg) =>
           if (docSettings.isDebug) ex.printStackTrace()
-          reporter.error(null, "fatal error: " + msg)
+          reporter.error(NoDocPos, s"fatal error: $msg")
       }
       finally reporter.finish()
 
@@ -86,13 +89,14 @@ class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
 }
 
 object ScalaDoc extends ScalaDoc {
+  val NoDocPos = FakePos("scaladoc")
+
   class Command(arguments: List[String], settings: doc.Settings) extends CompilerCommand(arguments, settings) {
     override def cmdName = "scaladoc"
-    override def usageMsg = (
-      createUsageMsg("where possible scaladoc", explain = false)(x => x.isStandard && settings.isScaladocSpecific(x.name)) +
-      "\n\nStandard scalac options also available:" +
-      optionsMessage(x => x.isStandard && !settings.isScaladocSpecific(x.name))
-    )
+    override def usageMsg =
+      sm"""${createUsageMsg("where possible scaladoc", explain = false)(x => x.isStandard && settings.isScaladocSpecific(x.name))}
+           |Standard scalac options also available:
+           |${optionsMessage(x => x.isStandard && !settings.isScaladocSpecific(x.name))}"""
   }
 
   def main(args: Array[String]): Unit = {
