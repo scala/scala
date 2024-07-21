@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.collection.mutable
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -461,7 +461,7 @@ trait MatchAnalysis extends MatchApproximation {
     // the case is reachable if there is a model for -P /\ C,
     // thus, the case is unreachable if there is no model for -(-P /\ C),
     // or, equivalently, P \/ -C, or C => P
-    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Int] = {
+    def unreachableCase(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): Option[Int] = {
       debug.patmat("reachability analysis")
       val start = if (settings.areStatisticsEnabled) statistics.startTimer(statistics.patmatAnaReach) else null
 
@@ -519,7 +519,7 @@ trait MatchAnalysis extends MatchApproximation {
 
     // exhaustivity
 
-    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
+    def exhaustive(prevBinder: Symbol, cases: List[List[TreeMaker]], @unused pt: Type): List[String] = if (!settings.warnStrictUnsealedPatMat && uncheckableType(prevBinder.info)) Nil else {
       debug.patmat("exhaustiveness analysis")
       // customize TreeMakersToProps (which turns a tree of tree makers into a more abstract DAG of tests)
       // - approximate the pattern `List()` (unapplySeq on List with empty length) as `Nil`,
@@ -788,7 +788,7 @@ trait MatchAnalysis extends MatchApproximation {
       object VariableAssignment {
         private def findVar(path: List[Symbol]) = path match {
           case List(root) if root == scrutVar.path.symbol => Some(scrutVar)
-          case _ => varAssignment.find{case (v, a) => chop(v.path) == path}.map(_._1)
+          case _ => varAssignment.find{case (v, _) => chop(v.path) == path}.map(_._1)
         }
 
         private val uniques = new mutable.HashMap[Var, VariableAssignment]

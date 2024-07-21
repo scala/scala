@@ -12,12 +12,10 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.annotation.tailrec
-
+import scala.annotation._
 import scala.collection.mutable
-import scala.reflect.io.AbstractFile
 import scala.reflect.internal.MissingRequirementError
-
+import scala.reflect.io.AbstractFile
 import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._, TastyName.ObjectName
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.tools.nsc.tasty.{cyan, yellow, magenta, blue, green}
@@ -521,7 +519,7 @@ trait ContextOps { self: TastyUniverse =>
     final def processParents(cls: Symbol, parentTypes: List[Type]): parentTypes.type = {
       if (parentTypes.head.typeSymbolDirect === u.definitions.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
-        withPhaseNoLater("extmethods") { ctx0 =>
+        withPhaseNoLater("extmethods") { _ =>
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(noSymbol)
           for (decl <- cls.info.decls if decl.isMethod) {
@@ -781,7 +779,7 @@ trait ContextOps { self: TastyUniverse =>
           enterIfUnseen0(decls, d)
       }
 
-      def reportParameterizedTrait(cls: Symbol, decls: u.Scope): Unit = {
+      def reportParameterizedTrait(cls: Symbol, @unused decls: u.Scope): Unit = {
         val traitParams = traitParamAccessors(cls).getOrElse(Iterable.empty)
         if (traitParams.nonEmpty) {
           log {

@@ -616,7 +616,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       val sym = tree.symbol
 
       tree match {
-        case templ @ Template(parents, self, body) =>
+        case Template(parents, self, body) =>
           // change parents of templates to conform to parents in the symbol info
           val parents1 = currentOwner.info.parents map (t => TypeTree(t) setPos tree.pos)
 

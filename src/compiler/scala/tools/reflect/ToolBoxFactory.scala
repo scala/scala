@@ -200,7 +200,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(tree, TERMmode, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
             trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, printOwners = settings.Yshowsymowners.value, printKinds = settings.Yshowsymkinds.value))
-            analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
+            analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (_, msg) => throw ToolBoxError(msg))
           })
 
       private def wrapInPackageAndCompile(packageName: TermName, tree: ImplDef): Symbol = {

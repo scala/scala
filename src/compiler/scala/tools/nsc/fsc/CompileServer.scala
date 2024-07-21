@@ -152,7 +152,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
       val c = compiler
       try new c.Run() compile command.files
       catch {
-        case ex @ FatalError(msg) =>
+        case FatalError(msg) =>
           reporter.error(null, "fatal error: " + msg)
           clearCompiler()
         case ex: Throwable =>

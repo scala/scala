@@ -194,7 +194,7 @@ abstract class UnCurry extends InfoTransform
 
         import treeInfo.{catchesThrowable, isSyntheticCase}
         for {
-          Try(t, catches, _) <- body
+          Try(_, catches, _) <- body
           cdef <- catches
           if catchesThrowable(cdef) && !isSyntheticCase(cdef)
         } {
@@ -398,7 +398,7 @@ abstract class UnCurry extends InfoTransform
      *  all lambda impl methods as static.
      */
     private def translateSynchronized(tree: Tree) = tree match {
-      case dd @ DefDef(_, _, _, _, _, Apply(fn, body :: Nil)) if isSelfSynchronized(dd) =>
+      case dd @ DefDef(_, _, _, _, _, Apply(_, body :: Nil)) if isSelfSynchronized(dd) =>
         log("Translating " + dd.symbol.defString + " into synchronized method")
         dd.symbol setFlag SYNCHRONIZED
         deriveDefDef(dd)(_ => body)
@@ -838,7 +838,7 @@ abstract class UnCurry extends InfoTransform
 
       val theTyper = typer.atOwner(dd, currentClass)
       val forwTree = theTyper.typedPos(dd.pos) {
-        val seqArgs = map3(newPs, oldPs, isRepeated)((param, oldParam, isRep) => {
+        val seqArgs = map3(newPs, oldPs, isRepeated)((param, _, isRep) => {
           if (!isRep) Ident(param)
           else {
             val parTp = elementType(ArrayClass, param.tpe)

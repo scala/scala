@@ -97,7 +97,7 @@ trait Plugins { global: Global =>
     val cache = pluginClassLoadersCache
     val checkStamps = policy == settings.CachePolicy.LastModified.name
     cache.checkCacheability(classpath.map(_.toURL), checkStamps, disableCache) match {
-      case Left(msg) =>
+      case Left(_) =>
         val loader = newLoader()
         closeableRegistry.registerCloseable(loader)
         loader

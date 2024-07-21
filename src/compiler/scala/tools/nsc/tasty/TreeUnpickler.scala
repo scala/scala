@@ -16,7 +16,7 @@ import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat, TastyF
 import TastyRefs._, TastyFlags._, TastyFormat._
 import ForceKinds._
 
-import scala.annotation.switch
+import scala.annotation.{switch, unused}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.reflect.internal.Variance
@@ -162,7 +162,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       tag match {
         case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM | TEMPLATE =>
           val end = readEnd()
-          for (i <- 0 until numRefs(tag)) readNat()
+          for (_ <- 0 until numRefs(tag)) readNat()
           if (tag === TEMPLATE) {
             // Read all member definitions now, whereas non-members are children of
             // template's owner tree.
@@ -179,7 +179,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val end = readEnd()
             val nrefs = numRefs(tag)
             if (nrefs < 0) {
-              for (i <- nrefs until 0) scanTree(buf, AllDefs)
+              for (_ <- nrefs until 0) scanTree(buf, AllDefs)
               goto(end)
             }
             else {
@@ -514,7 +514,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       flags
     }
 
-    def isAbstractType(ttag: Int)(implicit ctx: Context): Boolean = nextUnsharedTag match {
+    def isAbstractType(@unused ttag: Int)(implicit ctx: Context): Boolean = nextUnsharedTag match {
       case LAMBDAtpt =>
         val rdr = fork
         rdr.reader.readByte()  // tag
@@ -744,7 +744,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def indexStats(end: Addr)(implicit ctx: Context): Unit = {
       while (currentAddr.index < end.index) {
         nextByte match {
-          case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
+          case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
             symbolAtCurrent()
             skipTree()
           case IMPORT | EXPORT =>
@@ -1056,7 +1056,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     def isTopLevel: Boolean = nextByte === IMPORT || nextByte === PACKAGE
 
-    def readIndexedStatAsSym(exprOwner: Symbol)(implicit ctx: Context): NoCycle = nextByte match {
+    def readIndexedStatAsSym(@unused exprOwner: Symbol)(implicit ctx: Context): NoCycle = nextByte match {
       case TYPEDEF | VALDEF | DEFDEF =>
         readIndexedMember()
       case IMPORT =>
@@ -1313,7 +1313,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   private def traceReadWith[T](treader: TreeReader, mode: TastyMode, owner: Symbol) = TraceInfo[T](
     query = "read within owner",
     qual = s"${showSym(owner)} with modes `${mode.debug}` at ${treader.reader.currentAddr}",
-    res = t => s"exiting sub reader"
+    res = _ => s"exiting sub reader"
   )
 
   /** A lazy datastructure that records how definitions are nested in TASTY data.

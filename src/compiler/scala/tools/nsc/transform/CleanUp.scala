@@ -220,8 +220,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
                 case _        => false
               }
               def typesMatchUpdate = paramTypes match {
-                case List(tp1, tp2) => (tp1 <:< IntTpe) && isMaybeUnit
-                case _              => false
+                case List(tp1, _) => (tp1 <:< IntTpe) && isMaybeUnit
+                case _            => false
               }
 
               (methSym.name == nme.length && params.isEmpty) ||
@@ -518,9 +518,9 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
           case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
             super.transform(arg)
-          case _                                                      =>
+          case _ =>
             typedWithPos(tree.pos) {
-              gen.evalOnce(classTagEvidence, currentOwner, unit) { ev =>
+              gen.evalOnce(classTagEvidence, currentOwner, unit) { _ =>
                 val arr = typedWithPos(tree.pos)(gen.mkMethodCall(classTagEvidence, definitions.ClassTagClass.info.decl(nme.newArray), Nil, Literal(Constant(elems.size)) :: Nil))
                 gen.evalOnce(arr, currentOwner, unit) { arr =>
                   val stats = ListBuffer[Tree]()
@@ -553,7 +553,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         ).transform(this)
 
       // <List or Seq>(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil))) but only for reference types
-      case StripCast(Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _)))))))
+      case StripCast(Apply(appMeth @ Select(_, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _)))))))
       if wrapArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod
         && currentRun.runDefinitions.isSeqApply(appMeth)  // includes List
         && rest.elems.lengthIs < transformListApplyLimit
@@ -646,7 +646,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
        * And, finally, be advised - Scala's Symbol literal (scala.Symbol) and the Symbol class of the compiler
        * have little in common.
        */
-      case Apply(Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
+      case Apply(Select(qual, _), (arg @ Literal(Constant(_: String))) :: Nil)
       if fun.symbol == Symbol_apply && !currentClass.isTrait && treeInfo.isQualifierSafeToElide(qual) =>
 
         treeCopy.ApplyDynamic(tree, atPos(fun.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil).transform(this)

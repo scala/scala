@@ -473,7 +473,7 @@ trait Infer extends Checkable {
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
           try instantiateToBound(tvar, varianceInTypes(formals)(tparam))
-          catch { case ex: NoInstance => WildcardType }
+          catch { case _: NoInstance => WildcardType }
         )
       else
         WildcardType.fillList(tvars.length)
@@ -1513,9 +1513,9 @@ trait Infer extends Checkable {
           def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
-            case best :: nil            => finish(best)
-            case nil if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
-            case nil                    => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
+            case best :: _              => finish(best)
+            case _   if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
+            case _                      => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
           }
         }
 

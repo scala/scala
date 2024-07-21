@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package transform.patmat
 
+import scala.annotation._
+
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
 trait MatchTranslation {
@@ -186,7 +188,7 @@ trait MatchTranslation {
       val Match(selector, cases) = match_
 
       val (nonSyntheticCases, defaultOverride) = cases match {
-        case init :+ last if treeInfo isSyntheticDefaultCase last => (init, Some(((scrut: Tree) => last.body)))
+        case init :+ last if treeInfo isSyntheticDefaultCase last => (init, Some(((_: Tree) => last.body)))
         case _                                                    => (cases, None)
       }
 
@@ -263,7 +265,7 @@ trait MatchTranslation {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
+                  combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(_ => Throw(REF(exSym))), suppression)
                 )
               })
         }
@@ -402,7 +404,7 @@ trait MatchTranslation {
       private def genDrop(binder: Symbol, n: Int): List[Tree]         = codegen.drop(seqTree(binder, forceImmutable = false))(n) :: Nil
 
       // codegen.drop(seqTree(binder))(nbIndexingIndices)))).toList
-      protected def seqTree(binder: Symbol, forceImmutable: Boolean) = tupleSel(binder)(firstIndexingBinder + 1)
+      protected def seqTree(binder: Symbol, @unused forceImmutable: Boolean) = tupleSel(binder)(firstIndexingBinder + 1)
       protected def tupleSel(binder: Symbol)(i: Int): Tree           = codegen.tupleSel(binder)(i)
 
       // the trees that select the subpatterns on the extractor's result,

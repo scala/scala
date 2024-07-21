@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.management.openmbean.CompositeData
 import javax.management.{Notification, NotificationEmitter, NotificationListener}
 
-import scala.annotation.nowarn
+import scala.annotation.{nowarn, unused}
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.ChromeTrace
 import scala.reflect.io.AbstractFile
@@ -195,7 +195,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     //we may miss a GC event if gc is occurring as we call this
     RealProfiler.gcMx foreach {
       case emitter: NotificationEmitter => emitter.removeNotificationListener(this)
-      case gc =>
+      case _ =>
     }
     reporter.close(this)
     if (chromeTrace != null) {
@@ -335,13 +335,12 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     }
   }
 
-  private def completionName(root: Global#Symbol, associatedFile: AbstractFile): String = {
+  private def completionName(root: Global#Symbol, @unused associatedFile: AbstractFile): String =
     if (root.hasPackageFlag || root.isTopLevel) root.javaBinaryNameString
     else {
       val enclosing = root.enclosingTopLevelClass
       enclosing.javaBinaryNameString + "::" + root.rawname.toString
     }
-  }
 }
 
 object EventType extends Enumeration {

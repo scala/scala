@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{immutable, mutable}
 import symtab._
@@ -119,7 +119,7 @@ abstract class Erasure extends InfoTransform
    */
   val prepareSigMap = new TypeMap {
     def squashBoxed(tp: Type): Type = tp.dealiasWiden match {
-      case t @ RefinedType(parents, decls) =>
+      case RefinedType(parents, decls) =>
         val parents1 = parents mapConserve squashBoxed
         if (parents1 eq parents) tp
         else RefinedType(parents1, decls)
@@ -227,7 +227,7 @@ abstract class Erasure extends InfoTransform
       // a signature should always start with a class
       def ensureClassAsFirstParent(tps: List[Type]) = tps match {
         case Nil => ObjectTpe :: Nil
-        case head :: tail if isInterfaceOrTrait(head.typeSymbol) => ObjectTpe :: tps
+        case head :: _ if isInterfaceOrTrait(head.typeSymbol) => ObjectTpe :: tps
         case _ => tps
       }
 
@@ -293,7 +293,7 @@ abstract class Erasure extends InfoTransform
               }
               else builder.append('*')
             } else tp match {
-              case PolyType(_, res) =>
+              case PolyType(_, _) =>
                 builder.append('*') // scala/bug#7932
               case _ =>
                 boxedSig(tp)
@@ -415,7 +415,7 @@ abstract class Erasure extends InfoTransform
         }
         Some(builder.toString)
       }
-      catch { case ex: UnknownSig => None }
+      catch { case _: UnknownSig => None }
     }
     else None
   }
@@ -478,7 +478,7 @@ abstract class Erasure extends InfoTransform
 
   override def newTyper(context: Context) = new Eraser(context)
 
-  class EnterBridges(unit: CompilationUnit, root: Symbol) {
+  class EnterBridges(@unused unit: CompilationUnit, root: Symbol) {
     val site         = root.thisType
     val bridgesScope = newScope
     val bridgeTarget = mutable.HashMap[Symbol, Symbol]()
@@ -595,7 +595,7 @@ abstract class Erasure extends InfoTransform
           def bridgeMayClash = other.paramss.exists(_.exists(_.tpe match { case TypeRef(_, r, _) => r.isTypeParameter case _ => false }))
           def bridgeIsAOK = checkBridgeOverrides(member, other, bridge) match {
             case Nil => true
-            case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
+            case _ if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
             case es => for ((pos, msg) <- es) reporter.error(pos, msg); false
           }
           !sigContainsValueClass && !bridgeMayClash || bridgeIsAOK
@@ -715,7 +715,7 @@ abstract class Erasure extends InfoTransform
             }
           } else treeCopy.Apply(tree, treeCopy.TypeApply(ta, treeCopy.Select(sel, qual1, name), List(targ)), List())
 
-        case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
+        case Apply(TypeApply(Select(_, _), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
             case ErasedValueType(clazz, _) => targ.setType(clazz.tpe)
@@ -1372,7 +1372,7 @@ abstract class Erasure extends InfoTransform
 
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
-            case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: _) =>
+            case ApplyDynamic(_, Literal(Constant(_: Symbol)) :: _) =>
               tree
             case _: Apply if tree1 ne tree =>
               /* some Apply trees get replaced (in `preEraseApply`) with one of

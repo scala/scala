@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.collection.mutable
 import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.tools.nsc.Reporting.WarningCategory
@@ -335,7 +335,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       trait TypeTestCondStrategy {
         type Result
 
-        def withOuterTest(orig: Result)(testedBinder: Symbol, expectedTp: Type): Result = orig
+        def withOuterTest(orig: Result)(@unused testedBinder: Symbol, @unused expectedTp: Type): Result = orig
         // TODO: can probably always widen
         def typeTest(testedBinder: Symbol, expectedTp: Type): Result
         def nonNullTest(testedBinder: Symbol): Result
@@ -590,7 +590,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => FALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(_ => FALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }
@@ -640,14 +640,14 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     def requiresSwitch(scrut: Tree, cases: List[List[TreeMaker]]): Boolean = {
       if (settings.XnoPatmatAnalysis.value) false
       else scrut match {
-        case Typed(tree, tpt) =>
+        case Typed(_, tpt) =>
           val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
           // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
           // `case 1 | 2` is considered as two cases.
           def exceedsTwoCasesOrAlts = {
             // avoids traversing the entire list if there are more than 3 elements
             def lengthMax3(cases: List[List[TreeMaker]]): Int = cases match {
-              case a :: b :: c :: _ => 3
+              case _ :: _ :: _ :: _ => 3
               case cases            => cases.map {
                 case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
                 case _                                      => 1

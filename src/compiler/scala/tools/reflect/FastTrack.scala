@@ -61,7 +61,7 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
       makeBlackbox(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
       makeBlackbox(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
       makeBlackbox(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
-      makeBlackbox(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
+      makeBlackbox(           ApiUniverseReify) { case Applied(_, _ :: Nil, (expr :: _) :: _)     => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
       makeWhitebox(            StringContext_f) { case _                                          => _.interpolateF },
       makeWhitebox(            StringContext_s) { case _                                          => _.interpolateS },
       makeWhitebox(            StringContext_raw) { case _                                        => _.interpolateRaw },

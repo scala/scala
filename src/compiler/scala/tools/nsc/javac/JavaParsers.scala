@@ -387,7 +387,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      * ElementValueList             ::= ElementValue {`,` ElementValue}
      */
     def annotation(): Tree = {
-      object LiteralK { def unapply(token: Token) = tryLiteral() }
+      object LiteralK { def unapply(@unused token: Token) = tryLiteral() }
 
       def elementValue(): Tree = in.token match {
         case LiteralK(k) => in.nextToken(); atPos(in.currentPos)(Literal(k))

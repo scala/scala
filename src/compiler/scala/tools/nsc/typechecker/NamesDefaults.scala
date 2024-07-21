@@ -13,9 +13,9 @@
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags._
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import symtab.Flags._
 import PartialFunction.cond
 
 /**
@@ -340,7 +340,7 @@ trait NamesDefaults { self: Analyzer =>
 
     // begin transform
     tree match {
-      case NamedApplyBlock(info) => tree
+      case NamedApplyBlock(_) => tree
       // `fun` is typed. `namelessArgs` might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
@@ -352,7 +352,7 @@ trait NamesDefaults { self: Analyzer =>
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
           typedApp match {
-            case Apply(expr, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
+            case Apply(_, typedArgs) if (typedApp :: typedArgs).exists(_.isErrorTyped) =>
               setError(tree) // bail out with and erroneous Apply *or* erroneous arguments, see scala/bug#7238, scala/bug#7509
             case Apply(expr, typedArgs) =>
               // Extract the typed arguments, restore the call-site evaluation order (using

@@ -26,7 +26,7 @@ trait FastStringInterpolator extends FormatInterpolator {
   // rewrite a tree like `scala.StringContext.apply("hello \\n ", " ", "").s("world", Test.this.foo)`
   // to `"hello \n world ".+(Test.this.foo)`
   private def interpolated(macroApp: Tree, isRaw: Boolean): Tree = macroApp match {
-    case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), _interpol), args) if
+    case Apply(Select(Apply(stringCtx@Select(qualSC, _), parts), _interpol@_), args) if
       stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
       treeInfo.isQualifierSafeToElide(qualSC) &&
       parts.forall(treeInfo.isLiteralString) &&
@@ -82,7 +82,7 @@ trait FastStringInterpolator extends FormatInterpolator {
       else concatenate(treated, args)
 
     // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
-    case t@Apply(Select(someStringContext, _interpol), args) =>
+    case Apply(Select(someStringContext, _interpol@_), args) =>
       q"""{
         val sc = $someStringContext
         _root_.scala.StringContext.standardInterpolator(

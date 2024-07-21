@@ -187,13 +187,13 @@ trait GenTypes {
 
     tpe match {
       case tpe @ RefinedType(parents, decls) =>
-        reifySymDef(tpe.typeSymbol)
+        List(tpe.typeSymbol).foreach(reifySymDef)
         mirrorBuildCall(nme.RefinedType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case ExistentialType(tparams, underlying) =>
         tparams.foreach(reifySymDef)
         reifyBuildCall(nme.ExistentialType, tparams, underlying)
       case tpe @ ClassInfoType(parents, decls, clazz) =>
-        reifySymDef(clazz)
+        List(clazz).foreach(reifySymDef)
         mirrorBuildCall(nme.ClassInfoType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case MethodType(params, restpe) =>
         params foreach reifySymDef

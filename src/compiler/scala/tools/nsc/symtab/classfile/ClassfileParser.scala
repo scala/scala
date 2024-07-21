@@ -18,7 +18,7 @@ package classfile
 import java.io.IOException
 import java.lang.Integer.toHexString
 
-import scala.annotation.switch
+import scala.annotation._
 import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
@@ -528,7 +528,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       val parentIndex = u2()
       val parentName = if (parentIndex == 0) null else pool.getClassName(parentIndex)
       val ifaceCount = u2()
-      val ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClassName(index = u2())
+      val ifaces = for (_ <- List.range(0, ifaceCount)) yield pool.getSuperClassName(index = u2())
       val completer = new ClassTypeCompleter(clazz.name, jflags, parentName, ifaces)
 
       enterOwnInnerClasses()
@@ -922,9 +922,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
      * Parse the "Exceptions" attribute which denotes the exceptions
      * thrown by a method.
      */
-    def parseExceptions(len: Int, completer: JavaTypeCompleter): Unit = {
+    def parseExceptions(@unused len: Int, completer: JavaTypeCompleter): Unit = {
       val nClasses = u2()
-      for (n <- 0 until nClasses) {
+      for (_ <- 0 until nClasses) {
         // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (scala/bug#7065)
         val cls = pool.getClassName(u2())
         completer.exceptions ::= cls
@@ -1195,7 +1195,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           case LongSigTpe =>
             checkScalaSigAnnotArg()
             bytes = parseScalaLongSigBytes()
-          case t =>
+          case _ =>
             skipAnnotArgs()
         }
         i += 1
@@ -1292,7 +1292,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var paramNames: ParamNames = _
     var exceptions: List[NameOrString] = Nil
   }
-  private final class ClassTypeCompleter(name: Name, jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
+  private final class ClassTypeCompleter(@unused name: Name, @unused jflags: JavaAccFlags, parent: NameOrString, ifaces: List[NameOrString]) extends JavaTypeCompleter {
     var permittedSubclasses: List[symbolTable.Symbol] = Nil
     override def complete(sym: symbolTable.Symbol): Unit = {
       val info = if (sig != null) sigToType(sym, sig) else {
@@ -1316,7 +1316,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     override def complete(sym: symbolTable.Symbol): Unit = {
       def descriptorInfo = sigToType(sym, descriptor)
       val hasOuterParam = (name == nme.CONSTRUCTOR) && (descriptorInfo match {
-        case MethodType(params, restpe) =>
+        case MethodType(params, _) =>
           // if this is a non-static inner class, remove the explicit outer parameter
           innerClasses getEntry currentClass match {
             case Some(entry) if !entry.jflags.isStatic =>
@@ -1339,10 +1339,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         sigToType(sym, sig)
       } else if (name == nme.CONSTRUCTOR) {
         descriptorInfo match {
-          case MethodType(params, restpe) =>
+          case MethodType(params, _) =>
             val paramsNoOuter = if (hasOuterParam) params.tail else params
             val newParams = paramsNoOuter match {
-              case (init :+ tail) if jflags.isSynthetic =>
+              case init :+ _ if jflags.isSynthetic =>
                 // scala/bug#7455 strip trailing dummy argument ("access constructor tag") from synthetic constructors which
                 // are added when an inner class needs to access a private constructor.
                 init

@@ -177,7 +177,7 @@ private[async] trait AnfTransform extends TransformUtils {
             treeCopy.Match(tree, scrutExpr, casesWithAssign)
           }
 
-        case ld@LabelDef(name, params, rhs) =>
+        case LabelDef(name, params, rhs) =>
           treeCopy.LabelDef(tree, name, params, transformNewControlFlowBlock(rhs))
         case t@Typed(expr, tpt)             =>
           transform(expr).setType(t.tpe)
@@ -318,11 +318,11 @@ private[async] trait AnfTransform extends TransformUtils {
       val statsExpr0: ArrayBuffer[Tree] = new ArrayBuffer[Tree](statsExpr.length)
 
       statsExpr.reverseIterator.foreach {
-        case ld@LabelDef(_, param :: Nil, _) =>
+        case ld@LabelDef(_, _ :: Nil, _) =>
           val (ld1, after) = modifyLabelDef(ld)
           statsExpr0 += after
           statsExpr0 += ld1
-        case a@ValDef(mods, name, tpt, ld@LabelDef(_, param :: Nil, _)) =>
+        case a@ValDef(mods, name, tpt, ld@LabelDef(_, _ :: Nil, _)) =>
           val (ld1, after) = modifyLabelDef(ld)
           statsExpr0 += treeCopy.ValDef(a, mods, name, tpt, after)
           statsExpr0 += ld1

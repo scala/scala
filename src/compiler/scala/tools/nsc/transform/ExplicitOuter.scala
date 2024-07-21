@@ -392,7 +392,7 @@ abstract class ExplicitOuter extends InfoTransform
         if (sym.isProtected && !sym.isJavaDefined) sym setFlag notPROTECTED
       }
       tree match {
-        case Template(parents, self, decls) =>
+        case Template(_, _, _) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
             if (!currentClass.isInterface) {
@@ -468,7 +468,7 @@ abstract class ExplicitOuter extends InfoTransform
         // for the pattern matcher
         // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
         // TODO remove the synthetic `<outer>` method from outerFor??
-        case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
+        case Apply(eqsel@Select(Apply(sel@Select(base, nme.OUTER_SYNTH), Nil), eq), args) =>
           val outerFor = sel.symbol.owner
           val acc = outerAccessor(outerFor)
 

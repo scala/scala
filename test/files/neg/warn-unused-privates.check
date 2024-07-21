@@ -82,15 +82,15 @@ warn-unused-privates.scala:233: warning: private class for your eyes only in obj
 warn-unused-privates.scala:249: warning: private class D in class nonprivate alias is enclosing is never used
   private class D extends C2   // warn
                 ^
+warn-unused-privates.scala:269: warning: private val n in class t12992 enclosing def is unused is never used
+  private val n = 42
+              ^
+warn-unused-privates.scala:274: warning: private method f in class recursive reference is not a usage is never used
+  private def f(i: Int): Int = // warn
+              ^
 warn-unused-privates.scala:277: warning: private class P in class recursive reference is not a usage is never used
   private class P {
                 ^
-warn-unused-privates.scala:72: warning: local var s5 in class StableAccessors is never updated: consider using immutable val
-  private[this] var s5 = 0 // warn, never set
-                    ^
-warn-unused-privates.scala:114: warning: local var x in method f2 is never updated: consider using immutable val
-    var x = 100 // warn about it being a var
-        ^
 error: No warnings can be incurred under -Werror.
 31 warnings
 1 error

@@ -383,8 +383,8 @@ trait Contexts { self: Analyzer =>
         def prune(trees: List[Tree], pending: List[(Symbol, Tree)], acc: List[(Symbol, Tree)]): List[(Symbol, Tree)] = pending match {
           case Nil => acc
           case ps =>
-            val (in, out) = ps.partition { case (vsym, rhs) => trees.exists(_.exists(_.symbol == vsym)) }
-            if(in.isEmpty) acc
+            val (in, out) = ps.partition { case (vsym, _) => trees.exists(_.exists(_.symbol == vsym)) }
+            if (in.isEmpty) acc
             else prune(in.map(_._2) ++ trees, out, in ++ acc)
         }
 
@@ -592,8 +592,8 @@ trait Contexts { self: Analyzer =>
                 tryOnce(isLastTry = false)
                 reporter.hasErrors
               } catch {
-                case ex: CyclicReference => throw ex
-                case ex: TypeError => true // recoverable cyclic references?
+                case e: CyclicReference => throw e
+                case _: TypeError => true // recoverable cyclic references?
               }
             }
           } else true
@@ -880,7 +880,7 @@ trait Contexts { self: Analyzer =>
         val pstr = if ((parents eq null) || parents.isEmpty) "Nil" else parents mkString " "
         val bstr = if (body eq null) "" else "" + body.length + " stats"
         s"""Template($pstr, _, $bstr)"""
-      case x => s"${tree.shortClass}${treeIdString}:${treeTruncated}"
+      case _ => s"${tree.shortClass}${treeIdString}:${treeTruncated}"
     }
 
     override def toString =
@@ -1815,7 +1815,7 @@ trait Contexts { self: Analyzer =>
           if (context.reportErrors) {
             context.issue(divergent.withPt(paramTp))
             errorBuffer.filterInPlace {
-              case dte: DivergentImplicitTypeError => false
+              case _: DivergentImplicitTypeError => false
               case _ => true
             }
           }
@@ -1976,8 +1976,8 @@ trait Contexts { self: Analyzer =>
         if (isRootImport) !definitions.isUnimportableUnlessRenamed(sym)
         else definitions.isImportable(sym)
       ) match {
-        case filtered: NoSymbol => TupleOfNullAndNoSymbol
-        case _                  => (current, result)
+        case _: NoSymbol => TupleOfNullAndNoSymbol
+        case _           => (current, result)
       }
     }
 

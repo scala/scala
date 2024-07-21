@@ -37,7 +37,7 @@ trait Adaptations {
         case _                    => EmptyTree
       }
       def isInfix = t match {
-        case Apply(_, arg :: Nil) => t.hasAttachment[MultiargInfixAttachment.type]
+        case Apply(_, _ :: Nil) => t.hasAttachment[MultiargInfixAttachment.type]
         case _                    => false
       }
       def callString = (
@@ -90,7 +90,7 @@ trait Adaptations {
       }
       @inline def warnAdaptation: true = {
         def discardedArgs = t match {
-          case Apply(_, stat @ Block(Apply(TypeApply(Select(adapter, _), _), adapted) :: Nil, expr) :: Nil) =>
+          case Apply(_, Block(Apply(TypeApply(Select(adapter, _), _), adapted) :: Nil, expr) :: Nil) =>
             isTupleSymbol(adapter.symbol.companion) && expr.tpe == UnitTpe && adapted == args
           case _ => false
         }

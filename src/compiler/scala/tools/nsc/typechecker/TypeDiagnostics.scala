@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation._
 import scala.collection.mutable, mutable.ListBuffer
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
@@ -48,9 +48,9 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
   /** For errors which are artifacts of the implementation: such messages
    *  indicate that the restriction may be lifted in the future.
    */
-  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String, category: WarningCategory, site: Symbol): Unit =
+  def restrictionWarning(pos: Position, @unused unit: CompilationUnit, msg: String, category: WarningCategory, site: Symbol): Unit =
     runReporting.warning(pos, "Implementation restriction: " + msg, category, site)
-  def restrictionError(pos: Position, unit: CompilationUnit, msg: String): Unit =
+  def restrictionError(pos: Position, @unused unit: CompilationUnit, msg: String): Unit =
     reporter.error(pos, "Implementation restriction: " + msg)
 
   /** A map of Positions to addendums - if an error involves a position in
@@ -116,8 +116,8 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     else ""
 
   private def methodTypeErrorString(tp: Type) = tp match {
-    case mt @ MethodType(params, resultType)  =>
-      def forString = params map (_.defString)
+    case MethodType(params, resultType)  =>
+      def forString = params.map(_.defString)
 
        forString.mkString("(", ",", ")") + resultType
     case x                                    => x.toString

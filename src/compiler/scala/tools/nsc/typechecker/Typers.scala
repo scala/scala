@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.{tailrec, unused}
+import scala.annotation._
 import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
@@ -217,7 +217,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /** Overridden to false in scaladoc and/or interactive. */
     def canAdaptConstantTypeToLiteral = true
     def canTranslateEmptyListToNil    = true
-    def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
+    def missingSelectErrorTree(tree: Tree, @unused qual: Tree, @unused name: Name): Tree = tree
 
     // used to exempt synthetic accessors (i.e. those that are synthesized by the compiler to access a field)
     // from skolemization because there's a weird bug that causes spurious type mismatches
@@ -6479,7 +6479,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (pt != Kind.Wildcard && pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
       else context withinTypeConstructorAllowed typed(tree, NOmode, pt)
 
-    def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
+    def typedHigherKindedType(tree: Tree, @unused mode: Mode): Tree =
       context withinTypeConstructorAllowed typed(tree)
 
     /** Types a type constructor tree used in a new or supertype */

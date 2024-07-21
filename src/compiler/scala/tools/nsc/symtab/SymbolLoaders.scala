@@ -16,11 +16,12 @@ package symtab
 import classfile.{ClassfileParser, ReusableDataReader}
 import java.io.IOException
 
+import scala.annotation._
 import scala.reflect.internal.MissingRequirementError
-import scala.reflect.io.{AbstractFile, NoAbstractFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.reflect.internal.util.ReusableInstance
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 
 /** This class ...
  *
@@ -50,7 +51,7 @@ abstract class SymbolLoaders {
   // forwards to runReporting.warning, but we don't have global in scope here
   def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit
 
-  protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
+  protected def enterIfNew(owner: Symbol, member: Symbol, @unused completer: SymbolLoader): Symbol = {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
     owner.info.decls enter member
     member
