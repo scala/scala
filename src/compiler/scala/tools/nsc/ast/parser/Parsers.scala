@@ -3019,14 +3019,14 @@ self =>
           migrationWarning(in.lastOffset, msg, since = "2.13.2", actions = runReporting.codeAction("replace procedure syntax", o2p(in.lastOffset), " =", msg))
         }
         atPos(start, in.skipToken()) {
-          val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
+          val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds.map(_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs =
             if (in.token == LBRACE) {
-              missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
+              missingEquals(); atPos(in.offset) { constrBlock() }
             }
             else {
-              accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
+              accept(EQUALS) ; atPos(in.offset) { constrExpr() }
             }
           DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         }
@@ -3105,15 +3105,15 @@ self =>
      *                    |  ConstrBlock
      *  }}}
      */
-    def constrExpr(vparamss: List[List[ValDef]]): Tree =
-      if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(selfInvocation(vparamss) :: Nil, literalUnit)
+    def constrExpr(): Tree =
+      if (in.token == LBRACE) constrBlock()
+      else Block(selfInvocation() :: Nil, literalUnit)
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
      *  }}}
      */
-    def selfInvocation(vparamss: List[List[ValDef]]): Tree =
+    def selfInvocation(): Tree =
       atPos(accept(THIS)) {
         newLineOptWhenFollowedBy(LBRACE)
         var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
@@ -3129,9 +3129,9 @@ self =>
      *  ConstrBlock    ::=  `{` SelfInvocation {semi BlockStat} `}`
      *  }}}
      */
-    def constrBlock(vparamss: List[List[ValDef]]): Tree =
+    def constrBlock(): Tree =
       atPos(in.skipToken()) {
-        val stats = selfInvocation(vparamss) :: {
+        val stats = selfInvocation() :: {
           if (isStatSep) { in.nextToken(); blockStatSeq() }
           else Nil
         }
