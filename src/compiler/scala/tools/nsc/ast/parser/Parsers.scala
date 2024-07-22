@@ -218,7 +218,7 @@ self =>
 
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateBody(isPre: Boolean) = skipBraces((noSelfType, EmptyTree.asList))
+    override def templateBody() = skipBraces((noSelfType, EmptyTree.asList))
   }
 
   class UnitParser(override val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) { uself =>
@@ -3322,7 +3322,7 @@ self =>
       if (in.token == LBRACE) {
         val braceOffset = in.offset
         // @S: pre template body cannot stub like post body can!
-        val (self, body) = templateBody(isPre = true)
+        val (self, body) = templateBody()
         if (in.token == WITH && (self eq noSelfType)) {
           val advice =
             if (currentRun.isScala3) "use trait parameters instead."
@@ -3404,16 +3404,15 @@ self =>
     /** {{{
      *  TemplateBody ::= [nl] `{` TemplateStatSeq `}`
      *  }}}
-     * @param isPre specifies whether in early initializer (true) or not (false)
      */
-    def templateBody(isPre: Boolean) = inBraces(templateStatSeq(isPre)) match {
+    def templateBody() = inBraces(templateStatSeq()) match {
       case (selfTypeVal, Nil) => (selfTypeVal, EmptyTree.asList)
       case result             => result
     }
     def templateBodyOpt(parenMeansSyntaxError: Boolean): (ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
-        templateBody(isPre = false)
+        templateBody()
       } else {
         if (in.token == LPAREN) {
           if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", skipIt = true)
@@ -3476,9 +3475,8 @@ self =>
     /** {{{
      *  TemplateStatSeq  ::= [id [`:` Type] `=>`] TemplateStats
      *  }}}
-     * @param isPre specifies whether in early initializer (true) or not (false)
      */
-    def templateStatSeq(isPre : Boolean): (ValDef, List[Tree]) = {
+    def templateStatSeq(): (ValDef, List[Tree]) = {
       var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
       if (isExprIntro) checkNoEscapingPlaceholders {
