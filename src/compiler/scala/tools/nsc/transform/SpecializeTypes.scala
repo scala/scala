@@ -120,13 +120,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  @annotation.tailrec private def findSymbol[T](candidates: List[T], f: T => Symbol): Symbol = {
-    if (candidates.isEmpty) NoSymbol
-    else f(candidates.head) match {
-      case NoSymbol => findSymbol(candidates.tail, f)
-      case sym      => sym
-    }
-  }
   private def hasNewParents(tree: Tree) = {
     val parents = tree.symbol.info.parents
     val prev    = enteringPrevPhase(tree.symbol.info.parents)

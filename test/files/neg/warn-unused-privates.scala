@@ -1,9 +1,9 @@
 //
-//> using options -deprecation -Wunused:privates -Xfatal-warnings
+//> using options -deprecation -Werror -Wunused:privates
 //
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
-  private def bippy(x: Int): Int      = bippy(x)  // TODO: could warn
+  private def bippy(x: Int): Int      = bippy(x)  // warn
   private def boop(x: Int)            = x+a+b     // warn
   final private val MILLIS1           = 2000      // no warn, might have been inlined
   final private val MILLIS2: Int      = 1000      // warn
@@ -268,4 +268,13 @@ class `issue 12600 ignore abstract types` {
 class `t12992 enclosing def is unused` {
   private val n = 42
   @annotation.unused def f() = n + 2 // unused code uses n
+}
+
+class `recursive reference is not a usage` {
+  private def f(i: Int): Int = // warn
+    if (i <= 0) i
+    else f(i-1)
+  private class P {
+    def f() = new P()
+  }
 }
