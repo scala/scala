@@ -1,8 +1,6 @@
 package scala.collection
 package immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
@@ -11,7 +9,6 @@ import scala.collection.mutable.{Builder, ListBuffer}
 import scala.tools.testkit.{AssertUtil, ReflectUtil}
 import scala.util.Try
 
-@RunWith(classOf[JUnit4])
 class LazyListTest {
 
   @Test
@@ -425,7 +422,7 @@ class LazyListTest {
     def assertNoStackOverflow[A](lazyList: LazyList[A]): Unit = {
       // don't hang the test if we've made a programming error in this test
       val finite = lazyList.take(1000)
-      AssertUtil.assertThrows[RuntimeException](finite.force, _ contains "self-referential")
+      AssertUtil.assertThrows[RuntimeException](finite.force, _ contains "self-reference")
     }
     assertNoStackOverflow { class L { val ll: LazyList[Nothing] = LazyList.empty #::: ll }; (new L).ll }
     assertNoStackOverflow { class L { val ll: LazyList[Int] = 1 #:: ll.map(_ + 1).filter(_ % 2 == 0) }; (new L).ll }
