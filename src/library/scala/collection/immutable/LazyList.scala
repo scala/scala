@@ -1153,7 +1153,7 @@ object LazyList extends SeqFactory[LazyList] {
       "Use the #::: method with a by-name parameter instead; see docs for more info",
       since = "2.13.15"
     )
-    def #:::[B >: A]()(prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l()
+    protected[immutable] def #:::[B >: A]()(prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l()
   }
 
   object #:: {
