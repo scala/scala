@@ -562,7 +562,7 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
             case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
             case _ =>
           }
-        case _: RefTree if isExisting(sym)            => targets += sym
+        case _: RefTree => if (isExisting(sym) && !currentOwner.hasTransOwner(sym)) targets += sym
         case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
         case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
           ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)

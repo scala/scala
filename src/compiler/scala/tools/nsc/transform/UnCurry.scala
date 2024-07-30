@@ -576,15 +576,6 @@ abstract class UnCurry extends InfoTransform
           tree
       }
 
-      @tailrec def isThrowable(pat: Tree): Boolean = pat match {
-        case Typed(Ident(nme.WILDCARD), tpt) =>
-          tpt.tpe =:= ThrowableTpe
-        case Bind(_, pat) =>
-          isThrowable(pat)
-        case _ =>
-          false
-      }
-
       tree match {
         /* Some uncurry post transformations add members to templates.
          *

@@ -291,12 +291,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
     protected def printCaseDef(tree: CaseDef) = {
       val CaseDef(pat, guard, body) = tree
       print("case ")
-      @tailrec def patConstr(pat: Tree): Tree = pat match {
-        case Apply(fn, args) => patConstr(fn)
-        case _ => pat
-      }
-
-      print(pat); printOpt(" if ", guard)
+      print(pat)
+      printOpt(" if ", guard)
       print(" => ", body)
     }
 
