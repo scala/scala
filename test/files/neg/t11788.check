@@ -1,0 +1,6 @@
+t11788/Foo.java:5: error: cannot find symbol
+		return java.lang.Integer.valueOf(42);
+		           ^
+  symbol:   variable lang
+  location: variable java of type String
+1 error

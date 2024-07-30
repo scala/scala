@@ -5391,12 +5391,31 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (isStableContext(tree, mode, pt)) tree setType clazz.thisType else tree
         }
 
-
       // For Java, instance and static members are in the same scope, but we put the static ones in the companion object
       // so, when we can't find a member in the class scope, check the companion
       def inCompanionForJavaStatic(cls: Symbol, name: Name): Symbol =
         if (!(context.unit.isJava && cls.isClass)) NoSymbol
         else context.javaFindMember(cls.typeOfThis, name, s => s.isStaticMember || s.isStaticModule)._2
+      // For Java, a selection p.q requires checking if p is a type with member q; otherwise it is a package.
+      // If a non-package term was found, look for a class; otherwise just look for a package.
+      def repairJavaSelection(qual: Tree, name: Name): Symbol =
+        if (!context.unit.isJava || !qual.hasAttachment[RootSelection.type] || qual.symbol.hasPackageFlag) NoSymbol
+        else qual match {
+          case Ident(qname) =>
+            val found =
+              if (qual.symbol.isTerm) {
+                val lookup = context.lookupSymbol(qname.toTypeName, s => qualifies(s) && s.isClass)
+                if (lookup.isSuccess) inCompanionForJavaStatic(lookup.symbol, name) else NoSymbol
+              }
+              else NoSymbol
+            found.orElse {
+              context.lookupSymbol(qname, s => qualifies(s) && s.hasPackageFlag) match {
+                case LookupSucceeded(_, pkg) => member(pkg.info, name)
+                case _ => NoSymbol
+              }
+            }
+          case _ => NoSymbol
+        }
 
       // If they try C.tupled, make it (C.apply _).tupled
       def fixUpCaseTupled(tree: Tree, qual: Tree, name: Name, mode: Mode): Tree =
@@ -5435,7 +5454,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (!isPastTyper && isUniversalMember(result.symbol))
               context.warning(tree.pos, s"dubious usage of ${result.symbol} with unit value", WarningCategory.LintUniversalMethods)
 
-          val sym = tree.symbol orElse member(qualTp, name) orElse inCompanionForJavaStatic(qualTp.typeSymbol, name)
+          val sym = tree.symbol
+            .orElse(member(qualTp, name))
+            .orElse(inCompanionForJavaStatic(qualTp.typeSymbol, name))
+            .orElse(repairJavaSelection(qual, name))
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
@@ -5655,7 +5677,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           startContext.lookupSymbol(name.toTypeName, qualifies).symbol
         } else NoSymbol
 
-        // in Java, only pick a package if it is rooted
+        // in Java, only pick a package p if it is rooted (no relative packaging)
         def termQualifies(sym: Symbol) = qualifies(sym) && (
             !startContext.unit.isJava  || !sym.hasPackageFlag
           || sym.owner.isEffectiveRoot || sym.owner.isRootPackage || sym.isRootPackage

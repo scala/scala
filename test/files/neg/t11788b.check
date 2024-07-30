@@ -1,0 +1,4 @@
+t11788b/Foo.java:5: error: incompatible types: java.lang.Integer cannot be converted to java.lang.Integer
+		return Integer.valueOf(42);
+		                      ^
+1 error

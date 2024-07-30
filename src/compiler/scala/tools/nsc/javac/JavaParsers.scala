@@ -297,7 +297,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         if (in.token == FINAL) in.nextToken()
         if (in.token == IDENTIFIER) {
           var t = typeArgs(atPos(in.currentPos)(Ident(ident())))
-          // typeSelect generates Select nodes is the lhs is an Ident or Select,
+          // typeSelect generates Select nodes if the lhs is an Ident or Select,
           // SelectFromTypeTree otherwise. See #3567.
           // Select nodes can be later
           // converted in the typechecker to SelectFromTypeTree if the class
@@ -306,6 +306,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             case Ident(_) | Select(_, _) => Select(t, name)
             case _ => SelectFromTypeTree(t, name.toTypeName)
           }
+          if (in.token == DOT)
+            t.updateAttachment(RootSelection)
           while (in.token == DOT) {
             in.nextToken()
             t = typeArgs(atPos(in.currentPos)(typeSelect(t, ident())))
