@@ -12,7 +12,7 @@ import sbt.librarymanagement.{
   * Settings to support validation of TastyUnpickler against the release of dotty with the matching TASTy version
   */
 object TastySupport {
-  val supportedTASTyRelease = "3.5.0-RC4" // TASTY: 28.5-1
+  val supportedTASTyRelease = "3.5.1-RC1" // TASTY: 28.5-1
   val scala3Compiler = "org.scala-lang" % "scala3-compiler_3" % supportedTASTyRelease
   val scala3Library = "org.scala-lang" % "scala3-library_3" % supportedTASTyRelease
 
@@ -69,7 +69,9 @@ object DottySupport {
       object DottyLibrarySourceFilter extends FileFilter {
         def accept(file: File): Boolean = {
           val name = file.getName
-          file.isFile && (name.endsWith(".scala") || name.endsWith(".java"))
+          file.isFile &&
+            (name.endsWith(".scala") || name.endsWith(".java")) &&
+            !Set("AnyKind.scala", "Matchable.scala").contains(name)
         }
       }
 
