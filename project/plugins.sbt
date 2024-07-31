@@ -7,7 +7,7 @@ scalacOptions ++= Seq(
   "-Wconf:msg=IntegrationTest .* is deprecated:s,msg=itSettings .* is deprecated:s"
 )
 
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.15.0"
 
 libraryDependencies += "org.pantsbuild" % "jarjar" % "1.7.2"
 
