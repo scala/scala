@@ -37,7 +37,7 @@ import scala.build._, VersionUtil._
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.13.2"
 val junitInterfaceDep = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.17.0"                          % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.18.0"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
