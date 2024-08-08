@@ -269,19 +269,14 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   /** Repacks the contents of this `LongMap` for maximum efficiency of lookup.
-    *
-    *  For maps that undergo a complex creation process with both addition and
-    *  removal of keys, and then are used heavily with no further removal of
-    *  elements, calling `repack` after the end of the creation can result in
-    *  improved performance.  Repacking takes time proportional to the number
-    *  of entries in the map.
-    */
-  def repack(): Unit = {
-    var m = mask
-    if (_size + _vacant >= 0.5*mask && !(_vacant > 0.2*mask)) m = ((m << 1) + 1) & IndexMask
-    while (m > 8 && 8*_size < m) m = m >>> 1
-    repack(m)
-  }
+   *
+   *  For maps that undergo a complex creation process with both addition and
+   *  removal of keys, and then are used heavily with no further removal of
+   *  elements, calling `repack` after the end of the creation can result in
+   *  improved performance.  Repacking takes time proportional to the number
+   *  of entries in the map.
+   */
+  def repack(): Unit = repack(repackMask(mask, _size = _size, _vacant = _vacant))
 
   override def put(key: Long, value: V): Option[V] = {
     if (key == -key) {
@@ -587,10 +582,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
 }
 
 object LongMap {
-  private final val IndexMask  = 0x3FFFFFFF
-  private final val MissingBit = 0x80000000
-  private final val VacantBit  = 0x40000000
-  private final val MissVacant = 0xC0000000
+  private final val IndexMask  = 0x3FFF_FFFF
+  private final val MissingBit = 0x8000_0000
+  private final val VacantBit  = 0x4000_0000
+  private final val MissVacant = 0xC000_0000
 
   private val exceptionDefault: Long => Nothing = (k: Long) => throw new NoSuchElementException(k.toString)
 
@@ -682,4 +677,11 @@ object LongMap {
 
   implicit def iterableFactory[V]: Factory[(Long, V), LongMap[V]] = toFactory(this)
   implicit def buildFromLongMap[V]: BuildFrom[LongMap[_], (Long, V), LongMap[V]] = toBuildFrom(this)
+
+  private def repackMask(mask: Int, _size: Int, _vacant: Int): Int = {
+    var m = mask
+    if (_size + _vacant >= 0.5*mask && !(_vacant > 0.2*mask)) m = ((m << 1) + 1) & IndexMask
+    while (m > 8 && _size < (m >>> 3)) m = m >>> 1
+    m /*.ensuring(_size <= _ + 1)*/
+  }
 }
