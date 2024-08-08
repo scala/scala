@@ -960,7 +960,7 @@ lazy val sbtTest = project.in(file("test") / "sbt-test")
     sbtTestDirectory := baseDirectory.value,
 
     scriptedBatchExecution := true, // set to `false` to execute each test in a separate sbt instance
-    scriptedParallelInstances := (if (insideCI.value) 1 else 2), // default is 1; races cause spurious failures
+    scriptedParallelInstances := 2,
 
     // hide sbt output of scripted tests
     scriptedBufferLog := true,
