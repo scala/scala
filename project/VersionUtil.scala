@@ -142,11 +142,12 @@ object VersionUtil {
     }
 
     val (canonicalV, mavenSuffix, osgiV, release) = suffix match {
-      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-$cross-SNAPSHOT",      s"$base.v$date-$sha",         false)
-      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$cross-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
-      case "SHA"          => (s"$base-$sha",         s"-$cross-$sha",          s"$base.v$date-$sha",         false)
-      case ""             => (s"$base",              "",                       s"$base.v$date-VFINAL-$sha",  true)
-      case _              => (s"$base-$suffix",      s"-$suffix",              s"$base.v$date-$suffix-$sha", true)
+      case "SNAPSHOT"          => (s"$base-$date-$sha",   s"-$cross-SNAPSHOT",           s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT"      => (s"$base-$date-$sha",   s"-$cross-$sha-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-TEST-SNAPSHOT" => (s"$base-$date-$sha",   s"-$cross-$sha-TEST-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case "SHA"               => (s"$base-$sha",         s"-$cross-$sha",               s"$base.v$date-$sha",         false)
+      case ""                  => (s"$base",              "",                            s"$base.v$date-VFINAL-$sha",  true)
+      case _                   => (s"$base-$suffix",      s"-$suffix",                   s"$base.v$date-$suffix-$sha", true)
     }
 
 

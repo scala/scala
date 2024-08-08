@@ -49,6 +49,9 @@ object ScriptCommands {
     * The optional argument is the Artifactory snapshot repository URL. */
   def setupValidateTest = setup("setupValidateTest") { args =>
     Seq(
+      // include sha to prevent multiple builds running on the same jenkins worker from overriding each other
+      // sbtTest/scripted uses publishLocal
+      Global / baseVersionSuffix := "SHA-TEST-SNAPSHOT",
       LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
     ) ++ (args match {
       case Seq(url) => Seq(Global / resolvers += "scala-pr" at url)
