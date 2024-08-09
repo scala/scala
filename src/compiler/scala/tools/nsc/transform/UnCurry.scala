@@ -220,7 +220,10 @@ abstract class UnCurry extends InfoTransform
       // Normally, we can unwrap `() => cbn` to `cbn` where `cbn` refers to a CBN argument (typically `cbn` is an Ident),
       // because we know `cbn` will already be a `Function0` thunk. When we're targeting a SAM,
       // the types don't align and we must preserve the function wrapper.
-      if (fun.vparams.isEmpty && isByNameRef(fun.body) && fun.attachments.get[SAMFunction].isEmpty) { noApply += fun.body ; fun.body }
+      if (fun.vparams.isEmpty && isByNameRef(fun.body) && !fun.attachments.contains[SAMFunction]) {
+        noApply += fun.body
+        fun.body
+      }
       else if (forceExpandFunction || inConstructorFlag != 0) {
         // Expand the function body into an anonymous class
         gen.expandFunction(localTyper)(fun, inConstructorFlag)
@@ -233,18 +236,26 @@ abstract class UnCurry extends InfoTransform
         val newFun = deriveFunction(fun)(_ => localTyper.typedPos(fun.pos)(
           gen.mkForwarder(gen.mkAttributedRef(liftedMethod.symbol), (fun.vparams map (_.symbol)) :: Nil)
         ))
+        def typeNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod :: Nil, super.transform(newFun)))
 
         if (!mustExpand) {
           liftedMethod.symbol.updateAttachment(DelambdafyTarget)
           liftedMethod.updateAttachment(DelambdafyTarget)
+          typeNewFun
         }
-
-        val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod :: Nil, super.transform(newFun)))
-        if (mustExpand) {
-          val Block(stats, expr : Function) = typedNewFun: @unchecked
-          treeCopy.Block(typedNewFun, stats, gen.expandFunction(localTyper)(expr, inConstructorFlag))
-        } else {
-          typedNewFun
+        else typeNewFun match {
+          case typedNewFun @ Block(stats, expr: Function) =>
+            val expansion = gen.expandFunction(localTyper)(expr, inConstructorFlag)
+            expansion match {
+              case Block(ClassDef(_, _, _, Template(_, _, body)) :: Nil, _) =>
+                body.last match {
+                  case DefDef(_, _, _, _, _, Apply(_, args)) => noApply.addAll(args) // samDef args are pass-thru
+                  case _ =>
+                }
+              case _ =>
+            }
+            treeCopy.Block(typedNewFun, stats, expansion)
+          case x => throw new MatchError(x)
         }
       }
 

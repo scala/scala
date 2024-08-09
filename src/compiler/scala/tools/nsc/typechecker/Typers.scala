@@ -3069,10 +3069,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (samTp eq NoType) false
             else {
               /* Make a synthetic class symbol to represent the synthetic class that
-             * will be spun up by LMF for this function. This is necessary because
-             * it's possible that the SAM method might need bridges, and they have
-             * to go somewhere. Erasure knows to compute bridges for these classes
-             * just as if they were real templates extending the SAM type. */
+               * will be spun up by LMF for this function. This is necessary because
+               * it's possible that the SAM method might need bridges, and they have
+               * to go somewhere. Erasure knows to compute bridges for these classes
+               * just as if they were real templates extending the SAM type. */
               val synthCls = fun.symbol.owner.newClassWithInfo(
                 name = tpnme.ANON_CLASS_NAME,
                 parents = ObjectTpe :: samTp :: Nil,
@@ -3089,8 +3089,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               fun.setType(samTp)
 
               /* Arguably I should do `fun.setSymbol(samCls)` rather than leaning
-             * on an attachment, but doing that confounds lambdalift's free var
-             * analysis in a way which does not seem to be trivially reparable. */
+               * on an attachment, but doing that confounds lambdalift's free var
+               * analysis in a way which does not seem to be trivially reparable. */
               fun.updateAttachment(SAMFunction(samTp, sam, synthCls))
 
               true
