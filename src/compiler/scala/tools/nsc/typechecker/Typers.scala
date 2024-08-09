@@ -3045,10 +3045,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (samTp eq NoType) false
             else {
               /* Make a synthetic class symbol to represent the synthetic class that
-             * will be spun up by LMF for this function. This is necessary because
-             * it's possible that the SAM method might need bridges, and they have
-             * to go somewhere. Erasure knows to compute bridges for these classes
-             * just as if they were real templates extending the SAM type. */
+               * will be spun up by LMF for this function. This is necessary because
+               * it's possible that the SAM method might need bridges, and they have
+               * to go somewhere. Erasure knows to compute bridges for these classes
+               * just as if they were real templates extending the SAM type. */
               val synthCls = fun.symbol.owner.newClassWithInfo(
                 name = tpnme.ANON_CLASS_NAME,
                 parents = ObjectTpe :: samTp :: Nil,
@@ -3065,8 +3065,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               fun.setType(samTp)
 
               /* Arguably I should do `fun.setSymbol(samCls)` rather than leaning
-             * on an attachment, but doing that confounds lambdalift's free var
-             * analysis in a way which does not seem to be trivially reparable. */
+               * on an attachment, but doing that confounds lambdalift's free var
+               * analysis in a way which does not seem to be trivially reparable. */
               fun.updateAttachment(SAMFunction(samTp, sam, synthCls))
 
               true
@@ -5038,44 +5038,44 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *       the function of type `() => $T$`, which evaluates $e$ when it is applied to the empty parameter list `()`.
        */
       def typedEta(methodValue: Tree): Tree = methodValue.tpe match {
-        case tp@(MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
+        case tp @ (MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
           if (tp.params.lengthCompare(definitions.MaxFunctionArity) > 0) MaxFunctionArityError(methodValue, s"; method ${methodValue.symbol.name} cannot be eta-expanded because it takes ${tp.params.length} arguments")
           else {
-            val etaPt =
-              pt match {
-                case pt: ProtoType =>
-                  pt.asFunctionType orElse functionType(WildcardType.fillList(tp.params.length), WildcardType) orElse WildcardType // arity overflow --> NoType
-                case _             => pt
-              }
-
-            // We know syntactically methodValue can't refer to a constructor because you can't write `this _` for that (right???)
+            val etaPt = pt match {
+              case pt: ProtoType =>
+                pt.asFunctionType
+                  .orElse(functionType(WildcardType.fillList(tp.params.length), WildcardType))
+                  .orElse(WildcardType) // arity overflow --> NoType
+              case pt => pt
+            }
+            // We know syntactically methodValue can't refer to a constructor because you can't write `this _`
             typedEtaExpansion(methodValue, mode, etaPt)
           }
 
         case TypeRef(_, ByNameParamClass, _) |  NullaryMethodType(_) => // (2)
+          def warnNullary(tree: Tree) = {
+            val msg = "Methods without a parameter list and by-name params " +
+              "can no longer be converted to functions as `m _`, " +
+              "write a function literal `() => m` instead"
+            val pos = tree.pos
+            val action = {
+              val etaPos = pos.withEnd(pos.end + 2)
+              if (pos.source.sourceAt(etaPos).endsWith(" _"))
+                runReporting.codeAction("replace by function literal", etaPos, s"() => ${pos.source.sourceAt(pos)}", msg)
+              else Nil
+            }
+            if (currentRun.isScala3)
+              context.warning(pos, msg, Scala3Migration, action)
+            else
+              context.deprecationWarning(pos, NoSymbol, msg, "2.13.2", action)
+          }
           val pos = methodValue.pos
-          // must create it here to change owner (normally done by typed's typedFunction)
+          // must create it here to change owner (normally done by typer's typedFunction)
           val funSym = context.owner.newAnonymousFunctionValue(pos)
           new ChangeOwnerTraverser(context.owner, funSym) traverse methodValue
 
-          val result = typed(Function(Nil, methodValue) setSymbol funSym setPos pos, mode, pt)
-
-          val msg = "Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, " +
-            "write a function literal `() => m` instead"
-
-          val action = {
-            val etaPos = pos.withEnd(pos.end + 2)
-            if (pos.source.sourceAt(etaPos).endsWith(" _"))
-              runReporting.codeAction("replace by function literal", etaPos, s"() => ${pos.source.sourceAt(pos)}", msg)
-            else Nil
-          }
-
-          if (currentRun.isScala3)
-            context.warning(pos, msg, Scala3Migration, action)
-          else
-            context.deprecationWarning(pos, NoSymbol, msg, "2.13.2", action)
-
-          result
+          typed(Function(Nil, methodValue).setSymbol(funSym).setPos(pos), mode, pt)
+            .tap(warnNullary)
 
         case ErrorType =>
           methodValue

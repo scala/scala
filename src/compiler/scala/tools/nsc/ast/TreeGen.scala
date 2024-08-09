@@ -309,8 +309,9 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
                                       resTp: Type = functionResultType(fun.tpe),
                                       additionalFlags: FlagSet = NoFlags): DefDef = {
     val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-    // for sams, methParamProtos is the parameter symbols for the sam's method, so that we generate the correct override (based on parameter types)
-    val methParamSyms = methParamProtos.map { param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName) }
+    // for sams, methParamProtos is the parameter symbols for the sam's method,
+    // so that we generate the correct override (based on parameter types)
+    val methParamSyms = methParamProtos.map(param => methSym.newSyntheticValueParam(param.tpe, param.name.toTermName))
     methSym setInfo MethodType(methParamSyms, resTp)
 
     // we must rewire reference to the function's param symbols -- and not methParamProtos -- to methParamSyms
@@ -326,8 +327,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       val enclosingStaticModules = owner.ownersIterator.filter(x => !x.hasPackageFlag && x.isModuleClass && x.isStatic)
       enclosingStaticModules.foldLeft(tree)((tree, moduleClass) => tree.substituteThis(moduleClass, gen.mkAttributedIdent(moduleClass.sourceModule)) )
     }
-
-    newDefDef(methSym, substThisForModule(moveToMethod(useMethodParams(fun.body))))(tpt = TypeTree(resTp))
+    val body = substThisForModule(moveToMethod(useMethodParams(fun.body)))
+    newDefDef(methSym, body)(tpt = TypeTree(resTp))
   }
 
   /**

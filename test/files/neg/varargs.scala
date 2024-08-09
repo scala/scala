@@ -21,6 +21,6 @@ object Test {
   @varargs def v5(a: String)(b: Int*) = a + b.sum // ok
 
   @varargs def v6: Int = 1 // nok
-  @varargs def v7(i: Int*)() = i.sum // ok (?)
+  @varargs def v7(i: Int*)() = i.sum // nok, was: (?)
 
 }

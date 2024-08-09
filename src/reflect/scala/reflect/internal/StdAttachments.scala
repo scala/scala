@@ -50,21 +50,23 @@ trait StdAttachments {
   }
 
   /** Stores the trees that give rise to a refined type to be used in reification.
-   *  Unfortunately typed `CompoundTypeTree` is lacking essential info, and the reifier cannot use `CompoundTypeTree.tpe`.
-   *  Therefore we need this hack (see `Reshape.toPreTyperTypeTree` for a detailed explanation).
+   *
+   *  Typed `CompoundTypeTree` is lacking info required by the reifier, which can't use `CompoundTypeTree.tpe`.
+   *  (See `Reshape.toPreTyperTypeTree` for a detailed explanation.)
    */
   case class CompoundTypeTreeOriginalAttachment(parents: List[Tree], stats: List[Tree])
 
-  /** Attached to a Function node during type checking when the expected type is a SAM type (and not a built-in FunctionN).
-    *
-    * Ideally, we'd move to Dotty's Closure AST, which tracks the environment,
-    * the lifted method that has the implementation, and the target type.
-    * For backwards compatibility, an attachment is the best we can do right now.
-    *
-    * @param samTp the expected type that triggered sam conversion (may be a subtype of the type corresponding to sam's owner)
-    * @param sam the single abstract method implemented by the Function we're attaching this to
-    * @param synthCls the (synthetic) class representing the eventual implementation class (spun at runtime by LMF on the JVM)
-    */
+  /** A Function node was type checked with an expected type that is a SAM type and not a built-in FunctionN.
+   *
+   *  Dotty's Closure AST improves on this because it tracks the environment,
+   *  the lifted method that has the implementation, and the target type.
+   *
+   *  @param samTp the expected type that triggered sam conversion
+   *         (may be a subtype of the type corresponding to sam's owner)
+   *  @param sam the single abstract method implemented by the Function we're attaching this to
+   *  @param synthCls the (synthetic) class representing the eventual implementation class
+   *         (spun at runtime by LMF on the JVM)
+   */
   case class SAMFunction(samTp: Type, sam: Symbol, synthCls: Symbol) extends PlainAttachment
 
   case object DelambdafyTarget extends PlainAttachment
