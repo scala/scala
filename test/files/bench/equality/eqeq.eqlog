@@ -1,4 +1,4 @@
-Banchmark results for testing equality operations:
+Benchmark results for testing equality operations:
 eq.scala: Base case, use eq equality only
 eqeq.scala: Test case, use == instead of eq.
 All tests run on Thinkpad T400, 1.6.0_12 client VM.

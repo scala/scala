@@ -34,7 +34,7 @@ package scala.async.run.toughtype {
 
   class ToughTypeSpec {
 
-    @Test def `propogates tough types`(): Unit = {
+    @Test def `propagates tough types`(): Unit = {
       val fut = ToughTypeObject.m2
       val res: (List[_], scala.async.run.toughtype.ToughTypeObject.Inner) = Await.result(fut, 2 seconds)
       assertEquals(Nil, res._1)
