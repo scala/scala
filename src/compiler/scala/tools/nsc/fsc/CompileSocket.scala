@@ -105,7 +105,7 @@ class CompileSocket extends CompileOutputCommon {
     if (portsDir.list.toList.exists(_.name == fixPort.toString)) fixPort else -1
   } else portsDir.list.toList match {
     case Nil      => -1
-    case x :: xs  => try x.name.toInt catch {
+    case x :: _  => try x.name.toInt catch {
       case e: Exception => x.delete() ; throw e
     }
   }
@@ -161,8 +161,8 @@ class CompileSocket extends CompileOutputCommon {
 
     @tailrec
     def getsock(attempts: Int): Option[Socket] = attempts match {
-      case 0    => warn("Unable to establish connection to compilation daemon") ; None
-      case num  =>
+      case 0 => warn("Unable to establish connection to compilation daemon") ; None
+      case _ =>
         val port = if (create) getPort(vmArgs) else pollPort()
         if (port < 0) return None
 

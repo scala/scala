@@ -42,16 +42,16 @@ trait Parsers { self: Quasiquotes =>
       val posMapList = posMap.toList
       def containsOffset(start: Int, end: Int) = start <= offset && offset < end
       def fallbackPosition = posMapList match {
-        case (pos1, (start1, end1)) :: _   if start1 > offset => pos1
-        case _ :+ ((pos2, (start2, end2))) if end2 <= offset  => pos2.withPoint(pos2.point + (end2 - start2))
-        case x                                                => throw new MatchError(x)
+        case (pos1, (start1, _)) :: _   if start1 > offset   => pos1
+        case _ :+ ((pos2, (start2, end2))) if end2 <= offset => pos2.withPoint(pos2.point + (end2 - start2))
+        case x                                               => throw new MatchError(x)
       }
       posMapList.sliding(2).collect {
-        case (pos1, (start1, end1)) :: _                        if containsOffset(start1, end1) => (pos1, offset - start1)
-        case (pos1, (start1, end1)) :: (pos2, (start2, _)) :: _ if containsOffset(end1, start2) => (pos1, end1 - start1)
-        case _ :: (pos2, (start2, end2)) :: _                   if containsOffset(start2, end2) => (pos2, offset - start2)
-      }.map { case (pos, offset) =>
-        pos.withPoint(pos.point + offset)
+        case (pos1, (start1, end1)) :: _                     if containsOffset(start1, end1) => (pos1, offset - start1)
+        case (pos1, (start1, end1)) :: (_, (start2, _)) :: _ if containsOffset(end1, start2) => (pos1, end1 - start1)
+        case _ :: (pos2, (start2, end2)) :: _                if containsOffset(start2, end2) => (pos2, offset - start2)
+      }.map {
+        case (pos, offset) => pos.withPoint(pos.point + offset)
       }.toList.headOption.getOrElse(fallbackPosition)
     }
 
@@ -92,7 +92,7 @@ trait Parsers { self: Quasiquotes =>
               case _ => gen.mkBlock(stats, doFlatten = true)
             }
           case nme.unapply => gen.mkBlock(stats, doFlatten = false)
-          case other       => global.abort("unreachable")
+          case _           => global.abort("unreachable")
         }
 
         // tq"$a => $b"

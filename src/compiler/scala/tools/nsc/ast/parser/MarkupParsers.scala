@@ -137,7 +137,7 @@ trait MarkupParsers {
 
             try handle.parseAttribute(r2p(start, mid, curOffset), tmp)
             catch {
-              case e: RuntimeException =>
+              case _: RuntimeException =>
                 errorAndResult("error parsing attribute value", parser.errorTermTree)
             }
 

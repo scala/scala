@@ -89,7 +89,7 @@ abstract class NodePrinters {
       tree match {
         case SelectFromTypeTree(qual, name) => showRefTreeName(qual) + "#" + showName(name)
         case Select(qual, name)             => showRefTreeName(qual) + "." + showName(name)
-        case id @ Ident(name)               => showNameAndPos(id)
+        case id: Ident                      => showNameAndPos(id)
         case _                              => "" + tree
       }
     }
@@ -124,6 +124,7 @@ abstract class NodePrinters {
       }
     }
     def println(s: String) = printLine(s, "")
+    def print(s: String) = buf.append(s)
 
     def printLine(value: String, comment: String): Unit = {
       buf append "  " * level
@@ -214,7 +215,7 @@ abstract class NodePrinters {
     }
 
     def traverse(tree: Tree): Unit = {
-      showPosition(tree)
+      print(showPosition(tree))
 
       tree match {
         case ApplyDynamic(fun, args)      => applyCommon(tree, fun, args)
@@ -234,7 +235,7 @@ abstract class NodePrinters {
 
         case ld @ LabelDef(name, params, rhs) =>
           printMultiline(tree) {
-            showNameAndPos(ld)
+            print(showNameAndPos(ld))
             traverseList("()", "params")(params)
             traverse(rhs)
           }
@@ -358,7 +359,7 @@ abstract class NodePrinters {
           tree match {
             case t: RefTree               => println(showRefTree(t))
             case t if t.productArity == 0 => println(treePrefix(t))
-            case t                        => printMultiline(tree)(tree.productIterator foreach traverseAny)
+            case _                        => printMultiline(tree)(tree.productIterator foreach traverseAny)
           }
       }
     }

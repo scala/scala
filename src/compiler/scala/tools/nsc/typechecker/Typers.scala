@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.{tailrec, unused}
+import scala.annotation._
 import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Chars, TypesStats}
@@ -217,7 +217,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /** Overridden to false in scaladoc and/or interactive. */
     def canAdaptConstantTypeToLiteral = true
     def canTranslateEmptyListToNil    = true
-    def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree
+    def missingSelectErrorTree(tree: Tree, @unused qual: Tree, @unused name: Name): Tree = tree
 
     // used to exempt synthetic accessors (i.e. those that are synthesized by the compiler to access a field)
     // from skolemization because there's a weird bug that causes spurious type mismatches
@@ -5917,8 +5917,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           tree
         }
 
-
-        val Try(block, catches, fin) = tree
+        val Try(block, catches, finalizer) = tree
         val block1   = typed(block, pt)
         val cases    = catches match {
           case CaseDef(EmptyTree, EmptyTree, catchExpr) :: Nil =>
@@ -5933,7 +5932,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _ => catches
         }
         val catches1 = typedCases(cases, ThrowableTpe, pt)
-        val fin1     = if (fin.isEmpty) fin else typed(fin, UnitTpe)
+        val fin1     = if (finalizer.isEmpty) finalizer else typed(finalizer, UnitTpe)
 
         def finish(ownType: Type) = treeCopy.Try(tree, block1, catches1, fin1) setType ownType
 
@@ -6481,7 +6480,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (pt != Kind.Wildcard && pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
       else context withinTypeConstructorAllowed typed(tree, NOmode, pt)
 
-    def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
+    def typedHigherKindedType(tree: Tree, @unused mode: Mode): Tree =
       context withinTypeConstructorAllowed typed(tree)
 
     /** Types a type constructor tree used in a new or supertype */

@@ -48,7 +48,7 @@ trait SplainErrors { self: Analyzer with SplainFormatting =>
   def splainPushImplicitSearchFailure(implicitTree: Tree, expectedType: Type, originalError: AbsTypeError): Unit = {
     def pushImpFailure(fun: Tree, args: List[Tree]): Unit = {
       fun.tpe match {
-        case PolyType(tparams, restpe) if tparams.nonEmpty && sameLength(tparams, args) =>
+        case PolyType(tparams, _) if tparams.nonEmpty && sameLength(tparams, args) =>
           splainPushNonconformantBonds(expectedType, implicitTree, mapList(args)(_.tpe), tparams, Some(originalError))
         case _ =>
       }

@@ -241,7 +241,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     /* The hashcode method for value classes
      * def hashCode(): Int = this.underlying.hashCode
      */
-    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { _ =>
       Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
     }
 
@@ -425,7 +425,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         }
         def nameSuffixedByParamIndex = original.name.append(s"${nme.CASE_ACCESSOR}$$${i}").toTermName
         val newName = if (i < 0) freshAccessorName else nameSuffixedByParamIndex
-        val newAcc = deriveMethod(ddef.symbol, name => newName) { newAcc =>
+        val newAcc = deriveMethod(ddef.symbol, _ => newName) { newAcc =>
           newAcc.makePublic
           newAcc resetFlag (ACCESSOR | PARAMACCESSOR | OVERRIDE)
           ddef.rhs.duplicate

@@ -13,10 +13,11 @@
 package scala.tools.nsc
 package ast.parser
 
+import scala.annotation.unused
 import scala.collection.mutable
-import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.ListOfNil
 import scala.reflect.internal.util.StringOps.splitWhere
+import symtab.Flags.MUTABLE
 
 /** This class builds instance of `Tree` that represent XML.
  *
@@ -28,7 +29,7 @@ import scala.reflect.internal.util.StringOps.splitWhere
  *
  *  @author  Burak Emir
  */
-abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
+abstract class SymbolicXMLBuilder(@unused p: Parsers#Parser, @unused preserveWS: Boolean) {
   val global: Global
   import global._
 

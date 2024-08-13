@@ -46,15 +46,27 @@ warn-unused-privates.scala:68: warning: private var s2 in class StableAccessors 
 warn-unused-privates.scala:69: warning: private var s3 in class StableAccessors is never used
   private var s3: Int = 0 // warn, never got
               ^
+warn-unused-privates.scala:72: warning: local var s5 in class StableAccessors is never updated: consider using immutable val
+  private[this] var s5 = 0 // warn, never set
+                    ^
 warn-unused-privates.scala:87: warning: private default argument in trait DefaultArgs is never used
   private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
                              ^
 warn-unused-privates.scala:87: warning: private default argument in trait DefaultArgs is never used
   private def bippy(x1: Int, x2: Int = 10, x3: Int = 15): Int = x1 + x2 + x3
                                            ^
+warn-unused-privates.scala:114: warning: local var x in method f2 is never updated: consider using immutable val
+    var x = 100 // warn about it being a var
+        ^
 warn-unused-privates.scala:120: warning: private object Dongo in object Types is never used
   private object Dongo { def f = this } // warn
                  ^
+warn-unused-privates.scala:121: warning: private class Bar1 in object Types is never used
+  private class Bar1 // warn
+                ^
+warn-unused-privates.scala:123: warning: private type Alias1 in object Types is never used
+  private type Alias1 = String // warn
+               ^
 warn-unused-privates.scala:153: warning: private method x_= in class OtherNames is never used
   private def x_=(i: Int): Unit = ()
               ^
@@ -64,33 +76,21 @@ warn-unused-privates.scala:154: warning: private method x in class OtherNames is
 warn-unused-privates.scala:155: warning: private method y_= in class OtherNames is never used
   private def y_=(i: Int): Unit = ()
               ^
-warn-unused-privates.scala:269: warning: private val n in class t12992 enclosing def is unused is never used
-  private val n = 42
-              ^
-warn-unused-privates.scala:274: warning: private method f in class recursive reference is not a usage is never used
-  private def f(i: Int): Int = // warn
-              ^
-warn-unused-privates.scala:121: warning: private class Bar1 in object Types is never used
-  private class Bar1 // warn
-                ^
-warn-unused-privates.scala:123: warning: private type Alias1 in object Types is never used
-  private type Alias1 = String // warn
-               ^
 warn-unused-privates.scala:233: warning: private class for your eyes only in object not even using companion privates is never used
   private implicit class `for your eyes only`(i: Int) {  // warn
                          ^
 warn-unused-privates.scala:249: warning: private class D in class nonprivate alias is enclosing is never used
   private class D extends C2   // warn
                 ^
+warn-unused-privates.scala:269: warning: private val n in class t12992 enclosing def is unused is never used
+  private val n = 42
+              ^
+warn-unused-privates.scala:274: warning: private method f in class recursive reference is not a usage is never used
+  private def f(i: Int): Int = // warn
+              ^
 warn-unused-privates.scala:277: warning: private class P in class recursive reference is not a usage is never used
   private class P {
                 ^
-warn-unused-privates.scala:72: warning: local var s5 in class StableAccessors is never updated: consider using immutable val
-  private[this] var s5 = 0 // warn, never set
-                    ^
-warn-unused-privates.scala:114: warning: local var x in method f2 is never updated: consider using immutable val
-    var x = 100 // warn about it being a var
-        ^
 error: No warnings can be incurred under -Werror.
 31 warnings
 1 error

@@ -62,7 +62,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
             case x =>
               assert(x != ArrayClass, "array")
               tree match {
-                case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
+                case Apply(_, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
                   arg
                 case _ =>
                   (REF(currentRun.runDefinitions.boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectTpe
@@ -87,8 +87,8 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
           if (treeInfo isExprSafeToInline side) value
           else BLOCK(side, value)
         val tree1 = pt match {
-          case ErasedValueType(clazz, BoxedUnitTpe) => cast(preservingSideEffects(tree, REF(BoxedUnit_UNIT)), pt)
-          case ErasedValueType(clazz, underlying)   => cast(unboxValueClass(tree, clazz, underlying), pt)
+          case ErasedValueType(_, BoxedUnitTpe) => cast(preservingSideEffects(tree, REF(BoxedUnit_UNIT)), pt)
+          case ErasedValueType(clazz, underlying) => cast(unboxValueClass(tree, clazz, underlying), pt)
           case _ =>
             pt.typeSymbol match {
               case UnitClass  =>

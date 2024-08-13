@@ -905,7 +905,7 @@ object LocalOptImpls {
 
       // Ensure the length of `renumber`. Unused variable indices are mapped to -1.
       val minLength = if (isWide) index + 2 else index + 1
-      for (i <- renumber.length until minLength) renumber += -1
+      for (_ <- renumber.length until minLength) renumber += -1
 
       renumber(index) = index
       if (isWide) renumber(index + 1) = index
@@ -965,7 +965,7 @@ object LocalOptImpls {
     @tailrec
     def isEmpty(node: AbstractInsnNode): Boolean = node.getNext match {
       case null => true
-      case l: LineNumberNode => true
+      case _: LineNumberNode => true
       case n if n.getOpcode >= 0 => false
       case n => isEmpty(n)
     }

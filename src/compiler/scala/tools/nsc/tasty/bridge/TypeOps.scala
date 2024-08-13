@@ -339,15 +339,15 @@ trait TypeOps { self: TastyUniverse =>
           case _ => tp
         }
         prefix match {
-          case pre: u.TypeRef => processInner(u.typeRef(prefix, sym, Nil)) // e.g. prefix is `Foo[Int]`
-          case _              => processInner(sym.tpeHK) // ignore prefix otherwise
+          case _: u.TypeRef => processInner(u.typeRef(prefix, sym, Nil)) // e.g. prefix is `Foo[Int]`
+          case _            => processInner(sym.tpeHK) // ignore prefix otherwise
         }
       }
       else if (sym.isType) {
         prefix match {
-          case tp: u.ThisType if !sym.isTypeParameter     => u.typeRef(prefix, sym, Nil)
-          case _:u.SingleType | _:u.RefinedType           => u.typeRef(prefix, sym, Nil)
-          case _                                          => u.appliedType(sym, Nil)
+          case _: u.ThisType if !sym.isTypeParameter => u.typeRef(prefix, sym, Nil)
+          case _:u.SingleType | _:u.RefinedType      => u.typeRef(prefix, sym, Nil)
+          case _                                     => u.appliedType(sym, Nil)
         }
       }
       else { // is a term
@@ -457,7 +457,7 @@ trait TypeOps { self: TastyUniverse =>
      *  Do the same for by name types => From[T] and => To[T]
      */
     def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean): Type = self match {
-      case self @ u.NullaryMethodType(tp) =>
+      case u.NullaryMethodType(tp) =>
         u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg = false))
       case _ =>
         if (self.typeSymbol.isSubClass(from)) {

@@ -328,7 +328,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
             // TODO is this case ever hit? constructors does not generate Assigns with EmptyTree for the rhs AFAICT
             // !!! Ident(self) is never referenced, is it supposed to be confirming
             // that self is anything in particular?
-            case Apply(lhs@Select(Ident(self), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
+            case Apply(lhs@Select(Ident(_), _), EmptyTree.asList) if lhs.symbol.isSetter => Nil
             case stat => List(stat)
           }
 

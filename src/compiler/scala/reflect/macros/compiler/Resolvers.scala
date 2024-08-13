@@ -34,7 +34,7 @@ trait Resolvers {
     lazy val (macroImplRef, isBlackbox, macroImplOwner, macroImpl, targs) =
       typer.silent(_.typed(markMacroImplRef(untypedMacroImplRef)), reportAmbiguousErrors = false) match {
         case SilentResultValue(macroImplRef @ MacroImplReference(_, isBlackbox, owner, meth, targs)) => (macroImplRef, isBlackbox, owner, meth, targs)
-        case SilentResultValue(macroImplRef) => MacroImplReferenceWrongShapeError()
+        case SilentResultValue(_) => MacroImplReferenceWrongShapeError()
         case ste: SilentTypeError => abort(ste.err.errPos, ste.err.errMsg)
       }
   }

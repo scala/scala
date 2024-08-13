@@ -67,7 +67,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     reporter.echo(NoPosition, msg)
   }
   private def reporterError(pos: Position, msg: String): Unit = synchronized {
-    reporter.echo(msg)
+    reporter.error(pos, msg)
   }
 
   private object handler extends UncaughtExceptionHandler {

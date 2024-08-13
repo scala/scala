@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.annotation.switch
+import scala.annotation.{switch, unused}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes
@@ -82,7 +82,7 @@ abstract class BTypesFromClassfile {
     }
   }
 
-  private def computeClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): Right[Nothing, ClassInfo] = {
+  private def computeClassInfoFromClassNode(classNode: ClassNode, @unused classBType: ClassBType): Right[Nothing, ClassInfo] = {
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")

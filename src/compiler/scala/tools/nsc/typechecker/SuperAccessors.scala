@@ -19,8 +19,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
-import mutable.ListBuffer
+import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
@@ -192,8 +191,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
       def mixIsTrait = sup.tpe match {
-        case SuperType(thisTpe, superTpe) => superTpe.typeSymbol.isTrait
-        case x                            => throw new MatchError(x)
+        case SuperType(_, superTpe) => superTpe.typeSymbol.isTrait
+        case x                      => throw new MatchError(x)
       }
 
       val needAccessor = name.isTermName && {
@@ -376,7 +375,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case DefDef(_, _, _, _, _, _) if tree.symbol.isMethodWithExtension =>
           deriveDefDef(tree)(rhs => withInvalidOwner(transform(rhs)))
 
-        case TypeApply(sel @ Select(qual, name), args) =>
+        case TypeApply(sel @ Select(_, _), args) =>
           mayNeedProtectedAccessor(sel, args, goToSuper = true)
 
         case Assign(lhs @ Select(qual, name), rhs) =>

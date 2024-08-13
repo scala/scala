@@ -17,7 +17,7 @@ package internal
 import java.security.MessageDigest
 
 import Chars.isOperatorPart
-import scala.annotation.{nowarn, switch}
+import scala.annotation.switch
 import scala.collection.immutable
 import scala.io.Codec
 
@@ -176,7 +176,6 @@ trait StdNames {
   //        the early initializer.
   /** This should be the first trait in the linearization. */
   // abstract class Keywords extends CommonNames {
-  @nowarn("cat=deprecation&msg=early initializers")
   abstract class Keywords extends {
     private[this] val kw = new KeywordSetBuilder
 

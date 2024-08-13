@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.reflect.internal.util.ListOfNil
 import symtab.Flags._
 
@@ -119,7 +119,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   }
 
   // TODO: add MIXEDIN (see e.g., `accessed` on `Symbol`)
-  private def setMixedinAccessorFlags(orig: Symbol, cloneInSubclass: Symbol): Unit =
+  private def setMixedinAccessorFlags(@unused orig: Symbol, cloneInSubclass: Symbol): Unit =
     cloneInSubclass setFlag OVERRIDE | NEEDS_TREES resetFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS
 
   private def setFieldFlags(accessor: Symbol, fieldInSubclass: TermSymbol): Unit = {
@@ -375,7 +375,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         } else tp
 
 
-      case tp@ClassInfoType(parents, oldDecls, clazz) if !classNeedsInfoTransform(clazz) => tp
+      case tp@ClassInfoType(_, _, clazz) if !classNeedsInfoTransform(clazz) => tp
 
       // mix in fields & accessors for all mixed in traits
       case tp@ClassInfoType(parents, oldDecls, clazz) =>

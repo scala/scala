@@ -23,7 +23,7 @@ trait StdAttachments {
   def reifyBinding(tree: Tree): Tree =
     tree.attachments.get[ReifyBindingAttachment] match {
       case Some(ReifyBindingAttachment(binding)) => binding
-      case other => Ident(NoSymbol)
+      case _ => Ident(NoSymbol)
     }
 
   case class ReifyAliasAttachment(sym: Symbol, alias: TermName)

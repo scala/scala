@@ -15,6 +15,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation._
 import scala.collection.mutable
 
 /**
@@ -148,7 +149,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     }
 
     // determine which lambda target to use with java's LMF -- create a new one if scala-specific boxing is required
-    def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, functionalInterface: Symbol, sam: Symbol): Symbol = {
+    def createBoxingBridgeMethodIfNeeded(fun: Function, target: Symbol, @unused functionalInterface: Symbol, sam: Symbol): Symbol = {
       val oldClass = fun.symbol.enclClass
       val pos = fun.pos
 

@@ -183,4 +183,7 @@ trait StdAttachments {
   case object DiscardedExpr extends PlainAttachment
   /** Anonymous parameter of `if (_)` may be inferred as Boolean. */
   case object BooleanParameterType extends PlainAttachment
+
+  /** This Bind tree was derived immediately from the given tree, for unused accounting. */
+  case class VarAlias(tree: Tree /*Bind | ValDef*/) extends PlainAttachment
 }

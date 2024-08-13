@@ -252,7 +252,7 @@ final class FileBasedCache[K, T] {
     if (disableCache) Left("caching is disabled due to a policy setting")
     else if (!checkStamps) Right(paths)
     else {
-      val nonJarZips = urlsAndFiles.filter { case (url, file) => file == null || !Jar.isJarOrZip(file.file) }
+      val nonJarZips = urlsAndFiles.filter { case (_, file) => file == null || !Jar.isJarOrZip(file.file) }
       if (nonJarZips.nonEmpty) Left(s"caching is disabled because of the following classpath elements: ${nonJarZips.map(_._1).mkString(", ")}.")
       else Right(paths)
     }
@@ -267,7 +267,7 @@ final class FileBasedCache[K, T] {
       val fileKey = attrs.fileKey()
       Stamp(lastModified, attrs.size(), if (fileKey == null) NoFileKey else fileKey)
       } catch {
-        case ex: java.nio.file.NoSuchFileException =>
+        case _: java.nio.file.NoSuchFileException =>
           // Dummy stamp for (currently) non-existent file.
           Stamp(FileTime.fromMillis(0), -1, new Object)
       }

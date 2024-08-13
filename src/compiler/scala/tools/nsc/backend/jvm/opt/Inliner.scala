@@ -217,7 +217,7 @@ abstract class Inliner {
         }
         val indentString = " " * indent
         this match {
-          case s @ InlineLogSuccess(r, sizeBefore, sizeAfter) =>
+          case InlineLogSuccess(r, sizeBefore, sizeAfter) =>
             s"${indentString}inlined ${calleeString(r)} (${r.logText}). Before: $sizeBefore ins, after: $sizeAfter ins."
 
           case InlineLogRewrite(closureInit, invocations) =>

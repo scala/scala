@@ -463,7 +463,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
           bsAdd(this, value)
         }
     }
-    case bits: Array[Long] =>
+    case _: Array[Long] =>
       bsAdd(this, value)
   }
 
@@ -485,7 +485,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
         else if (value == s.c) {                       s.c = s.d; s.d = -1; size = 3 }
         else if (value == s.d) {                                  s.d = -1; size = 3 }
     }
-    case bits: Array[Long] =>
+    case _: Array[Long] =>
       bsRemove(this, value)
       if (this.size == 4)
         this.set = bsToSmall(this.set.asInstanceOf[Array[Long]])

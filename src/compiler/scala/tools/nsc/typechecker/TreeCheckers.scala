@@ -324,7 +324,7 @@ abstract class TreeCheckers extends Analyzer {
             if (args exists (_ == EmptyTree))
               errorFn(tree.pos, "Apply arguments to " + fn + " contains an empty tree: " + args)
 
-          case Select(qual, name) =>
+          case Select(_, _) =>
             checkSym(tree)
           case This(_) =>
             checkSym(tree)
@@ -406,7 +406,7 @@ abstract class TreeCheckers extends Analyzer {
           val fmt = "%-" + width + "s"
           val lines = pairs map {
             case (s: Symbol, msg) => fmt.format(msg) + "  in  " + ownersString(s)
-            case (x, msg)         => fmt.format(msg)
+            case (_, msg)         => fmt.format(msg)
           }
           lines.mkString("Out of scope symbol reference {\n", "\n", "\n}")
         }

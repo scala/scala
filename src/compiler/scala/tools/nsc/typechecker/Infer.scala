@@ -473,7 +473,7 @@ trait Infer extends Checkable {
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
         map2(tparams, tvars)((tparam, tvar) =>
           try instantiateToBound(tvar, varianceInTypes(formals)(tparam))
-          catch { case ex: NoInstance => WildcardType }
+          catch { case _: NoInstance => WildcardType }
         )
       else
         WildcardType.fillList(tvars.length)
@@ -1513,9 +1513,9 @@ trait Infer extends Checkable {
           def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
-            case best :: nil            => finish(best)
-            case nil if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
-            case nil                    => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
+            case best :: _              => finish(best)
+            case _   if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
+            case _                      => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
           }
         }
 
@@ -1548,10 +1548,9 @@ trait Infer extends Checkable {
       def finish(sym: Symbol, tpe: Type) = tree setSymbol sym setType tpe
       // Alternatives which conform to bounds
       def checkWithinBounds(sym: Symbol): Unit = sym.alternatives match {
-        case Nil if argtypes.exists(_.isErroneous) =>
-        case Nil                                   => fail()
-        case alt :: Nil                            => finish(alt, pre memberType alt)
-        case alts @ (hd :: _)                      =>
+        case Nil            => if (!argtypes.exists(_.isErroneous)) fail()
+        case alt :: Nil     => finish(alt, pre memberType alt)
+        case alts @ hd :: _ =>
           log(s"Attaching AntiPolyType-carrying overloaded type to $sym")
           // Multiple alternatives which are within bounds; spin up an
           // overloaded type which carries an "AntiPolyType" as a prefix.
@@ -1561,7 +1560,7 @@ trait Infer extends Checkable {
           finish(sym setInfo tpe, tpe)
       }
       matchingLength.alternatives match {
-        case Nil => fail()
+        case Nil        => fail()
         case alt :: Nil => finish(alt, pre memberType alt)
         case _ =>
           checkWithinBounds(matchingLength.filter { alt =>

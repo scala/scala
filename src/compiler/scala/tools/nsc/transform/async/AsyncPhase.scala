@@ -48,7 +48,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       reporter.warning(pos, s"${settings.async.name} must be enabled for async transformation.")
     sourceFilesToTransform += pos.source
     val postAnfTransform = config.getOrElse("postAnfTransform", (x: Block) => x).asInstanceOf[Block => Block]
-    val stateDiagram = config.getOrElse("stateDiagram", (sym: Symbol, tree: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
+    val stateDiagram = config.getOrElse("stateDiagram", (_: Symbol, _: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
     val allowExceptionsToPropagate = config.contains("allowExceptionsToPropagate")
     method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram, allowExceptionsToPropagate))
     // Wrap in `{ expr: Any }` to force value class boxing before calling `completeSuccess`, see test/async/run/value-class.scala
@@ -124,7 +124,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         case dd: DefDef if dd.hasAttachment[AsyncAttachment] =>
           val asyncAttachment = dd.getAndRemoveAttachment[AsyncAttachment].get
           val asyncBody = (dd.rhs: @unchecked) match {
-            case blk@Block(Apply(qual, body :: Nil) :: Nil, Literal(Constant(()))) => body
+            case Block(Apply(_, body :: Nil) :: Nil, Literal(Constant(()))) => body
           }
 
           atOwner(dd, dd.symbol) {

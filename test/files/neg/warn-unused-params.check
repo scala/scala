@@ -25,9 +25,6 @@ warn-unused-params.scala:87: warning: parameter ev in method g2 is never used
 warn-unused-params.scala:91: warning: parameter i in anonymous function is never used
   def f = (i: Int) => answer      // warn
             ^
-warn-unused-params.scala:97: warning: parameter i in anonymous function is never used
-  def g = for (i <- List(1)) yield answer    // warn map.(i => 42)
-               ^
 warn-unused-params.scala:101: warning: parameter ctx in method f is never used
   def f[A](implicit ctx: Context[A]) = answer
                     ^
@@ -47,5 +44,5 @@ warn-unused-params.scala:142: warning: parameter s in method f is never used
   def f(s: Serializable) = toString.nonEmpty  // warn explicit param of marker trait
         ^
 error: No warnings can be incurred under -Werror.
-16 warnings
+15 warnings
 1 error

@@ -643,7 +643,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    ClassBType(internalName, moduleClassSym, fromSymbol = true) { (c: ClassBType, moduleClassSym) =>
+    ClassBType(internalName, moduleClassSym, fromSymbol = true) { (_: ClassBType, moduleClassSym) =>
       val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
       val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
       Right(ClassInfo(

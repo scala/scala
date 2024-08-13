@@ -286,14 +286,11 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     /** Return the output directory for the given file.
      */
-    def outputDirFor(src: AbstractFile): AbstractFile = {
-      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) = src.path.startsWith(srcDir.path)
-
-      singleOutDir.getOrElse(outputs.find((isBelow _).tupled) match {
+    def outputDirFor(src: AbstractFile): AbstractFile =
+      singleOutDir.getOrElse(outputs.find { case (srcDir, _) => src.path.startsWith(srcDir.path) } match {
         case Some((_, d)) => d
         case _ => throw new FatalError(s"Could not find an output directory for ${src.path} in ${outputs}")
       })
-    }
 
     /** Return the source file path(s) which correspond to the given
      *  classfile path and SourceFile attribute value, subject to the
@@ -312,19 +309,16 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
      *  output directory there will be two or more candidate source file
      *  paths.
      */
-    def srcFilesFor(classFile : AbstractFile, srcPath : String) : List[AbstractFile] = {
-      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) = classFile.path.startsWith(outDir.path)
-
+    def srcFilesFor(classFile : AbstractFile, srcPath : String) : List[AbstractFile] =
       singleOutDir match {
         case Some(_: VirtualDirectory | _: io.ZipArchive) => Nil
         case Some(d) => List(d.lookupPathUnchecked(srcPath, directory = false))
         case None =>
-          (outputs filter (isBelow _).tupled) match {
+          outputs.filter { case (_, outDir) => classFile.path.startsWith(outDir.path) } match {
             case Nil => Nil
             case matches => matches.map(_._1.lookupPathUnchecked(srcPath, directory = false))
           }
       }
-    }
   }
 
   /** A base class for settings of all types.
@@ -333,7 +327,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
 
     /** Will be called after this Setting is set for any extra work. */
-    private[this] var _postSetHook: this.type => Unit = (x: this.type) => ()
+    private[this] var _postSetHook: this.type => Unit = (_: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)
     def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
@@ -818,8 +812,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       @tailrec
       def loop(seen: List[String], args: List[String]): (List[String], List[String]) = args match {
         case Optionlike() :: _ if halting         => (seen, args)
-        case "help" :: rest if helpText.isDefined => sawHelp = true ; loop(seen, rest)
-        case head :: rest                         => loop(head :: seen, rest)
+        case "help" :: args if helpText.isDefined => sawHelp = true; loop(seen, args)
+        case head :: args                         => loop(head :: seen, args)
         case Nil                                  => (seen, Nil)
       }
       val (seen, rest) = loop(Nil, args)
@@ -885,7 +879,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       case List("help")                   => sawHelp = true; SomeOfNil
       case List(x) if choices contains x  => value = x ; SomeOfNil
       case List(x)                        => errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
-      case xs                             => errorAndValue("'" + name + "' does not accept multiple arguments.", None)
+      case _                              => errorAndValue("'" + name + "' does not accept multiple arguments.", None)
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
@@ -915,14 +909,13 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     private[this] var _v: T = Nil
     private[this] var _numbs: List[(Int,Int)] = Nil
     private[this] var _names: T = Nil
-    //protected var v: T = Nil
     protected def v: T = _v
     protected def v_=(t: T): Unit = {
       // throws NumberFormat on bad range (like -5-6)
-      def asRange(s: String): (Int,Int) = (s indexOf '-') match {
+      def asRange(s: String): (Int,Int) = s.indexOf('-') match {
         case -1 => (s.toInt, s.toInt)
         case 0  => (-1, s.tail.toInt)
-        case i if s.last == '-' => (s.init.toInt, Int.MaxValue)
+        case _ if s.last == '-' => (s.init.toInt, Int.MaxValue)
         case i  => (s.take(i).toInt, s.drop(i+1).toInt)
       }
       val numsAndStrs = t filter (_.nonEmpty) partition (_ forall (ch => ch.isDigit || ch == '-'))

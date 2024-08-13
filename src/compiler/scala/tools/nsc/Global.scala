@@ -18,7 +18,7 @@ import java.io.{Closeable, FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}, StandardCharsets.UTF_8
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation._
 import scala.collection.{immutable, mutable}
 import scala.reflect.ClassTag
 import scala.reflect.internal.pickling.PickleBuffer
@@ -376,7 +376,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[InternalReporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
-      catch { case ex: Throwable =>
+      catch { case _: Throwable =>
         globalError("exception while trying to instantiate source reader '" + name + "'")
         None
       }
@@ -1470,6 +1470,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     private def showMembers() = {
       // Allows for syntax like scalac -Xshow-class Random@erasure,typer
+      @nowarn
       def splitClassAndPhase(str: String, term: Boolean): Name = {
         def mkName(s: String) = if (term) newTermName(s) else newTypeName(s)
         (str indexOf '@') match {
@@ -1651,7 +1652,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case _: InterruptedException => reporter.cancelled = true
         case ex: IOException => globalError(ex.getMessage())
       }
     }
@@ -1672,7 +1673,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case _: InterruptedException => reporter.cancelled = true
         case ex: IOException => globalError(ex.getMessage())
       }
     }

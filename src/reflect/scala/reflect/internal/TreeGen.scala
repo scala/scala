@@ -18,6 +18,7 @@ import Flags._
 import util._
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.util.chaining._
 
 abstract class TreeGen {
   val global: SymbolTable
@@ -633,18 +634,18 @@ abstract class TreeGen {
   *  4.
   *
   *    for (P <- G; E; ...) ...
-  *      =>
+  *      ==>
   *    for (P <- G.filter (P => E); ...) ...
   *
   *  5. For N < MaxTupleArity:
   *
-  *    for (P_1 <- G; P_2 = E_2; val P_N = E_N; ...)
+  *    for (P_1 <- G; P_2 = E_2; P_N = E_N; ...)
   *      ==>
   *    for (TupleN(P_1, P_2, ... P_N) <-
   *      for (x_1 @ P_1 <- G) yield {
   *        val x_2 @ P_2 = E_2
   *        ...
-  *        val x_N & P_N = E_N
+  *        val x_N @ P_N = E_N
   *        TupleN(x_1, ..., x_N)
   *      } ...)
   *
@@ -670,9 +671,16 @@ abstract class TreeGen {
       def splitpos = (if (pos != NoPosition) wrapped.withPoint(pos.point) else pos).makeTransparent
       matchVarPattern(pat) match {
         case Some((name, tpt)) =>
-          Function(
-            List(atPos(pat.pos) { ValDef(Modifiers(PARAM), name.toTermName, tpt, EmptyTree) }),
-            body) setPos splitpos
+          val p = atPos(pat.pos) {
+            ValDef(Modifiers(PARAM), name.toTermName, tpt, EmptyTree)
+              .tap { p =>
+                if (pat.hasAttachment[VarAlias])
+                  varAliasTo(propagatePatVarDefAttachments(pat, p), pat)
+                else
+                  varAliasTo(pat, propagatePatVarDefAttachments(pat, p))
+              }
+          }
+          Function(List(p), body).setPos(splitpos)
         case None =>
           atPos(splitpos) {
             mkVisitor(List(CaseDef(pat, EmptyTree, body)), checkExhaustive = false)
@@ -685,23 +693,23 @@ abstract class TreeGen {
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
       // ForAttachment on the method selection is used to differentiate
       // result of for desugaring from a regular method call
-      Apply(Select(qual, meth) setPos qual.pos updateAttachment ForAttachment,
-        List(makeClosure(pos, pat, body))) setPos pos
+      Apply(Select(qual, meth).setPos(qual.pos).updateAttachment(ForAttachment),
+        List(makeClosure(pos, pat, body))).setPos(pos)
 
     /* If `pat` is not yet a `Bind` wrap it in one with a fresh name */
-    def makeBind(pat: Tree): Tree = pat match {
-      case Bind(_, _) => pat
-      case _ => Bind(freshTermName(), pat) setPos pat.pos
+    def makeBind(pat: Tree): Bind = pat match {
+      case pat: Bind => pat
+      case _ => Bind(freshTermName(), pat).setPos(pat.pos).updateAttachment(NoWarnAttachment)
     }
 
     /* A reference to the name bound in Bind `pat`. */
-    def makeValue(pat: Tree): Tree = pat match {
-      case Bind(name, _) => Ident(name) setPos pat.pos.focus
+    def makeValue(pat: Tree): Ident = pat match {
+      case Bind(name, _) => Ident(name).setPos(pat.pos.focus)
       case x             => throw new MatchError(x)
     }
 
     /* The position of the closure that starts with generator at position `genpos`. */
-    def closurePos(genpos: Position) =
+    def closurePos(genpos: Position): Position =
       if (genpos == NoPosition) NoPosition
       else {
         val end = body.pos match {
@@ -715,52 +723,79 @@ abstract class TreeGen {
       case (t @ ValFrom(pat, rhs)) :: Nil =>
         makeCombination(closurePos(t.pos), mapName, rhs, pat, body)
       case (t @ ValFrom(pat, rhs)) :: (rest @ (ValFrom(_, _) :: _)) =>
-        makeCombination(closurePos(t.pos), flatMapName, rhs, pat,
-                        mkFor(rest, sugarBody))
+        makeCombination(closurePos(t.pos), flatMapName, rhs, pat, body = mkFor(rest, sugarBody))
       case (t @ ValFrom(pat, rhs)) :: Filter(test) :: rest =>
-        mkFor(ValFrom(pat, makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)).setPos(t.pos) :: rest, sugarBody)
+        mkFor(ValFrom(patternAlias(pat), makeCombination(rhs.pos | test.pos, nme.withFilter, rhs, pat, test)).setPos(t.pos) :: rest, sugarBody)
       case (t @ ValFrom(pat, rhs)) :: rest =>
-        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
+        val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(ValEq.unapply(_).nonEmpty)
         assert(!valeqs.isEmpty, "Missing ValEq")
         val rest1 = rest.drop(valeqs.length)
         val (pats, rhss) = valeqs.map(ValEq.unapply(_).get).unzip
         val defpat1 = makeBind(pat)
-        val defpats = pats map makeBind
-        val pdefs = defpats.lazyZip(rhss).flatMap(mkPatDef)
-        val ids = (defpat1 :: defpats) map makeValue
+        val defpats = pats.map(makeBind)
+        val pdefs = defpats.lazyZip(rhss).flatMap((p, r) => mkPatDef(Modifiers(0), p, r, r.pos, forFor = true))
+        val tupled = {
+          val ids = (defpat1 :: defpats).map(makeValue)
+          atPos(wrappingPos(ids))(mkTuple(ids).updateAttachment(ForAttachment))
+        }
         val rhs1 = mkFor(
           List(ValFrom(defpat1, rhs).setPos(t.pos)),
-          Yield(Block(pdefs, atPos(wrappingPos(ids)) { mkTuple(ids) }) setPos wrappingPos(pdefs)))
-        val allpats = (pat :: pats) map (_.duplicate)
+          Yield(Block(pdefs, tupled).setPos(wrappingPos(pdefs)))
+        )
+        val untupled = {
+          val allpats = (pat :: pats).map(patternAlias)
+          atPos(wrappingPos(allpats))(mkTuple(allpats))
+        }
         val pos1 =
           if (t.pos == NoPosition) NoPosition
           else rangePos(t.pos.source, t.pos.start, t.pos.point, rhs1.pos.end)
-        val vfrom1 = ValFrom(atPos(wrappingPos(allpats)) { mkTuple(allpats) }, rhs1).setPos(pos1)
+        val vfrom1 = ValFrom(untupled, rhs1).setPos(pos1)
         mkFor(vfrom1 :: rest1, sugarBody)
       case _ =>
         EmptyTree //may happen for erroneous input
-
     }
   }
 
-  /** Create tree for pattern definition <val pat0 = rhs> */
-  def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
-    mkPatDef(Modifiers(0), pat, rhs)
-
+  // Fresh terms are not warnable. Bindings written `x@_` may be deemed unwarnable.
   private def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
     if (isPatVarWarnable && from.hasAttachment[NoWarnAttachment.type]) to.updateAttachment(NoWarnAttachment)
     else to
 
-  // Keep marker for `x@_`, add marker for `val C(x) = ???` to distinguish from ordinary `val x = ???`.
+  // Distinguish patvar in pattern `val C(x) = ???` from `val x = ???`.
   private def propagatePatVarDefAttachments(from: Tree, to: ValDef): to.type =
     propagateNoWarnAttachment(from, to).updateAttachment(PatVarDefAttachment)
 
+  // For unused patvar bookkeeping, `to.symbol` is the symbol of record.
+  private def varAliasTo(from: Tree, to: Tree /*Bind|ValDef*/): from.type =
+    from.updateAttachment(VarAlias(to))
+
+  private def patternAlias(pat: Tree): Tree = {
+    val dup = pat.duplicate
+    if (matchVarPattern(pat).isDefined)
+      varAliasTo(dup, pat)
+    else
+      foreach2(getVariables(dup), getVariables(pat)) { (d, v) =>
+        varAliasTo(d._4, v._4)
+      }
+    dup
+  }
+
+  /** Create tree for pattern definition <val pat0 = rhs> */
+  def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
+    mkPatDef(Modifiers(0), pat, rhs, rhs.pos)
+
   /** Create tree for pattern definition <mods val pat0 = rhs> */
-  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = mkPatDef(mods, pat, rhs, rhs.pos)(fresh)
-  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree, rhsPos: Position)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
+  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = mkPatDef(mods, pat, rhs, rhs.pos)
+
+  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree, rhsPos: Position)(implicit fresh: FreshNameCreator): List[ValDef] = mkPatDef(mods, pat, rhs, rhsPos, forFor = false)
+
+  private def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree, rhsPos: Position, forFor: Boolean)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
       List(atPos(pat.pos union rhsPos) {
-        propagateNoWarnAttachment(pat, ValDef(mods, name.toTermName, tpt, rhs))
+        ValDef(mods, name.toTermName, tpt, rhs)
+          .tap(vd =>
+              if (forFor) varAliasTo(pat, propagatePatVarDefAttachments(pat, vd))
+              else propagateNoWarnAttachment(pat, vd))
       })
 
     case None =>
@@ -805,7 +840,8 @@ abstract class TreeGen {
       vars match {
         case List((vname, tpt, pos, original)) =>
           List(atPos(pat.pos union pos union rhsPos) {
-            propagatePatVarDefAttachments(original, ValDef(mods, vname.toTermName, tpt, matchExpr))
+            ValDef(mods, vname.toTermName, tpt, matchExpr)
+              .tap(vd => varAliasTo(original, propagatePatVarDefAttachments(original, vd)))
           })
         case _ =>
           val tmp = freshTermName()
@@ -822,7 +858,8 @@ abstract class TreeGen {
           var cnt = 0
           val restDefs = for ((vname, tpt, pos, original) <- vars) yield atPos(pos) {
             cnt += 1
-            propagatePatVarDefAttachments(original, ValDef(mods, vname.toTermName, tpt, Select(Ident(tmp), TermName("_" + cnt))))
+            ValDef(mods, vname.toTermName, tpt, Select(Ident(tmp), TermName("_" + cnt)))
+              .tap(vd => varAliasTo(original, propagatePatVarDefAttachments(original, vd)))
           }
           firstDef :: restDefs
       }
@@ -830,14 +867,14 @@ abstract class TreeGen {
 
   /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
   def mkGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree)(implicit fresh: FreshNameCreator): Tree = {
-    val pat1 = patvarTransformerForFor.transform(pat)
+    val pat1 = patvarTransformer.transform(pat)
     if (valeq) ValEq(pat1, rhs).setPos(pos)
     else ValFrom(pat1, mkCheckIfRefutable(pat1, rhs)).setPos(pos)
   }
 
   private def unwarnable(pat: Tree): Tree = {
     pat foreach {
-      case b @ Bind(_, _) => b updateAttachment NoWarnAttachment
+      case b @ Bind(_, _) => b.updateAttachment(NoWarnAttachment)
       case _ =>
     }
     pat
@@ -934,19 +971,15 @@ abstract class TreeGen {
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)
    */
-  class PatvarTransformer(forFor: Boolean) extends Transformer {
+  class PatvarTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if treeInfo.isVarPattern(tree) && name != nme.WILDCARD =>
         atPos(tree.pos) {
-          val b = Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
-          if (forFor && isPatVarWarnable) b updateAttachment NoWarnAttachment
-          else b
+          Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
         }
       case Typed(id @ Ident(name), tpt) if treeInfo.isVarPattern(id) && name != nme.WILDCARD =>
         atPos(tree.pos.withPoint(id.pos.point)) {
-          Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
-            Typed(Ident(nme.WILDCARD), tpt)
-          })
+          Bind(name, atPos(tree.pos.withStart(tree.pos.point)) { Typed(Ident(nme.WILDCARD), tpt) })
         }
       case Apply(fn @ Apply(_, _), args) =>
         treeCopy.Apply(tree, transform(fn), transformTrees(args))
@@ -970,10 +1003,7 @@ abstract class TreeGen {
   def isVarDefWarnable: Boolean = false
 
   /** Not in for comprehensions, whether to warn unused pat vars depends on flag. */
-  object patvarTransformer       extends PatvarTransformer(forFor = false)
-
-  /** Tag pat vars in for comprehensions. */
-  object patvarTransformerForFor extends PatvarTransformer(forFor = true)
+  object patvarTransformer extends PatvarTransformer
 
   // annotate the expression with @unchecked
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {

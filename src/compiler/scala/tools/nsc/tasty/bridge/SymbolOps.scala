@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.annotation.tailrec
+import scala.annotation._
 import scala.tools.nsc.tasty.{SafeEq, TastyUniverse, ForceKinds, TastyModes}, TastyModes._, ForceKinds._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
@@ -84,7 +84,7 @@ trait SymbolOps { self: TastyUniverse =>
     def repr: TastyRepr = {
       try sym.rawInfo.asInstanceOf[TastyRepr]
       catch {
-        case err: ClassCastException =>
+        case _: ClassCastException =>
           val raw = u.showRaw(sym.rawInfo)
           val tastyRepr = u.typeOf[TastyRepr]
           throw new AssertionError(s"$sym is already completed. Expected $tastyRepr, is $raw.")
@@ -123,9 +123,9 @@ trait SymbolOps { self: TastyUniverse =>
   def symIsExperimental(sym: Symbol) = sym.hasAnnotation(defn.ExperimentalAnnotationClass)
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
-  def normalizeIfConstructor(owner: Symbol, termParamss: List[List[Symbol]], paramClauses: List[List[NoCycle]], isConstructor: Boolean): List[List[Symbol]] =
+  def normalizeIfConstructor(@unused owner: Symbol, termParamss: List[List[Symbol]], paramClauses: List[List[NoCycle]], isConstructor: Boolean): List[List[Symbol]] =
     if (!isConstructor) termParamss
-    else {
+    else
       paramClauses match {
         case (vparam :: _) :: _ if vparam.tflags.is(Implicit, butNot=Given) => Nil :: termParamss
         case _ =>
@@ -135,7 +135,6 @@ trait SymbolOps { self: TastyUniverse =>
             termParamss
           }
       }
-    }
 
   private[bridge] def lookupSymbol(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = {
     deepComplete(space)

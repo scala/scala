@@ -288,7 +288,7 @@ trait Implicits extends splain.SplainData {
     /** Does type `tp` contain an Error type as parameter or result?
      */
     private final def containsError(tp: Type): Boolean = tp match {
-      case PolyType(tparams, restpe) =>
+      case PolyType(_, restpe) =>
         containsError(restpe)
       case NullaryMethodType(restpe) =>
         containsError(restpe)
@@ -621,7 +621,7 @@ trait Implicits extends splain.SplainData {
           @tailrec
           def loop(ois: List[OpenImplicit], isByName: Boolean): Option[OpenImplicit] =
             ois match {
-              case hd :: tl if (isByName || hd.isByName) && hd.pt <:< pt => Some(hd)
+              case hd :: _ if (isByName || hd.isByName) && hd.pt <:< pt => Some(hd)
               case hd :: tl => loop(tl, isByName || hd.isByName)
               case _ => None
             }
@@ -736,7 +736,7 @@ trait Implicits extends splain.SplainData {
           if (mt.isImplicit)
             loop(restpe, pt)
           else pt match {
-            case tr @ TypeRef(pre, sym, args) =>
+            case TypeRef(pre, sym, args) =>
               if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.lowerBound)
               else {
@@ -1205,7 +1205,7 @@ trait Implicits extends splain.SplainData {
             firstPending == alt || (
               try improves(firstPending, alt)
               catch {
-                case e: CyclicReference =>
+                case _: CyclicReference =>
                   devWarning(s"Discarding $firstPending during implicit search due to cyclic reference.")
                   true
               }
@@ -1569,7 +1569,7 @@ trait Implicits extends splain.SplainData {
             // can't generate a reference to a value that's abstracted over by an existential
             if (containsExistential(tp1)) EmptyTree
             else manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp1))
-          case ConstantType(value) =>
+          case ConstantType(_) =>
             manifestOfType(tp1.deconst, FullManifestClass)
           case TypeRef(pre, sym, args) =>
             if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
@@ -1609,7 +1609,7 @@ trait Implicits extends splain.SplainData {
             if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
             else mot(erasure.intersectionDominator(parents), from, to)
-          case ExistentialType(tparams, result) =>
+          case ExistentialType(_, _) =>
             mot(tp1.skolemizeExistential, from, to)
           case _ =>
             EmptyTree

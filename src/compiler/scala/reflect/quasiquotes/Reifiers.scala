@@ -319,7 +319,7 @@ trait Reifiers { self: Quasiquotes =>
      */
     def group[T](lst: List[T])(similar: (T, T) => Boolean) = lst.foldLeft[List[List[T]]](List()) {
       case (Nil, el) => List(List(el))
-      case (ll :+ (last @ (lastinit :+ lastel)), el) if similar(lastel, el) => ll :+ (last :+ el)
+      case (ll :+ (last @ _ :+ lastel), el) if similar(lastel, el) => ll :+ (last :+ el)
       case (ll, el) => ll :+ List(el)
     }
 
@@ -363,7 +363,7 @@ trait Reifiers { self: Quasiquotes =>
       case ParamPlaceholder(Hole(tree, DotDot)) => tree
       case SyntacticPatDef(mods, pat, tpt, rhs) =>
         reifyBuildCall(nme.SyntacticPatDef, mods, pat, tpt, rhs)
-      case SyntacticValDef(mods, p @ Placeholder(h: ApplyHole), tpt, rhs) if h.tpe <:< treeType =>
+      case SyntacticValDef(mods, Placeholder(h: ApplyHole), tpt, rhs) if h.tpe <:< treeType =>
         mirrorBuildCall(nme.SyntacticPatDef, reify(mods), h.tree, reify(tpt), reify(rhs))
     }
 

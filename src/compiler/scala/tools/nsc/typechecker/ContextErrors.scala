@@ -13,17 +13,17 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
 import scala.PartialFunction.cond
-import scala.annotation.tailrec
+import scala.annotation._
+import scala.reflect.internal.util.{CodeAction, NoSourceFile}
+import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
+import scala.reflect.io.NoAbstractFile
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
-import scala.util.control.{ControlThrowable, NonFatal}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.stackTraceString
-import scala.reflect.io.NoAbstractFile
-import scala.reflect.internal.util.{CodeAction, NoSourceFile}
+import scala.util.control.{ControlThrowable, NonFatal}
 
 trait ContextErrors extends splain.SplainErrors {
   self: Analyzer =>
@@ -314,13 +314,13 @@ trait ContextErrors extends splain.SplainErrors {
           case Some(holder) =>
             val prettyParent = formatTraitWithParams(parent, holder.params)
             s"$prettyParent is an illegal Scala 3 parameterized trait; so can not take constructor arguments"
-          case none => s"$parent is a trait; does not take constructor arguments"
+          case _ => s"$parent is a trait; does not take constructor arguments"
 
         }
         issueNormalTypeError(arg, msg)
       }
 
-      def ConstrArgsInParentOfTraitError(arg: Tree, parent: Symbol) =
+      def ConstrArgsInParentOfTraitError(arg: Tree, @unused parent: Symbol) =
         issueNormalTypeError(arg, "parents of traits may not have parameters")
 
       def MissingTypeArgumentsParentTpeError(supertpt: Tree) =
@@ -678,7 +678,7 @@ trait ContextErrors extends splain.SplainErrors {
 
       // doTypeApply
       //tryNamesDefaults
-      def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
+      def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, @unused fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], argPos: Array[Int]) = {
@@ -1277,7 +1277,7 @@ trait ContextErrors extends splain.SplainErrors {
       }
 
       def NotWithinBounds(tree: Tree, prefix: String, targs: List[Type],
-                          tparams: List[Symbol], kindErrors: List[String]) =
+                          tparams: List[Symbol], @unused kindErrors: List[String]) =
         issueNormalTypeError(tree,
           NotWithinBoundsErrorMessage(prefix, targs, tparams, settings.explaintypes.value))
 

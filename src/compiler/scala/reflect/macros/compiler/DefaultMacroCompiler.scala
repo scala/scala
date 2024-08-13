@@ -71,7 +71,7 @@ abstract class DefaultMacroCompiler extends Resolvers
     val vanillaResult = tryCompile(vanillaImplRef)
     val bundleResult = tryCompile(bundleImplRef)
 
-    def ensureUnambiguousSuccess() = {
+    def ensureUnambiguousSuccess(): Unit = {
       // we now face a hard choice of whether to report ambiguity:
       //   1) when there are eponymous methods in both bundle and object
       //   2) when both references to eponymous methods are resolved successfully
@@ -100,6 +100,7 @@ abstract class DefaultMacroCompiler extends Resolvers
     try {
       if (vanillaResult.isSuccess || bundleResult.isSuccess) ensureUnambiguousSuccess()
       if (vanillaResult.isFailure && bundleResult.isFailure) reportMostAppropriateFailure()
+      //else // TODO
       vanillaResult.orElse(bundleResult).get
     } catch {
       case MacroImplResolutionException(pos, msg) =>

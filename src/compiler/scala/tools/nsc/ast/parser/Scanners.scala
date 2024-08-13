@@ -350,7 +350,7 @@ trait Scanners extends ScannersCommon {
     /** Are we in a `${ }` block? such that RBRACE exits back into multiline string. */
     private def inMultiLineInterpolatedExpression = {
       sepRegions match {
-        case RBRACE :: STRINGLIT :: STRINGPART :: rest => true
+        case RBRACE :: STRINGLIT :: STRINGPART :: _ => true
         case _ => false
       }
     }
@@ -1792,10 +1792,10 @@ trait Scanners extends ScannersCommon {
     def insertRBrace(): List[BracePatch] = {
       def insert(bps: List[BracePair]): List[BracePatch] = bps match {
         case List() => patches
-        case (bp @ BracePair(loff, lindent, roff, rindent, nested)) :: bps1 =>
+        case BracePair(loff, lindent, roff, rindent, nested) :: bps1 =>
           if (lindent <= rindent) insert(bps1)
           else {
-//           println("patch inside "+bp+"/"+line(loff)+"/"+lineStart(line(loff))+"/"+lindent"/"+rindent)//DEBUG
+//           println("patch inside "+bps.head+"/"+line(loff)+"/"+lineStart(line(loff))+"/"+lindent"/"+rindent)//DEBUG
             val patches1 = insert(nested)
             if (patches1 ne patches) patches1
             else {

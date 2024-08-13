@@ -12,5 +12,7 @@
 
 package scala.tools.nsc.ast.parser
 
-class Patch(off: Int, change: Change)
+import scala.annotation.unused
+
+class Patch(@unused off: Int, @unused change: Change)
 

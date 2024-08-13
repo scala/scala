@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation._
 import scala.collection.mutable
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
@@ -363,7 +363,7 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    private def enterClassSymbol(tree: ClassDef, clazz: ClassSymbol): Symbol = {
+    private def enterClassSymbol(@unused tree: ClassDef, clazz: ClassSymbol): Symbol = {
       var sourceFile = clazz.sourceFile
       if (sourceFile != null && sourceFile != contextFile)
         devWarning(s"Source file mismatch in $clazz: ${sourceFile} vs. $contextFile")
@@ -789,10 +789,10 @@ trait Namers extends MethodSynthesis {
     }
 
     // Hooks which are overridden in the presentation compiler
-    def enterExistingSym(sym: Symbol, tree: Tree): Context = {
+    def enterExistingSym(@unused sym: Symbol, @unused tree: Tree): Context = {
       this.context
     }
-    def enterIfNotThere(sym: Symbol): Unit = { }
+    def enterIfNotThere(sym: Symbol): Unit = ()
 
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
@@ -808,7 +808,7 @@ trait Namers extends MethodSynthesis {
         case TypeBounds(lo, _) =>
           // check that lower bound is not an F-bound
           // but carefully: class Foo[T <: Bar[_ >: T]] should be allowed
-          for (tp1 @ TypeRef(_, sym, _) <- lo) {
+          for (TypeRef(_, sym, _) <- lo) {
             if (settings.breakCycles.value) {
               if (!sym.maybeInitialize) {
                 log(s"Cycle inspecting $lo for possible f-bounds: ${sym.fullLocationString}")
@@ -1477,7 +1477,7 @@ trait Namers extends MethodSynthesis {
     /**
      * For every default argument, insert a method symbol computing that default
      */
-    def enterDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef]): Unit = {
+    def enterDefaultGetters(meth: Symbol, @unused ddef: DefDef, vparamss: List[List[ValDef]], @unused tparams: List[TypeDef]): Unit = {
       val methOwner  = meth.owner
       val search = DefaultGetterNamerSearch(context, meth, initCompanionModule = false)
       var posCounter = 1
@@ -1518,7 +1518,7 @@ trait Namers extends MethodSynthesis {
      * typechecked, the corresponding param would not yet have the "defaultparam"
      * flag.
      */
-    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol): Unit = {
+    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], @unused tparams: List[TypeDef], overridden: Symbol): Unit = {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate): @unchecked
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
@@ -1639,7 +1639,7 @@ trait Namers extends MethodSynthesis {
 
       def createAndEnter(f: Symbol => Symbol): Unit
     }
-    private class DefaultGetterInCompanion(c: Context, meth: Symbol, initCompanionModule: Boolean) extends DefaultGetterNamerSearch {
+    private class DefaultGetterInCompanion(@unused c: Context, meth: Symbol, initCompanionModule: Boolean) extends DefaultGetterNamerSearch {
       private val module = companionSymbolOf(meth.owner, context)
       if (initCompanionModule) module.initialize
       private val cda: Option[ConstructorDefaultsAttachment] = module.attachments.get[ConstructorDefaultsAttachment]
@@ -1677,7 +1677,7 @@ trait Namers extends MethodSynthesis {
 
       }
     }
-    private class DefaultMethodInOwningScope(c: Context, meth: Symbol) extends DefaultGetterNamerSearch {
+    private class DefaultMethodInOwningScope(@unused c: Context, meth: Symbol) extends DefaultGetterNamerSearch {
       private lazy val ownerNamer: Namer = {
         val ctx = context.nextEnclosing(c => c.scope.toList.contains(meth)) // TODO use lookup rather than toList.contains
         assert(ctx != NoContext, meth)
@@ -1789,12 +1789,9 @@ trait Namers extends MethodSynthesis {
       // log("typeDefSig(" + tpsym + ", " + tparams + ")")
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
       val tp = typer.typedType(rhs).tpe match {
-        case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
-          TypeBounds.empty
-        case tp @ TypeBounds(lt, rt) if (tdef.symbol hasFlag JAVA) =>
-          TypeBounds(lt, rt)
-        case tp =>
-          tp
+        case TypeBounds(lt, rt) if lt.isError || rt.isError  => TypeBounds.empty
+        case TypeBounds(lt, rt) if tdef.symbol.hasFlag(JAVA) => TypeBounds(lt, rt)
+        case tp => tp
       }
       // see neg/bug1275, #3419
       // used to do a rudimentary kind check here to ensure overriding in refinements

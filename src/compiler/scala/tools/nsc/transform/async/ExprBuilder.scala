@@ -525,7 +525,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
       private val compactStateTransform = new AstTransformer {
         val transformState = currentTransformState
         override def transform(tree: Tree): Tree = tree match {
-          case as @ Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == transformState.stateSetter && compactStates =>
+          case Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == transformState.stateSetter && compactStates =>
             val replacement = switchIdOf(i)
             treeCopy.Apply(tree, qual, treeCopy.Literal(lit, Constant(replacement)):: Nil)
           case _: Match | _: CaseDef | _: Block | _: If | _: LabelDef =>

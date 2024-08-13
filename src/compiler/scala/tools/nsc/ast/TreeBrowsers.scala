@@ -282,7 +282,7 @@ abstract class TreeBrowsers {
                 // skip through 1-ary trees
                 def expando(tree: Tree): List[Tree] = tree.children match {
                   case only :: Nil => only :: expando(only)
-                  case other => tree :: Nil
+                  case _ => tree :: Nil
                 }
 
                 val path = new TreePath((treeModel.getRoot :: unit :: expando(unit.unit.body)).toArray[AnyRef]) // targ necessary to disambiguate Object and Object[] ctors
@@ -465,10 +465,10 @@ abstract class TreeBrowsers {
       case Super(qualif, mix) =>
         List(qualif)
 
-      case This(qualif) =>
+      case This(_) =>
         Nil
 
-      case Select(qualif, selector) =>
+      case Select(qualif, _) =>
         List(qualif)
 
       case Ident(name) =>
@@ -486,7 +486,7 @@ abstract class TreeBrowsers {
       case SingletonTypeTree(ref) =>
         List(ref)
 
-      case SelectFromTypeTree(qualif, selector) =>
+      case SelectFromTypeTree(qualif, _) =>
         List(qualif)
 
       case CompoundTypeTree(templ) =>
@@ -619,13 +619,13 @@ abstract class TreeBrowsers {
                         toDocument(hi) :: ")")
         )
 
-       case RefinedType(parents, defs) =>
+       case RefinedType(parents, _) =>
         Document.group(
           Document.nest(4, "RefinedType(" :/:
                         toDocument(parents) :: ")")
         )
 
-      case ClassInfoType(parents, defs, clazz) =>
+      case ClassInfoType(parents, _, clazz) =>
         Document.group(
           Document.nest(4,"ClassInfoType(" :/:
                         toDocument(parents) :: ", " :/:

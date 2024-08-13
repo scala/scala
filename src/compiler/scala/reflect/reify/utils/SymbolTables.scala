@@ -13,6 +13,7 @@
 package scala.reflect.reify
 package utils
 
+import scala.annotation._
 import scala.collection.{immutable, mutable}, mutable.{ArrayBuffer, ListBuffer}
 import java.lang.System.{lineSeparator => EOL}
 
@@ -89,7 +90,7 @@ trait SymbolTables {
       new SymbolTable(newSymtab, newAliases)
     }
 
-    def add(sym: Symbol, name0: TermName, reification: Tree): SymbolTable = {
+    def add(@unused sym: Symbol, name0: TermName, reification: Tree): SymbolTable = {
       def freshName(name0: TermName): TermName = {
         var name = name0.toString
         name = name.replace(".type", "$type")
@@ -133,10 +134,11 @@ trait SymbolTables {
       s"""symtab = [$symtabString], aliases = [$aliasesString]${if (original.isDefined) ", has original" else ""}"""
     }
 
+    @nowarn // spurious unused buf.type
     def debugString: String = {
       val buf = new StringBuilder
       buf.append("symbol table = " + (if (syms.length == 0) "<empty>" else "")).append(EOL)
-      syms foreach (sym => buf.append(symDef(sym)).append(EOL))
+      syms.foreach(sym => buf.append(symDef(sym)).append(EOL))
       buf.delete(buf.length - EOL.length, buf.length)
       buf.toString
     }

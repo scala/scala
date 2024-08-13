@@ -16,7 +16,7 @@ package transform
 
 import symtab.Flags
 import Flags.SYNTHETIC
-import scala.annotation.tailrec
+import scala.annotation._
 
 /** Perform tail recursive call elimination.
  *
@@ -84,7 +84,7 @@ abstract class TailCalls extends Transform {
    *            parameter lists exist.
    * </p>
    */
-  class TailCallElimination(unit: CompilationUnit) extends AstTransformer {
+  class TailCallElimination(@unused unit: CompilationUnit) extends AstTransformer {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason
@@ -275,7 +275,7 @@ abstract class TailCalls extends Transform {
       import runDefinitions.{Boolean_or, Boolean_and}
 
       tree match {
-        case dd: DefDef if tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass) =>
+        case _: DefDef if tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass) =>
           reporter.error(tree.pos, "lazy vals are not tailcall transformed")
           tree.transform(this)
 
@@ -287,7 +287,7 @@ abstract class TailCalls extends Transform {
           debuglog(s"Considering $name for tailcalls, with labels in tailpos: ${newCtx.tailLabels}")
           val newRHS = transform(rhs0, newCtx)
 
-          deriveDefDef(tree) { rhs =>
+          deriveDefDef(tree) { _ =>
             if (newCtx.isTransformed) {
               /* We have rewritten the tree, but there may be nested recursive calls remaining.
                * If @tailrec is given we need to fail those now.
@@ -330,7 +330,7 @@ abstract class TailCalls extends Transform {
           )
 
         // a translated casedef
-        case LabelDef(_, _, body) if hasSynthCaseSymbol(tree) =>
+        case LabelDef(_, _, _) if hasSynthCaseSymbol(tree) =>
           deriveLabelDef(tree)(transform)
 
         case Block(stats, expr) =>
@@ -471,7 +471,7 @@ abstract class TailCalls extends Transform {
         traverseNoTail(selector)
         traverseTrees(cases)
 
-      case dd @ DefDef(_, _, _, _, _, _) => // we are run per-method
+      case DefDef(_, _, _, _, _, _) => // we are run per-method
 
       case Block(stats, expr) =>
         traverseTreesNoTail(stats)

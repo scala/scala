@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation._
 import scala.collection.mutable
 import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
@@ -158,7 +159,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
    *
    */
   private trait OmittablesHelper {
-    def computeOmittableAccessors(clazz: Symbol, defs: List[Tree], auxConstructors: List[Tree], constructor: List[Tree]): Set[Symbol] = {
+    def computeOmittableAccessors(clazz: Symbol, defs: List[Tree], auxConstructors: List[Tree], @unused constructor: List[Tree]): Set[Symbol] = {
       val decls = clazz.info.decls.toSet
       val isEffectivelyFinal = clazz.isEffectivelyFinal
 
@@ -306,7 +307,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     }
 
     /** For a DelayedInit subclass, wrap remainingConstrStats into a DelayedInit closure. */
-    def delayedInitDefsAndConstrStats(defs: List[Tree], remainingConstrStats: List[Tree]): (List[Tree], List[Tree]) = {
+    def delayedInitDefsAndConstrStats(@unused defs: List[Tree], remainingConstrStats: List[Tree]): (List[Tree], List[Tree]) = {
       val delayedHook     = delayedEndpointDef(remainingConstrStats)
       val delayedHookSym  = delayedHook.symbol.asInstanceOf[MethodSymbol]
 
@@ -355,7 +356,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         val arrayUpdateMethod = currentRun.runDefinitions.arrayUpdateMethod
         val adapter = new AstTransformer {
           override def transform(t: Tree): Tree = t match {
-            case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
+            case Apply(fun @ Select(_, _), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
               localTyper.typed(Apply(gen.mkAttributedSelect(xs, arrayUpdateMethod), List(idx, v)))
             case _ => super.transform(t)
           }

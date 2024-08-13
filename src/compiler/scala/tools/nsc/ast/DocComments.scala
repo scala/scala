@@ -185,7 +185,7 @@ trait DocComments { self: Global =>
     }
 
     def mergeSection(srcSec: Option[(Int, Int)], dstSec: Option[(Int, Int)]) = dstSec match {
-      case Some((start, end)) =>
+      case Some((_, end)) =>
         if (end > tocopy) tocopy = end
       case None =>
         srcSec match {
@@ -312,7 +312,7 @@ trait DocComments { self: Global =>
 
       searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
         case Some(str) if str startsWith "$" => lookupVariable(str.tail, site)
-        case s @ Some(str)                   => s
+        case s @ Some(_)                     => s
         case None                            => lookupVariable(vble, site.owner)
       }
   }
@@ -560,5 +560,5 @@ trait DocComments { self: Global =>
     }
   }
 
-  class ExpansionLimitExceeded(str: String) extends Exception
+  class ExpansionLimitExceeded(str: String) extends Exception(str)
 }

@@ -16,16 +16,17 @@ package typechecker
 import java.lang.Math.min
 
 import symtab.Flags._
-import scala.reflect.internal.util.ScalaClassLoader
-import scala.reflect.runtime.ReflectionUtils
-import scala.reflect.internal.util.Statistics
+import scala.annotation._
 import scala.reflect.internal.TypesStats
-import scala.reflect.macros.util._
-import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
-import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
+import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.internal.util.Statistics
 import scala.reflect.macros.compiler.DefaultMacroCompiler
+import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
+import scala.reflect.macros.util._
+import scala.reflect.runtime.ReflectionUtils
 import scala.tools.reflect.FastTrack
+import scala.util.control.ControlThrowable
 import scala.util.control.NonFatal
 import Fingerprint._
 
@@ -186,7 +187,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           case _ => Other
         }
 
-        val transformed = transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => tparam)
+        val transformed = transformTypeTagEvidenceParams(macroImplRef, (_, tparam) => tparam)
         mmap(transformed)(p => if (p.isTerm) fingerprint(p.info) else Tagged(p.paramPos))
       }
 
@@ -223,9 +224,9 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       new AstTransformer {
         override def transform(tree: Tree) = {
           tree match {
-            case Literal(const @ Constant(x)) if tree.tpe == null => tree setType ConstantType(const)
-            case _ if tree.tpe == null => tree setType NoType
-            case _ => ;
+            case Literal(const @ Constant(_)) if tree.tpe == null => tree.setType(ConstantType(const))
+            case _ if tree.tpe == null => tree.setType(NoType)
+            case _ =>
           }
           super.transform(tree)
         }
@@ -549,7 +550,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     def onSuppressed(expandee: Tree): Tree = expandee
     def onDelayed(expanded: Tree): Tree = expanded
     def onSkipped(expanded: Tree): Tree = expanded
-    def onFailure(expanded: Tree): Tree = { typer.infer.setError(expandee); expandee }
+    def onFailure(@unused expanded: Tree): Tree = { typer.infer.setError(expandee); expandee }
 
     def apply(desugared: Tree): Tree = {
       if (isMacroExpansionSuppressed(desugared)) onSuppressed(expandee)

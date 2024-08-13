@@ -1236,7 +1236,7 @@ private[collection] object RedBlackTree {
     if((t1 eq null) || (t2 eq null)) t1
     else if (t1 eq t2) null
     else {
-      val (l1, _, r1, k1) = split(t1, t2.key)
+      val (l1, _, r1, _) = split(t1, t2.key)
       val tl = _difference(l1, t2.left)
       val tr = _difference(r1, t2.right)
       join2(tl, tr)

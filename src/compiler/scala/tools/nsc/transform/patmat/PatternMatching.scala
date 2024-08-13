@@ -76,11 +76,11 @@ trait PatternMatching extends Transform
         } finally
           inAsync = wasInAsync
 
-      case CaseDef(UnApply(Apply(Select(qual, nme.unapply), Ident(nme.SELECTOR_DUMMY) :: Nil), (bind@Bind(b, Ident(nme.WILDCARD))) :: Nil), guard, body)
+      case CaseDef(UnApply(Apply(Select(qual, nme.unapply), Ident(nme.SELECTOR_DUMMY) :: Nil), (bind@Bind(name, Ident(nme.WILDCARD))) :: Nil), guard, body)
         if guard.isEmpty && qual.symbol == definitions.NonFatalModule =>
         transform(treeCopy.CaseDef(
           tree,
-          treeCopy.Bind(bind, bind.name, Typed(Ident(nme.WILDCARD), TypeTree(definitions.ThrowableTpe)).setType(definitions.ThrowableTpe)),
+          treeCopy.Bind(bind, name, Typed(Ident(nme.WILDCARD), TypeTree(definitions.ThrowableTpe)).setType(definitions.ThrowableTpe)),
           localTyper.typed(atPos(tree.pos)(Apply(gen.mkAttributedRef(definitions.NonFatal_apply), List(Ident(bind.symbol))))),
           body))
 

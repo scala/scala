@@ -1,21 +1,9 @@
-unused.scala:7: warning: pattern var a in value patvars is never used: use a wildcard `_` or suppress this warning with `a@_`
-    case C(a, _, _, _) => 1
+unused.scala:7: warning: pattern var x in value patvars is never used
+    case C(x, 2, _, _) => 1
            ^
-unused.scala:8: warning: pattern var b in value patvars is never used: use a wildcard `_` or suppress this warning with `b@_`
-    case C(_, b, c@_, _) => 2
-              ^
-unused.scala:9: warning: pattern var a in value patvars is never used: use a wildcard `_` or suppress this warning with `a@_`
-    case C(a, b@_, c, d@_) => 3
-           ^
-unused.scala:9: warning: pattern var c in value patvars is never used: use a wildcard `_` or suppress this warning with `c@_`
-    case C(a, b@_, c, d@_) => 3
-                   ^
-unused.scala:10: warning: pattern var e in value patvars is never used: use a wildcard `_` or suppress this warning with `e@_`
+unused.scala:10: warning: pattern var e in value patvars is never used
     case e => 4
          ^
-unused.scala:8: warning: unreachable code
-    case C(_, b, c@_, _) => 2
-                            ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+2 warnings
 1 error

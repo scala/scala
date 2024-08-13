@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation._
+
 /** A sample transform.
  */
 abstract class SampleTransform extends Transform {
@@ -27,7 +29,7 @@ abstract class SampleTransform extends Transform {
   protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new SampleTransformer(unit)
 
-  class SampleTransformer(unit: CompilationUnit) extends AstTransformer {
+  class SampleTransformer(@unused unit: CompilationUnit) extends AstTransformer {
 
     override def transform(tree: Tree): Tree = {
       val tree1 = super.transform(tree);      // transformers always maintain `currentOwner`.

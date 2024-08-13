@@ -14,6 +14,7 @@ package scala.tools.nsc
 package typechecker
 
 import Mode._
+import scala.annotation._
 
 trait TypersTracking {
   self: Analyzer =>
@@ -116,7 +117,7 @@ trait TypersTracking {
       show(resetIfEmpty(indented("""\-> """ + s)))
       typedTree
     }
-    def showAdapt(original: Tree, adapted: Tree, pt: Type, context: Context): Unit = {
+    def showAdapt(original: Tree, adapted: Tree, pt: Type, @unused context: Context): Unit = {
       if (!noPrintAdapt(original, adapted)) {
         def tree_s1 = inLightCyan(truncAndOneLine(ptTree(original)))
         def pt_s = if (pt.isWildcard) "" else s" based on pt $pt"

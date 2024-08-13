@@ -341,10 +341,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               generatedDest = jumpDest
           }
 
-        case app : Apply =>
+        case app: Apply =>
           generatedType = genApply(app, expectedType)
 
-        case app @ ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
+        case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: staticAndDynamicArgs) =>
           val numDynamicArgs = qual.symbol.info.params.length
           val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(staticAndDynamicArgs.length - numDynamicArgs)
           val bootstrapDescriptor = staticHandleFromSymbol(bootstrapMethodRef)
@@ -373,7 +373,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             }
           }
 
-        case Select(Ident(nme.EMPTY_PACKAGE_NAME), module) =>
+        case Select(Ident(nme.EMPTY_PACKAGE_NAME), _) =>
           assert(tree.symbol.isModule, s"Selection of non-module from empty package: $tree sym: ${tree.symbol} at: ${tree.pos}")
           genLoadModule(tree)
 
@@ -564,7 +564,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         case Nil =>
           // not an assertion: !shouldEmitCleanup (at least not yet, pendingCleanups() may still have to run, and reset `shouldEmitCleanup`.
           genLoadTo(expr, returnType, LoadDestination.Return)
-        case nextCleanup :: rest =>
+        case nextCleanup :: _ =>
           genLoad(expr, returnType)
           lineNumber(r)
           val saveReturnValue = (returnType != UNIT)
@@ -665,7 +665,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                  *   elemKind = new BType(BType.ARRAY, arr.off + argsSize, arr.len - argsSize)
                  * however the above does not enter a TypeName for each nested arrays in chrs.
                  */
-                for (i <- args.length until dims) elemKind = ArrayBType(elemKind)
+                for (_ <- args.length until dims) elemKind = ArrayBType(elemKind)
               }
               argsSize match {
                 case 1 => bc newarray elemKind
@@ -834,7 +834,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       var switchBlocks: List[Tuple2[asm.Label, Tree]] = Nil
 
       // collect switch blocks and their keys, but don't emit yet any switch-block.
-      for (caze @ CaseDef(pat, guard, body) <- tree.cases) {
+      for (CaseDef(pat, guard, body) <- tree.cases) {
         assert(guard == EmptyTree, guard)
         val switchBlockPoint = new asm.Label
         switchBlocks ::= ((switchBlockPoint, body))
@@ -1098,7 +1098,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.packageObject match {
           case NoSymbol => abort(s"scala/bug#5604: Cannot use package as value: $tree")
-          case s        => abort(s"scala/bug#5604: found package class where package object expected: $tree")
+          case _        => abort(s"scala/bug#5604: found package class where package object expected: $tree")
         }
       )
       lineNumber(tree)
@@ -1242,7 +1242,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                     recipe.append(s)
                   }
 
-                case other =>
+                case _ =>
                   totalArgSlots += elemSlots
                   recipe.append(TagArg)
                   val tpe = tpeTK(elem)
@@ -1356,7 +1356,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val result = ListBuffer[Tree]()
       def loop(tree: Tree): Unit = {
         tree match {
-          case Apply(fun@Select(larg, method), rarg :: Nil)
+          case Apply(fun@Select(larg, _), rarg :: Nil)
             if (isPrimitive(fun.symbol) && scalaPrimitives.getPrimitive(fun.symbol) == scalaPrimitives.CONCAT) =>
 
             loop(larg)

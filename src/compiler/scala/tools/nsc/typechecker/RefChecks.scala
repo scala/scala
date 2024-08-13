@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.CodeAction
@@ -79,7 +80,7 @@ abstract class RefChecks extends Transform {
     false
   }
 
-  class RefCheckTransformer(unit: CompilationUnit) extends AstTransformer {
+  class RefCheckTransformer(@unused unit: CompilationUnit) extends AstTransformer {
     private final val indent = "  "
 
     var localTyper: analyzer.Typer = typer
@@ -145,11 +146,9 @@ abstract class RefChecks extends Transform {
       }
 
       // Check for doomed attempt to overload applyDynamic
-      if (clazz isSubClass DynamicClass) {
-        for ((_, m1 :: m2 :: _) <- (clazz.info member nme.applyDynamic).alternatives groupBy (_.typeParams.length)) {
+      if (clazz.isSubClass(DynamicClass))
+        for ((_, m1 :: _ :: _) <- clazz.info.member(nme.applyDynamic).alternatives.groupBy(_.typeParams.length))
           reporter.error(m1.pos, "implementation restriction: applyDynamic cannot be overloaded except by methods with different numbers of type parameters, e.g. applyDynamic[T1](method: String)(arg: T1) and applyDynamic[T1, T2](method: String)(arg1: T1, arg2: T2)")
-        }
-      }
 
       // This has become noisy with implicit classes.
       if (settings.isDeveloper && settings.warnPolyImplicitOverload) {
@@ -1295,7 +1294,7 @@ abstract class RefChecks extends Transform {
         clazz == seltpe.typeSymbol &&
         clazz.isCaseClass &&
         (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable)
-      case Typed(pat, tpt) =>
+      case Typed(_, tpt) =>
         seltpe <:< tpt.tpe
       case Ident(tpnme.WILDCARD) =>
         true
@@ -1567,8 +1566,8 @@ abstract class RefChecks extends Transform {
       def groupRepeatableAnnotations(sym: Symbol, anns: List[AnnotationInfo]): List[AnnotationInfo] =
         if (!sym.isJavaDefined) anns
         else anns match {
-          case single :: Nil => anns
-          case multiple      =>
+          case single @ _ :: Nil => single
+          case multiple =>
             sym.getAnnotation(AnnotationRepeatableAttr) match {
               case Some(repeatable) =>
                 repeatable.assocs.collectFirst {
@@ -1589,7 +1588,7 @@ abstract class RefChecks extends Transform {
             }
         }
 
-      def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { level =>
+      def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { _ =>
         if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred) {
           val rest = if (sym.isDeferred) " The annotation affects only the annotated method, not overriding methods in subclasses." else ""
           reporter.error(sym.pos, s"${sym.name}: Only concrete methods can be marked @elidable.$rest")
@@ -1670,7 +1669,7 @@ abstract class RefChecks extends Transform {
       }
     }
 
-    private def transformApplication(tree: Tree, fun: Tree, targs: List[Tree], argss: List[List[Tree]]): Tree = {
+    private def transformApplication(tree: Tree, fun: Tree, @unused targs: List[Tree], argss: List[List[Tree]]): Tree = {
       (fun, argss) match {
         case (
           Select(qual, nme.withFilter),
@@ -2020,7 +2019,7 @@ abstract class RefChecks extends Transform {
                            // probably not, until we allow parameterised extractors
             tree.transform(this)
 
-          case blk @ Block(stats, expr) =>
+          case Block(stats, expr) =>
             // diagnostic info
             val (count, result0) =
               expr match {

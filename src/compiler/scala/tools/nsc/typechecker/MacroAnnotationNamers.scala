@@ -58,11 +58,11 @@ trait MacroAnnotationNamers { self: Analyzer =>
           case _                  => abort("Unexpected tree: " + tree)
         }
         if (isPastTyper) sym.name.toTermName match {
-          case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
-          case _                                                                                  =>
+          case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR =>
+          case _ =>
             tree match {
-              case md: DefDef => log("[+symbol] " + sym.debugLocationString)
-              case _          =>
+              case _: DefDef => log("[+symbol] " + sym.debugLocationString)
+              case _ =>
             }
         }
         tree.symbol = sym
@@ -375,7 +375,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
     private implicit class RichType(tpe: Type) {
       def completeOnlyExpansions(sym: Symbol) = tpe match {
         case mec: MacroAnnotationNamer#MaybeExpandeeCompleter => mec.complete(sym, onlyExpansions = true)
-        case c                                                => ()
+        case _ =>
       }
     }
 
@@ -774,7 +774,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
       }
       def rewrapAfterTransform(stat: Tree, transformed: List[Tree]): List[Tree] = (stat, transformed) match {
         case (stat @ DocDef(comment, _), List(transformed: MemberDef)) => List(treeCopy.DocDef(stat, comment, transformed))
-        case (stat @ DocDef(comment, _), List(transformed: DocDef)) => List(transformed)
+        case (DocDef(_, _), List(transformed: DocDef)) => List(transformed)
         case (_, Nil | List(_: MemberDef)) => transformed
         case (_, unexpected) => unexpected // NOTE: who knows how people are already using macro annotations, so it's scary to fail here
       }

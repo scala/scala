@@ -161,6 +161,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   run / fork := true,
   run / connectInput := true,
   Compile / scalacOptions ++= Seq("-feature", "-Xlint",
+    //"-Vprint",
     //"-Xmaxerrs", "5", "-Xmaxwarns", "5", // uncomment for ease of development while breaking things
     // work around https://github.com/scala/bug/issues/11534
     "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
@@ -463,6 +464,9 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
+    Compile / scalacOptions ++= Seq(
+      "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+    ),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
@@ -534,6 +538,7 @@ lazy val compiler = configureAsSubproject(project)
       ).get
     },
     Compile / scalacOptions ++= Seq(
+      //"-Wunused", //"-Wnonunit-statement",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(
@@ -694,6 +699,9 @@ lazy val partest = configureAsSubproject(project)
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
     libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    Compile / scalacOptions ++= Seq(
+      "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+    ),
     Compile / javacOptions ++= Seq("-XDenableSunApiLintControl", "-Xlint") ++
       (if (fatalWarnings.value) Seq("-Werror") else Seq()),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),

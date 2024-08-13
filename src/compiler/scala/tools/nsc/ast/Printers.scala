@@ -34,7 +34,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         printTree(
             if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
               tree match {
-                case ClassDef(_, _, _, impl @ Template(ps, noSelfType, body))
+                case ClassDef(_, _, _, impl @ Template(ps, `noSelfType`, body))
                 if (tree.symbol.thisSym != tree.symbol) =>
                   ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
                 case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
@@ -150,8 +150,8 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         // if a Block only continues one actual statement, just print it.
         case Block(stats, expr) =>
           allStatements(tree) match {
-            case List(x)            => printTree(x)
-            case xs                 => s()
+            case List(x) => printTree(x)
+            case _       => s()
           }
 
         // We get a lot of this stuff

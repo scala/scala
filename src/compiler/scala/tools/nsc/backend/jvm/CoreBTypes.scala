@@ -245,11 +245,11 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   // Z -> MethodNameAndType(boxToBoolean,(Z)Ljava/lang/Boolean;)
   def srBoxesRuntimeBoxToMethods: Map[BType, MethodNameAndType] = _srBoxesRuntimeBoxToMethods.get
-  private[this] lazy val _srBoxesRuntimeBoxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((primitive, boxed) => "boxTo" + boxed))
+  private[this] lazy val _srBoxesRuntimeBoxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((_, boxed) => "boxTo" + boxed))
 
   // Z -> MethodNameAndType(unboxToBoolean,(Ljava/lang/Object;)Z)
   def srBoxesRuntimeUnboxToMethods: Map[BType, MethodNameAndType] = _srBoxesRuntimeUnboxToMethods.get
-  private[this] lazy val _srBoxesRuntimeUnboxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((primitive, boxed) => "unboxTo" + primitive))
+  private[this] lazy val _srBoxesRuntimeUnboxToMethods: LazyVar[Map[BType, MethodNameAndType]] = runLazy(srBoxesRuntimeMethods((primitive, _) => "unboxTo" + primitive))
 
   private def singleParamOfClass(cls: Symbol) = (s: Symbol) => s.paramss match {
     case List(List(param)) => param.info.typeSymbol == cls

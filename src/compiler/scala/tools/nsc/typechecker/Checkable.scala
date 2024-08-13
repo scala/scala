@@ -144,7 +144,7 @@ trait Checkable {
     def Psym = P.typeSymbol
     def PErased =
       P match {
-        case GenericArray(n, core) => existentialAbstraction(core.typeSymbol :: Nil, P)
+        case GenericArray(_, core) => existentialAbstraction(core.typeSymbol :: Nil, P)
         case _                     => existentialAbstraction(Psym.typeParams, Psym.tpe_*)
       }
     def XR = if (Xsym == AnyClass) PErased else propagateKnownTypes(X, Psym)
@@ -276,7 +276,7 @@ trait Checkable {
     }
     // Important to dealias at any entry point (this is the only one at this writing but cf isNeverSubClass.)
     def isNeverSubType(tp1: Type, tp2: Type): Boolean = /*logResult(s"isNeverSubType($tp1, $tp2)")*/((tp1.dealias, tp2.dealias) match {
-      case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
+      case (TypeRef(_, sym1, _), TypeRef(_, sym2, args2)) =>
         isNeverSubClass(sym1, sym2) || {
           (sym1 isSubClass sym2) && {
             val tp1seen = tp1 baseType sym2

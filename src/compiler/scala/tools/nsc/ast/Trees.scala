@@ -204,7 +204,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         tree, transformer.transform(arg))
     case _: TypeTreeWithDeferredRefCheck =>
       transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
-    case x => super.xtransform(transformer, tree)
+    case _ => super.xtransform(transformer, tree)
   }
 
   // Finally, no one uses resetAllAttrs anymore, so I'm removing it from the compiler.

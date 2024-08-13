@@ -244,7 +244,7 @@ private[internal] trait TypeMaps {
       annots foreach foldOver
 
     def foldOver(annot: AnnotationInfo): Unit = {
-      val AnnotationInfo(atp, args, assocs) = annot
+      val AnnotationInfo(atp, args, _) = annot
       atp.foldOver(this)
       foldOverAnnotArgs(args)
     }

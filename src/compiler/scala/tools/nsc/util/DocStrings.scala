@@ -91,7 +91,7 @@ object DocStrings {
    *  usecase or the end of the string, as they might include other sections
    *  of their own
    */
-  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] = {
+  def tagIndex(str: String, p: Int => Boolean = (_ => true)): List[(Int, Int)] = {
     var indices = findAll(str, 0) (idx => str(idx) == '@' && p(idx))
     indices = mergeUsecaseSections(str, indices)
     indices = mergeInheritdocSections(str, indices)
