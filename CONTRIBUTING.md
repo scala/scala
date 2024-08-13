@@ -127,7 +127,8 @@ scala  -cp out Test
 ```
 
 **Flags**
-  - To specify compiler flags such as `-Werror -Xlint`, you can add a comment at the top of your source file of the form: `// scalac: -Werror -Xlint`.
+  - To specify compiler flags such as `-Werror -Xlint`, you can add a comment at the top of your source file of the form:
+    `//> using options -Werror -Xlint`
   - Similarly, a `// javac: <flags>` comment in a Java source file passes flags to the Java compiler.
   - A `// filter: <regex>` comment eliminates output lines that match the filter before comparing to the `.check` file.
   - A `// java: <flags>` comment makes a `run` test execute in a separate JVM and passes the additional flags to the `java` command.
