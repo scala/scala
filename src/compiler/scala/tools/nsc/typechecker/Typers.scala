@@ -3405,49 +3405,50 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           result
       }
 
-      // TODO: adapt to new trait field encoding, figure out why this exemption is made
-      // 'accessor' and 'accessed' are so similar it becomes very difficult to
-      //follow the logic, so I renamed one to something distinct.
-      def accesses(looker: Symbol, accessed: Symbol) = (
-        accessed.isLocalToThis
-          && (accessed.isParamAccessor || looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
-      )
-
+      /* From the spec (refchecks checks other conditions regarding erasing to the same type and default arguments):
+       *
+       * A block expression [... its] statement sequence may not contain two definitions or
+       * declarations that bind the same name --> `inBlock`
+       *
+       * It is an error if a template directly defines two matching members.
+       *
+       * A member definition $M$ _matches_ a member definition $M'$, if $M$ and $M'$ bind the same name,
+       * and one of following holds:
+       *   1. Neither $M$ nor $M'$ is a method definition.
+       *   2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
+       *   3. $M$ defines a parameterless method and $M'$ defines a method with an empty parameter list `()` or _vice versa_.
+       *   4. $M$ and $M'$ define both polymorphic methods with equal number of argument types $\overline T$, $\overline T'$
+       *      and equal numbers of type parameters $\overline t$, $\overline t'$, say,
+       *      and  $\overline T' = [\overline t'/\overline t]\overline T$.
+       */
       def checkNoDoubleDefs(scope: Scope): Unit = {
         var e = scope.elems
         while ((e ne null) && e.owner == scope) {
+          val sym = e.sym
           var e1 = scope.lookupNextEntry(e)
           while ((e1 ne null) && e1.owner == scope) {
-            val sym = e.sym
             val sym1 = e1.sym
 
-            /* From the spec (refchecks checks other conditions regarding erasing to the same type and default arguments):
-             *
-             * A block expression [... its] statement sequence may not contain two definitions or
-             * declarations that bind the same name --> `inBlock`
-             *
-             * It is an error if a template directly defines two matching members.
-             *
-             * A member definition $M$ _matches_ a member definition $M'$, if $M$ and $M'$ bind the same name,
-             * and one of following holds:
-             *   1. Neither $M$ nor $M'$ is a method definition.
-             *   2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
-             *   3. $M$ defines a parameterless method and $M'$ defines a method with an empty parameter list `()` or _vice versa_.
-             *   4. $M$ and $M'$ define both polymorphic methods with equal number of argument types $\overline T$, $\overline T'$
-             *      and equal numbers of type parameters $\overline t$, $\overline t'$, say,
-             *      and  $\overline T' = [\overline t'/\overline t]\overline T$.
-             */
-            if (!(accesses(sym, sym1) || accesses(sym1, sym))  // TODO: does this purely defer errors until later?
-                && (inBlock || !(sym.isMethod || sym1.isMethod) || (sym.tpe matches sym1.tpe))
-                // default getters are defined twice when multiple overloads have defaults.
-                // The error for this is deferred until RefChecks.checkDefaultsInOverloaded
-                && !sym.isErroneous && !sym1.isErroneous && !sym.hasDefault) {
-              log("Double definition detected:\n  " +
-                  ((sym.getClass, sym.info, sym.ownerChain)) + "\n  " +
-                  ((sym1.getClass, sym1.info, sym1.ownerChain)))
+            def nullaryNilary: Boolean = {
+              def nn(m: Symbol): Boolean = m.isParamAccessor || m.hasAccessorFlag || !m.isMethod || {
+                m.tpe match {
+                  case MethodType(Nil, _) | NullaryMethodType(_) => true
+                  case _ => false
+                }
+              }
+              nn(sym) && nn(sym1)
+            }
+            val conflicted = inBlock || (!sym.isMethod && !sym1.isMethod) || nullaryNilary || sym.tpe.matches(sym1.tpe)
+
+            // default getters are defined twice when multiple overloads have defaults.
+            // The error for this is deferred until RefChecks.checkDefaultsInOverloaded
+            if (conflicted && !sym.isErroneous && !sym1.isErroneous && !sym.hasDefault) {
+              log(sm"""Double definition detected:
+                      |  ${(sym.getClass, sym.info, sym.ownerChain)}
+                      |  ${(sym1.getClass, sym1.info, sym1.ownerChain)}""")
 
               DefDefinedTwiceError(sym, sym1)
-              scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
+              scope.unlink(e1) // need to unlink to avoid later problems with lub; see #scala/bug#2779
             }
             e1 = scope.lookupNextEntry(e1)
           }
