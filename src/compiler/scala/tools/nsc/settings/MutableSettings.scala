@@ -349,6 +349,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     private[this] var _deprecationMessage: Option[String] = None
     override def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
+
+    def reset(): Unit
   }
 
   /** A setting represented by an integer. */
@@ -413,6 +415,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       else List(name, value.toString)
 
     withHelpSyntax(s"$name <n>")
+
+    override def reset() = v = default
   }
 
   /** A setting that is a boolean flag, with default as specified. */
@@ -437,6 +441,10 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
         } else errorAndValue(s"'$x' is not a valid choice for '$name'", None)
       case _       => errorAndValue(s"'$name' accepts only one boolean value", None)
     }
+    override def reset() = {
+      v = default
+      setByUser = false
+    }
   }
 
   /** A special setting for accumulating arguments like -Dfoo=bar. */
@@ -458,6 +466,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     def tryToSetColon(args: List[String]): Option[ResultOfTryToSet] = errorAndValue(s"bad argument for $name", None)
     override def respondsTo(token: String) = token startsWith prefix
     def unparse: List[String] = value
+    override def reset() = v = Nil
   }
 
   /** A setting represented by a string, (`default` unless set) */
@@ -489,6 +498,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def isHelping: Boolean = sawHelp
 
     override def help = helpText.get
+    override def reset() = v = default
   }
 
   /** A setting represented by a Scala version.
@@ -530,6 +540,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def help = helpText.get
 
     withHelpSyntax(s"${name}:<${arg}>")
+
+    override def reset() = v = initial
   }
 
   class PathSetting private[nsc](
@@ -549,6 +561,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       super.value,
       appendPath.value
     )
+    override def reset() = ()
   }
 
   /** Set the output directory for all sources. */
@@ -788,6 +801,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     }
     def unparse: List[String] = value.toList.map(s => s"$name:$s")
     def contains(s: String)   = domain.values.find(_.toString == s).exists(value.contains)
+    override def reset() = clear()
   }
 
   /** A setting that accumulates all strings supplied to it,
@@ -832,6 +846,11 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def isHelping: Boolean = sawHelp
 
     override def help = helpText.get
+
+    override def reset() = {
+      v = default
+      setByUser = false
+    }
   }
 
   /** A setting represented by a string in a given set of `choices`,
@@ -886,6 +905,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil) // used from ide
 
     withHelpSyntax(name + ":<" + helpArg + ">")
+
+    override def reset() = v = default
   }
 
   private def mkPhasesHelp(descr: String, default: String) = {
@@ -965,6 +986,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       if (default == "") name + ":<phases>"
       else name + "[:phases]"
     )
+
+    override def reset() = clear()
   }
 
   /** Internal use - syntax enhancements. */

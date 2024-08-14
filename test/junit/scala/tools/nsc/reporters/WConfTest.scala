@@ -43,8 +43,7 @@ class WConfTest extends BytecodeTesting {
     reports(code, extraWconf, lint).filter(_.severity == InternalReporter.INFO)
 
   def reports(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] = {
-    // lint has a postSetHook to enable `deprecated`, which in turn adds to `Wconf`,
-    // but since we clear and initialize Wconf after enabling lint, that effect is cancelled.
+    global.settings.deprecation.reset()
     if (lint) {
       global.settings.warnUnused.clear()
       global.settings.lint.tryToSet(List("_"))

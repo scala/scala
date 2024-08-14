@@ -28,7 +28,7 @@ import scala.tools.nsc.Reporting._
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
- * PerRunReporting implements per-Run stateful info tracking and reporting
+ *  PerRunReporting implements per-Run stateful info tracking and reporting
  */
 trait Reporting extends internal.Reporting { self: ast.Positions with CompilationUnits with internal.Symbols =>
   def settings: Settings
@@ -53,11 +53,29 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}$multiHelp")
         WConf(Nil)
       case Right(conf) =>
-        // configure cat=scala3-migration if it isn't yet
-        val Migration = MessageFilter.Category(WarningCategory.Scala3Migration)
-        val boost = (settings.isScala3: @nowarn) && !conf.filters.exists(_._1.exists(_ == Migration))
-        if (boost) conf.copy(filters = conf.filters :+ (Migration :: Nil, Action.Error))
-        else conf
+        // default is "cat=deprecation:ws,cat=feature:ws,cat=optimizer:ws"
+        // under -deprecation, "cat=deprecation:w", but under -deprecation:false or -nowarn, "cat=deprecation:s"
+        // similarly for -feature, -Wopt (?)
+        val needsDefaultAdjustment = settings.deprecation.isSetByUser
+        val adjusted =
+          if (needsDefaultAdjustment || settings.nowarn.value) {
+            val (user, defaults) = conf.filters.splitAt(conf.filters.length - settings.WconfDefault.length)
+            val Deprecation = MessageFilter.Category(WarningCategory.Deprecation)
+            val action = if (settings.deprecation.value) Action.Warning else Action.Silent
+            val fixed = defaults.map {
+              case (cat @ Deprecation :: Nil, Action.WarningSummary) => cat -> action
+              case other => other
+            }
+            conf.copy(filters = user ::: fixed)
+          }
+          else conf
+        // configure any:s for -nowarn or cat=scala3-migration:e for -Xsource:3
+        def Migration = MessageFilter.Category(WarningCategory.Scala3Migration)
+        if (settings.nowarn.value)
+          adjusted.copy(filters = adjusted.filters :+ (MessageFilter.Any :: Nil, Action.Silent))
+        else if (settings.isScala3: @nowarn)
+          adjusted.copy(filters = adjusted.filters :+ (Migration :: Nil, Action.Error))
+        else adjusted
     }
 
     private lazy val quickfixFilters = {
@@ -386,19 +404,20 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     var seenMacroExpansionsFallingBack = false
 
     // i.e., summarize warnings
-    def summarizeErrors(): Unit = if (!reporter.hasErrors && !settings.nowarn.value) {
-      for (c <- summarizedWarnings.keys.toList.sortBy(_.name))
+    def summarizeErrors(): Unit = if (!reporter.hasErrors) {
+      val warnOK = !settings.nowarn.value
+      if (warnOK) for (c <- summarizedWarnings.keys.toList.sortBy(_.name))
         summarize(Action.WarningSummary, c)
       for (c <- summarizedInfos.keys.toList.sortBy(_.name))
         summarize(Action.InfoSummary, c)
 
-      if (seenMacroExpansionsFallingBack)
+      if (warnOK && seenMacroExpansionsFallingBack)
         warning(NoPosition, "some macros could not be expanded and code fell back to overridden methods;"+
                 "\nrecompiling with generated classfiles on the classpath might help.", WarningCategory.Other, site = "")
 
       // todo: migrationWarnings
 
-      if (settings.fatalWarnings.value && reporter.hasWarnings)
+      if (warnOK && settings.fatalWarnings.value && reporter.hasWarnings)
         reporter.error(NoPosition, "No warnings can be incurred under -Werror.")
     }
 

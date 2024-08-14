@@ -60,7 +60,6 @@ object Reporter {
 /** The reporter used in a Global instance.
   *
   * It filters messages based on
-  *   - settings.nowarn
   *   - settings.maxerrs / settings.maxwarns
   *   - positions (only one error at a position, no duplicate messages on a position)
   */

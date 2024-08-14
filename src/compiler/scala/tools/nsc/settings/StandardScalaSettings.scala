@@ -36,10 +36,7 @@ trait StandardScalaSettings { _: MutableSettings =>
   /** Other settings.
    */
   val dependencyfile =  StringSetting ("-dependencyfile", "file", "Set dependency tracking file.", ".scala_dependencies") withAbbreviation "--dependency-file"
-  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs. See also -Wconf.") withAbbreviation "--deprecation" withPostSetHook { s =>
-    if (s.value) Wconf.tryToSet(List(s"cat=deprecation:w"))
-    else Wconf.tryToSet(List(s"cat=deprecation:s"))
-  }
+  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs. See also -Wconf.").withAbbreviation("--deprecation")
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding) withAbbreviation "--encoding"
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.") withAbbreviation "--explain-types"
   val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly. See also -Wconf.") withAbbreviation "--feature" withPostSetHook { s =>
@@ -48,7 +45,9 @@ trait StandardScalaSettings { _: MutableSettings =>
   }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help" withAbbreviation("-h")
-  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s.value) maxwarns.value = 0 }
+  val nowarn =         BooleanSetting("-nowarn", "Silence warnings. (-Wconf:any:s)")
+                        .withAbbreviation("--no-warnings")
+                        .withPostSetHook(s => if (s.value) maxwarns.value = 0)
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
   val quickfix =       MultiStringSetting(

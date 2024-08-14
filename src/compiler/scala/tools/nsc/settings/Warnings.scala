@@ -27,7 +27,7 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Werror", "Fail the compilation if there are any warnings.") withAbbreviation "-Xfatal-warnings"
 
-  private val WconfDefault = List("cat=deprecation:ws", "cat=feature:ws", "cat=optimizer:ws")
+  val WconfDefault = List("cat=deprecation:ws", "cat=feature:ws", "cat=optimizer:ws")
   // Note: user-defined settings are added on the right, but the value is reversed before
   // it's parsed, so that later defined settings take precedence.
   val Wconf = MultiStringSetting(
