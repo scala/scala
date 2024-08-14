@@ -15,10 +15,9 @@ package reflect
 package internal
 
 import java.util.Objects
-
 import scala.collection.mutable
 import scala.ref.WeakReference
-import mutable.{ListBuffer, LinkedHashSet}
+import mutable.{LinkedHashSet, ListBuffer}
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.{tailrec, unused}
@@ -27,6 +26,7 @@ import util.ThreeValues._
 import Variance._
 import Depth._
 import TypeConstants._
+import scala.util.chaining._
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -3818,7 +3818,11 @@ trait Types
 
     override def isTrivial: Boolean = underlying.isTrivial && annotations.forall(_.isTrivial)
 
-    override def safeToString = annotations.mkString(underlying.toString + " @", " @", "")
+    override def safeToString = {
+      val wrap = isShowAsInfixType || isFunctionTypeDirect(this)
+      val ul = underlying.toString.pipe(s => if (wrap) s"($s)" else s)
+      annotations.mkString(ul + " @", " @", "")
+    }
 
     override def filterAnnotations(p: AnnotationInfo => Boolean): Type = {
       val (yes, no) = annotations partition p

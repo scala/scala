@@ -1,0 +1,20 @@
+
+scala> class ann extends annotation.StaticAnnotation
+class ann
+
+scala> def a: Int => (Int @ann) = ???
+def a: Int => Int @ann
+
+scala> def b: Int => Int @ann = ???
+def b: Int => Int @ann
+
+scala> def c: (Int => Int) @ann = ???
+def c: (Int => Int) @ann
+
+scala> def d: Int => (Int => Int) @ann = ???
+def d: Int => ((Int => Int) @ann)
+
+scala> def e: (Int => Int => Int) @ann = ???
+def e: (Int => (Int => Int)) @ann
+
+scala> :quit
