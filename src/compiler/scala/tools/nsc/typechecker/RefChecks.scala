@@ -1656,7 +1656,7 @@ abstract class RefChecks extends Transform {
       sym.name == nme.apply &&
         sym.isCase && // only synthetic case apply methods
         isClassTypeAccessible &&
-        !fun.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(sym)
+        !sym.tpe.finalResultType.typeSymbol.primaryConstructor.isLessAccessibleThan(sym)
     }
 
     private def transformCaseApply(tpe: Type, pos: Position) = {
