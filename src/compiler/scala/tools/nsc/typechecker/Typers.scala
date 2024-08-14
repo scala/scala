@@ -3539,7 +3539,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // As packages are open, it doesn't make sense to check double definitions here. Furthermore,
         // it is expensive if the package is large. Instead, such double definitions are checked in `Namers.enterInScope`
-        if (!context.owner.isPackageClass)
+        if (!context.owner.isPackageClass && !unit.isJava)
           checkNoDoubleDefs(scope)
 
         // Note that Java units don't have synthetics, but there's no point in making a special case (for performance or correctness),
