@@ -166,7 +166,7 @@ import scala.runtime.Statics
   *  loop("Iterator3: ", it3.next(), it3)
   *  }}}
   *
-  *  - In the `fibs` example earlier, the fact that `tail` works at all is of interest.
+  *  In the `fibs` example earlier, the fact that `tail` works at all is of interest.
   *  `fibs` has an initial `(0, 1, LazyList(...))`, so `tail` is deterministic.
   *  If we defined `fibs` such that only `0` were concretely known, then the act
   *  of determining `tail` would require the evaluation of `tail`, so the
@@ -218,6 +218,27 @@ import scala.runtime.Statics
   *  filtered.isEmpty // prints "getting empty LazyList"
   *  }}}
   *
+  *  ----
+  *
+  *  You may sometimes encounter an exception like the following:
+  *
+  *  {{{
+  *  java.lang.RuntimeException: "LazyList evaluation depends on its own result (self-reference); see docs for more info
+  *  }}}
+  *
+  *  This exception occurs when a `LazyList` is attempting to derive its next element
+  *  from itself, and is attempting to read the element currently being evaluated. A
+  *  trivial example of such might be
+  *
+  *  {{{
+  *  lazy val a: LazyList[Int] = 1 #:: 2 #:: a.filter(_ > 2)
+  *  }}}
+  *
+  *  When attempting to evaluate the third element of `a`, it will skip the first two
+  *  elements and read the third, but that element is already being evaluated. This is
+  *  often caused by a subtle logic error; in this case, using `>=` in the `filter`
+  *  would fix the error.
+  *
   *  @tparam A    the type of the elements contained in this lazy list.
   *
   *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#lazylists "Scala's Collection Library overview"]]
@@ -253,7 +274,9 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     // if it's already mid-evaluation, we're stuck in an infinite
     // self-referential loop (also it's empty)
     if (midEvaluation) {
-      throw new RuntimeException("self-referential LazyList or a derivation thereof has no more elements")
+      throw new RuntimeException(
+        "LazyList evaluation depends on its own result (self-reference); see docs for more info"
+      )
     }
     midEvaluation = true
     val res = try lazyState() finally midEvaluation = false
