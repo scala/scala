@@ -420,7 +420,7 @@ class BytecodeTest extends BytecodeTesting {
         |  }
         |}""".stripMargin
     val List(_, cAnon, _) = compileClasses(code)
-    // field for caputred param is not final
+    // field for captured param is not final
     assertEquals(Opcodes.ACC_PRIVATE, cAnon.fields.asScala.find(_.name.startsWith("param")).get.access)
     assertInvoke(getMethod(cAnon, "<init>"), "scala/runtime/Statics", "releaseFence")
   }
