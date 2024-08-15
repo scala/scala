@@ -68,8 +68,8 @@ env:
     - secure: "T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8=" # PRIVATE_REPO_PASS, for publishing to scala-ci Artifactory
     - secure: "dbAvl6KEuLwZ0MVQPZihFsPzCdiLbX0EFk3so+hcfEbksrmLQ1tn4X5ZM7Wy1UDR8uN9lxngEwHch7a7lKqpugzmXMew9Wnikr9WBWbJT77Z+XJ/jHI6YuiCRpRo+nvxXGp9Ry80tSIgx5eju0J83IaJL41BWlBkvyAd7YAHORI=" # GPG_SUBKEY_SECRET, so we can sign JARs
     - secure: "RTyzS6nUgthupw5M0fPwTlcOym1sWgBo8eXYepB2xGiQnRu4g583BGuNBW1UZ3vIjRETi/UKQ1HtMR+i7D8ptF1cNpomopncVJA1iy7pU2w0MJ0xgIPMuvtkIa3kxocd/AnxAp+UhUad3nC8lDpkvZsUhhyA0fb4iPKipd2b2xY=" # TRAVIS_TOKEN (login with GitHub as SethTisue), for triggering scala-dist job
-    - secure: "PbDzgRGivsDM/1P18dIAZiZnK8yG+fxU/9Ho6DkAd8pvsu7S08MPks+ekM0uSVeKxYj7Npzd3XTe4weEXM7Jtljy3CRHoPasI0TF/6ZVOb7H+MMP1cg9K1xrZXKfEk2RABCbMxKtrEv9BDa/lVtjCCEKWAIPz38Z6q2mKk417Ps=" # SONA_USER, token username for publishing to Sonatype
-    - secure: "D/V5nrAJsAc6t5ZMoeSt37ViIsJyRmagA286M3zWn/uZhgk4mbgYfzu6rDbYeUTBB9jX8YHKPtzUrxqcnlpkV8z6USAbDhzYSLL/QqcLnTjKZZ3KvPEimNQIXX8Nb1KIrlXNQ/xTE8u+GNvQLDdxa60QqlzvA3tt5vnVl3GatFE=" # SONA_PASS, token password for publishing to Sonatype
+    - secure: "IIuL7N2kiU9bTi4LLPxyf7AmXkr1bc9RN4uYQ6A87ZE54yYB44GqNPsYL5W18dc4np1W/SRx6eIGWsncxIebtK9a/W/xXdVpYQBmiPI1TAJLGTlOb8IGa6tTfVWEGIY/WRVbHZ5j5pCq5OtjFlkOMJl9AQwsMmTVwFoqkKvJ9Lo=" # SONA_USER, token username for publishing to Sonatype
+    - secure: "kvgLi2lcjC3tRN1/qppu/t5iuQyszpGWHeJICI/4/6JnlK/TDn5s0mdyivfIglicCgpd3dMCt7Rv0qDTWHNi6FFV8X5qxcCiYGAlODBp8MHEoHuc6SOWqOJVX2V0xym7eYunsbc0b22bKbBLrRXdoa9LUy82Fdv1kxoeG66Tt7I=" # SONA_PASS, token password for publishing to Sonatype # SONA_PASS, token password for publishing to Sonatype
 
 # caching for sdkman / sbt / ivy / coursier imported from scala-dev
 cache:
