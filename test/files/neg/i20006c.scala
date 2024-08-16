@@ -1,3 +1,4 @@
+//> using options -Werror -Xsource:3 -Xsource-features:double-definitions
 
 abstract class XIterateIterator[T](seed: T) extends collection.AbstractIterator[T] {
   private var first = true
@@ -19,7 +20,7 @@ final class YIterateIterator[T](seed: T, hasNext: T => Boolean, next: T => T) ex
   private var first = true
   private var acc = seed
   override def hasNext: Boolean = first || hasNext(acc) // error
-  override def next(): T = { // noerror
+  override def next(): T = { // error
     if (first) {
       first = false
     } else {
@@ -33,7 +34,7 @@ final class ZIterateIterator[T](seed: T, hasNext: T => Boolean, next: T => T) {
   private var first = true
   private var acc = seed
   def hasNext: Boolean = first || hasNext(acc) // error
-  def next(): T = { // noerror
+  def next(): T = { // error
     if (first) {
       first = false
     } else {
@@ -53,14 +54,14 @@ class E(x: String) {
   private[this] var x: Int = 42 // error
 }
 class F(x: String) {
-  def x(): Int = 42 // noerror
+  def x(): Int = 42 // error
 }
 class G(x: String) {
   def x(i: Int): Int = i
 }
 class H {
   private[this] val x: String = ""
-  def x(): Int = 42 // noerror
+  def x(): Int = 42 // error
 }
 class I {
   private[this] def x: String = ""
@@ -68,7 +69,7 @@ class I {
 }
 class PrivateConflict {
   private[this] var x = 42
-  def x(): Int = x
+  def x(): Int = x // error
   def x_=(n: Int) = x = n
 }
 class LocalConflict {

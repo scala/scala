@@ -1195,6 +1195,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def leadingInfix           = isScala3 && contains(o.leadingInfix)
       def packagePrefixImplicits = isScala3 && contains(o.packagePrefixImplicits)
       def implicitResolution     = isScala3 && contains(o.implicitResolution) || settings.Yscala3ImplicitResolution.value
+      def doubleDefinitions      = isScala3 && contains(o.doubleDefinitions)
     }
 
     // used in sbt

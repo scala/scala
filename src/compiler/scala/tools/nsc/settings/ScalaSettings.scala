@@ -181,6 +181,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val leadingInfix           = Choice("leading-infix", "Leading infix operators continue the previous line.")
     val packagePrefixImplicits = Choice("package-prefix-implicits", "The package prefix p is no longer part of the implicit search scope for type p.A.")
     val implicitResolution     = Choice("implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see github.com/scala/scala/pull/6037).")
+    val doubleDefinitions      = Choice("double-definitions", "Correctly disallow double definitions differing in empty parens.")
 
     val v13_13_choices = List(caseApplyCopyAccess, caseCompanionFunction, inferOverride, any2StringAdd, unicodeEscapesRaw, stringContextScope, leadingInfix, packagePrefixImplicits)
 
@@ -190,11 +191,16 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       expandsTo = v13_13_choices)
 
     val v13_14_choices = implicitResolution :: v13_13_choices
-
     val v13_14 = Choice(
       "v2.13.14",
       "v2.13.13 plus implicit-resolution",
       expandsTo = v13_14_choices)
+
+    val v13_15_choices = doubleDefinitions :: v13_14_choices
+    val v13_15 = Choice(
+      "v2.13.15",
+      "v2.13.14 plus double-definitions",
+      expandsTo = v13_15_choices)
   }
   val XsourceFeatures = MultiChoiceSetting(
     name = "-Xsource-features",

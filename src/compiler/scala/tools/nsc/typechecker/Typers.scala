@@ -3438,7 +3438,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               nn(sym) && nn(sym1)
             }
-            val conflicted = inBlock || (!sym.isMethod && !sym1.isMethod) || nullaryNilary || sym.tpe.matches(sym1.tpe)
+            def correctly: Boolean = nullaryNilary.tap(if (_) reportCorrection()) && currentRun.sourceFeatures.doubleDefinitions
+            def reportCorrection(): Unit =
+              if (currentRun.isScala3 && !currentRun.sourceFeatures.doubleDefinitions)
+                context.warning(sym.pos, s"Double definition will be detected in Scala 3; the conflicting $sym1 is defined at ${sym1.pos.line}:${sym1.pos.column}", Scala3Migration)
+
+            val conflicted = inBlock || (!sym.isMethod && !sym1.isMethod) || sym.tpe.matches(sym1.tpe) || correctly
 
             // default getters are defined twice when multiple overloads have defaults.
             // The error for this is deferred until RefChecks.checkDefaultsInOverloaded
