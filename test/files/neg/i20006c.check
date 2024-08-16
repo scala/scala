@@ -1,0 +1,54 @@
+i20006c.scala:9: error: method next is defined twice;
+  the conflicting value next was defined at line 7:7
+  override def next(): T = { // error
+               ^
+i20006c.scala:8: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 6:7
+  override def hasNext: Boolean = first || hasNext(acc) // error
+               ^
+i20006c.scala:23: error: method next is defined twice;
+  the conflicting value next was defined at line 19:65
+  override def next(): T = { // error
+               ^
+i20006c.scala:22: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 19:42
+  override def hasNext: Boolean = first || hasNext(acc) // error
+               ^
+i20006c.scala:37: error: method next is defined twice;
+  the conflicting value next was defined at line 33:65
+  def next(): T = { // error
+      ^
+i20006c.scala:36: error: method hasNext is defined twice;
+  the conflicting value hasNext was defined at line 33:42
+  def hasNext: Boolean = first || hasNext(acc) // error
+      ^
+i20006c.scala:48: error: x is already defined as value x
+  val x: String = "member" // error
+      ^
+i20006c.scala:51: error: variable x is defined twice;
+  the conflicting value x was defined at line 50:9
+  private var x: Int = 42 // error
+              ^
+i20006c.scala:54: error: x is already defined as value x
+  private[this] var x: Int = 42 // error
+                    ^
+i20006c.scala:57: error: method x is defined twice;
+  the conflicting value x was defined at line 56:9
+  def x(): Int = 42 // error
+      ^
+i20006c.scala:64: error: method x is defined twice;
+  the conflicting value x was defined at line 63:21
+  def x(): Int = 42 // error
+      ^
+i20006c.scala:68: error: method x is defined twice;
+  the conflicting method x was defined at line 67:21
+  def x(): Int = 42 // error
+      ^
+i20006c.scala:72: error: method x is defined twice;
+  the conflicting variable x was defined at line 71:21
+  def x(): Int = x // error
+      ^
+i20006c.scala:78: error: x is already defined as variable x
+    def x(): Int = x // error
+        ^
+14 errors
