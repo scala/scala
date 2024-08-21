@@ -32,6 +32,7 @@ trait StandardScalaSettings { _: MutableSettings =>
   val javaextdirs =       PathSetting ("-javaextdirs", "Override java extdirs classpath.", Defaults.javaExtDirs) withAbbreviation "--java-extension-directories"
   val sourcepath =        PathSetting ("-sourcepath", "Specify location(s) of source files.", "") withAbbreviation "--source-path" // Defaults.scalaSourcePath
   val rootdir =           PathSetting ("-rootdir", "The absolute path of the project root directory, usually the git/scm checkout. Used by -Wconf.", "") withAbbreviation "--root-directory"
+  val systemPath =        PathSetting ("-system", "Override location of Java system modules", "") withAbbreviation "--system"
 
   /** Other settings.
    */
@@ -74,11 +75,13 @@ trait StandardScalaSettings { _: MutableSettings =>
         val current = setting.value.toInt
         if (!isJavaAtLeast("9") && current > 8) errorFn.apply("-release is only supported on JVM 9 and higher")
         if (target.valueSetByUser.map(_.toInt > current).getOrElse(false)) errorFn("-release cannot be less than -target")
+        if (systemPath.isSetByUser) errorFn("-release cannot be used with -system")
         //target.value = setting.value  // this would trigger deprecation
       }
       .withAbbreviation("--release")
       .withAbbreviation("-java-output-version")
   def releaseValue: Option[String] = release.valueSetByUser
+  def systemPathValue: Option[String] = systemPath.valueSetByUser
   val target =
     ChoiceSetting("-target", "target", "Target platform for object files.", AllTargetVersions, "8")
       .withPreSetHook(normalizeTarget)
@@ -89,7 +92,6 @@ trait StandardScalaSettings { _: MutableSettings =>
       // .withAbbreviation("--Xtarget")
       // .withAbbreviation("-Xtarget")
       .withAbbreviation("-Xunchecked-java-output-version")
-      .withDeprecationMessage("Use -release instead to compile against the correct platform API.")
   def targetValue: String = target.valueSetByUser.orElse(releaseValue).getOrElse(target.value)
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))

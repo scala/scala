@@ -27,7 +27,7 @@ class JrtClassPathTest {
         val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(resolver.Calculated.javaBootClassPath)
         AggregateClassPath(elements)
       }
-      else JrtClassPath(None, None, closeableRegistry).head
+      else JrtClassPath(None, None, None, closeableRegistry).head
 
     assertEquals(Nil, cp.classes(""))
     assertTrue(cp.packages("java").toString, cp.packages("java").exists(_.name == "java.lang"))
