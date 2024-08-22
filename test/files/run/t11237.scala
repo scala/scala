@@ -1,4 +1,5 @@
-//> abusing options -Vprint:~uncurry
+// using options -Vprint:~uncurry
+
 trait Semigroup[F] { self =>
   def append(f1: F, f2: => F): F
   val z = 10

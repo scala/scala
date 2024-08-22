@@ -186,4 +186,7 @@ trait StdAttachments {
 
   /** This Bind tree was derived immediately from the given tree, for unused accounting. */
   case class VarAlias(tree: Tree /*Bind | ValDef*/) extends PlainAttachment
+
+  /** Do not mangle the arg. It is passed directly in a forwarding application. */
+  case object PreserveArg extends PlainAttachment
 }

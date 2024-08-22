@@ -246,14 +246,6 @@ abstract class UnCurry extends InfoTransform
         else typeNewFun match {
           case typedNewFun @ Block(stats, expr: Function) =>
             val expansion = gen.expandFunction(localTyper)(expr, inConstructorFlag)
-            expansion match {
-              case Block(ClassDef(_, _, _, Template(_, _, body)) :: Nil, _) =>
-                body.last match {
-                  case DefDef(_, _, _, _, _, Apply(_, args)) => noApply.addAll(args) // samDef args are pass-thru
-                  case _ =>
-                }
-              case _ =>
-            }
             treeCopy.Block(typedNewFun, stats, expansion)
           case x => throw new MatchError(x)
         }
@@ -467,7 +459,7 @@ abstract class UnCurry extends InfoTransform
         else translateSynchronized(tree) match {
           case dd @ DefDef(mods, name, tparams, _, tpt, rhs) =>
             // Remove default argument trees from parameter ValDefs, scala/bug#4812
-            val vparamssNoRhs = dd.vparamss mapConserve (_ mapConserve {p =>
+            val vparamssNoRhs = dd.vparamss.mapConserve(_.mapConserve { p =>
               treeCopy.ValDef(p, p.mods, p.name, p.tpt, EmptyTree)
             })
 
@@ -558,7 +550,7 @@ abstract class UnCurry extends InfoTransform
             if (isByNameRef(tree1)) {
               val tree2 = tree1 setType functionType(Nil, tree1.tpe)
               return {
-                if (noApply contains tree2) tree2
+                if (tree.attachments.contains[PreserveArg.type] || noApply.contains(tree2)) tree2
                 else localTyper.typedPos(tree1.pos)(Apply(Select(tree2, nme.apply), Nil))
               }
             }

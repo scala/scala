@@ -327,7 +327,16 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       enclosingStaticModules.foldLeft(tree)((tree, moduleClass) => tree.substituteThis(moduleClass, gen.mkAttributedIdent(moduleClass.sourceModule)) )
     }
 
-    newDefDef(methSym, substThisForModule(moveToMethod(useMethodParams(fun.body))))(tpt = TypeTree(resTp))
+    val body = useMethodParams(fun.body)
+    if (methParamSyms.exists(p => isByNameParamType(p.info))) {
+      val bynames = methParamSyms.zip(fun.vparams).collect { case (mp, vp) if isByNameParamType(mp.info) != isByNameParamType(vp.tpt.tpe) => mp }
+      if (bynames.nonEmpty)
+        body.foreach {
+          case t @ Ident(_) if bynames.contains(t.symbol) => t.updateAttachment(PreserveArg)
+          case _ =>
+        }
+    }
+    newDefDef(methSym, substThisForModule(moveToMethod(body)))(tpt = TypeTree(resTp))
   }
 
   /**
