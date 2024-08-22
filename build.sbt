@@ -93,6 +93,44 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
+// Run `sbt -Dscala.build.publishDevelocity` to publish build scans to develocity.scala-lang.org
+// In Jenkins, the `...publishDevelocity=stage` value is used to set the `JENKINS_STAGE` value of the scan
+ThisBuild / develocityConfiguration := {
+  def pubDev = Option(System.getProperty("scala.build.publishDevelocity"))
+  val isInsideCI = sys.env.get("JENKINS_URL").exists(_.contains("scala-ci.typesafe.com"))
+  val config = develocityConfiguration.value
+  val buildScan = config.buildScan
+  val buildCache = config.buildCache
+  config
+    .withProjectId(ProjectId("scala2"))
+    .withServer(config.server.withUrl(Some(url("https://develocity.scala-lang.org"))))
+    .withBuildScan(
+      buildScan
+        .withPublishing(Publishing.onlyIf(ctx => pubDev.nonEmpty && ctx.authenticated))
+        .withBackgroundUpload(false)
+        .tag(if (isInsideCI) "CI" else "Local")
+        .tag("2.13")
+        .withLinks(buildScan.links ++
+          sys.env.get("BUILD_URL").map(u => "Jenkins Build" -> url(u)) ++
+          sys.env.get("repo_ref").map(sha => "GitHub Commit" -> url(s"https://github.com/scala/scala/commit/$sha")) ++
+          sys.env.get("_scabot_pr").map(pr => "GitHub PR " -> url(s"https://github.com/scala/scala/pull/$pr")))
+        .withValues(buildScan.values +
+          ("GITHUB_REPOSITORY" -> "scala/scala") +
+          ("GITHUB_BRANCH" -> "2.13.x") ++
+          pubDev.filterNot(_.isEmpty).map("JENKINS_STAGE" -> _) ++
+          sys.env.get("JOB_NAME").map("JENKINS_JOB_NAME" -> _) ++
+          sys.env.get("repo_ref").map("GITHUB_SHA" -> _) ++
+          sys.env.get("_scabot_pr").map("GITHUB_PR" -> _) ++
+          sys.env.get("NODE_NAME").map("JENKINS_NODE" -> _))
+        .withObfuscation(buildScan.obfuscation.withIpAddresses(_.map(_ => "0.0.0.0")))
+    )
+    .withBuildCache(
+      buildCache
+        .withLocal(buildCache.local.withEnabled(false))
+        .withRemote(buildCache.remote.withEnabled(false))
+    )
+}
+
 // Save MiMa logs
 SavedLogs.settings
 
@@ -1149,7 +1187,7 @@ def partestOnly(in: String): Def.Initialize[Task[Unit]] =
 def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
   partestOnly(in).result map (_ -> s"partest $in")
 
-lazy val root: Project = (project in file("."))
+lazy val scala2: Project = (project in file("."))
   .settings(disableDocs)
   .settings(generateBuildCharacterFileSettings)
   .settings(
