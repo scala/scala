@@ -28,7 +28,7 @@ case $prDryRun in
     if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
       echo "Scala core already built!"
     else
-      $SBT -warn "setupPublishCore $prRepoUrl" publish
+      $SBT -Dscala.build.publishDevelocity=build -warn "setupPublishCore $prRepoUrl" publish
     fi
 
     mv buildcharacter.properties jenkins.properties # parsed by the jenkins job
