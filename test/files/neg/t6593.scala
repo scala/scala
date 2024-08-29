@@ -114,11 +114,14 @@ class Hello2024 {
 
   locally {
     str == obj // n
-    str == cls // n
-    str == 1 // n
+    str == cls // w: non-sensible
+    str == 1 // w: non-sensible
     str == "" // n
-    str != opt // n
+    str != opt // w: non-sensible
     str == null // n
+    val cs: CharSequence = "oy"
+    str == cs // n
+    cs == str // n
   }
 
   locally {
@@ -138,14 +141,17 @@ class Hello2024 {
 
   locally {
     lst == obj // n
-    lst == cls // n
-    lst == 1 // n
-    lst == opt // n
-    lst == str // n
-    lst == set // n
-    lst == Seq(1) // n
-    lst == map // n
-    lst == eqs // n
+    lst == cls // w: non-sensible (collections)
+    lst == 1 // w: non-sensible (collections)
+    lst == opt // w: non-sensible (collections)
+    lst == str // w: non-sensible (collections)
+    lst == set // w: non-sensible (collections)
+    lst == Seq(1) // n, both are Seqs
+    lst == map // w: non-sensible (collections)
+    lst == eqs // w: non-sensible (collections)
+    val itr = Iterator(1)
+    lst == itr // w: non-sensible (collections)
+    lst == (itr: scala.collection.IterableOnce[Int]) // n
   }
 
   locally {

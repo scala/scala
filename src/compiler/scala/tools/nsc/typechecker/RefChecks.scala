@@ -1042,7 +1042,7 @@ abstract class RefChecks extends Transform {
       // equals.
       def isUsingWarnableEquals = {
         val m = receiver.info.member(nme.equals_)
-        ((m == Object_equals) || (m == Any_equals) || isMethodCaseEquals(m))
+        (m == Object_equals) || (m == Any_equals) || isMethodCaseEquals(m)
       }
       def isMethodCaseEquals(m: Symbol) = m.isSynthetic && m.owner.isCase
       def isCaseEquals = isMethodCaseEquals(receiver.info.member(nme.equals_))
@@ -1074,6 +1074,17 @@ abstract class RefChecks extends Transform {
         && isEitherValueClass
         && !isCaseEquals
       )
+
+      def isCollection(s: Symbol) = s.isNonBottomSubClass(IterableClass)
+      lazy val SeqClass = rootMirror.getClassIfDefined("scala.collection.Seq")
+      lazy val SetClass = rootMirror.getClassIfDefined("scala.collection.Set")
+      lazy val MapClass = rootMirror.getClassIfDefined("scala.collection.Map")
+      def collectionBase(s: Symbol) = {
+        if (s.isNonBottomSubClass(SeqClass)) SeqClass
+        else if (s.isNonBottomSubClass(SetClass)) SetClass
+        else if (s.isNonBottomSubClass(MapClass)) MapClass
+        else NoSymbol
+      }
 
       def isEffectivelyFinalDeep(sym: Symbol): Boolean = (
         sym.isEffectivelyFinal
@@ -1129,7 +1140,21 @@ abstract class RefChecks extends Transform {
           if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
             nonSensiblyNeq()
       }
-      else if (isWarnable && !isCaseEquals) {
+      else if (receiver == StringClass) {
+        if (!haveSubclassRelationship)
+          nonSensiblyNeq()
+      }
+      else if (isCollection(receiver)) {
+        val rBase = collectionBase(receiver)
+        val aBase = collectionBase(actual)
+        if (rBase != NoSymbol) {
+          if (aBase != NoSymbol && rBase != aBase)
+            nonSensiblyNeq()
+          else if (!isCollection(actual) && !haveSubclassRelationship)
+            nonSensiblyNeq()
+        }
+      }
+      else if (isWarnable && !isCaseEquals) { // case equals is handled below
         if (isNew(qual)) // new X == y
           nonSensiblyNew()
         else if (isNew(other) && (isEffectivelyFinalDeep(receiver) || isReferenceOp))   // object X ; X == new Y

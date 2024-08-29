@@ -1,4 +1,4 @@
-//> using options -Xfatal-warnings -deprecation
+//> using options -Werror -deprecation
 //
 final class Bip { def <=(other: Bop) = true }
 final class Bop { }
@@ -31,7 +31,7 @@ class EqEqValTest {
   1 == "abc"        // w
   1 == ("abc": Any) // n: Any may be a boxed Int
   1 == (1: Any)     // n: as above
-  "abc" == 1        // n
+  "abc" == 1        // w: string equality is known
   Some(1) == 1      // w: case class equals
 
   true == java.lang.Boolean.valueOf(true) // n
@@ -117,4 +117,14 @@ class AnyEqualsTest {
   def foo[A](a: A) = a.equals(1)  // w: bypasses coopeq
   // ok
   def bar[A <: AnyRef](a: A) = a.equals(1) // n
+}
+
+object eq_refine {
+  class E
+  class SE extends Serializable
+  val e = new E
+  if (e == "") ??? // warn about comparing unrelated types
+
+  val se = new SE
+  if (se == "") ??? // types are still unrelated
 }

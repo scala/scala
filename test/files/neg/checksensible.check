@@ -31,6 +31,9 @@ checksensible.scala:29: warning: comparing values of types Integer and Unit usin
 checksensible.scala:31: warning: comparing values of types Int and String using `==` will always yield false
   1 == "abc"        // w
     ^
+checksensible.scala:34: warning: comparing values of types String and Int using `==` will always yield false
+  "abc" == 1        // w: string equality is known
+        ^
 checksensible.scala:35: warning: comparing values of types Some[Int] and Int using `==` will always yield false
   Some(1) == 1      // w: case class equals
           ^
@@ -115,6 +118,12 @@ checksensible.scala:114: warning: comparing values of types AnyVal and AnyVal us
 checksensible.scala:117: warning: comparing values of types A and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
   def foo[A](a: A) = a.equals(1)  // w: bypasses coopeq
                              ^
+checksensible.scala:126: warning: eq_refine.E and String are unrelated: they will most likely never compare equal
+  if (e == "") ??? // warn about comparing unrelated types
+        ^
+checksensible.scala:129: warning: eq_refine.SE and String are unrelated: they will most likely never compare equal
+  if (se == "") ??? // types are still unrelated
+         ^
 error: No warnings can be incurred under -Werror.
-39 warnings
+42 warnings
 1 error
