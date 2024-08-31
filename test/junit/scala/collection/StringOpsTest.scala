@@ -102,4 +102,16 @@ class StringOpsTest {
     assertEquals("de", "abcdef".collect { case c @ ('b' | 'c') => (c+2).toChar })
     assertEquals(Seq('d'.toInt, 'e'.toInt), "abcdef".collect { case c @ ('b' | 'c') => (c+2).toInt })
   }
+
+  @Test def init(): Unit = {
+    assertEquals("ab", "abc".init)
+    assertEquals("a", "ab".init)
+    assertThrows[NoSuchElementException]("".init)
+  }
+
+  @Test def tail(): Unit = {
+    assertEquals("bc", "abc".tail)
+    assertEquals("b", "ab".tail)
+    assertThrows[NoSuchElementException]("".tail)
+  }
 }
