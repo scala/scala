@@ -106,12 +106,14 @@ class StringOpsTest {
   @Test def init(): Unit = {
     assertEquals("ab", "abc".init)
     assertEquals("a", "ab".init)
+    assertEquals("", "a".init)
     assertThrows[NoSuchElementException]("".init)
   }
 
   @Test def tail(): Unit = {
     assertEquals("bc", "abc".tail)
     assertEquals("b", "ab".tail)
+    assertEquals("", "a".tail)
     assertThrows[NoSuchElementException]("".tail)
   }
 }
