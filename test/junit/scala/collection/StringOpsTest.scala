@@ -107,13 +107,13 @@ class StringOpsTest {
     assertEquals("ab", "abc".init)
     assertEquals("a", "ab".init)
     assertEquals("", "a".init)
-    assertThrows[NoSuchElementException]("".init)
+    assertThrows[UnsupportedOperationException]("".init)
   }
 
   @Test def tail(): Unit = {
     assertEquals("bc", "abc".tail)
     assertEquals("b", "ab".tail)
     assertEquals("", "a".tail)
-    assertThrows[NoSuchElementException]("".tail)
+    assertThrows[UnsupportedOperationException]("".tail)
   }
 }
