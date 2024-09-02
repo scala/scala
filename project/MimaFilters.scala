@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.12.19"),
+    mimaReferenceVersion := Some("2.12.20"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -32,8 +32,6 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef#ArrayCharSequence.isEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.isEmpty"),
 
-    // private[scala] member used by Properties and by REPL
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.consoleIsTerminal"),
   )
 
   override val buildSettings = Seq(
