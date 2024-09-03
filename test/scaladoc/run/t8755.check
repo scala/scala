@@ -1,0 +1,3 @@
+warning: Phase ploogin is not reachable from parser
+parser -> namer -> packageobjects -> typer -> terminal
+Done.

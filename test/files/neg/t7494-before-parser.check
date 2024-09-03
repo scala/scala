@@ -1,1 +1,4 @@
-fatal error: Phases form a cycle: parser -> beforeparser -> parser
+warning: Phase beforeparser is not reachable from parser
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -1,0 +1,8 @@
+warning: No phase `refchecks` for ploogin.runsBefore
+warning: Phase ploogin is not reachable from parser
+parser -> namer -> packageobjects -> typer -> terminal
+[running phase parser on newSource]
+[running phase namer on newSource]
+[running phase packageobjects on newSource]
+[running phase typer on newSource]
+Done.
