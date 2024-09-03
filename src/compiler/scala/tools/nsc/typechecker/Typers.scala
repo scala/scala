@@ -3429,6 +3429,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           while ((e1 ne null) && e1.owner == scope) {
             val sym1 = e1.sym
 
+            def allowPrivateLocalAcc: Boolean =
+              sym.isParamAccessor && sym.isPrivateLocal || sym1.isParamAccessor && sym1.isPrivateLocal
             def nullaryNilary: Boolean = {
               def nn(m: Symbol): Boolean = m.isParamAccessor || m.hasAccessorFlag || !m.isMethod || {
                 m.tpe match {
@@ -3443,7 +3445,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (currentRun.isScala3 && !currentRun.sourceFeatures.doubleDefinitions)
                 context.warning(sym.pos, s"Double definition will be detected in Scala 3; the conflicting $sym1 is defined at ${sym1.pos.line}:${sym1.pos.column}", Scala3Migration)
 
-            val conflicted = inBlock || (!sym.isMethod && !sym1.isMethod) || sym.tpe.matches(sym1.tpe) || correctly
+            val conflicted = inBlock || (!sym.isMethod && !sym1.isMethod) ||
+              sym.tpe.matches(sym1.tpe) && !allowPrivateLocalAcc || // Scala 2: allow `class C(x: A) { def x: B }`
+              correctly // Scala 3: warn / err for `class C(x: A) { def x: B }`, and with nilary `def x(): B`
 
             // default getters are defined twice when multiple overloads have defaults.
             // The error for this is deferred until RefChecks.checkDefaultsInOverloaded

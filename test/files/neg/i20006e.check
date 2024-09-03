@@ -1,0 +1,82 @@
+i20006e.scala:12: error: method x is defined twice;
+  the conflicting value x was defined at line 11:22
+  def x: Int = 4 // err
+      ^
+i20006e.scala:17: error: method x is defined twice;
+  the conflicting value x was defined at line 16:28
+    def x: Int = 4 // err
+        ^
+i20006e.scala:22: error: method x is defined twice;
+  the conflicting value x was defined at line 21:24
+  def x: Int = 4 // err
+      ^
+i20006e.scala:27: error: method x is defined twice;
+  the conflicting value x was defined at line 26:30
+    def x: Int = 4 // err
+        ^
+i20006e.scala:32: error: method x is defined twice;
+  the conflicting value x was defined at line 31:14
+  def x: Int = 4 // err
+      ^
+i20006e.scala:44: error: method x is defined twice;
+  the conflicting value x was defined at line 43:22
+  def x(): Int = 4 // err
+      ^
+i20006e.scala:49: error: method x is defined twice;
+  the conflicting value x was defined at line 48:28
+    def x(): Int = 4 // err
+        ^
+i20006e.scala:54: error: method x is defined twice;
+  the conflicting value x was defined at line 53:24
+  def x(): Int = 4 // err
+      ^
+i20006e.scala:59: error: method x is defined twice;
+  the conflicting value x was defined at line 58:30
+    def x(): Int = 4 // err
+        ^
+i20006e.scala:64: error: method x is defined twice;
+  the conflicting value x was defined at line 63:14
+  def x(): Int = 4 // err
+      ^
+i20006e.scala:68: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006e.scala:72: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006e.scala:76: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006e.scala:81: error: x is already defined as value x
+    val x: Int = 4 // err
+        ^
+i20006e.scala:86: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006e.scala:91: error: x is already defined as value x
+    val x: Int = 4 // err
+        ^
+i20006e.scala:96: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006e.scala:4: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 3:10
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C1
+  def x: Int = 4 // warn in Xsource:3
+      ^
+i20006e.scala:8: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 7:28
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C2
+  def x: Int = 4 // warn in Xsource:3
+      ^
+i20006e.scala:36: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 35:10
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=D1
+  def x(): Int = 4 // warn in Xsource:3
+      ^
+i20006e.scala:40: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 39:28
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=D2
+  def x(): Int = 4 // warn in Xsource:3
+      ^
+21 errors

@@ -6,21 +6,9 @@ i20006b.scala:8: error: method hasNext is defined twice;
   the conflicting value hasNext was defined at line 6:7
   override def hasNext: Boolean = first || hasNext(acc) // error
                ^
-i20006b.scala:22: error: method hasNext is defined twice;
-  the conflicting value hasNext was defined at line 19:42
-  override def hasNext: Boolean = first || hasNext(acc) // error
-               ^
-i20006b.scala:36: error: method hasNext is defined twice;
-  the conflicting value hasNext was defined at line 33:42
-  def hasNext: Boolean = first || hasNext(acc) // error
-      ^
 i20006b.scala:48: error: x is already defined as value x
   val x: String = "member" // error
       ^
-i20006b.scala:51: error: variable x is defined twice;
-  the conflicting value x was defined at line 50:9
-  private var x: Int = 42 // error
-              ^
 i20006b.scala:54: error: x is already defined as value x
   private[this] var x: Int = 42 // error
                     ^
@@ -36,11 +24,26 @@ Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=YIterateIterator
   override def next(): T = { // werror
                ^
+i20006b.scala:22: error: Double definition will be detected in Scala 3; the conflicting value hasNext is defined at 19:42
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=YIterateIterator
+  override def hasNext: Boolean = first || hasNext(acc) // error
+               ^
 i20006b.scala:37: error: Double definition will be detected in Scala 3; the conflicting value next is defined at 33:65
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=ZIterateIterator
   def next(): T = { // werror
       ^
+i20006b.scala:36: error: Double definition will be detected in Scala 3; the conflicting value hasNext is defined at 33:42
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=ZIterateIterator
+  def hasNext: Boolean = first || hasNext(acc) // error
+      ^
+i20006b.scala:51: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 50:9
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=D
+  private var x: Int = 42 // error
+              ^
 i20006b.scala:57: error: Double definition will be detected in Scala 3; the conflicting value x is defined at 56:9
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=F

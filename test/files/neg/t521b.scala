@@ -1,3 +1,4 @@
+//> using options -Xsource:3
 package test
 
 import java.io.File
