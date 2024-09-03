@@ -1,6 +1,8 @@
 warning: No phase `refchicks` for ploogin.runsAfter - did you mean refchecks?
 warning: No phase `java` for ploogin.runsBefore - did you mean jvm?
-warning: Dropping phase ploogin, it is not reachable from parser
+warning: Component ploogin dropped due to bad constraint
+warning: Dropping phase ploogin, which is not reachable from parser
+error: No warnings can be incurred under -Werror.
     phase name  id  description
     ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring

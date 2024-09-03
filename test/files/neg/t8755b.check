@@ -1,4 +1,5 @@
-warning: Dropping phase ploogin, it is not reachable from parser
+warning: Dropping phase ploogin, which is not reachable from parser
+error: No warnings can be incurred under -Werror.
     phase name  id  description
     ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring

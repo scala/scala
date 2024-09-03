@@ -1,5 +1,5 @@
 warning: No phase `refchecks` for ploogin.runsBefore
-warning: Dropping phase ploogin, it is not reachable from parser
+warning: Dropping phase ploogin, which is not reachable from parser
 parser -> namer -> packageobjects -> typer -> terminal
 [running phase parser on newSource]
 [running phase namer on newSource]
