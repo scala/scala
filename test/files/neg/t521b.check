@@ -1,5 +1,6 @@
-t521b.scala:15: error: method path is defined twice;
-  the conflicting value path was defined at line 14:30
+t521b.scala:16: error: Double definition will be detected in Scala 3; the conflicting value path is defined at 15:30
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test.ZipArchive.Entry
     override def path = "";
                  ^
 1 error

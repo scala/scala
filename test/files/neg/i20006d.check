@@ -1,0 +1,62 @@
+i20006d.scala:12: error: method x is defined twice;
+  the conflicting value x was defined at line 11:22
+  def x: Int = 4 // err
+      ^
+i20006d.scala:17: error: method x is defined twice;
+  the conflicting value x was defined at line 16:28
+    def x: Int = 4 // err
+        ^
+i20006d.scala:22: error: method x is defined twice;
+  the conflicting value x was defined at line 21:24
+  def x: Int = 4 // err
+      ^
+i20006d.scala:27: error: method x is defined twice;
+  the conflicting value x was defined at line 26:30
+    def x: Int = 4 // err
+        ^
+i20006d.scala:32: error: method x is defined twice;
+  the conflicting value x was defined at line 31:14
+  def x: Int = 4 // err
+      ^
+i20006d.scala:44: error: method x is defined twice;
+  the conflicting value x was defined at line 43:22
+  def x(): Int = 4 // err
+      ^
+i20006d.scala:49: error: method x is defined twice;
+  the conflicting value x was defined at line 48:28
+    def x(): Int = 4 // err
+        ^
+i20006d.scala:54: error: method x is defined twice;
+  the conflicting value x was defined at line 53:24
+  def x(): Int = 4 // err
+      ^
+i20006d.scala:59: error: method x is defined twice;
+  the conflicting value x was defined at line 58:30
+    def x(): Int = 4 // err
+        ^
+i20006d.scala:64: error: method x is defined twice;
+  the conflicting value x was defined at line 63:14
+  def x(): Int = 4 // err
+      ^
+i20006d.scala:68: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006d.scala:72: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006d.scala:76: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006d.scala:81: error: x is already defined as value x
+    val x: Int = 4 // err
+        ^
+i20006d.scala:86: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+i20006d.scala:91: error: x is already defined as value x
+    val x: Int = 4 // err
+        ^
+i20006d.scala:96: error: x is already defined as value x
+  val x: Int = 4 // err
+      ^
+17 errors
