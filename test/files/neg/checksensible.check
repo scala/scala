@@ -1,3 +1,6 @@
+checksensible.scala:29: warning: named argument is deprecated for infix syntax
+  0 == (c = 1)
+          ^
 checksensible.scala:54: warning: symbol literal is deprecated; use Symbol("sym") instead [quickfixable]
   (1 != 'sym)
         ^
@@ -116,5 +119,5 @@ checksensible.scala:117: warning: comparing values of types A and Int using `equ
   def foo[A](a: A) = a.equals(1)
                              ^
 error: No warnings can be incurred under -Werror.
-39 warnings
+40 warnings
 1 error

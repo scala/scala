@@ -1,3 +1,12 @@
+names-defaults.scala:294: warning: named argument is deprecated for infix syntax
+    val one = t f (x = 1)
+                     ^
+names-defaults.scala:393: warning: named argument is deprecated for infix syntax
+    def _1 = (0, 0) copy (_1 = 1)
+                             ^
+names-defaults.scala:394: warning: named argument is deprecated for infix syntax
+    def _2 = (1, 1) copy (_2 = 2)
+                             ^
 names-defaults.scala:359: warning: the parameter name y is deprecated: use b instead
   deprNam1(y = 10, a = 1)
              ^
