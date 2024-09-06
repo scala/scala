@@ -947,7 +947,13 @@ self =>
           }
         }
       }
-      def mkNamed(args: List[Tree]) = if (isExpr) args.map(treeInfo.assignmentToMaybeNamedArg) else args
+      def mkNamed(args: List[Tree]) = if (!isExpr) args else
+        args.map { arg =>
+          val arg1 = treeInfo.assignmentToMaybeNamedArg(arg)
+          if ((arg1 ne arg) && currentRun.isScala3)
+            deprecationWarning(arg.pos.point, "named argument is deprecated for infix syntax", since="2.13.16")
+          arg1
+        }
       var isMultiarg = false
       val arguments = right match {
         case Parens(Nil)               => literalUnit :: Nil

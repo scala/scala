@@ -295,12 +295,12 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
   def result: ClassPath = {
     val cp = computeResult()
     if (settings.Ylogcp.value) {
-      Console print f"Classpath built from ${settings.toConciseString} %n"
-      Console print s"Defaults: ${PathResolver.Defaults}"
-      Console print s"Calculated: $Calculated"
+      Console.print(f"Classpath built from ${settings.toConciseString} %n")
+      Console.print(s"Defaults: ${PathResolver.Defaults}")
+      Console.print(s"Calculated: $Calculated")
 
-      val xs = (Calculated.basis drop 2).flatten.distinct
-      Console print (xs mkLines (s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
+      val xs = Calculated.basis.drop(2).flatten.distinct
+      Console.print(xs.mkLines(s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
     }
     cp
   }
