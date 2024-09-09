@@ -55,9 +55,8 @@ class DirectCompiler(val runner: Runner) {
 
 
   /** Massage args to merge plugins and fix paths.
-   *  Plugin path can be relative to test root, or cwd is out.
-   *  While we're at it, mix in the baseline options, too.
-   *  That's how ant passes in the plugins dir.
+   *  Plugin path can be relative to test root, or cwd (".") means use output dir and copy scalac-plugin.xml there.
+   *  Mix in the baseline options from the suiteRunner (scalacOpts, scalacExtraArgs).
    */
   private def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): Seq[String] = {
     val dir = runner.suiteRunner.pathSettings.testRoot
@@ -87,6 +86,11 @@ class DirectCompiler(val runner: Runner) {
 
     runner.suiteRunner.scalacExtraArgs ++ filteredOpts ++ others ++ Xplugin
   }
+  private def updatePluginPath(args: List[String]): Seq[String] = {
+    import runner.testInfo.testFile
+    val srcDir = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
+    updatePluginPath(args, AbstractFile.getDirectory(runner.outDir), AbstractFile.getDirectory(srcDir))
+  }
 
   def compile(opts0: List[String], sources: List[File]): TestState = {
     import runner.{sources => _, _}
@@ -104,8 +108,7 @@ class DirectCompiler(val runner: Runner) {
 
     val testSettings = new TestSettings(FileManager.joinPaths(classPath), s => parseArgErrors += s)
     val logWriter    = new FileWriter(logFile)
-    val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
-    val opts         = updatePluginPath(opts0, AbstractFile.getDirectory(outDir), AbstractFile.getDirectory(srcDir))
+    val opts         = updatePluginPath(opts0)
     val command      = new CompilerCommand(opts.toList, testSettings)
     val reporter     = ExtConsoleReporter(testSettings, new PrintWriter(logWriter, true))
     val global       = newGlobal(testSettings, reporter)

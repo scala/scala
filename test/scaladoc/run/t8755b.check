@@ -1,0 +1,10 @@
+warning: No phase `refchecks` for ploogin.runsAfter
+warning: No phase `jvm` for ploogin.runsBefore
+parser -> namer -> packageobjects -> typer -> ploogin -> terminal
+[running phase parser on newSource]
+[running phase namer on newSource]
+[running phase packageobjects on newSource]
+[running phase typer on newSource]
+[running phase ploogin on newSource]
+running plugin
+Done.
