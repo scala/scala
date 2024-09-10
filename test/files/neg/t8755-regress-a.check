@@ -1,0 +1,28 @@
+    phase name  id  description
+    ----------  --  -----------
+        parser   1  parse source into ASTs, perform simple desugaring
+         namer   2  resolve names, attach symbols to named trees
+packageobjects   3  load package objects
+         typer   4  the meat and potatoes: type the trees
+            C8   0  C8 makes C7 reachable
+superaccessors   6  add super accessors in traits and nested classes
+            C7   0  C7 has only a before constraint
+    extmethods   8  add extension methods for inline classes
+       pickler   9  serialize symbol tables
+     refchecks  10  reference/override checking, translate nested objects
+        patmat  11  translate match expressions
+       uncurry  12  uncurry, translate function values to anonymous classes
+        fields  13  synthesize accessors and fields, add bitmaps for lazy vals
+     tailcalls  14  replace tail calls by jumps
+    specialize  15  @specialized-driven class and method specialization
+ explicitouter  16  this refs to outer pointers
+       erasure  17  erase types, add interfaces for traits
+   posterasure  18  clean up erased inline classes
+    lambdalift  19  move nested functions to top level
+  constructors  20  move field definitions into constructors
+       flatten  21  eliminate inner classes
+         mixin  22  mixin composition
+       cleanup  23  platform-specific cleanups, generate reflective calls
+    delambdafy  24  remove lambdas
+           jvm  25  generate JVM bytecode
+      terminal  26  the last phase during a compilation run

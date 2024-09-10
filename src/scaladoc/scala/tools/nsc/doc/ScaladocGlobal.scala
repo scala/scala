@@ -54,8 +54,6 @@ class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(
     phasesSet += analyzer.namerFactory
     phasesSet += analyzer.packageObjects
     phasesSet += analyzer.typerFactory
-    phasesSet += patmatSentinel
-    phasesSet += erasureSentinel
     phasesSet += terminal
   }
 
@@ -64,27 +62,6 @@ class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(
       lazy val global: self.type = self
       override def platformPhases = Nil // used by computePlatformPhases
     }
-
-  // Placeholders for plugins who wish to declare runsBefore patmat or erasure.
-  // A bit deceptive for plugins that run after them, as scaladoc ought to -Ystop-before:patmat
-  lazy val patmatSentinel: SubComponent = new { val global = self } with SubComponent {
-    val phaseName = "patmat"
-    val runsAfter = "typer" :: Nil
-    val runsRightAfter = None
-    def newPhase(prev: Phase): Phase = new Phase(prev) {
-      val name = phaseName
-      def run() = ()
-    }
-  }
-  lazy val erasureSentinel: SubComponent = new { val global = self } with SubComponent {
-    val phaseName = "erasure"
-    val runsAfter = "patmat" :: Nil
-    val runsRightAfter = None
-    def newPhase(prev: Phase): Phase = new Phase(prev) {
-      val name = phaseName
-      def run() = ()
-    }
-  }
 
   override def createJavadoc = if (settings.docNoJavaComments.value) false else true
 

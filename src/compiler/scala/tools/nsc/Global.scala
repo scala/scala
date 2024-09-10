@@ -41,6 +41,7 @@ import scala.tools.nsc.transform.async.AsyncPhase
 import scala.tools.nsc.transform.patmat.PatternMatching
 import scala.tools.nsc.typechecker._
 import scala.tools.nsc.util.ClassPath
+import scala.util.chaining._
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
@@ -749,6 +750,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     computePlatformPhases()             // backend/Platform.scala
     computePluginPhases()               // plugins/Plugins.scala
     cullPhases(computePhaseAssembly())  // PhaseAssembly.scala
+      .tap { _ => if (settings.fatalWarnings.value && reporter.hasWarnings) runReporting.summarizeErrors() }
   }
 
   /* The phase descriptor list. Components that are phase factories. */

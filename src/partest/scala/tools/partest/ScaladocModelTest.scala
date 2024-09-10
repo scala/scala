@@ -12,13 +12,13 @@
 
 package scala.tools.partest
 
-import scala.sys.process.{Parser => CommandLineParser}
 import scala.tools.nsc._
+import scala.tools.nsc.doc.{DocFactory, Universe}
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
-import scala.tools.nsc.doc.{DocFactory, Universe}
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.util.chaining._
 
 /** A class for testing scaladoc model generation
  *   - you need to specify the code in the `code` method
@@ -87,20 +87,21 @@ abstract class ScaladocModelTest extends DirectTest {
 
   private[this] var docSettings: doc.Settings = null
 
+  // custom settings, silencing "model contains X documentable templates"
+  override def newSettings(): doc.Settings = new doc.Settings(_ => ()).tap(_.scaladocQuietRun = true)
+  override def newSettings(args: List[String]): doc.Settings = super.newSettings(args).asInstanceOf[doc.Settings]
+  override def settings: doc.Settings = newSettings(tokenize(s"$extraSettings $scaladocSettings"))
+
   // create a new scaladoc compiler
   def newDocFactory: DocFactory = {
-    docSettings = new doc.Settings(_ => ())
-    docSettings.scaladocQuietRun = true // yaay, no more "model contains X documentable templates"!
-    val args = extraSettings + " " + scaladocSettings
-    new ScalaDoc.Command((CommandLineParser tokenize (args)), docSettings) // side-effecting, I think
-    val docFact = new DocFactory(new ConsoleReporter(docSettings), docSettings)
-    docFact
+    docSettings = settings
+    new DocFactory(new ConsoleReporter(docSettings), docSettings)
   }
 
   // compile with scaladoc and output the result
   def model: Option[Universe] = newDocFactory.makeUniverse(Right(code))
 
-  // finally, enable easy navigation inside the entities
+  // enable easy navigation inside the entities
   object access {
 
     implicit class TemplateAccess(tpl: DocTemplateEntity) {
