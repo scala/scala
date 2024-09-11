@@ -82,8 +82,7 @@ class PhaseAssemblyTest {
     val components = names.foldLeft(parserAndTerminal(global)) { (comps, nm) =>
       component(global, nm, rra(nm), ra(comps, nm), runsBefore = beforeTerminal) :: comps
     }
-    val graph = DependencyGraph(components)
-    assertThrows[FatalError](graph.compilerPhaseList(), _ == "Phases kerfuffle and konflikt both immediately follow phooey")
+    assertThrows[FatalError](DependencyGraph(components), _ == "Phases kerfuffle and konflikt both immediately follow phooey")
   }
   @Test def `trivial cycle`: Unit = {
     val settings = new Settings
@@ -100,8 +99,7 @@ class PhaseAssemblyTest {
     val components = names.foldLeft(parserAndTerminal(global)) { (comps, nm) =>
       component(global, nm, rra(nm), ra(comps, nm), runsBefore = beforeTerminal) :: comps
     }
-    val graph = DependencyGraph(components)
-    assertThrows[FatalError](graph.compilerPhaseList(), _ == "Phases form a cycle: phooey -> kerfuffle -> konflikt -> phooey")
+    assertThrows[FatalError](DependencyGraph(components), _ == "Phases form a cycle: phooey -> kerfuffle -> konflikt -> phooey")
   }
   @Test def `run before tightly bound phases`: Unit = {
     val settings = new Settings

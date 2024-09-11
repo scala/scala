@@ -33,7 +33,8 @@ trait PhaseAssembly {
       phasesSet.add(terminal)
       reporter.warning(NoPosition, "Added default terminal phase")
     }
-    val graph = DependencyGraph(phasesSet)
+    val warn = !settings.isScaladoc || settings.isDebug || settings.showPhases.value
+    val graph = DependencyGraph(phasesSet, warn)
     for (n <- settings.genPhaseGraph.valueSetByUser; d <- settings.outputDirs.getSingleOutput if !d.isVirtual)
       DependencyGraph.graphToDotFile(graph, Path(d.file) / File(s"$n.dot"))
     graph.compilerPhaseList().tap(_ => graph.warnings.foreach(msg => reporter.warning(NoPosition, msg)))
@@ -84,8 +85,10 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
     }
   }
 
-  // input must be acyclic and only one FollowsNow edge is allowed between a pair of vertices
-  private def validate(): Unit = {
+  /** Find unreachable vertices.
+   *  Input must be acyclic and a vertex can have only one outgoing FollowsNow edge.
+   */
+  private def validate(warn: Boolean): Set[String] = if (order == 1) Set.empty else {
     def checkFollowsNow(v: Int): Unit =
       adjacency(v).foldLeft(-1) { (w, e) =>
         if (e.weight != FollowsNow) w
@@ -122,6 +125,10 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
       }
     }
     walk()
+    names.iterator.zipWithIndex.collect { case (n, i) if !seen(i) =>
+      if (warn) warning(s"Dropping phase ${names(i)}, it is not reachable from $start")
+      n
+    }.toSet
   }
 
   def compilerPhaseList(): List[SubComponent] = if (order == 1) List(components(start)) else {
@@ -210,7 +217,6 @@ class DependencyGraph(order: Int, start: String, val components: Map[String, Sub
         }
       }
     }
-    validate()
     relax()
     traverse()
   }
@@ -229,34 +235,41 @@ object DependencyGraph {
    *  A component must be declared as "initial".
    *  If no phase is "initial" but a phase is named "parser", it is taken as initial.
    *  If no phase is "terminal" but a phase is named "terminal", it is taken as terminal.
-   *  Empty constraints are ignored.
+   *  Warnings are issued for invalid constraints (runsAfter / runsRightAfter / runsBefore) if `warn` is true.
+   *  Components without a valid "runsAfter" or "runsRightAfter" are dropped with an "unreachable" warning.
    */
-  def apply(phases: Iterable[SubComponent]): DependencyGraph = {
+  def apply(phases: Iterable[SubComponent], warn: Boolean = true): DependencyGraph = {
     val start = phases.find(_.initial)
       .orElse(phases.find(_.phaseName == Parser))
       .getOrElse(throw new AssertionError("Missing initial component"))
     val end = phases.find(_.terminal)
       .orElse(phases.find(_.phaseName == Terminal))
       .getOrElse(throw new AssertionError("Missing terminal component"))
-    new DependencyGraph(phases.size, start.phaseName, phases.map(p => p.phaseName -> p).toMap).tap { graph =>
-      for (p <- phases) {
-        require(p.phaseName.nonEmpty, "Phase name must be non-empty.")
-        def checkConstraint(name: String, constraint: String): Boolean =
-          graph.components.contains(name).tap(ok => if (!ok) graph.warning(s"No phase `$name` for ${p.phaseName}.$constraint"))
-        for (after <- p.runsRightAfter if after.nonEmpty && checkConstraint(after, "runsRightAfter"))
-          graph.addEdge(after, p.phaseName, FollowsNow)
-        for (after <- p.runsAfter if after.nonEmpty && !p.runsRightAfter.contains(after) && checkConstraint(after, "runsAfter"))
-          graph.addEdge(after, p.phaseName, Follows)
-        for (before <- p.runsBefore if before.nonEmpty && checkConstraint(before, "runsBefore"))
-          graph.addEdge(p.phaseName, before, Follows)
-        if (p != start && p != end)
-          if (p.runsRightAfter.forall(_.isEmpty) && p.runsAfter.forall(_.isEmpty))
-            graph.addEdge(start.phaseName, p.phaseName, Follows)
-        if (p != end || p == end && p == start)
-          if (p.runsBefore.forall(_.isEmpty))
-            graph.addEdge(p.phaseName, end.phaseName, Follows)
+    val graph = new DependencyGraph(phases.size, start.phaseName, phases.map(p => p.phaseName -> p).toMap)
+    def phaseTypo(name: String) =
+      if (graph.components.contains(name)) ""
+      else graph.components.keysIterator.filter(util.EditDistance.levenshtein(name, _) < 3).toList match {
+        case Nil => ""
+        case close => s" - did you mean ${util.StringUtil.oxford(close, "or")}?"
       }
+    for (p <- phases) {
+      require(p.phaseName.nonEmpty, "Phase name must be non-empty.")
+      def checkConstraint(name: String, constraint: String): Boolean =
+        graph.components.contains(name).tap(ok => if (!ok && warn) graph.warning(s"No phase `$name` for ${p.phaseName}.$constraint${phaseTypo(name)}"))
+      for (after <- p.runsRightAfter if after.nonEmpty && checkConstraint(after, "runsRightAfter"))
+        graph.addEdge(after, p.phaseName, FollowsNow)
+      for (after <- p.runsAfter if after.nonEmpty && !p.runsRightAfter.contains(after) && checkConstraint(after, "runsAfter"))
+        graph.addEdge(after, p.phaseName, Follows)
+      for (before <- p.runsBefore if before.nonEmpty && checkConstraint(before, "runsBefore"))
+        graph.addEdge(p.phaseName, before, Follows)
+      // Add "runsBefore terminal" to phases without (or with invalid) runsBefore
+      if (p != end || p == end && p == start)
+        if (!p.runsBefore.exists(graph.components.contains))
+          graph.addEdge(p.phaseName, end.phaseName, Follows)
     }
+    val unreachable = graph.validate(warn)
+    if (unreachable.isEmpty) graph
+    else apply(phases.filterNot(p => unreachable(p.phaseName)), warn).tap(res => graph.warnings.foreach(res.warning))
   }
 
   /** Emit a graphviz dot file for the graph.
