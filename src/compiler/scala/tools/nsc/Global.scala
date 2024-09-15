@@ -1226,10 +1226,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
-    val symSource = new mutable.AnyRefMap[Symbol, AbstractFile]
+    val symSource = new mutable.HashMap[Symbol, AbstractFile]
 
     /** A map from compiled top-level symbols to their picklers */
-    val symData = new mutable.AnyRefMap[Symbol, PickleBuffer]
+    val symData = new mutable.HashMap[Symbol, PickleBuffer]
 
     private var phasec: Int  = 0   // phases completed
     private var unitc: Int   = 0   // units completed this phase

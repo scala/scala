@@ -76,7 +76,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
   // TOOD: figure out how to make the root-level async built-in macro sufficiently configurable:
   //       replace the ExecutionContext implicit arg with an AsyncContext implicit that also specifies the type of the Future/Awaitable/Node/...?
   final class AsyncTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    private lazy val liftableMap = new mutable.AnyRefMap[Symbol, (Symbol, List[Tree])]()
+    private lazy val liftableMap = new mutable.HashMap[Symbol, (Symbol, List[Tree])]()
 
     override def transformUnit(unit: CompilationUnit): Unit = {
       if (settings.async.value) {

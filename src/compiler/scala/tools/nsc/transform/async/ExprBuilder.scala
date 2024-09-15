@@ -396,8 +396,8 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     val blockBuilder = new AsyncBlockBuilder(stats, expr, startState, endState, startToEndUpdateStyle = StateTransitionStyle.Update)
 
     new AsyncBlock {
-      private val switchIds = mutable.AnyRefMap[Integer, Integer]()
-      private val emptyReplacements = mutable.AnyRefMap[Integer, Integer]()
+      private val switchIds = mutable.HashMap[Integer, Integer]()
+      private val emptyReplacements = mutable.HashMap[Integer, Integer]()
       private def switchIdOf(state: Integer) = switchIds(emptyReplacements.getOrElse(state, state))
 
       // render with http://graphviz.it/#/new

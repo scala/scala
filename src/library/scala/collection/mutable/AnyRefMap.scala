@@ -41,6 +41,7 @@ import scala.language.implicitConversions
  *  rapidly as 2^30^ is approached.
  *
  */
+@deprecated("Use `scala.collection.mutable.HashMap` instead for better performance.", since = "2.13.0")
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
@@ -517,6 +518,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   override protected[this] def stringPrefix = "AnyRefMap"
 }
 
+@deprecated("Use `scala.collection.mutable.HashMap` instead for better performance.", since = "2.13.0")
 object AnyRefMap {
   private final val IndexMask  = 0x3FFFFFFF
   private final val MissingBit = 0x80000000
