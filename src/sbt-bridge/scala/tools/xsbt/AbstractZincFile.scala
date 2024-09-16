@@ -16,7 +16,6 @@ package scala.tools
 package xsbt
 
 import xsbti.{ PathBasedFile, VirtualFile }
-import scala.reflect.io.Streamable
 
 private trait AbstractZincFile extends scala.reflect.io.AbstractFile {
   def underlying: VirtualFile
@@ -29,7 +28,22 @@ private final class ZincPlainFile private[xsbt] (val underlying: PathBasedFile)
 private final class ZincVirtualFile private[xsbt] (val underlying: VirtualFile)
     extends scala.reflect.io.VirtualFile(underlying.name, underlying.id)
     with AbstractZincFile {
-  Streamable.closing(output)(_.write(Streamable.bytes(underlying.input))) // fill in the content
+  val buffer = new Array[Byte](4096)
+
+  val in = underlying.input()
+  val output0 = output
+
+  try {
+    var readBytes = in.read(buffer)
+
+    while (readBytes != -1) {
+      output0.write(buffer, 0, readBytes)
+      readBytes = in.read(buffer)
+    }
+  } finally {
+    in.close()
+    output0.close()
+  }
 }
 
 private object AbstractZincFile {
