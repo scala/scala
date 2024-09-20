@@ -193,17 +193,16 @@ trait CompilerControl { self: Global =>
   def askToDoFirst(source: SourceFile) =
     postWorkItem(new AskToDoFirstItem(source))
 
-  /** If source is not yet loaded, loads it, and starts a new run, otherwise
-   * continues with current pass.
-   * Waits until source is fully type checked and returns body in response.
-   * @param source     The source file that needs to be fully typed.
-   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If
-                       the file is already loaded, this flag is ignored.
-   * @param response   The response, which is set to the fully attributed tree of `source`.
-   *                   If the unit corresponding to `source` has been removed in the meantime
-   *                   the a NoSuchUnitError is raised in the response.
+  /** If source is not yet loaded, loads it, and starts a new run, otherwise continues with current pass.
+   *  Waits until source is fully type checked and returns body in response.
+   *  @param source     The source file that needs to be fully typed.
+   *  @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If
+   *                    the file is already loaded, this flag is ignored.
+   *  @param response   The response, which is set to the fully attributed tree of `source`.
+   *                    If the unit corresponding to `source` has been removed in the meantime
+   *                    the a NoSuchUnitError is raised in the response.
    */
-  def askLoadedTyped(source:SourceFile, keepLoaded: Boolean, response: Response[Tree]): Unit =
+  def askLoadedTyped(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]): Unit =
     postWorkItem(new AskLoadedTypedItem(source, keepLoaded, response))
 
   final def askLoadedTyped(source: SourceFile, response: Response[Tree]): Unit =
@@ -260,15 +259,14 @@ trait CompilerControl { self: Global =>
     if (self.onCompilerThread) {
       try   { r set op() }
       catch { case exc: Throwable => r raise exc }
-      r
     } else {
       val ir = scheduler askDoQuickly op
       ir onComplete {
         case Left(result) => r set result
         case Right(exc)   => r raise exc
       }
-      r
     }
+    r
   }
 
   def onCompilerThread = Thread.currentThread == compileRunner
@@ -327,7 +325,7 @@ trait CompilerControl { self: Global =>
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
-    override def toString = "reload "+sources
+    override def toString = s"reload $sources"
 
     def raiseMissing() =
       response raise new MissingResponse

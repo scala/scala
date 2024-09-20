@@ -191,4 +191,3 @@ trait ContextTrees { self: Global =>
     }
   }
 }
-

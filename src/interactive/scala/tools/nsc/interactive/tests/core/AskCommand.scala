@@ -18,27 +18,23 @@ import scala.annotation.unused
 import scala.tools.nsc.interactive.Response
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.SourceFile
+import scala.util.chaining._
 
 /**
  * A trait for defining commands that can be queried to the
  * presentation compiler.
- * */
+ */
 trait AskCommand {
 
   /** presentation compiler's instance. */
   protected val compiler: Global
 
-  /**
-   * Presentation compiler's `askXXX` actions work by doing side-effects
-   * on a `Response` instance passed as an argument during the `askXXX`
-   * call.
-   * The defined method `ask` is meant to encapsulate this behavior.
-   * */
-  protected def ask[T](op: Response[T] => Unit): Response[T] = {
-    val r = new Response[T]
-    op(r)
-    r
-  }
+  /** Presentation compiler's `ask` actions work by doing side-effects
+   *  on a `Response` instance passed as an argument during the `ask` call.
+   *  The defined method `ask` is meant to encapsulate this behavior.
+   */
+  protected def ask[T](op: Response[T] => Unit): Response[T] =
+    new Response[T]().tap(op)
 }
 
 /** Ask the presentation compiler to shut-down. */
@@ -53,17 +49,22 @@ trait AskParse extends AskCommand {
   /** `sources` need to be entirely parsed before running the test
    *  (else commands such as `AskTypeCompletionAt` may fail simply because
    *  the source's AST is not yet loaded).
+   *
+   *  Submit each parse job and get the response sequentially;
+   *  otherwise, parser progress update will run the next job.
    */
-  def askParse(sources: Seq[SourceFile]): Unit = {
-    val responses = sources map (askParse(_))
-    responses.foreach(_.get) // force source files parsing
-  }
+  def askParse(sources: Seq[SourceFile]): Unit =
+    sources.map(askParse(_)).foreach(_.get)
 
-  private def askParse(src: SourceFile, keepLoaded: Boolean = true): Response[Tree] = {
+  def askParse2(sources: Seq[SourceFile]): Unit =
+    for (source <- sources) {
+      val _ = askParse(source).get
+    }
+
+  private def askParse(src: SourceFile, keepLoaded: Boolean = true): Response[Tree] =
     ask {
       compiler.askParsedEntered(src, keepLoaded, _)
     }
-  }
 }
 
 /** Ask the presentation compiler to reload a sequence of `sources` */

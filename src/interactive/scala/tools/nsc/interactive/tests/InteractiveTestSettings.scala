@@ -16,10 +16,8 @@ package tests
 
 import java.io.File.pathSeparatorChar
 import java.io.File.separatorChar
-import scala.tools.nsc.interactive.tests.core.PresentationCompilerInstance
 import scala.tools.nsc.io.Path
-import core.Reporter
-import core.TestSettings
+import core.{PresentationCompilerInstance, Reporter, TestSettings}
 
 trait InteractiveTestSettings extends TestSettings with PresentationCompilerInstance {
 
@@ -53,7 +51,7 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
     }
 
     // Make the --sourcepath path provided in the .flags file (if any) relative to the test's base directory
-    if(settings.sourcepath.isSetByUser)
+    if (settings.sourcepath.isSetByUser)
       settings.sourcepath.value = (baseDir / Path(settings.sourcepath.value)).path
 
     adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.sourcepath)

@@ -25,9 +25,9 @@ import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.tools.nsc.symtab._
+import scala.tools.nsc.symtab.BrowsingLoaders
 import scala.tools.nsc.typechecker.{Analyzer, Typers}
-import scala.util.control.Breaks._
+//import scala.util.chaining._
 import scala.util.control.ControlThrowable
 
 /**
@@ -35,15 +35,14 @@ import scala.util.control.ControlThrowable
  * does not clear the comments table at every new typer run (those
  * being many and close between in this context).
  */
-
 trait CommentPreservingTypers extends Typers {
   self: Analyzer =>
 
-  override def resetDocComments() = {}
+  override def resetDocComments() = ()
 }
 
 trait InteractiveAnalyzer extends Analyzer {
-  val global : Global
+  val global: Global
   import global._
 
   override def newTyper(context: Context): InteractiveTyper = new Typer(context) with InteractiveTyper
@@ -155,15 +154,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
-    if (debugIDE) println("[%s] %s".format(projectName, msg))
+    if (debugIDE) println(s"[$projectName] $msg")
 
   /** Inform with msg only when verboseIDE is true. */
   @inline final def informIDE(msg: => String) =
-    if (verboseIDE) println("[%s][%s]".format(projectName, msg))
+    if (verboseIDE) println(s"[$projectName][$msg]")
 
   // don't keep the original owner in presentation compiler runs
   // (the map will grow indefinitely, and the only use case is the backend)
-  override def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = { }
+  override def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = ()
 
   override protected def synchronizeNames = true
 
@@ -209,9 +208,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** A map that associates with each abstract file the set of responses that ware waiting
    *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var getParsedEnteredResponses = newResponseMap
+  protected val getParsedEnteredResponses = newResponseMap
 
-  private def cleanResponses(rmap: ResponseMap): Unit = {
+  private def cleanResponses(rmap: ResponseMap): Unit =
     for ((source, rs) <- rmap.toList) {
       for (r <- rs) {
         if (getUnit(source).isEmpty)
@@ -222,7 +221,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       if (rmap(source).isEmpty)
         rmap -= source
     }
-  }
 
   override lazy val analyzer = new {
     val global: Global.this.type = Global.this
@@ -301,6 +299,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   def isOutOfDate: Boolean = outOfDate
 
   def demandNewCompilerRun() = {
+    //if (!lastWasReload) allSources.foreach(getUnit(_).foreach(reset(_)))
     if (outOfDate) throw new FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
@@ -320,12 +319,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Called from parser, which signals hereby that a method definition has been parsed.
    */
-  override def signalParseProgress(pos: Position): Unit = {
+  override def signalParseProgress(pos: Position): Unit =
     // We only want to be interruptible when running on the PC thread.
-    if(onCompilerThread) {
+    if (onCompilerThread)
       checkForMoreWork(pos)
-    }
-  }
 
   /** Called from typechecker, which signals hereby that a node has been completely typechecked.
    *  If the node includes unit.targetPos, abandons run and returns newly attributed tree.
@@ -351,17 +348,17 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
         throw new TyperResult(located)
       }
-      else {
+      else
         try {
+          debugLog(s"Typer signal done, checking for more work...")
           checkForMoreWork(old.pos)
         } catch {
           case ex: ValidateException => // Ignore, this will have been reported elsewhere
-            debugLog("validate exception caught: "+ex)
+            debugLog(s"validate exception caught: $ex")
           case ex: Throwable =>
             log.flush()
             throw ex
         }
-      }
     }
   }
 
@@ -383,7 +380,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Called from typechecker every time a top-level class or object is entered.
    */
-  override def registerTopLevelSym(sym: Symbol): Unit = { currentTopLevelSyms += sym }
+  override def registerTopLevelSym(sym: Symbol): Unit = currentTopLevelSyms.addOne(sym)
 
   protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
     val global: Global.this.type
@@ -428,101 +425,99 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  @param pos   The position of the tree if polling while typechecking, NoPosition otherwise
    *
    */
-  private[interactive] def pollForWork(pos: Position): Unit = {
-    var loop: Boolean = true
-    while (loop) {
-      breakable{
-        loop = false
-        // TODO refactor to eliminate breakable/break/return?
-        (if (!interruptsEnabled) return): @nowarn("cat=lint-nonlocal-return")
-        if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
-          Thread.`yield`()
+  @annotation.tailrec
+  final private[interactive] def pollForWork(pos: Position): Unit = {
+    if (!interruptsEnabled)
+      return
+    if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
+      Thread.`yield`()
 
-        def nodeWithWork(): Option[WorkEvent] =
-          if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
-          else None
+    def nodeWithWork(): Option[WorkEvent] =
+      if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
+      else None
 
-        nodesSeen += 1
-        logreplay("atnode", nodeWithWork()) match {
-          case Some(WorkEvent(id, _)) =>
-            debugLog("some work at node "+id+" current = "+nodesSeen)
-          //        assert(id >= nodesSeen)
-          moreWorkAtNode = id
-          case None =>
+    nodesSeen += 1
+    logreplay("atnode", nodeWithWork()) match {
+      case Some(WorkEvent(id, _)) =>
+        debugLog(s"some work at node $id current = $nodesSeen")
+      //        assert(id >= nodesSeen)
+        moreWorkAtNode = id
+      case None =>
+    }
+
+    if (nodesSeen < moreWorkAtNode)
+      return
+
+    logreplay("asked", scheduler.pollInterrupt()) match {
+      case Some(ir) =>
+        try {
+          interruptsEnabled = false
+          debugLog(s"ask started$timeStep")
+          ir.execute()
+        } finally {
+          debugLog(s"ask finished$timeStep")
+          interruptsEnabled = true
         }
+        pollForWork(pos)
+      case _ =>
+        if (logreplay("cancelled", pendingResponse.isCancelled))
+          throw CancelException
 
-        if (nodesSeen >= moreWorkAtNode) {
-
-          logreplay("asked", scheduler.pollInterrupt()) match {
-            case Some(ir) =>
-              try {
-                interruptsEnabled = false
-                debugLog("ask started"+timeStep)
-                ir.execute()
-              } finally {
-                debugLog("ask finished"+timeStep)
-                interruptsEnabled = true
-              }
-            loop = true; break()
-            case _ =>
-          }
-
-          if (logreplay("cancelled", pendingResponse.isCancelled)) {
-            throw CancelException
-          }
-
-          logreplay("exception thrown", scheduler.pollThrowable()) match {
-            case Some(ex: FreshRunReq) =>
-              newTyperRun()
+        logreplay("exception thrown", scheduler.pollThrowable()) match {
+          case Some(ex: FreshRunReq) =>
+            newTyperRun()
             minRunId = currentRunId
             demandNewCompilerRun()
-
-            case Some(ShutdownReq) =>
-              scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
-                val units = scheduler.dequeueAll {
-                  case item: WorkItem => Some(item.raiseMissing())
-                  case _ => Some(())
-                }
-
-                // don't forget to service interrupt requests
-                scheduler.dequeueAllInterrupts(_.execute())
-
-                debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
-                debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
-                         .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
-                checkNoResponsesOutstanding()
-
-                log.flush()
-                scheduler = new NoWorkScheduler
-                throw ShutdownReq
+          case Some(ShutdownReq) =>
+            scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
+              val units = scheduler.dequeueAll {
+                case item: WorkItem => Some(item.raiseMissing())
+                case _ => Some(())
               }
 
-            case Some(ex: Throwable) => log.flush(); throw ex
-            case _ =>
-          }
+              // don't forget to service interrupt requests
+              scheduler.dequeueAllInterrupts(_.execute())
 
-          lastWasReload = false
+              debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
+              debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
+                       .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
+              checkNoResponsesOutstanding()
 
-          logreplay("workitem", scheduler.nextWorkItem()) match {
-            case Some(action) =>
-              try {
-                debugLog("picked up work item at "+pos+": "+action+timeStep)
-                action()
-                debugLog("done with work item: "+action)
-              } finally {
-                debugLog("quitting work item: "+action+timeStep)
-              }
-            case None =>
-          }
+              log.flush()
+              scheduler = new NoWorkScheduler
+              throw ShutdownReq
+            }
+          case Some(ex: Throwable) =>
+            log.flush()
+            throw ex
+          case _ =>
         }
-      }
-    }
+
+        lastWasReload = false
+
+        logreplay("workitem", scheduler.nextWorkItem()) match {
+          case Some(action) =>
+            try {
+              debugLog(s"picked up work item at $pos: $action$timeStep")
+              action()
+              debugLog(s"done with work item: $action")
+            } finally {
+              debugLog(s"quitting work item: $action$timeStep")
+            }
+          case None =>
+        }
+      // end default
+    } // end match
   }
 
   protected def checkForMoreWork(pos: Position): Unit = {
     val typerRun = currentTyperRun
     pollForWork(pos)
-    if (typerRun != currentTyperRun) demandNewCompilerRun()
+    if (typerRun != currentTyperRun) {
+      debugLog(s"Checking for work has created a new run, demanding a new run while is${
+        if (isOutOfDate) "" else " not"} out of date...")
+      demandNewCompilerRun()
+    }
   }
 
   // ----------------- The Background Runner Thread -----------------------
@@ -537,36 +532,33 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
    */
   @elidable(elidable.WARNING)
-  override def assertCorrectThread(): Unit = {
-    assert(initializing || anyThread || onCompilerThread,
-        "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
-        " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
-  }
+  override def assertCorrectThread(): Unit = assert(initializing || anyThread || onCompilerThread,
+    s"Race condition detected! You are running a presentation compiler method off the PC thread. [phase: $globalPhase]"
+  )
 
   /** Create a new presentation compiler runner.
    */
   private def newRunnerThread(): Thread = {
     threadId += 1
-    compileRunner = new PresentationCompilerThread(this, projectName)
-    compileRunner.setDaemon(true)
-    compileRunner
+    PresentationCompilerThread(this, projectName)
   }
 
   private def ensureUpToDate(unit: RichCompilationUnit) =
     if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
 
   /** Compile all loaded source files in the order given by `allSources`.
+   *
+   *  Invoked by the PC thread task. Recurses if there are waiting responses.
    */
   private[interactive] final def backgroundCompile(): Unit = {
     informIDE("Starting new presentation compiler type checking pass")
     reporter.reset()
 
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
-    allSources = allSources filter (s => unitOfFile contains (s.file))
+    allSources = allSources.filter(s => unitOfFile.contains(s.file))
 
     // ensure all loaded units are parsed
     for (s <- allSources; unit <- getUnit(s)) {
-      // checkForMoreWork(NoPosition)  // disabled, as any work done here would be in an inconsistent state
       ensureUpToDate(unit)
       parseAndEnter(unit)
       serviceParsedEntered()
@@ -577,18 +569,19 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       val limit = System.currentTimeMillis() + afterTypeDelay
       while (System.currentTimeMillis() < limit) {
         Thread.sleep(SleepTime)
+        debugLog(s"checkForMoreWork after sleeping")
         checkForMoreWork(NoPosition)
       }
     }
 
     // ensure all loaded units are typechecked
-    for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
+    for (s <- allSources if !ignoredFiles(s.file); unit <- getUnit(s))
       try {
         if (!unit.isUpToDate)
           if (unit.problems.isEmpty || !settings.YpresentationStrict.value)
             typeCheck(unit)
-          else debugLog("%s has syntax errors. Skipped typechecking".format(unit))
-        else debugLog("already up to date: "+unit)
+          else debugLog(s"$unit has syntax errors. Skipped typechecking")
+        else debugLog(s"already up to date: $unit")
         for (r <- waitLoadedTypeResponses(unit.source))
           r set unit.body
         serviceParsedEntered()
@@ -599,18 +592,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         case ex: Throwable =>
           println("[%s]: exception during background compile: ".format(unit.source) + ex)
           ex.printStackTrace()
-          for (r <- waitLoadedTypeResponses(unit.source)) {
+          for (r <- waitLoadedTypeResponses(unit.source))
             r.raise(ex)
-          }
           serviceParsedEntered()
-
           lastException = Some(ex)
           ignoredFiles += unit.source.file
           println("[%s] marking unit as crashed (crashedFiles: %s)".format(unit, ignoredFiles))
-
-          reporter.error(unit.body.pos, "Presentation compiler crashed while type checking this file: %s".format(ex.toString()))
+          reporter.error(unit.body.pos, s"Presentation compiler crashed while type checking this file: $ex")
       }
-    }
 
     // move units removable after this run to the "to-be-removed" buffer
     toBeRemoved.synchronized {
@@ -624,6 +613,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
     // wind down
     if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty) {
+      debugLog("Continue background compilation for waiting responses...")
       // need another cycle to treat those
       newTyperRun()
       backgroundCompile()
@@ -662,7 +652,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** Parse unit and create a name index, unless this has already been done before */
   private def parseAndEnter(unit: RichCompilationUnit): Unit =
     if (unit.status == NotLoaded) {
-      debugLog("parsing: "+unit)
+      debugLog(s"parsing: $unit")
       runReporting.clearSuppressionsComplete(unit.source)
       currentTyperRun.compileLate(unit)
       if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
@@ -700,9 +690,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Move list of files to front of allSources */
-  def moveToFront(fs: List[SourceFile]): Unit = {
-    allSources = fs ::: (allSources diff fs)
-  }
+  def moveToFront(fs: List[SourceFile]): Unit =
+    allSources = fs ::: allSources.diff(fs)
 
   // ----------------- Implementations of client commands -----------------------
 
@@ -719,9 +708,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           val result = results.head
           results = results.tail
           if (results.isEmpty) {
-            response set result
+            response.set(result)
             debugLog("responded"+timeStep)
-          } else response setProvisionally result
+          }
+          else
+            response.setProvisionally(result)
         }
       }
     } catch {
@@ -760,7 +751,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     toBeRemoved.synchronized { toBeRemoved -= source.file }
     toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun -= source.file }
     reset(unit)
-    //parseAndEnter(unit)
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
@@ -859,15 +849,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   private def withTempUnits[T](sources: List[SourceFile])(f: (SourceFile => RichCompilationUnit) => T): T = {
     val unitOfSrc: SourceFile => RichCompilationUnit = src => unitOfFile(src.file)
-    sources filterNot (getUnit(_).isDefined) match {
+    sources.filterNot(getUnit(_).isDefined) match {
       case Nil =>
         f(unitOfSrc)
       case unknown =>
         reloadSources(unknown)
-        try {
-          f(unitOfSrc)
-        } finally
-          afterRunRemoveUnitsOf(unknown)
+        try f(unitOfSrc)
+        finally afterRunRemoveUnitsOf(unknown)
     }
   }
 
@@ -931,37 +919,39 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           findMirrorSymbol(sym, u).pos
         }
       } else {
-        debugLog("link not in class "+sym+" "+source+" "+sym.owner)
+        debugLog(s"link not in class $sym $source ${sym.owner}")
         NoPosition
       }
     }
   }
 
-  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit): Unit = {
-    unit.body foreachPartial {
+  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit): Unit =
+    unit.body.foreachPartial {
       case DocDef(comment, defn) if defn.symbol == sym =>
         fillDocComment(defn.symbol, comment)
         EmptyTree
       case _: ValOrDefDef =>
         EmptyTree
     }
-  }
 
   /** Implements CompilerControl.askDocComment */
-  private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol, fragments: List[(Symbol,SourceFile)],
+  private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol,
+                                         fragments: List[(Symbol, SourceFile)],
                                          response: Response[(String, String, Position)]): Unit = {
     informIDE(s"getDocComment $sym at $source, site $site")
     respond(response) {
-      withTempUnits(fragments.unzip._2){ units =>
-        for((sym, src) <- fragments) {
-          val mirror = findMirrorSymbol(sym, units(src))
-          if (mirror ne NoSymbol) forceDocComment(mirror, units(src))
+      withTempUnits(fragments.unzip._2) { unitForSrc =>
+        for ((sym, src) <- fragments) {
+          val mirror = findMirrorSymbol(sym, unitForSrc(src))
+          if (mirror ne NoSymbol) forceDocComment(mirror, unitForSrc(src))
         }
-        val mirror = findMirrorSymbol(sym, units(source))
+        val mirror = findMirrorSymbol(sym, unitForSrc(source))
         if (mirror eq NoSymbol)
           ("", "", NoPosition)
         else {
-          (expandedDocComment(mirror, site), rawDocComment(mirror), docCommentPos(mirror))
+          val expansion = expandedDocComment(mirror, site)
+          debugLog(s"Expanded doc for $sym: $expansion")
+          (expansion, rawDocComment(mirror), docCommentPos(mirror))
         }
       }
     }
@@ -1313,7 +1303,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askParsedEntered */
-  private[interactive] def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean = true): Unit = {
+  private[interactive]
+  def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean): Unit =
     getUnit(source) match {
       case Some(unit) =>
         getParsedEnteredNow(source, response)
@@ -1328,17 +1319,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
             getParsedEnteredResponses(source) += response
         }
     }
-  }
 
   /** Parses and enters given source file, storing parse tree in response */
-  private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]): Unit = {
+  private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]): Unit =
     respond(response) {
       onUnitOf(source) { unit =>
         parseAndEnter(unit)
         unit.body
       }
     }
-  }
 
   // ---------------- Helper classes ---------------------------
 
@@ -1357,15 +1346,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       applyPhase(typerPhase, unit)
     }
 
-    /** Apply a phase to a compilation unit
-     *  @return true iff typechecked correctly
+    /** Apply a phase to a compilation unit.
      */
-    private def applyPhase(phase: Phase, unit: CompilationUnit): Unit = {
+    private def applyPhase(phase: Phase, unit: CompilationUnit): Unit =
       enteringPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
-    }
   }
 
   def newTyperRun(): Unit = {
+    debugLog("new typer run")
     currentTyperRun = new TyperRun
   }
 

@@ -75,19 +75,15 @@ abstract class InteractiveTest
   protected def ++(tests: PresentationCompilerTestDef*): Unit = testActions ++= tests
 
   /** Test's entry point */
-  def main(args: Array[String]): Unit = {
-    try execute()
-    finally askShutdown()
-  }
+  def main(args: Array[String]): Unit = try execute() finally askShutdown()
 
-  protected def execute(): Unit = {
+  protected def execute(): Unit =
     util.stringFromStream { ostream =>
       Console.withOut(ostream) {
         loadSources()
         runDefaultTests()
       }
     }.linesIterator.filterNot(filterOutLines).map(normalize).foreach(println)
-  }
 
   protected def filterOutLines(line: String) = false
   protected def normalize(s: String) = s
@@ -105,10 +101,8 @@ abstract class InteractiveTest
   }
 
   /** Run all defined `PresentationCompilerTestDef` */
-  protected def runDefaultTests(): Unit = {
-    //TODO: integrate random tests!, i.e.: if (runRandomTests) randomTests(20, sourceFiles)
+  protected def runDefaultTests(): Unit =
     testActions.foreach(_.runTest())
-  }
 
   /** Perform n random tests with random changes. */
   /****

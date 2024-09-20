@@ -12,47 +12,60 @@
 
 package scala.tools.nsc.interactive
 
+import scala.util.chaining._
+
 /** A presentation compiler thread. This is a lightweight class, delegating most
  *  of its functionality to the compiler instance.
  *
  */
-final class PresentationCompilerThread(var compiler: Global, name: String = "")
-  extends Thread("Scala Presentation Compiler [" + name + "]") {
+final class PresentationCompilerThread private (task: Runnable, name: String) extends Thread(task, name)
 
-  /** The presentation compiler loop.
-   */
-  override def run(): Unit = {
-    compiler.debugLog("starting new runner thread")
-    while (compiler ne null) try {
-      compiler.checkNoResponsesOutstanding()
-      compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
-      compiler.pollForWork(compiler.NoPosition)
-      while (compiler.isOutOfDate) {
+object PresentationCompilerThread {
+
+  def apply(compiler: Global, name: String) =
+    new PresentationCompilerThread(new Task(compiler), s"Scala Presentation Compiler [$name]")
+      .tap(_.setDaemon(true))
+
+  private class Task(compiler: Global) extends Runnable {
+
+    /** The presentation compiler loop.
+     */
+    override def run(): Unit = {
+      compiler.debugLog("starting new runner thread")
+      def loop(): Unit =
         try {
-          compiler.backgroundCompile()
+          compiler.checkNoResponsesOutstanding()
+          compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
+          compiler.pollForWork(compiler.NoPosition)
+          while (compiler.isOutOfDate) {
+            try compiler.backgroundCompile()
+            catch {
+              case ex: FreshRunReq => compiler.debugLog("fresh run req caught, starting new pass")
+            }
+            compiler.log.flush()
+          }
+          loop()
         } catch {
+          case ShutdownReq =>
+            compiler.debugLog("exiting presentation compiler")
+            compiler.log.close()
           case ex: FreshRunReq =>
-            compiler.debugLog("fresh run req caught, starting new pass")
-        }
-        compiler.log.flush()
-      }
-    } catch {
-      case ex @ ShutdownReq =>
-        compiler.debugLog("exiting presentation compiler")
-        compiler.log.close()
-
-        // make sure we don't keep around stale instances
-        compiler = null
-      case ex: Throwable =>
-        compiler.log.flush()
-
-        ex match {
-          case ex: FreshRunReq =>
-            compiler.debugLog("fresh run req caught outside presentation compiler loop; ignored") // This shouldn't be reported
-          case _ : Global#ValidateException => // This will have been reported elsewhere
+            compiler.log.flush()
+            compiler.debugLog("fresh run req caught outside presentation compiler loop; ignored")
+              // This shouldn't be reported
+            loop()
+          case _ : Global#ValidateException =>
+            compiler.log.flush()
             compiler.debugLog("validate exception caught outside presentation compiler loop; ignored")
-          case _ => ex.printStackTrace(); compiler.informIDE("Fatal Error: "+ex)
+              // This will have been reported elsewhere
+            loop()
+          case ex: RuntimeException =>
+            compiler.log.flush()
+            ex.printStackTrace()
+            compiler.informIDE(s"Fatal Error: $ex")
+            compiler.log.close()
         }
+      loop()
     }
   }
 }
