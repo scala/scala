@@ -112,4 +112,13 @@ class Response[T] {
     complete = false
     cancelled = false
   }
+
+  override def toString =
+    if (!isComplete) "Response incomplete"
+    else if (isCancelled) "Response cancelled"
+    else get(0L) match {
+      case None => "Response has no provisional result"
+      case Some(Right(t)) => s"Response failed: ${t.getMessage}"
+      case Some(Left(data)) => s"Response data: ${data}"
+    }
 }

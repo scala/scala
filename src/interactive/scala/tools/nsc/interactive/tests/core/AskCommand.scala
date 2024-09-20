@@ -53,11 +53,14 @@ trait AskParse extends AskCommand {
   /** `sources` need to be entirely parsed before running the test
    *  (else commands such as `AskTypeCompletionAt` may fail simply because
    *  the source's AST is not yet loaded).
+   *
+   *  Submit each parse job and get the response sequentially;
+   *  otherwise, parser progress update will run the next job.
    */
-  def askParse(sources: Seq[SourceFile]): Unit = {
-    val responses = sources map (askParse(_))
-    responses.foreach(_.get) // force source files parsing
-  }
+  def askParse(sources: Seq[SourceFile]): Unit =
+    for (source <- sources) {
+      val _ = askParse(source).get
+    }
 
   private def askParse(src: SourceFile, keepLoaded: Boolean = true): Response[Tree] = {
     ask {
