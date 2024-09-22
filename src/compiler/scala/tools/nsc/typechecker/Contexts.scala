@@ -1909,8 +1909,15 @@ trait Contexts { self: Analyzer =>
 
   class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
     def pos = tree.pos
-    def posOf(sel: ImportSelector) =
-      if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos
+    def posOf(sel: ImportSelector) = {
+      val start = sel.namePos
+      if (start >= 0) {
+        val hasRename = sel.rename != null && sel.renamePos >= 0 // !sel.isWildcard
+        val end = if (hasRename) sel.renamePos + sel.rename.length else start + sel.name.length
+        tree.pos.withStart(start).withEnd(end) ^ start
+      }
+      else tree.pos
+    }
 
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {

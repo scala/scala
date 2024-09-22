@@ -1,0 +1,8 @@
+[ERROR] [RangePosition(t12734.scala, 76, 83, 142)]: object AssertionErrer is not a member of package java.lang
+did you mean AssertionError?
+[WARNING] [RangePosition(t12734.scala, 94, 94, 108)]: Unused import
+[WARNING] [RangePosition(t12734.scala, 110, 110, 125)]: Unused import
+[WARNING] [RangePosition(t12734.scala, 127, 127, 133)]: Unused import
+[WARNING] [RangePosition(t12734.scala, 167, 167, 168)]: Unused import
+4 warnings
+1 error
