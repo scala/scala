@@ -2,6 +2,7 @@
 
 import java.lang.{AssertionErrer, Integer => JInt, String, Thread}
 import scala.annotation._
+import scala.connection._
 
 trait T {
   def t: Thread
