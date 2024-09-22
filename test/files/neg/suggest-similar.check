@@ -12,7 +12,7 @@ did you mean Weehawken?
 suggest-similar.scala:16: error: value readline is not a member of object scala.io.StdIn
 did you mean readLine? or perhaps readByte, readInt, or readLong?
   import scala.io.StdIn.{readline, readInt}
-         ^
+                         ^
 suggest-similar.scala:20: error: object stdin is not a member of package io
 did you mean StdIn?
   import scala.io.stdin.{readLine => line}

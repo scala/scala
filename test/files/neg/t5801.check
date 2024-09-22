@@ -1,6 +1,6 @@
 t5801.scala:1: error: object sth is not a member of package scala
 import scala.sth
-       ^
+             ^
 t5801.scala:4: error: not found: value sth
   def foo(a: Int)(implicit b: sth.Sth): Unit = {}
                               ^
