@@ -310,11 +310,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction] = Nil): Unit =
       issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since), actions))
 
-    // multiple overloads cannot use default args
+    // multiple overloads cannot have default args
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String, actions: List[CodeAction]): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin), actions)
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
-      deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
+      deprecationWarning(pos, msg, since, siteName(site), siteName(origin), actions = Nil)
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
       val version = origin.deprecationVersion.getOrElse("")
@@ -365,15 +365,18 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warning(pos: Position, msg: String, category: WarningCategory, site: String, actions: List[CodeAction]): Unit =
       issueIfNotSuppressed(Message.Plain(pos, msg, category, site, actions))
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      warning(pos, msg, category, site, Nil)
+      warning(pos, msg, category, site, actions = Nil)
 
     // Preferred over the overload above whenever a site symbol is available
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction] = Nil): Unit =
       warning(pos, msg, category, siteName(site), actions)
 
     // Provide an origin for the warning.
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String, actions: List[CodeAction]): Unit =
+      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions))
+    // convenience overload for source compatibility
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
-      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
+      warning(pos, msg, category, site, origin, actions = Nil)
 
     def codeAction(title: String, pos: Position, newText: String, desc: String, expected: Option[(String, CompilationUnit)] = None) =
       CodeAction(title, pos, newText, desc, expected.forall(e => e._1 == e._2.source.sourceAt(pos)))
@@ -468,17 +471,20 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       def insertEdits(sourceChars: Array[Char], edits: List[TextEdit], file: Path): Array[Byte] = {
         val patchedChars = new Array[Char](sourceChars.length + edits.iterator.map(_.delta).sum)
-        @tailrec def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
+        println(s"IE ${sourceChars.length} -> ${patchedChars.length}, where edits ${edits.iterator.map(_.delta).sum}")
+        @tailrec
+        def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
+          println(s"LOOP(${edits.length} in = $inIdx out = $outIdx")
           def copy(upTo: Int): Int = {
             val untouched = upTo - inIdx
             System.arraycopy(sourceChars, inIdx, patchedChars, outIdx, untouched)
             outIdx + untouched
           }
           edits match {
-            case e :: es =>
+            case e :: edits =>
               val outNew = copy(e.position.start)
               e.newText.copyToArray(patchedChars, outNew)
-              loop(es, e.position.end, outNew + e.newText.length)
+              loop(edits, e.position.end, outNew + e.newText.length)
             case _ =>
               val outNew = copy(sourceChars.length)
               if (outNew != patchedChars.length)
@@ -490,20 +496,18 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         new String(patchedChars).getBytes(encoding)
       }
 
-      def apply(edits: mutable.Set[TextEdit]): Unit = {
-        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start))) {
-          if (checkNoOverlap(edits, source)) {
-            underlyingFile(source) foreach { file =>
+      def apply(edits: mutable.Set[TextEdit]): Unit =
+        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start)))
+          if (checkNoOverlap(edits, source))
+            underlyingFile(source).foreach { file =>
               val sourceChars = new String(Files.readAllBytes(file), encoding).toCharArray
+              println(s"EDITS $edits")
               try Files.write(file, insertEdits(sourceChars, edits, file))
               catch {
                 case e: IOException =>
                   issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes to ${file.toFile.getAbsolutePath}\n${e.getMessage}", WarningCategory.Other, "", Nil))
               }
             }
-          }
-        }
-      }
     }
   }
 }

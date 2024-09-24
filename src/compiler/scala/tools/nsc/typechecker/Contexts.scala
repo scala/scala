@@ -15,6 +15,7 @@ package typechecker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.internal.Chars.{CR, LF, isLineBreakChar, isWhitespace}
 import scala.reflect.internal.util.{CodeAction, ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
@@ -99,13 +100,46 @@ trait Contexts { self: Analyzer =>
           case _ =>
         }
       loop(infos0)
-      unused.foreach {
+      def emit(culled: Culled, actions: List[CodeAction]): Unit = culled match {
         case (selector, info, owner) =>
           val pos = info.posOf(selector)
           val origin = info.fullSelectorString(selector)
           val addendum = checkDeprecatedElementInPath(selector, info)
-          runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin)
+          runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin, actions)
       }
+      // include leading and trailing white space on the line, including a trailing newline if result line is blank
+      def expandToLine(pos: Position): Position = {
+        var i = pos.start
+        val content = pos.source.content
+        while (i > 0 && isWhitespace(content(i-1)) && !isLineBreakChar(content(i-1))) i -= 1
+        val sawNL = i > 0 && isLineBreakChar(content(i-1))
+        val emptyLeft = sawNL || i == 0 // import may be at start of content
+        var j = pos.end
+        val max = content.length
+        while (j < max && isWhitespace(content(j)) && !isLineBreakChar(content(j))) j += 1
+        val emptyResultLine = emptyLeft && j < max && isLineBreakChar(content(j))
+        if (emptyResultLine) { // blank result line with trailing line separator, trim it
+          if (content(j) == CR && j+1 < max && content(j+1) == LF) j += 2
+          else j += 1
+        }
+        else if (sawNL && j == max) { // rare stray import at EOF, try to trim preceding line separator
+          if (content(i-1) == LF && i > 1 && content(i-2) == CR) i -= 2
+          else i -= 1
+        }
+        if (i != pos.start || j != pos.end) pos.withStart(i).withEnd(j) else pos
+      }
+      // if quickfixing, emit "merged" edit per import
+      if (settings.quickfix.isSetByUser && !settings.quickFixSilent) {
+        unused.groupBy(_._2).foreach {
+          case (info, selectorInfo :: Nil) =>
+            println(s"WIDEN ${info.pos} -> ${expandToLine(info.pos)}")
+            val edits = runReporting.codeAction("unused import", expandToLine(info.pos), newText = "", desc = "remove import")
+            emit(selectorInfo, edits)
+          case (info, selectorInfos) =>
+            unused.foreach(emit(_, Nil))
+        }
+      }
+      else unused.foreach(emit(_, Nil))
     }
     allImportInfos.remove(unit).foreach(warnUnusedSelections)
   }
