@@ -1588,7 +1588,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         if (settings.browse.containsPhase(globalPhase))
           treeBrowser.browse(phase.name, units)
 
-        if ((settings.Yvalidatepos containsPhase globalPhase) && !reporter.hasErrors)
+        if (!reporter.hasErrors && settings.Yvalidatepos.containsPhase(globalPhase))
           currentRun.units.foreach(unit => validatePositions(unit.body))
 
         // move the pointer

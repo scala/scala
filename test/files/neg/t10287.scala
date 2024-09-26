@@ -1,4 +1,4 @@
-//> using options -Werror -Wunused:_ -Xsource:3
+//> using options -Werror -Wunused:_ -Xsource:3 -Yvalidate-pos:typer
 
 class C {
   def unused_patvar =

@@ -125,51 +125,50 @@ trait Positions extends api.Positions { self: SymbolTable =>
     if (useOffsetPositions) Position.offset(source, point)
     else Position.range(source, start, point, end)
 
-
   abstract class ChildSolidDescendantsCollector extends Traverser {
     // don't traverse annotations
     override def traverseModifiers(mods: Modifiers): Unit = ()
 
     override def traverse(tree: Tree): Unit =
-      if (tree ne EmptyTree) {
+      if (tree ne EmptyTree)
         if (tree.pos.isTransparent) super.traverse(tree)
-        else {
-          traverseSolidChild(tree)
-        }
-      }
+        else traverseSolidChild(tree)
+
     def traverseSolidChild(t: Tree): Unit
+
     def apply(t: Tree): Unit = super.traverse(t)
   }
 
-  private[this] def reportTree(prefix: String, tree: Tree): Unit = {
-    val source = if (tree.pos.isDefined) tree.pos.source else ""
-    inform("== " + prefix + " tree [" + tree.id + "] of type " + tree.productPrefix + " at " + tree.pos.show + source)
-    inform("")
-    inform(treeStatus(tree))
-    inform("")
-  }
-
-  private[this] def positionError(topTree: Tree, msg: String)(body: => Unit): Unit = {
-    inform("======= Position error\n" + msg)
-    body
-    inform("\nWhile validating #" + topTree.id)
-    inform(treeStatus(topTree))
-    inform("\nChildren:")
-    topTree.children foreach (t => inform("  " + treeStatus(t, topTree)))
-    inform("=======")
-    throw new ValidateException(msg)
-  }
-
-  private[this] val posStartOrdering: Ordering[Tree] = new Ordering[Tree] {
+  private val posStartOrdering: Ordering[Tree] = new Ordering[Tree] {
     override def compare(x: Tree, y: Tree): Int = {
-      @inline def posOf(t: Tree): Int = {
+      def posOf(t: Tree): Int = {
         val pos = t.pos
         if (pos eq NoPosition) Int.MinValue else pos.start
       }
       Integer.compare(posOf(x), posOf(y))
     }
   }
+
   def validatePositions(tree: Tree): Unit = if (!useOffsetPositions) {
+    def reportTree(prefix: String, tree: Tree): Unit = {
+      val source = if (tree.pos.isDefined) tree.pos.source else ""
+      inform("== " + prefix + " tree [" + tree.id + "] of type " + tree.productPrefix + " at " + tree.pos.show + source)
+      inform("")
+      inform(treeStatus(tree))
+      inform("")
+    }
+
+    def positionError(topTree: Tree, msg: String)(body: => Unit): Unit = {
+      inform("======= Position error\n" + msg)
+      body
+      inform("\nWhile validating #" + topTree.id)
+      inform(treeStatus(topTree))
+      inform("\nChildren:")
+      topTree.children foreach (t => inform("  " + treeStatus(t, topTree)))
+      inform("=======")
+      throw new ValidateException(msg)
+    }
+
     object worker {
       val trace = settings.Yposdebug.value && settings.verbose.value
       val topTree = tree
@@ -210,73 +209,70 @@ trait Positions extends api.Positions { self: SymbolTable =>
         }
       }
 
-      def loop(tree: Tree, encltree: Tree): Unit = {
-        if (!tree.isEmpty && tree.canHaveAttrs) {
-          val treePos = tree.pos
-          if (trace)
-            inform("[%10s] %s".format("validate", treeStatus(tree, encltree)))
+      def loop(tree: Tree, encltree: Tree): Unit = if (!tree.isEmpty && tree.canHaveAttrs) {
+        val treePos = tree.pos
+        if (trace)
+          inform(f"[${"validate"}%10s] ${treeStatus(tree, encltree)}")
 
-          if (!treePos.isDefined)
-            positionError(topTree, "Unpositioned tree #" + tree.id) {
-              inform("%15s %s".format("unpositioned", treeStatus(tree, encltree)))
-              inform("%15s %s".format("enclosing", treeStatus(encltree)))
-              encltree.children foreach (t => inform("%15s %s".format("sibling", treeStatus(t, encltree))))
+        if (!treePos.isDefined)
+          positionError(topTree, s"Unpositioned tree #${tree.id}") {
+            inform("%15s %s".format("unpositioned", treeStatus(tree, encltree)))
+            inform("%15s %s".format("enclosing", treeStatus(encltree)))
+            encltree.children foreach (t => inform("%15s %s".format("sibling", treeStatus(t, encltree))))
+          }
+
+        solidChildrenCollector(tree)
+        val numChildren = solidChildrenCollector.collectedSize
+
+        if (treePos.isRange) {
+          val enclPos = encltree.pos
+          if (!enclPos.isRange)
+            positionError(topTree, "Synthetic tree [" + encltree.id + "] contains nonsynthetic tree [" + tree.id + "]") {
+              reportTree("Enclosing", encltree)
+              reportTree("Enclosed", tree)
+            }
+          if (!enclPos.includes(treePos))
+            positionError(topTree, "Enclosing tree [" + encltree.id + "] does not include tree [" + tree.id + "]") {
+              reportTree("Enclosing", encltree)
+              reportTree("Enclosed", tree)
             }
 
-          solidChildrenCollector(tree)
-          val numChildren = solidChildrenCollector.collectedSize
-
-          if (treePos.isRange) {
-            val enclPos = encltree.pos
-            if (!enclPos.isRange)
-              positionError(topTree, "Synthetic tree [" + encltree.id + "] contains nonsynthetic tree [" + tree.id + "]") {
-                reportTree("Enclosing", encltree)
-                reportTree("Enclosed", tree)
-              }
-            if (!(enclPos includes treePos))
-              positionError(topTree, "Enclosing tree [" + encltree.id + "] does not include tree [" + tree.id + "]") {
-                reportTree("Enclosing", encltree)
-                reportTree("Enclosed", tree)
-              }
-
-            if (numChildren > 1) {
-              val childSolidDescendants = solidChildrenCollector.sortedArray
-              var t1 = childSolidDescendants(0)
-              var t1Pos = t1.pos
-              var i = 1
-              while (i < numChildren) {
-                val t2 = childSolidDescendants(i)
-                val t2Pos = t2.pos
-                if (t1Pos.overlaps(t2Pos)) {
-                  positionError(topTree, "Overlapping trees") {
-                    reportTree("Ancestor", tree)
-                    reportTree("First overlapping", t1)
-                    reportTree("Second overlapping", t2)
-                  }
+          if (numChildren > 1) {
+            val childSolidDescendants = solidChildrenCollector.sortedArray
+            var t1 = childSolidDescendants(0)
+            var t1Pos = t1.pos
+            var i = 1
+            while (i < numChildren) {
+              val t2 = childSolidDescendants(i)
+              val t2Pos = t2.pos
+              if (t1Pos.overlaps(t2Pos)) {
+                positionError(topTree, "Overlapping trees") {
+                  reportTree("Ancestor", tree)
+                  reportTree("First overlapping", t1)
+                  reportTree("Second overlapping", t2)
                 }
-                //why only for range
-                if (t2Pos.isRange) {
-                  t1 = t2
-                  t1Pos = t2Pos
-                }
-                i += 1
               }
+              if (t2Pos.isRange) { // only ranges overlap, so check ranges pairwise
+                t1 = t2
+                t1Pos = t2Pos
+              }
+              i += 1
             }
           }
-          if (numChildren > 0) {
-            if (numChildren == 1) {
-              val first = solidChildrenCollector.child(0)
-              solidChildrenCollector.clear()
-              loop(first, tree)
-            } else {
-              val snap = solidChildrenCollector.borrowArray
-              var i = 0
-              while (i < numChildren) {
-                loop(snap(i), tree)
-                i += 1
-              }
-              solidChildrenCollector.spareArray(snap)
+        }
+        if (numChildren > 0) {
+          if (numChildren == 1) {
+            val first = solidChildrenCollector.child(0)
+            solidChildrenCollector.clear()
+            loop(first, tree)
+          } else {
+            val snap = solidChildrenCollector.borrowArray
+            var i = 0
+            while (i < numChildren) {
+              loop(snap(i), tree)
+              i += 1
             }
+            solidChildrenCollector.spareArray(snap)
           }
         }
       }
@@ -396,23 +392,20 @@ trait Positions extends api.Positions { self: SymbolTable =>
   /** Position a tree.
    *  This means: Set position of a node and position all its unpositioned children.
    */
-  def atPos[T <: Tree](pos: Position)(tree: T): T = {
+  def atPos[T <: Tree](pos: Position)(tree: T): tree.type = {
     if (useOffsetPositions || !pos.isOpaqueRange) {
       posAssigner.pos = pos
       posAssigner.traverse(tree)
-      tree
     }
-    else {
-      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
-        tree.setPos(pos)
-        tree.onlyChild match {
-          case EmptyTree =>
-            setChildrenPos(pos, tree)
-          case only =>
-            atPos(pos)(only)
-        }
+    else if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
+      tree.setPos(pos)
+      tree.onlyChild match {
+        case EmptyTree =>
+          setChildrenPos(pos, tree)
+        case only =>
+          atPos(pos)(only)
       }
-      tree
     }
+    tree
   }
 }

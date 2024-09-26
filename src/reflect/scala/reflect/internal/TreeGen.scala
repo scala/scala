@@ -708,7 +708,8 @@ abstract class TreeGen {
       case x             => throw new MatchError(x)
     }
 
-    /* The position of the closure that starts with generator at position `genpos`. */
+    // The position of the closure that starts with generator at position `genpos`.
+    // This position is carried by ValFrom.
     def closurePos(genpos: Position): Position =
       if (genpos == NoPosition) NoPosition
       else {
@@ -725,7 +726,7 @@ abstract class TreeGen {
       case (t @ ValFrom(pat, rhs)) :: (rest @ (ValFrom(_, _) :: _)) =>
         makeCombination(closurePos(t.pos), flatMapName, rhs, pat, body = mkFor(rest, sugarBody))
       case (t @ ValFrom(pat, rhs)) :: Filter(test) :: rest =>
-        mkFor(ValFrom(patternAlias(pat), makeCombination(rhs.pos | test.pos, nme.withFilter, rhs, pat, test)).setPos(t.pos) :: rest, sugarBody)
+        mkFor(ValFrom(patternAlias(pat), makeCombination(pat.pos | rhs.pos | test.pos, nme.withFilter, rhs, pat, test)).setPos(t.pos) :: rest, sugarBody)
       case (t @ ValFrom(pat, rhs)) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile(ValEq.unapply(_).nonEmpty)
         assert(!valeqs.isEmpty, "Missing ValEq")

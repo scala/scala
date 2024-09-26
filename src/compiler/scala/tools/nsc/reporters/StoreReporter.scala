@@ -43,6 +43,6 @@ class StoreReporter(val settings: Settings) extends FilteringReporter {
 }
 object StoreReporter {
   case class Info(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]) {
-    override def toString: String = s"pos: $pos $msg $severity${if (actions.isEmpty) "" else " " + actions}"
+    override def toString: String = s"pos: $pos $msg $severity${if (actions.isEmpty) "" else actions}"
   }
 }
