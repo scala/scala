@@ -420,6 +420,7 @@ trait StdNames {
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
     def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
+    def isFreshTermName(name: Name)         = name.startsWith(FRESH_TERM_NAME_PREFIX)
 
     /** Is name a variable name? */
     def isVariableName(name: Name): Boolean = {
