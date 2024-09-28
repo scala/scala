@@ -165,4 +165,20 @@ class QuickfixTest extends BytecodeTesting {
            |"""
     testQuickfix(a, b, "-Wunnamed-boolean-literal -quickfix:any")
   }
+
+  @Test def `synthetic case companion used as a function error has a fix`: Unit = {
+    val a =
+      sm"""|case class C(i: Int)
+           |object Test {
+           |  def test = List(1, 2, 3).map(C)
+           |}
+           |"""
+    val b =
+      sm"""|case class C(i: Int)
+           |object Test {
+           |  def test = List(1, 2, 3).map(C.apply)
+           |}
+           |"""
+    testQuickfix(a, b, "-Xsource:3 -quickfix:any")
+  }
 }

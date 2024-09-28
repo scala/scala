@@ -1,9 +1,9 @@
-t3664.scala:10: error: Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use C.apply instead.
+t3664.scala:10: error: Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use C.apply instead. [quickfixable]
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Test.f
   def f(xs: List[Int]): List[C] = xs.map(C) // ident
                                          ^
-t3664.scala:11: error: Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use D.apply instead.
+t3664.scala:11: error: Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use D.apply instead. [quickfixable]
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=Test.g
   def g(xs: List[Int]): List[O.D] = xs.map(O.D) // select
