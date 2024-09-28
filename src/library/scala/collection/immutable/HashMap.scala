@@ -144,7 +144,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     rootNode.getOrElse(key, keyUnimprovedHash, keyHash, 0, default)
   }
 
-  @`inline` private[this] def newHashMapOrThis[V1 >: V](newRootNode: BitmapIndexedMapNode[K, V1]): HashMap[K, V1] =
+  @inline private[this] def newHashMapOrThis[V1 >: V](newRootNode: BitmapIndexedMapNode[K, V1]): HashMap[K, V1] =
     if (newRootNode eq rootNode) this else new HashMap(newRootNode)
 
   def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] = {
@@ -167,7 +167,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
       else {
         val newNode = rootNode.concat(hm.rootNode, 0)
         if (newNode eq hm.rootNode) hm
-        else newHashMapOrThis(rootNode.concat(hm.rootNode, 0))
+        else newHashMapOrThis(newNode)
       }
     case hm: mutable.HashMap[K @unchecked, V @unchecked] =>
       val iter = hm.nodeIterator
@@ -271,7 +271,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   override def foreachEntry[U](f: (K, V) => U): Unit = rootNode.foreachEntry(f)
 
   /** Applies a function to each key, value, and **original** hash value in this Map */
-  @`inline` private[collection] def foreachWithHash(f: (K, V, Int) => Unit): Unit = rootNode.foreachWithHash(f)
+  @inline private[collection] def foreachWithHash(f: (K, V, Int) => Unit): Unit = rootNode.foreachWithHash(f)
 
   override def equals(that: Any): Boolean =
     that match {
@@ -1326,7 +1326,7 @@ private final class BitmapIndexedMapNode[K, +V](
       case _ => false
     }
 
-  @`inline` private def deepContentEquality(a1: Array[Any], a2: Array[Any], length: Int): Boolean = {
+  @inline private def deepContentEquality(a1: Array[Any], a2: Array[Any], length: Int): Boolean = {
     if (a1 eq a2)
       true
     else {
