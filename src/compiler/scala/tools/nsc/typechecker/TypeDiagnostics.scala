@@ -86,12 +86,6 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     prefix + name.decode
   }
 
-  // Bind of pattern var was `x @ _`
-  private def nowarn(t: Tree) = t.hasAttachment[NoWarnAttachment.type]
-
-  // ValDef was a PatVarDef `val P(x) = ???`
-  private def wasPatVarDef(t: Tree) = t.hasAttachment[PatVarDefAttachment.type]
-
   /** Does the positioned line assigned to t1 precede that of t2?
    */
   def posPrecedes(p1: Position, p2: Position) = p1.isDefined && p2.isDefined && p1.line < p2.line
@@ -499,10 +493,17 @@ trait TypeDiagnostics extends splain.SplainDiagnostics {
     val ignoreNames: Set[TermName] = Set(
       "readResolve", "readObject", "writeObject", "writeReplace"
     ).map(TermName(_))
+
+    // Bind of pattern var was `x @ _`; also used for wildcard, e.g. `_ <- e`
+    private def nowarn(tree: Bind): Boolean   = tree.hasAttachment[NoWarnAttachment.type]
+    private def nowarn(tree: ValDef): Boolean = tree.hasAttachment[NoWarnAttachment.type]
+
+    // ValDef was a PatVarDef `val P(x) = ???`
+    private def wasPatVarDef(tree: ValDef): Boolean = tree.hasAttachment[PatVarDefAttachment.type]
   }
 
   class UnusedPrivates extends Traverser {
-    import UnusedPrivates.ignoreNames
+    import UnusedPrivates.{ignoreNames, nowarn, wasPatVarDef}
     def isEffectivelyPrivate(sym: Symbol): Boolean = false
     val defnTrees = ListBuffer.empty[MemberDef]
     val targets   = mutable.Set.empty[Symbol]
