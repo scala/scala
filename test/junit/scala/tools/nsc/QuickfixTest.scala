@@ -215,9 +215,86 @@ class QuickfixTest extends BytecodeTesting {
       sm"""|class C
            |import java.lang.Runnable
            |import java.lang.Thread"""
-    //testQuickfix(precedingNL, resPrecedingNL, "-Wunused:imports -quickfix:any")
-    //testQuickfix(noPrecedingNL, resNoPrecedingNL, "-Wunused:imports -quickfix:any")
-    //testQuickfix(multiplePrefix, resNoPrecedingNL, "-Wunused:imports -quickfix:any")
+    testQuickfix(precedingNL, resPrecedingNL, "-Wunused:imports -quickfix:any")
+    testQuickfix(noPrecedingNL, resNoPrecedingNL, "-Wunused:imports -quickfix:any")
+    testQuickfix(multiplePrefix, resNoPrecedingNL, "-Wunused:imports -quickfix:any")
     testQuickfix(multipleSuffix, resNoPrecedingNL, "-Wunused:imports -quickfix:any")
+  }
+
+  @Test def `unused imports are selectively quickfixable`: Unit = {
+    val keepEither =
+      sm"""|import java.lang.{Runnable, Thread}
+           |class C extends Runnable { def run() = () }
+           |"""
+    val keptEither =
+      sm"""|import java.lang.Runnable
+           |class C extends Runnable { def run() = () }
+           |"""
+    val keepOne =
+      sm"""|import java.lang.Runnable, java.lang.Thread
+           |class C extends Runnable { def run() = () }
+           |"""
+    val keptOne =
+      sm"""|import java.lang.Runnable
+           |class C extends Runnable { def run() = () }
+           |"""
+    val keepOther =
+      sm"""|import java.lang.Thread, java.lang.Runnable
+           |class C extends Runnable { def run() = () }
+           |"""
+    val keepNeither =
+      sm"""|import java.lang.Thread, java.lang.Runnable
+           |class C
+           |"""
+    val keepNothing =
+      sm"""|import java.lang.{Runnable, Thread}
+           |class C
+           |"""
+    val keptNothing =
+      sm"""|class C
+           |"""
+    val keepTwo =
+      sm"""|import java.lang.{Runnable, System, Thread}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    val keptTwo =
+      sm"""|import java.lang.{Runnable, System}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    testQuickfix(keepEither, keptEither, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepOne, keptOne, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepOther, keptOne, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepNeither, keptNothing, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepNothing, keptNothing, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepTwo, keptTwo, "-Wunused:imports -quickfix:any")
+  }
+
+  @Test def `unused imports respects your weird formatting`: Unit = {
+    val keepColumns =
+      sm"""|import java.lang.{Runnable,
+           |                  Thread,
+           |                  System}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    val keptColumns =
+      sm"""|import java.lang.{Runnable,
+           |                  System}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    val overlapping =
+      sm"""|import java.lang.{AutoCloseable,
+           |                  Thread,
+           |                  Runnable,
+           |                  System}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    val lapped =
+      sm"""|import java.lang.{
+           |                  Runnable,
+           |                  System}, System.out
+           |class C extends Runnable { def run() = out.println() }
+           |"""
+    testQuickfix(keepColumns, keptColumns, "-Wunused:imports -quickfix:any")
+    testQuickfix(overlapping, lapped, "-Wunused:imports -quickfix:any")
   }
 }

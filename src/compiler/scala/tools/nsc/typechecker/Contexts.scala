@@ -15,7 +15,6 @@ package typechecker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.reflect.internal.Chars.{CR, LF, isLineBreakChar, isWhitespace}
 import scala.reflect.internal.util.{CodeAction, ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
@@ -23,12 +22,11 @@ import scala.util.chaining._
 /**
  *  @author  Martin Odersky
  */
-trait Contexts { self: Analyzer =>
+trait Contexts { self: Analyzer with ImportTracking =>
   import global._
   import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
-
 
   protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
 
@@ -57,92 +55,6 @@ trait Contexts { self: Analyzer =>
     rootMirror.RootClass,
     rootMirror.RootClass.info.decls
   )
-
-  private lazy val allUsedSelectors =
-    mutable.Map.empty[ImportInfo, Set[ImportSelector]].withDefaultValue(Set.empty)
-  private lazy val allImportInfos =
-    mutable.Map.empty[CompilationUnit, List[(ImportInfo, Symbol)]].withDefaultValue(Nil)
-
-  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
-    def msg(sym: Symbol) = sym.deprecationMessage.map(": " + _).getOrElse("")
-    def checkDeprecatedElementInPath(selector: ImportSelector, info: ImportInfo): String = {
-      def badName(name: Name) =
-        info.qual.tpe.member(name) match {
-          case m if m.isDeprecated => Some(s" of deprecated $m${msg(m)}")
-          case _ => None
-        }
-      val badSelected =
-        if (!selector.isMask && selector.isSpecific) badName(selector.name).orElse(badName(selector.name.toTypeName))
-        else None
-      def badFrom = {
-        val sym = info.qual.symbol
-        if (sym.isDeprecated) Some(s" from deprecated $sym${msg(sym)}") else None
-      }
-      badSelected.orElse(badFrom).getOrElse("")
-    }
-    def warnUnusedSelections(infos0: List[(ImportInfo, Symbol)]): Unit = {
-      type Culled = (ImportSelector, ImportInfo, Symbol)
-      var unused = List.empty[Culled]
-      @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
-        infos match {
-          case (info, owner) :: infos =>
-            val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-            def checkSelectors(selectors: List[ImportSelector]): Unit =
-              selectors match {
-                case selector :: selectors =>
-                  checkSelectors(selectors)
-                  if (!selector.isMask && !used(selector))
-                    unused ::= ((selector, info, owner))
-                case _ =>
-              }
-            checkSelectors(info.tree.selectors)
-            loop(infos)
-          case _ =>
-        }
-      loop(infos0)
-      def emit(culled: Culled, actions: List[CodeAction]): Unit = culled match {
-        case (selector, info, owner) =>
-          val pos = info.posOf(selector)
-          val origin = info.fullSelectorString(selector)
-          val addendum = checkDeprecatedElementInPath(selector, info)
-          runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin, actions)
-      }
-      // include leading and trailing white space on the line, including a trailing newline if result line is blank
-      def expandToLine(pos: Position): Position = {
-        var i = pos.start
-        val content = pos.source.content
-        while (i > 0 && isWhitespace(content(i-1)) && !isLineBreakChar(content(i-1))) i -= 1
-        val sawNL = i > 0 && isLineBreakChar(content(i-1))
-        val emptyLeft = sawNL || i == 0 // import may be at start of content
-        var j = pos.end
-        val max = content.length
-        while (j < max && isWhitespace(content(j)) && !isLineBreakChar(content(j))) j += 1
-        val emptyResultLine = emptyLeft && j < max && isLineBreakChar(content(j))
-        if (emptyResultLine) { // blank result line with trailing line separator, trim it
-          if (content(j) == CR && j+1 < max && content(j+1) == LF) j += 2
-          else j += 1
-        }
-        else if (sawNL && j == max) { // rare stray import at EOF, try to trim preceding line separator
-          if (content(i-1) == LF && i > 1 && content(i-2) == CR) i -= 2
-          else i -= 1
-        }
-        if (i != pos.start || j != pos.end) pos.withStart(i).withEnd(j) else pos
-      }
-      // if quickfixing, emit "merged" edit per import
-      if (settings.quickfix.isSetByUser && !settings.quickFixSilent) {
-        unused.groupBy(_._2).foreach {
-          case (info, selectorInfo :: Nil) =>
-            println(s"WIDEN ${info.pos} -> ${expandToLine(info.pos)}")
-            val edits = runReporting.codeAction("unused import", expandToLine(info.pos), newText = "", desc = "remove import")
-            emit(selectorInfo, edits)
-          case (info, selectorInfos) =>
-            unused.foreach(emit(_, Nil))
-        }
-      }
-      else unused.foreach(emit(_, Nil))
-    }
-    allImportInfos.remove(unit).foreach(warnUnusedSelections)
-  }
 
   var lastAccessCheckDetails: String = ""
 
@@ -767,7 +679,7 @@ trait Contexts { self: Analyzer =>
     def makeImportContext(tree: Import): Context =
       make(tree).tap { ctx =>
         if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport && !ctx.outer.owner.isInterpreterWrapper)
-          allImportInfos(ctx.unit) ::= ctx.importOrNull -> ctx.owner
+          recordImportContext(ctx)
       }
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
@@ -2030,7 +1942,7 @@ trait Contexts { self: Analyzer =>
           else s"(expr=${tree.expr}, ${result.fullLocationString})"
         }")
       if (settings.warnUnusedImport && !isRootImport && result != NoSymbol && pos != NoPosition)
-        allUsedSelectors(this) += sel
+        recordImportUsage(this, sel)
     }
 
     def allImportedSymbols: Iterable[Symbol] =
