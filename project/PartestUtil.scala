@@ -72,7 +72,7 @@ object PartestUtil {
                 val next = prefix + suffix
                 testFile.getParentFile / next
               }
-              val assocFiles = List(".check", ".flags").map(sibling)
+              val assocFiles = List(".check").map(sibling)
               val sourceFiles = if (testFile.isFile) List(testFile) else testFile.**(AllPassFilter).get.toList
               val allFiles = testFile :: assocFiles ::: sourceFiles
               allFiles.exists(f => f.isFile && re.findFirstIn(IO.read(f)).isDefined)
@@ -89,7 +89,7 @@ object PartestUtil {
         (matchingFileContent ++ matchingFileName).map(_._2).distinct.sorted
       }
 
-      val completion = Completions.strict(Set("<filename glob>", "<regex> (for source, flags or checkfile contents)").map(s => Completion.displayOnly(s)))
+      val completion = Completions.strict(Set("<filename glob>", "<regex> (for source or checkfile contents)").map(s => Completion.displayOnly(s)))
       val tokenCompletion = TokenCompletions.fixed((seen, level) => completion)
 
       val globOrPattern = StringBasic.map(expandGrep).flatMap {
