@@ -186,4 +186,10 @@ trait StdAttachments {
 
   /** This Bind tree was derived immediately from the given tree, for unused accounting. */
   case class VarAlias(tree: Tree /*Bind | ValDef*/) extends PlainAttachment
+
+  /** A top-level class may be a "nest host" with given "nest members" (nested classes or companion). */
+  case class NestMembers(members: List[Symbol]) extends PlainAttachment
+
+  /** A nested class or a top-level companion module may have a "nest host" for which it is a "nest member". */
+  case class NestHost(host: Symbol) extends PlainAttachment
 }
