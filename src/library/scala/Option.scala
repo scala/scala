@@ -572,7 +572,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    * }}}
    */
   def toList: List[A] =
-    if (isEmpty) List() else new ::(this.get, Nil)
+    if (isEmpty) Nil else new ::(this.get, Nil)
 
   /** Returns a [[scala.util.Left]] containing the given
    * argument `left` if this $option is empty, or
