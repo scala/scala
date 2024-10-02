@@ -59,24 +59,27 @@ trait ImportTracking { self: Analyzer =>
       def keyInfoOfTracked(info: TrackedInfo): ImportInfo = info._2
       def keyInfoOfCulled(culled: Culled): ImportInfo = keyInfoOfTracked(culled._2)
       def infoOfCulled(culled: Culled): ImportInfo = culled._2._1
-      var unused = List.empty[Culled]
-      def cull(infos: List[TrackedInfo]): Unit =
-        infos match {
-          case (tracked @ (info, _, _)) :: infos =>
-            val used = usedSelectors.remove(info).getOrElse(Set.empty)
-            def checkSelectors(selectors: List[ImportSelector]): Unit =
-              selectors match {
-                case selector :: selectors =>
-                  checkSelectors(selectors)
-                  if (!selector.isMask && !used(selector))
-                    unused ::= selector -> tracked
-                case _ =>
-              }
-            checkSelectors(info.tree.selectors)
-            cull(infos)
-          case _ =>
-        }
-      cull(infos)
+      val unused: List[Culled] = {
+        var res = List.empty[Culled]
+        def cull(infos: List[TrackedInfo]): Unit =
+          infos match {
+            case (tracked @ (info, _, _)) :: infos =>
+              val used = usedSelectors.remove(info).getOrElse(Set.empty)
+              def checkSelectors(selectors: List[ImportSelector]): Unit =
+                selectors match {
+                  case selector :: selectors =>
+                    checkSelectors(selectors)
+                    if (!selector.isMask && !used(selector))
+                      res ::= selector -> tracked
+                  case _ =>
+                }
+              checkSelectors(info.tree.selectors)
+              cull(infos)
+            case _ =>
+          }
+        cull(infos)
+        res
+      }
       def emit(culled: Culled, actions: List[CodeAction]): Unit = culled match {
         case (selector, (info, _, owner)) =>
           val pos = info.posOf(selector)
@@ -84,32 +87,47 @@ trait ImportTracking { self: Analyzer =>
           val addendum = checkDeprecatedElementInPath(selector, info)
           runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin, actions)
       }
-      // include leading and trailing white space on the line, including a trailing newline if result line is blank
-      // if commaBias is non-zero, consume the adjacent comma (left if bias < 0) (and assume no leading comma)
-      // if commaBias is > 0, don't consume left whitespace (to preserve import keyword) but do consume next comma.
+      // Widen pos to include leading and trailing white space on the line, including a trailing newline if result line is blank.
+      // Include trailing comma if commaBias > 0. (Or preceding comma if commaBias < 0, for last element in a list.)
       def expandToLine(pos: Position, commaBias: Int): Position = {
-        var i = pos.start
         val content = pos.source.content
-        if (commaBias <= 0)
-          while (i > 0 && isWhitespace(content(i-1)) && !isLineBreakChar(content(i-1))) i -= 1
-        val sawNL = i > 0 && isLineBreakChar(content(i-1))
-        val emptyLeft = sawNL || i == 0 // import may be at start of content
-        if (commaBias < 0)
-          while (i > 0 && (isWhitespace(content(i-1)) || isLineBreakChar(content(i-1)) || content(i-1) == ',')) i -= 1
-        var j = pos.end
-        val max = content.length
-        while (j < max && (isWhitespace(content(j)) || commaBias > 0 && content(j) == ',') && !isLineBreakChar(content(j))) j += 1
-        val emptyResultLine = emptyLeft && j < max && isLineBreakChar(content(j))
-        if (emptyResultLine) { // blank result line with trailing line separator, trim it
-          if (content(j) == CR && j+1 < max && content(j+1) == LF) j += 2
-          else j += 1
+        val prev = content.lastIndexWhere(c => !isWhitespace(c), end = pos.start-1)
+        val emptyLeft = prev < 0 || isLineBreakChar(content(prev))
+        val next = content.indexWhere(c => !isWhitespace(c) && !(commaBias > 0 && c == ','), from = pos.end)
+        val emptyRight = next < 0 || isLineBreakChar(content(next))
+
+        if (emptyLeft && emptyRight) { // blank result line with trailing line separator, trim it
+          val end =
+            if (next >= 0)
+              if (content(next) == CR && next+1 < content.length && content(next+1) == LF) next + 2
+              else next + 1
+            else content.length
+          val start =
+            if (commaBias < 0) {
+              val probe = content.lastIndexWhere(c => !isWhitespace(c) && !isLineBreakChar(c), end = prev-1)
+              if (probe >= 0 && content(probe) == ',') probe
+              else if (prev >= 0) prev + 1
+              else 0
+            }
+            else if (prev >= 0) prev + 1
+            else 0
+          pos.withStart(start).withEnd(end)
         }
-        // omit this unnecessary complication
-        //else if (sawNL && j == max) { // rare stray import at EOF (actually SourceFile always appends NL to content)
-        //  if (content(i-1) == LF && i > 1 && content(i-2) == CR) i -= 2
-        //  else i -= 1
-        //}
-        if (i != pos.start || j != pos.end) pos.withStart(i).withEnd(j) else pos
+        else if (commaBias < 0) {
+          val start =
+            if (prev >= 0 && content(prev) == ',') prev
+            else {
+              val probe = content.lastIndexWhere(c => !isWhitespace(c) && !isLineBreakChar(c), end = prev-1)
+              if (probe >= 0 && content(probe) == ',') probe else if (prev >= 0) prev + 1 else 0
+            }
+          pos.withStart(start)
+        }
+        else if (commaBias > 0) {
+          val next = content.indexWhere(c => !isWhitespace(c), from = pos.end)
+          if (next >= 0 && content(next) == ',') pos.withEnd(next + 1)
+          else pos
+        }
+        else pos
       }
       // if quickfixing, emit (possibly "merged") edit(s) per import statement
       if (settings.quickfix.isSetByUser && !settings.quickFixSilent) {
@@ -135,8 +153,7 @@ trait ImportTracking { self: Analyzer =>
             toEmit.init.foreach(emit(_, actions = Nil))
             val imports = existing.map(_.tree)
             val editPos = wrappingPos(imports.head.pos, imports)
-            val edits = delete(editPos, commaBias = 0) // single delete of statement at last selector of last import info
-            emit(toEmit.last, edits)
+            emit(toEmit.last, actions = delete(editPos, commaBias = 0)) // single delete of statement at last selector of last import info
           }
           else
             foreachWithIndex(existing) { (info, i) =>
@@ -144,7 +161,11 @@ trait ImportTracking { self: Analyzer =>
                 val toEmit = tracking(info).sortBy(_._1.namePos)
                 toEmit.init.foreach(emit(_, actions = Nil))
                 val editPos = info.tree.pos.withStart(info.tree.pos.point) // exclude the keyword, i.e., do not edit it out
-                emit(toEmit.last, delete(editPos, commaBias = if (i == 0) 1 else -1)) // emit edit with last warning for last selector
+                val commaBias = { // including comma to right, unless at end and comma to left was not deleted
+                  val n = existing.size
+                  if (n > 1 && i == n - 1 && !deleting.contains(existing(i - 1))) -1 else 1
+                }
+                emit(toEmit.last, delete(editPos, commaBias = commaBias)) // emit edit with last warning for last selector
               }
               else if (updating.contains(info)) {
                 val toEmit = tracking(info).sortBy(_._1.namePos)
@@ -153,27 +174,27 @@ trait ImportTracking { self: Analyzer =>
                   toEmit.init.foreach(emit(_, actions = Nil))
                   val editPos = info.tree.pos.withStart(info.tree.pos.point) // exclude the keyword, i.e., do not edit it out
                   val revised = info.tree.copy(selectors = remaining)
-                  emit(toEmit.last, edit(editPos, replacement = revised.toString.stripPrefix("import"))) // exclude the keyword on output
+                  emit(toEmit.last, edit(editPos, replacement = revised.toString.stripPrefix("import "))) // exclude the keyword on output
                 }
                 else {
                   // instead of replacing the import, emit an edit for each change to preserve formatting.
-                  // first edit may overlap with second, so trim it.
-                  // range of selector is from namePos to a comma or brace
-                  var editss = toEmit.map { case culled @ (selector, (_, _, _)) =>
-                    val j = info.tree.selectors.indexOf(selector)
-                    //val end = if (j < info.tree.selectors.size - 1) info.tree.selectors(j + 1).namePos else info.tree.pos.end - 1
-                    val end = info.tree.pos.source.content.indexWhere(c => c == ',' || c == '}', from = selector.namePos)
-                    val editPos = info.tree.pos.withStart(selector.namePos).withEnd(end)
-                    delete(editPos, commaBias = if (j == 0) 1 else -1)
+                  // there are multiple selectors, comma-separated in braces {x, y => w, z}.
+                  // for the prefix of deleted selectors, also delete the next comma if there is one before a brace.
+                  // thereafter, also delete the preceding comma.
+                  val first = info.tree.selectors.head
+                  val last = info.tree.selectors.last
+                  toEmit.foreach { case culled @ (selector, (_, _, _)) =>
+                    val start =
+                      if (selector == first) info.tree.pos.start + 1
+                      else selector.namePos
+                    @annotation.unused val x = '{'
+                    val end = info.tree.pos.source.content.indexWhere(c => c == ',' || c == '}', from = start)
+                    val commaBias =
+                      if (selector == last && info.tree.selectors.length > 1 && !toEmit.contains(info.tree.selectors.dropRight(1).last)) -1
+                      else 1
+                    val editPos = info.tree.pos.withStart(start).withEnd(end)
+                    emit(culled, delete(editPos, commaBias = commaBias))
                   }
-                  // correct first two edits fighting over shared comma
-                  if (editss.length > 1) {
-                    val first = editss(0).head.edits.head
-                    val second = editss(1).head.edits.head
-                    if (first.position.overlaps(second.position))
-                      editss = (editss(0).head.copy(edits = first.copy(position = first.position.withEnd(second.position.start)) :: Nil) :: Nil) :: editss.tail
-                  }
-                  foreach2(toEmit, editss)((culled, edits) => emit(culled, edits))
                 }
               }
             }
