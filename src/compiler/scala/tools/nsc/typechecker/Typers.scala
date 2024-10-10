@@ -1295,8 +1295,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adapt(tree.setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
         else if (tree.tpe <:< pt) {
           val sym = tree.symbol
-          if (sym != null && !isPastTyper && currentRun.isScala3 && isFunctionType(pt) && sym.isModule && sym.isSynthetic && sym.companion.isCase)
-            context.warning(tree.pos, s"Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use ${sym.name}.apply instead.", Scala3Migration)
+          if (sym != null && !isPastTyper && currentRun.isScala3 && isFunctionType(pt) && sym.isModule && sym.isSynthetic && sym.companion.isCase) {
+            val msg = s"Synthetic case companion used as a function. In Scala 3 (or with -Xsource-features:case-companion-function), case companions no longer extend FunctionN. Use ${sym.name}.apply instead."
+            val action = runReporting.codeAction("add `.apply`", tree.pos.focusEnd, ".apply", msg)
+            context.warning(tree.pos, msg, Scala3Migration, action)
+          }
           tree
         } else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
           tree
