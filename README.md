@@ -80,6 +80,7 @@ We are grateful for the following OSS licenses:
   - [JProfiler Java profiler](https://www.ej-technologies.com/products/jprofiler/overview.html)
   - [YourKit Java Profiler](https://www.yourkit.com/java/profiler/)
   - [IntelliJ IDEA](https://www.jetbrains.com/idea/download/)
+  - [![Revved up by Develocity](https://img.shields.io/badge/Revved%20up%20by-Develocity-06A0CE?logo=Gradle&labelColor=02303A)](https://develocity.scala-lang.org)
 
 ## Build setup
 
