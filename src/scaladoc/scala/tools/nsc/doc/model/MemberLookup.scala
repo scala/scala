@@ -62,9 +62,15 @@ trait MemberLookup extends base.MemberLookupBase {
       else sym
     classpathEntryFor(sym1) flatMap { path =>
       if (isJDK(sym1)) {
-        Some(LinkToExternalTpl(name, jdkUrl(path), makeTemplate(sym)))
-      }
-      else {
+        // ISSUE 12820
+        val url =
+          scala.util.Try(Class.forName(sym1.javaClassName).getModule())
+          .toOption
+          .flatMap(module => Option(module.getName()))
+          .map(moduleName => s"$jdkUrl/$moduleName")
+          .getOrElse(jdkUrl)
+        Some(LinkToExternalTpl(name, url, makeTemplate(sym)))
+      } else {
         settings.extUrlMapping get path map { url =>
           LinkToExternalTpl(name, url, makeTemplate(sym))
         }
@@ -99,17 +105,6 @@ trait MemberLookup extends base.MemberLookupBase {
 
   private def isJDK(sym: Symbol) =
     sym.associatedFile.underlyingSource.map(f => isChildOf(f, (sys.props("java.home")))).getOrElse(false)
-
-  def jdkUrl(path: String): String = {
-    if (path.endsWith(".jmod")) {
-      val tokens = path.split(java.io.File.separatorChar)
-      val module = tokens.last.stripSuffix(".jmod")
-      s"$jdkUrl/$module"
-    }
-    else {
-      jdkUrl
-    }
-  }
 
   def jdkUrl: String = {
     if (settings.jdkApiDocBase.isDefault)
