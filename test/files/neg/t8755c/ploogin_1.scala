@@ -93,7 +93,6 @@ class P(val global: Global) extends Plugin {
     //override val runsBefore = List("terminal")
     override def newPhase(prev: Phase) = new phase(prev)
     class phase(prev: Phase) extends Phase(prev) {
-      println(s"construct c6 prev ${prev}")
       override val name = s"phase $phaseName"
       override def run() = println(name)
     }
