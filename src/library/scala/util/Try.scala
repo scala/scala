@@ -217,7 +217,7 @@ object Try {
       val r1 = r
       Success(r1)
     } catch {
-      case NonFatal(e) => return Failure(e)
+      case NonFatal(e) => Failure(e)
     }
 }
 
