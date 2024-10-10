@@ -539,6 +539,16 @@ trait Trees extends api.Trees {
       traverser.traverse(expr)
       selectors foreach traverser.traverseImportSelector
     }
+    def posOf(sel: ImportSelector): Position = {
+      val pos0 = this.pos
+      val start = sel.namePos
+      if (start >= 0 && selectors.contains(sel)) {
+        val hasRename = sel.rename != null && sel.renamePos >= 0 // !sel.isWildcard
+        val end = if (hasRename) sel.renamePos + sel.rename.length else start + sel.name.length
+        pos0.withStart(start).withEnd(end) ^ start
+      }
+      else pos0
+    }
   }
   object Import extends ImportExtractor
 

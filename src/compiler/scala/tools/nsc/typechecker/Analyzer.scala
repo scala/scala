@@ -33,6 +33,7 @@ trait Analyzer extends AnyRef
             with StdAttachments
             with MacroAnnotationAttachments
             with AnalyzerPlugins
+            with ImportTracking
 {
   val global : Global
   import global._
