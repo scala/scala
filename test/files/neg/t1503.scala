@@ -30,7 +30,7 @@ class Test {
 
   def h(x: Any): String = x match { case s @ "hello, world" => s }
   def h2(x: Any): String = x match { case s @ (_: "hello, world") => s }
-  //def h3(x: Any): "hello, world" = x match { case s @ "hello, world" => s }  // crash
+  def h3(x: Any): "hello, world" = x match { case s @ "hello, world" => s }
 
   //def j(x: Any): Array[Int] = x match { case xs @ Array(42) => xs } // found Array[T] required Array[Int]
 }

@@ -641,7 +641,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // A module reference in a pattern has type Foo.type, not "object Foo"
         narrowIf(checkStable(tree), sym.isModuleNotMethod)
       else if (isModuleTypedExpr)                     // (3)
-        narrowIf(tree, condition = true)
+        narrowIf(tree, condition = !sym.isConstant)
       else if (isGetClassCall)                        // (4)
         tree setType MethodType(Nil, getClassReturnType(pre))
       else
@@ -1055,7 +1055,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (sym != null && !context.unit.isJava && sym.isDeprecated)
           context.deprecationWarning(tree.pos, sym)
         tree match {
-          case Literal(`value`) => tree
+          case Literal(`value`) /*| Bind(_, _)*/ => tree
           case _ =>
             // If the original tree is not a literal, make it available to plugins in an attachment
             treeCopy.Literal(tree, value).updateAttachment(OriginalTreeAttachment(tree))
