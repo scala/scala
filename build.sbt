@@ -126,7 +126,7 @@ ThisBuild / develocityConfiguration := {
           sys.env.get("_scabot_pr").map(pr => "GitHub PR " -> url(s"https://github.com/scala/scala/pull/$pr")))
         .withValues(buildScan.values +
           ("GITHUB_REPOSITORY" -> "scala/scala") +
-          ("GITHUB_BRANCH" -> "2.12.x") ++
+          ("GITHUB_BRANCH" -> "2.13.x") ++
           pubDev.filterNot(_.isEmpty).map("JENKINS_STAGE" -> _) ++
           sys.env.get("JOB_NAME").map("JENKINS_JOB_NAME" -> _) ++
           sys.env.get("repo_ref").map("GITHUB_SHA" -> _) ++
