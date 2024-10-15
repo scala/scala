@@ -18,6 +18,7 @@ case $prDryRun in
     # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
     $SBT \
        -Dstarr.version=$scalaVersion \
+       -Dscala.build.publishDevelocity=test \
        -warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
