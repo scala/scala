@@ -119,7 +119,7 @@ ThisBuild / develocityConfiguration := {
         .withPublishing(Publishing.onlyIf(ctx => pubDev.nonEmpty && ctx.authenticated))
         .withBackgroundUpload(false)
         .tag(if (isInsideCI) "CI" else "Local")
-        .tag("2.12")
+        .tag("2.13")
         .withLinks(buildScan.links ++
           sys.env.get("BUILD_URL").map(u => "Jenkins Build" -> url(u)) ++
           sys.env.get("repo_ref").map(sha => "GitHub Commit" -> url(s"https://github.com/scala/scala/commit/$sha")) ++
