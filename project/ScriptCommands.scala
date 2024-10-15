@@ -28,9 +28,8 @@ object ScriptCommands {
   def setupPublishCoreNonOpt = setup("setupPublishCoreNonOpt") { args =>
     Seq(
       Global / baseVersionSuffix := "SHA-SNAPSHOT"
-    ) ++ (args match {
-      case Seq(url) => publishTarget(url)
-      case Nil => Nil
+    ) ++ (args flatMap {
+      case url => publishTarget(url)
     }) ++ noDocs
   }
 
@@ -38,10 +37,9 @@ object ScriptCommands {
     * The optional argument is the Artifactory snapshot repository URL. */
   def setupPublishCore = setup("setupPublishCore") { args =>
     Seq(
-      Global / baseVersionSuffix := "SHA-SNAPSHOT"
-    ) ++ (args match {
-      case Seq(url) => publishTarget(url)
-      case Nil => Nil
+      Global / baseVersionSuffix := "SHA-SNAPSHOT",
+    ) ++ (args flatMap {
+      case url => publishTarget(url)
     }) ++ noDocs ++ enableOptimizer
   }
 
@@ -53,9 +51,8 @@ object ScriptCommands {
       // sbtTest/scripted uses publishLocal
       Global / baseVersionSuffix := "SHA-TEST-SNAPSHOT",
       LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ (args match {
-      case Seq(url) => Seq(Global / resolvers += "scala-pr" at url)
-      case Nil => Nil
+    ) ++ (args flatMap {
+      case url => Seq(Global / resolvers += "scala-pr" at url)
     }) ++ enableOptimizer
   }
 

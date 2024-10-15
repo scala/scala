@@ -103,6 +103,44 @@ Global / scalaVersion      := {
     versionProps("starr.version")
 }
 
+// Run `sbt -Dscala.build.publishDevelocity` to publish build scans to develocity.scala-lang.org
+// In Jenkins, the `...publishDevelocity=stage` value is used to set the `JENKINS_STAGE` value of the scan
+ThisBuild / develocityConfiguration := {
+  def pubDev = Option(System.getProperty("scala.build.publishDevelocity"))
+  val isInsideCI = sys.env.get("JENKINS_URL").exists(_.contains("scala-ci.typesafe.com"))
+  val config = develocityConfiguration.value
+  val buildScan = config.buildScan
+  val buildCache = config.buildCache
+  config
+    .withProjectId(ProjectId("scala2"))
+    .withServer(config.server.withUrl(Some(url("https://develocity.scala-lang.org"))))
+    .withBuildScan(
+      buildScan
+        .withPublishing(Publishing.onlyIf(ctx => pubDev.nonEmpty && ctx.authenticated))
+        .withBackgroundUpload(false)
+        .tag(if (isInsideCI) "CI" else "Local")
+        .tag("2.12")
+        .withLinks(buildScan.links ++
+          sys.env.get("BUILD_URL").map(u => "Jenkins Build" -> url(u)) ++
+          sys.env.get("repo_ref").map(sha => "GitHub Commit" -> url(s"https://github.com/scala/scala/commit/$sha")) ++
+          sys.env.get("_scabot_pr").map(pr => "GitHub PR " -> url(s"https://github.com/scala/scala/pull/$pr")))
+        .withValues(buildScan.values +
+          ("GITHUB_REPOSITORY" -> "scala/scala") +
+          ("GITHUB_BRANCH" -> "2.12.x") ++
+          pubDev.filterNot(_.isEmpty).map("JENKINS_STAGE" -> _) ++
+          sys.env.get("JOB_NAME").map("JENKINS_JOB_NAME" -> _) ++
+          sys.env.get("repo_ref").map("GITHUB_SHA" -> _) ++
+          sys.env.get("_scabot_pr").map("GITHUB_PR" -> _) ++
+          sys.env.get("NODE_NAME").map("JENKINS_NODE" -> _))
+        .withObfuscation(buildScan.obfuscation.withIpAddresses(_.map(_ => "0.0.0.0")))
+    )
+    .withBuildCache(
+      buildCache
+        .withLocal(buildCache.local.withEnabled(false))
+        .withRemote(buildCache.remote.withEnabled(false))
+    )
+}
+
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
   crossPaths := false,
@@ -484,48 +522,6 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
-<<<<<<< HEAD
-||||||| f0ee0ab1ae
-lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
-  .dependsOn(compiler, reflect, library)
-  .settings(clearSourceAndResourceDirectories)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(disablePublishing)
-  .settings(
-    libraryDependencies ++= {
-      val jacksonVersion = "2.17.2"
-      Seq(
-        "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
-        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
-        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
-      )
-    }
-  )
-
-=======
-lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
-  .dependsOn(compiler, reflect, library)
-  .settings(clearSourceAndResourceDirectories)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(disablePublishing)
-  .settings(
-    libraryDependencies ++= {
-      val jacksonVersion = "2.18.0"
-      Seq(
-        "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
-        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
-        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
-        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
-      )
-    }
-  )
-
->>>>>>> 07ce417eb1
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
@@ -1191,7 +1187,7 @@ def partestOnly(in: String): Def.Initialize[Task[Unit]] =
 def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
   partestOnly(in).result map (_ -> s"partest $in")
 
-lazy val root: Project = (project in file("."))
+lazy val scala2: Project = (project in file("."))
   .settings(disableDocs)
   .settings(generateBuildCharacterFileSettings)
   .settings(
