@@ -550,7 +550,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         || mode.inQualMode && !tree.symbol.isConstant
         || !(tree.tpe <:< pt) && (ptSym.isAbstractType && pt.lowerBound.isStable || ptSym.isRefinementClass)
       )
-
+      def isNarrowable(tpe: Type): Boolean = unwrapWrapperTypes(tpe) match {
+        case TypeRef(_, _, _) | RefinedType(_, _) => true
+        case tpe                                  => !isConstantType(tpe) && !phase.erasedTypes
+      }
       (    isNarrowable(tree.tpe)
         && mode.typingExprNotLhs
         && expectsStable
@@ -601,15 +604,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     protected def stabilize(tree: Tree, pre: Type, mode: Mode, pt: Type): Tree = {
 
-      // Side effect time! Don't be an idiot like me and think you
-      // can move "val sym = tree.symbol" before this line, because
-      // inferExprAlternative side-effects the tree's symbol.
-      if (tree.symbol.isOverloaded && !mode.inFunMode)
-        inferExprAlternative(tree, pt)
-
-      val sym = tree.symbol
+      val sym = {
+        // inferExprAlternative side-effects the tree's symbol.
+        if (tree.symbol.isOverloaded && !mode.inFunMode)
+          inferExprAlternative(tree, pt)
+        tree.symbol
+      }
       val isStableIdPattern = mode.typingPatternNotConstructor && tree.isTerm
-
       def isModuleTypedExpr = (
            treeInfo.admitsTypeSelection(tree)
         && (isStableContext(tree, mode, pt) || sym.isModuleNotMethod)
@@ -626,31 +627,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // this so for now it requires the type symbol be public.
       def isGetClassCall = isGetClass(sym) && pre.typeSymbol.isPublic
 
-      def narrowIf(tree: Tree, condition: Boolean) =
-        if (condition) tree setType singleType(pre, sym) else tree
-
-      def checkStable(tree: Tree): Tree =
-        if (treeInfo.isStableIdentifierPattern(tree)) tree
-        else UnstableTreeError(tree)
-
       if (tree.isErrorTyped)
         tree
       else if (!sym.isValue && isStableValueRequired) // (2)
         NotAValueError(tree, sym)
       else if (isStableIdPattern)                     // (1)
-        // A module reference in a pattern has type Foo.type, not "object Foo"
-        narrowIf(checkStable(tree), sym.isModuleNotMethod)
+        if (!treeInfo.isStableIdentifierPattern(tree)) UnstableTreeError(tree)
+        else if (sym.isModuleNotMethod) tree.setType(singleType(pre, sym))
+        else tree
       else if (isModuleTypedExpr)                     // (3)
-        narrowIf(tree, condition = !sym.isConstant)
+        tree.setType(singleType(pre, sym))
       else if (isGetClassCall)                        // (4)
-        tree setType MethodType(Nil, getClassReturnType(pre))
+        tree.setType(MethodType(Nil, getClassReturnType(pre)))
       else
         tree
-    }
-
-    private def isNarrowable(tpe: Type): Boolean = unwrapWrapperTypes(tpe) match {
-      case TypeRef(_, _, _) | RefinedType(_, _) => true
-      case _                                    => !phase.erasedTypes
     }
 
     def stabilizeFun(tree: Tree, mode: Mode, pt: Type): Tree = {
