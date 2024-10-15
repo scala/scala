@@ -33,6 +33,9 @@ jobs:
           java-version: ${{matrix.java}}
           cache: sbt
 
+      - name: Setup SBT
+        uses: sbt/setup-sbt@v1
+
       - name: Build
         run: |
           sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
