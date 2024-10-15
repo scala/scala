@@ -37,7 +37,7 @@ import scala.build._, VersionUtil._
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.13.2"
 val junitInterfaceDep = "com.github.sbt"                 % "junit-interface"                  % "0.13.3"                          % Test
-val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.18.0"                          % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.18.1"                          % Test
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
@@ -484,6 +484,48 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
+<<<<<<< HEAD
+||||||| f0ee0ab1ae
+lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
+  .dependsOn(compiler, reflect, library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    libraryDependencies ++= {
+      val jacksonVersion = "2.17.2"
+      Seq(
+        "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      )
+    }
+  )
+
+=======
+lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
+  .dependsOn(compiler, reflect, library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    libraryDependencies ++= {
+      val jacksonVersion = "2.18.0"
+      Seq(
+        "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
+        "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
+        "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
+        "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      )
+    }
+  )
+
+>>>>>>> 07ce417eb1
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
