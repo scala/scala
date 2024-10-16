@@ -21,7 +21,7 @@ C(2,3)
       case _ => scala.runtime.Statics.ioobe[Any](x$1)
     };
     override <synthetic> def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](C.this);
-    <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
+    <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]().&&(C.this.productPrefix.==(x$1.asInstanceOf[C].productPrefix));
     override <synthetic> def productElementName(x$1: Int): String = x$1 match {
       case 0 => "x"
       case 1 => "y"

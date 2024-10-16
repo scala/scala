@@ -135,7 +135,11 @@ trait SyntheticMethods extends ast.TreeDSL {
     def canEqualMethod: Tree = {
       syntheticCanEqual = true
       createMethod(nme.canEqual_, List(AnyTpe), BooleanTpe) { m =>
-        Ident(m.firstParam) IS_OBJ classExistentialType(context.prefix, clazz)
+        val isInst = Ident(m.firstParam) IS_OBJ classExistentialType(context.prefix, clazz)
+        isInst AND fn(
+          gen.mkAttributedSelect(mkThis, Product_productPrefix),
+          Any_==,
+          gen.mkAttributedSelect(thatCast(m), Product_productPrefix))
       }
     }
 
