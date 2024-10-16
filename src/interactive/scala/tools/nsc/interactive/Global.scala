@@ -209,7 +209,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** A map that associates with each abstract file the set of responses that ware waiting
    *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var getParsedEnteredResponses = newResponseMap
+  protected val getParsedEnteredResponses = newResponseMap
 
   private def cleanResponses(rmap: ResponseMap): Unit = {
     for ((source, rs) <- rmap.toList) {
@@ -301,6 +301,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   def isOutOfDate: Boolean = outOfDate
 
   def demandNewCompilerRun() = {
+    if (!lastWasReload) allSources.foreach(getUnit(_).foreach(reset(_)))
     if (outOfDate) throw new FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
@@ -429,13 +430,14 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  @param pos   The position of the tree if polling while typechecking, NoPosition otherwise
    *
    */
+  @nowarn("cat=lint-nonlocal-return")
   private[interactive] def pollForWork(pos: Position): Unit = {
     var loop: Boolean = true
     while (loop) {
-      breakable{
+      breakable {
         loop = false
         // TODO refactor to eliminate breakable/break/return?
-        (if (!interruptsEnabled) return): @nowarn("cat=lint-nonlocal-return")
+        if (!interruptsEnabled) return
         if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
           Thread.`yield`()
 
@@ -448,7 +450,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           case Some(WorkEvent(id, _)) =>
             debugLog("some work at node "+id+" current = "+nodesSeen)
           //        assert(id >= nodesSeen)
-          moreWorkAtNode = id
+            moreWorkAtNode = id
           case None =>
         }
 
@@ -464,7 +466,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
                 debugLog("ask finished"+timeStep)
                 interruptsEnabled = true
               }
-            loop = true; break()
+              loop = true
+              break()
             case _ =>
           }
 
@@ -475,8 +478,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           logreplay("exception thrown", scheduler.pollThrowable()) match {
             case Some(ex: FreshRunReq) =>
               newTyperRun()
-            minRunId = currentRunId
-            demandNewCompilerRun()
+              minRunId = currentRunId
+              demandNewCompilerRun()
 
             case Some(ShutdownReq) =>
               scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
@@ -498,7 +501,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
                 throw ShutdownReq
               }
 
-            case Some(ex: Throwable) => log.flush(); throw ex
+            case Some(ex: Throwable) =>
+              log.flush()
+              throw ex
             case _ =>
           }
 
@@ -563,7 +568,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     reporter.reset()
 
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
-    allSources = allSources filter (s => unitOfFile contains (s.file))
+    allSources = allSources.filter(s => unitOfFile.contains(s.file))
 
     // ensure all loaded units are parsed
     for (s <- allSources; unit <- getUnit(s)) {
@@ -583,7 +588,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
 
     // ensure all loaded units are typechecked
-    for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
+    for (s <- allSources if !ignoredFiles(s.file); unit <- getUnit(s))
       try {
         if (!unit.isUpToDate)
           if (unit.problems.isEmpty || !settings.YpresentationStrict.value)
@@ -611,7 +616,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
           reporter.error(unit.body.pos, "Presentation compiler crashed while type checking this file: %s".format(ex.toString()))
       }
-    }
 
     // move units removable after this run to the "to-be-removed" buffer
     toBeRemoved.synchronized {
@@ -720,9 +724,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           val result = results.head
           results = results.tail
           if (results.isEmpty) {
-            response set result
+            response.set(result)
             debugLog("responded"+timeStep)
-          } else response setProvisionally result
+          }
+          else {
+            response.setProvisionally(result)
+          }
         }
       }
     } catch {
@@ -860,15 +867,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   private def withTempUnits[T](sources: List[SourceFile])(f: (SourceFile => RichCompilationUnit) => T): T = {
     val unitOfSrc: SourceFile => RichCompilationUnit = src => unitOfFile(src.file)
-    sources filterNot (getUnit(_).isDefined) match {
+    sources.filterNot(getUnit(_).isDefined) match {
       case Nil =>
         f(unitOfSrc)
       case unknown =>
         reloadSources(unknown)
-        try {
-          f(unitOfSrc)
-        } finally
-          afterRunRemoveUnitsOf(unknown)
+        try f(unitOfSrc)
+        finally afterRunRemoveUnitsOf(unknown)
     }
   }
 
@@ -949,21 +954,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askDocComment */
-  private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol, fragments: List[(Symbol,SourceFile)],
+  private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol,
+                                         fragments: List[(Symbol, SourceFile)],
                                          response: Response[(String, String, Position)]): Unit = {
     informIDE(s"getDocComment $sym at $source, site $site")
     respond(response) {
-      withTempUnits(fragments.unzip._2){ units =>
-        for((sym, src) <- fragments) {
-          val mirror = findMirrorSymbol(sym, units(src))
-          if (mirror ne NoSymbol) forceDocComment(mirror, units(src))
+      withTempUnits(fragments.unzip._2) { unitForSrc =>
+        for ((sym, src) <- fragments) {
+          val mirror = findMirrorSymbol(sym, unitForSrc(src))
+          if (mirror ne NoSymbol) forceDocComment(mirror, unitForSrc(src))
         }
-        val mirror = findMirrorSymbol(sym, units(source))
+        val mirror = findMirrorSymbol(sym, unitForSrc(source))
         if (mirror eq NoSymbol)
           ("", "", NoPosition)
-        else {
+        else
           (expandedDocComment(mirror, site), rawDocComment(mirror), docCommentPos(mirror))
-        }
       }
     }
     // New typer run to remove temp units and drop per-run caches that might refer to symbols entered from temp units.

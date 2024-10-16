@@ -75,19 +75,15 @@ abstract class InteractiveTest
   protected def ++(tests: PresentationCompilerTestDef*): Unit = testActions ++= tests
 
   /** Test's entry point */
-  def main(args: Array[String]): Unit = {
-    try execute()
-    finally askShutdown()
-  }
+  def main(args: Array[String]): Unit = try execute() finally askShutdown()
 
-  protected def execute(): Unit = {
+  protected def execute(): Unit =
     util.stringFromStream { ostream =>
       Console.withOut(ostream) {
         loadSources()
         runDefaultTests()
       }
     }.linesIterator.map(normalize).foreach(println)
-  }
 
   protected def normalize(s: String) = s
 
