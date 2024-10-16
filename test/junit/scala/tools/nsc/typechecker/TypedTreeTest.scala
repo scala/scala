@@ -60,19 +60,22 @@ class TypedTreeTest extends BytecodeTesting {
     import compiler.global._
     val code =
       """object O {
-        |  final val x = 42
+        |  final val x = 42       // accessor gets inlined constant
         |  def f(x: Int) = x
         |  def f(x: Boolean) = x
-        |  f(O.x)
+        |  f(O.x)                 // arg is inlined constant
         |}
       """.stripMargin
     val run = compiler.newRun()
     run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
     val tree = run.units.next().body
-    val attached = tree.filter(_.hasAttachment[analyzer.OriginalTreeAttachment]).toList
-    assertEquals(1, attached.length)
-    val List(t) = attached
-    assertEquals("42:Set(OriginalTreeAttachment(O.x))", s"$t:${t.attachments.all}")
+    tree.filter(_.hasAttachment[analyzer.OriginalTreeAttachment])
+      .sortBy(_.pos.start)
+      .toList
+      .map(t => s"$t:${t.attachments.all}") match {
+        case "42:Set(OriginalTreeAttachment(O.this.x))" :: "42:Set(OriginalTreeAttachment(O.x))" :: Nil =>
+        case wrong => throw new MatchError(wrong)
+      }
   }
 
 
