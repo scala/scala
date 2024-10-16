@@ -87,6 +87,7 @@ abstract class BackendUtils extends PerRunInit {
     case "21" => asm.Opcodes.V21
     case "22" => asm.Opcodes.V22
     case "23" => asm.Opcodes.V23
+    case "24" => asm.Opcodes.V24
     // to be continued...
   })
 
