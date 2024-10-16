@@ -531,7 +531,7 @@ trait TypeComparers {
       sym2 match {
         case SingletonClass                   => tp1.isStable || fourthTry
         case _: ClassSymbol                   => classOnRight
-        case _: TypeSymbol if sym2.isDeferred => abstractTypeOnRight(tp2.lowerBound) || fourthTry
+        case _: TypeSymbol if sym2.isDeferred => fourthTry || abstractTypeOnRight(tp2.lowerBound)
         case _: TypeSymbol                    => retry(normalizePlus(tp1), normalizePlus(tp2))
         case _                                => fourthTry
       }
