@@ -1167,7 +1167,16 @@ object LazyList extends SeqFactory[LazyList] {
     /** Construct a LazyList consisting of the concatenation of the given LazyList and
       *  another LazyList.
       */
-    def #:::[B >: A](prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l()
+    def #:::[B >: A](prefix: => LazyList[B]): LazyList[B] = newLL(prefix.state) lazyAppendedAll l()
+
+    /** @deprecated Use the #::: method with a by-name parameter instead.
+      *             This can be accomplished by simply recompiling.
+      */
+    @deprecated(
+      "Use the #::: method with a by-name parameter instead; see docs for more info",
+      since = "2.13.15"
+    )
+    protected[immutable] def #:::[B >: A]()(prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l()
   }
 
   object #:: {
