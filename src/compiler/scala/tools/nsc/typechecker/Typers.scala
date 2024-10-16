@@ -41,7 +41,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   final val shortenImports = false
 
   // All typechecked RHS of ValDefs for right-associative operator desugaring
-  private val rightAssocValDefs = new mutable.AnyRefMap[Symbol, Tree]
+  private val rightAssocValDefs = new mutable.HashMap[Symbol, Tree]
   // Symbols of ValDefs for right-associative operator desugaring which are passed by name and have been inlined
   private val inlinedRightAssocValDefs = new mutable.HashSet[Symbol]
 
@@ -50,7 +50,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   // chain, this is used to determine which are true aliases, ones where the field can be elided from this class.
   // And yes, if you were asking, this is yet another binary fragility, as we bake knowledge of the super class into
   // this class.
-  private val superConstructorCalls: mutable.AnyRefMap[Symbol, collection.Map[Symbol, Symbol]] = perRunCaches.newAnyRefMap()
+  private val superConstructorCalls: mutable.HashMap[Symbol, collection.Map[Symbol, Symbol]] = perRunCaches.newMap()
 
   // allows override of the behavior of the resetTyper method w.r.t comments
   def resetDocComments() = clearDocComments()
@@ -2281,7 +2281,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!superClazz.isJavaDefined) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (sameLength(superParamAccessors, superArgs)) {
-            val accToSuperAcc = mutable.AnyRefMap[Symbol, Symbol]()
+            val accToSuperAcc = mutable.HashMap[Symbol, Symbol]()
             for ((superAcc, superArg@Ident(name)) <- superParamAccessors zip superArgs) {
               if (mexists(vparamss)(_.symbol == superArg.symbol)) {
                 val ownAcc = clazz.info decl name suchThat (_.isParamAccessor) match {

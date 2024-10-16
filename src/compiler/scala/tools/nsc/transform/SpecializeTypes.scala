@@ -15,7 +15,7 @@ package tools.nsc
 package transform
 
 import scala.annotation._
-import scala.collection.mutable, mutable.{AnyRefMap, Buffer, ListBuffer}
+import scala.collection.mutable, mutable.{Buffer, HashMap, ListBuffer}
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.chaining._
@@ -80,7 +80,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private implicit val typeOrdering: Ordering[Type] = Ordering[String] on ("" + _.typeSymbol.name)
 
   /** For a given class and concrete type arguments, give its specialized class */
-  val specializedClass = perRunCaches.newAnyRefMap[Symbol, AnyRefMap[TypeEnv, Symbol]]()
+  val specializedClass = perRunCaches.newAnyRefMap[Symbol, HashMap[TypeEnv, Symbol]]()
 
   // read-only map, where missing value defaults to empty immutable.Map
   def specializationOf(sym: Symbol) = specializedClass.getOrElse(sym, Map.empty[TypeEnv, Symbol])
@@ -630,7 +630,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       val env = mapAnyRefsInSpecSym(env0, clazz, sClass)
       typeEnv(sClass) = env
-      specializedClass.getOrElseUpdate(clazz, AnyRefMap.empty).update(env0, sClass)
+      specializedClass.getOrElseUpdate(clazz, HashMap.empty).update(env0, sClass)
 
       val decls1                        = newScope  // declarations of the newly specialized class 'sClass'
       var oldClassTParams: List[Symbol] = Nil       // original unspecialized type parameters
@@ -1529,10 +1529,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     /** Map a specializable method to its rhs, when not deferred. */
-    val body = AnyRefMap.empty[Symbol, Tree]
+    val body = HashMap.empty[Symbol, Tree]
 
     /** Map a specializable method to its value parameter symbols. */
-    val parameters = AnyRefMap.empty[Symbol, List[Symbol]]
+    val parameters = HashMap.empty[Symbol, List[Symbol]]
 
     /** Collect method bodies that are concrete specialized methods.
      */

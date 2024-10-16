@@ -75,6 +75,7 @@ object IsMap {
     }
 
   // AnyRefMap has stricter bounds than the ones used by the mapOpsIsMap definition
+  @deprecated("AnyRefMap is deprecated", "2.13.0")
   implicit def anyRefMapIsMap[K0 <: AnyRef, V0]: IsMap[mutable.AnyRefMap[K0, V0]] { type K = K0; type V = V0; type C = mutable.AnyRefMap[K0, V0] } =
     new IsMap[mutable.AnyRefMap[K0, V0]] {
       type K = K0

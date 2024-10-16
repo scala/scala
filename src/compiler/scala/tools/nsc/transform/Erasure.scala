@@ -33,7 +33,7 @@ abstract class Erasure extends InfoTransform
 
   val phaseName: String = "erasure"
 
-  val requiredDirectInterfaces = perRunCaches.newAnyRefMap[Symbol, mutable.Set[Symbol]]()
+  val requiredDirectInterfaces = perRunCaches.newMap[Symbol, mutable.Set[Symbol]]()
 
   def newTransformer(unit: CompilationUnit): AstTransformer =
     new ErasureTransformer(unit)

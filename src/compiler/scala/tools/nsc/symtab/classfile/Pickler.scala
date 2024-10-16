@@ -150,7 +150,7 @@ abstract class Pickler extends SubComponent {
     override protected def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value
   }
 
-  type Index   = mutable.AnyRefMap[AnyRef, Int] // a map from objects (symbols, types, names, ...) to indices into Entries
+  type Index   = mutable.HashMap[AnyRef, Int] // a map from objects (symbols, types, names, ...) to indices into Entries
   type Entries = Array[AnyRef]
 
   final val InitEntriesSize = 256
@@ -158,7 +158,7 @@ abstract class Pickler extends SubComponent {
   private[this] var _entries: Entries = _
 
   final def initPickle(root: Symbol, noPrivates: Boolean)(f: Pickle => Unit): Pickle = {
-    if (_index eq null)   { _index   = new Index(InitEntriesSize) }
+    if (_index eq null)   { _index   = new Index(InitEntriesSize, mutable.HashMap.defaultLoadFactor) }
     if (_entries eq null) { _entries = new Entries(InitEntriesSize) }
     val pickle = new Pickle(root, _index, _entries, noPrivates)
     try f(pickle) finally { pickle.close(); _index.clear(); fill(_entries, null) }
