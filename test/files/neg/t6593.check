@@ -1,0 +1,147 @@
+t6593.scala:69: warning: comparing values of types Any and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
+    any equals 1 // w: bypass
+        ^
+t6593.scala:77: warning: Cls and FinCls are unrelated: they will most likely never compare equal
+    cls == fin // w: unrelated
+        ^
+t6593.scala:78: warning: Cls and Eqs are unrelated: they will most likely never compare equal
+    cls == eqs // w: unrelated
+        ^
+t6593.scala:79: warning: Cls and String are unrelated: they will most likely never compare equal
+    cls == str // w: unrelated
+        ^
+t6593.scala:80: warning: Cls and List[Int] are unrelated: they will most likely never compare equal
+    cls == lst // w: unrelated
+        ^
+t6593.scala:81: warning: Cls and scala.collection.immutable.Nil.type are unrelated: they will most likely never compare equal
+    cls == Nil // w: unrelated
+        ^
+t6593.scala:82: warning: Cls and Int are unrelated: they will most likely never compare equal
+    cls == 1 // w: unrelated
+        ^
+t6593.scala:83: warning: Cls and Integer are unrelated: they will most likely never compare equal
+    cls == intB // w: unrelated
+        ^
+t6593.scala:90: warning: SubCls and FinCls are unrelated: they will most likely never compare equal
+    sub == fin // w: unrelated
+        ^
+t6593.scala:94: warning: FinCls and Cls are unrelated: they will most likely never compare equal
+    fin == cls // w: unrelated
+        ^
+t6593.scala:95: warning: comparing values of types FinCls and Int using `==` will always yield false
+    fin == 1 // w: non-sensible
+        ^
+t6593.scala:96: warning: comparing values of types FinCls and String using `==` will always yield false
+    fin == str // w: non-sensible
+        ^
+t6593.scala:97: warning: FinCls and List[Int] are unrelated: they will most likely never compare equal
+    fin == lst // w: unrelated
+        ^
+t6593.scala:98: warning: comparing values of types FinCls and scala.collection.immutable.Nil.type using `==` will always yield false
+    fin == Nil // w: non-sensible (both are final, unlike the line above)
+        ^
+t6593.scala:99: warning: comparing a fresh object using `==` will always yield false
+    fin == new AnyRef() // w: final receiver, fresh
+        ^
+t6593.scala:110: warning: comparing values of types CC and Cls using `==` will always yield false
+    cc == cls // w: non-sensible
+       ^
+t6593.scala:111: warning: comparing values of types CC and Cls using `==` will always yield false
+    scc == cls // w: non-sensible (wrong)
+        ^
+t6593.scala:112: warning: comparing values of types CC and Int using `==` will always yield false
+    cc == 1 // w: non-sensible
+       ^
+t6593.scala:117: warning: comparing values of types String and Cls using `==` will always yield false
+    str == cls // w: non-sensible
+        ^
+t6593.scala:118: warning: comparing values of types String and Int using `==` will always yield false
+    str == 1 // w: non-sensible
+        ^
+t6593.scala:120: warning: comparing values of types String and Option[Int] using `!=` will always yield true
+    str != opt // w: non-sensible
+        ^
+t6593.scala:130: warning: Option[Int] and Cls are unrelated: they will most likely never compare equal
+    opt == cls // w: unrelated
+        ^
+t6593.scala:131: warning: Option[Int] and Int are unrelated: they will most likely never compare equal
+    opt == 1 // w: unrelated
+        ^
+t6593.scala:132: warning: Option[Int] and String are unrelated: they will most likely never compare equal
+    opt == str // w: unrelated
+        ^
+t6593.scala:133: warning: Option[Int] and List[Int] are unrelated: they will most likely never compare equal
+    opt == lst // w: unrelated
+        ^
+t6593.scala:137: warning: comparing values of types Some[Int] and Cls using `==` will always yield false
+    som == cls // w: non-sensible
+        ^
+t6593.scala:138: warning: comparing values of types Some[Int] and Int using `==` will always yield false
+    som == 1 // w: non-sensible
+        ^
+t6593.scala:139: warning: comparing values of types Some[Int] and String using `==` will always yield false
+    som == str // w: non-sensible
+        ^
+t6593.scala:144: warning: comparing values of types List[Int] and Cls using `==` will always yield false
+    lst == cls // w: non-sensible (collections)
+        ^
+t6593.scala:145: warning: comparing values of types List[Int] and Int using `==` will always yield false
+    lst == 1 // w: non-sensible (collections)
+        ^
+t6593.scala:146: warning: comparing values of types List[Int] and Option[Int] using `==` will always yield false
+    lst == opt // w: non-sensible (collections)
+        ^
+t6593.scala:147: warning: comparing values of types List[Int] and String using `==` will always yield false
+    lst == str // w: non-sensible (collections)
+        ^
+t6593.scala:148: warning: comparing values of types List[Int] and scala.collection.immutable.Set[Int] using `==` will always yield false
+    lst == set // w: non-sensible (collections)
+        ^
+t6593.scala:150: warning: comparing values of types List[Int] and scala.collection.mutable.Map[Int,Int] using `==` will always yield false
+    lst == map // w: non-sensible (collections)
+        ^
+t6593.scala:151: warning: comparing values of types List[Int] and Eqs using `==` will always yield false
+    lst == eqs // w: non-sensible (collections)
+        ^
+t6593.scala:153: warning: comparing values of types List[Int] and Iterator[Int] using `==` will always yield false
+    lst == itr // w: non-sensible (collections)
+        ^
+t6593.scala:159: warning: comparing values of types Int and Cls using `==` will always yield false
+    int == cls   // w: non-sensible
+        ^
+t6593.scala:160: warning: comparing values of types Int and String using `==` will always yield false
+    int == ""    // w: non-sensible
+        ^
+t6593.scala:162: warning: comparing values of types Int and Boolean using `==` will always yield false
+    int == true  // w: non-sensible
+        ^
+t6593.scala:164: warning: comparing values of types Int and Boolean using `==` will always yield false
+    int == booB  // w: non-sensible
+        ^
+t6593.scala:165: warning: comparing values of types Int and Unit using `==` will always yield false
+    int == ()    // w: non-sensible
+        ^
+t6593.scala:166: warning: comparing values of types Int and scala.runtime.BoxedUnit using `==` will always yield false
+    int == uniB // w: non-sensible
+        ^
+t6593.scala:172: warning: comparing values of types Null and Int using `==` will always yield false
+    null == int  // w: non-sensible
+         ^
+t6593.scala:178: warning: comparing values of types Integer and Cls using `==` will always yield false
+    intB == cls // w: non-sensible
+         ^
+t6593.scala:179: warning: comparing values of types Integer and String using `==` will always yield false
+    intB == str // w: non-sensible
+         ^
+t6593.scala:183: warning: comparing values of types Integer and Boolean using `==` will always yield false
+    intB == true // w: non-sensible
+         ^
+t6593.scala:184: warning: comparing values of types Integer and Boolean using `==` will always yield false
+    intB == booB // w: non-sensible
+         ^
+t6593.scala:185: warning: comparing values of types Integer and Unit using `==` will always yield false
+    intB == ()   // w: non-sensible
+         ^
+error: No warnings can be incurred under -Werror.
+48 warnings
+1 error

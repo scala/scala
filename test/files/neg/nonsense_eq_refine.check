@@ -1,9 +1,0 @@
-nonsense_eq_refine.scala:7: warning: E and String are unrelated: they will most likely never compare equal
-  if (e == "") ??? // warn about comparing unrelated types
-        ^
-nonsense_eq_refine.scala:10: warning: SE and String are unrelated: they will most likely never compare equal
-  if (se == "") ??? // types are still unrelated
-         ^
-error: No warnings can be incurred under -Werror.
-2 warnings
-1 error
