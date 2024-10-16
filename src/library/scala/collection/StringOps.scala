@@ -1201,14 +1201,16 @@ final class StringOps(private val s: String) extends AnyVal {
   def withFilter(p: Char => Boolean): StringOps.WithFilter = new StringOps.WithFilter(p, s)
 
   /** The rest of the string without its first char.
-    * @note $unicodeunaware
-    */
-  def tail: String = slice(1, s.length)
+   *  @throws UnsupportedOperationException if the string is empty.
+   *  @note $unicodeunaware
+   */
+  def tail: String = if(s.isEmpty) throw new UnsupportedOperationException("tail of empty String") else slice(1, s.length)
 
   /** The initial part of the string without its last char.
-    * @note $unicodeunaware
-    */
-  def init: String = slice(0, s.length-1)
+   *  @throws UnsupportedOperationException if the string is empty.
+   * @note $unicodeunaware
+   */
+  def init: String = if(s.isEmpty) throw new UnsupportedOperationException("init of empty String") else slice(0, s.length-1)
 
   /** A string containing the first `n` chars of this string.
     * @note $unicodeunaware
