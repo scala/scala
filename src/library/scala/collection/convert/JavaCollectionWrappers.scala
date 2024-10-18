@@ -474,6 +474,7 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   @SerialVersionUID(3L)
   class JConcurrentMapWrapper[K, V](val underlying: juc.ConcurrentMap[K, V])
     extends AbstractJMapWrapper[K, V]
+      with JMapWrapperLike[K, V, concurrent.Map, concurrent.Map[K, V]]
       with concurrent.Map[K, V] {
 
     override def get(k: K) = Option(underlying get k)
