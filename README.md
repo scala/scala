@@ -244,8 +244,8 @@ The CI also publishes nightly API docs:
   - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/?C=M;O=D)
     - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/2.13.x/)
 
-Using a nightly build in sbt is explained in
-[this Stack Overflow answer](http://stackoverflow.com/questions/40622878)
+Using a nightly build in sbt and other tools is explained on this
+[doc page](https://docs.scala-lang.org/overviews/core/nightlies.html)
 
 ## Scala CI internals
 
