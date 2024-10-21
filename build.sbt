@@ -45,7 +45,7 @@ val jnaDep            = "net.java.dev.jna"               % "jna"                
 val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.12"
-val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.2"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.3"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
