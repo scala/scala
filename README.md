@@ -288,11 +288,11 @@ $ sbt
 
 ## "Nightly" builds
 
-The Scala CI builds nightly download releases and publishes
-them to https://scala-ci.typesafe.com/artifactory/scala-integration/ .
+The Scala CI publishes these to
+https://scala-ci.typesafe.com/artifactory/scala-integration/ .
 
-Using a nightly build in sbt is explained in
-[this Stack Overflow answer](https://stackoverflow.com/questions/40622878)
+Using a nightly build in sbt and other tools is explained on this
+[doc page](https://docs.scala-lang.org/overviews/core/nightlies.html).
 
 Although we casually refer to these as "nightly" builds, they aren't
 actually built nightly, but "mergely".  That is to say, a build is
