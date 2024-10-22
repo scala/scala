@@ -758,7 +758,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @param that     the iterable providing the second half of each result pair
     *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
     *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
-    *  @return        a new collection of type `That` containing pairs consisting of
+    *  @return        a new $coll containing pairs consisting of
     *                 corresponding elements of this $coll and `that`. The length
     *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
     *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
