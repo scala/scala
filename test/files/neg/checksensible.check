@@ -1,120 +1,129 @@
 checksensible.scala:54: warning: symbol literal is deprecated; use Symbol("sym") instead [quickfixable]
-  (1 != 'sym)
+  (1 != 'sym)      // w
         ^
 checksensible.scala:15: warning: comparing a fresh object using `eq` will always yield false
-  (new AnyRef) eq (new AnyRef)
+  (new AnyRef) eq (new AnyRef)         // w
                ^
 checksensible.scala:16: warning: comparing a fresh object using `ne` will always yield true
-  (new AnyRef) ne (new AnyRef)
+  (new AnyRef) ne (new AnyRef)         // w
                ^
 checksensible.scala:17: warning: comparing a fresh object using `eq` will always yield false
-  Shmoopie eq (new AnyRef)
+  Shmoopie eq (new AnyRef)             // w
            ^
 checksensible.scala:18: warning: comparing a fresh object using `eq` will always yield false
-  (Shmoopie: AnyRef) eq (new AnyRef)
+  (Shmoopie: AnyRef) eq (new AnyRef)   // w
                      ^
 checksensible.scala:19: warning: comparing a fresh object using `eq` will always yield false
-  (new AnyRef) eq Shmoopie
+  (new AnyRef) eq Shmoopie             // w
                ^
 checksensible.scala:20: warning: comparing a fresh object using `eq` will always yield false
-  (new AnyRef) eq null
+  (new AnyRef) eq null                 // w
                ^
 checksensible.scala:21: warning: comparing a fresh object using `eq` will always yield false
-  null eq new AnyRef
+  null eq new AnyRef                   // w
        ^
 checksensible.scala:28: warning: comparing values of types Unit and Int using `==` will always yield false
-  (c = 1) == 0
+  (c = 1) == 0 // w
           ^
 checksensible.scala:29: warning: comparing values of types Integer and Unit using `==` will always yield false
-  0 == (c = 1)
+  0 == (c = 1) // w
     ^
 checksensible.scala:31: warning: comparing values of types Int and String using `==` will always yield false
-  1 == "abc"
+  1 == "abc"        // w
     ^
+checksensible.scala:34: warning: comparing values of types String and Int using `==` will always yield false
+  "abc" == 1        // w: string equality is known
+        ^
 checksensible.scala:35: warning: comparing values of types Some[Int] and Int using `==` will always yield false
-  Some(1) == 1      // as above
+  Some(1) == 1      // w: case class equals
           ^
 checksensible.scala:40: warning: comparing a fresh object using `==` will always yield false
-  new AnyRef == 1
+  new AnyRef == 1                      // w: fresh object
              ^
 checksensible.scala:43: warning: comparing values of types Int and Boolean using `==` will always yield false
-  1 == java.lang.Boolean.valueOf(true)
+  1 == java.lang.Boolean.valueOf(true) // w
     ^
 checksensible.scala:45: warning: comparing values of types Int and Boolean using `!=` will always yield true
-  1 != true
+  1 != true                          // w
     ^
 checksensible.scala:46: warning: comparing values of types Unit and Boolean using `==` will always yield false
-  () == true
+  () == true                         // w
      ^
 checksensible.scala:47: warning: comparing values of types Unit and Unit using `==` will always yield true
-  () == ()
+  () == ()                           // w
      ^
 checksensible.scala:48: warning: comparing values of types Unit and Unit using `==` will always yield true
-  () == println()
+  () == println()                    // w
      ^
 checksensible.scala:49: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
-  () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
+  () == scala.runtime.BoxedUnit.UNIT // w
      ^
 checksensible.scala:50: warning: comparing values of types scala.runtime.BoxedUnit and Unit using `!=` will always yield false
-  scala.runtime.BoxedUnit.UNIT != ()
+  scala.runtime.BoxedUnit.UNIT != () // w
                                ^
 checksensible.scala:53: warning: comparing values of types Int and Unit using `!=` will always yield true
-  (1 != println())
+  (1 != println()) // w
      ^
 checksensible.scala:54: warning: comparing values of types Int and Symbol using `!=` will always yield true
-  (1 != 'sym)
+  (1 != 'sym)      // w
      ^
 checksensible.scala:60: warning: comparing a fresh object using `==` will always yield false
-  ((x: Int) => x + 1) == null
+  ((x: Int) => x + 1) == null   // w (fresh object)
                       ^
 checksensible.scala:61: warning: comparing a fresh object using `==` will always yield false
-  Bep == ((_: Int) + 1)
+  Bep == ((_: Int) + 1)         // w (fresh object)
       ^
 checksensible.scala:63: warning: comparing a fresh object using `==` will always yield false
-  new Object == new Object
+  new Object == new Object           // w
              ^
 checksensible.scala:64: warning: comparing a fresh object using `==` will always yield false
-  new Object == "abc"
+  new Object == "abc"                // w
              ^
 checksensible.scala:65: warning: comparing a fresh object using `!=` will always yield true
-  new Exception() != new Exception()
+  new Exception() != new Exception() // w
                   ^
 checksensible.scala:68: warning: comparing values of types Int and Null using `==` will always yield false
-  if (foo.length == null) "plante" else "plante pas"
+  if (foo.length == null) "plante" else "plante pas" // w
                  ^
 checksensible.scala:73: warning: comparing values of types Bip and Bop using `==` will always yield false
-  (x1 == x2)
+  (x1 == x2) // w
       ^
 checksensible.scala:83: warning: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==` will always yield false
-  c3 == z1
+  c3 == z1    // w
      ^
 checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==` will always yield false
-  z1 == c3
+  z1 == c3    // w
      ^
 checksensible.scala:85: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=` will always yield true
-  z1 != c3
+  z1 != c3    // w
      ^
 checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 and String using `!=` will always yield true
-  c3 != "abc"
+  c3 != "abc" // w
      ^
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=` will always yield true
-    while ((c = in.read) != -1)
+    while ((c = in.read) != -1) // w
                          ^
 checksensible.scala:105: warning: comparing values of types Long and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
-  1L equals 1
+  1L equals 1 // w: bypasses coopeq
      ^
 checksensible.scala:112: warning: comparing values of types Any and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
-  (1L: Any) equals 1
+  (1L: Any) equals 1              // w: bypasses coopeq
             ^
 checksensible.scala:113: warning: comparing values of types AnyVal and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
-  (1L: AnyVal) equals 1
+  (1L: AnyVal) equals 1           // w: bypasses coopeq
                ^
 checksensible.scala:114: warning: comparing values of types AnyVal and AnyVal using `equals` unsafely bypasses cooperative equality; use `==` instead
-  (1L: AnyVal) equals (1: AnyVal)
+  (1L: AnyVal) equals (1: AnyVal) // w: bypasses coopeq
                ^
 checksensible.scala:117: warning: comparing values of types A and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
-  def foo[A](a: A) = a.equals(1)
+  def foo[A](a: A) = a.equals(1)  // w: bypasses coopeq
                              ^
+checksensible.scala:126: warning: eq_refine.E and String are unrelated: they will most likely never compare equal
+  if (e == "") ??? // warn about comparing unrelated types
+        ^
+checksensible.scala:129: warning: eq_refine.SE and String are unrelated: they will most likely never compare equal
+  if (se == "") ??? // types are still unrelated
+         ^
 error: No warnings can be incurred under -Werror.
-39 warnings
+42 warnings
 1 error
