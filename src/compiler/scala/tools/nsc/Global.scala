@@ -1697,10 +1697,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     def compileLate(unit: CompilationUnit): Unit = {
       addUnit(unit)
 
-      if (firstPhase ne null) { // we might get here during initialization, is a source is newer than the binary
+      if (firstPhase ne null) { // we might get here during initialization, if a source is newer than the binary
         val maxId = math.max(globalPhase.id, typerPhase.id)
-        firstPhase.iterator takeWhile (_.id < maxId) foreach (ph =>
-          enteringPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit))
+        firstPhase.iterator.takeWhile(_.id < maxId).foreach { ph =>
+          enteringPhase(ph)(ph.asInstanceOf[GlobalPhase].applyPhase(unit))
+        }
         refreshProgress()
       }
     }
