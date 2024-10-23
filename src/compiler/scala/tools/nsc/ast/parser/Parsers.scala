@@ -23,6 +23,7 @@ import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Pos
 import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.ast.parser.Tokens._
+import scala.util.chaining._
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -948,12 +949,9 @@ self =>
         }
       }
       def mkNamed(args: List[Tree]) = if (!isExpr) args else
-        args.map { arg =>
-          val arg1 = treeInfo.assignmentToMaybeNamedArg(arg)
-          if ((arg1 ne arg) && currentRun.isScala3)
-            deprecationWarning(arg.pos.point, "named argument is deprecated for infix syntax", since="2.13.16")
-          arg1
-        }
+        args.map(treeInfo.assignmentToMaybeNamedArg(_))
+          .tap(res => if (currentRun.isScala3 && args.lengthCompare(1) == 0 && (args.head ne res.head))
+            deprecationWarning(args.head.pos.point, "named argument is deprecated for infix syntax", since="2.13.16"))
       var isMultiarg = false
       val arguments = right match {
         case Parens(Nil)               => literalUnit :: Nil
