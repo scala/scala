@@ -22,12 +22,11 @@ import scala.util.chaining._
 /**
  *  @author  Martin Odersky
  */
-trait Contexts { self: Analyzer =>
+trait Contexts { self: Analyzer with ImportTracking =>
   import global._
   import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
-
 
   protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
 
@@ -56,59 +55,6 @@ trait Contexts { self: Analyzer =>
     rootMirror.RootClass,
     rootMirror.RootClass.info.decls
   )
-
-  private lazy val allUsedSelectors =
-    mutable.Map.empty[ImportInfo, Set[ImportSelector]].withDefaultValue(Set.empty)
-  private lazy val allImportInfos =
-    mutable.Map.empty[CompilationUnit, List[(ImportInfo, Symbol)]].withDefaultValue(Nil)
-
-  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
-    def msg(sym: Symbol) = sym.deprecationMessage.map(": " + _).getOrElse("")
-    def checkDeprecatedElementInPath(selector: ImportSelector, info: ImportInfo): String = {
-      def badName(name: Name) =
-        info.qual.tpe.member(name) match {
-          case m if m.isDeprecated => Some(s" of deprecated $m${msg(m)}")
-          case _ => None
-        }
-      val badSelected =
-        if (!selector.isMask && selector.isSpecific) badName(selector.name).orElse(badName(selector.name.toTypeName))
-        else None
-      def badFrom = {
-        val sym = info.qual.symbol
-        if (sym.isDeprecated) Some(s" from deprecated $sym${msg(sym)}") else None
-      }
-      badSelected.orElse(badFrom).getOrElse("")
-    }
-    def warnUnusedSelections(infos0: List[(ImportInfo, Symbol)]): Unit = {
-      type Culled = (ImportSelector, ImportInfo, Symbol)
-      var unused = List.empty[Culled]
-      @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
-        infos match {
-          case (info, owner) :: infos =>
-            val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-            def checkSelectors(selectors: List[ImportSelector]): Unit =
-              selectors match {
-                case selector :: selectors =>
-                  checkSelectors(selectors)
-                  if (!selector.isMask && !used(selector))
-                    unused ::= ((selector, info, owner))
-                case _ =>
-              }
-            checkSelectors(info.tree.selectors)
-            loop(infos)
-          case _ =>
-        }
-      loop(infos0)
-      unused.foreach {
-        case (selector, info, owner) =>
-          val pos = info.posOf(selector)
-          val origin = info.fullSelectorString(selector)
-          val addendum = checkDeprecatedElementInPath(selector, info)
-          runReporting.warning(pos, s"Unused import$addendum", WarningCategory.UnusedImports, owner, origin)
-      }
-    }
-    allImportInfos.remove(unit).foreach(warnUnusedSelections)
-  }
 
   var lastAccessCheckDetails: String = ""
 
@@ -733,7 +679,7 @@ trait Contexts { self: Analyzer =>
     def makeImportContext(tree: Import): Context =
       make(tree).tap { ctx =>
         if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport && !ctx.outer.owner.isInterpreterWrapper)
-          allImportInfos(ctx.unit) ::= ctx.importOrNull -> ctx.owner
+          recordImportContext(ctx)
       }
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
@@ -1909,8 +1855,7 @@ trait Contexts { self: Analyzer =>
 
   class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
     def pos = tree.pos
-    def posOf(sel: ImportSelector) =
-      if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos
+    def posOf(sel: ImportSelector) = tree.posOf(sel)
 
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
@@ -1997,7 +1942,7 @@ trait Contexts { self: Analyzer =>
           else s"(expr=${tree.expr}, ${result.fullLocationString})"
         }")
       if (settings.warnUnusedImport && !isRootImport && result != NoSymbol && pos != NoPosition)
-        allUsedSelectors(this) += sel
+        recordImportUsage(this, sel)
     }
 
     def allImportedSymbols: Iterable[Symbol] =
