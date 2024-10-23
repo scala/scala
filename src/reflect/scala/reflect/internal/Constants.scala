@@ -236,6 +236,13 @@ trait Constants extends api.Constants {
     def escapedStringValue: String = {
       import java.lang.StringBuilder
       def escapedChar(b: StringBuilder, ch: Char): Boolean = {
+        def quadNibble(x: Int, i: Int): Unit =
+          if (i < 4) {
+            quadNibble(x >> 4, i + 1)
+            val n = x & 0xF
+            val c = if (n < 10) '0' + n else 'A' + (n - 10)
+            b.append(c.toChar)
+          }
         val replace = (ch: @switch) match {
           case '\b' => "\\b"
           case '\t' => "\\t"
@@ -245,7 +252,7 @@ trait Constants extends api.Constants {
           case '"'  => "\\\""
           case '\'' => "\\\'"
           case '\\' => "\\\\"
-          case _ if ch.isControl => f"\\u${ch.toInt}%04X"
+          case _ if ch.isControl => b.append("\\u"); quadNibble(ch.toInt, 0); return true;
           case _    => b.append(ch); return false
         }
         b.append(replace)
@@ -257,7 +264,7 @@ trait Constants extends api.Constants {
         def loop(i: Int, modified: Boolean): Boolean =
           if (i < max) loop(i + 1, escapedChar(b, text.charAt(i)) || modified)
           else modified
-        val _ = loop(i = 0, modified = false)
+        val _ = loop(i = 0, modified = false) // could discard buffer and let intrinsic "\"" + text + "\""
         b.append("\"").toString
       }
       tag match {

@@ -91,6 +91,9 @@ class BasePrintTest {
 
   @Test def testConstantControl(): Unit = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
 
+  // ISOControl is 0-1F, 7F-9F
+  @Test def testConstantABControl(): Unit = assertTreeCode(Literal(Constant("hello\u009fworld")))(s"${sq}hello\\u009Fworld${sq}")
+
   @Test def testConstantFormfeedChar(): Unit = assertTreeCode(Literal(Constant('\f')))("'\\f'")
 
   @Test def testConstantControlChar(): Unit = assertTreeCode(Literal(Constant(3.toChar)))("'\\u0003'")
