@@ -6,7 +6,7 @@ object TestEnum extends Suite("TestEnum") {
 
   final class Colour(name: String, ordinal: Int) extends Enum[Colour](name, ordinal)
 
-  object Colour extends EnumCompanion[Colour] {
+  object Colour extends EnumCompanion[Colour](implicitly)() {
     val Red   = new Colour("Red", 0)
     val Green = new Colour("Green", 1)
     val Blue  = new Colour("Blue", 2)

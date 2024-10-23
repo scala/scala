@@ -3,9 +3,9 @@ package tastytest
 object TestArrayAnnot {
   def test = {
     forceAnnots[
-      Tagged, 
+      Tagged,
       SuppressWarnings,
-      "new SuppressWarnings(Array.type.apply[String]((Array[String]{\"xyz\", \"foo\"}: String*))(reflect#ClassTag.type.apply[String](classOf[java.lang.String])))"
+      "new SuppressWarnings(value = Array.type.apply[String]((Array[String]{\"xyz\", \"foo\"}: String*))(reflect#ClassTag.type.apply[String](classOf[java.lang.String])))"
     ]
   }
 }

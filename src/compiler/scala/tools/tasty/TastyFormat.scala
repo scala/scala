@@ -12,7 +12,7 @@
 
 package scala.tools.tasty
 
-// revision: https://github.com/scala/scala3/commit/5189e6854ad1dacc3454542c2f124f5bcb7e2a9c
+// revision: https://github.com/scala/scala3/commit/24bff2a019afcf0f45ddfd3af6b213e7e228471c
 object TastyFormat {
 
   /** The first four bytes of a TASTy file, followed by four values:
@@ -36,7 +36,7 @@ object TastyFormat {
    *  compatibility, but remains backwards compatible, with all
    *  preceding `MinorVersion`.
    */
-  final val MinorVersion: Int = 5
+  final val MinorVersion: Int = 6
 
   /** Natural Number. The `ExperimentalVersion` allows for
    *  experimentation with changes to TASTy without committing
