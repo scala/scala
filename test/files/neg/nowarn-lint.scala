@@ -1,4 +1,4 @@
-//> using options -Werror -Xlint:multiarg-infix,unit-special,unused
+//> using options -Werror -Xlint:unit-special,unused
 
 import annotation.nowarn
 
@@ -29,12 +29,6 @@ class HH[@specialized(Unit) A](val a: A)(val aa: A)
 class J {
   private val j = 42
   def f: Unit = ()
-}
-
-@nowarn("cat=lint-multiarg-infix")
-trait T {
-  def m(i: Int, j: Int) = i + j
-  def f1(t: T) = t m (1, 2)           // multiarg, warn
 }
 
 // canonically unused nowarn

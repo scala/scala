@@ -641,7 +641,6 @@ object Reporting {
         LintBynameImplicit,
         LintRecurseWithDefault,
         LintUnitSpecialization,
-        LintMultiargInfix,
         LintPerformance,
         LintIntDivToFloat,
         LintUniversalMethods,

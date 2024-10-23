@@ -1,0 +1,6 @@
+infix-named-arg.scala:5: warning: named argument is deprecated for infix syntax
+  def f = 42 + (x = 1)
+                  ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

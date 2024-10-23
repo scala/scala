@@ -106,7 +106,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
         unit.body = initialUnitBody(unit)
 
       if (settings.Ymemberpos.isSetByUser)
-        new MemberPosReporter(unit) show (style = settings.Ymemberpos.value)
+        new MemberPosReporter(unit).show(style = settings.Ymemberpos.value)
     }
   }
 }
