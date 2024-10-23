@@ -1,0 +1,137 @@
+reload: Completions.scala
+
+askTypeCompletion at Completions.scala(12,14)
+================================================================================
+[response] askTypeCompletion at (12,14)
+retrieved 31 members
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (test.Foo, B)
+def Bar: Double
+def Baz: Double
+def ensuring(cond: Boolean): test.Foo
+def ensuring(cond: Boolean, msg: => Any): test.Foo
+def ensuring(cond: test.Foo => Boolean): test.Foo
+def ensuring(cond: test.Foo => Boolean, msg: => Any): test.Foo
+def equals(x$1: Object): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (test.Foo, B)
+final def !=(x$1: Any): Boolean
+final def ## : Int
+final def ==(x$1: Any): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long, x$2: Int): Unit
+================================================================================
+
+askTypeCompletion at Completions.scala(15,13)
+================================================================================
+[response] askTypeCompletion at (15,13)
+retrieved 31 members
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (test.Foo, B)
+def Bar: Double
+def Baz: Double
+def ensuring(cond: Boolean): test.Foo
+def ensuring(cond: Boolean, msg: => Any): test.Foo
+def ensuring(cond: test.Foo => Boolean): test.Foo
+def ensuring(cond: test.Foo => Boolean, msg: => Any): test.Foo
+def equals(x$1: Object): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (test.Foo, B)
+final def !=(x$1: Any): Boolean
+final def ## : Int
+final def ==(x$1: Any): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long, x$2: Int): Unit
+================================================================================
+
+askTypeCompletion at Completions.scala(18,17)
+================================================================================
+[response] askTypeCompletion at (18,17)
+retrieved 31 members
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (test.Foo, B)
+def Bar: Double
+def Baz: Double
+def ensuring(cond: Boolean): test.Foo
+def ensuring(cond: Boolean, msg: => Any): test.Foo
+def ensuring(cond: test.Foo => Boolean): test.Foo
+def ensuring(cond: test.Foo => Boolean, msg: => Any): test.Foo
+def equals(x$1: Object): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (test.Foo, B)
+final def !=(x$1: Any): Boolean
+final def ## : Int
+final def ==(x$1: Any): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long, x$2: Int): Unit
+================================================================================
+
+askTypeCompletion at Completions.scala(21,24)
+================================================================================
+[response] askTypeCompletion at (21,24)
+retrieved 31 members
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def +(other: String): String
+def ->[B](y: B): (test.Foo, B)
+def Bar: Double
+def Baz: Double
+def ensuring(cond: Boolean): test.Foo
+def ensuring(cond: Boolean, msg: => Any): test.Foo
+def ensuring(cond: test.Foo => Boolean): test.Foo
+def ensuring(cond: test.Foo => Boolean, msg: => Any): test.Foo
+def equals(x$1: Object): Boolean
+def formatted(fmtstr: String): String
+def hashCode(): Int
+def toString(): String
+def →[B](y: B): (test.Foo, B)
+final def !=(x$1: Any): Boolean
+final def ## : Int
+final def ==(x$1: Any): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long, x$2: Int): Unit
+================================================================================
