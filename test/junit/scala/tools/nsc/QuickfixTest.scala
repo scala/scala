@@ -242,6 +242,10 @@ class QuickfixTest extends BytecodeTesting {
       sm"""|import java.lang.Thread, java.lang.Runnable
            |class C extends Runnable { def run() = () }
            |"""
+    val keepOtherSpacey =
+      sm"""|import java.lang.Thread  , java.lang.Runnable
+           |class C extends Runnable { def run() = () }
+           |"""
     val keepNeither =
       sm"""|import java.lang.Thread, java.lang.Runnable
            |class C
@@ -264,6 +268,7 @@ class QuickfixTest extends BytecodeTesting {
     testQuickfix(keepEither, keptEither, "-Wunused:imports -quickfix:any")
     testQuickfix(keepOne, keptOne, "-Wunused:imports -quickfix:any")
     testQuickfix(keepOther, keptOne, "-Wunused:imports -quickfix:any")
+    testQuickfix(keepOtherSpacey, keptOne, "-Wunused:imports -quickfix:any")
     testQuickfix(keepNeither, keptNothing, "-Wunused:imports -quickfix:any")
     testQuickfix(keepNothing, keptNothing, "-Wunused:imports -quickfix:any")
     testQuickfix(keepTwo, keptTwo, "-Wunused:imports -quickfix:any")

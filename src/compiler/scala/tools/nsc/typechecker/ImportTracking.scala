@@ -33,13 +33,15 @@ trait ImportTracking { self: Analyzer =>
   def recordImportUsage(info: ImportInfo, sel: ImportSelector): Unit = usedSelectors(info) += sel
 
   def recordImportContext(ctx: Context): Unit = ctx.firstImport.foreach { info =>
-    val keyword = if (info.pos.start != info.pos.point) info else ctx.imports.find(p => p.pos.isDefined && p.pos.start != p.pos.point).getOrElse(info)
+    val keyword =
+      if (info.pos.start != info.pos.point) info
+      else ctx.imports.find(p => p.pos.isDefined && p.pos.start != p.pos.point).getOrElse(info)
     importInfos(ctx.unit) ::= (info, keyword, ctx.owner) : @nowarn
   }
 
   def warnUnusedImports(unit: CompilationUnit): Unit = if (!unit.isJava) {
-    def msg(sym: Symbol) = sym.deprecationMessage.map(": " + _).getOrElse("")
     def checkDeprecatedElementInPath(selector: ImportSelector, info: ImportInfo): String = {
+      def msg(sym: Symbol) = sym.deprecationMessage.map(": " + _).getOrElse("")
       def badName(name: Name) =
         info.qual.tpe.member(name) match {
           case m if m.isDeprecated => Some(s" of deprecated $m${msg(m)}")
@@ -160,10 +162,15 @@ trait ImportTracking { self: Analyzer =>
               if (removing.contains(info)) {
                 val toEmit = tracking(info).sortBy(_._1.namePos)
                 toEmit.init.foreach(emit(_, actions = Nil))
-                val editPos = info.tree.pos.withStart(info.tree.pos.point) // exclude the keyword, i.e., do not edit it out
                 val commaBias = { // including comma to right, unless at end and comma to left was not deleted
                   val n = existing.size
                   if (n > 1 && i == n - 1 && !deleting.contains(existing(i - 1))) -1 else 1
+                }
+                val editPos = {
+                  // exclude the keyword, i.e., do not edit it out
+                  val p0 = info.tree.pos.withStart(info.tree.pos.point)
+                  val prev = p0.source.content.lastIndexWhere(c => !isWhitespace(c), end = p0.start-1)
+                  p0.withStart(prev + 1)
                 }
                 emit(toEmit.last, delete(editPos, commaBias = commaBias)) // emit edit with last warning for last selector
               }
@@ -181,12 +188,10 @@ trait ImportTracking { self: Analyzer =>
                   // there are multiple selectors, comma-separated in braces {x, y => w, z}.
                   // for the prefix of deleted selectors, also delete the next comma if there is one before a brace.
                   // thereafter, also delete the preceding comma.
-                  val first = info.tree.selectors.head
+                  //val first = info.tree.selectors.head
                   val last = info.tree.selectors.last
                   toEmit.foreach { case culled @ (selector, (_, _, _)) =>
-                    val start =
-                      if (selector == first) info.tree.pos.start + 1
-                      else selector.namePos
+                    val start = selector.namePos
                     @annotation.unused val x = '{'
                     val end = info.tree.pos.source.content.indexWhere(c => c == ',' || c == '}', from = start)
                     val commaBias =
