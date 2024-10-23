@@ -1583,7 +1583,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     private def warnMultiargInfix(tree: Tree): Unit =
-      context.warning(tree.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+      context.warning(tree.pos, "multiarg infix syntax looks like a tuple", WarningCategory.Other)
 
     /** Typechecks a parent type reference.
      *

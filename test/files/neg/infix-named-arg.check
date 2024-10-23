@@ -1,9 +1,6 @@
 infix-named-arg.scala:5: warning: named argument is deprecated for infix syntax
   def f = 42 + (x = 1)
                   ^
-infix-named-arg.scala:7: warning: multiarg infix syntax looks like a tuple and will be deprecated
-  def g = new C() `multi` (x = 42, y = 27)
-                  ^
 error: No warnings can be incurred under -Werror.
-2 warnings
+1 warning
 1 error

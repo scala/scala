@@ -7,7 +7,7 @@ class C[@specialized(Unit) A](a: A)
 nowarn-lint.scala:7: warning: Class parameter is specialized for type Unit. Consider using `@specialized(Specializable.Arg)` instead.
 class D[@specialized(Specializable.Primitives) A](a: A)
                                                  ^
-nowarn-lint.scala:41: warning: @nowarn annotation does not suppress any warnings
+nowarn-lint.scala:35: warning: @nowarn annotation does not suppress any warnings
 @nowarn("any")
  ^
 error: No warnings can be incurred under -Werror.

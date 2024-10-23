@@ -7,37 +7,37 @@ sd503.scala:23: error: type mismatch;
  required: Int
   def f7() = d.x = (42, 27)           // type mismatch (same as doti)
                    ^
-sd503.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:9: warning: multiarg infix syntax looks like a tuple
   def % (i: Int, j: Int) = i + j      // operator, warn
       ^
-sd503.scala:13: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:13: warning: multiarg infix syntax looks like a tuple
   def f1(t: T) = t m (1, 2)           // multiarg, warn
                    ^
-sd503.scala:15: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:15: warning: multiarg infix syntax looks like a tuple
   def f3(t: T) = t % (1, 2)           // multiarg, warn
                    ^
-sd503.scala:19: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:19: warning: multiarg infix syntax looks like a tuple
   def f5() = c x_= (42, 27)           // multiarg, warn
                ^
-sd503.scala:54: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:54: warning: multiarg infix syntax looks like a tuple
   def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // very multiarg, warn
       ^
-sd503.scala:59: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:59: warning: multiarg infix syntax looks like a tuple
   def f[A](as: Embiggen[A], x: A, y: A, z: A): as.type = as += (x, y, z)      // very multiarg, warn
                                                             ^
-sd503.scala:70: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:70: warning: multiarg infix syntax looks like a tuple
   def f(x: A, y: A, zs: A*): this.type = this += (x, y, zs: _*)               // warn but could defer to deprecation
                                               ^
-sd503.scala:80: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:80: warning: multiarg infix syntax looks like a tuple
   def f = this lines_! (42, 27)                                               // warn usage, of course
                ^
-sd503.scala:86: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:86: warning: multiarg infix syntax looks like a tuple
   def +(i: Int, j: Int): Adder = new Adder(c + i*j)   // warn multiarg symbolic def
       ^
-sd503.scala:92: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:92: warning: multiarg infix syntax looks like a tuple
     x = x + (3, 9)                 // warn multiarg infix apply
           ^
-sd503.scala:102: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:102: warning: multiarg infix syntax looks like a tuple
     x += (3, 9)                    // warn multiarg infix assignment!
       ^
 11 warnings

@@ -129,6 +129,8 @@ trait Warnings {
   val warnUnnamedBoolean   = BooleanSetting("-Wunnamed-boolean-literal", "Warn about unnamed boolean literals if there is more than one or defaults are used, unless parameter has @deprecatedName.")
   val warnUnnamedStrict    = BooleanSetting("-Wunnamed-boolean-literal-strict", "Warn about all unnamed boolean literals, unless parameter has @deprecatedName or the method has a single leading boolean parameter.").enabling(warnUnnamedBoolean :: Nil)
   val warnToString         = BooleanSetting("-Wtostring-interpolated", "Warn when a standard interpolator uses toString.")
+  val warnMultiargInfix    = BooleanSetting("-Wmultiarg-infix", "Infix operator was defined or used with multiarg operand.")
+  def multiargInfix        = warnMultiargInfix.value
 
   object PerformanceWarnings extends MultiChoiceEnumeration {
     val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")
@@ -219,7 +221,6 @@ trait Warnings {
     val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
     val UnitSpecialization     = LintWarning("unit-special",              "Warn for specialization of Unit in parameter position.")
-    val MultiargInfix          = LintWarning("multiarg-infix",            "Infix operator was defined or used with multiarg operand.")
     val ImplicitRecursion      = LintWarning("implicit-recursion",        "Implicit resolves to an enclosing definition.")
     val UniversalMethods       = LintWarning("universal-methods",         "Require arg to is/asInstanceOf. No Unit receiver.")
     val NumericMethods         = LintWarning("numeric-methods",           "Dubious usages, such as `42.isNaN`.")
@@ -257,7 +258,6 @@ trait Warnings {
   def warnByNameImplicit         = lint contains ByNameImplicit
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
   def unitSpecialization         = lint contains UnitSpecialization
-  def multiargInfix              = lint contains MultiargInfix
   def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit.value: @nowarn("cat=deprecation"))
   def lintUniversalMethods       = lint.contains(UniversalMethods)
   def lintNumericMethods         = lint.contains(NumericMethods)

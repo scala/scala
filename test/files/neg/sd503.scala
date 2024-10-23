@@ -1,4 +1,4 @@
-//> using options -Xlint:multiarg-infix
+//> using options -Wmultiarg-infix
 //
 // lint multiarg infix syntax, e.g., vs += (1, 2, 3)
 // Since infix is encouraged by symbolic operator names, discourage defining def += (x: A, y: A, zs: A*)

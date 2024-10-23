@@ -13,12 +13,9 @@ dotless-targs-ranged-a.scala:13: warning: type application is not allowed for in
 dotless-targs-ranged-a.scala:14: warning: type application is not allowed for infix operators [quickfixable]
   def evil = new A() op  [Int,   String     ]  42
                      ^
-dotless-targs-ranged-a.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
-  def h1 = List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
-                ^
 dotless-targs-ranged-a.scala:11: warning: type parameter A defined in method op shadows class A defined in package <empty>. You may want to rename your type parameter, or possibly remove it.
   def op[A, B](i: Int): Int = 2*i
          ^
 error: No warnings can be incurred under -Werror.
-7 warnings
+6 warnings
 1 error
