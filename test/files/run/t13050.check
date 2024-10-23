@@ -1,0 +1,8 @@
+
+scala> import scala.tools.partest.async.OptionAwait._
+import scala.tools.partest.async.OptionAwait._
+
+scala> println(optionally { value(Some(1)) + value(Some(2)) })
+Some(3)
+
+scala> :quit
