@@ -233,20 +233,32 @@ trait Constants extends api.Constants {
       else if (tag == ClazzTag) signature(typeValue)
       else value.toString()
 
-    def escapedChar(ch: Char): String = (ch: @switch) match {
-      case '\b' => "\\b"
-      case '\t' => "\\t"
-      case '\n' => "\\n"
-      case '\f' => "\\f"
-      case '\r' => "\\r"
-      case '"'  => "\\\""
-      case '\'' => "\\\'"
-      case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\u%04X".format(ch.toInt) else String.valueOf(ch)
-    }
-
     def escapedStringValue: String = {
-      def escape(text: String): String = text flatMap escapedChar
+      import java.lang.StringBuilder
+      def escapedChar(b: StringBuilder, ch: Char): Boolean = {
+        val replace = (ch: @switch) match {
+          case '\b' => "\\b"
+          case '\t' => "\\t"
+          case '\n' => "\\n"
+          case '\f' => "\\f"
+          case '\r' => "\\r"
+          case '"'  => "\\\""
+          case '\'' => "\\\'"
+          case '\\' => "\\\\"
+          case _ if ch.isControl => f"\\u${ch.toInt}%04X"
+          case _    => b.append(ch); return false
+        }
+        b.append(replace)
+        true
+      }
+      def escape(text: String): String = {
+        val max = text.length
+        val b = new StringBuilder(max)
+        def loop(i: Int, modified: Boolean): Boolean =
+          if (i < max) loop(i + 1, escapedChar(b, text.charAt(i)) || modified)
+          else modified
+        if (loop(i = 0, modified = false)) b.toString else text
+      }
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
@@ -264,7 +276,10 @@ trait Constants extends api.Constants {
               show(clazz.tpe_*)
             case _ => show(typeValue)
           }
-        case CharTag => "'" + escapedChar(charValue) + "'"
+        case CharTag =>
+          val b = new StringBuilder().append("'")
+          val _ = escapedChar(b, charValue)
+          b.append("'").toString
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
         case _       => String.valueOf(value)

@@ -79,6 +79,8 @@ class BasePrintTest {
 
   @Test def testConstantLong(): Unit = assertTreeCode(Literal(Constant(42L)))("42L")
 
+  @Test def testConstantNull(): Unit = assertTreeCode(Literal(Constant(null)))("null")
+
   val sq  = "\""
   val tq  = "\"" * 3
   val teq = "\"\"\\\""
