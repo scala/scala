@@ -253,15 +253,16 @@ trait Constants extends api.Constants {
       }
       def escape(text: String): String = {
         val max = text.length
-        val b = new StringBuilder(max)
+        val b = new StringBuilder(max).append("\"")
         def loop(i: Int, modified: Boolean): Boolean =
           if (i < max) loop(i + 1, escapedChar(b, text.charAt(i)) || modified)
           else modified
-        if (loop(i = 0, modified = false)) b.toString else text
+        val _ = loop(i = 0, modified = false)
+        b.append("\"").toString
       }
       tag match {
         case NullTag   => "null"
-        case StringTag => "\"" + escape(stringValue) + "\""
+        case StringTag => escape(stringValue)
         case ClazzTag  =>
           def show(tpe: Type) = "classOf[" + signature(tpe) + "]"
           typeValue match {
