@@ -14,7 +14,7 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
-import scala.reflect.internal.util.{SourceFile, NoSourceFile}
+import scala.reflect.internal.util.{NoSourceFile, ReplBatchSourceFile, SourceFile}
 
 abstract class AsyncPhase extends Transform with TypingTransformers with AnfTransform with Lifter with LiveVariables {
   self =>
@@ -81,7 +81,11 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     override def transformUnit(unit: CompilationUnit): Unit = {
       if (settings.async.value) {
         // NoSourceFile can happen for, e.g., toolbox compilation; overestimate by always transforming them. See test/async/jvm/toolbox.scala
-        val shouldTransform = unit.source == NoSourceFile || sourceFilesToTransform.contains(unit.source)
+        val shouldTransform = unit.source == NoSourceFile || sourceFilesToTransform(unit.source) || (unit.source match {
+          // scala/bug#13050, see also `PerRunReporting.repSrc`
+          case r: ReplBatchSourceFile => sourceFilesToTransform(r.parserSource)
+          case _ => false
+        })
         if (shouldTransform) super.transformUnit(unit)
         if (awaits.exists(_.isInitialized)) {
           unit.body.foreach {
