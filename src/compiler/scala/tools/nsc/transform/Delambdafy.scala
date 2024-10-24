@@ -43,10 +43,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
   final case class LambdaMetaFactoryCapable(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol, bridges: List[Symbol], isSerializable: Boolean)
 
-  /**
-    * Get the symbol of the target lifted lambda body method from a function. I.e. if
-    * the function is {args => anonfun(args)} then this method returns anonfun's symbol
-    */
+  /** Get the symbol of the target lifted lambda body method from a function. I.e. if
+   *  the function is {args => anonfun(args)} then this method returns anonfun's symbol
+   */
   private def targetMethod(fun: Function): Symbol = fun match {
     case Function(_, Apply(target, _)) => target.symbol
     case _ =>
@@ -177,9 +176,11 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val resTpOk = (
            samResultType =:= UnitTpe
         || functionResultType =:= samResultType
-        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // yes, this is what the spec says -- no further correspondence required
-      if (resTpOk && (samParamTypes corresponds functionParamTypes){ (samParamTp, funParamTp) =>
-          funParamTp =:= samParamTp || (isReferenceType(funParamTp) && isReferenceType(samParamTp) && funParamTp <:< samParamTp) }) target
+        || (isReferenceType(samResultType) && isReferenceType(functionResultType))) // per spec, no further correspondence required
+      def paramTpsOk = samParamTypes.corresponds(functionParamTypes)((samParamTp, funParamTp) =>
+          funParamTp =:= samParamTp ||
+          (isReferenceType(funParamTp) && isReferenceType(samParamTp) && funParamTp <:< samParamTp))
+      if (resTpOk && paramTpsOk) target
       else {
         // We have to construct a new lambda target that bridges to the one created by uncurry.
         // The bridge must satisfy the above invariants, while also minimizing adaptation on our end.
@@ -194,7 +195,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // which means the function's parameter -- even if it expects a value class -- will need to be
         // boxed on the generic call to the sam method.
 
-        val bridgeParamTypes = map2(samParamTypes, functionParamTypes){ (samParamTp, funParamTp) =>
+        val bridgeParamTypes = map2(samParamTypes, functionParamTypes) { (samParamTp, funParamTp) =>
           if (isReferenceType(samParamTp) && funParamTp <:< samParamTp) funParamTp
           else postErasure.elimErasedValueType(samParamTp)
         }
@@ -243,9 +244,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
           gen.mkMethodCall(Select(gen.mkAttributedThis(oldClass), target), capturedArgRefs ::: functionArgRefs)
         }
+        val forwarderResultType =
+          if (samResultType.isInstanceOf[ErasedValueType] && functionResultType.isInstanceOf[ErasedValueType]) bridgeResultType
+          else functionResultType
 
         val bridge = postErasure.newTransformer(unit).transform(DefDef(methSym, List(bridgeParams.map(ValDef(_))),
-          adaptToType(forwarderCall setType functionResultType, bridgeResultType))).asInstanceOf[DefDef]
+          adaptToType(forwarderCall.setType(forwarderResultType), bridgeResultType))).asInstanceOf[DefDef]
 
         boxingBridgeMethods += bridge
         bridge.symbol
