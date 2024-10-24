@@ -233,23 +233,46 @@ trait Constants extends api.Constants {
       else if (tag == ClazzTag) signature(typeValue)
       else value.toString()
 
-    def escapedChar(ch: Char): String = (ch: @switch) match {
-      case '\b' => "\\b"
-      case '\t' => "\\t"
-      case '\n' => "\\n"
-      case '\f' => "\\f"
-      case '\r' => "\\r"
-      case '"'  => "\\\""
-      case '\'' => "\\\'"
-      case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\u%04X".format(ch.toInt) else String.valueOf(ch)
-    }
-
     def escapedStringValue: String = {
-      def escape(text: String): String = text flatMap escapedChar
+      import java.lang.StringBuilder
+      def escapedChar(b: StringBuilder, i: Int): Int = {
+        def quadNibble(b: StringBuilder, x: Int, i: Int): Unit =
+          if (i < 4) {
+            quadNibble(b, x >> 4, i + 1)
+            val n = x & 0xF
+            val c = if (n < 10) '0' + n else 'A' + (n - 10)
+            b.append(c.toChar)
+          }
+        val replace = (b.charAt(i): @switch) match {
+          case '\b' => "\\b"
+          case '\t' => "\\t"
+          case '\n' => "\\n"
+          case '\f' => "\\f"
+          case '\r' => "\\r"
+          case '"'  => "\\\""
+          case '\'' => "\\\'"
+          case '\\' => "\\\\"
+          case ch if ch.isControl =>
+            val q = new StringBuilder(6).append("\\u")
+            quadNibble(q, ch.toInt, 0)
+            b.replace(i, i + 1, q.toString)
+            return 6
+          case _    => return 1
+        }
+        b.replace(i, i + 1, replace)
+        replace.length // 2
+      }
+      def escape(text: String) = {
+        val quoted = "\"" + text + "\""
+        val b = new StringBuilder(quoted)
+        var i = 1 // don't escape the bookend quotes
+        while (i < b.length - 1)
+          i += escapedChar(b, i)
+        if (b.length == quoted.length) quoted else b.toString
+      }
       tag match {
         case NullTag   => "null"
-        case StringTag => "\"" + escape(stringValue) + "\""
+        case StringTag => escape(stringValue)
         case ClazzTag  =>
           def show(tpe: Type) = "classOf[" + signature(tpe) + "]"
           typeValue match {
@@ -264,7 +287,10 @@ trait Constants extends api.Constants {
               show(clazz.tpe_*)
             case _ => show(typeValue)
           }
-        case CharTag => "'" + escapedChar(charValue) + "'"
+        case CharTag =>
+          val b = new StringBuilder("'" + charValue + "'")
+          escapedChar(b, 1)
+          b.toString
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
         case _       => String.valueOf(value)

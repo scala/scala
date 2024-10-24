@@ -79,6 +79,8 @@ class BasePrintTest {
 
   @Test def testConstantLong(): Unit = assertTreeCode(Literal(Constant(42L)))("42L")
 
+  @Test def testConstantNull(): Unit = assertTreeCode(Literal(Constant(null)))("null")
+
   val sq  = "\""
   val tq  = "\"" * 3
   val teq = "\"\"\\\""
@@ -88,6 +90,9 @@ class BasePrintTest {
   @Test def testConstantFormfeed(): Unit = assertTreeCode(Literal(Constant("hello\fworld")))(s"${sq}hello\\fworld${sq}")
 
   @Test def testConstantControl(): Unit = assertTreeCode(Literal(Constant("hello\u0003world")))(s"${sq}hello\\u0003world${sq}")
+
+  // ISOControl is 0-1F, 7F-9F
+  @Test def testConstantABControl(): Unit = assertTreeCode(Literal(Constant("hello\u009fworld")))(s"${sq}hello\\u009Fworld${sq}")
 
   @Test def testConstantFormfeedChar(): Unit = assertTreeCode(Literal(Constant('\f')))("'\\f'")
 
