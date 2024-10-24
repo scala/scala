@@ -15,6 +15,7 @@ package reflect
 package internal
 
 import scala.annotation.{nowarn, switch}
+import scala.util.chaining._
 
 trait Constants extends api.Constants {
   self: SymbolTable =>
@@ -257,17 +258,10 @@ trait Constants extends api.Constants {
         }
         b.append(replace)
       }
-      def escape(text: String): String = {
-        val max = text.length
-        val b = new StringBuilder(max).append("\"")
-        def loop(i: Int): Unit =
-          if (i < max) {
-            escapedChar(b, text.charAt(i))
-            loop(i + 1)
-          }
-        loop(i = 0)
-        b.append("\"").toString
-      }
+      def escape(text: String) =
+        new StringBuilder(text.length).append("\"")
+          .tap(b => text.chars.forEach(i => escapedChar(b, i.toChar)))
+          .append("\"").toString
       tag match {
         case NullTag   => "null"
         case StringTag => escape(stringValue)
@@ -286,9 +280,9 @@ trait Constants extends api.Constants {
             case _ => show(typeValue)
           }
         case CharTag =>
-          val b = new StringBuilder().append("'")
-          escapedChar(b, charValue)
-          b.append("'").toString
+          new StringBuilder().append("'")
+            .tap(b => escapedChar(b, charValue))
+            .append("'").toString
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
         case _       => String.valueOf(value)
