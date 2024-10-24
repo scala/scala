@@ -15,7 +15,6 @@ package reflect
 package internal
 
 import scala.annotation.{nowarn, switch}
-import scala.util.chaining._
 
 trait Constants extends api.Constants {
   self: SymbolTable =>
@@ -236,15 +235,15 @@ trait Constants extends api.Constants {
 
     def escapedStringValue: String = {
       import java.lang.StringBuilder
-      def escapedChar(b: StringBuilder, ch: Char): Unit = {
-        def quadNibble(x: Int, i: Int): Unit =
+      def escapedChar(b: StringBuilder, i: Int): Int = {
+        def quadNibble(b: StringBuilder, x: Int, i: Int): Unit =
           if (i < 4) {
-            quadNibble(x >> 4, i + 1)
+            quadNibble(b, x >> 4, i + 1)
             val n = x & 0xF
             val c = if (n < 10) '0' + n else 'A' + (n - 10)
             b.append(c.toChar)
           }
-        val replace = (ch: @switch) match {
+        val replace = (b.charAt(i): @switch) match {
           case '\b' => "\\b"
           case '\t' => "\\t"
           case '\n' => "\\n"
@@ -253,15 +252,23 @@ trait Constants extends api.Constants {
           case '"'  => "\\\""
           case '\'' => "\\\'"
           case '\\' => "\\\\"
-          case _ if ch.isControl => b.append("\\u"); quadNibble(ch.toInt, 0); return
-          case _    => b.append(ch); return
+          case ch if ch.isControl =>
+            val q = new StringBuilder(6).append("\\u")
+            quadNibble(q, ch.toInt, 0)
+            b.replace(i, i + 1, q.toString)
+            return 6
+          case _    => return 1
         }
-        b.append(replace)
+        b.replace(i, i + 1, replace)
+        replace.length // 2
       }
-      def escape(text: String) =
-        new StringBuilder(text.length + 2).append("\"")
-          .tap(b => text.chars.forEach(i => escapedChar(b, i.toChar)))
-          .append("\"").toString
+      def escape(text: String) = {
+        val b = new StringBuilder("\"" + text + "\"")
+        var i = 1 // don't escape the bookend quotes
+        while (i < b.length - 1)
+          i += escapedChar(b, i)
+        b.toString
+      }
       tag match {
         case NullTag   => "null"
         case StringTag => escape(stringValue)
@@ -280,9 +287,9 @@ trait Constants extends api.Constants {
             case _ => show(typeValue)
           }
         case CharTag =>
-          new StringBuilder().append("'")
-            .tap(b => escapedChar(b, charValue))
-            .append("'").toString
+          val b = new StringBuilder("'" + charValue + "'")
+          escapedChar(b, 1)
+          b.toString
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
         case _       => String.valueOf(value)
