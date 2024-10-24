@@ -259,7 +259,7 @@ trait Constants extends api.Constants {
         b.append(replace)
       }
       def escape(text: String) =
-        new StringBuilder(text.length).append("\"")
+        new StringBuilder(text.length + 2).append("\"")
           .tap(b => text.chars.forEach(i => escapedChar(b, i.toChar)))
           .append("\"").toString
       tag match {
