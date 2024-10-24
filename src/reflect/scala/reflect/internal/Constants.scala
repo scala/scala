@@ -235,7 +235,7 @@ trait Constants extends api.Constants {
 
     def escapedStringValue: String = {
       import java.lang.StringBuilder
-      def escapedChar(b: StringBuilder, ch: Char): Boolean = {
+      def escapedChar(b: StringBuilder, ch: Char): Unit = {
         def quadNibble(x: Int, i: Int): Unit =
           if (i < 4) {
             quadNibble(x >> 4, i + 1)
@@ -252,19 +252,20 @@ trait Constants extends api.Constants {
           case '"'  => "\\\""
           case '\'' => "\\\'"
           case '\\' => "\\\\"
-          case _ if ch.isControl => b.append("\\u"); quadNibble(ch.toInt, 0); return true;
-          case _    => b.append(ch); return false
+          case _ if ch.isControl => b.append("\\u"); quadNibble(ch.toInt, 0); return
+          case _    => b.append(ch); return
         }
         b.append(replace)
-        true
       }
       def escape(text: String): String = {
         val max = text.length
         val b = new StringBuilder(max).append("\"")
-        def loop(i: Int, modified: Boolean): Boolean =
-          if (i < max) loop(i + 1, escapedChar(b, text.charAt(i)) || modified)
-          else modified
-        val _ = loop(i = 0, modified = false) // could discard buffer and let intrinsic "\"" + text + "\""
+        def loop(i: Int): Unit =
+          if (i < max) {
+            escapedChar(b, text.charAt(i))
+            loop(i + 1)
+          }
+        loop(i = 0)
         b.append("\"").toString
       }
       tag match {
@@ -286,7 +287,7 @@ trait Constants extends api.Constants {
           }
         case CharTag =>
           val b = new StringBuilder().append("'")
-          val _ = escapedChar(b, charValue)
+          escapedChar(b, charValue)
           b.append("'").toString
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
