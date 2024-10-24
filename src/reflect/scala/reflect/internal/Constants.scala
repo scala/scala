@@ -263,11 +263,12 @@ trait Constants extends api.Constants {
         replace.length // 2
       }
       def escape(text: String) = {
-        val b = new StringBuilder("\"" + text + "\"")
+        val quoted = "\"" + text + "\""
+        val b = new StringBuilder(quoted)
         var i = 1 // don't escape the bookend quotes
         while (i < b.length - 1)
           i += escapedChar(b, i)
-        b.toString
+        if (b.length == quoted.length) quoted else b.toString
       }
       tag match {
         case NullTag   => "null"
