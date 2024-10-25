@@ -229,7 +229,6 @@
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/openjdk/jmh/jmh-generator-bytecode/1.20/jmh-generator-bytecode-1.20.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/pl/project13/scala/sbt-jmh-extras/0.3.3/sbt-jmh-extras-0.3.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/sf/jopt-simple/jopt-simple/4.6/jopt-simple-4.6.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/ow2/asm/asm/5.0.3/asm-5.0.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/openjdk/jmh/jmh-core/1.20/jmh-core-1.20.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
@@ -245,7 +244,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -254,7 +252,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -263,7 +260,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/openjdk/jol/jol-core/0.13/jol-core-0.13.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/webjars/jquery/3.4.1/jquery-3.4.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
@@ -284,7 +280,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/webjars/jquery/3.4.1/jquery-3.4.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
@@ -305,7 +300,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -314,7 +308,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -348,7 +341,6 @@
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/zinc-classpath_2.12/1.3.4/zinc-classpath_2.12-1.3.4.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/zinc-core_2.12/1.3.4/zinc-core_2.12-1.3.4.jar!/" />
         <root url="jar://$USER_HOME$/.sbt/boot/scala-2.12.10/lib/scala-compiler.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.15.0/jna-5.15.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/apache/commons/commons-lang3/3.3.2/commons-lang3-3.3.2.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/googlecode/javaewah/JavaEWAH/1.1.6/JavaEWAH-1.1.6.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/lihaoyi/fastparse-utils_2.12/0.4.2/fastparse-utils_2.12-0.4.2.jar!/" />
@@ -366,7 +358,6 @@
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/util-cache_2.12/1.3.3/util-cache_2.12-1.3.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/openjdk/jmh/jmh-generator-reflection/1.20/jmh-generator-reflection-1.20.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/apache/logging/log4j/log4j-slf4j-impl/2.11.2/log4j-slf4j-impl-2.11.2.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna-platform/5.15.0/jna-platform-5.15.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/sbt/1.6.2/sbt-1.6.2.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/protocol_2.12/1.6.2/protocol_2.12-1.6.2.jar!/" />
@@ -446,7 +437,6 @@
     <library name="scalacheck-test-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/webjars/jquery/3.4.1/jquery-3.4.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
@@ -459,7 +449,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/webjars/jquery/3.4.1/jquery-3.4.1.jar!/" />
       </CLASSES>
       <JAVADOC />
@@ -469,7 +458,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -480,7 +468,6 @@
           <root url="file://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/scala-compiler/2.13.1/scala-compiler-2.13.1.jar" />
           <root url="file://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/scala-reflect/2.13.1/scala-reflect-2.13.1.jar" />
           <root url="file://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/scala-library/2.13.1/scala-library-2.13.1.jar" />
-          <root url="file://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar" />
           <root url="file://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar" />
         </compiler-classpath>
       </properties>
@@ -494,9 +481,7 @@
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/ch/epfl/lamp/dotty-compiler_0.23/0.23.0-RC1/dotty-compiler_0.23-0.23.0-RC1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/util-interface/1.2.2/util-interface-1.2.2.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/jline/jline/3.14.0/jline-3.14.0.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/jline/jline-terminal-jna/3.27.0/jline-terminal-jna-3.27.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/jline/jline-reader/3.27.0/jline-reader-3.27.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/ch/epfl/lamp/dotty-library_0.23/0.23.0-RC1/dotty-library_0.23-0.23.0-RC1.jar!/" />
@@ -511,7 +496,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/webjars/jquery/3.4.1/jquery-3.4.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
@@ -524,7 +508,6 @@
     <library name="testkit-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar!/" />
-        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/net/java/dev/jna/jna/5.3.1/jna-5.3.1.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/9.7.0-scala-2/scala-asm-9.7.0-scala-2.jar/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/3.27.0/jline-3.27.0-jdk8.jar!/" />
         <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/junit/junit/4.12/junit-4.12.jar!/" />

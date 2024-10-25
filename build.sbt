@@ -41,8 +41,6 @@ val scalacheckDep     = "org.scalacheck"                %% "scalacheck"         
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.16"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")     classifier "jdk8"
-val jnaDep            = "net.java.dev.jna"               % "jna"                              % versionProps("jna.version")
-val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.12"
 val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.3"
@@ -533,9 +531,9 @@ lazy val compiler = configureAsSubproject(project)
     description := "Scala Compiler",
     libraryDependencies += asmDep,
     libraryDependencies += diffUtilsDep,
-    // These are only needed for the POM:
+    // This is only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies ++= jlineDeps,
+    libraryDependencies += jlineDep,
     buildCharacterPropertiesFile := (Compile / resourceManaged).value / "scala-buildcharacter.properties",
     Compile / resourceGenerators += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -588,7 +586,6 @@ lazy val compiler = configureAsSubproject(project)
                             |org.jline.style.*;resolution:=optional
                             |org.jline.terminal;resolution:=optional
                             |org.jline.terminal.impl;resolution:=optional
-                            |org.jline.terminal.impl.jna.*;resolution:=optional
                             |org.jline.terminal.spi;resolution:=optional
                             |org.jline.utils;resolution:=optional
                             |org.jline.builtins;resolution:=optional
@@ -633,7 +630,7 @@ lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-front
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
-    libraryDependencies ++= jlineDeps,
+    libraryDependencies += jlineDep,
     name := "scala-repl-frontend",
   )
   .settings(
@@ -1170,7 +1167,7 @@ lazy val scalaDist = Project("scalaDist", file(".") / "target" / "scala-dist-dis
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
     }.taskValue,
     Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
-    libraryDependencies ++= jlineDeps,
+    libraryDependencies += jlineDep,
     apiURL := None,
     fixPom(
       "/project/name" -> <name>Scala Distribution Artifacts</name>,
@@ -1332,7 +1329,7 @@ lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
     bspEnabled := false,
-    libraryDependencies ++= jlineDeps,
+    libraryDependencies += jlineDep,
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
       val cp = (testP / IntegrationTest / fullClasspath).value
@@ -1347,11 +1344,7 @@ lazy val dist = (project in file("dist"))
     Compile / packageBin := {
       val targetDir = (ThisBuild / buildDirectory).value / "pack" / "lib"
       val jlineJAR = findJar((Compile / dependencyClasspath).value, jlineDep).get.data
-      val jnaJAR = findJar((Compile / dependencyClasspath).value, jnaDep).get.data
-      val mappings = Seq(
-        (jlineJAR, targetDir / "jline.jar"),
-        (jnaJAR, targetDir / "jna.jar"),
-      )
+      val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },

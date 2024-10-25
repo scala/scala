@@ -100,7 +100,7 @@ object Reader {
     }
 
     lazy val inputrcFileContents: Option[Array[Byte]] = inputrcFileUrl().map(in => urlByteArray(in))
-    val jlineTerminal = TerminalBuilder.builder().jna(true).build()
+    val jlineTerminal = TerminalBuilder.builder().build()
     val completer = new Completion(completion)
     val parser    = new ReplParser(repl)
     val history   = new DefaultHistory
