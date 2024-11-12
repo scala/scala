@@ -23,6 +23,10 @@ trait Function3[-T1, -T2, -T3, +R] extends AnyRef { self =>
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2, v3: T3): R
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext(implicit v1: T1, v2: T2, v3: T3): R = apply(v1, v2, v3)
   /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f(x1)(x2)(x3) == apply(x1, x2, x3)`

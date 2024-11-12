@@ -70,6 +70,11 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    */
   def apply(v1: T1): R
 
+  /** Apply the body of this function to the argument which is taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext(implicit v1: T1): R = apply(v1)
+
   /** Composes two instances of `Function1` in a new `Function1`, with this function applied last.
    *
    *  @tparam   A   the type to which function `g` can be applied

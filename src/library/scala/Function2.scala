@@ -38,6 +38,10 @@ trait Function2[@specialized(Specializable.Args) -T1, @specialized(Specializable
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2): R
+  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext(implicit v1: T1, v2: T2): R = apply(v1, v2)
   /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f(x1)(x2) == apply(x1, x2)`
