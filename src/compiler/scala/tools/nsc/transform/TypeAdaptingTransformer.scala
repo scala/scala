@@ -65,6 +65,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
             case UnitClass =>
               if (treeInfo isExprSafeToInline tree) REF(BoxedUnit_UNIT)
               else BLOCK(tree, REF(BoxedUnit_UNIT))
+            case NothingClass => tree // a non-terminating expression doesn't need boxing
             case x =>
               assert(x != ArrayClass, "array")
               tree match {
