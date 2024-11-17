@@ -809,9 +809,7 @@ trait Trees extends api.Trees {
   // copying trees will all too easily forget to distinguish subclasses
   class ApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends Apply(fun, args)
 
-  // TODO remove this class, add a tree attachment to Apply to track whether implicits were involved
-  // copying trees will all too easily forget to distinguish subclasses
-  class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
+  def ApplyImplicitView(fun: Tree, args: List[Tree]) = Apply(fun, args).updateAttachment(AppliedImplicitView)
 
   def ApplyConstructor(tpt: Tree, args: List[Tree]) = Apply(Select(New(tpt), nme.CONSTRUCTOR), args)
 
@@ -1114,7 +1112,6 @@ trait Trees extends api.Trees {
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
       (tree match { // TODO: use a tree attachment to track whether this is an apply to implicit args or a view
         case _: ApplyToImplicitArgs => new ApplyToImplicitArgs(fun, args)
-        case _: ApplyImplicitView => new ApplyImplicitView(fun, args)
         // TODO: ApplyConstructor ???
         case self.pendingSuperCall => self.pendingSuperCall
         case _ => new Apply(fun, args)

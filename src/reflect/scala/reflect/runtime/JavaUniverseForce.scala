@@ -93,6 +93,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.BooleanParameterType
     this.RightAssociative
     this.RightAssociativeArg
+    this.AppliedImplicitView
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

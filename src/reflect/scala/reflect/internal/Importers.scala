@@ -382,8 +382,6 @@ trait Importers { to: SymbolTable =>
       case from.Apply(fun, args) => their match {
         case _: from.ApplyToImplicitArgs =>
           new ApplyToImplicitArgs(importTree(fun), args map importTree)
-        case _: from.ApplyImplicitView =>
-          new ApplyImplicitView(importTree(fun), args map importTree)
         case _ =>
           new Apply(importTree(fun), args map importTree)
       }

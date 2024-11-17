@@ -192,7 +192,7 @@ trait ModelFactoryImplicitSupport {
 
       // type the view application so we get the exact type of the result (not the formal type)
       val viewTree = result.tree.setType(viewSimplifiedType)
-      val appliedTree = new ApplyImplicitView(viewTree, List(Ident("<argument>") setType viewTree.tpe.paramTypes.head))
+      val appliedTree = ApplyImplicitView(viewTree, List(Ident("<argument>") setType viewTree.tpe.paramTypes.head))
       val appliedTreeTyped: Tree = {
         val newContext = context.makeImplicit(context.ambiguousErrors)
         newContext.macrosEnabled = false

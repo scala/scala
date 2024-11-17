@@ -1216,7 +1216,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     if (settings.logImplicitConv.value) context.echo(tree.pos, msg)
                     else debuglog(msg)
 
-                    val viewApplied = new ApplyImplicitView(coercion, List(tree)) setPos tree.pos
+                    val viewApplied = ApplyImplicitView(coercion, List(tree)).setPos(tree.pos)
                     val silentContext = context.makeImplicit(context.ambiguousErrors)
                     val typedView = newTyper(silentContext).typed(viewApplied, mode, pt)
 
@@ -1383,7 +1383,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         && !qtpe.isError
         && !qtpe.typeSymbol.isBottomClass
         && !qtpe.isWildcard
-        && !qual.isInstanceOf[ApplyImplicitView] // don't chain views
+        && !qual.hasAttachment[AppliedImplicitView.type] // don't chain views
         && (context.implicitsEnabled || context.enrichmentEnabled)
         // Elaborating `context.implicitsEnabled`:
         // don't try to adapt a top-level type that's the subject of an implicit search
@@ -1410,7 +1410,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (currentRun.isScala3 && coercion.symbol == currentRun.runDefinitions.Predef_any2stringaddMethod)
               if (!currentRun.sourceFeatures.any2StringAdd)
                 runReporting.warning(qual.pos, s"Converting to String for concatenation is not supported in Scala 3 (or with -Xsource-features:any2stringadd).", Scala3Migration, coercion.symbol)
-            typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+            typedQualifier(atPos(qual.pos)(ApplyImplicitView(coercion, List(qual))))
         }
       }
       else qual
@@ -3680,8 +3680,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   val treeInfo.Applied(_, _, argss) = appl
                   val needsAdjust =
                     argss.find {
-                      case (aiv: ApplyImplicitView) :: Nil =>
-                        aiv.args match {
+                      case (view @ Apply(_, viewed)) :: Nil if view.hasAttachment[AppliedImplicitView.type] =>
+                        viewed match {
                           case Block(_ :: _, _) :: Nil => true
                           case _ => false
                         }
@@ -5224,9 +5224,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               fn.symbol.paramLists match {
                 case (h :: Nil) :: Nil if !h.isByNameParam && (!isUserRassocArg(arg) || needsRewrite(arg)) =>
                   val arg1 = arg match {
-                    case view: ApplyImplicitView if usesStab(view.fun) =>
-                      new ApplyImplicitView(view.fun, rewriteRightAssoc(view.args.head) :: Nil)
-                        .setType(view.tpe).setPos(view.pos)
+                    case view @ Apply(coercion, coerced :: Nil) if view.hasAttachment[AppliedImplicitView.type] && usesStab(coercion) =>
+                      treeCopy.Apply(view, coercion, rewriteRightAssoc(coerced) :: Nil)
                     case arg => rewriteRightAssoc(arg)
                   }
                   treeCopy.Apply(applied, fn, arg1 :: Nil)
@@ -6358,8 +6357,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // if in the midst of series of apply, possibly a qualifier was adapted, possibly an rassoc arg.
         // the expression to rewrite with added stabilizers is different for each case.
         val result = adapted match {
-          case view: ApplyImplicitView if shouldInsertRassocs =>
-            new ApplyImplicitView(view.fun, addStabilizers(view.args.head) :: Nil)
+          case view @ Apply(coercion, coerced :: Nil) if view.hasAttachment[AppliedImplicitView.type] && shouldInsertRassocs =>
+            treeCopy.Apply(view, coercion, addStabilizers(coerced) :: Nil)
           case _ if shouldInsertStabilizers => addStabilizers(adapted)
           case _ => adapted
         }

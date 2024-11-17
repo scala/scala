@@ -188,4 +188,7 @@ trait StdAttachments {
   case object RightAssociative extends PlainAttachment
   /** Arg to right associative infix application is candidate for rewriting. */
   case object RightAssociativeArg extends PlainAttachment
+
+  /** Application is an implicit view. */
+  case object AppliedImplicitView extends PlainAttachment
 }

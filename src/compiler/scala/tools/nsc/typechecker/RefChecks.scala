@@ -17,7 +17,7 @@ import scala.annotation._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.CodeAction
-import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.Reporting.WarningCategory, WarningCategory._
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.settings.NoScalaVersion
 import symtab.Flags._
@@ -994,11 +994,13 @@ abstract class RefChecks extends Transform {
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
-    def checkImplicitViewOptionApply(pos: Position, fun: Tree, argss: List[List[Tree]]): Unit = if (settings.warnOptionImplicit) argss match {
-      case List(List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
-        refchecksWarning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.", WarningCategory.LintOptionImplicit) // scala/bug#6567
-      case _ =>
-    }
+    def checkImplicitViewOptionApply(pos: Position, fun: Tree, argss: List[List[Tree]]): Unit =
+      if (settings.warnOptionImplicit && fun.symbol == currentRun.runDefinitions.Option_apply)
+        argss match {
+          case (((view @ Apply(coercion, _)) :: Nil) :: Nil) if view.hasAttachment[AppliedImplicitView.type] =>
+            refchecksWarning(pos, s"Suspicious application of an implicit view ($coercion) in the argument to Option.apply.", LintOptionImplicit) // scala/bug#6567
+          case _ =>
+        }
 
     private def isObjectOrAnyComparisonMethod(sym: Symbol) = sym match {
       case Object_eq | Object_ne | Object_== | Object_!= | Any_== | Any_!= => true
@@ -2074,7 +2076,7 @@ abstract class RefChecks extends Transform {
             def checkImplicitlyAdaptedBlockResult(t: Tree): Unit = {
               def loop(t: Tree): Unit =
                 t match {
-                  case Apply(coercion, _) if t.isInstanceOf[ApplyImplicitView] =>
+                  case Apply(coercion, _) if t.hasAttachment[AppliedImplicitView.type] =>
                     coercion.symbol.paramLists match {
                       case (p :: Nil) :: _ if p.isByNameParam => refchecksWarning(t.pos, s"Block result expression was adapted via implicit conversion (${coercion.symbol}) taking a by-name parameter; only the result was passed, not the entire block.", WarningCategory.LintBynameImplicit)
                       case _ =>
