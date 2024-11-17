@@ -5200,34 +5200,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (settings.areStatisticsEnabled) statistics.stopTimer(failedApplyNanos, appStart)
             reportError(error)
         }
-        val silentResult = silent(
-          op                    = _.typed(fun, mode.forFunMode, funpt),
-          reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
-          newtree               = if (mode.inExprMode) tree else context.tree
-        )
-        silentResult match {
-          case SilentResultValue(fun1) =>
-            def transformRassoc(applied: Tree): Tree = applied match {
-              case Apply(fn, arg :: Nil) if !fn.symbol.paramLists.head.head.isByNameParam =>
-                def isUserRassocArg(t: Tree): Boolean = t match {
-                  case Block(_, expr) => isUserRassocArg(expr)
-                  case _ if t.hasAttachment[RightAssociativeArg.type] =>
-                    t.removeAttachment[RightAssociativeArg.type]
-                    true
-                  case _ => false
-                }
-                def rewriteRightAssoc(arg: Tree): Tree = {
-                  val vsym = context.owner.newValue(freshTermName(nme.RIGHT_ASSOC_OP_PREFIX), arg.pos.focus, FINAL | SYNTHETIC | ARTIFACT)
-                  vsym.setInfo(arg.tpe)
-                  val vdef = atPos(arg.pos) { ValDef(vsym, arg).setType(NoType) }
-                  context.pendingStabilizers ::= vdef
-                  arg.changeOwner(context.owner -> vsym)
-                  Ident(vsym).setType(singleType(NoPrefix, vsym)).setPos(arg.pos.focus)
-                }
-                def needsRewrite(t: Tree) = !treeInfo.isStableIdentifier(t, allowVolatile = false) && !treeInfo.isExprSafeToInline(t)
-                def usesStab(t: Tree) = t.exists { case Ident(nm) => nm.startsWith(nme.STABILIZER_PREFIX) case _ => false }
-                // rewrite if arg was adapted or needsRewrite
-                if (!isUserRassocArg(arg) || needsRewrite(arg)) {
+        def transformRassoc(applied: Tree): Tree = {
+          def isUserRassocArg(t: Tree): Boolean = t match {
+            case Block(_, expr) => isUserRassocArg(expr)
+            case _ if t.hasAttachment[RightAssociativeArg.type] =>
+              t.removeAttachment[RightAssociativeArg.type]
+              true
+            case _ => false
+          }
+          def rewriteRightAssoc(arg: Tree): Tree = {
+            val vsym = context.owner.newValue(freshTermName(nme.RIGHT_ASSOC_OP_PREFIX), arg.pos.focus, FINAL | SYNTHETIC | ARTIFACT)
+            vsym.setInfo(arg.tpe)
+            val vdef = atPos(arg.pos) { ValDef(vsym, arg).setType(NoType) }
+            context.pendingStabilizers ::= vdef
+            arg.changeOwner(context.owner -> vsym)
+            Ident(vsym).setType(singleType(NoPrefix, vsym)).setPos(arg.pos.focus)
+          }
+          def needsRewrite(t: Tree) = !treeInfo.isStableIdentifier(t, allowVolatile = false) && !treeInfo.isExprSafeToInline(t)
+          def usesStab(t: Tree) = t.exists { case Ident(nm) => nm.startsWith(nme.STABILIZER_PREFIX) case _ => false }
+          applied match {
+            // rewrite if arg was adapted or needsRewrite but isn't by-name
+            case Apply(fn, arg :: Nil) =>
+              fn.symbol.paramLists match {
+                case (h :: Nil) :: Nil if !h.isByNameParam && (!isUserRassocArg(arg) || needsRewrite(arg)) =>
                   val arg1 = arg match {
                     case view: ApplyImplicitView if usesStab(view.fun) =>
                       new ApplyImplicitView(view.fun, rewriteRightAssoc(view.args.head) :: Nil)
@@ -5235,10 +5230,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     case arg => rewriteRightAssoc(arg)
                   }
                   treeCopy.Apply(applied, fn, arg1 :: Nil)
-                }
-                else applied
-              case _ => applied
-            }
+                case _ => applied // unexpected
+              }
+            case _ => applied
+          }
+        }
+        val silentResult = silent(
+          op                    = _.typed(fun, mode.forFunMode, funpt),
+          reportAmbiguousErrors = !mode.inExprMode && context.ambiguousErrors,
+          newtree               = if (mode.inExprMode) tree else context.tree
+        )
+        silentResult match {
+          case SilentResultValue(fun1) =>
             val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
             if (settings.areStatisticsEnabled) statistics.incCounter(typedApplyCount)
             val needsRewrite = {
