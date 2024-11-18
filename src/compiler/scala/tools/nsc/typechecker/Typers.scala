@@ -283,7 +283,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           for (arg <- args) ar.subst traverse arg
         }
 
-        new ApplyToImplicitArgs(fun, args) setPos fun.pos
+        ApplyToImplicitArgs(fun, args).setPos(fun.pos)
       case ErrorType =>
         fun
       case x => throw new MatchError(x)
@@ -5290,7 +5290,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               val tree1: Tree = resolveClassTag(tree.pos, tagType) match {
                 case EmptyTree => MissingClassTagError(tree, tagType)
-                case tag       => atPos(tree.pos)(new ApplyToImplicitArgs(Select(tag, nme.newArray), arg :: Nil))
+                case tag       => atPos(tree.pos)(ApplyToImplicitArgs(Select(tag, nme.newArray), arg :: Nil))
               }
               if (tree1.isErrorTyped) tree1 else typed(tree1, mode, pt)
             case Apply(Select(fun, nme.apply), _) if treeInfo.isSuperConstrCall(fun) => TooManyArgumentListsForConstructor(tree) //scala/bug#5696
@@ -5347,7 +5347,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               mkAssign(Select(qq1, qual.symbol) setPos qual.pos)
             }
 
-          case Apply(fn, extra) if qual.isInstanceOf[ApplyToImplicitArgs] =>
+          case Apply(fn, extra) if qual.hasAttachment[AppliedToImplicitArgs.type] =>
             fn match {
               case treeInfo.Applied(Select(table, nme.apply), _, indices :: Nil) =>
                 // table(indices)(implicits)

@@ -35,7 +35,7 @@ trait StdAttachments {
   def macroExpanderAttachment(tree: Tree): MacroExpanderAttachment =
     tree.attachments.get[MacroExpanderAttachment] getOrElse {
       tree match {
-        case Apply(fn, _) if tree.isInstanceOf[ApplyToImplicitArgs] => macroExpanderAttachment(fn)
+        case Apply(fn, _) if tree.hasAttachment[AppliedToImplicitArgs.type] => macroExpanderAttachment(fn)
         case _ => MacroExpanderAttachment(tree, EmptyTree)
       }
     }

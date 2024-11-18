@@ -516,7 +516,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         !elemtpt.tpe.typeSymbol.isBottomClass && !elemtpt.tpe.typeSymbol.isPrimitiveValueClass /* can happen via specialization.*/
       =>
         classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
-          case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.isInstanceOf[ApplyToImplicitArgs] =>
+          case Some(att) if att.expandee.symbol.name == nme.materializeClassTag && tree.hasAttachment[AppliedToImplicitArgs.type] =>
             super.transform(arg)
           case _ =>
             typedWithPos(tree.pos) {

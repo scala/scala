@@ -191,4 +191,6 @@ trait StdAttachments {
 
   /** Application is an implicit view. */
   case object AppliedImplicitView extends PlainAttachment
+
+  case object AppliedToImplicitArgs extends PlainAttachment
 }
