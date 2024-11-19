@@ -193,4 +193,6 @@ trait StdAttachments {
   case object AppliedImplicitView extends PlainAttachment
 
   case object AppliedToImplicitArgs extends PlainAttachment
+
+  case class Stabilizers(ts: List[Tree]) extends PlainAttachment
 }

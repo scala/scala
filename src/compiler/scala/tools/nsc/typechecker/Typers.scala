@@ -6302,14 +6302,34 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val shouldPrintTyping = printTypings && !phase.erasedTypes && !noPrintTyping(tree)
       val shouldPopTypingStack = shouldPrintTyping && typingStack.beforeNextTyped(tree, mode, pt, context)
 
-      // if already in APPSELmode, continue accumulating stabilizers, to be emitted in an enclosing block
+      // After type checking an Apply/Select, e.g., `a.foo(x).b.bar(z)`, which is not part of the qualifier of some
+      // outer Apply/Select, we emit stabilizers (PR #5999) and right-assoc locals (#5969 / #7741) at the end.
+      //     { val stab$1 = a.foo(x); val stab$2 = stab$1.b; stab$2.bar(z) }
+      // Setting `APPSELmode` for typing the subexpressions along the qualifier enables accumulating stabilizers,
+      // so if we're already in `APPSELmode` we don't insert them here.
+      // See also doc on APPSELmode.
       val shouldInsertStabilizers = !phase.erasedTypes && !mode.in(APPSELmode) && !isMacroImplRef(tree) && {
         tree match { case _: Select | _: Apply | _: TypeApply => true case _ => false }
       }
-
       val mode1: Mode = if (shouldInsertStabilizers) mode | APPSELmode else mode
-      val savedPendingStabilizer = context.pendingStabilizers
-      if (shouldInsertStabilizers) context.pendingStabilizers = Nil
+
+      // When starting to type check an outermost Apply/Select, we have to stash pending stabilizers.
+      // Example: `a.b.foo(c.d.bar)`. When typing `c.d.bar`, there is a pending stabilizer for `a.b`.
+      // The `typedArg` method clears the `APPSELmode` for typing `c.d.bar`, so `shouldInsertStabilizers` is true,
+      // but the pending stabilizer should not be inserted here.
+      // There is a corner case: the tree may be type checked already and pending stabilizers might origin in the
+      // subtree, not in some outer tree. Example with adaptToMember:
+      //     x.#::(y).#::(z) => adaptToMember creates `conv(conv(x).#::(rassoc$1))`
+      // The argument `conv(x).#::(rassoc$1)` is already typed and there's a pending rassoc. The stabilizer was
+      // not emitted because the expression was part of the qualifier of an outer application.
+      // But with the implicit conversion, the expression is now in argument position, so the stabilizer should be
+      // inserted. The attachment is used to identify pending stabilizers belonging to already typed trees.
+      val outerPendingStabilizers = if (!shouldInsertStabilizers) Nil else {
+        val inner = tree.attachments.get[Stabilizers].map(_.ts).getOrElse(Nil)
+        val outer = if (inner.nonEmpty) context.pendingStabilizers.diff(inner) else context.pendingStabilizers
+        context.pendingStabilizers = inner
+        outer
+      }
 
       try {
         val ptPlugins = pluginsPt(pt, this, tree, mode1)
@@ -6349,18 +6369,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             } else result
           }
 
-        def isRassoc(t: Tree) = t match {
-          case ValDef(_, nm, _, _) => nm.startsWith(nme.RIGHT_ASSOC_OP_PREFIX)
-          case _ => false
-        }
-        val shouldInsertRassocs = context.pendingStabilizers.exists(isRassoc)
-        // if in the midst of series of apply, possibly a qualifier was adapted, possibly an rassoc arg.
-        // the expression to rewrite with added stabilizers is different for each case.
         val result = adapted match {
-          case view @ Apply(coercion, coerced :: Nil) if view.hasAttachment[AppliedImplicitView.type] && shouldInsertRassocs =>
-            treeCopy.Apply(view, coercion, addStabilizers(coerced) :: Nil)
           case _ if shouldInsertStabilizers => addStabilizers(adapted)
-          case _ => adapted
+          case _ =>
+            if (mode1.in(APPSELmode) && context.pendingStabilizers.nonEmpty)
+              adapted.updateAttachment(Stabilizers(context.pendingStabilizers))
+            adapted
         }
 
         if (shouldPrint)
@@ -6393,7 +6407,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } finally {
         if (shouldPopTypingStack) typingStack.pop(tree)
         if (settings.areHotStatisticsEnabled) statistics.popTimer(byTypeStack, startByType)
-        if (shouldInsertStabilizers) context.pendingStabilizers = savedPendingStabilizer
+        if (shouldInsertStabilizers) context.pendingStabilizers = outerPendingStabilizers
       }
     }
 

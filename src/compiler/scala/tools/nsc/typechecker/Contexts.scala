@@ -256,6 +256,7 @@ trait Contexts { self: Analyzer with ImportTracking =>
     /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ and magic REPL imports) */
     def isRootImport: Boolean = false
 
+    /** Accumulate stabilizers (PR #5999) and right-assoc locals (#5969 / #7741). See APPSELmode. */
     var pendingStabilizers: List[Tree] = Nil
 
     /** Types for which implicit arguments are currently searched */

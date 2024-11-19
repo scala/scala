@@ -95,6 +95,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.RightAssociativeArg
     this.AppliedImplicitView
     this.AppliedToImplicitArgs
+    this.Stabilizers
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
