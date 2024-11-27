@@ -968,12 +968,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 @SerialVersionUID(3L)
 object Iterator extends IterableFactory[Iterator] {
 
-  private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
-    def hasNext = false
-    def next() = throw new NoSuchElementException("next on empty iterator")
-    override def knownSize: Int = 0
-    override protected def sliceIterator(from: Int, until: Int): AbstractIterator[Nothing] = this
-  }
+  private[this] val _empty: Iterator[Nothing] with immutable.Iterable[Nothing] =
+    new AbstractIterator[Nothing] with immutable.Iterable[Nothing] {
+      def hasNext = false
+      def next() = throw new NoSuchElementException("next on empty iterator")
+      override def knownSize: Int = 0
+      override protected def sliceIterator(from: Int, until: Int): AbstractIterator[Nothing] = this
+    }
 
   /** Creates a target $coll from an existing source collection
     *
