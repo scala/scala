@@ -985,7 +985,7 @@ object Iterator extends IterableFactory[Iterator] {
   override def from[A](source: IterableOnce[A]): Iterator[A] = source.iterator
 
   /** The iterator which produces no values. */
-  @`inline` final def empty[T]: Iterator[T] = _empty
+  @`inline` final def empty[A]: Iterator[A] with immutable.Iterable[A] = _empty
 
   def single[A](a: A): Iterator[A] = new AbstractIterator[A] {
     private[this] var consumed: Boolean = false
