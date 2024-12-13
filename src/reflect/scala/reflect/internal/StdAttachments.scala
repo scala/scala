@@ -186,4 +186,6 @@ trait StdAttachments {
 
   /** Force desugaring Match trees, don't emit switches. Attach to DefDef trees or their symbol. */
   case object ForceMatchDesugar extends PlainAttachment
+
+  case object NullOutAttachment extends PlainAttachment
 }

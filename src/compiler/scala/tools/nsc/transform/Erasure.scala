@@ -19,6 +19,7 @@ import scala.collection.{immutable, mutable}
 import symtab._
 import Flags._
 import scala.reflect.internal.Mode._
+import scala.util.chaining._
 
 abstract class Erasure extends InfoTransform
                           with scala.reflect.internal.transform.Erasure
@@ -660,7 +661,7 @@ abstract class Erasure extends InfoTransform
       val rhs = member.tpe match {
         case MethodType(Nil, FoldableConstantType(c)) => Literal(c)
         case _                                =>
-          val sel: Tree    = gen.mkAttributedSelect(gen.mkAttributedThis(root), member)
+          val sel: Tree    = gen.mkAttributedSelect(gen.mkAttributedThis(root).tap(t => if (member.hasAnnotation(definitions.NullOutClass)) t.updateAttachment(NullOutAttachment)), member)
           val bridgingCall = bridge.paramss.foldLeft(sel)((fun, vparams) => Apply(fun, vparams map Ident))
 
           maybeWrap(bridgingCall)
@@ -1330,6 +1331,10 @@ abstract class Erasure extends InfoTransform
             samf => addBridgesToLambda(samf.synthCls)
           }
           fun
+
+        case tree @ Typed(expr, tt @ TypeTree()) if tt.tpe.hasAnnotation(definitions.NullOutClass) =>
+          expr.updateAttachment(NullOutAttachment)
+          tree
 
         case _ =>
           tree

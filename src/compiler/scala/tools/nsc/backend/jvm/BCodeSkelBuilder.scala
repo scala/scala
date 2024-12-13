@@ -549,9 +549,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
                 val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), newTermName(traitSuperAccessorName(sym)), _.cloneSymbol.withoutAnnotations)
                 dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
                 val selfParam :: realParams = dd1.vparamss.head.map(_.symbol): @unchecked
+                import scala.util.chaining._
                 deriveDefDef(dd1)(_ =>
                   atPos(dd1.pos)(
-                    Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor), dd.symbol),
+                    Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor).tap(s => if (sym.hasAnnotation(definitions.NullOutClass)) s.updateAttachment(NullOutAttachment)), dd.symbol),
                     realParams.map(global.gen.mkAttributedIdent)).updateAttachment(UseInvokeSpecial))
                 )
               }
