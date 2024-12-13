@@ -416,19 +416,6 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
     }
   }
 
-  /** LazyList specialization of foldLeft which allows GC to collect along the
-    * way.
-    *
-    * @tparam B The type of value being accumulated.
-    * @param z The initial value seeded into the function `op`.
-    * @param op The operation to perform on successive elements of the `LazyList`.
-    * @return The accumulated value from successive applications of `op`.
-    */
-  @tailrec
-  override def foldLeft[B](z: B)(op: (B, A) => B): B =
-    if (isEmpty) z
-    else tail.foldLeft(op(z, head))(op)
-
   // LazyList.Empty doesn't use the SerializationProxy
   protected[this] def writeReplace(): AnyRef =
     if (knownNonEmpty) new SerializationProxy[A](this) else this
