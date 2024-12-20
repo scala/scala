@@ -72,7 +72,8 @@ object PathResolver {
      */
     def sourcePathEnv       = envOrElse("SOURCEPATH", "")
 
-    def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
+    //using propOrNone/getOrElse instead of propOrElse so that searchForBootClasspath is lazy evaluated
+    def javaBootClassPath   = propOrNone("sun.boot.class.path") getOrElse searchForBootClasspath
     def javaExtDirs         = propOrEmpty("java.ext.dirs")
     def scalaHome           = propOrEmpty("scala.home")
     def scalaExtDirs        = propOrEmpty("scala.ext.dirs")
