@@ -10,7 +10,7 @@ stages:
 jobs:
   include:
     - stage: build
-      if: type != pull_request
+      if: type != pull_request AND repo = scala/scala AND branch = 2.13.x
       name: publish (bootstrapped) to scala-integration or sonatype
       script:
         # see comment in `bootstrap_fun` for details on the procedure
@@ -30,7 +30,7 @@ jobs:
         - triggerScalaDist
 
     - stage: build
-      if: type != pull_request
+      if: type != pull_request AND repo = scala/scala AND branch = 2.13.x
       name: language spec
       dist: focal
       language: ruby
