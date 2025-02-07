@@ -140,7 +140,6 @@ abstract class CopyProp {
           val canElim = vi.getOpcode != ASTORE || {
             val currentFieldValueProds = prodCons.initialProducersForValueAt(vi, vi.`var`)
             currentFieldValueProds.size == 1 && (currentFieldValueProds.head match {
-              case ParameterProducer(0) => !isStaticMethod(method) // current field value is `this`, which won't be gc'd anyway
               case _: UninitializedLocalProducer => true // field is not yet initialized, so current value cannot leak
               case _ => false
             })

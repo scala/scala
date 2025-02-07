@@ -1077,4 +1077,40 @@ class BytecodeTest extends BytecodeTesting {
     assertInvoke(getMethod(t, "t5"), "j/J", "k")
     assertInvoke(getMethod(t, "t6"), "j/J", "k")
   }
+
+  @Test def nullOutMixin(): Unit = {
+    val code =
+      """trait T { @annotation.nullOut def meh = 42 }
+        |class C extends T
+        |""".stripMargin
+
+    val List(c, t) = compileClasses(code)
+    assertSameSummary(getMethod(c, "meh"), List(ALOAD, ACONST_NULL, ASTORE, "meh$", IRETURN))
+    assertSameSummary(getMethod(t, "meh$"), List(ALOAD, ACONST_NULL, ASTORE, "meh", IRETURN))
+  }
+
+  @Test def nullOutCall(): Unit = {
+    val code =
+      """class C {
+        |  def f = (this: @annotation.nullOut).hashCode
+        |  def g(x: AnyRef) = (x: @annotation.nullOut).hashCode
+        |}""".stripMargin
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "f"), List(ALOAD, ACONST_NULL, ASTORE, "hashCode", IRETURN))
+    assertSameSummary(getMethod(c, "g"), List(ALOAD, ACONST_NULL, ASTORE, "hashCode", IRETURN))
+  }
+
+  @Test def nullOutBridge(): Unit = {
+    val code =
+      """class C {
+        |  def f: Object = ""
+        |}
+        |class D extends C {
+        |  @annotation.nullOut override def f: String = ""
+        |}
+        |""".stripMargin
+    val List(_, d) = compileClasses(code)
+    val List(bridge) = getMethods(d, "f").filter(_.instructions.exists(_.opcode == INVOKEVIRTUAL))
+    assertSameSummary(bridge, List(ALOAD, ACONST_NULL, ASTORE, "f", ARETURN))
+  }
 }

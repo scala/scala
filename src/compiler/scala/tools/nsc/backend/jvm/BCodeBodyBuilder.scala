@@ -364,6 +364,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           }
           else {
             mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+            if(tree.hasAttachment[NullOutAttachment.type]) {
+              mnode.visitInsn(asm.Opcodes.ACONST_NULL)
+              mnode.visitVarInsn(asm.Opcodes.ASTORE, 0)
+            }
             // When compiling Array.scala, the constructor invokes `Array.this.super.<init>`. The expectedType
             // is `[Object` (computed by typeToBType, the type of This(Array) is `Array[T]`). If we would set
             // the generatedType to `Array` below, the call to adapt at the end would fail. The situation is
@@ -400,7 +404,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           if (!sym.hasPackageFlag) {
             val tk = symInfoTK(sym)
             if (sym.isModule) { genLoadModule(tree) }
-            else { locals.load(sym) }
+            else {
+              locals.load(sym)
+              if(tree.hasAttachment[NullOutAttachment.type]) {
+                mnode.visitInsn(asm.Opcodes.ACONST_NULL)
+                locals.store(sym)
+              }
+            }
             generatedType = tk
           }
 

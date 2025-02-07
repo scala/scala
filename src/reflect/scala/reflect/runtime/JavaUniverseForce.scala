@@ -92,6 +92,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DiscardedExpr
     this.BooleanParameterType
     this.ForceMatchDesugar
+    this.NullOutAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -449,6 +450,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr
     definitions.AnnotationRepeatableAttr
+    definitions.NullOutClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
     definitions.ImplicitAmbiguousClass

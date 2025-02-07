@@ -722,7 +722,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     case seq: IndexedSeq[A @unchecked] => foldl[A, B](seq, 0, z, op)
     case _ =>
       var result = z
-      val it = iterator
+      val it = (this: @annotation.nullOut).iterator
       while (it.hasNext) {
         result = op(result, it.next())
       }
@@ -755,7 +755,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def foldRight[B](z: B)(op: (A, B) => B): B = reversed.foldLeft(z)((b, a) => op(a, b))
 
   @deprecated("Use foldLeft instead of /:", "2.13.0")
-  @`inline` final def /: [B](z: B)(op: (B, A) => B): B = foldLeft[B](z)(op)
+  @annotation.nullOut
+  @`inline` final def /: [B](z: B)(op: (B, A) => B): B = (this: @annotation.nullOut).foldLeft[B](z)(op)
 
   @deprecated("Use foldRight instead of :\\", "2.13.0")
   @`inline` final def :\ [B](z: B)(op: (A, B) => B): B = foldRight[B](z)(op)
@@ -1313,9 +1314,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
    */
+  @annotation.nullOut
   final def mkString(start: String, sep: String, end: String): String =
     if (knownSize == 0) start + end
-    else addString(new StringBuilder(), start, sep, end).result()
+    else (this: @annotation.nullOut).addString(new StringBuilder(), start, sep, end).result()
 
   /** Displays all elements of this $coll in a string using a separator string.
    *
@@ -1328,7 +1330,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
    */
-  @inline final def mkString(sep: String): String = mkString("", sep, "")
+  @annotation.nullOut
+  @inline final def mkString(sep: String): String = (this: @annotation.nullOut).mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
    *
@@ -1339,7 +1342,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *          of all elements of this $coll follow each other without any
    *          separator string.
    */
-  @inline final def mkString: String = mkString("")
+  @annotation.nullOut
+  @inline final def mkString: String = (this: @annotation.nullOut).mkString("")
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string `end`.
@@ -1365,10 +1369,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @param end   the ending string.
    *  @return      the string builder `b` to which elements were appended.
    */
+  @annotation.nullOut
   def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
     val jsb = b.underlying
     if (start.length != 0) jsb.append(start)
-    val it = iterator
+    val it = (this: @annotation.nullOut).iterator
     if (it.hasNext) {
       jsb.append(it.next())
       while (it.hasNext) {

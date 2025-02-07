@@ -19,6 +19,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.NameTransformer
 import scala.reflect.internal.util.ListOfNil
+import scala.util.chaining._
 
 
 abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
@@ -564,7 +565,11 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
         else if (!sym.isMacro) { // forwarder
           assert(sym.alias != NoSymbol, (sym, sym.debugFlagString, clazz))
           // debuglog("New forwarder: " + sym.defString + " => " + sym.alias.defString)
-          addDefDef(sym, Apply(SuperSelect(clazz, sym.alias), sym.paramss.head.map(Ident(_))))
+          addDefDef(sym, Apply(SuperSelect(clazz, sym.alias).tap({
+            case Select(Super(t: This, _), _) if sym.alias.hasAnnotation(definitions.NullOutClass) =>
+              t.updateAttachment(NullOutAttachment)
+            case _ =>
+          }), sym.paramss.head.map(Ident(_))))
         }
       }
 

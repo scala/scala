@@ -1317,6 +1317,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val AnnotationRepeatableAttr      = requiredClass[java.lang.annotation.Repeatable]
 
     // Annotations
+    lazy val NullOutClass               = requiredClass[scala.annotation.nullOut]
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]
     lazy val ImplicitNotFoundClass      = requiredClass[scala.annotation.implicitNotFound]
     lazy val ImplicitAmbiguousClass     = getClassIfDefined("scala.annotation.implicitAmbiguous")

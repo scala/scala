@@ -176,9 +176,10 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     None
   }
 
+  @annotation.nullOut
   override def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var acc = z
-    var these: LinearSeq[A] = coll
+    var these: LinearSeq[A] = (this: @annotation.nullOut).coll
     while (!these.isEmpty) {
       acc = op(acc, these.head)
       these = these.tail
