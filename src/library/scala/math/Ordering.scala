@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -382,8 +382,15 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   /** `Ordering`s for `Float`s.
     *
-    * The behavior of the comparison operations provided by the default (implicit)
-    * ordering on `Float` changed in 2.10.0 and 2.13.0.
+    * The default extends `Ordering.Float.TotalOrdering`.
+    *
+    * `Ordering.Float.TotalOrdering` uses the `java.lang.Float.compare` semantics for all operations.
+    * Scala also provides the `Ordering.Float.IeeeOrdering` semantics. Which uses the IEEE 754 semantics
+    * for float ordering.
+    *
+    * Historically: `IeeeOrdering` was used in Scala from 2.10.x through 2.12.x. This changed in 2.13.0
+    * to `TotalOrdering`.
+    *
     * Prior to Scala 2.10.0, the `Ordering` instance used semantics
     * consistent with `java.lang.Float.compare`.
     *
@@ -394,11 +401,6 @@ object Ordering extends LowPriorityOrderingImplicits {
     * `false` thus `0.0F < Float.NaN`, `0.0F > Float.NaN`, and
     * `Float.NaN == Float.NaN` all yield `false`, analogous `None` in `flatMap`.
     *
-    * Recognizing the limitation of the IEEE 754 semantics in terms of ordering,
-    * Scala 2.13.0 created two instances: `Ordering.Float.IeeeOrdering`, which retains
-    * the IEEE 754 semantics from Scala 2.12.x, and `Ordering.Float.TotalOrdering`,
-    * which brings back the `java.lang.Float.compare` semantics for all operations.
-    * The default extends `TotalOrdering`.
     *
     *  {{{
     *  List(0.0F, 1.0F, 0.0F / 0.0F, -1.0F / 0.0F).sorted      // List(-Infinity, 0.0, 1.0, NaN)

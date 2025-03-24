@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -62,7 +62,7 @@ trait MemberLookup extends base.MemberLookupBase {
       else sym
     classpathEntryFor(sym1) flatMap { path =>
       if (isJDK(sym1)) {
-        Some(LinkToExternalTpl(name, jdkUrl(path), makeTemplate(sym)))
+        Some(LinkToExternalTpl(name, jdkUrl(path, sym1), makeTemplate(sym)))
       }
       else {
         settings.extUrlMapping get path map { url =>
@@ -100,11 +100,35 @@ trait MemberLookup extends base.MemberLookupBase {
   private def isJDK(sym: Symbol) =
     sym.associatedFile.underlyingSource.map(f => isChildOf(f, (sys.props("java.home")))).getOrElse(false)
 
-  def jdkUrl(path: String): String = {
-    if (path.endsWith(".jmod")) {
+  // ISSUE-12820
+  import scala.util.Try
+  private lazy val classGetModule = Try {
+    val clazz = Class.forName("java.lang.Class")
+    clazz.getMethod("getModule")
+  }.toOption
+  private lazy val moduleGetName = Try {
+    val clazz = Class.forName("java.lang.Module")
+    clazz.getMethod("getName")
+  }.toOption
+
+  def jdkUrl(path: String, sym: Symbol): String = {
+    if (path.endsWith(".jmod") && javaVersion >= 11) {
       val tokens = path.split(java.io.File.separatorChar)
       val module = tokens.last.stripSuffix(".jmod")
       s"$jdkUrl/$module"
+    } else if (path.endsWith("ct.sym") && javaVersion >= 11) {
+      (for {
+        clazz <- Try(Class.forName(sym.javaClassName)).toOption
+        getModule <- classGetModule
+        module <- Try(getModule.invoke(clazz)).toOption
+        getModuleName <- moduleGetName
+        moduleName <-
+          Try(getModuleName.invoke(module)).toOption
+            .map(Option(_))
+            .flatten
+      } yield {
+        s"$jdkUrl/$moduleName"
+      }).getOrElse(jdkUrl)
     }
     else {
       jdkUrl
@@ -128,11 +152,15 @@ trait MemberLookup extends base.MemberLookupBase {
   }
 
   lazy val javaVersion: Int =
-    System.getProperty("java.specification.version").split('.').take(2).map(_.toIntOption) match {
-      case Array(Some(1), Some(n)) => n   // example: 1.8.0_242
-      case Array(Some(n))          => n   // example: 14
-      case Array(Some(n), _)       => n   // example: 11.0.7
-      case _                       => 8   // shrug!
+    global.settings.releaseValue
+      .getOrElse(scala.util.Properties.javaSpecVersion)
+      .split('.')
+      .take(2)
+      .map(_.toIntOption) match {
+      case Array(Some(1), Some(n)) => n // example: 1.8.0_242
+      case Array(Some(n))          => n // example: 14
+      case Array(Some(n), _)       => n // example: 11.0.7
+      case _                       => 8 // shrug!
     }
 
   override def warnNoLink = !settings.docNoLinkWarnings.value

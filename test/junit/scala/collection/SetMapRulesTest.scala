@@ -237,6 +237,7 @@ class SetMapRulesTest {
   @Test def testMutableOpenHashMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.OpenHashMap.from(d)))
 
+  @annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
   @Test def testMutableAnyRefMap(): Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.AnyRefMap.from(d)))
 

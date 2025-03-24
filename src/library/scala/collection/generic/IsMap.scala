@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -75,6 +75,7 @@ object IsMap {
     }
 
   // AnyRefMap has stricter bounds than the ones used by the mapOpsIsMap definition
+  @deprecated("AnyRefMap is deprecated", "2.13.16")
   implicit def anyRefMapIsMap[K0 <: AnyRef, V0]: IsMap[mutable.AnyRefMap[K0, V0]] { type K = K0; type V = V0; type C = mutable.AnyRefMap[K0, V0] } =
     new IsMap[mutable.AnyRefMap[K0, V0]] {
       type K = K0

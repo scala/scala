@@ -7,6 +7,9 @@ import org.junit.Test
 import scala.tools.testkit.AssertUtil._
 import scala.util.{Success, Try}
 import duration.Duration.Inf
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.impl.Promise.DefaultPromise
+import scala.util.chaining._
 
 class FutureTest {
   @Test
@@ -111,5 +114,88 @@ class FutureTest {
 
     assertTrue(f.isCompleted)
     assertEquals(Some(Success(1)), f.value)
+  }
+
+  @Test def t13058(): Unit = {
+    implicit val directExecutionContext: ExecutionContext = ExecutionContext.fromExecutor(_.run())
+    val Noop = impl.Promise.getClass.getDeclaredFields.find(_.getName.contains("Noop")).get.tap(_.setAccessible(true)).get(impl.Promise)
+
+    def numTransforms(p: Promise[_]) = {
+      def count(cs: impl.Promise.Callbacks[_]): Int = cs match {
+        case Noop => 0
+        case m: impl.Promise.ManyCallbacks[_] => 1 + count(m.rest)
+        case _ => 1
+      }
+      val cs = p.asInstanceOf[DefaultPromise[_]].get().asInstanceOf[impl.Promise.Callbacks[_]]
+      count(cs)
+    }
+
+    locally {
+      val p1 = Promise[Int]()
+      val p2 = Promise[Int]()
+      val p3 = Promise[Int]()
+
+      p3.future.onComplete(_ => ())
+      p3.future.onComplete(_ => ())
+
+      assert(p2.asInstanceOf[DefaultPromise[_]].get() eq Noop)
+      assert(numTransforms(p3) == 2)
+      val ops3 = p3.asInstanceOf[DefaultPromise[_]].get()
+
+      val first = Future.firstCompletedOf(List(p1.future, p2.future, p3.future))
+
+      assert(numTransforms(p1) == 1)
+      assert(numTransforms(p2) == 1)
+      assert(numTransforms(p3) == 3)
+
+      val succ = Success(42)
+      p1.complete(succ)
+      assert(Await.result(first, Inf) == 42)
+
+      assert(p1.asInstanceOf[DefaultPromise[_]].get() eq succ)
+      assert(p2.asInstanceOf[DefaultPromise[_]].get() eq Noop)
+      assert(p3.asInstanceOf[DefaultPromise[_]].get() eq ops3)
+
+      assert(numTransforms(p2) == 0)
+      assert(numTransforms(p3) == 2)
+    }
+
+    locally {
+      val b = ListBuffer.empty[String]
+      var p = Promise[Int]().asInstanceOf[DefaultPromise[Int]]
+      assert(p.get() eq Noop)
+      val a1 = p.onCompleteWithUnregister(_ => ())
+      a1()
+      assert(p.get() eq Noop)
+
+      val a2 = p.onCompleteWithUnregister(_ => b += "a2")
+      p.onCompleteWithUnregister(_ => b += "b2")
+      a2()
+      assert(numTransforms(p) == 1)
+      p.complete(Success(41))
+      assert(b.mkString == "b2")
+
+      p = Promise[Int]().asInstanceOf[DefaultPromise[Int]]
+      b.clear()
+      p.onCompleteWithUnregister(_ => b += "a3")
+      val b3 = p.onCompleteWithUnregister(_ => b += "b3")
+      p.onCompleteWithUnregister(_ => b += "c3")
+      b3()
+      assert(numTransforms(p) == 2)
+      p.complete(Success(41))
+      assert(b.mkString == "a3c3")
+
+
+      p = Promise[Int]().asInstanceOf[DefaultPromise[Int]]
+      b.clear()
+      p.onCompleteWithUnregister(_ => b += "a4")
+      p.onCompleteWithUnregister(_ => b += "b4")
+      val c4 = p.onCompleteWithUnregister(_ => b += "c4")
+      c4()
+      assert(numTransforms(p) == 2)
+      p.complete(Success(41))
+      println(b.mkString)
+      assert(b.mkString == "b4a4")
+    }
   }
 }

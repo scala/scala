@@ -22,8 +22,8 @@ object Test extends StoreReporterDirectTest {
     assert(tClass.exists)
     assert(tClass.delete())
 
-    // Expecting stub symbol warning, but no stack trace!
+    // Expecting stub symbol warning only under -verbose, but definitely no stack trace!
     compileCode(app)
-    println(filteredInfos.mkString("\n"))
+    assert(filteredInfos.isEmpty, filteredInfos.mkString("; "))
   }
 }

@@ -5,9 +5,29 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.collection.immutable
+
+
 /* Test for scala/bug#10540 */
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
 class AnyRefMapTest {
+  @Test def t13048(): Unit = {
+    def t(x: AnyRef, y: AnyRef): Unit = {
+      val m = AnyRefMap.empty[AnyRef, Unit]
+      m.getOrElseUpdate(x, m.getOrElseUpdate(y, ()))
+      assert(m.keys.toSet == immutable.Set(x, y))
+    }
+    val o1 = new AnyRef {
+      override val hashCode = 4422
+    }
+    val o2 = new AnyRef {
+      override val hashCode = 4422
+    }
+    t(o1, o2)
+    t(o2, o1)
+    t(o1, o1)
+  }
 
   @Test def testAnyRefMapCopy(): Unit = {
     val m1 = AnyRefMap("a" -> "b")

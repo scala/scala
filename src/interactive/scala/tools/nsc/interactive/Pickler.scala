@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -212,7 +212,7 @@ object Pickler {
 
   /** Same as `p ~ q`
    */
-  def seqPickler[T, U](p: Pickler[T], q: => Pickler[U]) = new Pickler[T ~ U] {
+  def seqPickler[T, U](p: Pickler[T], q: => Pickler[U]): Pickler[T ~ U] = new Pickler[T ~ U] {
     lazy val qq = q
     def pickle(wr: Writer, x: T ~ U) = {
       p.pickle(wr, x.fst)
@@ -226,7 +226,7 @@ object Pickler {
 
   /** Same as `p | q`
    */
-  def eitherPickler[T, U <: T, V <: T](p: CondPickler[U], q: => CondPickler[V]) =
+  def eitherPickler[T, U <: T, V <: T](p: CondPickler[U], q: => CondPickler[V]): CondPickler[T] =
     new CondPickler[T](x => p.canPickle(x) || q.canPickle(x)) {
       lazy val qq = q
       override def tryPickle(wr: Writer, x: Any): Boolean =

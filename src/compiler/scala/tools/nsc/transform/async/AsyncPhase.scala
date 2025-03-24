@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -31,8 +31,6 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
                                            stateDiagram: ((Symbol, Tree) => Option[String => Unit]),
                                            allowExceptionsToPropagate: Boolean) extends PlainAttachment
 
-  def hasAsyncAttachment(dd: DefDef) = dd.hasAttachment[AsyncAttachment]
-
   // Optimization: avoid the transform altogether if there are no async blocks in a unit.
   private val sourceFilesToTransform = perRunCaches.newSet[SourceFile]()
   private val awaits: mutable.Set[Symbol] = perRunCaches.newSet[Symbol]()
@@ -51,6 +49,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     val stateDiagram = config.getOrElse("stateDiagram", (_: Symbol, _: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
     val allowExceptionsToPropagate = config.contains("allowExceptionsToPropagate")
     method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram, allowExceptionsToPropagate))
+    method.updateAttachment(ForceMatchDesugar)
     // Wrap in `{ expr: Any }` to force value class boxing before calling `completeSuccess`, see test/async/run/value-class.scala
     deriveDefDef(method) { rhs =>
       Block(Apply(gen.mkAttributedRef(definitions.Predef_locally), rhs :: Nil).updateAttachment(TypedExpectingUnitAttachment), Literal(Constant(())))
@@ -76,7 +75,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
   // TOOD: figure out how to make the root-level async built-in macro sufficiently configurable:
   //       replace the ExecutionContext implicit arg with an AsyncContext implicit that also specifies the type of the Future/Awaitable/Node/...?
   final class AsyncTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    private lazy val liftableMap = new mutable.AnyRefMap[Symbol, (Symbol, List[Tree])]()
+    private lazy val liftableMap = new mutable.HashMap[Symbol, (Symbol, List[Tree])]()
 
     override def transformUnit(unit: CompilationUnit): Unit = {
       if (settings.async.value) {

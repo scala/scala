@@ -1,0 +1,9 @@
+
+scala> import scala.util.chaining.given
+import scala.util.chaining.given
+
+scala> 42.tap(println)
+42
+val res0: Int = 42
+
+scala> :quit

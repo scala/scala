@@ -1,0 +1,186 @@
+
+scala> import annotation._, scala.util.chaining._
+import annotation._
+import scala.util.chaining._
+
+scala> class ann(x: Int = 1, y: Int = 2) extends Annotation
+class ann
+
+scala> class naa(x: Int = 1, y: Int = 2) extends Annotation {
+  def this(s: String) = this(1, 2)
+}
+class naa
+
+scala> class mul(x: Int = 1, y: Int = 2)(z: Int = 3, zz: Int = 4) extends Annotation
+class mul
+
+scala> class kon(x: Int = 1, y: Int = 2) extends ConstantAnnotation
+class kon
+
+scala> class rann(x: Int = 1.tap(println), y: Int) extends Annotation
+class rann
+
+scala> class C {
+  val a = 1
+  val b = 2
+
+  @ann(y = b, x = a) def m1 = 1
+
+  @ann(x = a) def m2 = 1
+  @ann(y = b) def m3 = 1
+
+  @naa(a, b) def m4 = 1
+  @naa(y = b, x = a) def m5 = 1
+  @naa("") def m6 = 1
+
+  // warn, only first argument list is kept
+  @mul(a, b)(a, b) def m7 = 1
+  @mul(y = b)(a, b) def m8 = 1
+  @mul(y = b, x = a)(zz = b) def m9 = 1
+  @mul(y = b)(zz = b) def m10 = 1
+
+  @kon(y = 22) def m11 = 1
+  @kon(11) def m12 = 1
+}
+         @mul(a, b)(a, b) def m7 = 1
+          ^
+On line 15: warning: Implementation limitation: multiple argument lists on annotations are
+       currently not supported; ignoring arguments List(C.this.a, C.this.b)
+         @mul(y = b)(a, b) def m8 = 1
+          ^
+On line 16: warning: Implementation limitation: multiple argument lists on annotations are
+       currently not supported; ignoring arguments List(C.this.a, C.this.b)
+         @mul(y = b, x = a)(zz = b) def m9 = 1
+          ^
+On line 17: warning: Implementation limitation: multiple argument lists on annotations are
+       currently not supported; ignoring arguments List(3, C.this.b)
+         @mul(y = b)(zz = b) def m10 = 1
+          ^
+On line 18: warning: Implementation limitation: multiple argument lists on annotations are
+       currently not supported; ignoring arguments List(3, C.this.b)
+class C
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> println(typeOf[C].members.toList.filter(_.name.startsWith("m")).sortBy(_.name).map(_.annotations.head).mkString("\n"))
+ann(C.this.a, C.this.b)
+mul(1, C.this.b)
+kon(y = 22)
+kon(x = 11)
+ann(C.this.a, 2)
+ann(1, C.this.b)
+naa(C.this.a, C.this.b)
+naa(C.this.a, C.this.b)
+naa("")
+mul(C.this.a, C.this.b)
+mul(1, C.this.b)
+mul(C.this.a, C.this.b)
+
+scala> val i6 = typeOf[C].member(TermName("m6")).annotations.head
+val i6: $r.intp.global.AnnotationInfo = naa("")
+
+scala> i6.constructorSymbol(global.typer.typed).paramss
+val res1: List[List[$r.intp.global.Symbol]] = List(List(value s))
+
+scala> val i11 = typeOf[C].member(TermName("m11")).annotations.head
+val i11: $r.intp.global.AnnotationInfo = kon(y = 22)
+
+scala> i11.assocs
+val res2: List[($r.intp.global.Name, $r.intp.global.ClassfileAnnotArg)] = List((y,22))
+
+scala> i11.assocsWithDefaults
+val res3: List[($r.intp.global.Name, $r.intp.global.ClassfileAnnotArg)] = List((x,1), (y,22))
+
+scala> val i3 = typeOf[C].member(TermName("m3")).annotations.head
+val i3: $r.intp.global.AnnotationInfo = ann(1, C.this.b)
+
+scala> i3.args.map(_.tpe)
+val res4: List[$r.intp.global.Type] = List(Int(1) @scala.annotation.meta.defaultArg, Int)
+
+scala> i3.args.map(i3.argIsDefault)
+val res5: List[Boolean] = List(true, false)
+
+scala> // ordinary named/default args when using annotation class in executed code
+
+scala> new rann(y = 2.tap(println)); () // prints 2, then the default 1
+2
+1
+
+scala> @rann(y = {new rann(y = 2.tap(println)); 2}) class r1
+class r1
+
+scala> println(typeOf[r1].typeSymbol.annotations.head.args)
+List(scala.util.`package`.chaining.scalaUtilChainingOps[Int](1).tap[Unit](((x: Any) => scala.Predef.println(x))), {
+  {
+    <artifact> val x$1: Int = scala.util.`package`.chaining.scalaUtilChainingOps[Int](2).tap[Unit](((x: Any) => scala.Predef.println(x)));
+    <artifact> val x$2: Int = $line17.$read.INSTANCE.$iw.rann.<init>$default$1;
+    new $line17.$read.INSTANCE.$iw.rann(x$2, x$1)
+  };
+  2
+})
+
+scala> // subclassing
+
+scala> class sub1(z: Int = 3) extends ann(11, z)
+class sub1
+
+scala> class sub2(z: Int = 3) extends ann(y = z)
+class sub2
+
+scala> class suk(z: Int = 3) extends kon(y = 22)
+class suk
+
+scala> class sum(z: Int) extends mul(11, 22)(z)
+class sum
+
+scala> println(typeOf[sub1].typeSymbol.annotations)
+List(scala.annotation.meta.superArg("x", 11), scala.annotation.meta.superFwdArg("y", "z"))
+
+scala> println(typeOf[sub2].typeSymbol.annotations)
+List(scala.annotation.meta.superArg("x", 1), scala.annotation.meta.superFwdArg("y", "z"))
+
+scala> println(typeOf[suk].typeSymbol.annotations)
+List(scala.annotation.meta.superArg("y", 22))
+
+scala> println(typeOf[sum].typeSymbol.annotations) // none
+List()
+
+scala> class D {
+  val a = 1
+
+  @sub1() def m1 = 1
+  @sub1(a) def m2 = 1
+  @sub2 def m3 = 1
+  @sub2(33) def m4 = 1
+
+  @suk() def k1 = 1
+  @suk(33) def k2 = 1
+}
+class D
+
+scala> val ms = typeOf[D].members.toList.filter(_.name.startsWith("m")).sortBy(_.name).map(_.annotations.head)
+val ms: List[$r.intp.global.AnnotationInfo] = List(sub1(3), sub1(D.this.a), sub2(3), sub2(33))
+
+scala> ms.foreach(m => {println(m.args); println(m.argsForSuper(typeOf[ann].typeSymbol)) })
+List(3)
+List(11, 3)
+List(D.this.a)
+List(11, D.this.a)
+List(3)
+List(1, 3)
+List(33)
+List(1, 33)
+
+scala> val ks = typeOf[D].members.toList.filter(_.name.startsWith("k")).sortBy(_.name).map(_.annotations.head)
+val ks: List[$r.intp.global.AnnotationInfo] = List(suk, suk(z = 33))
+
+scala> ks.foreach(k => {println(k.assocs); println(k.assocsForSuper(typeOf[kon].typeSymbol)) })
+List()
+List((y,22))
+List((z,33))
+List((y,22))
+
+scala> :quit

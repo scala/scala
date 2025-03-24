@@ -31,22 +31,47 @@ sammy_wrong_arity.scala:13: error: type mismatch;
 sammy_wrong_arity.scala:15: error: missing parameter type
   def f6 = ((x) => 0): T2
              ^
+sammy_wrong_arity.scala:15: error: type mismatch;
+ found   : ? => ?
+ required: T2
+  def f6 = ((x) => 0): T2
+                ^
 sammy_wrong_arity.scala:17: error: missing parameter type
   def f7 = ((x) => 0): T0
              ^
+sammy_wrong_arity.scala:17: error: type mismatch;
+ found   : ? => ?
+ required: T0
+  def f7 = ((x) => 0): T0
+                ^
 sammy_wrong_arity.scala:18: error: missing parameter type
   def f8 = ((x) => 0): T2
              ^
+sammy_wrong_arity.scala:18: error: type mismatch;
+ found   : ? => ?
+ required: T2
+  def f8 = ((x) => 0): T2
+                ^
 sammy_wrong_arity.scala:20: error: missing parameter type
   def f9 = ((x, y) => 0): T0
              ^
 sammy_wrong_arity.scala:20: error: missing parameter type
   def f9 = ((x, y) => 0): T0
                 ^
+sammy_wrong_arity.scala:20: error: type mismatch;
+ found   : (?, ?) => ?
+ required: T0
+  def f9 = ((x, y) => 0): T0
+                   ^
 sammy_wrong_arity.scala:21: error: missing parameter type
   def g0 = ((x, y) => 0): T1
              ^
 sammy_wrong_arity.scala:21: error: missing parameter type
   def g0 = ((x, y) => 0): T1
                 ^
-13 errors
+sammy_wrong_arity.scala:21: error: type mismatch;
+ found   : (?, ?) => ?
+ required: T1
+  def g0 = ((x, y) => 0): T1
+                   ^
+18 errors

@@ -1,0 +1,9 @@
+t12074.scala:5: warning: private val range in class C is never used
+  private val range = -700 to 700
+              ^
+t12074.scala:6: warning: private val rangely in class C is never used
+  private val rangely = -700.to(700)
+              ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

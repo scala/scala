@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -774,6 +774,7 @@ trait StdNames {
     val copy: NameType                 = nameType("copy")
     val create: NameType               = nameType("create")
     val currentMirror: NameType        = nameType("currentMirror")
+    val curried: NameType              = nameType("curried")
     val delayedInit: NameType          = nameType("delayedInit")
     val delayedInitArg: NameType       = nameType("delayedInit$body")
     val dollarScope: NameType          = nameType("$scope")

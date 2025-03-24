@@ -1,4 +1,11 @@
 sammy_error.scala:6: error: missing parameter type
   foo(x => x) // should result in only one error (the second one stemmed from adapting to SAM when the tree was erroneous)
       ^
-1 error
+sammy_error.scala:6: error: type mismatch;
+ found   : F1[Any,Nothing]
+ required: F1[Any,Any]
+Note: Nothing <: Any, but trait F1 is invariant in type B.
+You may wish to define B as +B instead. (SLS 4.5)
+  foo(x => x) // should result in only one error (the second one stemmed from adapting to SAM when the tree was erroneous)
+        ^
+2 errors

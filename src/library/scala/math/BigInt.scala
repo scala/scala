@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -379,7 +379,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
       else if (_long < 0) BigInt(-1)
       else BigInt(0) // for _long >= 0
     } else BigInt(this.bigInteger.shiftRight(n))
-  
+
   /** Bitwise and of BigInts
    */
   def &(that: BigInt): BigInt =
@@ -501,7 +501,7 @@ final class BigInt private (private var _bigInteger: BigInteger, private val _lo
         (_long & (1L << n)) != 0
       else
         _long < 0 // give the sign bit
-    } else _bigInteger.testBit(n)
+    } else this.bigInteger.testBit(n)
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit set.
    */

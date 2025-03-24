@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -396,8 +396,8 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     val blockBuilder = new AsyncBlockBuilder(stats, expr, startState, endState, startToEndUpdateStyle = StateTransitionStyle.Update)
 
     new AsyncBlock {
-      private val switchIds = mutable.AnyRefMap[Integer, Integer]()
-      private val emptyReplacements = mutable.AnyRefMap[Integer, Integer]()
+      private val switchIds = mutable.HashMap[Integer, Integer]()
+      private val emptyReplacements = mutable.HashMap[Integer, Integer]()
       private def switchIdOf(state: Integer) = switchIds(emptyReplacements.getOrElse(state, state))
 
       // render with http://graphviz.it/#/new
@@ -522,7 +522,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         live
       } else all
 
-      private val compactStateTransform = new AstTransformer {
+      private val compactStateTransform: AstTransformer = new AstTransformer {
         val transformState = currentTransformState
         override def transform(tree: Tree): Tree = tree match {
           case Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == transformState.stateSetter && compactStates =>

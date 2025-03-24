@@ -10,7 +10,7 @@ object TraitsWithSideEffects {
   }
 
   trait ExprMap {
-    val map: mutable.Map[String, Boolean] = mutable.AnyRefMap.empty
+    val map: mutable.Map[String, Boolean] = mutable.HashMap.empty
 
     setupEntries(map)
   }

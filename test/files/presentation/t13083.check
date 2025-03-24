@@ -1,0 +1,7 @@
+reload: CompleteLocalImport.scala
+
+askTypeCompletion at CompleteLocalImport.scala(2,14)
+================================================================================
+[response] askTypeCompletion at (2,14)
+retrieved 14 members
+================================================================================

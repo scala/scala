@@ -18,7 +18,7 @@ object test1 {
 }
 
 object test2 {
-  def c(y: Float) = {
+  def c(y: Float): AnyRef { val y: Int } = {
     class D {
       val y = 2
     }

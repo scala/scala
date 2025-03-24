@@ -1,4 +1,4 @@
-//> using options -Yrangepos
+//
 //
 class TypeTreeObjects {
   class Container {

@@ -5,70 +5,12 @@ dist: xenial  # GPG stuff breaks on bionic; scala/scala-dev#764
 language: scala
 
 stages:
-  - build
-  - test
-
-templates: # this has no effect on travis, it's just a place to put our templates
-  pr-jdk8: &pr-jdk8
-    if: type = pull_request OR repo != scala/scala
-
-  cron-jdk17: &cron-jdk17
-    if: type = cron AND repo = scala/scala
-    env: ADOPTOPENJDK=17
-
-  build-for-testing: &build-for-testing
-    # pull request validation (w/ bootstrap)
-    # differs from the build that publishes releases / integration builds:
-    # - not using bash script setup, but just the underlying sbt calls
-    # - publishing locally rather than to Artifactory
-    # the bootstrap above is older historically; this way of doing it is newer
-    # and also simpler. we should aim to reduce/eliminate the duplication.
-    stage: build
-    name: build, publishLocal, build again
-    script:
-      - set -e
-      - sbt setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dstarr.version=$STARR setupValidateTest compile
-    workspaces:
-      create:
-        name: bootstrapped
-        paths:
-          # so new STARR will be available
-          - "buildcharacter.properties"
-          - "$HOME/.ivy2/local/org.scala-lang"
-          # so build products built using new STARR are kept
-          - "target"
-          - "project/target"
-          - "project/project/target"
-          - "project/project/project/target"
-          - "dist"
-          - "build"
-
-  test1: &test1
-    stage: test
-    name: tests (junit, scalacheck, et al)
-    workspaces:
-      use: bootstrapped
-    script:
-      - set -e
-      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dstarr.version=$STARR setupValidateTest Test/compile testAll1
-
-  test2: &test2
-    stage: test
-    name: tests (partest)
-    workspaces:
-      use: bootstrapped
-    script:
-      - set -e
-      - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-      - sbt -Dstarr.version=$STARR setupValidateTest testAll2
+  - name: build
 
 jobs:
   include:
     - stage: build
-      if: (type = push OR type = api) AND repo = scala/scala # api for manually triggered release builds
+      if: type != pull_request AND repo = scala/scala AND branch = 2.13.x
       name: publish (bootstrapped) to scala-integration or sonatype
       script:
         # see comment in `bootstrap_fun` for details on the procedure
@@ -87,45 +29,8 @@ jobs:
         - buildQuick
         - triggerScalaDist
 
-    - <<: *build-for-testing
-      <<: *pr-jdk8
-
-    - <<: *test1
-      <<: *pr-jdk8
-
-    - <<: *test2
-      <<: *pr-jdk8
-
-    - <<: *build-for-testing
-      <<: *cron-jdk17
-
-    - <<: *test1
-      <<: *cron-jdk17
-
-    - <<: *test2
-      <<: *cron-jdk17
-
-    - stage: test
-      name: build library with Scala 3
-      if: type = pull_request OR repo != scala/scala
-      workspaces:
-        use: bootstrapped
-      script:
-        - set -e
-        - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-        - sbt -Dscala.build.compileWithDotty=true library/compile
-
-    - name: build benchmarks
-      if: type = pull_request OR repo != scala/scala
-      workspaces:
-        use: bootstrapped
-      script:
-        - set -e
-        - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-        - sbt bench/Jmh/compile
-
     - stage: build
-      if: type = pull_request OR type = push
+      if: type != pull_request AND repo = scala/scala AND branch = 2.13.x
       name: language spec
       dist: focal
       language: ruby
@@ -169,10 +74,4 @@ cache:
     - $HOME/.rvm
 
 notifications:
-  slack:
-    rooms:
-      - typesafe:WoewGgHil2FkdGzJyV3phAhj
-    if: (type = cron OR type = push) AND repo = scala/scala
-    on_success: never
-    on_failure: change
   webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis

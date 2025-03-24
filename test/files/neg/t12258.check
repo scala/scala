@@ -1,0 +1,9 @@
+sample_2.scala:2: warning: Something is wrong.
+package sample
+        ^
+sample_2.scala:5: More is broken.
+object Sample extends App {
+       ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

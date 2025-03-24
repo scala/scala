@@ -118,6 +118,11 @@ names-defaults-neg.scala:110: error: unknown parameter name: m
 names-defaults-neg.scala:146: error: missing parameter type for expanded function ((<x$1: error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
+names-defaults-neg.scala:146: error: type mismatch;
+ found   : ? => ?
+ required: Int
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+                                       ^
 names-defaults-neg.scala:146: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
@@ -127,6 +132,11 @@ names-defaults-neg.scala:147: error: parameter 'a' is already specified at param
 names-defaults-neg.scala:148: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
+names-defaults-neg.scala:148: error: type mismatch;
+ found   : ? => ?
+ required: String
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                                    ^
 names-defaults-neg.scala:103: warning: symbol literal is deprecated; use Symbol("foo") instead [quickfixable]
   def deprNam6(@deprecatedName('foo) deprNam6Arg: String) = 0
                                ^
@@ -149,4 +159,4 @@ names-defaults-neg.scala:106: warning: the parameter name bar is deprecated (sin
   deprNam7(bar = null)
                ^
 7 warnings
-33 errors
+35 errors

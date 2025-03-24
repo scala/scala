@@ -1,4 +1,4 @@
-//> using options -Yrangepos
+//
 import language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 

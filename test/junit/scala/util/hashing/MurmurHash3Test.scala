@@ -56,4 +56,16 @@ class MurmurHash3Test {
     assertEquals(r5, r6)
     assertEquals(r5.hashCode, r6.hashCode)
   }
+
+  @Test
+  def testEqualArray(): Unit = {
+    val z1 = (1 to 1).map(_ => 0).toArray
+    val z2 = (1 to 2).map(_ => 0).toArray
+    val z3 = (1 to 3).map(_ => 0).toArray
+    val z4 = (1 to 4).map(_ => 0).toArray
+    Seq(z1, z2, z3, z4).foreach(z => check(z.toIndexedSeq.hashCode(), z))
+    Seq(z1, z2, z3, z4).sliding(2).foreach{ case Seq(a, b) =>
+      assertNotEquals(a.toIndexedSeq.hashCode(), b.toIndexedSeq.hashCode())
+    }
+  }
 }

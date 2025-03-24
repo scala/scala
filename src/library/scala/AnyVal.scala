@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -29,9 +29,8 @@ package scala
  *   - The ''integer types'' include the subrange types as well as [[scala.Int]] and [[scala.Long]].
  *   - The ''floating point types'' are [[scala.Float]] and [[scala.Double]].
  *
- * Prior to Scala 2.10, `AnyVal` was a sealed trait. Beginning with Scala 2.10,
- * however, it is possible to define a subclass of `AnyVal` called a ''user-defined value class''
- * which is treated specially by the compiler. Properly-defined user value classes provide a way
+ * A subclass of `AnyVal` is called a ''user-defined value class''
+ * and is treated specially by the compiler. Properly-defined user value classes provide a way
  * to improve performance on user-defined types by avoiding object allocation at runtime, and by
  * replacing virtual method invocations with static method invocations.
  *

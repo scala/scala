@@ -1,4 +1,4 @@
-//> using options -Wconf:cat=scala3-migration:w -Werror -Xlint -Xsource:3 -Yrangepos:true
+//> using options -Wconf:cat=scala3-migration:w -Werror -Xlint -Xsource:3
 class A {
   def fn1 = List apply 1
   def fn2 = List apply[Int] 2

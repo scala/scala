@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -91,6 +91,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.DiscardedValue
     this.DiscardedExpr
     this.BooleanParameterType
+    this.ForceMatchDesugar
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -470,6 +471,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BeanPropertyAttr
     definitions.BooleanBeanPropertyAttr
     definitions.CompileTimeOnlyAttr
+    definitions.DefaultArgAttr
     definitions.DeprecatedAttr
     definitions.DeprecatedNameAttr
     definitions.DeprecatedInheritanceAttr
@@ -480,6 +482,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SerialVersionUIDAttr
     definitions.SerialVersionUIDAnnotation
     definitions.SpecializedClass
+    definitions.SuperArgAttr
+    definitions.SuperFwdArgAttr
     definitions.ThrowsClass
     definitions.TransientAttr
     definitions.UncheckedClass

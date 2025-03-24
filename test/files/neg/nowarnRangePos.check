@@ -1,3 +1,7 @@
+nowarnRangePos.scala:84: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
+Applicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other, site=C.T12.f
+    @nowarn("v") def f = try 1
+                         ^
 nowarnRangePos.scala:11: warning: method dep in class C is deprecated (since 1.2.3): message
   @nowarn @ann(dep) def t2 = 0          // deprecation warning, @nowarn unused
                ^
@@ -19,6 +23,16 @@ nowarnRangePos.scala:75: warning: a pure expression does nothing in statement po
 nowarnRangePos.scala:80: warning: method dep in class C is deprecated (since 1.2.3): message
     a + dep
         ^
+nowarnRangePos.scala:90: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+Applicable -Wconf / @nowarn filters for this warning: msg=<part of the message>, cat=other-pure-statement, site=C.T13.g
+    def g = { 1; 2 }
+              ^
+nowarnRangePos.scala:113: warning: method dep in class C is deprecated (since 1.2.3): message
+  @purr def t2 = new C().dep  // warn, plus unused @nowarn
+                         ^
+nowarnRangePos.scala:116: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+  @nodep def t4 = { 1; 2 } // warn, plus unused @nowarn
+                    ^
 nowarnRangePos.scala:45: warning: I3b has a valid main method (args: Array[String]): Unit,
   but C.I3b will not have an entry point on the JVM.
   Reason: companion is a trait, which means no static forwarder can be generated.
@@ -43,6 +57,15 @@ nowarnRangePos.scala:24: warning: @nowarn annotation does not suppress any warni
 nowarnRangePos.scala:65: warning: @nowarn annotation does not suppress any warnings
   @nowarn("msg=something else") // unused
    ^
+nowarnRangePos.scala:91: warning: @nowarn annotation does not suppress any warnings
+    @nowarn("v") def unused = 0
+     ^
+nowarnRangePos.scala:113: warning: @nowarn annotation does not suppress any warnings
+  @purr def t2 = new C().dep  // warn, plus unused @nowarn
+   ^
+nowarnRangePos.scala:116: warning: @nowarn annotation does not suppress any warnings
+  @nodep def t4 = { 1; 2 } // warn, plus unused @nowarn
+   ^
 error: No warnings can be incurred under -Werror.
-14 warnings
+21 warnings
 1 error

@@ -7,6 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import scala.collection.{immutable => im}
 
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
 class FactoriesTest {
 
   val seq: Seq[Int] = ArrayBuffer(1, 2, 3)

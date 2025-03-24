@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -425,8 +425,8 @@ trait ContextErrors extends splain.SplainErrors {
       def AmbiguousParentClassError(tree: Tree) =
         issueNormalTypeError(tree, "ambiguous parent class qualifier")
 
-      //typedSelect
-      def NotAMemberError(sel: Tree, qual: Tree, name: Name, cx: Context) = {
+      //typedSelect or checkSelector
+      def NotAMemberError(sel: Tree /*Select|Import*/, qual: Tree, name: Name, cx: Context) = {
         import util.EditDistance, util.StringUtil.oxford
         def errMsg: String = {
           val editThreshold  = 3
@@ -517,7 +517,14 @@ trait ContextErrors extends splain.SplainErrors {
             else s"$nameString is not a member of $targetStr$addendum"
           )
         }
-        issueNormalTypeError(sel, errMsg)
+        sel match {
+          case tree: Import => // selector name is unique; use it to improve position
+            tree.selectors.find(_.introduces(name)) match {
+              case Some(badsel) => issueTypeError(PosAndMsgTypeError(tree.posOf(badsel), errMsg))
+              case _ => issueNormalTypeError(sel, errMsg)
+            }
+          case _ => issueNormalTypeError(sel, errMsg)
+        }
         // the error has to be set for the copied tree, otherwise
         // the error remains persistent across multiple compilations
         // and causes problems
@@ -812,7 +819,9 @@ trait ContextErrors extends splain.SplainErrors {
         val advice =
           if (meth.isConstructor || meth.info.params.lengthIs > definitions.MaxFunctionArity) ""
           else s"""
-            |Unapplied methods are only converted to functions when a function type is expected.
+            |Unapplied methods are only converted to functions when a function type is expected.${
+              if (!currentRun.isScala3) "" else """
+            |Use -Xsource-features:eta-expand-always to convert even if the expected type is not a function type."""}
             |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin
         val message =
           if (meth.isMacro) MacroTooFewArgumentListsMessage
@@ -1209,6 +1218,11 @@ trait ContextErrors extends splain.SplainErrors {
             }
           case (tpe, _) => tpe
         }
+
+      def NoMatchingAlternative(tree: Tree, alts: List[Symbol], argTpes: List[Type], pt: Type) = {
+        val msg = " does not match arguments "
+        issueNormalTypeError(tree, applyErrorMsg(tree, msg, argTpes, pt))
+      }
 
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
         val alts = alternatives(tree)

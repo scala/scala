@@ -221,6 +221,15 @@ class IteratorTest {
     assertSameElements(List(3) ++ List(1, 2, 3).reverseIterator.drop(1), List(3, 2, 1))
   }
 
+  @Test def `drop does overflow t13052`: Unit = {
+    var counter = 0L
+    val it = Iterator.continually(counter.tap(_ => counter += 1))
+    val n = 1_000_000_000
+    val dropped = it.drop(n).drop(n).drop(n).drop(50)
+    assertEquals(3L * n + 50L, dropped.next())
+    assertEquals(3L * n + 100L, dropped.drop(49).next())
+  }
+
   @Test def dropIsChainable(): Unit = {
     assertSameElements(1 to 4, Iterator from 0 take 5 drop 1)
     assertSameElements(3 to 4, Iterator from 0 take 5 drop 3)
@@ -891,7 +900,7 @@ class IteratorTest {
   }
 
   @Test
-  def t11106(): Unit = {
+  def `t11106 still lazy after withFilter`: Unit = {
     var i = 0
     Iterator.continually(0)
       .map(_ => {i += 1; i})
@@ -1048,5 +1057,28 @@ class IteratorTest {
       slid.next()
       slid.next()
     }
+  }
+
+  // scala/bug#3516
+  @Test def `iterator span followed by toSeq`(): Unit = {
+    def spanA(list: List[Int], x: Int) =
+      list.iterator.span(_ == x) match {
+        case (a,b) => (a.toList, b.toList)
+      }
+
+    def spanB(list: List[Int], x: Int) =
+      list.iterator.span(_ == x) match {
+        case (a,b) => (a.toSeq, b.toSeq) match {
+          case (a,b) => (a.toList, b.toList)
+        }
+      }
+
+    assert(spanA(List(1, 2, 1), 1) == (List(1), List(2, 1)))
+    assert(spanB(List(1, 2, 1), 1) == (List(1), List(2, 1)))
+
+    val original = List(1, 2, 3).iterator
+    val (front, back) = original.span(_ != 2)
+    back.drop(1)
+    assert(front.toList == List(1))
   }
 }

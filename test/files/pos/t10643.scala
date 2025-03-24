@@ -1,5 +1,5 @@
 
-//> using options -Yrangepos
+//
 
 trait AA
 trait BB

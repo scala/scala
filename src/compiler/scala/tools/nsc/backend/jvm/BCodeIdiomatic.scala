@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -674,7 +674,7 @@ abstract class BCodeIdiomatic {
    *
    */
   class LabelDefsFinder(rhs: Tree) extends InternalTraverser {
-    val result = mutable.AnyRefMap.empty[Tree, List[LabelDef]]
+    val result = mutable.HashMap.empty[Tree, List[LabelDef]]
     var acc: List[LabelDef] = Nil
     var directResult: List[LabelDef] = Nil
 

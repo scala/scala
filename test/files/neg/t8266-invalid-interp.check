@@ -12,4 +12,7 @@ t8266-invalid-interp.scala:8: error: \v is not supported, but for vertical tab u
 invalid escape '\v' not one of [\b, \t, \n, \f, \r, \\, \", \', \uxxxx] at index 0 in "\v". Use \\ for literal \.
     f"\v$x%.4s, Fred",
       ^
-4 errors
+t8266-invalid-interp.scala:11: error: invalid escape '\s' not one of [\b, \t, \n, \f, \r, \\, \", \', \uxxxx] at index 11 in ". And then \s.". Use \\ for literal \.
+    s"She said, $x. And then \s.",
+                             ^
+5 errors

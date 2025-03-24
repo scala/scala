@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -254,20 +254,21 @@ trait MatchTranslation {
         val catches = if (swatches.nonEmpty) swatches else {
           val scrutSym = freshSym(caseDefs.head.pat.pos, ThrowableTpe)
           val cases    = caseDefs.map(translateCase(scrutSym, pt))
+          val casesPos = wrappingPos(caseDefs)
 
           val exSym = freshSym(pos, ThrowableTpe, "ex")
           val suppression =
             if (settings.XnoPatmatAnalysis.value) Suppression.FullSuppression
             else Suppression.NoSuppression.copy(suppressExhaustive = true) // try/catches needn't be exhaustive
 
-          List(
-              atPos(pos) {
-                CaseDef(
-                  Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
-                  EmptyTree,
-                  combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(_ => Throw(REF(exSym))), suppression)
-                )
-              })
+          val combo = combineCases(REF(exSym), scrutSym, cases, pt, selectorPos, matchOwner, Some(_ => Throw(REF(exSym))), suppression)
+          List(atPos(casesPos) {
+            CaseDef(
+              Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
+              EmptyTree,
+              combo
+            )
+          })
         }
 
         typer.typedCases(catches, ThrowableTpe, WildcardType)

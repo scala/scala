@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -20,7 +20,7 @@ import java.util.{Arrays, Spliterator}
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.generic.DefaultSerializable
+import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.collection.immutable.VectorInline._
 import scala.collection.immutable.VectorStatics._
 import scala.collection.mutable.ReusableBuilder
@@ -283,7 +283,7 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   }
 
   protected[this] def ioob(index: Int): IndexOutOfBoundsException =
-    new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${length-1})")
+    CommonErrors.indexOutOfBounds(index = index, max = length - 1)
 
   override final def head: A =
     if (prefix1.length == 0) throw new NoSuchElementException("empty.head")

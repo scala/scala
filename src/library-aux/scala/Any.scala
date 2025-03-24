@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -15,7 +15,6 @@ package scala
 /** Class `Any` is the root of the Scala class hierarchy.  Every class in a Scala
  *  execution environment inherits directly or indirectly from this class.
  *
- * Starting with Scala 2.10 it is possible to directly extend `Any` using ''universal traits''.
  * A ''universal trait'' is a trait that extends `Any`, only has `def`s as members, and does no initialization.
  *
  * The main use case for universal traits is to allow basic inheritance of methods for [[scala.AnyVal value classes]].

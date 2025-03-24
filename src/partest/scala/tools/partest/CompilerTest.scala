@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -31,11 +31,12 @@ abstract class CompilerTest extends DirectTest {
   def check(source: String, unit: global.CompilationUnit): Unit
 
   lazy val global: Global = newCompiler()
-  lazy val units: List[global.CompilationUnit] = compilationUnits(global)(sources: _ *)
+  lazy val computedSources = sources
+  lazy val units: List[global.CompilationUnit] = compilationUnits(global)(computedSources: _ *)
   import global._
   import definitions.compilerTypeFromTag
 
-  def show() = sources.lazyZip(units).foreach(check)
+  def show() = computedSources.lazyZip(units).foreach(check)
 
   // Override at least one of these...
   def code = ""

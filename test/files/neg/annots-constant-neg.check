@@ -1,7 +1,7 @@
-Test.scala:12: error: class Ann1 cannot have auxiliary constructors because it extends ConstantAnnotation
+Test.scala:11: error: class Ann1 cannot have auxiliary constructors because it extends ConstantAnnotation
   def this(s: String) = this(0) // err
       ^
-Test.scala:14: error: class Ann2 needs to have exactly one argument list because it extends ConstantAnnotation
+Test.scala:13: error: class Ann2 needs to have exactly one argument list because it extends ConstantAnnotation
 class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
                                    ^
 Test.scala:27: error: annotation argument needs to be a constant; found: Test.this.nonConst

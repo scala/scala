@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -30,7 +30,7 @@ package scala
  *  foo.arr(10)         ~~> foo.applyDynamic("arr")(10)
  *  }}}
  *
- *  As of Scala 2.10, defining direct or indirect subclasses of this trait
+ *  Defining direct or indirect subclasses of this trait
  *  is only possible if the language feature `dynamics` is enabled.
  */
 trait Dynamic extends Any

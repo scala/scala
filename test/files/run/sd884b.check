@@ -1,0 +1,54 @@
+
+scala> class B {
+  @ann(x = 11) def m1 = 1
+  @ann(y = 22) def m2 = 1
+
+  @kon(x = 11) def k1 = 1
+  @kon(y = 22) def k2 = 1
+}
+class B
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> def t(tp: Type) = {
+  val ms = tp.members.toList.filter(_.name.startsWith("m")).sortBy(_.name)
+  for (m <- ms) {
+    val i = m.annotations.head
+    println(i)
+    println(i.args.map(_.tpe))
+    println(i.args.map(i.argIsDefault))
+  }
+  val ks = tp.members.toList.filter(_.name.startsWith("k")).sortBy(_.name)
+  ks.foreach(k => println(k.annotations.head))
+  ks.foreach(k => println(k.annotations.head.assocsWithDefaults))
+}
+def t(tp: $r.intp.global.Type): Unit
+
+scala> t(typeOf[A])
+ann(11, T.i)
+List(Int, Int @scala.annotation.meta.defaultArg)
+List(false, true)
+ann(1, 22)
+List(Int(1) @scala.annotation.meta.defaultArg, Int)
+List(true, false)
+kon(x = 11)
+kon(y = 22)
+List((x,11), (y,2))
+List((x,1), (y,22))
+
+scala> t(typeOf[B])
+ann(11, T.i)
+List(Int(11), Int @scala.annotation.meta.defaultArg)
+List(false, true)
+ann(1, 22)
+List(Int @scala.annotation.meta.defaultArg, Int(22))
+List(true, false)
+kon(x = 11)
+kon(y = 22)
+List((x,11), (y,2))
+List((x,1), (y,22))
+
+scala> :quit

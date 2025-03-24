@@ -9,6 +9,8 @@ import scala.collection.{BuildFrom, View, mutable}
 import scala.language.implicitConversions
 import scala.tools.testkit.AssertUtil.assertSameElements
 
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
+  @annotation.nowarn("cat=deprecation&origin=scala.collection.generic.IsMap.anyRefMapIsMap")
 class DecoratorsTest {
 
   @Test

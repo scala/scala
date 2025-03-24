@@ -2,7 +2,7 @@ import scala.tools.partest._
 
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -Yrangepos"
+
   override def sources = List(
     "class C1 { def t = List(1).map ( x => x ) }",
     "class C2 { def t = List(1).map { x => x } }",

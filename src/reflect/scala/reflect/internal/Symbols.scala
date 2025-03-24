@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -676,6 +676,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isLabel     = false
 
     /** Package/package object tests */
+    def isPackage              = false
     def isPackageClass         = false
     def isPackageObject        = false
     def isPackageObjectClass   = false
@@ -2968,6 +2969,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isMixinConstructor = rawname == nme.MIXIN_CONSTRUCTOR
     override def isConstructor      = isClassConstructor || isMixinConstructor
 
+    override def isPackage          = hasFlag(PACKAGE)
     override def isPackageObject    = isModule && (rawname == nme.PACKAGE)
 
     override def isExistentiallyBound = this hasFlag EXISTENTIAL
@@ -3388,6 +3390,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isCaseClass               = this hasFlag CASE
     override def isClassLocalToConstructor = this hasFlag INCONSTRUCTOR
     override def isModuleClass             = this hasFlag MODULE
+    override def isPackage                 = hasFlag(PACKAGE) // i.e., isPackageClass
     override def isPackageClass            = this hasFlag PACKAGE
     override def isTrait                   = this hasFlag TRAIT
 

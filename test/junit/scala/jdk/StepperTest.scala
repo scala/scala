@@ -260,6 +260,7 @@ class StepperTest {
     }
 
   @Test
+  @annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
   def anyRefMapSteppers(): Unit =
     for (size <- sizes) {
       val l = List.fill(size)(r.nextInt().toString -> r.nextInt()).distinctBy(_._1)

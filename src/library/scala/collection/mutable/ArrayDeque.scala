@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -16,7 +16,7 @@ package mutable
 
 import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.generic.DefaultSerializable
+import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.reflect.ClassTag
 
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer.
@@ -580,7 +580,8 @@ trait ArrayDequeOps[A, +CC[_], +C <: AnyRef] extends StrictOptimizedSeqOps[A, CC
   protected def start_+(idx: Int): Int
 
   @inline protected final def requireBounds(idx: Int, until: Int = length): Unit =
-    if (idx < 0 || idx >= until) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${until-1})")
+    if (idx < 0 || idx >= until)
+      throw CommonErrors.indexOutOfBounds(index = idx, max = until - 1)
 
   /**
     * This is a more general version of copyToArray - this also accepts a srcStart unlike copyToArray

@@ -42,8 +42,8 @@ val jolDep            = "org.openjdk.jol"                % "jol-core"           
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")     classifier "jdk8"
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
-val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.12"
-val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.4"
+val diffUtilsDep      = "io.github.java-diff-utils"      % "java-diff-utils"                  % "4.15"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.10.8"
 
 val projectFolder = settingKey[String]("subfolder in src when using configureAsSubproject, else the project name")
 
@@ -72,7 +72,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-Global / baseVersion       := "2.13.16"
+Global / baseVersion       := "2.13.17"
 Global / baseVersionSuffix := "SNAPSHOT"
 ThisBuild / organization   := "org.scala-lang"
 ThisBuild / homepage       := Some(url("https://www.scala-lang.org"))
@@ -81,7 +81,7 @@ ThisBuild / licenses       += (("Apache-2.0", url("https://www.apache.org/licens
 ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
   s"""Scala (${(ThisBuild/homepage).value.get})
      |
-     |Copyright EPFL and Lightbend, Inc.
+     |Copyright EPFL and Lightbend, Inc. dba Akka
      |
      |Licensed under Apache License 2.0
      |(http://www.apache.org/licenses/LICENSE-2.0).
@@ -251,8 +251,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
           <name>LAMP/EPFL</name>
         </developer>
         <developer>
-          <id>Lightbend</id>
-          <name>Lightbend, Inc.</name>
+          <id>Akka</id>
+          <name>Lightbend, Inc. dba Akka</name>
         </developer>
       </developers>
   },
@@ -635,7 +635,6 @@ lazy val replFrontend = configureAsSubproject(project, srcdir = Some("repl-front
   )
   .settings(
     run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `replFrontend/run` works
-    Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
     Compile / run / javaOptions += "-Dorg.jline.terminal.output=forced-out",
   )
   .dependsOn(repl)
@@ -681,10 +680,10 @@ lazy val sbtBridge = configureAsSubproject(project, srcdir = Some("sbt-bridge"))
     ),
     headerLicense := Some(HeaderLicense.Custom(
       s"""Zinc - The incremental compiler for Scala.
-         |Copyright Scala Center, Lightbend, and Mark Harrah
+         |Copyright Scala Center, Lightbend dba Akka, and Mark Harrah
          |
          |Scala (${(ThisBuild/homepage).value.get})
-         |Copyright EPFL and Lightbend, Inc.
+         |Copyright EPFL and Lightbend, Inc. dba Akka
          |
          |Licensed under Apache License 2.0
          |(http://www.apache.org/licenses/LICENSE-2.0).
@@ -709,7 +708,7 @@ lazy val scalap = configureAsSubproject(project)
     headerLicense  := Some(HeaderLicense.Custom(
       s"""Scala classfile decoder (${(ThisBuild/homepage).value.get})
          |
-         |Copyright EPFL and Lightbend, Inc.
+         |Copyright EPFL and Lightbend, Inc. dba Akka
          |
          |Licensed under Apache License 2.0
          |(http://www.apache.org/licenses/LICENSE-2.0).

@@ -1,8 +1,11 @@
 package scala.collection
 
 import org.junit._
+
 import scala.collection.mutable.ListBuffer
 import org.openjdk.jol.info.GraphLayout
+
+import scala.annotation.nowarn
 
 object Sizes {
   def list: Int = 24
@@ -41,6 +44,27 @@ class Sizes {
     val wrapped = Array[String]("")
     assertTotalSize(16, JOL.netLayout(mutable.ArraySeq.make[String](wrapped), wrapped))
     assertTotalSize(16, JOL.netLayout(immutable.ArraySeq.unsafeWrapArray[String](wrapped), wrapped))
+  }
+
+  @Test
+  def stream(): Unit = {
+    def next = new Object
+    @nowarn("cat=deprecation")
+    val st = Stream.continually(next).take(100)
+    locally(st.mkString) // force 100 elements
+    val l = JOL.netLayout(st)
+    // println(l.toFootprint)
+    assertTotalSize(4016, l)
+  }
+
+  @Test
+  def lazyList(): Unit = {
+    def next = new Object
+    val ll = LazyList.continually(next).take(100)
+    locally(ll.mkString) // force 100 elements
+    val l = JOL.netLayout(ll)
+    // println(l.toFootprint)
+    assertTotalSize(4024, l)
   }
 }
 

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -31,7 +31,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
   def quotedName(name: Name, decode: Boolean): String = {
     val s = if (decode) name.decode else name.toString
     val term = name.toTermName
-    if (nme.keywords(term) && term != nme.USCOREkw) "`%s`" format s
+    if (nme.keywords(term) && term != nme.USCOREkw) s"`$s`"
     else s
   }
   def quotedName(name: Name): String = quotedName(name, decode = false)
@@ -272,9 +272,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
       def selectorToString(s: ImportSelector): String = {
         def selectorName(n: Name): String = if (s.isWildcard) nme.WILDCARD.decoded else quotedName(n)
-        val from = selectorName(s.name)
-        if (s.isRename || s.isMask) from + "=>" + selectorName(s.rename)
-        else from
+        if (s.isGiven) s.rename.decoded
+        else if (s.isRename || s.isMask) s"${selectorName(s.name)}=>${selectorName(s.rename)}"
+        else selectorName(s.name)
       }
       print("import ", resSelect, ".")
       selectors match {
@@ -743,7 +743,6 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case _ =>
           }
           printArgss(argss)
-        case _ => super.printTree(tree)
       }
     }
 

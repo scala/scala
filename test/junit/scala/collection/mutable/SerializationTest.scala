@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4
 import scala.collection.mutable
 
 @RunWith(classOf[JUnit4])
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
 class SerializationTest {
 
   @Test

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -40,8 +40,8 @@ trait Warnings {
          |Syntax: -Wconf:<filters>:<action>,<filters>:<action>,...
          |multiple <filters> are combined with &, i.e., <filter>&...&<filter>
          |
-         |Note: Run with `-Wconf:any:warning-verbose` to print warnings with their category, site,
-         |and (for deprecations) origin and since-version.
+         |Use the `@nowarn("verbose")` / `@nowarn("v")` annotation or `-Wconf:any:warning-verbose`
+         |to print applicable message filters with every warning.
          |
          |<filter>
          |  - Any message: any
@@ -198,6 +198,7 @@ trait Warnings {
     val AdaptedArgs            = LintWarning("adapted-args",              "An argument list was modified to match the receiver.")
     val NullaryUnit            = LintWarning("nullary-unit",              "`def f: Unit` looks like an accessor; add parens to look side-effecting.")
     val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.")
+    val InferStructural        = LintWarning("infer-structural",          "Warn on definitions with an inferred structural type.")
     val InferAny               = LintWarning("infer-any",                 "A type argument was inferred as Any.")
     val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
     val DocDetached            = LintWarning("doc-detached",              "When running scaladoc, warn if a doc comment is discarded.")
@@ -222,7 +223,7 @@ trait Warnings {
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
     val UnitSpecialization     = LintWarning("unit-special",              "Warn for specialization of Unit in parameter position.")
     val ImplicitRecursion      = LintWarning("implicit-recursion",        "Implicit resolves to an enclosing definition.")
-    val UniversalMethods       = LintWarning("universal-methods",         "Require arg to is/asInstanceOf. No Unit receiver.")
+    val UniversalMethods       = LintWarning("universal-methods",         "Dubious usage of member of `Any` or `AnyRef`.")
     val NumericMethods         = LintWarning("numeric-methods",           "Dubious usages, such as `42.isNaN`.")
     val ArgDiscard             = LintWarning("arg-discard",               "-Wvalue-discard for adapted arguments.")
     val IntDivToFloat          = LintWarning("int-div-to-float",          "Warn when an integer division is converted (widened) to floating point: `(someInt / 2): Double`.")
@@ -236,6 +237,7 @@ trait Warnings {
   def warnAdaptedArgs            = lint contains AdaptedArgs
   def warnNullaryUnit            = lint contains NullaryUnit
   def warnInaccessible           = lint contains Inaccessible
+  def warnInferStructural        = lint contains InferStructural
   def warnInferAny               = lint contains InferAny
   def warnMissingInterpolator    = lint contains MissingInterpolator
   def warnDocDetached            = lint contains DocDetached

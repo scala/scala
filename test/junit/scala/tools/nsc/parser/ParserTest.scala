@@ -8,7 +8,7 @@ import org.junit.Assert._
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
-class ParserTest extends BytecodeTesting{
+class ParserTest extends BytecodeTesting {
   override def compilerArgs: String = "-Ystop-after:parser -Yvalidate-pos:parser -Yrangepos"
   @Test
   def crlfRangePositionXml_t10321(): Unit = {

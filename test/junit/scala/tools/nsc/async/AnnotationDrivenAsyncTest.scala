@@ -9,7 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.{Assert, Ignore, Test}
 
 import scala.annotation.{StaticAnnotation, nowarn, unused}
-import scala.collection.mutable
+import scala.collection.mutable, mutable.{Buffer, LinkedHashMap, ListBuffer}
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.{CodeAction, Position}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
@@ -391,11 +391,11 @@ class AnnotationDrivenAsyncTest {
       case DefDef(_, _, _, _, _, Block(stats, expr)) =>
         // collect the two stats and expr from L1 L2 L3
         val parseTreeStats: List[Tree] = stats ++ List(expr)
-        val fsmTree                        = result.fsmTree
-        val posMap = mutable.LinkedHashMap[Tree, mutable.Buffer[Tree]]()
+        val fsmTree = result.fsmTree
+        val posMap = LinkedHashMap.empty[Tree, Buffer[Tree]]
 
         // Traverse the tree and record parent-child relationship
-        val parentMap = mutable.LinkedHashMap[Tree, Tree]()
+        val parentMap = LinkedHashMap.empty[Tree, Tree]
         def collectParents(t: Tree): Unit = {
           for (child <- t.children) {
             parentMap(child) = t
@@ -414,25 +414,20 @@ class AnnotationDrivenAsyncTest {
         // of the user-written stats/expr.
         for {
           parseTreeStat <- parseTreeStats
-          pos = parseTreeStat.pos
           tree <- fsmTree.get
-        } {
-          if (pos.includes(tree.pos)) {
-            posMap.get(parseTreeStat) match {
-              case Some(existing) =>
-                // Produce minimal output by discarding sub-trees that are contained by larger trees in the
-                // value of posMap.
-                if (!existing.exists(t => isAncestor(tree, t))) {
-                  val (retained, discarded) = existing.toList.partition(t => isAncestor(t, tree) || !isAncestor(tree, t))
-                  existing.clear()
-                  existing ++= retained
-                  existing += tree
-                }
-              case None =>
-                posMap(parseTreeStat) = mutable.ListBuffer(tree)
-            }
-          }
+          if parseTreeStat.pos.includes(tree.pos)
         }
+          posMap.get(parseTreeStat) match {
+            case Some(existing) if !existing.exists(isAncestor(tree, _)) =>
+              // Produce minimal output by discarding subtrees that are contained by larger trees in the value of posMap
+              val (retained, discarded) = existing.toList.partition(t => isAncestor(t, tree) || !isAncestor(tree, t))
+              existing.clear()
+              existing ++= retained
+              existing += tree
+            case Some(_) =>
+            case None =>
+              posMap(parseTreeStat) = ListBuffer(tree)
+          }
 
         // The synthetic exception handler and state machine loop should not be positioned within
         // the position of L1, L2, or L3, as this would trigger a breakpoint at the line on each
@@ -443,11 +438,18 @@ class AnnotationDrivenAsyncTest {
         // Some synthetic code _will_ be at L1 L2 and L3, but this is only directly related to
         // the save and restore of the variables used/produced by this state.
         def oneliner(s: String) = s.replace(System.lineSeparator(), "\\n")
-        val actual = posMap.toList.map { case (orig, corresponding) => s"${oneliner(orig.toString)}\n${"-" * 80}\n${corresponding.map(t => oneliner(t.toString)).mkString("\n")}"}.mkString("\n" * 3)
+        val actual = posMap.toList.map {
+          case (orig, corresponding) =>
+            val corr = corresponding.map(t => oneliner(t.toString)).mkString("\n")
+            s"${oneliner(orig.toString)}\n${"-" * 80}\n${corr}"
+        }.mkString("\n" * 3)
         val expected =
           """val x = id(1)
             |--------------------------------------------------------------------------------
-            |case 0 => {\n  val awaitable$async: scala.tools.nsc.async.CustomFuture = scala.tools.nsc.async.CustomFuture._successful(scala.Int.box(Test.this.id(1)));\n  tr = self.getCompleted(awaitable$async);\n  self.state_=(1);\n  if (null.!=(tr))\n    while$()\n  else\n    {\n      self.onComplete(awaitable$async);\n      return ()\n    }\n}
+            |val awaitable$async: scala.tools.nsc.async.CustomFuture = scala.tools.nsc.async.CustomFuture._successful(scala.Int.box(Test.this.id(1)))
+            |tr = self.getCompleted(awaitable$async)
+            |self.state_=(1)
+            |if (null.!=(tr))\n  while$()\nelse\n  {\n    self.onComplete(awaitable$async);\n    return ()\n  }
             |<synthetic> val await$1: Object = {\n  val tryGetResult$async: Object = self.tryGet(tr);\n  if (self.eq(tryGetResult$async))\n    return ()\n  else\n    tryGetResult$async.$asInstanceOf[Object]()\n}
             |self.x = scala.Int.unbox(await$1)
             |
@@ -504,26 +506,23 @@ class AnnotationDrivenAsyncTest {
 
   def run(code: String, compileOnly: Boolean = false): Any = {
     val compileResult = compile(code, compileOnly)
-    try
-      if (!compileOnly) compileResult.run()
-    finally {
-      compileResult.close()
-    }
+    try if (!compileOnly) compileResult.run()
+    finally compileResult.close()
   }
 
   def compile(code: String, compileOnly: Boolean = false): CompileResult = {
     val out = createTempDir()
 
-      val reporter = new StoreReporter(new Settings) {
-        override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
-          if (severity == INFO) println(msg)
-          else super.doReport(pos, msg, severity, actions)
-      }
-      val settings = new Settings(println(_))
-      settings.async.value = true
-      settings.outdir.value = out.getAbsolutePath
-      settings.Yrangepos.value = true
-      settings.embeddedDefaults(getClass.getClassLoader)
+    val reporter = new StoreReporter(new Settings) {
+      override def doReport(pos: Position, msg: String, severity: Severity, actions: List[CodeAction]): Unit =
+        if (severity == INFO) println(msg)
+        else super.doReport(pos, msg, severity, actions)
+    }
+    val settings = new Settings(println(_))
+    settings.async.value = true
+    settings.outdir.value = out.getAbsolutePath
+    settings.Yrangepos.value = true
+    settings.embeddedDefaults(getClass.getClassLoader)
 
     // settings.debug.value = true
     // settings.uniqid.value = true

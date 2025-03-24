@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -121,8 +121,6 @@ trait HasFlags {
   def isOverride            = hasFlag(OVERRIDE)
   def isParamAccessor       = hasFlag(PARAMACCESSOR)
   def isPrivate             = hasFlag(PRIVATE)
-  @deprecated ("use `hasPackageFlag` instead", "2.11.0")
-  def isPackage             = hasFlag(PACKAGE)
   def isPrivateLocal        = hasAllFlags(PrivateLocal)
   def isProtected           = hasFlag(PROTECTED)
   def isProtectedLocal      = hasAllFlags(ProtectedLocal)

@@ -1,0 +1,12 @@
+t13070.scala:7: warning: pattern var i in value $anonfun is never used
+      (i, j) = ns // warn // warn
+       ^
+t13070.scala:7: warning: pattern var j in value $anonfun is never used
+      (i, j) = ns // warn // warn
+          ^
+t13070.scala:16: warning: pattern var j in value $anonfun is never used
+      (i, j) = ns // warn
+          ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

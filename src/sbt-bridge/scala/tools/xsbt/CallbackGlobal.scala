@@ -1,9 +1,9 @@
 /*
  * Zinc - The incremental compiler for Scala.
- * Copyright Scala Center, Lightbend, and Mark Harrah
+ * Copyright Scala Center, Lightbend dba Akka, and Mark Harrah
  *
  * Scala (https://www.scala-lang.org)
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -83,9 +83,17 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     extends CallbackGlobal(settings, dreporter, output)
     with ZincGlobalCompat {
 
+  // AnalysisCallback3 only exists in recent Zinc
+  private lazy val callback3Opt =
+    try Some(callback.asInstanceOf[AnalysisCallback3])
+    catch {
+      case _: NoClassDefFoundError =>
+        None
+    }
+
   override def getSourceFile(f: AbstractFile): BatchSourceFile = {
-    val file = (f, callback) match {
-      case (plainFile: PlainFile, callback3: AnalysisCallback3) =>
+    val file = (f, callback3Opt) match {
+      case (plainFile: PlainFile, Some(callback3)) =>
         AbstractZincFile(callback3.toVirtualFile(plainFile.file.toPath))
       case _ => f
     }

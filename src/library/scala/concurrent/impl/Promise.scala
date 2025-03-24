@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -215,6 +215,16 @@ private[concurrent] object Promise {
     override final def onComplete[U](func: Try[T] => U)(implicit executor: ExecutionContext): Unit =
       dispatchOrAddCallbacks(get(), new Transformation[T, Unit](Xform_onComplete, func, executor))
 
+    /** The same as [[onComplete]], but additionally returns a function which can be
+     *  invoked to unregister the callback function. Removing a callback from a long-lived
+     *  future can enable garbage collection of objects referenced by the closure.
+     */
+    private[concurrent] final def onCompleteWithUnregister[U](func: Try[T] => U)(implicit executor: ExecutionContext): () => Unit = {
+      val t = new Transformation[T, Unit](Xform_onComplete, func, executor)
+      dispatchOrAddCallbacks(get(), t)
+      () => unregisterCallback(t)
+    }
+
     override final def failed: Future[Throwable] =
       if (!get().isInstanceOf[Success[_]]) super.failed
       else Future.failedFailureFuture // Cached instance in case of already known success
@@ -319,6 +329,15 @@ private[concurrent] object Promise {
         p.dispatchOrAddCallbacks(p.get(), callbacks)
       }
 
+    @tailrec private def unregisterCallback(t: Transformation[_, _]): Unit = {
+      val state = get()
+      if (state eq t) {
+        if (!compareAndSet(state, Noop)) unregisterCallback(t)
+      } else if (state.isInstanceOf[ManyCallbacks[_]]) {
+        if (!compareAndSet(state, removeCallback(state.asInstanceOf[ManyCallbacks[T]], t))) unregisterCallback(t)
+      }
+    }
+
     // IMPORTANT: Noop should never be passed in here, neither as left OR as right
     @tailrec private[this] final def concatCallbacks(left: Callbacks[T], right: Callbacks[T]): Callbacks[T] =
       if (left.isInstanceOf[Transformation[T,_]]) new ManyCallbacks[T](left.asInstanceOf[Transformation[T,_]], right)
@@ -326,6 +345,20 @@ private[concurrent] object Promise {
         val m = left.asInstanceOf[ManyCallbacks[T]]
         concatCallbacks(m.rest, new ManyCallbacks(m.first, right))
       }
+
+    @tailrec private[this] final def removeCallback(cs: Callbacks[T], t: Transformation[_, _], result: Callbacks[T] = null): AnyRef =
+      if (cs eq t) {
+        if (result == null) Noop
+        else result
+      }
+      else if (cs.isInstanceOf[ManyCallbacks[_]]) {
+        val m = cs.asInstanceOf[ManyCallbacks[T]]
+        if (m.first eq t) {
+          if (result == null) m.rest
+          else concatCallbacks(m.rest, result)
+        }
+        else removeCallback(m.rest, t, if (result == null) m.first else new ManyCallbacks(m.first, result))
+      } else cs
 
     // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
     @tailrec
@@ -489,7 +522,7 @@ private[concurrent] object Promise {
               if (v.isInstanceOf[Failure[F]]) {
                 val f = fun.asInstanceOf[PartialFunction[Throwable, Future[T]]].applyOrElse(v.asInstanceOf[Failure[F]].exception, Future.recoverWithFailed)
                 if (f ne Future.recoverWithFailedMarker) {
-                  if (f.isInstanceOf[DefaultPromise[T]]) f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null) else completeWith(f.asInstanceOf[Future[T]])
+                  if (f.isInstanceOf[DefaultPromise[_]]) f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null) else completeWith(f.asInstanceOf[Future[T]])
                   null
                 } else v
               } else v

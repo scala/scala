@@ -1,4 +1,4 @@
-//> using options -deprecation -Wunused:nowarn -Yrangepos:true -Werror
+//> using options -deprecation -Wunused:nowarn -Werror
 import scala.annotation._
 
 class ann(a: Any) extends Annotation
@@ -79,6 +79,17 @@ class C {
     val a = dep: @nowarn
     a + dep
   }
+
+  @nowarn object T12 {
+    @nowarn("v") def f = try 1
+    def g = { 1; 2 }
+  }
+
+  @nowarn("verbose") object T13 {
+    @nowarn def f = try 1
+    def g = { 1; 2 }
+    @nowarn("v") def unused = 0
+  }
 }
 
 trait T {
@@ -92,4 +103,15 @@ class Uh {
   def f = {
     def g(c: C) = c.dep
   }
+}
+
+object sd884 {
+  class nodep extends nowarn("cat=deprecation")
+  class purr extends nowarn("msg=pure expression does nothing")
+
+  @nodep def t1 = new C().dep // no warn
+  @purr def t2 = new C().dep  // warn, plus unused @nowarn
+
+  @purr def t3 = { 1; 2 }  // no warn
+  @nodep def t4 = { 1; 2 } // warn, plus unused @nowarn
 }

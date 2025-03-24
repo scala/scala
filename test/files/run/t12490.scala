@@ -3,7 +3,7 @@ import scala.collection.mutable.LinkedHashMap
 
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -Yrangepos -Ystop-after:parser"
+  override def extraSettings = super.extraSettings + " -Ystop-after:parser"
   val tests = LinkedHashMap(
     "class A { def t       = new C()   }" -> (24, 31),
     "class B { def t       = (new C)   }" -> (25, 30),

@@ -13,7 +13,7 @@ object MimaFilters extends AutoPlugin {
   import autoImport._
 
   override val globalSettings = Seq(
-    mimaReferenceVersion := Some("2.13.15"),
+    mimaReferenceVersion := Some("2.13.16"),
   )
 
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
@@ -39,6 +39,33 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#P.accept"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.concurrent.impl.FutureConvertersImpl#P.andThen"),
 
+    // KEEP: the CommonErrors object is not a public API
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.generic.CommonErrors"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.generic.CommonErrors$"),
+
+    // scala/scala#10937
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.LazyList#LazyBuilder#DeferredState.eval"),
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State"),
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$"),
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$Cons"),
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.immutable.LazyList$$State$$Empty$$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$EmptyMarker$"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.LazyList#LazyBuilder#DeferredState.eval"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$MidEvaluation$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LazyList$Uninitialized$"),
+
+    // scala/scala#11004
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Annotations#AnnotationApi.argIsDefault"),
+    // A new abstract trait method is not binary compatible in principle, but `AnnotationApi` is only implemented by
+    // `AnnotationInfo`, both of which are in scala-reflect.jar. So this should never leak.
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.api.Annotations#AnnotationApi.argIsDefault"),
+
+    // scala/scala#10976
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.defaultArg"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superArg"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superFwdArg"),
+
+    // scala/scala/pull/10923
     ProblemFilters.exclude[DirectMissingMethodProblem]("*.applyToContext"),
   )
 

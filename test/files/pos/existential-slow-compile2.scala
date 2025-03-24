@@ -1,4 +1,4 @@
-//> using options -Ystop-after:refchecks -Yrangepos
+//> using options -Ystop-after:refchecks
 class C {
   class L[+A]
   def test = {

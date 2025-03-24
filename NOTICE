@@ -1,10 +1,10 @@
 Scala
-Copyright (c) 2002-2024 EPFL
-Copyright (c) 2011-2024 Lightbend, Inc.
+Copyright (c) 2002-2025 EPFL
+Copyright (c) 2011-2025 Lightbend, Inc. dba Akka
 
 Scala includes software developed at
 LAMP/EPFL (https://lamp.epfl.ch/) and
-Lightbend, Inc. (https://www.lightbend.com/).
+Akka (https://akka.io/).
 
 Licensed under the Apache License, Version 2.0 (the "License").
 Unless required by applicable law or agreed to in writing, software

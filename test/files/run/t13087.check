@@ -1,0 +1,43 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> @ann class K
+class K
+
+scala> typeOf[K]
+val res0: $r.intp.global.Type = K
+
+scala> val arg = typeOf[K].typeSymbol.annotations.head.args.head
+val arg: $r.intp.global.Tree = kux.f.+(new O[Int]().a(1))
+
+scala> val plusSel = arg.asInstanceOf[Apply].fun
+val plusSel: $r.intp.global.Tree = kux.f.+
+
+scala> plusSel.tpe
+val res1: $r.intp.global.Type = (x: Int): Int
+
+scala> plusSel.symbol.tpe
+val res2: $r.intp.global.Type = (x: Int): Int
+
+scala> val fSel = plusSel.asInstanceOf[Select].qualifier
+val fSel: $r.intp.global.Tree = kux.f
+
+scala> fSel.tpe
+val res3: $r.intp.global.Type = Int
+
+scala> fSel.symbol.tpe
+val res4: $r.intp.global.Type = Int
+
+scala> val aSel = arg.asInstanceOf[Apply].args.head.asInstanceOf[Apply].fun
+val aSel: $r.intp.global.Tree = new O[Int]().a
+
+scala> aSel.tpe
+val res5: $r.intp.global.Type = (t: Int): Int
+
+scala> aSel.symbol.tpe
+val res6: $r.intp.global.Type = (t: T): T
+
+scala> :quit

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -14,6 +14,7 @@ package scala.collection
 package mutable
 
 import scala.annotation.{nowarn, tailrec}
+import scala.collection.generic.CommonErrors
 import scala.collection.immutable.{::, List, Nil}
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
 
@@ -203,7 +204,7 @@ class ListBuffer[A]
 
   def update(idx: Int, elem: A): Unit = {
     ensureUnaliased()
-    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    if (idx < 0 || idx >= len) throw CommonErrors.indexOutOfBounds(index = idx, max = len - 1)
     if (idx == 0) {
       val newElem = new :: (elem, first.tail)
       if (last0 eq first) {
@@ -223,7 +224,7 @@ class ListBuffer[A]
 
   def insert(idx: Int, elem: A): Unit = {
     ensureUnaliased()
-    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    if (idx < 0 || idx > len) throw CommonErrors.indexOutOfBounds(index = idx, max = len - 1)
     if (idx == len) addOne(elem)
     else {
       val p = locate(idx)
@@ -250,7 +251,7 @@ class ListBuffer[A]
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    if (idx < 0 || idx > len) throw CommonErrors.indexOutOfBounds(index = idx, max = len - 1)
     val it = elems.iterator
     if (it.hasNext) {
       if (idx == len) addAll(it)
@@ -264,7 +265,7 @@ class ListBuffer[A]
 
   def remove(idx: Int): A = {
     ensureUnaliased()
-    if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    if (idx < 0 || idx >= len) throw CommonErrors.indexOutOfBounds(index = idx, max = len - 1)
     val p = locate(idx)
     val nx = getNext(p)
     if(p eq null) {
@@ -281,7 +282,7 @@ class ListBuffer[A]
   def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
       ensureUnaliased()
-      if (idx < 0 || idx + count > len) throw new IndexOutOfBoundsException(s"$idx to ${idx + count} is out of bounds (min 0, max ${len-1})")
+      if (idx < 0 || idx + count > len) throw new IndexOutOfBoundsException(s"$idx to ${idx + count} is out of bounds (min 0, max ${len - 1})")
       removeAfter(locate(idx), count)
     } else if (count < 0) {
       throw new IllegalArgumentException("removing negative number of elements: " + count)

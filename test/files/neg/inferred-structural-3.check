@@ -1,0 +1,18 @@
+inferred-structural-3.scala:8: error: in Scala 3 (or with -Xsource-features:no-infer-structural), method a will no longer have a structural type: Option[AnyRef{def g: Int}]
+  members that can be accessed with a reflective call: def g: Int
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C.a
+  def a = Option(new { def g = 1 }) // warn
+      ^
+inferred-structural-3.scala:16: error: in Scala 3 (or with -Xsource-features:infer-override), the inferred type changes to AnyRef instead of A [quickfixable]
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C.g
+  def g = new A { def f = this } // warn -- inferred type of `f` is `A`, since we're not using -Xsource-features:infer-override
+                      ^
+inferred-structural-3.scala:19: error: in Scala 3 (or with -Xsource-features:no-infer-structural), method i will no longer have a structural type: AnyRef{val x: Int}
+  members that can be accessed with a reflective call: val x: Int
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=C.i
+  def i = new AnyRef { val x = 2 } // warn
+      ^
+3 errors

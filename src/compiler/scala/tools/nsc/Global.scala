@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -82,10 +82,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def findMemberFromRoot(fullName: Name): Symbol = rootMirror.findMemberFromRoot(fullName)
 
   override def openPackageModule(pkgClass: Symbol, force: Boolean): Unit = {
-    if (force || isPast(currentRun.namerPhase)) super.openPackageModule(pkgClass, force = true)
+    // presentation compiler uses `compileLate` whioch doesn't advance `globalPhase`, so `isPast` is false.
+    // therefore checking `isAtPhaseAfter` as well.
+    val forceNow = force || isPast(currentRun.namerPhase) || isRunGlobalInitialized && isAtPhaseAfter(currentRun.namerPhase)
+    if (forceNow) super.openPackageModule(pkgClass, force = true)
     else analyzer.packageObjects.deferredOpen.addOne(pkgClass)
   }
-
   // alternate constructors ------------------------------------------
 
   override def settings = currentSettings
@@ -1037,25 +1039,16 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   private[this] var curFreshNameCreator: FreshNameCreator = null
   private[scala] def currentFreshNameCreator_=(fresh: FreshNameCreator): Unit = curFreshNameCreator = fresh
 
-  def isGlobalInitialized = (
-       definitions.isDefinitionsInitialized
-    && rootMirror.isMirrorInitialized
-  )
+  def isGlobalInitialized = definitions.isDefinitionsInitialized && rootMirror.isMirrorInitialized
+  private def isRunGlobalInitialized = (curRun ne null) && isGlobalInitialized
+
   override def isPastTyper = isPast(currentRun.typerPhase)
   def isBeforeErasure      = isBefore(currentRun.erasurePhase)
-  def isPast(phase: Phase) = (
-       (curRun ne null)
-    && isGlobalInitialized // defense against init order issues
-    && (globalPhase.id > phase.id)
-  )
-  def isBefore(phase: Phase) = (
-       (curRun ne null)
-    && isGlobalInitialized // defense against init order issues
-    && (phase match {
-      case NoPhase => true // if phase is NoPhase then that phase ain't comin', so we're "before it"
-      case _       => globalPhase.id < phase.id
-    })
-  )
+  def isPast(phase: Phase) = isRunGlobalInitialized && (globalPhase.id > phase.id)
+  def isBefore(phase: Phase) = isRunGlobalInitialized && (phase match {
+    case NoPhase => true // if phase is NoPhase then that phase ain't comin', so we're "before it"
+    case _       => globalPhase.id < phase.id
+  })
 
   // TODO - trim these to the absolute minimum.
   @inline final def exitingErasure[T](op: => T): T        = exitingPhase(currentRun.erasurePhase)(op)
@@ -1189,6 +1182,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def caseCompanionFunction  = isScala3 && contains(o.caseCompanionFunction)
       def caseCopyByName         = isScala3 && contains(o.caseCopyByName)
       def inferOverride          = isScala3 && contains(o.inferOverride)
+      def noInferStructural      = isScala3 && contains(o.noInferStructural)
       def any2StringAdd          = isScala3 && contains(o.any2StringAdd)
       def unicodeEscapesRaw      = isScala3 && contains(o.unicodeEscapesRaw)
       def stringContextScope     = isScala3 && contains(o.stringContextScope)
@@ -1196,6 +1190,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def packagePrefixImplicits = isScala3 && contains(o.packagePrefixImplicits)
       def implicitResolution     = isScala3 && contains(o.implicitResolution) || settings.Yscala3ImplicitResolution.value
       def doubleDefinitions      = isScala3 && contains(o.doubleDefinitions)
+      def etaExpandAlways        = isScala3 && contains(o.etaExpandAlways)
     }
 
     // used in sbt
@@ -1226,10 +1221,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
-    val symSource = new mutable.AnyRefMap[Symbol, AbstractFile]
+    val symSource = new mutable.HashMap[Symbol, AbstractFile]
 
     /** A map from compiled top-level symbols to their picklers */
-    val symData = new mutable.AnyRefMap[Symbol, PickleBuffer]
+    val symData = new mutable.HashMap[Symbol, PickleBuffer]
 
     private var phasec: Int  = 0   // phases completed
     private var unitc: Int   = 0   // units completed this phase

@@ -17,5 +17,5 @@ object Test extends ReplTest {
     |pos
     |""".stripMargin.trim
 
-  override def extraSettings: String = "-Yrangepos"
+
 }

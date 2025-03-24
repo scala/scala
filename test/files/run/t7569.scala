@@ -1,7 +1,7 @@
 import scala.tools.partest._
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -Yrangepos"
+
   override def sources = List(
     """|import scala.language.postfixOps
        |class A {

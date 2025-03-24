@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -152,7 +152,6 @@ trait Types
     override def params = underlying.params
     override def paramTypes = underlying.paramTypes
     override def termSymbol = underlying.termSymbol
-    override def termSymbolDirect = underlying.termSymbolDirect
     override def typeParams = underlying.typeParams
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
@@ -329,10 +328,6 @@ trait Types
       * tp.sym, due to normalization.
       */
     def typeSymbol: Symbol = NoSymbol
-
-    /** The term symbol ''directly'' associated with the type.
-     */
-    def termSymbolDirect: Symbol = termSymbol
 
     /** The type symbol ''directly'' associated with the type.
      *  In other words, no normalization is performed: if this is an alias type,
@@ -2580,7 +2575,6 @@ trait Types
     override def prefix           = pre
     override def prefixDirect     = pre
     override def termSymbol       = super.termSymbol
-    override def termSymbolDirect = super.termSymbol
     override def typeArgs         = args
     override def typeOfThis       = relativize(sym.typeOfThis)
     override def typeSymbol       = sym
@@ -4037,13 +4031,13 @@ trait Types
   private[this] val copyRefinedTypeSSM: ReusableInstance[SubstSymMap] =
     ReusableInstance[SubstSymMap](SubstSymMap(), enabled = isCompilerUniverse)
 
-  def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
-    if ((parents eq original.parents) && (decls eq original.decls)) original
+  def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope, owner: Symbol = null) =
+    if ((parents eq original.parents) && (decls eq original.decls) && (owner eq null)) original
     else {
-      val owner = original.typeSymbol.owner
+      val newOwner = if (owner != null) owner else original.typeSymbol.owner
       val result =
         if (isIntersectionTypeForLazyBaseType(original)) intersectionTypeForLazyBaseType(parents)
-        else refinedType(parents, owner)
+        else refinedType(parents, newOwner)
       if (! decls.isEmpty){
         val syms1 = decls.toList
         for (sym <- syms1)

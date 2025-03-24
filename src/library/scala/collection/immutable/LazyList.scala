@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -28,35 +28,49 @@ import scala.runtime.Statics
   *
   *  Elements are memoized; that is, the value of each element is computed at most once.
   *
-  *  Elements are computed in-order and are never skipped. In other words,
-  *  accessing the tail causes the head to be computed first.
+  *  Elements are computed in order and are never skipped.
+  *  As a consequence, accessing the tail causes the head to be computed first.
   *
   *  How lazy is a `LazyList`? When you have a value of type `LazyList`, you
-  *  don't know yet whether the list is empty or not. If you learn that it is non-empty,
-  *  then you also know that the head has been computed. But the tail is itself
-  *  a `LazyList`, whose emptiness-or-not might remain undetermined.
+  *  don't know yet whether the list is empty.
+  *  We say that it is lazy in its head.
+  *  If you have tested that it is non-empty,
+  *  then you also know that the head has been computed.
+  *
+  *  It is also lazy in its tail, which is also a `LazyList`.
+  *  You don't know whether the tail is empty until it is "forced", which is to say,
+  *  until an element of the tail is computed.
+  *
+  *  These important properties of `LazyList` depend on its construction using `#::` (or `#:::`).
+  *  That operator is analogous to the "cons" of a strict `List`, `::`.
+  *  It is "right-associative", so that the collection goes on the "right",
+  *  and the element on the left of the operator is prepended to the collection.
+  *  However, unlike the cons of a strict `List`, `#::` is lazy in its parameter,
+  *  which is the element prepended to the left, and also lazy in its right-hand side,
+  *  which is the `LazyList` being prepended to.
+  *  (That is accomplished by implicitly wrapping the `LazyList`, as shown in the Scaladoc.)
+  *
+  *  Other combinators from the collections API do not preserve this laziness.
+  *  In particular, `++`, or `concat`, is "eager" or "strict" in its parameter
+  *  and should not be used to compose `LazyList`s.
   *
   *  A `LazyList` may be infinite. For example, `LazyList.from(0)` contains
-  *  all of the natural numbers 0, 1, 2, and so on. For infinite sequences,
+  *  all of the natural numbers `0`, `1`, `2`, ... For infinite sequences,
   *  some methods (such as `count`, `sum`, `max` or `min`) will not terminate.
   *
-  *  Here is an example:
+  *  Here is an example showing the Fibonacci sequence,
+  *  which may be evaluated to an arbitrary number of elements:
   *
   *  {{{
   *  import scala.math.BigInt
   *  object Main extends App {
   *    val fibs: LazyList[BigInt] =
-  *      BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map{ n => n._1 + n._2 }
-  *    fibs.take(5).foreach(println)
+  *      BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map(n => n._1 + n._2)
+  *    println {
+  *      fibs.take(5).mkString(", ")
+  *    }
   *  }
-  *
-  *  // prints
-  *  //
-  *  // 0
-  *  // 1
-  *  // 1
-  *  // 2
-  *  // 3
+  *  // prints: 0, 1, 1, 2, 3
   *  }}}
   *
   *  To illustrate, let's add some output to the definition `fibs`, so we
@@ -64,13 +78,12 @@ import scala.runtime.Statics
   *
   *  {{{
   *  import scala.math.BigInt
+  *  import scala.util.chaining._
   *  object Main extends App {
   *    val fibs: LazyList[BigInt] =
   *      BigInt(0) #:: BigInt(1) #::
-  *        fibs.zip(fibs.tail).map{ n =>
-  *          println(s"Adding \${n._1} and \${n._2}")
-  *          n._1 + n._2
-  *        }
+  *        fibs.zip(fibs.tail).map(n => (n._1 + n._2)
+  *        .tap(sum => println(s"Adding ${n._1} and ${n._2} => $sum")))
   *    fibs.take(5).foreach(println)
   *    fibs.take(6).foreach(println)
   *  }
@@ -79,11 +92,11 @@ import scala.runtime.Statics
   *  //
   *  // 0
   *  // 1
-  *  // Adding 0 and 1
+  *  // Adding 0 and 1 => 1
   *  // 1
-  *  // Adding 1 and 1
+  *  // Adding 1 and 1 => 2
   *  // 2
-  *  // Adding 1 and 2
+  *  // Adding 1 and 2 => 3
   *  // 3
   *
   *  // And then prints
@@ -93,35 +106,28 @@ import scala.runtime.Statics
   *  // 1
   *  // 2
   *  // 3
-  *  // Adding 2 and 3
+  *  // Adding 2 and 3 => 5
   *  // 5
   *  }}}
   *
-  *  Note that the definition of `fibs` uses `val` not `def`.  The memoization of the
-  *  `LazyList` requires us to have somewhere to store the information and a `val`
-  *  allows us to do that.
+  *  Note that the definition of `fibs` uses `val` not `def`.
+  *  Memoization of the `LazyList` requires us to retain a reference to the computed values.
   *
-  *  Further remarks about the semantics of `LazyList`:
+  *  `LazyList` is considered an immutable data structure, even though its elements are computed on demand.
+  *  Once the values are memoized they do not change.
+  *  Moreover, the `LazyList` itself is defined once and references to it are interchangeable.
+  *  Values that have yet to be memoized still "exist"; they simply haven't been computed yet.
   *
-  *  - Though the `LazyList` changes as it is accessed, this does not
-  *  contradict its immutability.  Once the values are memoized they do
-  *  not change. Values that have yet to be memoized still "exist", they
-  *  simply haven't been computed yet.
+  *  Memoization can be a source of memory leaks and must be used with caution.
+  *  It avoids recomputing elements of the list, but if a reference to the head
+  *  is retained unintentionally, then all elements will be retained.
   *
-  *  - One must be cautious of memoization; it can eat up memory if you're not
-  *  careful.  That's because memoization of the `LazyList` creates a structure much like
-  *  [[scala.collection.immutable.List]].  As long as something is holding on to
-  *  the head, the head holds on to the tail, and so on recursively.
-  *  If, on the other hand, there is nothing holding on to the head (e.g. if we used
-  *  `def` to define the `LazyList`) then once it is no longer being used directly,
-  *  it disappears.
+  *  The caveat that all elements are computed in order means
+  *  that some operations, such as [[drop]], [[dropWhile]], [[flatMap]] or [[collect]],
+  *  may process a large number of intermediate elements before returning.
   *
-  *  - Note that some operations, including [[drop]], [[dropWhile]],
-  *  [[flatMap]] or [[collect]] may process a large number of intermediate
-  *  elements before returning.
-  *
-  *  Here's another example.  Let's start with the natural numbers and iterate
-  *  over them.
+  *  Here's an example that illustrates these behaviors.
+  *  Let's begin with an iteration of the natural numbers.
   *
   *  {{{
   *  // We'll start with a silly iteration
@@ -144,10 +150,10 @@ import scala.runtime.Statics
   *  val it1 = lazylist1.iterator
   *  loop("Iterator1: ", it1.next(), it1)
   *
-  *  // We can redefine this LazyList such that all we have is the Iterator left
-  *  // and allow the LazyList to be garbage collected as required.  Using a def
-  *  // to provide the LazyList ensures that no val is holding onto the head as
-  *  // is the case with lazylist1
+  *  // We can redefine this LazyList such that we retain only a reference to its Iterator.
+  *  // That allows the LazyList to be garbage collected.
+  *  // Using `def` to produce the LazyList in a method ensures
+  *  // that no val is holding onto the head, as with lazylist1.
   *  def lazylist2: LazyList[Int] = {
   *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
   *    loop(0)
@@ -190,19 +196,18 @@ import scala.runtime.Statics
   *  }
   *  }}}
   *
-  *  The head, the tail and whether the list is empty or not can be initially unknown.
+  *  The head, the tail and whether the list is empty is initially unknown.
   *  Once any of those are evaluated, they are all known, though if the tail is
-  *  built with `#::` or `#:::`, it's content still isn't evaluated. Instead, evaluating
-  *  the tails content is deferred until the tails empty status, head or tail is
+  *  built with `#::` or `#:::`, its content still isn't evaluated. Instead, evaluating
+  *  the tail's content is deferred until the tail's empty status, head or tail is
   *  evaluated.
   *
-  *  Delaying the evaluation of whether a LazyList is empty or not until it's needed
+  *  Delaying the evaluation of whether a LazyList is empty until it's needed
   *  allows LazyList to not eagerly evaluate any elements on a call to `filter`.
   *
-  *  Only when it's further evaluated (which may be never!) any of the elements gets
-  *  forced.
+  *  Only when it's further evaluated (which may be never!) do any of the elements get forced.
   *
-  *  for example:
+  *  For example:
   *
   *  {{{
   *  def tailWithSideEffect: LazyList[Nothing] = {
@@ -227,8 +232,8 @@ import scala.runtime.Statics
   *  }}}
   *
   *  This exception occurs when a `LazyList` is attempting to derive its next element
-  *  from itself, and is attempting to read the element currently being evaluated. A
-  *  trivial example of such might be
+  *  from itself, and is attempting to read the element currently being evaluated.
+  *  As a trivial example:
   *
   *  {{{
   *  lazy val a: LazyList[Int] = 1 #:: 2 #:: a.filter(_ > 2)
@@ -242,7 +247,7 @@ import scala.runtime.Statics
   *  @tparam A    the type of the elements contained in this lazy list.
   *
   *  @see [[https://docs.scala-lang.org/overviews/collections-2.13/concrete-immutable-collection-classes.html#lazylists "Scala's Collection Library overview"]]
-  *  section on `LazyLists` for more information.
+  *  section on `LazyLists` for a summary.
   *  @define Coll `LazyList`
   *  @define coll lazy list
   *  @define orderDependent
@@ -257,8 +262,8 @@ import scala.runtime.Statics
   *                        on the result (e.g. calling `head` or `tail`, or checking if it is empty).
   *  @define evaluatesAllElements This method evaluates all elements of the collection.
   */
-@SerialVersionUID(3L)
-final class LazyList[+A] private(private[this] var lazyState: () => LazyList.State[A])
+@SerialVersionUID(4L)
+final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => LazyList[A] */)
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, LazyList, LazyList[A]]
@@ -266,30 +271,72 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     with Serializable {
   import LazyList._
 
-  @volatile private[this] var stateEvaluated: Boolean = false
-  @inline private def stateDefined: Boolean = stateEvaluated
-  private[this] var midEvaluation = false
+   // kount() // LazyListTest.countAlloc
 
-  private lazy val state: State[A] = {
-    // if it's already mid-evaluation, we're stuck in an infinite
-    // self-referential loop (also it's empty)
-    if (midEvaluation) {
-      throw new RuntimeException(
-        "LazyList evaluation depends on its own result (self-reference); see docs for more info"
-      )
-    }
-    midEvaluation = true
-    val res = try lazyState() finally midEvaluation = false
-    // if we set it to `true` before evaluating, we may infinite loop
-    // if something expects `state` to already be evaluated
-    stateEvaluated = true
-    lazyState = null // allow GC
-    res
+  private def this(head: A, tail: LazyList[A]) = {
+    this(LazyList.EmptyMarker)
+    _head = head
+    _tail = tail
   }
+
+  // used to synchronize lazy state evaluation
+  // after initialization (`_head ne Uninitialized`)
+  //   - `null` if this is an empty lazy list
+  //   - `head: A` otherwise (can be `null`, `_tail == null` is used to test emptiness)
+  @volatile private[this] var _head: Any /* Uninitialized | A */ =
+    if (lazyState eq EmptyMarker) null else Uninitialized
+
+  // when `_head eq Uninitialized`
+  //   - `lazySate: () => LazyList[A]`
+  //   - MidEvaluation while evaluating lazyState
+  // when `_head ne Uninitialized`
+  //   - `null` if this is an empty lazy list
+  //   - `tail: LazyList[A]` otherwise
+  private[this] var _tail: AnyRef /* () => LazyList[A] | MidEvaluation.type | LazyList[A] */ =
+    if (lazyState eq EmptyMarker) null else lazyState
+
+  private def rawHead: Any = _head
+  private def rawTail: AnyRef = _tail
+
+  @inline private def isEvaluated: Boolean = _head.asInstanceOf[AnyRef] ne Uninitialized
+
+  private def initState(): Unit = synchronized {
+    if (!isEvaluated) {
+      // if it's already mid-evaluation, we're stuck in an infinite
+      // self-referential loop (also it's empty)
+      if (_tail eq MidEvaluation)
+        throw new RuntimeException(
+          "LazyList evaluation depends on its own result (self-reference); see docs for more info")
+
+      val fun = _tail.asInstanceOf[() => LazyList[A]]
+      _tail = MidEvaluation
+      val l =
+        // `fun` returns a LazyList that represents the state (head/tail) of `this`. We call `l.evaluated` to ensure
+        // `l` is initialized, to prevent races when reading `rawTail` / `rawHead` below.
+        // Often, lazy lists are created with `newLL(eagerCons(...))` so `l` is already initialized, but `newLL` also
+        // accepts non-evaluated lazy lists.
+        try fun().evaluated
+        // restore `fun` in finally so we can try again later if an exception was thrown (similar to lazy val)
+        finally _tail = fun
+      _tail = l.rawTail
+      _head = l.rawHead
+    }
+  }
+
+  @tailrec private def evaluated: LazyList[A] =
+    if (isEvaluated) {
+      if (_tail == null) Empty
+      else this
+    } else {
+      initState()
+      evaluated
+    }
 
   override def iterableFactory: SeqFactory[LazyList] = LazyList
 
-  override def isEmpty: Boolean = state eq State.Empty
+  // NOTE: `evaluated; this eq Empty` would be wrong. Deserialization of `Empty` creates a new
+  // instance with `null` fields, but the `evaluated` method always returns the canonical `Empty`.
+  @inline override def isEmpty: Boolean = evaluated eq Empty
 
   /** @inheritdoc
     *
@@ -297,12 +344,18 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   override def knownSize: Int = if (knownIsEmpty) 0 else -1
 
-  override def head: A = state.head
+  override def head: A =
+    // inlined `isEmpty` to make it clear that `rawHead` below is initialized
+    if (evaluated eq Empty) throw new NoSuchElementException("head of empty lazy list")
+    else rawHead.asInstanceOf[A]
 
-  override def tail: LazyList[A] = state.tail
+  override def tail: LazyList[A] =
+    // inlined `isEmpty` to make it clear that `rawTail` below is initialized
+    if (evaluated eq Empty) throw new UnsupportedOperationException("tail of empty lazy list")
+    else rawTail.asInstanceOf[LazyList[A]]
 
-  @inline private[this] def knownIsEmpty: Boolean = stateEvaluated && (isEmpty: @inline)
-  @inline private def knownNonEmpty: Boolean = stateEvaluated && !(isEmpty: @inline)
+  @inline private[this] def knownIsEmpty: Boolean = isEvaluated && isEmpty
+  @inline private def knownNonEmpty: Boolean = isEvaluated && !isEmpty
 
   /** Evaluates all undefined elements of the lazy list.
     *
@@ -381,9 +434,9 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (isEmpty) z
     else tail.foldLeft(op(z, head))(op)
 
-  // State.Empty doesn't use the SerializationProxy
+  // LazyList.Empty doesn't use the SerializationProxy
   protected[this] def writeReplace(): AnyRef =
-    if (knownNonEmpty) new LazyList.SerializationProxy[A](this) else this
+    if (knownNonEmpty) new SerializationProxy[A](this) else this
 
   override protected[this] def className = "LazyList"
 
@@ -399,11 +452,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   def lazyAppendedAll[B >: A](suffix: => collection.IterableOnce[B]): LazyList[B] =
     newLL {
       if (isEmpty) suffix match {
-        case lazyList: LazyList[B]       => lazyList.state // don't recompute the LazyList
-        case coll if coll.knownSize == 0 => State.Empty
-        case coll                        => stateFromIterator(coll.iterator)
+        case lazyList: LazyList[B]       => lazyList // don't recompute the LazyList
+        case coll if coll.knownSize == 0 => Empty
+        case coll                        => eagerHeadFromIterator(coll.iterator)
       }
-      else sCons(head, tail lazyAppendedAll suffix)
+      else eagerCons(head, tail lazyAppendedAll suffix)
     }
 
   /** @inheritdoc
@@ -423,7 +476,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $appendStackSafety
     */
   override def appended[B >: A](elem: B): LazyList[B] =
-    if (knownIsEmpty) newLL(sCons(elem, LazyList.empty))
+    if (knownIsEmpty) eagerCons(elem, Empty)
     else lazyAppendedAll(Iterator.single(elem))
 
   /** @inheritdoc
@@ -431,15 +484,15 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def scanLeft[B](z: B)(op: (B, A) => B): LazyList[B] =
-    if (knownIsEmpty) newLL(sCons(z, LazyList.empty))
-    else newLL(scanLeftState(z)(op))
+    if (knownIsEmpty) eagerCons(z, Empty)
+    else scanLeftImpl(z)(op)
 
-  private def scanLeftState[B](z: B)(op: (B, A) => B): State[B] =
-    sCons(
+  private def scanLeftImpl[B](z: B)(op: (B, A) => B): LazyList[B] =
+    eagerCons(
       z,
       newLL {
-        if (isEmpty) State.Empty
-        else tail.scanLeftState(op(z, head))(op)
+        if (isEmpty) Empty
+        else tail.scanLeftImpl(op(z, head))(op)
       }
     )
 
@@ -451,10 +504,10 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * @return The accumulated value from successive applications of `f`.
     */
   override def reduceLeft[B >: A](f: (B, A) => B): B = {
-    if (this.isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
+    if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
     else {
-      var reducedRes: B = this.head
-      var left: LazyList[A] = this.tail
+      var reducedRes: B = head
+      var left: LazyList[A] = tail
       while (!left.isEmpty) {
         reducedRes = f(reducedRes, left.head)
         left = left.tail
@@ -483,16 +536,16 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def filter(pred: A => Boolean): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
-    else LazyList.filterImpl(this, pred, isFlipped = false)
+    if (knownIsEmpty) Empty
+    else filterImpl(this, pred, isFlipped = false)
 
   /** @inheritdoc
     *
     * $preservesLaziness
     */
   override def filterNot(pred: A => Boolean): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
-    else LazyList.filterImpl(this, pred, isFlipped = true)
+    if (knownIsEmpty) Empty
+    else filterImpl(this, pred, isFlipped = true)
 
   /** A `collection.WithFilter` which allows GC of the head of lazy list during processing.
     *
@@ -509,7 +562,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
-  override def prepended[B >: A](elem: B): LazyList[B] = newLL(sCons(elem, this))
+  override def prepended[B >: A](elem: B): LazyList[B] = eagerCons(elem, this)
 
   /** @inheritdoc
     *
@@ -518,15 +571,15 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): LazyList[B] =
     if (knownIsEmpty) LazyList.from(prefix)
     else if (prefix.knownSize == 0) this
-    else newLL(stateFromIteratorConcatSuffix(prefix.iterator)(state))
+    else newLL(eagerHeadPrependIterator(prefix.iterator)(this))
 
   /** @inheritdoc
     *
     * $preservesLaziness
     */
   override def map[B](f: A => B): LazyList[B] =
-    if (knownIsEmpty) LazyList.empty
-    else (mapImpl(f): @inline)
+    if (knownIsEmpty) Empty
+    else mapImpl(f)
 
   /** @inheritdoc
     *
@@ -536,8 +589,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   private def mapImpl[B](f: A => B): LazyList[B] =
     newLL {
-      if (isEmpty) State.Empty
-      else sCons(f(head), tail.mapImpl(f))
+      if (isEmpty) Empty
+      else eagerCons(f(head), tail.mapImpl(f))
     }
 
   /** @inheritdoc
@@ -545,8 +598,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def collect[B](pf: PartialFunction[A, B]): LazyList[B] =
-    if (knownIsEmpty) LazyList.empty
-    else LazyList.collectImpl(this, pf)
+    if (knownIsEmpty) Empty
+    else collectImpl(this, pf)
 
   /** @inheritdoc
     *
@@ -557,7 +610,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   override def collectFirst[B](pf: PartialFunction[A, B]): Option[B] =
     if (isEmpty) None
     else {
-      val res = pf.applyOrElse(head, LazyList.anyToMarker.asInstanceOf[A => B])
+      val res = pf.applyOrElse(head, anyToMarker.asInstanceOf[A => B])
       if (res.asInstanceOf[AnyRef] eq Statics.pfMarker) tail.collectFirst(pf)
       else Some(res)
     }
@@ -583,8 +636,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   // optimisations are not for speed, but for functionality
   // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
   override def flatMap[B](f: A => IterableOnce[B]): LazyList[B] =
-    if (knownIsEmpty) LazyList.empty
-    else LazyList.flatMapImpl(this, f)
+    if (knownIsEmpty) Empty
+    else flatMapImpl(this, f)
 
   /** @inheritdoc
     *
@@ -597,12 +650,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def zip[B](that: collection.IterableOnce[B]): LazyList[(A, B)] =
-    if (this.knownIsEmpty || that.knownSize == 0) LazyList.empty
-    else newLL(zipState(that.iterator))
+    if (knownIsEmpty || that.knownSize == 0) Empty
+    else newLL(eagerHeadZipImpl(that.iterator))
 
-  private def zipState[B](it: Iterator[B]): State[(A, B)] =
-    if (this.isEmpty || !it.hasNext) State.Empty
-    else sCons((head, it.next()), newLL { tail zipState it })
+  private def eagerHeadZipImpl[B](it: Iterator[B]): LazyList[(A, B)] =
+    if (isEmpty || !it.hasNext) Empty
+    else eagerCons((head, it.next()), newLL { tail eagerHeadZipImpl it })
 
   /** @inheritdoc
     *
@@ -615,22 +668,22 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def zipAll[A1 >: A, B](that: collection.Iterable[B], thisElem: A1, thatElem: B): LazyList[(A1, B)] = {
-    if (this.knownIsEmpty) {
-      if (that.knownSize == 0) LazyList.empty
+    if (knownIsEmpty) {
+      if (that.knownSize == 0) Empty
       else LazyList.continually(thisElem) zip that
     } else {
       if (that.knownSize == 0) zip(LazyList.continually(thatElem))
-      else newLL(zipAllState(that.iterator, thisElem, thatElem))
+      else newLL(eagerHeadZipAllImpl(that.iterator, thisElem, thatElem))
     }
   }
 
-  private def zipAllState[A1 >: A, B](it: Iterator[B], thisElem: A1, thatElem: B): State[(A1, B)] = {
+  private def eagerHeadZipAllImpl[A1 >: A, B](it: Iterator[B], thisElem: A1, thatElem: B): LazyList[(A1, B)] = {
     if (it.hasNext) {
-      if (this.isEmpty) sCons((thisElem, it.next()), newLL { LazyList.continually(thisElem) zipState it })
-      else sCons((this.head, it.next()), newLL { this.tail.zipAllState(it, thisElem, thatElem) })
+      if (isEmpty) eagerCons((thisElem, it.next()), newLL { LazyList.continually(thisElem) eagerHeadZipImpl it })
+      else eagerCons((head, it.next()), newLL { tail.eagerHeadZipAllImpl(it, thisElem, thatElem) })
     } else {
-      if (this.isEmpty) State.Empty
-      else sCons((this.head, thatElem), this.tail zip LazyList.continually(thatElem))
+      if (isEmpty) Empty
+      else eagerCons((head, thatElem), tail zip LazyList.continually(thatElem))
     }
   }
 
@@ -643,7 +696,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * only evaluated individually as needed.
     */
   // just in case it can be meaningfully overridden at some point
-  override def lazyZip[B](that: collection.Iterable[B]): LazyZip2[A, B, LazyList.this.type] =
+  override def lazyZip[B](that: collection.Iterable[B]): LazyZip2[A, B, this.type] =
     super.lazyZip(that)
 
   /** @inheritdoc
@@ -667,8 +720,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   override def drop(n: Int): LazyList[A] =
     if (n <= 0) this
-    else if (knownIsEmpty) LazyList.empty
-    else LazyList.dropImpl(this, n)
+    else if (knownIsEmpty) Empty
+    else dropImpl(this, n)
 
   /** @inheritdoc
     *
@@ -676,8 +729,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * Additionally, it preserves laziness for all elements after the predicate returns `false`.
     */
   override def dropWhile(p: A => Boolean): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
-    else LazyList.dropWhileImpl(this, p)
+    if (knownIsEmpty) Empty
+    else dropWhileImpl(this, p)
 
   /** @inheritdoc
     *
@@ -685,7 +738,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   override def dropRight(n: Int): LazyList[A] = {
     if (n <= 0) this
-    else if (knownIsEmpty) LazyList.empty
+    else if (knownIsEmpty) Empty
     else newLL {
       var scout = this
       var remaining = n
@@ -694,27 +747,27 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
         remaining -= 1
         scout = scout.tail
       }
-      dropRightState(scout)
+      eagerHeadDropRightImpl(scout)
     }
   }
 
-  private def dropRightState(scout: LazyList[_]): State[A] =
-    if (scout.isEmpty) State.Empty
-    else sCons(head, newLL(tail.dropRightState(scout.tail)))
+  private def eagerHeadDropRightImpl(scout: LazyList[_]): LazyList[A] =
+    if (scout.isEmpty) Empty
+    else eagerCons(head, newLL(tail.eagerHeadDropRightImpl(scout.tail)))
 
   /** @inheritdoc
     *
     * $preservesLaziness
     */
   override def take(n: Int): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
-    else (takeImpl(n): @inline)
+    if (knownIsEmpty) Empty
+    else takeImpl(n)
 
   private def takeImpl(n: Int): LazyList[A] = {
-    if (n <= 0) LazyList.empty
+    if (n <= 0) Empty
     else newLL {
-      if (isEmpty) State.Empty
-      else sCons(head, tail.takeImpl(n - 1))
+      if (isEmpty) Empty
+      else eagerCons(head, tail.takeImpl(n - 1))
     }
   }
 
@@ -723,13 +776,13 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def takeWhile(p: A => Boolean): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
-    else (takeWhileImpl(p): @inline)
+    if (knownIsEmpty) Empty
+    else takeWhileImpl(p)
 
   private def takeWhileImpl(p: A => Boolean): LazyList[A] =
     newLL {
-      if (isEmpty || !p(head)) State.Empty
-      else sCons(head, tail.takeWhileImpl(p))
+      if (isEmpty || !p(head)) Empty
+      else eagerCons(head, tail.takeWhileImpl(p))
     }
 
   /** @inheritdoc
@@ -737,8 +790,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $initiallyLazy
     */
   override def takeRight(n: Int): LazyList[A] =
-    if (n <= 0 || knownIsEmpty) LazyList.empty
-    else LazyList.takeRightImpl(this, n)
+    if (n <= 0 || knownIsEmpty) Empty
+    else takeRightImpl(this, n)
 
   /** @inheritdoc
     *
@@ -751,20 +804,20 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $evaluatesAllElements
     */
-  override def reverse: LazyList[A] = reverseOnto(LazyList.empty)
+  override def reverse: LazyList[A] = reverseOnto(Empty)
 
   // need contravariant type B to make the compiler happy - still returns LazyList[A]
   @tailrec
   private def reverseOnto[B >: A](tl: LazyList[B]): LazyList[B] =
     if (isEmpty) tl
-    else tail.reverseOnto(newLL(sCons(head, tl)))
+    else tail.reverseOnto(newLL(eagerCons(head, tl)))
 
   /** @inheritdoc
     *
     * $preservesLaziness
     */
   override def diff[B >: A](that: collection.Seq[B]): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
+    if (knownIsEmpty) Empty
     else super.diff(that)
 
   /** @inheritdoc
@@ -772,7 +825,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     * $preservesLaziness
     */
   override def intersect[B >: A](that: collection.Seq[B]): LazyList[A] =
-    if (knownIsEmpty) LazyList.empty
+    if (knownIsEmpty) Empty
     else super.intersect(that)
 
   @tailrec
@@ -809,13 +862,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
-  override def padTo[B >: A](len: Int, elem: B): LazyList[B] = {
+  override def padTo[B >: A](len: Int, elem: B): LazyList[B] =
     if (len <= 0) this
     else newLL {
-      if (isEmpty) LazyList.fill(len)(elem).state
-      else sCons(head, tail.padTo(len - 1, elem))
+      if (isEmpty) LazyList.fill(len)(elem)
+      else eagerCons(head, tail.padTo(len - 1, elem))
     }
-  }
 
   /** @inheritdoc
     *
@@ -827,9 +879,9 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   private def patchImpl[B >: A](from: Int, other: IterableOnce[B], replaced: Int): LazyList[B] =
     newLL {
-      if (from <= 0) stateFromIteratorConcatSuffix(other.iterator)(LazyList.dropImpl(this, replaced).state)
-      else if (isEmpty) stateFromIterator(other.iterator)
-      else sCons(head, tail.patchImpl(from - 1, other, replaced))
+      if (from <= 0) eagerHeadPrependIterator(other.iterator)(dropImpl(this, replaced))
+      else if (isEmpty) eagerHeadFromIterator(other.iterator)
+      else eagerCons(head, tail.patchImpl(from - 1, other, replaced))
     }
 
   /** @inheritdoc
@@ -847,13 +899,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (index < 0) throw new IndexOutOfBoundsException(s"$index")
     else updatedImpl(index, elem, index)
 
-  private def updatedImpl[B >: A](index: Int, elem: B, startIndex: Int): LazyList[B] = {
+  private def updatedImpl[B >: A](index: Int, elem: B, startIndex: Int): LazyList[B] =
     newLL {
-      if (index <= 0) sCons(elem, tail)
+      if (index <= 0) eagerCons(elem, tail)
       else if (tail.isEmpty) throw new IndexOutOfBoundsException(startIndex.toString)
-      else sCons(head, tail.updatedImpl(index - 1, elem, startIndex))
+      else eagerCons(head, tail.updatedImpl(index - 1, elem, startIndex))
     }
-  }
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
     *  The written text begins with the string `start` and ends with the string `end`.
@@ -878,63 +929,62 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): b.type = {
     b.append(start)
-    if (!stateDefined) b.append("<not computed>")
+    if (!isEvaluated) b.append("<not computed>")
     else if (!isEmpty) {
       b.append(head)
       var cursor = this
-      @inline def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
+      // explicit param to prevent an ObjectRef for cursor
+      @inline def appendHead(c: LazyList[A]): Unit = b.append(sep).append(c.head)
       var scout = tail
-      @inline def scoutNonEmpty: Boolean = scout.stateDefined && !scout.isEmpty
-      if ((cursor ne scout) && (!scout.stateDefined || (cursor.state ne scout.state))) {
+      if (cursor ne scout) {
         cursor = scout
-        if (scoutNonEmpty) {
+        if (scout.knownNonEmpty) {
           scout = scout.tail
           // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
-          while ((cursor ne scout) && scoutNonEmpty && (cursor.state ne scout.state)) {
-            appendCursorElement()
+          while ((cursor ne scout) && scout.knownNonEmpty) {
+            appendHead(cursor)
             cursor = cursor.tail
             scout = scout.tail
-            if (scoutNonEmpty) scout = scout.tail
+            if (scout.knownNonEmpty) scout = scout.tail
           }
         }
       }
-      if (!scoutNonEmpty) {  // Not a cycle, scout hit an end
+      if (!scout.knownNonEmpty) { // Not a cycle, scout hit an end (empty or non-evaluated)
         while (cursor ne scout) {
-          appendCursorElement()
+          appendHead(cursor)
           cursor = cursor.tail
         }
         // if cursor (eq scout) has state defined, it is empty; else unknown state
-        if (!cursor.stateDefined) b.append(sep).append("<not computed>")
+        if (!cursor.isEvaluated) b.append(sep).append("<not computed>")
       } else {
-        @inline def same(a: LazyList[A], b: LazyList[A]): Boolean = (a eq b) || (a.state eq b.state)
-        // Cycle.
-        // If we have a prefix of length P followed by a cycle of length C,
-        // the scout will be at position (P%C) in the cycle when the cursor
-        // enters it at P.  They'll then collide when the scout advances another
-        // C - (P%C) ahead of the cursor.
-        // If we run the scout P farther, then it will be at the start of
-        // the cycle: (C - (P%C) + (P%C)) == C == 0.  So if another runner
-        // starts at the beginning of the prefix, they'll collide exactly at
-        // the start of the loop.
-        var runner = this
-        var k = 0
-        while (!same(runner, scout)) {
-          runner = runner.tail
-          scout = scout.tail
-          k += 1
-        }
-        // Now runner and scout are at the beginning of the cycle.  Advance
-        // cursor, adding to string, until it hits; then we'll have covered
-        // everything once.  If cursor is already at beginning, we'd better
-        // advance one first unless runner didn't go anywhere (in which case
-        // we've already looped once).
-        if (same(cursor, scout) && (k > 0)) {
-          appendCursorElement()
-          cursor = cursor.tail
-        }
-        while (!same(cursor, scout)) {
-          appendCursorElement()
-          cursor = cursor.tail
+        // Cycle: the scout is `knownNonEmpty` and `eq cursor`.
+        // if the cycle starts at `this`, its elements were already added
+        if (cursor ne this) {
+          // If we have a prefix of length P followed by a cycle of length C,
+          // the scout will be at position (P%C) in the cycle when the cursor
+          // enters it at P.  They'll then collide when the scout advances another
+          // C - (P%C) ahead of the cursor.
+          // If we run the scout P farther, then it will be at the start of
+          // the cycle: (C - (P%C) + (P%C)) == C == 0.  So if another runner
+          // starts at the beginning of the prefix, they'll collide exactly at
+          // the start of the loop.
+          var runner = this
+          while (runner ne scout) {
+            runner = runner.tail
+            scout = scout.tail
+          }
+          while({
+            val ct = cursor.tail
+            if (ct ne scout) {
+              // In `lazy val xs: LazyList[Int] = 1 #:: 2 #:: xs`, method `#::` creates a LazyList instance which ends up as the 3rd element.
+              // That 3rd element initially has unknown head/tail. Once it completes, the tail is assigned to be `xs.tail`.
+              // So in memory the structure is `LLx(1, LLy(2, LLz(1, <pointer-to-LLy>)))`.
+              // In `toString` we skip the last element to maintain the illusion.
+              appendHead(cursor)
+            }
+            cursor = ct
+            cursor ne scout
+          }) ()
         }
         b.append(sep).append("<cycle>")
       }
@@ -963,17 +1013,17 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
   override def hasDefiniteSize: Boolean = {
-    if (!stateDefined) false
+    if (!isEvaluated) false
     else if (isEmpty) true
     else {
       // Two-iterator trick (2x & 1x speed) for cycle detection.
       var those = this
       var these = tail
       while (those ne these) {
-        if (!these.stateDefined) return false
+        if (!these.isEvaluated) return false
         else if (these.isEmpty) return true
         these = these.tail
-        if (!these.stateDefined) return false
+        if (!these.isEvaluated) return false
         else if (these.isEmpty) return true
         these = these.tail
         if (those eq these) return false
@@ -989,32 +1039,24 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   * @define coll lazy list
   * @define Coll `LazyList`
   */
-@SerialVersionUID(3L)
+@SerialVersionUID(4L)
 object LazyList extends SeqFactory[LazyList] {
-  // Eagerly evaluate cached empty instance
-  private[this] val _empty = newLL(State.Empty).force
 
-  private sealed trait State[+A] extends Serializable {
-    def head: A
-    def tail: LazyList[A]
-  }
+  // LazyListTest.countAlloc
+  // var k = 0
+  // def kount(): Unit = k += 1
 
-  private object State {
-    @SerialVersionUID(3L)
-    object Empty extends State[Nothing] {
-      def head: Nothing = throw new NoSuchElementException("head of empty lazy list")
-      def tail: LazyList[Nothing] = throw new UnsupportedOperationException("tail of empty lazy list")
-    }
+  private object Uninitialized extends Serializable
+  private object MidEvaluation
+  private object EmptyMarker
 
-    @SerialVersionUID(3L)
-    final class Cons[A](val head: A, val tail: LazyList[A]) extends State[A]
-  }
+  private val Empty: LazyList[Nothing] = new LazyList(EmptyMarker)
 
   /** Creates a new LazyList. */
-  @inline private def newLL[A](state: => State[A]): LazyList[A] = new LazyList[A](() => state)
+  @inline private def newLL[A](state: => LazyList[A]): LazyList[A] = new LazyList[A](() => state)
 
-  /** Creates a new State.Cons. */
-  @inline private def sCons[A](hd: A, tl: LazyList[A]): State[A] = new State.Cons[A](hd, tl)
+  /** Creates a new LazyList with evaluated `head` and `tail`. */
+  @inline private def eagerCons[A](hd: A, tl: LazyList[A]): LazyList[A] = new LazyList[A](hd, tl)
 
   private val anyToMarker: Any => Any = _ => Statics.pfMarker
 
@@ -1039,7 +1081,7 @@ object LazyList extends SeqFactory[LazyList] {
         rest    = rest.tail
         restRef = rest                       // restRef.elem = rest
       }
-      if (found) sCons(elem, filterImpl(rest, p, isFlipped)) else State.Empty
+      if (found) eagerCons(elem, filterImpl(rest, p, isFlipped)) else Empty
     }
   }
 
@@ -1057,8 +1099,8 @@ object LazyList extends SeqFactory[LazyList] {
         rest    = rest.tail
         restRef = rest                                // restRef.elem = rest
       }
-      if (res.asInstanceOf[AnyRef] eq marker) State.Empty
-      else sCons(res, collectImpl(rest, pf))
+      if (res.asInstanceOf[AnyRef] eq marker) Empty
+      else eagerCons(res, collectImpl(rest, pf))
     }
   }
 
@@ -1081,8 +1123,8 @@ object LazyList extends SeqFactory[LazyList] {
         val head = it.next()
         rest     = rest.tail
         restRef  = rest                       // restRef.elem = rest
-        sCons(head, newLL(stateFromIteratorConcatSuffix(it)(flatMapImpl(rest, f).state)))
-      } else State.Empty
+        eagerCons(head, newLL(eagerHeadPrependIterator(it)(flatMapImpl(rest, f))))
+      } else Empty
     }
   }
 
@@ -1099,7 +1141,7 @@ object LazyList extends SeqFactory[LazyList] {
         i      -= 1
         iRef    = i                      // iRef.elem    = i
       }
-      rest.state
+      rest
     }
   }
 
@@ -1112,7 +1154,7 @@ object LazyList extends SeqFactory[LazyList] {
         rest    = rest.tail
         restRef = rest                          // restRef.elem = rest
       }
-      rest.state
+      rest
     }
   }
 
@@ -1140,7 +1182,7 @@ object LazyList extends SeqFactory[LazyList] {
         restRef  = rest                           // restRef.elem  = rest
       }
       // `rest` is the last `n` elements (or all of them)
-      rest.state
+      rest
     }
   }
 
@@ -1151,7 +1193,7 @@ object LazyList extends SeqFactory[LazyList] {
       *  @param hd   The first element of the result lazy list
       *  @param tl   The remaining elements of the result lazy list
       */
-    def apply[A](hd: => A, tl: => LazyList[A]): LazyList[A] = newLL(sCons(hd, newLL(tl.state)))
+    def apply[A](hd: => A, tl: => LazyList[A]): LazyList[A] = newLL(eagerCons(hd, newLL(tl)))
 
     /** Maps a lazy list to its head and tail */
     def unapply[A](xs: LazyList[A]): Option[(A, LazyList[A])] = #::.unapply(xs)
@@ -1163,7 +1205,7 @@ object LazyList extends SeqFactory[LazyList] {
     /** Construct a LazyList consisting of a given first element followed by elements
       *  from another LazyList.
       */
-    def #:: [B >: A](elem: => B): LazyList[B] = newLL(sCons(elem, newLL(l().state)))
+    def #:: [B >: A](elem: => B): LazyList[B] = newLL(eagerCons(elem, newLL(l())))
     /** Construct a LazyList consisting of the concatenation of the given LazyList and
       *  another LazyList.
       */
@@ -1178,30 +1220,30 @@ object LazyList extends SeqFactory[LazyList] {
   def from[A](coll: collection.IterableOnce[A]): LazyList[A] = coll match {
     case lazyList: LazyList[A]    => lazyList
     case _ if coll.knownSize == 0 => empty[A]
-    case _                        => newLL(stateFromIterator(coll.iterator))
+    case _                        => newLL(eagerHeadFromIterator(coll.iterator))
   }
 
-  def empty[A]: LazyList[A] = _empty
+  def empty[A]: LazyList[A] = Empty
 
-  /** Creates a State from an Iterator, with another State appended after the Iterator
-    * is empty.
-    */
-  private def stateFromIteratorConcatSuffix[A](it: Iterator[A])(suffix: => State[A]): State[A] =
-    if (it.hasNext) sCons(it.next(), newLL(stateFromIteratorConcatSuffix(it)(suffix)))
+  /** Creates a LazyList with the elements of an iterator followed by a LazyList suffix.
+   *  Eagerly evaluates the first element.
+   */
+  private def eagerHeadPrependIterator[A](it: Iterator[A])(suffix: => LazyList[A]): LazyList[A] =
+    if (it.hasNext) eagerCons(it.next(), newLL(eagerHeadPrependIterator(it)(suffix)))
     else suffix
 
-  /** Creates a State from an IterableOnce. */
-  private def stateFromIterator[A](it: Iterator[A]): State[A] =
-    if (it.hasNext) sCons(it.next(), newLL(stateFromIterator(it)))
-    else State.Empty
+  /** Creates a LazyList from an Iterator. Eagerly evaluates the first element. */
+  private def eagerHeadFromIterator[A](it: Iterator[A]): LazyList[A] =
+    if (it.hasNext) eagerCons(it.next(), newLL(eagerHeadFromIterator(it)))
+    else Empty
 
   override def concat[A](xss: collection.Iterable[A]*): LazyList[A] =
     if (xss.knownSize == 0) empty
-    else newLL(concatIterator(xss.iterator))
+    else newLL(eagerHeadConcatIterators(xss.iterator))
 
-  private def concatIterator[A](it: Iterator[collection.Iterable[A]]): State[A] =
-    if (!it.hasNext) State.Empty
-    else stateFromIteratorConcatSuffix(it.next().iterator)(concatIterator(it))
+  private def eagerHeadConcatIterators[A](it: Iterator[collection.Iterable[A]]): LazyList[A] =
+    if (!it.hasNext) Empty
+    else eagerHeadPrependIterator(it.next().iterator)(eagerHeadConcatIterators(it))
 
   /** An infinite LazyList that repeatedly applies a given function to a start value.
     *
@@ -1212,7 +1254,7 @@ object LazyList extends SeqFactory[LazyList] {
   def iterate[A](start: => A)(f: A => A): LazyList[A] =
     newLL {
       val head = start
-      sCons(head, iterate(f(head))(f))
+      eagerCons(head, iterate(f(head))(f))
     }
 
   /**
@@ -1224,7 +1266,7 @@ object LazyList extends SeqFactory[LazyList] {
     * @return the LazyList starting at value `start`.
     */
   def from(start: Int, step: Int): LazyList[Int] =
-    newLL(sCons(start, from(start + step, step)))
+    newLL(eagerCons(start, from(start + step, step)))
 
   /**
     * Create an infinite LazyList starting at `start` and incrementing by `1`.
@@ -1241,14 +1283,14 @@ object LazyList extends SeqFactory[LazyList] {
     * @param elem the element composing the resulting LazyList
     * @return the LazyList containing an infinite number of elem
     */
-  def continually[A](elem: => A): LazyList[A] = newLL(sCons(elem, continually(elem)))
+  def continually[A](elem: => A): LazyList[A] = newLL(eagerCons(elem, continually(elem)))
 
   override def fill[A](n: Int)(elem: => A): LazyList[A] =
-    if (n > 0) newLL(sCons(elem, fill(n - 1)(elem))) else empty
+    if (n > 0) newLL(eagerCons(elem, LazyList.fill(n - 1)(elem))) else empty
 
   override def tabulate[A](n: Int)(f: Int => A): LazyList[A] = {
     def at(index: Int): LazyList[A] =
-      if (index < n) newLL(sCons(f(index), at(index + 1))) else empty
+      if (index < n) newLL(eagerCons(f(index), at(index + 1))) else empty
 
     at(0)
   }
@@ -1257,8 +1299,8 @@ object LazyList extends SeqFactory[LazyList] {
   override def unfold[A, S](init: S)(f: S => Option[(A, S)]): LazyList[A] =
     newLL {
       f(init) match {
-        case Some((elem, state)) => sCons(elem, unfold(state)(f))
-        case None                => State.Empty
+        case Some((elem, state)) => eagerCons(elem, unfold(state)(f))
+        case None                => Empty
       }
     }
 
@@ -1326,13 +1368,13 @@ object LazyList extends SeqFactory[LazyList] {
     }
 
     override def result(): LazyList[A] = {
-      next init State.Empty
+      next init Empty
       list
     }
 
     override def addOne(elem: A): this.type = {
       val deferred = new DeferredState[A]
-      next init sCons(elem, newLL(deferred.eval()))
+      next init eagerCons(elem, newLL(deferred.eval()))
       next = deferred
       this
     }
@@ -1341,7 +1383,7 @@ object LazyList extends SeqFactory[LazyList] {
     override def addAll(xs: IterableOnce[A]): this.type = {
       if (xs.knownSize != 0) {
         val deferred = new DeferredState[A]
-        next init stateFromIteratorConcatSuffix(xs.iterator)(deferred.eval())
+        next init eagerHeadPrependIterator(xs.iterator)(deferred.eval())
         next = deferred
       }
       this
@@ -1350,18 +1392,18 @@ object LazyList extends SeqFactory[LazyList] {
 
   private object LazyBuilder {
     final class DeferredState[A] {
-      private[this] var _state: () => State[A] = _
+      private[this] var _tail: () => LazyList[A] = _
 
-      def eval(): State[A] = {
-        val state = _state
+      def eval(): LazyList[A] = {
+        val state = _tail
         if (state == null) throw new IllegalStateException("uninitialized")
         state()
       }
 
       // racy
-      def init(state: => State[A]): Unit = {
-        if (_state != null) throw new IllegalStateException("already initialized")
-        _state = () => state
+      def init(state: => LazyList[A]): Unit = {
+        if (_tail != null) throw new IllegalStateException("already initialized")
+        _tail = () => state
       }
     }
   }
@@ -1371,7 +1413,7 @@ object LazyList extends SeqFactory[LazyList] {
     * standard Java serialization to store the complete structure of unevaluated thunks. This allows the serialization
     * of long evaluated lazy lists without exhausting the stack through recursive serialization of cons cells.
     */
-  @SerialVersionUID(3L)
+  @SerialVersionUID(4L)
   final class SerializationProxy[A](@transient protected var coll: LazyList[A]) extends Serializable {
 
     private[this] def writeObject(out: ObjectOutputStream): Unit = {
@@ -1394,10 +1436,10 @@ object LazyList extends SeqFactory[LazyList] {
         case a => init += a.asInstanceOf[A]
       }
       val tail = in.readObject().asInstanceOf[LazyList[A]]
-      // scala/scala#10118: caution that no code path can evaluate `tail.state`
+      // scala/scala#10118: caution that no code path can evaluate `tail.evaluated`
       // before the resulting LazyList is returned
       val it = init.toList.iterator
-      coll = newLL(stateFromIteratorConcatSuffix(it)(tail.state))
+      coll = newLL(eagerHeadPrependIterator(it)(tail))
     }
 
     private[this] def readResolve(): Any = coll

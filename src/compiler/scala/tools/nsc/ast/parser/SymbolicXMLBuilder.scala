@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -177,8 +177,8 @@ abstract class SymbolicXMLBuilder(@unused p: Parsers#Parser, @unused preserveWS:
 
   /** could optimize if args.length == 0, args.length == 1 AND args(0) is <: Node. */
   def makeXMLseq(pos: Position, args: scala.collection.Seq[Tree]) = {
-    val buffer = ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, ListOfNil))
-    val applies = args filterNot isEmptyText map (t => Apply(Select(Ident(_buf), _plus), List(t)))
+    val buffer = atPos(pos)(ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, ListOfNil)))
+    val applies = args.filterNot(isEmptyText).map(t => atPos(t.pos)(Apply(Select(Ident(_buf), _plus), List(t))))
 
     atPos(pos)( gen.mkBlock(buffer :: applies.toList ::: List(Ident(_buf))) )
   }

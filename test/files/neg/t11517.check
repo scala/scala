@@ -1,0 +1,57 @@
+t11517.scala:6: error: missing parameter type for expanded function ((<x$1: error>) => x$1.$plus(1))
+  X.f(_ + 1)
+      ^
+t11517.scala:6: error: overloaded method f with alternatives:
+  (s: String)String <and>
+  (i: Int)Int
+ does not match arguments (? => ?)
+  X.f(_ + 1)
+    ^
+t11517.scala:17: error: missing parameter type for expanded function ((<x$2: error>) => x$2.$plus(1))
+  def `quite overloaded`(s: MyString): Int = s.indexOf(_ + 1)
+                                                       ^
+t11517.scala:17: error: overloaded method indexOf with alternatives:
+  (s: String,begin: Int,end: Int)Int <and>
+  (s: String,begin: Int)Int <and>
+  (s: String)Int <and>
+  (c: Int,begin: Int,end: Int)Int <and>
+  (c: Int,begin: Int)Int <and>
+  (c: Int)Int
+ does not match arguments (? => ?) with expected result type Int
+  def `quite overloaded`(s: MyString): Int = s.indexOf(_ + 1)
+                                               ^
+t11517.scala:19: error: overloaded method f with alternatives:
+  (s: String)String <and>
+  (i: Int)Int
+ cannot be applied to (String, i: Int)
+  X.f("hello, world", i = 42)
+    ^
+t11517.scala:20: error: overloaded method f with alternatives:
+  (s: String)String <and>
+  (i: Int)Int
+ cannot be applied to (String, Int => Int)
+  X.f("hello, world", (i: Int) => i)
+    ^
+t11517.scala:21: error: missing parameter type
+  X.f((i: Int, _) => i + 1)
+               ^
+t11517.scala:21: error: overloaded method f with alternatives:
+  (s: String)String <and>
+  (i: Int)Int
+ does not match arguments ((Int, ?) => ?)
+  X.f((i: Int, _) => i + 1)
+    ^
+t11517.scala:22: error: missing parameter type
+  X.g(i => i)
+      ^
+t11517.scala:22: error: type mismatch;
+ found   : ? => ?
+ required: String
+  X.g(i => i)
+        ^
+t11517.scala:23: error: type mismatch;
+ found   : Int => Int
+ required: String
+  X.g((i: Int) => i)
+               ^
+11 errors

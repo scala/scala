@@ -1,4 +1,4 @@
-//> using options -Xsource:3 -deprecation -Werror
+//> using options -Xsource:3 -deprecation -Werror -Xsource-features:eta-expand-always
 //
 trait AcciSamZero { def apply(): Int }
 

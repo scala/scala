@@ -7,6 +7,16 @@ import org.junit.Test
 import scala.tools.testkit.ReflectUtil.getMethodAccessible
 
 class LongMapTest {
+  @Test def t13048(): Unit = {
+    def t(x: Int, y: Int): Unit = {
+      val m = LongMap.empty[Unit]
+      m.getOrElseUpdate(x, m.getOrElseUpdate(y, ()))
+      assert(m.keys.toSet == immutable.Set(x, y), m.keys.toSet)
+    }
+    t(4, 28)
+    t(28, 4)
+    t(4, 4)
+  }
 
   @Test
   def `repack calculation must complete`: Unit = {

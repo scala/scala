@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -1372,7 +1372,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (it.hasNext) {
       jsb.append(it.next())
       while (it.hasNext) {
-        jsb.append(sep)
+        if (sep.length != 0) jsb.append(sep)
         jsb.append(it.next())
       }
     }

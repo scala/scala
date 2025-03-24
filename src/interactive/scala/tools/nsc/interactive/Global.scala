@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -21,7 +21,6 @@ import scala.collection.mutable
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.jdk.javaapi.CollectionConverters
 import scala.language.implicitConversions
-import scala.reflect.internal.Chars.isIdentifierStart
 import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
@@ -51,6 +50,7 @@ trait InteractiveAnalyzer extends Analyzer {
   override def newNamer(context: Context): InteractiveNamer = new Namer(context) with InteractiveNamer
 
   trait InteractiveTyper extends Typer {
+    override def isInteractive = true
     override def canAdaptConstantTypeToLiteral = false
     override def canTranslateEmptyListToNil    = false
     override def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree match {
@@ -403,8 +403,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case unit: RichCompilationUnit => unit.isParsed
       case _                         => true
     })
-    if (isPastNamer) super.openPackageModule(pkgClass, force = true)
-    else analyzer.packageObjects.deferredOpen.add(pkgClass)
+    super.openPackageModule(pkgClass, force = isPastNamer)
   }
 
   // ----------------- Polling ---------------------------------------
@@ -1190,7 +1189,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       results.filter { (member: Member) =>
         val symbol = member.sym
         def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
-        def isJunk = !symbol.exists || symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
+        def isJunk = !symbol.exists || symbol.name.isEmpty || symbol.encodedName.charAt(0) == '<' // e.g. <byname>
         def nameTypeOk: Boolean = {
           forImport || // Completing an import: keep terms and types.
             symbol.name.isTermName == name.isTermName || // Keep names of the same type
@@ -1201,7 +1200,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           matcher(member.aliasInfo.map(_.sym.name).getOrElse(NoSymbol.name)) && !forImport && symbol.name.isTermName == name.isTermName
         }
         
-        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || (matcher(member.sym.name) || aliasTypeOk)
+        !isJunk && member.accessible && (name.isEmpty || (matcher(member.sym.name) || aliasTypeOk)
           && nameTypeOk)
 
       }
@@ -1269,20 +1268,16 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
             typeCompletions(imp, qual, selector.namePos, selector.name)
         }
       case sel@Select(qual, name) =>
-        val qualPos = qual.pos
-        val effectiveQualEnd = if (qualPos.isRange) qualPos.end else qualPos.point - 1
-        def fallback = {
-          effectiveQualEnd + 2
-        }
-        val source = pos.source
-
-        val nameStart: Int = (focus1.pos.end - 1 to effectiveQualEnd by -1).find(p =>
-          source.identFrom(source.position(p)).exists(_.length == 0)
-        ).map(_ + 1).getOrElse(fallback)
+        val rawNameStart: Int = sel.pos.point
+        val hasBackTick = pos.source.content.lift(rawNameStart).contains('`')
+        val nameStart = if (hasBackTick) rawNameStart + 1 else rawNameStart
         typeCompletions(sel, qual, nameStart, name)
-      case Ident(name) =>
+      case ident@Ident(name) =>
         val allMembers = scopeMembers(pos)
-        val positionDelta: Int = pos.start - focus1.pos.start
+        val rawNameStart: Int = ident.pos.point
+        val hasBackTick = pos.source.content.lift(rawNameStart).contains('`')
+        val nameStart = if (hasBackTick) rawNameStart + 1 else rawNameStart
+        val positionDelta: Int = pos.start - nameStart
         val subName = name.subName(0, positionDelta)
         CompletionResult.ScopeMembers(positionDelta, scopeMemberFlatten(allMembers), subName, forImport = false)
       case _ =>

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -423,8 +423,8 @@ class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) 
     res
   }
 
-  private val _initialProducersCache:  mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
-  private val _ultimateConsumersCache: mutable.AnyRefMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.AnyRefMap.empty
+  private val _initialProducersCache:  mutable.HashMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.HashMap.empty
+  private val _ultimateConsumersCache: mutable.HashMap[(AbstractInsnNode, Int), Set[AbstractInsnNode]] = mutable.HashMap.empty
 }
 
 /**

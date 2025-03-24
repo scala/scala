@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -33,7 +33,7 @@ abstract class Erasure extends InfoTransform
 
   val phaseName: String = "erasure"
 
-  val requiredDirectInterfaces = perRunCaches.newAnyRefMap[Symbol, mutable.Set[Symbol]]()
+  val requiredDirectInterfaces = perRunCaches.newMap[Symbol, mutable.Set[Symbol]]()
 
   def newTransformer(unit: CompilationUnit): AstTransformer =
     new ErasureTransformer(unit)
@@ -117,7 +117,7 @@ abstract class Erasure extends InfoTransform
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
    */
-  val prepareSigMap = new TypeMap {
+  val prepareSigMap: TypeMap = new TypeMap {
     def squashBoxed(tp: Type): Type = tp.dealiasWiden match {
       case RefinedType(parents, decls) =>
         val parents1 = parents mapConserve squashBoxed
@@ -1003,7 +1003,7 @@ abstract class Erasure extends InfoTransform
      *   - Remove all instance creations new C(arg) where C is an inlined class.
      *   - Reset all other type attributes to null, thus enforcing a retyping.
      */
-    private val preTransformer = new TypingTransformer(unit) {
+    private val preTransformer: TypingTransformer = new TypingTransformer(unit) {
       // Work around some incomplete path unification :( there are similar casts in SpecializeTypes
       def context: Context = localTyper.context.asInstanceOf[Context]
 

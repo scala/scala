@@ -1,0 +1,32 @@
+
+scala> trait A { def f: AnyRef }                    // refinement dropped
+trait A
+
+scala> def a = Option(new { def g = 1 })            // refinement dropped
+def a: Option[AnyRef]
+
+scala> def b: Option[{ def g: Int }] = Option(new { def g = 1 })
+def b: Option[AnyRef{def g: Int}]
+
+scala> def c(p: { def i: Int }): Int = 0
+def c(p: AnyRef{def i: Int}): Int
+
+scala> def d = new A { def f: A = this }            // refinement of existing method is kept, in Scala 3 too
+def d: A{def f: A}
+
+scala> def e = new A { def f: AnyRef = new AnyRef } // no refinement in 2.13 eihter
+def e: A
+
+scala> def f = new A { def f = new AnyRef }         // no refinement in 2.13 either
+def f: A
+
+scala> def g = new A { def f = this }               // inferred type of `f` is AnyRef because of infer-override
+def g: A
+
+scala> def h = new AnyRef { type T = String }       // TODO: dropped in Scala 3; figure out the rules Scala 3 uses and approximate them
+def h: AnyRef{type T = String}
+
+scala> def i = new AnyRef { val x = 2 }             // dropped
+def i: AnyRef
+
+scala> :quit

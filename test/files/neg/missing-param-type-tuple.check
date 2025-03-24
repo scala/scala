@@ -6,6 +6,11 @@ Note: The expected type requires a one-argument function accepting a 2-Tuple.
 missing-param-type-tuple.scala:3: error: missing parameter type
   val x: ((Int, Int)) => Int = (a, b) => 0
                                    ^
+missing-param-type-tuple.scala:3: error: type mismatch;
+ found   : (?, ?) => ?
+ required: ((Int, Int)) => Int
+  val x: ((Int, Int)) => Int = (a, b) => 0
+                                      ^
 missing-param-type-tuple.scala:5: error: missing parameter type
 Note: The expected type requires a one-argument function accepting a 3-Tuple.
       Consider a pattern matching anonymous function, `{ case (param1, ..., param3) =>  ... }`
@@ -17,6 +22,11 @@ missing-param-type-tuple.scala:5: error: missing parameter type
 missing-param-type-tuple.scala:5: error: missing parameter type
   val y: ((Int, Int, Int)) => Int = (a, b, !!) => 0
                                            ^
+missing-param-type-tuple.scala:5: error: type mismatch;
+ found   : (?, ?, ?) => ?
+ required: ((Int, Int, Int)) => Int
+  val y: ((Int, Int, Int)) => Int = (a, b, !!) => 0
+                                               ^
 missing-param-type-tuple.scala:7: error: missing parameter type
 Note: The expected type requires a one-argument function accepting a 3-Tuple.
       Consider a pattern matching anonymous function, `{ case (param1, ..., param3) =>  ... }`
@@ -28,4 +38,9 @@ missing-param-type-tuple.scala:7: error: missing parameter type
 missing-param-type-tuple.scala:7: error: missing parameter type
   val z: ((Int, Int, Int)) => Int = (a, NotAVariablePatternName, c) => 0
                                                                  ^
-8 errors
+missing-param-type-tuple.scala:7: error: type mismatch;
+ found   : (?, ?, ?) => ?
+ required: ((Int, Int, Int)) => Int
+  val z: ((Int, Int, Int)) => Int = (a, NotAVariablePatternName, c) => 0
+                                                                    ^
+11 errors

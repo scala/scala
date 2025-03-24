@@ -1,0 +1,31 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> class C {
+  def f = new {
+    def g = new {
+      def h = 1
+    }
+  }
+}
+class C
+
+scala> val f = typeOf[C].decl(TermName("f"))
+val f: $r.intp.global.Symbol = method f
+
+scala> val g = f.tpe.resultType.decls.head
+val g: $r.intp.global.Symbol = method g
+
+scala> g.ownerChain.take(4)
+val res0: List[$r.intp.global.Symbol] = List(method g, <refinement of AnyRef>, method f, class C)
+
+scala> g.tpe.resultType.typeSymbol
+val res1: $r.intp.global.Symbol = <refinement of AnyRef>
+
+scala> g.tpe.resultType.typeSymbol.ownerChain.take(4)
+val res2: List[$r.intp.global.Symbol] = List(<refinement of AnyRef>, method g, <refinement of AnyRef>, method f)
+
+scala> :quit

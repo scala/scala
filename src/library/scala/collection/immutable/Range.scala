@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -15,6 +15,7 @@ package collection.immutable
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl.RangeStepper
+import scala.collection.generic.CommonErrors
 import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, Iterator, Stepper, StepperShape}
 import scala.util.hashing.MurmurHash3
 
@@ -177,7 +178,8 @@ sealed abstract class Range(
   @throws[IndexOutOfBoundsException]
   final def apply(idx: Int): Int = {
     validateMaxLength()
-    if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${numRangeElements-1})")
+    if (idx < 0 || idx >= numRangeElements)
+      throw CommonErrors.indexOutOfBounds(index = idx, max = numRangeElements - 1)
     else start + (step * idx)
   }
 

@@ -1,4 +1,4 @@
-//> using options -Yrangepos
+//
 object Test {
   Macro {
     "".reverse

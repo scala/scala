@@ -1,0 +1,6 @@
+adapt-to-any-member.scala:6: warning: conversion Elvis adds universal member method eq to type A
+  def f[A](x: A) = if (x eq null) 0 else 1 // warn
+                       ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

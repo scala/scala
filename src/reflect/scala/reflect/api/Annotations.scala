@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -90,6 +90,20 @@ trait Annotations { self: Universe =>
      */
     @deprecated("use `tree.children.tail` instead", "2.11.0")
     def scalaArgs: List[Tree]
+
+    /** For arguments in [[scalaArgs]], this method returns `true` if the argument AST is a default inserted
+     *  by the compiler, not an explicit argument passed in source code.
+     *
+     *  Since Scala 2.13.17, the defaults are ASTs of the default expression in the annotation definition.
+     *  Example:
+     *  {{{
+     *    class ann(x: Int = 42) extends Annotation
+     *    @ann class C
+     *  }}}
+     *  The `annotation.scalaArgs.head` is an AST `Literal(Constant(42))` for which the `argIsDefault` method
+     *  returns `true`.
+     */
+    def argIsDefault(tree: Tree): Boolean
 
     /** Payload of the Java annotation: a list of name-value pairs.
      *  Empty for Scala annotations.

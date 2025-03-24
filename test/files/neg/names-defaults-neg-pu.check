@@ -118,6 +118,11 @@ names-defaults-neg-pu.scala:104: error: unknown parameter name: m
 names-defaults-neg-pu.scala:140: error: missing parameter type for expanded function ((<x$1: error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
+names-defaults-neg-pu.scala:140: error: type mismatch;
+ found   : ? => ?
+ required: Int
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+                                       ^
 names-defaults-neg-pu.scala:140: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
@@ -127,6 +132,11 @@ names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at pa
 names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
+names-defaults-neg-pu.scala:142: error: type mismatch;
+ found   : ? => ?
+ required: String
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                                    ^
 names-defaults-neg-pu.scala:193: error: an expression of type Null is ineligible for implicit conversion
 Error occurred in an application involving default arguments.
   def f = new A3[Int]()
@@ -141,4 +151,4 @@ names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprec
   deprNam5(deprNam5Arg = null)
                        ^
 3 warnings
-34 errors
+36 errors

@@ -4,4 +4,9 @@ t556.scala:3: error: missing parameter type
 t556.scala:3: error: missing parameter type
   def g: Int = f((x, y) => x)
                      ^
-2 errors
+t556.scala:3: error: type mismatch;
+ found   : (?, ?) => ?
+ required: Int => Int
+  def g: Int = f((x, y) => x)
+                        ^
+3 errors

@@ -44,3 +44,17 @@ object X {
   import T.given
   def g = T.f[Int] // was given is not a member
 }
+
+class status_quo {
+  import scala.util.chaining._
+  import scala.concurrent.duration._
+  def f = 42.tap(println)
+  def g = 42.seconds
+}
+
+class givenly {
+  import scala.util.chaining.given
+  import scala.concurrent.duration.given
+  def f = 42.tap(println)
+  def g = 42.seconds
+}

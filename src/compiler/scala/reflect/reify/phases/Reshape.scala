@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -37,7 +37,7 @@ trait Reshape {
    *    * Transforming Annotated(annot, expr) into Typed(expr, TypeTree(Annotated(annot, _))
    *    * Non-idempotencies of the typechecker: https://github.com/scala/bug/issues/5464
    */
-  val reshape = new AstTransformer {
+  val reshape: AstTransformer = new AstTransformer {
     var currentSymbol: Symbol = NoSymbol
 
     override def transform(tree0: Tree) = {

@@ -7,6 +7,7 @@ import scala.math.Ordering
 
 import mutable.{ArrayBuffer, Builder}
 
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
 class BuildFromTest {
 
   // You can either overload methods for IterableOps and Iterable with SortedOps (if you want to support constrained collection types)
@@ -232,5 +233,11 @@ class BuildFromTest {
     // (In the original code, ExtendsOrdered was actually scala.Enumeration.Value, which does extends Ordered.
     //
     //
+  }
+  // additional test for previous, via scala/bug#12104
+  locally {
+    import scala.concurrent._, ExecutionContext.Implicits._
+    Future.traverse(List(1))(_ => Future.failed(new NoSuchElementException))
+    // diverging implicit expansion for type scala.collection.BuildFrom[List[Int],B,List[B] starting with method Tuple9 in object Ordering
   }
 }

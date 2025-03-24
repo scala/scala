@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -17,7 +17,7 @@ package immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}
-import scala.collection.generic.DefaultSerializable
+import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.runtime.Statics.releaseFence
 
 /** A class for immutable linked lists representing ordered collections
@@ -238,7 +238,7 @@ sealed abstract class List[+A]
     if (i == index && current.nonEmpty) {
       prefix.prependToList(elem :: current.tail)
     } else {
-      throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${length-1})")
+      throw CommonErrors.indexOutOfBounds(index = index, max = length - 1)
     }
   }
 

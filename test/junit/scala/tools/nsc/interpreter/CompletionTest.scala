@@ -94,6 +94,9 @@ class CompletionTest {
     checkExact(completer, "object O { private def x_y_z = 1; x_y", "}")("x_y_z")
     checkExact(completer, "object x_y_z; import x_y")("x_y_z")
 
+    checkExact(completer, "object O { def `1 thing` = 1 }; O.")("1 thing")
+    checkExact(completer, "object O { def `<x>` = 1 }; O.")("<x>")
+
     checkExact(completer, "object x_y_z { def a_b_c }; import x_y_z.a_b")("a_b_c")
 
     checkExact(completer, "object X { private[this] def definition = 0; def")("definition")
@@ -114,6 +117,16 @@ class CompletionTest {
 
     intp.interpret("object O { def x_y_x = 1; def x_y_z = 2; def getFooBarZot = 3}; ")
     checkExact(new ReplCompletion(intp), """object O2 { val x = O.""")("x_y_x", "x_y_z", "getFooBarZot")
+  }
+
+  @Test
+  def backticks(): Unit = {
+    val intp = newIMain()
+    val completer = new ReplCompletion(intp)
+
+    checkExact(completer, "object X { def `Foo Bar` = 0; this.`Foo ", after = "` }")("Foo Bar")
+    checkExact(completer, "val `Foo Bar` = 0; `Foo ", after = "`")("Foo Bar")
+    checkExact(completer, "def foo(`Foo Bar`: Int) { `Foo ", after = "` }")("Foo Bar")
   }
 
   @Test

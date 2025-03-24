@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -43,7 +43,7 @@ trait Calculate {
   /**
    *  Merely traverses the target and records symbols local to the reifee along with their metalevels.
    */
-  val calculate = new Traverser {
+  val calculate: Traverser = new Traverser {
     // see the explanation of metalevels in `Metalevels`
     var currMetalevel = 1
 

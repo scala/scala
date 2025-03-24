@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -89,8 +89,20 @@ object Mode {
     */
   final val APPSELmode: Mode    = Mode(0x20000)
 
+  /**
+   * Enabled while typing annotations. In this mode, no locals are created for named / default arguments and default
+   * arguments are AST copies of the default expression. Example:
+   *
+   * {{{
+   *   class a(x: Int = xDefault, y: Int) extends Annotation
+   *   @a(y = yExpr) def f = 0 // annotation is typed as `new a(xDefault, yExpr)`
+   *   new a(y = yExpr)        // typed as `{ val x$1 = yExpr; val x$2 = a.init$default$1(); new a(x$2, x$1) }`
+   * }}}
+   */
+  final val ANNOTmode: Mode     = Mode(0x40000)
+
   private val StickyModes: Mode       = EXPRmode | PATTERNmode | TYPEmode
-  private val StickyModesForFun: Mode = StickyModes | SCCmode
+  private val StickyModesForFun: Mode = StickyModes | SCCmode | ANNOTmode
   final val MonoQualifierModes: Mode  = EXPRmode | QUALmode | APPSELmode
   final val PolyQualifierModes: Mode  = MonoQualifierModes | POLYmode
   final val OperatorModes: Mode       = EXPRmode | POLYmode | TAPPmode | FUNmode
@@ -108,7 +120,8 @@ object Mode {
     LHSmode      -> "LHSmode",
     BYVALmode    -> "BYVALmode",
     TYPEPATmode  -> "TYPEPATmode",
-    APPSELmode   -> "APPSELmode"
+    APPSELmode   -> "APPSELmode",
+    ANNOTmode    -> "ANNOTmode",
   )
 
   // Former modes and their values:

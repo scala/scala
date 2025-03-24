@@ -18,6 +18,7 @@ import collection.accessWrappers.Wrappers._
 // Use this to re-establish a baseline for serialization compatibility.
 
 // based on run/t8549.scala partest
+@annotation.nowarn("cat=deprecation&origin=scala.collection.mutable.AnyRefMap")
 object SerializationStability {
 
   def parseBase64Binary(s: String): Array[Byte] = Base64.getDecoder.decode(s)

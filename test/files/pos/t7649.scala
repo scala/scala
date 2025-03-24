@@ -1,4 +1,4 @@
-//> using options -Yrangepos
+//
 //
 object Test {
   val c: scala.reflect.macros.blackbox.Context = ???

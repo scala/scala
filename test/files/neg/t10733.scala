@@ -1,4 +1,4 @@
-//> using options -Yrangepos -Ystop-after:parser
+//> using options -Ystop-after:parser
 trait T[_]
 trait U[_, _]
 

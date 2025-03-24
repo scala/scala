@@ -33,7 +33,7 @@ t12798-migration.scala:43: error: type application is not allowed for infix oper
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration
   def f = List(42) map [Int] (_ + 1)
-                   ^
+                       ^
 t12798-migration.scala:46: error: Top-level wildcard is not allowed
 Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration

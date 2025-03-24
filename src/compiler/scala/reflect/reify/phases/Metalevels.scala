@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -113,7 +113,7 @@ trait Metalevels {
    *  The reasoning from Example 2 still holds here - we do need to inline the freevar that refers to x.
    *  However, we must not touch anything inside the splice'd block, because it's not getting reified.
    */
-  val metalevels = new AstTransformer {
+  val metalevels: AstTransformer = new AstTransformer {
     var insideSplice = false
     val inlineableBindings = mutable.Map[TermName, Tree]()
 

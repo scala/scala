@@ -2,7 +2,7 @@ import scala.tools.partest._
 
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -Yrangepos -Ystop-after:typer -deprecation"
+  override def extraSettings = super.extraSettings + " -Ystop-after:typer -deprecation"
 
   override def code =
     """class C {

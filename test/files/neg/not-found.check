@@ -23,8 +23,4 @@ not-found.scala:21: error: not found: value X
 Identifiers that begin with uppercase are not pattern variables but match the value in scope.
   val X :: Nil = List(42)
       ^
-not-found.scala:21: warning: Pattern definition introduces Unit-valued member of T; consider wrapping it in `locally { ... }`.
-  val X :: Nil = List(42)
-        ^
-1 warning
 7 errors

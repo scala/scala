@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -9,8 +9,6 @@
  * See the NOTICE file distributed with this work for
  * additional information regarding copyright ownership.
  */
-
-// Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
 
 package scala.tools.nsc.interpreter
 package shell
@@ -158,7 +156,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   /** Show the history */
-  lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)", None) {
+  lazy val historyCommand: LoopCommand = new LoopCommand("history", "show the history (optional num is commands to show)", None) {
     override def usage = "[num]"
     def defaultLines = 20
 

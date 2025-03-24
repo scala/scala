@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -17,7 +17,7 @@ package mutable
 import java.util.Arrays
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.generic.DefaultSerializable
+import scala.collection.generic.{CommonErrors, DefaultSerializable}
 import scala.runtime.PStatics.VM_MaxArraySize
 
 /** An implementation of the `Buffer` class using an array to
@@ -99,8 +99,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     array = ArrayBuffer.downsize(array, requiredLength)
 
   @inline private def checkWithinBounds(lo: Int, hi: Int) = {
-    if (lo < 0) throw new IndexOutOfBoundsException(s"$lo is out of bounds (min 0, max ${size0 - 1})")
-    if (hi > size0) throw new IndexOutOfBoundsException(s"${hi - 1} is out of bounds (min 0, max ${size0 - 1})")
+    if (lo < 0) throw CommonErrors.indexOutOfBounds(index = lo, max = size0 - 1)
+    if (hi > size0) throw CommonErrors.indexOutOfBounds(index = hi - 1, max = size0 - 1)
   }
 
   def apply(n: Int): A = {
@@ -140,9 +140,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   def addOne(elem: A): this.type = {
     mutationCount += 1
     val newSize = size0 + 1
-    ensureSize(newSize)
+    if(array.length <= newSize - 1) ensureSize(newSize)
     size0 = newSize
-    this(size0 - 1) = elem
+    array(newSize - 1) = elem.asInstanceOf[AnyRef]
     this
   }
 
@@ -317,9 +317,9 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
    *   - Throws an exception if `targetLen` exceeds `VM_MaxArraySize` or is negative (overflow).
    */
   private[mutable] def resizeUp(arrayLen: Int, targetLen: Int): Int =
-    if (targetLen < 0) throw new Exception(s"Overflow while resizing array of array-backed collection. Requested length: $targetLen; current length: $arrayLen; increase: ${targetLen - arrayLen}")
+    if (targetLen < 0) throw new RuntimeException(s"Overflow while resizing array of array-backed collection. Requested length: $targetLen; current length: $arrayLen; increase: ${targetLen - arrayLen}")
     else if (targetLen <= arrayLen) -1
-    else if (targetLen > VM_MaxArraySize) throw new Exception(s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $targetLen; current length: $arrayLen")
+    else if (targetLen > VM_MaxArraySize) throw new RuntimeException(s"Array of array-backed collection exceeds VM length limit of $VM_MaxArraySize. Requested length: $targetLen; current length: $arrayLen")
     else if (arrayLen > VM_MaxArraySize / 2) VM_MaxArraySize
     else math.max(targetLen, math.max(arrayLen * 2, DefaultInitialSize))
 

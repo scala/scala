@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -106,7 +106,9 @@ object Array {
    */
   def copy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
     val srcClass = src.getClass
-    if (srcClass.isArray && dest.getClass.isAssignableFrom(srcClass))
+    val destClass = dest.getClass
+    if (srcClass.isArray && ((destClass eq srcClass) ||
+        (destClass.isArray && !srcClass.getComponentType.isPrimitive && !destClass.getComponentType.isPrimitive)))
       java.lang.System.arraycopy(src, srcPos, dest, destPos, length)
     else
       slowcopy(src, srcPos, dest, destPos, length)

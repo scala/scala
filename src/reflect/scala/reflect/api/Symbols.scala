@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -442,7 +442,9 @@ trait Symbols { self: Universe =>
     def privateWithin: Symbol
 
     /** Does this symbol represent the definition of a package?
-     *  Known issues: [[https://github.com/scala/bug/issues/6732]].
+     *
+     *  True for term symbols that are packages and for type symbols
+     *  for which `isPackageClass` is true.
      *
      *  @group Tests
      */

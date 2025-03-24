@@ -43,4 +43,4 @@ jobs:
       - name: Test
         run: |
           STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          sbt -Dstarr.version=$STARR setupValidateTest test:compile info testAll
+          sbt -Dstarr.version=$STARR setupValidateTest Test/compile info testAll

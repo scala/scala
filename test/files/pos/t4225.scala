@@ -1,5 +1,5 @@
 
-//> using options -Yrangepos
+//
 //
 object Test {
   class Foo {

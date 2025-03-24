@@ -15,7 +15,7 @@ To contribute here, please open a [pull request](https://help.github.com/article
 
 Be aware that we can't accept additions to the standard library, only modifications to existing code.  Binary compatibility forbids adding new public classes or public methods. Additions are made to [scala-library-next](https://github.com/scala/scala-library-next) instead.
 
-We require that you sign the [Scala CLA](https://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect Scala's future as open source software.
+We require that you sign the [Scala CLA](https://contribute.akka.io/contribute/cla/scala) before we can merge any of your work, to protect Scala's future as open source software.
 
 The general workflow is as follows.
 1. Find/file an issue in scala/bug (or submit a well-documented PR right away!).
@@ -37,7 +37,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
 |                                                                                                 | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | back end, optimizer, named & default arguments, reporters       |
- <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | 2.12.x branch, compiler performance, weird compiler bugs, lambdas |
+ <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, lambdas |
  <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | getting started, build, CI, community build, Jenkins, docs, library, REPL |
  <img src="https://avatars.githubusercontent.com/dwijnand"      height="50px" title="Dale Wijnand"/>         | [`@dwijnand`](https://github.com/dwijnand)           | pattern matcher, MiMa, partest |
  <img src="https://avatars.githubusercontent.com/som-snytt"     height="50px" title="Som Snytt"/>            | [`@som-snytt`](https://github.com/som-snytt)         | warnings/lints/errors, REPL, compiler options, compiler internals, partest |
@@ -53,7 +53,7 @@ P.S.: If you have some spare time to help out around here, we would be delighted
 
 # Branches
 
-Target the oldest branch you would like your changes to end up in. We periodically merge forward from older release branches (e.g., 2.12.x) to new ones (e.g. 2.13.x).
+Target the oldest branch you would like your changes to end up in. We periodically merge forward from 2.12.x to 2.13.x. Most changes should target 2.13.x, as 2.12.x is now under minimal maintenance.
 
 If your change is difficult to merge forward, you may be asked to also submit a separate PR targeting the newer branch.
 
@@ -63,10 +63,7 @@ If your change is a backport from a newer branch and thus doesn't need to be mer
 
 ## Choosing a branch
 
-Most changes should target 2.13.x. We are increasingly reluctant to target 2.12.x unless there is a special reason (e.g. if an especially bad bug is found, or if there is commercial sponsorship).
-
-The 2.11.x branch is now [inactive](https://github.com/scala/scala-dev/issues/451) and no further 2.11.x releases are planned (unless unusual, unforeseeable circumstances arise). You should not target 2.11.x without asking maintainers first.
-
+Most changes should target 2.13.x. We are increasingly reluctant to target 2.12.x unless there is a special reason (e.g. if an especially bad bug is found, or if there is commercial sponsorship). See [Scala 2 maintenance](https://www.scala-lang.org/development/#scala-2-maintenance).
 
 # Repository structure
 
@@ -117,7 +114,7 @@ scala/
 
 You need the following tools:
   - Java SDK. The baseline version is 8 for both 2.12.x and 2.13.x. It is almost always fine
-    to use a later SDK such as 11 or 15 for local development. CI will verify against the
+    to use a later SDK (such as 17 or 21) for local development. CI will verify against the
     baseline version.
   - sbt
 
@@ -282,7 +279,7 @@ and specifying the corresponding `scalaVersion`:
 ```
 $ sbt
 > set resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
-> set scalaVersion := "2.12.2-bin-abcd123-SNAPSHOT"
+> set scalaVersion := "2.13.17-bin-abcd123-SNAPSHOT"
 > console
 ```
 

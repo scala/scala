@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -146,10 +146,13 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       suspendedMessages.clear()
     }
 
-    private def isSuppressed(warning: Message): Boolean =
+    private def nowarnAction(warning: Message): Action =
       suppressions.getOrElse(repSrc(warning.pos.source), Nil).find(_.matches(warning)) match {
-        case Some(s) => s.markUsed(); true
-        case _ => false
+        case Some(s) =>
+          s.markUsed()
+          if (s.verbose) Action.WarningVerbose else Action.Silent
+        case _ =>
+          Action.Warning
       }
 
     def clearSuppressionsComplete(sourceFile: SourceFile): Unit = suppressionsComplete -= repSrc(sourceFile)
@@ -164,7 +167,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
     def runFinished(hasErrors: Boolean): Unit = {
       // report suspended messages (in case the run finished before typer)
-      suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning))
+      suspendedMessages.valuesIterator.foreach(_.foreach(issueWarning(_)))
 
       // report unused nowarns only if all all phases are done. scaladoc doesn't run all phases.
       if (!hasErrors && settings.warnUnusedNowarn && !settings.isScaladoc)
@@ -196,8 +199,8 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       sm.getOrElseUpdate(category, mutable.LinkedHashMap.empty)
     }
 
-    private def issueWarning(warning: Message): Unit = {
-      val action = wconf.action(warning)
+    private def issueWarning(warning: Message, verbose: Boolean = false): Unit = {
+      val action = if (verbose) Action.WarningVerbose else wconf.action(warning)
 
       val quickfixed = {
         if (!skipRewriteAction(action) && registerTextEdit(warning)) s"[rewritten by -quickfix] ${warning.msg}"
@@ -240,9 +243,12 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def issueIfNotSuppressed(warning: Message): Unit =
       if (shouldSuspend(warning))
         suspendedMessages.getOrElseUpdate(repSrc(warning.pos.source), mutable.LinkedHashSet.empty) += warning
-      else {
-        if (!isSuppressed(warning))
+      else nowarnAction(warning) match {
+        case Action.Warning =>
           issueWarning(warning)
+        case Action.WarningVerbose =>
+          issueWarning(warning, verbose = true)
+        case _ =>
       }
 
     private def summarize(action: Action, category: WarningCategory): Unit = {
@@ -310,11 +316,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     override def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String, actions: List[CodeAction] = Nil): Unit =
       issueIfNotSuppressed(Message.Deprecation(pos, msg, site, origin, Version.fromString(since), actions))
 
-    // multiple overloads cannot use default args
+    // multiple overloads cannot have default args
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String, actions: List[CodeAction]): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin), actions)
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
-      deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
+      deprecationWarning(pos, msg, since, siteName(site), siteName(origin), actions = Nil)
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
       val version = origin.deprecationVersion.getOrElse("")
@@ -365,15 +371,18 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warning(pos: Position, msg: String, category: WarningCategory, site: String, actions: List[CodeAction]): Unit =
       issueIfNotSuppressed(Message.Plain(pos, msg, category, site, actions))
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      warning(pos, msg, category, site, Nil)
+      warning(pos, msg, category, site, actions = Nil)
 
     // Preferred over the overload above whenever a site symbol is available
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, actions: List[CodeAction] = Nil): Unit =
       warning(pos, msg, category, siteName(site), actions)
 
     // Provide an origin for the warning.
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String, actions: List[CodeAction]): Unit =
+      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions))
+    // convenience overload for source compatibility
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol, origin: String): Unit =
-      issueIfNotSuppressed(Message.Origin(pos, msg, category, siteName(site), origin, actions = Nil))
+      warning(pos, msg, category, site, origin, actions = Nil)
 
     def codeAction(title: String, pos: Position, newText: String, desc: String, expected: Option[(String, CompilationUnit)] = None) =
       CodeAction(title, pos, newText, desc, expected.forall(e => e._1 == e._2.source.sourceAt(pos)))
@@ -422,6 +431,11 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     }
 
     private object quickfix {
+
+      private def nofix(msg: String): Unit = nofixAt(NoPosition, msg)
+      private def nofixAt(pos: Position, msg: String): Unit =
+        issueWarning(Message.Plain(pos, msg, WarningCategory.Other, site = "", actions = Nil))
+
       /** Source code at a position. Either a line with caret (offset), else the code at the range position. */
       def codeOf(pos: Position, source: SourceFile): String =
         if (pos.start < pos.end) new String(source.content.slice(pos.start, pos.end))
@@ -431,7 +445,6 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           val caret = " " * (pos.point - source.lineToOffset(line)) + "^"
           s"$code\n$caret"
         }
-
 
       def checkNoOverlap(patches: List[TextEdit], source: SourceFile): Boolean = {
         var ok = true
@@ -445,7 +458,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
                |
                |add `${p2.newText}` at
                |${codeOf(p2.position, source)}""".stripMargin.trim
-          issueWarning(Message.Plain(p1.position, msg, WarningCategory.Other, "", Nil))
+          nofixAt(p1.position, msg)
         }
         ok
       }
@@ -460,7 +473,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           Option(source.file.file).map(_.toPath)
         val r = p.filter(Files.exists(_))
         if (r.isEmpty)
-          issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes, file does not exist: ${source.file}", WarningCategory.Other, "", Nil))
+          nofix(s"Failed to apply quick fixes, file does not exist: ${source.file}")
         r
       }
 
@@ -468,42 +481,44 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
       def insertEdits(sourceChars: Array[Char], edits: List[TextEdit], file: Path): Array[Byte] = {
         val patchedChars = new Array[Char](sourceChars.length + edits.iterator.map(_.delta).sum)
-        @tailrec def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
+        @tailrec
+        def loop(edits: List[TextEdit], inIdx: Int, outIdx: Int): Unit = {
           def copy(upTo: Int): Int = {
             val untouched = upTo - inIdx
             System.arraycopy(sourceChars, inIdx, patchedChars, outIdx, untouched)
             outIdx + untouched
           }
           edits match {
-            case e :: es =>
+            case e :: edits =>
               val outNew = copy(e.position.start)
               e.newText.copyToArray(patchedChars, outNew)
-              loop(es, e.position.end, outNew + e.newText.length)
+              loop(edits, e.position.end, outNew + e.newText.length)
             case _ =>
               val outNew = copy(sourceChars.length)
               if (outNew != patchedChars.length)
-                issueWarning(Message.Plain(NoPosition, s"Unexpected content length when applying quick fixes; verify the changes to ${file.toFile.getAbsolutePath}", WarningCategory.Other, "", Nil))
+                nofix(s"Unexpected content length when applying quick fixes; verify the changes to ${file.toFile.getAbsolutePath}")
           }
         }
-
         loop(edits, 0, 0)
         new String(patchedChars).getBytes(encoding)
       }
 
-      def apply(edits: mutable.Set[TextEdit]): Unit = {
-        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start))) {
-          if (checkNoOverlap(edits, source)) {
-            underlyingFile(source) foreach { file =>
+      def apply(edits: mutable.Set[TextEdit]): Unit =
+        for ((source, edits) <- edits.groupBy(_.position.source).view.mapValues(_.toList.sortBy(_.position.start)))
+          if (checkNoOverlap(edits, source))
+            underlyingFile(source).foreach { file =>
               val sourceChars = new String(Files.readAllBytes(file), encoding).toCharArray
-              try Files.write(file, insertEdits(sourceChars, edits, file))
+              val lastPos = edits.last.position
+              val trimmed = // SourceFile.content can add a NL, so trim any edit position past EOF
+                if (lastPos.start >= sourceChars.length) edits.filterNot(_.position.start >= sourceChars.length)
+                else if (lastPos.end > sourceChars.length) edits.init :+ edits.last.copy(position = lastPos.withEnd(sourceChars.length))
+                else edits
+              try Files.write(file, insertEdits(sourceChars, trimmed, file))
               catch {
                 case e: IOException =>
-                  issueWarning(Message.Plain(NoPosition, s"Failed to apply quick fixes to ${file.toFile.getAbsolutePath}\n${e.getMessage}", WarningCategory.Other, "", Nil))
+                  nofix(s"Failed to apply quick fixes to ${file.toFile.getAbsolutePath}\n${e.getMessage}")
               }
             }
-          }
-        }
-      }
     }
   }
 }
@@ -621,6 +636,7 @@ object Reporting {
     val LintAdaptedArgs,
         LintNullaryUnit,
         LintInaccessible,
+        LintStructuralType,
         LintInferAny,
         LintMissingInterpolator,
         LintDocDetached,
@@ -886,7 +902,7 @@ object Reporting {
     }
   }
 
-  case class Suppression(annotPos: Position, filters: List[MessageFilter], start: Int, end: Int, synthetic: Boolean = false) {
+  case class Suppression(annotPos: Position, filters: List[MessageFilter], start: Int, end: Int, synthetic: Boolean = false, verbose: Boolean = false) {
     private[this] var _used = false
     def used: Boolean = _used
     def markUsed(): Unit = { _used = true }

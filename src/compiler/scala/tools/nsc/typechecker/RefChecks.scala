@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -1010,7 +1010,7 @@ abstract class RefChecks extends Transform {
       *
       * NOTE: I'm really not convinced by the logic here. I also think this would work better after erasure.
       */
-    private def checkSensibleEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree) = {
+    private def checkSensibleEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree): Unit = {
       def isReferenceOp = sym == Object_eq || sym == Object_ne
       def isNew(tree: Tree) = tree match {
         case Function(_, _) | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
@@ -1025,6 +1025,10 @@ abstract class RefChecks extends Transform {
       val receiver = underlyingClass(qual.tpe)
       def onTrees[T](f: List[Tree] => T) = f(List(qual, other))
       def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
+
+      // many parts of the implementation assume that `actual` and `receiver` are one `ClassSymbol`
+      // to support intersection types we'd need to work with lists of class symbols
+      if (onSyms(_.exists(_.isRefinementClass))) return
 
       // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
       def typesString = s"${normalizeAll(qual.tpe.widen)} and ${normalizeAll(other.tpe.widen)}"
@@ -1838,7 +1842,9 @@ abstract class RefChecks extends Transform {
         )
         if (!isOk) {
           val msg = s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead"
-          val namePos = sym.pos.focus.withEnd(sym.pos.point + sym.decodedName.length)
+          val namePos =
+            if (sym.pos.isRange) sym.pos
+            else sym.pos.toRange.withEnd(sym.pos.point + sym.decodedName.length)
           val action =
             if (namePos.source.sourceAt(namePos) == sym.decodedName)
               runReporting.codeAction("add empty parameter list", namePos.focusEnd, "()", msg)

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -59,7 +59,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
   val docfooter = StringSetting (
     "-doc-footer",
     "footer",
-    "A footer on every Scaladoc page, by default the EPFL/Lightbend copyright notice. Can be overridden with a custom footer.",
+    "A footer on every Scaladoc page, by default the EPFL/Akka copyright notice. Can be overridden with a custom footer.",
     ""
   )
 

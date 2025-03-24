@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends CompilerTest {
-  override def extraSettings = super.extraSettings + " -Yrangepos"
+
   override def sources = List(
     number("TestByte", "val value:Byte  = 1.toByte"),
     number("TestShort", "val value:Short  = 1.toShort"),

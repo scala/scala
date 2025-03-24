@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -185,13 +185,17 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     else {
       var i = seekEntryOrOpen(key)
       if (i < 0) {
-        // It is possible that the default value computation was side-effecting
-        // Our hash table may have resized or even contain what we want now
-        // (but if it does, we'll replace it)
         val value = {
-          val ok = _keys
+          val oks = _keys
+          val j = i & IndexMask
+          val ok = oks(j)
           val ans = defaultValue
-          if (ok ne _keys) {
+          // Evaluating `defaultValue` may change the map
+          //   - repack: the array is different
+          //   - element added at `j`: since `i < 0`, the key was missing and `ok` is either 0 or MinValue.
+          //     If `defaultValue` added an element at `j` then `_keys(j)` must be different now.
+          //     (`_keys` never contains 0 or MinValue.)
+          if (oks.ne(_keys) || ok != _keys(j)) {
             i = seekEntryOrOpen(key)
             if (i >= 0) _size -= 1
           }

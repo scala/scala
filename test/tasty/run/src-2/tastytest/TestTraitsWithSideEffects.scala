@@ -15,7 +15,7 @@ object TestTraitsWithSideEffects extends Suite("TestTraitsWithSideEffects") {
 
   test("init map with no backing field") {
     class ExprMapInit(val map: mutable.Map[String, Boolean]) extends ExprMapNoField
-    val exprMap = new ExprMapInit(mutable.AnyRefMap.empty)
+    val exprMap = new ExprMapInit(mutable.HashMap.empty)
     assert(checkEntries(exprMap.map))
   }
 }

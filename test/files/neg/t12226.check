@@ -1,0 +1,18 @@
+t12226.scala:6: warning: Implicit resolves to enclosing class Elvis; the conversion adds a member of AnyRef to value a
+  implicit class Elvis[A](alt: => A) { def ?:(a: A): A = if (a ne null) a else alt } // warn
+                                                             ^
+t12226.scala:9: warning: Implicit resolves to enclosing method f; the conversion adds a member of AnyRef to value a
+  implicit def f[A](a: A): String = if (a ne null) a else "nope" // warn
+                                        ^
+t12226.scala:9: warning: Implicit resolves to enclosing method f
+  implicit def f[A](a: A): String = if (a ne null) a else "nope" // warn
+                                                   ^
+t12226.scala:13: warning: Implicit resolves to enclosing method f; the conversion adds a member of AnyRef to result of method idt
+  implicit def f[A](a: A): String = if (idt(x = a) ne null) "yup" else "nope" // warn
+                                           ^
+t12226.scala:25: warning: Implicit resolves to enclosing class StringOps; the enrichment wraps value s
+    def normal: String = s.crazy.crazy // warn
+                         ^
+error: No warnings can be incurred under -Werror.
+5 warnings
+1 error

@@ -1,0 +1,24 @@
+
+x map f
+[0:7][0:5]x.map([6:7]f)
+x map f
+
+x map (f)
+[0:9][0:5]x.map([7:8]f)
+x map (f)
+
+x map ((f))
+[0:11][0:5]x.map([8:9]f)
+x map ((f))
+
+x map {f}
+[0:9][0:5]x.map([7:8]f)
+x map {f}
+
+x map {{f}}
+[0:11][0:5]x.map([8:9]f)
+x map {{f}}
+
+x map {({(f)})}
+[0:15][0:5]x.map([10:11]f)
+x map {({(f)})}

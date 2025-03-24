@@ -8,6 +8,6 @@ trait Resolver {
 }
 
 class ValueResolver extends Resolver {
-  override def resolve = valueResult
+  override def resolve: Result { def value: String } = valueResult
   def valueResult: Result = macro Macros.impl
 }

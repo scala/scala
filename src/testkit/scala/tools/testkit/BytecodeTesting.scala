@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -181,6 +181,9 @@ object BytecodeTesting {
   }
 
   def makeSourceFile(code: String, filename: String): BatchSourceFile = new BatchSourceFile(filename, code)
+  private var fileCount = 0
+  private def fileN = { val n = fileCount; fileCount += 1; if (n == 0) "" else n.toString }
+  def SourceFile(code: String*): List[BatchSourceFile] = code.map(makeSourceFile(_, s"UnitTestSource$fileN")).toList
 
   def getGeneratedClassfiles(outDir: AbstractFile): List[(String, Array[Byte])] = {
     def files(dir: AbstractFile): List[(String, Array[Byte])] = {

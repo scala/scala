@@ -7,6 +7,12 @@ Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t2.O.D.n.x
       def n(x: TT) = x // ambiguous
                ^
+t11921-alias.scala:27: error: in Scala 3 (or with -Xsource-features:no-infer-structural), value a will no longer have a structural type: t3.A[B.this.c.type]{def n: t3.Context}
+  members that can be accessed with a reflective call: def n: t3.Context
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t3.B.a
+    val a = new A[c.type](c) {
+        ^
 t11921-alias.scala:38: error: reference to c is ambiguous;
 it is both defined in the enclosing class B and inherited in the enclosing anonymous class as value c (defined in class A)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
@@ -16,6 +22,18 @@ Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t4.B.a
       def n = c // ambiguous
               ^
+t11921-alias.scala:37: error: in Scala 3 (or with -Xsource-features:no-infer-structural), value a will no longer have a structural type: t4.A[t4.Context]{def n: t4.Context}
+  members that can be accessed with a reflective call: def n: t4.Context
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t4.B.a
+    val a = new A(c) {
+        ^
+t11921-alias.scala:47: error: in Scala 3 (or with -Xsource-features:no-infer-structural), method f will no longer have a structural type: t5.K[t.type]{def test: t5.TT}
+  members that can be accessed with a reflective call: def test: t5.TT
+Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or @nowarn to demote them to warnings or suppress.
+Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t5.C.f
+    def f(t: TT) = new K[t.type](t) {
+        ^
 t11921-alias.scala:57: error: reference to name is ambiguous;
 it is both defined in the enclosing method m and inherited in the enclosing anonymous class as value name (defined in class C)
 In Scala 2, symbols inherited from a superclass shadow symbols defined in an outer scope.
@@ -34,4 +52,4 @@ Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=t7.Test.m
       println(name)
               ^
-4 errors
+7 errors

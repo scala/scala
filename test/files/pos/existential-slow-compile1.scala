@@ -1,4 +1,4 @@
-//> using options -Ystop-after:refchecks -Yrangepos
+//> using options -Ystop-after:refchecks
 class C {
   type L[+A] = scala.collection.immutable.List[A]
   def test = {

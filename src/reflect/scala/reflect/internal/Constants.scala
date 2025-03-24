@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -233,23 +233,63 @@ trait Constants extends api.Constants {
       else if (tag == ClazzTag) signature(typeValue)
       else value.toString()
 
-    def escapedChar(ch: Char): String = (ch: @switch) match {
-      case '\b' => "\\b"
-      case '\t' => "\\t"
-      case '\n' => "\\n"
-      case '\f' => "\\f"
-      case '\r' => "\\r"
-      case '"'  => "\\\""
-      case '\'' => "\\\'"
-      case '\\' => "\\\\"
-      case _    => if (ch.isControl) "\\u%04X".format(ch.toInt) else String.valueOf(ch)
-    }
-
     def escapedStringValue: String = {
-      def escape(text: String): String = text flatMap escapedChar
+      import java.lang.StringBuilder
+      def requiresFormat(c: Char): Boolean =
+        (c: @switch) match {
+          case '\b' | '\t' | '\n' | '\f' | '\r' | '"' | '\'' | '\\' => true
+          case c => c.isControl
+        }
+      def escapedChar(b: StringBuilder, c: Char): Unit = {
+        def quadNibble(b: StringBuilder, x: Int, i: Int): Unit =
+          if (i < 4) {
+            quadNibble(b, x >> 4, i + 1)
+            val n = x & 0xF
+            val c = if (n < 10) '0' + n else 'A' + (n - 10)
+            b.append(c.toChar)
+          }
+        val replace = (c: @switch) match {
+          case '\b' => "\\b"
+          case '\t' => "\\t"
+          case '\n' => "\\n"
+          case '\f' => "\\f"
+          case '\r' => "\\r"
+          case '"'  => "\\\""
+          case '\'' => "\\\'"
+          case '\\' => "\\\\"
+          case c =>
+            if (c.isControl) {
+              b.append("\\u")
+              quadNibble(b, c.toInt, 0)
+            }
+            else b.append(c)
+            return
+        }
+        b.append(replace)
+      }
+      def escape(text: String) = {
+        def mustBuild: Boolean = {
+          var i = 0
+          while (i < text.length) {
+            if (requiresFormat(text.charAt(i))) return true
+            i += 1
+          }
+          false
+        }
+        if (mustBuild) {
+          val b = new StringBuilder(text.length + 16).append('"')
+          var i = 0
+          while (i < text.length) {
+            escapedChar(b, text.charAt(i))
+            i += 1
+          }
+          b.append('"').toString
+        }
+        else "\"" + text + "\""
+      }
       tag match {
         case NullTag   => "null"
-        case StringTag => "\"" + escape(stringValue) + "\""
+        case StringTag => escape(stringValue)
         case ClazzTag  =>
           def show(tpe: Type) = "classOf[" + signature(tpe) + "]"
           typeValue match {
@@ -264,7 +304,14 @@ trait Constants extends api.Constants {
               show(clazz.tpe_*)
             case _ => show(typeValue)
           }
-        case CharTag => "'" + escapedChar(charValue) + "'"
+        case CharTag =>
+          val c = charValue
+          if (requiresFormat(c)) {
+            val b = new StringBuilder().append('\'')
+            escapedChar(b, c)
+            b.append('\'').toString
+          }
+          else "'" + c + "'"
         case LongTag => longValue.toString() + "L"
         case EnumTag => symbolValue.name.toString()
         case _       => String.valueOf(value)

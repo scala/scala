@@ -1,14 +1,17 @@
 package scala.math
 
+import java.util.concurrent.atomic.AtomicLong
 import org.junit.Test
 import org.junit.Assert.{assertFalse, assertNull, assertTrue}
 import scala.tools.testkit.AssertUtil.assertThrows
 
 class BigIntTest {
 
-  private val bigint = BigInt(42)
+  private val counter = new AtomicLong(Int.MaxValue)
+  private def bigint = BigInt(counter.getAndIncrement)
+  private def even = BigInt(42)
 
-  @Test def testIsComparable: Unit = assertTrue(BigInt(42).isInstanceOf[java.lang.Comparable[_]])
+  @Test def testIsComparable: Unit = assertTrue(bigint.isInstanceOf[java.lang.Comparable[_]])
 
   @Test def `mod respects BigInteger`: Unit = assertThrows[ArithmeticException](bigint mod BigInt(-3), _.contains("modulus not positive"))
 
@@ -32,7 +35,7 @@ class BigIntTest {
 
   @Test def `testBit respects BigInteger`: Unit = assertThrows[ArithmeticException](bigint.testBit(-3), _.contains("Negative bit address"))
 
-  @Test def `testBit 0`: Unit = assertFalse(bigint.testBit(0))
+  @Test def `testBit 0`: Unit = assertFalse(even.testBit(0))
 
   @Test def `BitInteger to BitInt respects null`: Unit = assertNull(null.asInstanceOf[java.math.BigInteger]: BigInt)
 }

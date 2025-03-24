@@ -2,7 +2,7 @@ import scala.tools.partest._
 
 object Test extends CompilerTest {
   import global._
-  override def extraSettings = super.extraSettings + " -Yrangepos"
+
   override def sources = List(
     """|class T5064 {
        |  List(1)

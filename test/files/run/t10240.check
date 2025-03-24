@@ -1,0 +1,33 @@
+
+List apply 1
+[0:12][0:10]List.apply([11:12]1)
+List apply 1
+
+List apply[Int] 2
+[0:17][0:15][0:10]List.apply[[11:14]Int]([16:17]2)
+List apply[Int] 2
+List apply[Int]
+
+List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+[0:72][0:63][0:52]List.apply[List[Int]](List(1), List(2)).mapConserve[[53:62][53:57]List[[58:61]Any]]([65:71](([65:66]x) => [70:71]x))
+List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]] (x => x)
+List apply[List[Int]] (List(1), List(2)) mapConserve[List[Any]]
+List apply[List[Int]]
+
+1 ->[Int] 2
+[0:11][0:9][0:4]1.$minus$greater[[5:8]Int]([10:11]2)
+1 ->[Int] 2
+1 ->[Int]
+
+new A() op  [Int,   String     ]  42
+[0:36][0:32][0:10]new A().op[[13:16]Int, [20:26]String]([34:36]42)
+new A() op  [Int,   String     ]  42
+new A() op  [Int,   String     ]
+
+42 ::[Int] Nil
+[0:14]{
+  [0:2]final <synthetic> <artifact> val rassoc$1 = [0:2]42;
+  [3:14]<3:14><3:14>Nil.$colon$colon[[6:9]Int]([0]rassoc$1)
+}
+42 ::[Int] Nil
+::[Int] Nil

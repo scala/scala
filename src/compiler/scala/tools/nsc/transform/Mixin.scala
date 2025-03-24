@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -427,7 +427,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     private val rootContext =
       erasure.NoContext.make(EmptyTree, rootMirror.RootClass, newScope)
 
-    private val nullables = mutable.AnyRefMap[Symbol, Map[Symbol, List[Symbol]]]()
+    private val nullables = mutable.HashMap[Symbol, Map[Symbol, List[Symbol]]]()
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).

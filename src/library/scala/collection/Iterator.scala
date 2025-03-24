@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -413,7 +413,17 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   @deprecated("Call scanRight on an Iterable instead.", "2.13.0")
   def scanRight[B](z: B)(op: (A, B) => B): Iterator[B] = ArrayBuffer.from(this).scanRight(z)(op).iterator
-
+ 
+  /** Finds index of the first element satisfying some predicate after or at some start index.
+    *
+    *  $mayNotTerminateInf
+    *
+    *  @param  p     the predicate used to test elements.
+    *  @param  from   the start index
+    *  @return the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
+    *           or `-1`, if none exists.
+    *  @note   Reuse: $consumesIterator
+    */
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
     val dropped = drop(from)
@@ -1257,12 +1267,15 @@ object Iterator extends IterableFactory[Iterator] {
         else if (until <= lo) 0               // empty
         else if (unbounded) until - lo        // now finite
         else adjustedBound min (until - lo)   // keep lesser bound
+      val sum = dropping + lo
       if (rest == 0) empty
+      else if (sum < 0) {
+        dropping = Int.MaxValue
+        remaining = 0
+        this.concat(new SliceIterator(underlying, start = sum - Int.MaxValue, limit = rest))
+      }
       else {
-        dropping = {
-          val sum = dropping + lo
-          if (sum < 0) Int.MaxValue else sum
-        }
+        dropping = sum
         remaining = rest
         this
       }

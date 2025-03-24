@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -44,6 +44,7 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   _
 }
 import scala.collection.Stepper.EfficientSplit
+import scala.collection.generic.CommonErrors
 import scala.collection.immutable.Range
 import scala.collection.mutable.ArrayBuilder
 import scala.math.Ordering
@@ -1545,7 +1546,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated[B >: A : ClassTag](index: Int, elem: B): Array[B] = {
-    if(index < 0 || index >= xs.length) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${xs.length-1})")
+    if(index < 0 || index >= xs.length)
+      throw CommonErrors.indexOutOfBounds(index = index, max = xs.length-1)
     val dest = toArray[B]
     dest(index) = elem
     dest

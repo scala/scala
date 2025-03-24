@@ -1,5 +1,5 @@
 false
-source-<macro>,line-1,offset=4
+RangePosition(<macro>, 0, 4, 7)
 8
 foo bar
 

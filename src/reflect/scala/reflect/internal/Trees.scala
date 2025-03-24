@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -509,13 +509,25 @@ trait Trees extends api.Trees {
       }
   }
 
+  /** A selector in an import clause `import x.name as rename`.
+   *  For a normal import, name and rename are the same.
+   *  For a rename, they are different.
+   *  A wildcard import has name `_` and null rename.
+   *  A "masking" import has rename `_` (where name is not `_`).
+   *
+   *  The unhappy special cases are:
+   *    - import member named `_` has rename `_` like normal. (backward compat)
+   *    - import given members is a wildcard but rename `given`. (forward compat)
+   *
+   *  Client must distinguish isWildcard and isGiven.
+   */
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi {
     assert(isWildcard || rename != null, s"Bad import selector $name => $rename")
     def isWildcard = name == nme.WILDCARD && rename == null
     def isGiven    = name == nme.WILDCARD && rename == nme.`given`
     def isMask     = name != nme.WILDCARD && rename == nme.WILDCARD
-    def isRename   = name != rename && rename != null && rename != nme.WILDCARD
-    def isSpecific = !isWildcard
+    def isRename   = name != rename && rename != null && rename != nme.WILDCARD && name != nme.WILDCARD
+    def isSpecific = if (name == nme.WILDCARD) rename == nme.WILDCARD else rename != nme.WILDCARD
     private def isLiteralWildcard = name == nme.WILDCARD && rename == nme.WILDCARD
     private def sameName(name: Name, other: Name) =  (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
     def hasName(other: Name) = sameName(name, other)
@@ -538,6 +550,16 @@ trait Trees extends api.Trees {
     override def traverse(traverser: Traverser): Unit = {
       traverser.traverse(expr)
       selectors foreach traverser.traverseImportSelector
+    }
+    def posOf(sel: ImportSelector): Position = {
+      val pos0 = this.pos
+      val start = sel.namePos
+      if (start >= 0 && selectors.contains(sel)) {
+        val hasRename = sel.rename != null && sel.renamePos >= 0 // !sel.isWildcard
+        val end = if (hasRename) sel.renamePos + sel.rename.length else start + sel.name.length
+        pos0.copyRange(start, start, end)
+      }
+      else pos0
     }
   }
   object Import extends ImportExtractor

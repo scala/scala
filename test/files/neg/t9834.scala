@@ -1,4 +1,4 @@
-//> using options -Yrangepos
+//
 //
 
 object x { def apply() = 42 ; def update(i: Int) = () }

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.meta.companionClass
 import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializationProxy
 import scala.language.implicitConversions
@@ -41,6 +42,7 @@ import scala.language.implicitConversions
  *  rapidly as 2^30^ is approached.
  *
  */
+@(deprecated @companionClass)("Use `scala.collection.mutable.HashMap` instead for better performance.", since = "2.13.16")
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
@@ -161,13 +163,17 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     val h = hashOf(key)
     var i = seekEntryOrOpen(h, key)
     if (i < 0) {
-      // It is possible that the default value computation was side-effecting
-      // Our hash table may have resized or even contain what we want now
-      // (but if it does, we'll replace it)
       val value = {
-        val oh = _hashes
+        val ohs = _hashes
+        val j = i & IndexMask
+        val oh = ohs(j)
         val ans = defaultValue
-        if (oh ne _hashes) {
+        // Evaluating `defaultValue` may change the map
+        //   - repack: the array is different
+        //   - element added at `j`: since `i < 0`, the key was missing and `oh` is either 0 or MinValue.
+        //     If `defaultValue` added an element at `j` then `_hashes(j)` must be different now.
+        //     (`hashOf` never returns 0 or MinValue.)
+        if (ohs.ne(_hashes) || oh != _hashes(j)) {
           i = seekEntryOrOpen(h, key)
           if (i >= 0) _size -= 1
         }
@@ -517,6 +523,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   override protected[this] def stringPrefix = "AnyRefMap"
 }
 
+@deprecated("Use `scala.collection.mutable.HashMap` instead for better performance.", since = "2.13.16")
 object AnyRefMap {
   private final val IndexMask  = 0x3FFFFFFF
   private final val MissingBit = 0x80000000

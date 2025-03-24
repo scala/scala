@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -34,7 +34,7 @@ import scala.collection.convert.{AsJavaConverters, AsScalaConverters}
   * }}}
   *
   * The conversions return adapters for the corresponding API, i.e., the collections are wrapped,
-  * not converted. Changes to the original collection are reflected in the view, and vice versa.
+  * not copied. Changes to the original collection are reflected in the view, and vice versa.
   *
   * The following conversions are supported via `asScala` and `asJava`:
   *

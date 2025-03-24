@@ -1,0 +1,12 @@
+lint-inferred-structural.scala:8: warning: method a has an inferred structural type: Option[AnyRef{def g: Int}]
+  members that can be accessed with a reflective call: def g: Int
+  def a = Option(new { def g = 1 }) // warn
+      ^
+lint-inferred-structural.scala:19: warning: method i has an inferred structural type: AnyRef{val x: Int}
+  members that can be accessed with a reflective call: val x: Int
+  def i = new AnyRef { val x = 2 } // warn
+      ^
+warning: 1 feature warning; re-run with -feature for details
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

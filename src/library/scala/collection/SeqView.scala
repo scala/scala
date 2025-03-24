@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -14,6 +14,7 @@ package scala
 package collection
 
 import scala.annotation.nowarn
+import scala.collection.generic.CommonErrors
 
 
 trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
@@ -95,7 +96,10 @@ object SeqView {
     def apply(idx: Int): A = if (idx < n) {
       underlying(idx)
     } else {
-      throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${if (underlying.knownSize >= 0) knownSize - 1 else "unknown"})")
+      throw (
+        if (underlying.knownSize >= 0) CommonErrors.indexOutOfBounds(index = idx, max = knownSize - 1)
+        else CommonErrors.indexOutOfBounds(index = idx)
+      )
     }
     def length: Int = underlying.length min normN
   }

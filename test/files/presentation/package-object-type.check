@@ -1,0 +1,42 @@
+reload: Main.scala
+
+askTypeCompletion at Main.scala(7,6)
+================================================================================
+[response] askTypeCompletion at (7,6)
+def +(other: String): String
+def ->[B](y: B): (concurrent.ExecutionException, B)
+def ensuring(cond: Boolean): concurrent.ExecutionException
+def ensuring(cond: Boolean, msg: => Any): concurrent.ExecutionException
+def ensuring(cond: concurrent.ExecutionException => Boolean): concurrent.ExecutionException
+def ensuring(cond: concurrent.ExecutionException => Boolean, msg: => Any): concurrent.ExecutionException
+def equals(x$1: Object): Boolean
+def fillInStackTrace(): Throwable
+def formatted(fmtstr: String): String
+def getCause(): Throwable
+def getLocalizedMessage(): String
+def getMessage(): String
+def getStackTrace(): Array[StackTraceElement]
+def hashCode(): Int
+def initCause(x$1: Throwable): Throwable
+def printStackTrace(): Unit
+def printStackTrace(x$1: java.io.PrintStream): Unit
+def printStackTrace(x$1: java.io.PrintWriter): Unit
+def setStackTrace(x$1: Array[StackTraceElement]): Unit
+def toString(): String
+def →[B](y: B): (concurrent.ExecutionException, B)
+final def !=(x$1: Any): Boolean
+final def ## : Int
+final def ==(x$1: Any): Boolean
+final def addSuppressed(x$1: Throwable): Unit
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def getSuppressed(): Array[Throwable]
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long, x$2: Int): Unit
+================================================================================

@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -817,6 +817,10 @@ private[internal] trait TypeMaps {
         case SingleType(pre, sym) if pre ne NoPrefix =>
           val newSym = substFor(sym)
           (if (sym eq newSym) tpe else singleType(pre, newSym)).mapOver(this)
+        case tp: RefinedType =>
+          val owner = tpe.typeSymbol.owner
+          val newOwner = substFor(owner)
+          (if (newOwner eq owner) tpe else copyRefinedType(tp, tp.parents, tp.decls, newOwner)).mapOver(this)
         case _ =>
           super.apply(tpe)
       }

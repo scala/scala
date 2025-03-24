@@ -1,3 +1,15 @@
+names-defaults.scala:318: warning: value q has an inferred structural type: Test.Test3207_1.p.Inner{def g: Int}
+  members that can be accessed with a reflective call: def g: Int
+    val q = new p.Inner() {
+        ^
+names-defaults.scala:325: warning: value inner has an inferred structural type: this.Inner{def g: Int}
+  members that can be accessed with a reflective call: def g: Int
+      val inner = new Inner() {
+          ^
+names-defaults.scala:324: warning: value p has an inferred structural type: Test.P3207[Int]{val inner: this.Inner{def g: Int}}
+  members that can be accessed with a reflective call: val inner: this.Inner{def g: Int}
+    val p = new P3207[Int] {
+        ^
 names-defaults.scala:359: warning: the parameter name y is deprecated: use b instead
   deprNam1(y = 10, a = 1)
              ^

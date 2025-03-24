@@ -12,7 +12,7 @@
         [84:93]if ([89][89][89]"".ne([89]null))
           [84:89]{
             [84:89]<synthetic> val o7: [84]Option[Int] = [84:89][84:89]Case3.unapply([84]x1);
-            [97:99]if ([84]o7.isEmpty.unary_!)
+            [84:99]if ([84]o7.isEmpty.unary_!)
               [97:99][97]matchEnd4([97:99]())
             else
               [84][84]case6()
@@ -40,7 +40,7 @@
         [241:250]if ([246][246][246]"".ne([246]null))
           [241:246]{
             [241:246]<synthetic> val o7: [241]Option[List[Int]] = [241:246][241:246]Case4.unapplySeq([241]x1);
-            [254:256]if ([241][241]o7.isEmpty.unary_!.&&([241][241][241][241]o7.get.!=([241]null).&&([241][241][241][241]o7.get.lengthCompare([241]1).==([241]0))))
+            [241:256]if ([241][241]o7.isEmpty.unary_!.&&([241][241][241][241]o7.get.!=([241]null).&&([241][241][241][241]o7.get.lengthCompare([241]1).==([241]0))))
               [254:256][254]matchEnd4([254:256]())
             else
               [241][241]case6()
@@ -68,7 +68,7 @@
         [385:392]if ([390][390][390]"".ne([390]null))
           [385:390]{
             [385:390]<synthetic> val o7: [385]Option[List[Int]] = [385:390][385:390]Case4.unapplySeq([385]x1);
-            [396:398]if ([385][385]o7.isEmpty.unary_!.&&([385][385][385][385]o7.get.!=([385]null).&&([385][385][385][385]o7.get.lengthCompare([385]0).==([385]0))))
+            [385:398]if ([385][385]o7.isEmpty.unary_!.&&([385][385][385][385]o7.get.!=([385]null).&&([385][385][385][385]o7.get.lengthCompare([385]0).==([385]0))))
               [396:398][396]matchEnd4([396:398]())
             else
               [385][385]case6()
@@ -94,7 +94,7 @@
       [513:514]case <synthetic> val x1: [513]Int(0) = [513:514]0;
       [513:514]case5()[532:537]{
         [532:537]<synthetic> val o7: [532]Option[Int] = [532:537][532:537]Case6.unapply([532]x1);
-        [545:547]if ([532]o7.isEmpty.unary_!)
+        [532:547]if ([532]o7.isEmpty.unary_!)
           [545:547][545]matchEnd4([545:547]())
         else
           [532][532]case6()

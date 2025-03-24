@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -208,7 +208,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
   trait SwitchEmission extends TreeMakers with MatchMonadInterface {
     import treeInfo.isGuardedCase
 
-    def inAsync: Boolean
+    def inForceDesugar: Boolean
 
     abstract class SwitchMaker {
       abstract class SwitchableTreeMakerExtractor { def unapply(x: TreeMaker): Option[Tree] }
@@ -313,7 +313,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
               (Bind(binder, origPatWithoutBind), unifiedBody)
             }
 
-          atPos(commonPattern.pos)(CaseDef(pat, EmptyTree, guardedBodySubst))
+          val samePos = wrappingPos(same.flatMap(k => List(k.pat, k.body)))
+          atPos(samePos)(CaseDef(pat, EmptyTree, guardedBodySubst))
         }
 
         // requires cases.exists(isGuardedCase) (otherwise the rewrite is pointless)
@@ -480,9 +481,12 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
             else {
               def wrapInDefaultLabelDef(cd: CaseDef): CaseDef =
                 if (needDefaultLabel) deriveCaseDef(cd){ b =>
-                  // TODO: can b.tpe ever be null? can't really use pt, see e.g. pos/t2683 or cps/match1.scala
-                  defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe.deconst else pt)
-                  LabelDef(defaultLabel, Nil, b)
+                  // If `b` is synthesized in SwitchMaker (by `collapseGuardedCases` or by `defaultCase`)
+                  // it is not yet typed. In order to assign the correct type to the label, type the case body.
+                  // See scala/scala#10926, pos/t13060.scala.
+                  val b1 = if (b.tpe == null) typer.typed(b, pt) else b
+                  defaultLabel setInfo MethodType(Nil, b1.tpe.deconst)
+                  LabelDef(defaultLabel, Nil, b1)
                 } else cd
 
               val last = collapsed.last
@@ -498,7 +502,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
     class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker { import CODE._
       val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe, StringTpe)
       val alternativesSupported = true
-      val canJump = !inAsync
+      val canJump = !inForceDesugar
 
       // Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
       // The tree itself can be a literal, an ident, a selection, ...
@@ -535,7 +539,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
       }
 
       def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
+      def defaultBody: Tree  = matchFailGenOverride
+        .map(gen => gen(REF(scrutSym)))
+        .getOrElse(Throw(MatchErrorClass.tpe, REF(scrutSym)))
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}

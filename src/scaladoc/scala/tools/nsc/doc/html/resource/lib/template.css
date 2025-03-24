@@ -321,10 +321,6 @@ dl.attributes > dd {
   font-style: italic;
 }
 
-#inheritedMembers > div.parent > h3 * {
-  color: white;
-}
-
 #inheritedMembers > div.conversion > h3 {
   height: 2em;
   padding: 1em;

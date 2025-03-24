@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -65,16 +65,16 @@ trait PatternMatching extends Transform
   def newTransformer(unit: CompilationUnit): AstTransformer = new MatchTransformer(unit)
 
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    private var inAsync = false
+    private var inForceDesugar = false
 
     override def transform(tree: Tree): Tree = tree match {
-      case dd: DefDef if async.hasAsyncAttachment(dd) =>
-        val wasInAsync = inAsync
+      case dd: DefDef if dd.hasAttachment[ForceMatchDesugar.type] || dd.symbol.hasAttachment[ForceMatchDesugar.type] =>
+        val wasInForceDesugar = inForceDesugar
         try {
-          inAsync = true
+          inForceDesugar = true
           super.transform(dd)
         } finally
-          inAsync = wasInAsync
+          inForceDesugar = wasInForceDesugar
 
       case CaseDef(UnApply(Apply(Select(qual, nme.unapply), Ident(nme.SELECTOR_DUMMY) :: Nil), (bind@Bind(name, Ident(nme.WILDCARD))) :: Nil), guard, body)
         if guard.isEmpty && qual.symbol == definitions.NonFatalModule =>
@@ -113,13 +113,13 @@ trait PatternMatching extends Transform
     }
 
     def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
-      new OptimizingMatchTranslator(localTyper, selectorPos, inAsync)
+      new OptimizingMatchTranslator(localTyper, selectorPos, inForceDesugar)
     }
 
   }
 
 
-  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position, val inAsync: Boolean)
+  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position, val inForceDesugar: Boolean)
     extends MatchTranslator
       with MatchOptimizer
       with MatchAnalyzer

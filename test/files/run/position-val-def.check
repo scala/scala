@@ -1,30 +1,88 @@
-val x = 0
-[0:9]val x = [8:9]0
-
-var x = 0
-[0:9]var x = [8:9]0
-
-val x, y = 0
-[NoPosition]{
-  [4]val x = [11]0;
-  [7:12]val y = [11:12]0;
-  [NoPosition]()
-}
-
-var x, y = 0
-[NoPosition]{
-  [4]var x = [11]0;
-  [7:12]var y = [11:12]0;
-  [NoPosition]()
-}
-
-val (x, y) = 0
-[NoPosition]{
-  <0:14><synthetic> <artifact> private[this] val x$1 = <4:14>[13:14][13:14]0: @[13]scala.unchecked match {
-    <4:10>case <4:10>[4]scala.Tuple2(<5:6>(x @ [5]_), <8:9>(y @ [8]_)) => <4:10><4:10>scala.Tuple2(<4:10>x, <4:10>y)
-  };
-  [5:6]val x = [5]x$1._1;
-  [8:9]val y = [8]x$1._2;
-  [NoPosition]()
-}
-
+newSource8.scala:1: warning: Pattern definition introduces Unit-valued member of C7; consider wrapping it in `locally { ... }`.
+class C7 { val Some(_) = Option(42) }
+               ^
+class C0 { val x = 42 }
+[15:16] [11:21] [NoPosition]   -> private[this] val x: Int = _
+[15]    [15]    [15]           -> <stable> <accessor> def x(): Int = C0.this.x
+[15:16] [19:21]                -> C0.this.x = 42
+--
+class C1 { var x = 42 }
+[15:16] [11:21] [NoPosition]   -> private[this] var x: Int = _
+[15]    [15]    [15]           -> <accessor> def x(): Int = C1.this.x
+[15]    [15]    [15]           -> <accessor> def x_=(x$1: Int): Unit = C1.this.x = x$1
+[15]    [15]                   -> C1.this.x = x$1
+[15:16] [19:21]                -> C1.this.x = 42
+--
+class C2 { val x, y = 42 }
+[15:16] <11:24> [NoPosition]   -> private[this] val x: Int = _
+[15]    [15]    [15]           -> <stable> <accessor> def x(): Int = C2.this.x
+[18:19] <11:24> [NoPosition]   -> private[this] val y: Int = _
+[18]    [18]    [18]           -> <stable> <accessor> def y(): Int = C2.this.y
+[15:16] [22]                   -> C2.this.x = 42
+[18:19] [22:24]                -> C2.this.y = 42
+--
+class C3 { var x, y = 42 }
+[15:16] <11:24> [NoPosition]   -> private[this] var x: Int = _
+[15]    [15]    [15]           -> <accessor> def x(): Int = C3.this.x
+[15]    [15]    [15]           -> <accessor> def x_=(x$1: Int): Unit = C3.this.x = x$1
+[15]    [15]                   -> C3.this.x = x$1
+[18:19] <11:24> [NoPosition]   -> private[this] var y: Int = _
+[18]    [18]    [18]           -> <accessor> def y(): Int = C3.this.y
+[18]    [18]    [18]           -> <accessor> def y_=(x$1: Int): Unit = C3.this.y = x$1
+[18]    [18]                   -> C3.this.y = x$1
+[15:16] [22]                   -> C3.this.x = 42
+[18:19] [22:24]                -> C3.this.y = 42
+--
+class C4 { val (x, y) = (42, 27) }
+<15:32> <15:32> [NoPosition]   -> <synthetic> <artifact> private[this] val x$1: Tuple2 = _
+[16:17] <11:32> [NoPosition]   -> private[this] val x: Int = _
+[16]    [16]    [16]           -> <stable> <accessor> def x(): Int = C4.this.x
+[19:20] <11:32> [NoPosition]   -> private[this] val y: Int = _
+[19]    [19]    [19]           -> <stable> <accessor> def y(): Int = C4.this.y
+<15:32> [24:32]                -> C4.this.x$1 = {...
+[24:32] [24:32] [24:32]        -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+<16:17> <16:17> <16:17>        -> val x: Int = x1._1$mcI$sp()
+<19:20> <19:20> <19:20>        -> val y: Int = x1._2$mcI$sp()
+[16:17] [16]                   -> C4.this.x = C4.this.x$1._1$mcI$sp()
+[19:20] [19]                   -> C4.this.y = C4.this.x$1._2$mcI$sp()
+--
+class C5 { val (x, y), (w, z) = (42, 27) }
+<15:40> <15:40> [NoPosition]   -> <synthetic> <artifact> private[this] val x$1: Tuple2 = _
+[16:17] <11:40> [NoPosition]   -> private[this] val x: Int = _
+[16]    [16]    [16]           -> <stable> <accessor> def x(): Int = C5.this.x
+[19:20] <11:40> [NoPosition]   -> private[this] val y: Int = _
+[19]    [19]    [19]           -> <stable> <accessor> def y(): Int = C5.this.y
+<23:40> <23:40> [NoPosition]   -> <synthetic> <artifact> private[this] val x$2: Tuple2 = _
+[24:25] <11:40> [NoPosition]   -> private[this] val w: Int = _
+[24]    [24]    [24]           -> <stable> <accessor> def w(): Int = C5.this.w
+[27:28] <11:40> [NoPosition]   -> private[this] val z: Int = _
+[27]    [27]    [27]           -> <stable> <accessor> def z(): Int = C5.this.z
+<15:40> [32]                   -> C5.this.x$1 = {...
+[32]    [32]    [32]           -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+<16:17> <16:17> <16:17>        -> val x: Int = x1._1$mcI$sp()
+<19:20> <19:20> <19:20>        -> val y: Int = x1._2$mcI$sp()
+[16:17] [16]                   -> C5.this.x = C5.this.x$1._1$mcI$sp()
+[19:20] [19]                   -> C5.this.y = C5.this.x$1._2$mcI$sp()
+<23:40> [32:40]                -> C5.this.x$2 = {...
+[32:40] [32:40] [32:40]        -> case <synthetic> val x1: Tuple2 = (new Tuple2$mcII$sp(42, 27): Tuple2)
+<24:25> <24:25> <24:25>        -> val w: Int = x1._1$mcI$sp()
+<27:28> <27:28> <27:28>        -> val z: Int = x1._2$mcI$sp()
+[24:25] [24]                   -> C5.this.w = C5.this.x$2._1$mcI$sp()
+[27:28] [27]                   -> C5.this.z = C5.this.x$2._2$mcI$sp()
+--
+class C6 { val x, y, z: String = "hello, worlds" }
+[15:16] <11:48> [NoPosition]   -> private[this] val x: String = _
+[15]    [15]    [15]           -> <stable> <accessor> def x(): String = C6.this.x
+[18:19] <11:48> [NoPosition]   -> private[this] val y: String = _
+[18]    [18]    [18]           -> <stable> <accessor> def y(): String = C6.this.y
+[21:22] <11:48> [NoPosition]   -> private[this] val z: String = _
+[21]    [21]    [21]           -> <stable> <accessor> def z(): String = C6.this.z
+[15:16] [33]                   -> C6.this.x = "hello, worlds"
+[18:19] [33]                   -> C6.this.y = "hello, worlds"
+[21:22] [33:48]                -> C6.this.z = "hello, worlds"
+--
+class C7 { val Some(_) = Option(42) }
+[11:35] [11:35] [NoPosition]   -> <synthetic> <artifact> private[this] val x$1: scala.runtime.BoxedUnit = _
+[11:35] [25:35]                -> C7.this.x$1 = {...
+[25:35] [25:35] [25:35]        -> case <synthetic> val x1: Option = (scala.Option.apply(scala.Int.box(42)): Option)
+--

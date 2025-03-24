@@ -116,4 +116,10 @@ class LazyListGCTest {
   def tails_zipWithIndex_foreach_allowsGC(): Unit = {
     assertLazyListOpAllowsGC((ll, check) => ll.tails.zipWithIndex.foreach { case (_, i) => check(i) }, _ => ())
   }
+
+  @Test
+  def foldLeft(): Unit = {
+    // fails when using `/:` instead of `foldLeft`
+    assertLazyListOpAllowsGC((ll, check) => ll.foldLeft(0){ case (s, x) => check(x); s + x}, _ => ())
+  }
 }

@@ -1,4 +1,4 @@
-//> using options -Xsource:3 -Xlint:eta-zero
+//> using options -Xsource:3 -Xlint:eta-zero -Xsource-features:eta-expand-always
 //
 trait AcciSamZero { def apply(): Int }
 

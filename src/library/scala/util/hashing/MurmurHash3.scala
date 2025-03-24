@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -136,7 +136,7 @@ private[hashing] class MurmurHash3 {
     while (it.hasNext) {
       h = mix(h, prev)
       val hash = it.next().##
-      if(rangeDiff != hash - prev) {
+      if(rangeDiff != hash - prev || rangeDiff == 0) {
         h = mix(h, hash)
         i += 1
         while (it.hasNext) {
@@ -173,7 +173,7 @@ private[hashing] class MurmurHash3 {
         while (i < l) {
           h = mix(h, prev)
           val hash = a(i).##
-          if(rangeDiff != hash - prev) {
+          if(rangeDiff != hash - prev || rangeDiff == 0) {
             h = mix(h, hash)
             i += 1
             while (i < l) {
@@ -252,7 +252,7 @@ private[hashing] class MurmurHash3 {
         while (i < l) {
           h = mix(h, prev)
           val hash = a(i).##
-          if(rangeDiff != hash - prev) {
+          if(rangeDiff != hash - prev || rangeDiff == 0) {
             h = mix(h, hash)
             i += 1
             while (i < l) {
@@ -292,7 +292,7 @@ private[hashing] class MurmurHash3 {
           rangeDiff = hash - prev
           rangeState = 2
         case 2 =>
-          if(rangeDiff != hash - prev) rangeState = 3
+          if(rangeDiff != hash - prev || rangeDiff == 0) rangeState = 3
         case _ =>
       }
       prev = hash

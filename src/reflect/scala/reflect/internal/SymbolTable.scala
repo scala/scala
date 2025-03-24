@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -16,7 +16,7 @@ package internal
 
 import java.net.URLClassLoader
 
-import scala.annotation.{elidable, tailrec}
+import scala.annotation.{elidable, nowarn, tailrec}
 import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
@@ -461,7 +461,9 @@ abstract class SymbolTable extends macros.Universe
     def newSet[K]()               = recordCache(mutable.HashSet.empty[K])
     def newWeakSet[K <: AnyRef]() = recordCache(WeakHashSet.empty[K])
 
+    @nowarn("cat=deprecation")
     def newAnyRefMap[K <: AnyRef, V]() = recordCache(mutable.AnyRefMap.empty[K, V])
+    @nowarn("cat=deprecation")
     def newAnyRefMap[K <: AnyRef, V](default: K => V) = recordCache(mutable.AnyRefMap.withDefault[K, V](default))
 
     /**

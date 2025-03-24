@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -173,6 +173,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val caseCompanionFunction  = Choice("case-companion-function", "Synthetic case companion objects no longer extend FunctionN. [bin]")
     val caseCopyByName         = Choice("case-copy-by-name", "Synthesize case copy method with by-name parameters. [bin]")
     val inferOverride          = Choice("infer-override", "Inferred type of member uses type of overridden member. [bin]")
+    val noInferStructural      = Choice("no-infer-structural", "Definitions with an inferred type never have a structural type. [bin]")
 
     // Other semantic changes
     val any2StringAdd          = Choice("any2stringadd", "Implicit `any2stringadd` is never inferred.")
@@ -182,6 +183,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     val packagePrefixImplicits = Choice("package-prefix-implicits", "The package prefix p is no longer part of the implicit search scope for type p.A.")
     val implicitResolution     = Choice("implicit-resolution", "Use Scala-3-style downwards comparisons for implicit search and overloading resolution (see github.com/scala/scala/pull/6037).")
     val doubleDefinitions      = Choice("double-definitions", "Correctly disallow double definitions differing in empty parens.")
+    val etaExpandAlways        = Choice("eta-expand-always", "Eta-expand even if the expected type is not a function type.")
 
     val v13_13_choices = List(caseApplyCopyAccess, caseCompanionFunction, inferOverride, any2StringAdd, unicodeEscapesRaw, stringContextScope, leadingInfix, packagePrefixImplicits)
 
@@ -201,6 +203,12 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
       "v2.13.15",
       "v2.13.14 plus double-definitions",
       expandsTo = v13_15_choices)
+
+    val v13_17_choices = etaExpandAlways :: noInferStructural :: v13_15_choices
+    val v13_17 = Choice(
+      "v2.13.17",
+      "v2.13.15 plus no-infer-structural, eta-expand-always",
+      expandsTo = v13_17_choices)
   }
   val XsourceFeatures = MultiChoiceSetting(
     name = "-Xsource-features",

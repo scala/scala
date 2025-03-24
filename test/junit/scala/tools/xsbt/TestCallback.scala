@@ -1,7 +1,7 @@
 package scala.tools.xsbt
 
 import xsbti.api.{ClassLike, DependencyContext}
-import xsbti.{Action, AnalysisCallback2, DiagnosticCode, DiagnosticRelatedInformation, Position, Severity, UseScope, VirtualFile, VirtualFileRef}
+import xsbti.{Action, AnalysisCallback3, DiagnosticCode, DiagnosticRelatedInformation, Position, Severity, UseScope, VirtualFile, VirtualFileRef}
 
 import java.io.File
 import java.nio.file.Path
@@ -9,7 +9,7 @@ import java.util
 import java.util.Optional
 import scala.collection.mutable.ArrayBuffer
 
-class TestCallback extends AnalysisCallback2 {
+class TestCallback extends AnalysisCallback3 {
   case class TestUsedName(name: String, scopes: util.EnumSet[UseScope])
 
   val classDependencies = new ArrayBuffer[(String, String, DependencyContext)]
@@ -140,6 +140,12 @@ class TestCallback extends AnalysisCallback2 {
   override def isPickleJava: Boolean = false
 
   override def getPickleJarPair = Optional.empty()
+
+  override def getSourceInfos =
+    throw new UnsupportedOperationException("not expected to be called in tests")
+
+  override def toVirtualFile(path: Path) =
+    throw new UnsupportedOperationException("not expected to be called in tests")
 }
 
 object TestCallback {

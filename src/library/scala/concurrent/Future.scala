@@ -1,7 +1,7 @@
 /*
  * Scala (https://www.scala-lang.org)
  *
- * Copyright EPFL and Lightbend, Inc.
+ * Copyright EPFL and Lightbend, Inc. dba Akka
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
@@ -14,15 +14,14 @@ package scala.concurrent
 
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
-
-import scala.util.control.{NonFatal, NoStackTrace}
+import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
 import scala.collection.BuildFrom
-import scala.collection.mutable.{Builder, ArrayBuffer}
+import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.reflect.ClassTag
-
 import scala.concurrent.ExecutionContext.parasitic
+import scala.concurrent.impl.Promise.DefaultPromise
 
 /** A `Future` represents a value which may or may not be currently available,
  *  but will be available at some point, or an exception if that value could not be made available.
@@ -125,7 +124,6 @@ trait Future[+T] extends Awaitable[T] {
    * @group Callbacks
    */
   def onComplete[U](f: Try[T] => U)(implicit executor: ExecutionContext): Unit
-
 
   /* Miscellaneous */
 
@@ -732,15 +730,28 @@ object Future {
     if (!i.hasNext) Future.never
     else {
       val p = Promise[T]()
-      val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
-        override final def apply(v1: Try[T]): Unit =  {
-          val r = getAndSet(null)
-          if (r ne null)
-            r tryComplete v1 // tryComplete is likely to be cheaper than complete
+      val firstCompleteHandler = new AtomicReference(List.empty[() => Unit]) with (Try[T] => Unit) {
+        final def apply(res: Try[T]): Unit =  {
+          val deregs = getAndSet(null)
+          if (deregs != null) {
+            p.tryComplete(res) // tryComplete is likely to be cheaper than complete
+            deregs.foreach(_.apply())
+          }
         }
       }
-      while(i.hasNext && firstCompleteHandler.get != null) // exit early if possible
-        i.next().onComplete(firstCompleteHandler)
+      var completed = false
+      while (i.hasNext && !completed) {
+        val deregs = firstCompleteHandler.get
+        if (deregs == null) completed = true
+        else i.next() match {
+          case dp: DefaultPromise[T @unchecked] =>
+            val d = dp.onCompleteWithUnregister(firstCompleteHandler)
+            if (!firstCompleteHandler.compareAndSet(deregs, d :: deregs))
+              d.apply()
+          case f =>
+            f.onComplete(firstCompleteHandler)
+        }
+      }
       p.future
     }
   }

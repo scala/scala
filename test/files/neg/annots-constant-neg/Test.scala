@@ -7,8 +7,7 @@ class Ann(
   b: Class[_] = classOf[String],
   c: Array[Object] = Array()) extends ConstantAnnotation
 
-// non-constant defaults are allowed
-class Ann1(value: Int = Test.nonConst) extends ConstantAnnotation {
+class Ann1(value: Int = 1) extends ConstantAnnotation {
   def this(s: String) = this(0) // err
 }
 class Ann2(x: Int)(y: Int) extends ConstantAnnotation // err
@@ -16,7 +15,8 @@ class Ann3 extends ConstantAnnotation
 class Ann4(x: Int = 0, value: Int) extends ConstantAnnotation
 class Ann5() extends ConstantAnnotation
 class Ann6(x: Int) extends ConstantAnnotation // scala/bug#11724
-class Ann7[T](x: T) extends annotation.ConstantAnnotation // scala/bug#11724
+class Ann7[T](x: T) extends ConstantAnnotation // scala/bug#11724
+class Ann8(x: Int = Test.nonConst) extends ConstantAnnotation // defaults of `ConstantAnnotation` are not enforced to be constants
 
 object Test {
   final val const = 1
