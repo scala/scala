@@ -1,4 +1,11 @@
 t771.scala:4: error: trait Iterator is abstract; cannot be instantiated
   def c[A](it:java.util.Iterator[A]) = new scala.Iterator[A]
                                        ^
-1 error
+t771.scala:3: error: object creation impossible.
+Missing implementations for 2 members of trait Iterator.
+  def hasNext(): Boolean = ???
+  def next(): List[Object] = ??? // implements `def next(): E`
+
+  def b[List[AnyRef]] = new java.util.Iterator[List[Object]] { }
+                            ^
+2 errors

@@ -3,7 +3,7 @@ reload: Completions.scala
 askScopeCompletion at Completions.scala(23,4)
 ================================================================================
 [response] askScopeCompletion at (23,4)
-retrieved 16 members
+retrieved 17 members
 [inaccessible] private[this] val pVOOO: Int
 [inaccessible] private[this] var pROOO: Int
 class C extends AnyRef
@@ -14,6 +14,7 @@ class Foo_3 extends AnyRef
 def <init>(): test.Foo
 def fCCC: Int
 def fOOO: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] val vOOO: Int
@@ -25,7 +26,7 @@ val o: test.O.type
 askScopeCompletion at Completions.scala(27,4)
 ================================================================================
 [response] askScopeCompletion at (27,4)
-retrieved 15 members
+retrieved 16 members
 [inaccessible] private[this] val pVOOO: Int
 [inaccessible] private[this] var pROOO: Int
 class C extends AnyRef
@@ -36,6 +37,7 @@ class Foo_3 extends AnyRef
 def <init>(): test.Foo
 def fCCC: Int
 def fOOO: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] val vOOO: Int
@@ -46,7 +48,7 @@ private[this] var rOOO: Int
 askScopeCompletion at Completions.scala(32,4)
 ================================================================================
 [response] askScopeCompletion at (32,4)
-retrieved 13 members
+retrieved 14 members
 [inaccessible] private[this] val pVCCC: Int
 [inaccessible] private[this] var pRCCC: Int
 class C extends AnyRef
@@ -56,6 +58,7 @@ class Foo_2 extends AnyRef
 class Foo_3 extends AnyRef
 def <init>(): test.Foo
 def fCCC: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] var rCCC: Int
@@ -65,13 +68,14 @@ val c: test.C
 askScopeCompletion at Completions.scala(35,5)
 ================================================================================
 [response] askScopeCompletion at (35,5)
-retrieved 8 members
+retrieved 9 members
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
 class Foo_2 extends AnyRef
 class Foo_3 extends AnyRef
 def <init>(): test.Foo
+final package test
 object O
 val c: test.C
 ================================================================================
@@ -79,7 +83,7 @@ val c: test.C
 askScopeCompletion at Completions.scala(38,5)
 ================================================================================
 [response] askScopeCompletion at (38,5)
-retrieved 13 members
+retrieved 14 members
 [inaccessible] private[this] val pVCCC: Int
 [inaccessible] private[this] var pRCCC: Int
 class C extends AnyRef
@@ -89,6 +93,7 @@ class Foo_2 extends AnyRef
 class Foo_3 extends AnyRef
 def <init>(): test.Foo
 def fCCC: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] var rCCC: Int
@@ -98,7 +103,7 @@ val c: test.C
 askScopeCompletion at Completions.scala(40,5)
 ================================================================================
 [response] askScopeCompletion at (40,5)
-retrieved 18 members
+retrieved 19 members
 [inaccessible] private[this] val pVCCC: Int
 [inaccessible] private[this] val pVOOO: Int
 [inaccessible] private[this] var pRCCC: Int
@@ -111,6 +116,7 @@ class Foo_3 extends AnyRef
 def <init>(): test.Foo
 def fCCC: Int
 def fOOO: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] val vOOO: Int
@@ -122,7 +128,7 @@ val c: test.C
 askScopeCompletion at Completions.scala(49,4)
 ================================================================================
 [response] askScopeCompletion at (49,4)
-retrieved 16 members
+retrieved 17 members
 [inaccessible] private[this] val pVOOO: Int
 [inaccessible] private[this] var pROOO: Int
 class C extends AnyRef
@@ -134,6 +140,7 @@ def <init>(): test.Foo_1
 def bar: Unit
 def fCCC: Int
 def fOOO: Int
+final package test
 object O
 private[this] val vCCC: Int
 private[this] val vOOO: Int
@@ -144,7 +151,7 @@ private[this] var rOOO: Int
 askScopeCompletion at Completions.scala(59,4)
 ================================================================================
 [response] askScopeCompletion at (59,4)
-retrieved 17 members
+retrieved 18 members
 [inaccessible] private[this] val pVOOO: Int
 [inaccessible] private[this] var pROOO: Int
 class C extends AnyRef
@@ -156,6 +163,7 @@ def <init>(): test.Foo_2
 def bar: Unit
 def fCCC: Int
 def fOOO: Int
+final package test
 object O
 private[this] val o: test.O.type
 private[this] val vCCC: Int
@@ -167,7 +175,7 @@ private[this] var rOOO: Int
 askScopeCompletion at Completions.scala(69,4)
 ================================================================================
 [response] askScopeCompletion at (69,4)
-retrieved 14 members
+retrieved 15 members
 [inaccessible] private[this] val pVCCC: Int
 [inaccessible] private[this] var pRCCC: Int
 class C extends AnyRef
@@ -178,6 +186,7 @@ class Foo_3 extends AnyRef
 def <init>(): test.Foo_3
 def bar: Unit
 def fCCC: Int
+final package test
 object O
 private[this] val c: test.C
 private[this] val vCCC: Int

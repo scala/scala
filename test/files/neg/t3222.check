@@ -10,4 +10,13 @@ t3222.scala:3: error: not found: type C
 t3222.scala:6: error: not found: type E
   @throws(classOf[E])
                   ^
-4 errors
+t3222.scala:2: error: `@throws` only allowed for methods and constructors
+class ExceptionTest {
+      ^
+t3222.scala:4: error: `@throws` only allowed for methods and constructors
+  def foo(@throws(classOf[D]) x: Int): Unit = {}
+                              ^
+t3222.scala:7: error: `@throws` only allowed for methods and constructors
+  type t = String
+       ^
+7 errors

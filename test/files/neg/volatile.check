@@ -4,4 +4,8 @@ volatile.scala:11: error: Inferred type C.this.D with C.this.E#T contains type s
 volatile.scala:11: error: Inferred type () => C.this.D with C.this.E#T contains type selection from volatile type C.this.D with C.this.E
    var sneak = { () => y.x }
                     ^
+volatile.scala:10: warning: value y in class C does nothing other than call itself recursively
+   val y : D with E = y
+                      ^
+1 warning
 2 errors

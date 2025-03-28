@@ -6,7 +6,7 @@ trait AcciSamZero { def apply(): Int }
 trait SamZero { def apply(): Int }
 
 class A {
-  def boom(): Unit
+  def boom(): Unit = ()
 }
 
 class EtaExpand214 {

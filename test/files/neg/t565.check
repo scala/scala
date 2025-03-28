@@ -2,4 +2,10 @@ t565.scala:2: error: only traits and abstract classes can have declared but unde
 (Note that variables need to be initialized to be defined)
   var s0: String
       ^
-1 error
+t565.scala:1: error: object creation impossible.
+Missing implementation:
+  def s0: String = ??? // variables need to be initialized to be defined
+
+object test {
+       ^
+2 errors

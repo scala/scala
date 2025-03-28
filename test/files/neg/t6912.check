@@ -1,4 +1,7 @@
 t6912.scala:8: error: not found: type Xxxx
   def test[T]: Xxxx = Foo1[T]
                ^
-1 error
+t6912.scala:1: error: in object Foo1, multiple overloaded alternatives of method apply define default arguments.
+object Foo1 {
+       ^
+2 errors

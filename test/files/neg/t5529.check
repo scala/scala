@@ -4,4 +4,10 @@ t5529.scala:12: error: File is already defined as class File
 t5529.scala:10: error: class type required but test.Test.File found
   sealed class Dir extends File { }
                            ^
-2 errors
+t5529.scala:10: error: class Dir needs to be abstract.
+Missing implementation for member of class Any:
+  def getClass(): Class[_] = ???
+
+  sealed class Dir extends File { }
+               ^
+3 errors

@@ -17,4 +17,10 @@ nested-fn-print.scala:9: error: type mismatch;
  required: Int => Double
     x3 = "c"
          ^
-4 errors
+nested-fn-print.scala:1: error: object creation impossible.
+Missing implementation:
+  def x3: Int => Double = ??? // variables need to be initialized to be defined
+
+object Test {
+       ^
+5 errors

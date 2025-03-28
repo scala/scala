@@ -35,4 +35,8 @@ i10715a.scala:24: error: type mismatch;
  required: String => String
     c.g[Int]: (String => String) // error
        ^
+i10715a.scala:25: warning: discarded pure expression does nothing
+    c.g[Int]: (Int => Parent) // ok
+            ^
+1 warning
 8 errors

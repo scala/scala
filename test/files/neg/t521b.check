@@ -3,4 +3,20 @@ Scala 3 migration messages are issued as errors under -Xsource:3. Use -Wconf or 
 Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=scala3-migration, site=test.ZipArchive.Entry
     override def path = "";
                  ^
-1 error
+t521b.scala:11: error: class PlainFile needs to be abstract.
+Missing implementation for member of class AbstractFile:
+  def path: String = ???
+
+class PlainFile(val file : File) extends AbstractFile {}
+      ^
+t521b.scala:14: error: `override` modifier required to override concrete member:
+val file: java.io.File (defined in class PlainFile)
+final class ZipArchive(val file : File, archive : ZipFile) extends PlainFile(file) {
+                           ^
+t521b.scala:14: error: class ZipArchive needs to be abstract.
+Missing implementation for member of class AbstractFile:
+  def path: String = ???
+
+final class ZipArchive(val file : File, archive : ZipFile) extends PlainFile(file) {
+            ^
+4 errors

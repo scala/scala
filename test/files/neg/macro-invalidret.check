@@ -39,11 +39,7 @@ type mismatch for return type: reflect.runtime.universe.Literal does not conform
   def bar2: Int = macro Impls.foo2
                               ^
 Macros_Test_2.scala:33: error: exception during macro expansion:
-#partest !java15+
-java.lang.NullPointerException
-#partest java15+
 java.lang.NullPointerException: Cannot throw exception because "null" is null
-#partest
 	at Impls$.foo3(Impls_1.scala:7)
 
   bar3
@@ -51,4 +47,11 @@ java.lang.NullPointerException: Cannot throw exception because "null" is null
 Macros_Test_2.scala:34: error: macro implementation is missing
   bar4
   ^
+Macros_Test_2.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  bar5
+  ^
+Macros_Test_2.scala:36: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  bar6
+  ^
+2 warnings
 10 errors

@@ -158,5 +158,33 @@ names-defaults-neg.scala:104: warning: the parameter name foo is deprecated: use
 names-defaults-neg.scala:106: warning: the parameter name bar is deprecated (since 2.12.0): use deprNam7Arg instead
   deprNam7(bar = null)
                ^
-7 warnings
-35 errors
+names-defaults-neg.scala:15: warning: a pure expression does nothing in statement position
+  test2(x = 1)
+            ^
+names-defaults-neg.scala:103: warning: constructor deprecatedName in class deprecatedName is deprecated (since 2.13.0): The parameter name should be a String, not a symbol.
+  def deprNam6(@deprecatedName('foo) deprNam6Arg: String) = 0
+                                     ^
+names-defaults-neg.scala:105: warning: constructor deprecatedName in class deprecatedName is deprecated (since 2.13.0): The parameter name should be a String, not a symbol.
+  def deprNam7(@deprecatedName('bar, "2.12.0") deprNam7Arg: String) = 0
+                                               ^
+names-defaults-neg.scala:113: warning: method + in class Int is deprecated (since 2.13.0): Adding a number and a String is deprecated. Use the string interpolation `s"$num$str"`
+  def test1(a: Int, b: String) = a +": "+ b
+                                   ^
+names-defaults-neg.scala:125: error: in class C, multiple overloaded alternatives of method bar define default arguments.
+The members with defaults are defined in class C and class B.
+class C extends B {
+      ^
+names-defaults-neg.scala:129: error: incompatible type in overriding
+def bar$default$1: String (defined in class B);
+ found   : Int
+ required: String
+  def bar(i: Int = 129083) = i
+          ^
+names-defaults-neg.scala:143: warning: a pure expression does nothing in statement position
+  delay(var2 = 40)
+               ^
+names-defaults-neg.scala:145: warning: method + in class Int is deprecated (since 2.13.0): Adding a number and a String is deprecated. Use the string interpolation `s"$num$str"`
+  def testAnnFun(a: Int, b: String) = println(a +": "+ b)
+                                                ^
+13 warnings
+37 errors

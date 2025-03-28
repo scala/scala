@@ -1,4 +1,10 @@
 t10228.scala:9: error: malformed type: A#Type
   def g[A <: Fili[A]]: Unit = implicitly[A <:< A#Type]
                                                  ^
-1 error
+t10228.scala:5: error: incompatible type in overriding
+type Type >: DataF.this.type <: t10228.Data (defined in trait Data);
+ found   : P#Type
+ required:  >: DataF.this.type <: t10228.Data
+  trait DataF[P <: Data, A <: DataF[P, A]] extends Data { type Type = P#Type }
+                                                               ^
+2 errors

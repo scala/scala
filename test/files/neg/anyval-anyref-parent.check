@@ -2,8 +2,8 @@ anyval-anyref-parent.scala:2: error: only classes (not traits) are allowed to ex
 trait Foo2 extends AnyVal // fail
       ^
 anyval-anyref-parent.scala:5: error: Any does not have a constructor
-class Bar1 extends Any      // fail
-                   ^
+abstract class Bar1 extends Any      // fail
+                            ^
 anyval-anyref-parent.scala:6: error: value class parameter must be a val and not be private[this]
 class Bar2(x: Int) extends AnyVal // fail
            ^

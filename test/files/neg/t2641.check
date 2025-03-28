@@ -4,4 +4,46 @@ t2641.scala:22: error: wrong number of type arguments for ManagedSeq, should be 
 t2641.scala:28: error: value managedIterator is not a member of ManagedSeq[A,Coll]
     override def managedIterator = self.managedIterator.slice(0, 0)
                                         ^
-2 errors
+t2641.scala:2: error: incompatible type in overriding
+def iterableFactory: scala.collection.IterableFactory[[_]ManagedSeqStrict[_]] (defined in trait IterableOps)
+  with def iterableFactory: scala.collection.IterableFactory[Iterable] (defined in trait Iterable);
+ found   : scala.collection.IterableFactory[Iterable]
+ required: scala.collection.IterableFactory[[_]ManagedSeqStrict[_]];
+ other members with override errors are: fromSpecific, newSpecificBuilder, empty
+abstract class ManagedSeqStrict[+A]
+               ^
+t2641.scala:11: error: incompatible type in overriding
+protected def coll: This (defined in trait IterableOps)
+  with final protected def coll: TraversableViewLike.this.type (defined in trait Iterable);
+ found   : TraversableViewLike.this.type (with underlying type TraversableViewLike.this.type)
+ required: This;
+ other members with override errors are: fromSpecific, newSpecificBuilder, empty
+trait TraversableViewLike[+A,
+      ^
+t2641.scala:17: error: incompatible type in overriding
+protected def fromSpecific(coll: scala.collection.IterableOnce[A]): TraversableView[A,Coll] (defined in trait IterableOps)
+  with protected def fromSpecific(coll: scala.collection.IterableOnce[A]): Iterable[A] (defined in trait IterableFactoryDefaults);
+ found   : (coll: scala.collection.IterableOnce[A]): Iterable[A]
+ required: (coll: scala.collection.IterableOnce[A]): TraversableView[A,Coll];
+ other members with override errors are: newSpecificBuilder, empty
+trait TraversableView[+A, +Coll] extends TraversableViewLike[A, Coll, TraversableView[A, Coll]]
+      ^
+t2641.scala:19: error: illegal inheritance;
+ trait ManagedSeq inherits different type instances of trait IterableOps:
+scala.collection.IterableOps[A,Iterable,TraversableView[A,ManagedSeqStrict[A]]] and scala.collection.IterableOps[A,ManagedSeqStrict,ManagedSeqStrict[A]]
+trait ManagedSeq[+A, +Coll]
+      ^
+t2641.scala:25: error: illegal inheritance;
+ trait Transformed inherits different type instances of trait IterableOps:
+scala.collection.IterableOps[B,Iterable,TraversableView[B,ManagedSeqStrict[B]]] and scala.collection.IterableOps[B,ManagedSeqStrict,ManagedSeqStrict[B]]
+  trait Transformed[+B] extends ManagedSeq[B, Coll] with super.Transformed[B]
+        ^
+t2641.scala:27: error: illegal inheritance;
+ trait Sliced inherits different type instances of trait IterableOps:
+scala.collection.IterableOps[A,Iterable,TraversableView[A,ManagedSeqStrict[A]]] and scala.collection.IterableOps[A,ManagedSeqStrict,ManagedSeqStrict[A]]
+  trait Sliced extends Transformed[A] with super.Sliced {
+        ^
+t2641.scala:28: error: method managedIterator overrides nothing
+    override def managedIterator = self.managedIterator.slice(0, 0)
+                 ^
+9 errors

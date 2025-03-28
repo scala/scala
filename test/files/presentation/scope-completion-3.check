@@ -3,7 +3,7 @@ reload: Completions.scala
 askScopeCompletion at Completions.scala(75,2)
 ================================================================================
 [response] askScopeCompletion at (75,2)
-retrieved 38 members
+retrieved 39 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef
@@ -16,6 +16,7 @@ def fc1: Int
 def ft1: Int
 def rt1: Int
 def rt1_=(x$1: Int): Unit
+final package test
 object Completion2
 object Ob1
 object Oc1
@@ -47,7 +48,7 @@ val vt1: Int
 askScopeCompletion at Completions.scala(104,2)
 ================================================================================
 [response] askScopeCompletion at (104,2)
-retrieved 38 members
+retrieved 39 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef
@@ -60,6 +61,7 @@ def fo1: Int
 def ft1: Int
 def rt1: Int
 def rt1_=(x$1: Int): Unit
+final package test
 object Completion2
 object Ob1
 object Oo1
