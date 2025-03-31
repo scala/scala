@@ -6,6 +6,6 @@ object TestGreeting extends Suite("TestGreeting") {
     final val greeting = "Hello, World!"
   }
 
-  test(assert(new Greeter with Hello().accessGreeting === "Hello, World!"))
+  test(assert((new Greeter with Hello).accessGreeting === "Hello, World!"))
 
 }

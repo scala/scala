@@ -1,0 +1,13 @@
+t6805.scala:4: error: trait T is a trait; does not take constructor arguments
+class C extends T() // error
+                ^
+t6805.scala:7: error: trait T is a trait; does not take constructor arguments
+class Y extends X with T() // error
+                       ^
+t6805.scala:11: error: trait T is abstract; cannot be instantiated
+  def u: T = new T()  // error
+             ^
+t6805.scala:12: error: trait T is a trait; does not take constructor arguments
+  def v: T = new X with T()  // error
+                        ^
+4 errors

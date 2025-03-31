@@ -4,7 +4,7 @@ import scala.math.Ordering
 
 class Test[K](param:TreeMap[K,Int]){
   def this() = this({
-    implicit object TreeOrd extends Ordering[K](){
+    implicit val TreeOrd: Ordering[K] = new Ordering[K] {
       def compare(a: K, b: K) = {
         -1
       }

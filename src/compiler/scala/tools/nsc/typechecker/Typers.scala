@@ -1582,12 +1582,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *    (3 times from the typer)
      *    <the same three calls>
      */
-    private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
+    private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean, isAnonClass: Boolean): Tree = {
       val app @ treeInfo.Applied(core, _, argss) = treeInfo.dissectApplied(encodedtpt)
       val decodedtpt = app.callee
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
-      // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,
+      // we cannot avoid cyclic references with `initialize` here, because when type macros arrive [sic],
       // we'll have to check the probe for isTypeMacro anyways.
       // therefore I think it's reasonable to trade a more specific "inherits itself" error
       // for a generic, yet understandable "cyclic reference" error
@@ -1596,39 +1596,40 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (p == null) NoSymbol
         else p.initialize
       }
-
-      def cookIfNeeded(tpt: Tree) = if (context.unit.isJava) tpt modifyType rawToExistential else tpt
-      cookIfNeeded(if (probe.isTrait || inMixinPosition) {
-        if (!argssAreTrivial) {
-          if (probe.isTrait) ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
-          else () // a class in a mixin position - this warrants an error in `validateParentClasses`
-                  // therefore here we do nothing, e.g. don't check that the # of ctor arguments
-                  // matches the # of ctor parameters or stuff like that
+      val tpt =
+        if (probe.isTrait || inMixinPosition) {
+          if (probe.isTrait && inMixinPosition && !isAnonClass && !argss.isEmpty)
+            ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
+          //if (!probe.isTrait)
+            // a class in a mixin position - this warrants an error in `validateParentClasses`
+            // therefore here we do nothing, e.g. don't check that the # of ctor arguments
+            // matches the # of ctor parameters or stuff like that
+          typedType(decodedtpt)
         }
-        typedType(decodedtpt)
-      } else {
-        val supertpt = typedTypeConstructor(decodedtpt)
-        val supertparams = if (supertpt.hasSymbolField) supertpt.symbol.typeParams else Nil
-        def inferParentTypeArgs: Tree = {
-          typedPrimaryConstrBody(templ) {
-            val supertpe = PolyType(supertparams, appliedType(supertpt.tpe, supertparams map (_.tpeHK)))
-            val supercall = New(supertpe, mmap(argss)(_.duplicate))
-            val treeInfo.Applied(Select(ctor, nme.CONSTRUCTOR), _, _) = supercall: @unchecked
-            ctor setType supertpe // this is an essential hack, otherwise it will occasionally fail to typecheck
-            atPos(supertpt.pos.focus)(supercall)
-          } match {
-            case EmptyTree => MissingTypeArgumentsParentTpeError(supertpt); supertpt
-            case tpt       => TypeTree(tpt.tpe) setPos supertpt.pos  // scala/bug#7224: don't .focus positions of the TypeTree of a parent that exists in source
+        else {
+          val supertpt = typedTypeConstructor(decodedtpt)
+          val supertparams = if (supertpt.hasSymbolField) supertpt.symbol.typeParams else Nil
+          def inferParentTypeArgs: Tree = {
+            typedPrimaryConstrBody(templ) {
+              val supertpe = PolyType(supertparams, appliedType(supertpt.tpe, supertparams map (_.tpeHK)))
+              val supercall = New(supertpe, mmap(argss)(_.duplicate))
+              val treeInfo.Applied(Select(ctor, nme.CONSTRUCTOR), _, _) = supercall: @unchecked
+              ctor setType supertpe // this is an essential hack, otherwise it will occasionally fail to typecheck
+              atPos(supertpt.pos.focus)(supercall)
+            } match {
+              case EmptyTree => MissingTypeArgumentsParentTpeError(supertpt); supertpt
+              case tpt       => TypeTree(tpt.tpe) setPos supertpt.pos
+                // scala/bug#7224: don't .focus positions of the TypeTree of a parent that exists in source
+            }
           }
+          val supertptWithTargs = if (supertparams.isEmpty || context.unit.isJava) supertpt else inferParentTypeArgs
+
+          // this is the place where we tell the typer what argss should be used for the super call
+          // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
+          // the super call dummy is already good enough, so we don't need to do anything
+          if (argssAreTrivial) supertptWithTargs else supertptWithTargs updateAttachment SuperArgsAttachment(argss)
         }
-
-        val supertptWithTargs = if (supertparams.isEmpty || context.unit.isJava) supertpt else inferParentTypeArgs
-
-        // this is the place where we tell the typer what argss should be used for the super call
-        // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
-        // the super call dummy is already good enough, so we don't need to do anything
-        if (argssAreTrivial) supertptWithTargs else supertptWithTargs updateAttachment SuperArgsAttachment(argss)
-      })
+      if (context.unit.isJava) tpt.modifyType(rawToExistential) else tpt
     }
 
     /** Typechecks the mishmash of trees that happen to be stuffed into the primary constructor of a given template.
@@ -1714,7 +1715,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  If the first parent is a trait, prepend its supertype to the list until it's a class.
      */
     private def normalizeFirstParent(parents: List[Tree]): List[Tree] = {
-      @annotation.tailrec
+      @tailrec
       def explode0(parents: List[Tree]): List[Tree] = {
         val supertpt :: rest = parents: @unchecked // parents is always non-empty here - it only grows
         if (supertpt.tpe.typeSymbol == AnyClass) {
@@ -1744,22 +1745,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  So we strip the duplicates before typer.
      */
     private def fixDuplicateSyntheticParents(parents: List[Tree]): List[Tree] = parents match {
-      case Nil      => Nil
-      case x :: xs  =>
+      case x :: xs =>
         val sym = x.symbol
         x :: fixDuplicateSyntheticParents(
           if (isPossibleSyntheticParent(sym)) xs.filter(_.symbol != sym)
           else xs
         )
+      case nil => Nil
     }
 
     def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefTpe)))
-      case first :: rest =>
+      case parents =>
+        val isAnonClass = !context.owner.isAnonymousClass // permit new T() {} syntax
+        def loop(parents: List[Tree], inMixinPosition: Boolean): List[Tree] =
+          parents match {
+            case parent :: parents =>
+              typedParentType(parent, templ, inMixinPosition = inMixinPosition, isAnonClass = isAnonClass) ::
+              loop(parents, inMixinPosition = true)
+            case _ => Nil
+          }
         try {
-          val supertpts = fixDuplicateSyntheticParents(normalizeFirstParent(
-            typedParentType(first, templ, inMixinPosition = false) +:
-            (rest map (typedParentType(_, templ, inMixinPosition = true)))))
+          val tpts0 = loop(parents, inMixinPosition = false)
+          val supertpts = fixDuplicateSyntheticParents(normalizeFirstParent(tpts0))
 
           // if that is required to infer the targs of a super call
           // typedParentType calls typedPrimaryConstrBody to do the inferring typecheck

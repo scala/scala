@@ -189,7 +189,7 @@ abstract class TreeBrowsers {
         }
       }
 
-      jTree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
+      jTree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener {
         def valueChanged(e: javax.swing.event.TreeSelectionEvent): Unit = {
           textArea.setText(e.getPath().getLastPathComponent().toString)
           infoPanel.update(e.getPath().getLastPathComponent())

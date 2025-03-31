@@ -1182,37 +1182,35 @@ trait Namers extends MethodSynthesis {
 
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
-      val parentTrees = typer.typedParentTypes(templ)
-      val pending = mutable.ListBuffer[AbsTypeError]()
-      parentTrees foreach { tpt =>
-        val ptpe = tpt.tpe
-        if (!ptpe.isError && !phase.erasedTypes) {
-          val psym = ptpe.typeSymbol
-          if (psym.isSealed) {
-            val sameSourceFile = context.unit.source.file == psym.sourceFile
-            val okChild =
-              if (psym.isJava)
-                psym.attachments.get[PermittedSubclassSymbols] match {
-                  case Some(permitted) => permitted.permits.exists(_ == clazz)
-                  case _ => sameSourceFile
-                }
-              else
-                sameSourceFile
-            if (okChild)
-              psym.addChild(clazz)
-            else
-              pending += ParentSealedInheritanceError(tpt, psym)
+      val parents =
+        typer.typedParentTypes(templ).map { tpt =>
+          val ptpe = tpt.tpe
+          if (ptpe.isError)
+            AnyRefTpe
+          else {
+            if (!phase.erasedTypes) {
+              val psym = ptpe.typeSymbol
+              if (psym.isSealed) {
+                val sameSourceFile = context.unit.source.file == psym.sourceFile
+                val okChild =
+                  if (psym.isJava)
+                    psym.attachments.get[PermittedSubclassSymbols] match {
+                      case Some(permitted) => permitted.permits.exists(_ == clazz)
+                      case _ => sameSourceFile
+                    }
+                  else
+                    sameSourceFile
+                if (okChild)
+                  psym.addChild(clazz)
+                else
+                  ErrorUtils.issueTypeError(ParentSealedInheritanceError(tpt, psym))
+              }
+              if (psym.isLocalToBlock && psym.isClass)
+                psym.addChild(clazz)
+            }
+            ptpe
           }
-          if (psym.isLocalToBlock && psym.isClass)
-            psym.addChild(clazz)
         }
-      }
-      pending.foreach(ErrorUtils.issueTypeError)
-
-      val parents = {
-        def checkParent(tpt: Tree): Type = if (tpt.tpe.isError) AnyRefTpe else tpt.tpe
-        parentTrees map checkParent
-      }
 
       enterSelf(templ.self)
 
