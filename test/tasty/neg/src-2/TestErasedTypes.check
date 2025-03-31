@@ -7,17 +7,4 @@ TestErasedTypes_fail.scala:10: error: Unsupported Scala 3 erased value x; found 
 TestErasedTypes_fail.scala:12: error: Unsupported Scala 3 erased method theString; found in object tastytest.ErasedTypes.ErasedCompileTimeOps.
   def test5 = ErasedCompileTimeOps.theString
                                    ^
-TestErasedTypes_fail.scala:6: error: class Bar in object ErasedTypes is marked @experimental and therefore its enclosing scope must be experimental.
-  def test1 = new Bar[Foo]
-                  ^
-TestErasedTypes_fail.scala:7: error: class Baz in object ErasedTypes is marked @experimental and therefore its enclosing scope must be experimental.
-  def test2 = new Baz[Foo]
-                  ^
-TestErasedTypes_fail.scala:9: error: trait Foo in object ErasedTypes is marked @experimental and therefore its enclosing scope must be experimental.
-  def test3(f: Foo) = f.foo1("foo")
-               ^
-TestErasedTypes_fail.scala:10: error: trait Foo in object ErasedTypes is marked @experimental and therefore its enclosing scope must be experimental.
-  def test4(f: Foo) = f.foo2("foo")
-               ^
-7 errors
-
+3 errors

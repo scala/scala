@@ -57,12 +57,4 @@ IllegalTraitParams_fail.scala:31: error: illegal inheritance; parameterized supe
  is defined in Scala 3 as trait TopLevelTraitParams4(uninstantiated: String)
 class IllegalMixinFromTraitWithParams extends OkTraitExtendsTraitWithParams // error - mixin indirectly parameterised trait
                                               ^
-IllegalTraitParams_fail.scala:14: error: cannot override final member:
-final val myFinalParam: String (defined in trait ForOverrideFinal)
-  override val myFinalParam: String = ""
-               ^
-IllegalTraitParams_fail.scala:16: error: cannot override final member:
-final val myFinalParam: String (defined in trait ForOverrideFinal)
-class IllegalOverrideFinalParamParam(override val myFinalParam: String) extends TraitParams.ForOverrideFinal
-                                                  ^
-18 errors
+16 errors
