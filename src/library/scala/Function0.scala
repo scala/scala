@@ -11,7 +11,7 @@
  */
 
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: 2022-01-17T20:47:12.170348200Z
+// genprod generated these sources at: 2024-11-11T11:11:11.910758899Z
 
 package scala
 
@@ -40,6 +40,10 @@ trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self
    *  @return   the result of function application.
    */
   def apply(): R
+  /** Apply the body of this function to the argument which is taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext: R = apply()
 
   override def toString(): String = "<function0>"
 }

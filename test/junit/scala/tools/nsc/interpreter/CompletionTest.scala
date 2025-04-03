@@ -164,7 +164,7 @@ class CompletionTest {
     val completer1 = new ReplCompletion(intp)
     checkExact(completer1, "new X_y_")("X_y_z")
     checkExact(completer1, "X_y_")("X_y_z")
-    checkExact(completer1, "X_y_z.app")("apply")
+    checkExact(completer1, "X_y_z.app")("apply applyToContext")
   }
 
   @Test

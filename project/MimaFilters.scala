@@ -64,6 +64,9 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.defaultArg"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superArg"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.meta.superFwdArg"),
+
+    // scala/scala/pull/10923
+    ProblemFilters.exclude[DirectMissingMethodProblem]("*.applyToContext"),
   )
 
   override val buildSettings = Seq(

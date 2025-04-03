@@ -110,7 +110,11 @@ raw"""
  *    }
  *    assert(greeting() == anonfun0())
  * """)
-  override def moreMethods = ""
+  override def moreMethods = """  /** Apply the body of this function to the argument which is taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext: R = apply()
+"""
 }
 
 object FunctionOne extends Function(1) {
@@ -131,6 +135,11 @@ object FunctionOne extends Function(1) {
  *  is that the latter can specify inputs which it will not handle."""
 
   override def moreMethods = """
+  /** Apply the body of this function to the argument which is taken from the implicit context.
+   *  @return   the result of function application.
+   */
+  @annotation.unspecialized def applyToContext(implicit v1: T1): R = apply(v1)
+
   /** Composes two instances of Function1 in a new Function1, with this function applied last.
    *
    *  @tparam   A   the type to which function `g` can be applied
@@ -237,6 +246,16 @@ class Function(val i: Int) extends Group("Function") with Arity {
 
   private def commaXs = xdefs.mkString("(", ", ", ")")
 
+  def applyToContextMethod = {
+    def comment =
+"""  /** Apply the body of this function to the arguments which are taken from the implicit context.
+   *  @return   the result of function application.
+   */
+"""
+    comment + "  @annotation.unspecialized def applyToContext(implicit %s): R = apply%s\n".format(
+      funArgs, vdefs.mkString("(", ", ", ")"))
+  }
+
   // (x1: T1) => (x2: T2) => (x3: T3) => (x4: T4) => apply(x1,x2,x3,x4)
   def shortCurry = {
     val body = "apply" + commaXs
@@ -281,7 +300,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
     )
   }
 
-  override def moreMethods = curryMethod + tupleMethod
+  override def moreMethods = applyToContextMethod ++ curryMethod + tupleMethod
 } // object Function
 
 
