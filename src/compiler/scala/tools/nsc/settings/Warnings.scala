@@ -131,6 +131,7 @@ trait Warnings {
   val warnToString         = BooleanSetting("-Wtostring-interpolated", "Warn when a standard interpolator uses toString.")
   val warnMultiargInfix    = BooleanSetting("-Wmultiarg-infix", "Infix operator was defined or used with multiarg operand.")
   def multiargInfix        = warnMultiargInfix.value
+  val warnTraitParens      = BooleanSetting("-Wtrait-args", "Warn when a trait has empty parens.")
 
   object PerformanceWarnings extends MultiChoiceEnumeration {
     val Captured       = Choice("captured",        "Modification of var in closure causes boxing.")

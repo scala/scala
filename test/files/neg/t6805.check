@@ -1,13 +1,12 @@
-t6805.scala:4: error: trait T is a trait; does not take constructor arguments
+t6805.scala:5: warning: omit parens for trait which takes no arguments
 class C extends T() // error
                 ^
-t6805.scala:7: error: trait T is a trait; does not take constructor arguments
+t6805.scala:8: warning: omit parens for trait which takes no arguments
 class Y extends X with T() // error
                        ^
-t6805.scala:11: error: trait T is abstract; cannot be instantiated
-  def u: T = new T()  // error
-             ^
-t6805.scala:12: error: trait T is a trait; does not take constructor arguments
+t6805.scala:12: warning: omit parens for trait which takes no arguments
   def v: T = new X with T()  // error
                         ^
-4 errors
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

@@ -608,7 +608,8 @@ object Reporting {
         WFlagSelfImplicit,
         WFlagUnnamedBooleanLiteral,
         WFlagTostringInterpolated,
-        WFlagValueDiscard
+        WFlagValueDiscard,
+        WFlagTraitArgs
       = wflag()
 
     sealed class Unused extends WarningCategory {

@@ -1,3 +1,4 @@
+//> using options -Wtrait-args -Werror
 
 trait T
 
@@ -8,7 +9,6 @@ class Y extends X with T() // error
 
 object funcs {
   def t: T = new T() {} // no error, permissive for Java anon syntax, just because
-  def u: T = new T()  // error
   def v: T = new X with T()  // error
-  def w: T = new T {}
+  def w: T = new T {} // correct in every way
 }

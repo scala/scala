@@ -18,7 +18,7 @@ import scala.annotation._
 import scala.collection.mutable, mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{CodeAction, FreshNameCreator, ListOfNil, Statistics}
-import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}, WarningCategory.Scala3Migration
+import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}, WarningCategory._
 import scala.util.chaining._
 import symtab.Flags._
 import Mode._
@@ -1598,8 +1598,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
       val tpt =
         if (probe.isTrait || inMixinPosition) {
-          if (probe.isTrait && inMixinPosition && !isAnonClass && !argss.isEmpty)
-            ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
+          if (probe.isTrait) {
+            if (!argssAreTrivial)
+              ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
+            else if (settings.warnTraitParens.value && (!isAnonClass || inMixinPosition) && !argss.isEmpty)
+              context.warning(encodedtpt.pos, "omit parens for trait which takes no arguments", WFlagTraitArgs)
+          }
           //if (!probe.isTrait)
             // a class in a mixin position - this warrants an error in `validateParentClasses`
             // therefore here we do nothing, e.g. don't check that the # of ctor arguments
@@ -1757,7 +1761,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def typedParentTypes(templ: Template): List[Tree] = templ.parents match {
       case Nil => List(atPos(templ.pos)(TypeTree(AnyRefTpe)))
       case parents =>
-        val isAnonClass = !context.owner.isAnonymousClass // permit new T() {} syntax
+        val isAnonClass = context.owner.isAnonymousClass // permit new T() {} syntax
         def loop(parents: List[Tree], inMixinPosition: Boolean): List[Tree] =
           parents match {
             case parent :: parents =>
