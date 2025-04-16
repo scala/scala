@@ -94,6 +94,17 @@ class IterableTest {
     check(unknown, unknown)
   }
 
+  @Test
+  def sizeIsIterable(): Unit = {
+    val it = Seq(1, 2, 3)
+    assert(it.sizeIs > Seq(2, 3).sizeIs)
+    assert(it.sizeIs != Seq(2, 3).sizeIs)
+    assert(it.sizeIs >= Seq(2, 3, 4).sizeIs)
+    assert(it.sizeIs == Seq(2, 3, 4).sizeIs)
+    assert(it.sizeIs <= Seq(2, 3, 4).sizeIs)
+    assert(it.sizeIs < Seq(2, 3, 4, 5).sizeIs)
+  }
+
   @Test def copyToArray(): Unit = {
     def check(a: Array[Int], copyToArray: Array[Int] => Int, elemsWritten: Int, start: Int, end: Int) = {
 
