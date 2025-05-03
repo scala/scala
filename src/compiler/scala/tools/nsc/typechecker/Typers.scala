@@ -163,8 +163,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
       case MethodType(params, _) =>
-        val argResultsBuff = new ListBuffer[SearchResult]()
-        val argBuff = new ListBuffer[Tree]()
+        val argResultsBuff = ListBuffer.empty[SearchResult]
+        val argBuff = ListBuffer.empty[Tree]
         // paramFailed cannot be initialized with params.exists(_.tpe.isError) because that would
         // hide some valid errors for params preceding the erroneous one.
         var paramFailed = false
@@ -174,9 +174,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //
         // apply the substitutions (undet type param -> type) that were determined
         // by implicit resolution of implicit arguments on the left of this argument
-        for(param <- params) {
+        for (param <- params) {
           var paramTp = param.tpe
-          for(ar <- argResultsBuff)
+          for (ar <- argResultsBuff)
             paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
 
           val res =
@@ -187,7 +187,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (res.isSuccess) {
             argBuff += mkArg(param.name, res.tree)
           } else {
-            mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
+            // don't pass the default argument (if any) here, but start emitting named arguments for the following args
+            mkArg = gen.mkNamedArg
             if (!param.hasDefault && !paramFailed) {
               context.reporter.reportFirstDivergentError(fun, param, paramTp)(context)
               paramFailed = true

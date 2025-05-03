@@ -1,0 +1,4 @@
+t12351.scala:8: error: could not find implicit value for parameter e: T
+  def g(t: String): T = implicitly[T]
+                                  ^
+1 error

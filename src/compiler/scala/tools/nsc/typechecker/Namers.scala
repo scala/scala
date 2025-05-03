@@ -363,22 +363,6 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    private def enterClassSymbol(@unused tree: ClassDef, clazz: ClassSymbol): Symbol = {
-      var sourceFile = clazz.sourceFile
-      if (sourceFile != null && sourceFile != contextFile)
-        devWarning(s"Source file mismatch in $clazz: ${sourceFile} vs. $contextFile")
-
-      clazz.associatedFile = contextFile
-      sourceFile = clazz.sourceFile
-      if (sourceFile != null) {
-        assert(currentRun.canRedefine(clazz) || sourceFile == currentRun.symSource(clazz), sourceFile)
-        currentRun.symSource(clazz) = sourceFile
-      }
-      registerTopLevelSym(clazz)
-      assert(clazz.name.toString.indexOf('(') < 0, clazz.name)  // )
-      clazz
-    }
-
     def enterClassSymbol(tree: ClassDef): Symbol = {
       val existing = context.scope.lookup(tree.name)
       val isRedefinition = (
@@ -397,9 +381,25 @@ trait Namers extends MethodSynthesis {
         else enterInScope(assignMemberSymbol(tree)) setFlag inConstructorFlag
       }
       clazz match {
-        case csym: ClassSymbol if csym.isTopLevel => enterClassSymbol(tree, csym)
-        case _                                    => clazz
+        case clazz: ClassSymbol if clazz.isTopLevel =>
+          clazz.sourceFile match {
+            case null =>
+            case sourceFile =>
+              if (sourceFile != contextFile)
+                devWarning(s"Source file mismatch in $clazz: ${sourceFile} vs. $contextFile")
+          }
+          clazz.associatedFile = contextFile
+          clazz.sourceFile match {
+            case null =>
+            case sourceFile =>
+              assert(currentRun.canRedefine(clazz) || sourceFile == currentRun.symSource(clazz), sourceFile)
+              currentRun.symSource(clazz) = sourceFile
+          }
+          registerTopLevelSym(clazz)
+          assert(!clazz.name.containsChar('('), clazz.name)  // )
+        case _ =>
       }
+      clazz
     }
 
     /** Given a ClassDef or ModuleDef, verifies there isn't a companion which

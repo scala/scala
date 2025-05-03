@@ -115,6 +115,9 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     } else {
       echo(statusLine(state, durationMs))
       if (!state.isOk) errInfo.foreach(echo)
+      else if (config.optShowLog && info.logFile.canRead)
+        List(bold(cyan(s"##### Log file '${info.logFile}' from successful test #####\n")), info.logFile.fileContents)
+          .foreach(echo)
       Nil
     }
   }

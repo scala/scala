@@ -404,7 +404,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): TermSymbol = {
       val triedCookingFlag = if (alternatives.forall(_.hasFlag(TRIEDCOOKING))) TRIEDCOOKING else 0L
 
-      newTermSymbol(alternatives.head.name.toTermName, alternatives.head.pos, OVERLOADED | triedCookingFlag) setInfo OverloadedType(pre, alternatives)
+      newTermSymbol(alternatives.head.name.toTermName, alternatives.head.pos, OVERLOADED | triedCookingFlag)
+        .setInfo(OverloadedType(pre, alternatives))
     }
 
     final def newErrorValue(name: TermName): TermSymbol =
@@ -2310,7 +2311,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *  class C {
      *    def <init> = { ... }
-     *    val x = { def g() = ...; g() } }
+     *    val x = { def g() = ...; g() }
      *  }
      *
      *  In this case the owner chain of `g` is `x`, followed by `C` but
@@ -2655,7 +2656,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         (file eq NoAbstractFile) || {
           val path = file.path
           path.endsWith(".class") || path.endsWith(".sig") || path.endsWith(".tasty")
-        }) null else file
+        }) null
+      else file
     }
 
     /** Overridden in ModuleSymbols to delegate to the module class.
@@ -3448,6 +3450,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else _associatedFile
       }
     )
+    // assert isTopLevel
     override def associatedFile_=(f: AbstractFile): Unit = { _associatedFile = f }
 
     override def reset(completer: Type): this.type = {

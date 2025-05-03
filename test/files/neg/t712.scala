@@ -1,3 +1,5 @@
+import language.implicitConversions
+
 trait A {
   type Node <: NodeImpl;
   implicit def coerce(n : NodeImpl) = n.self;

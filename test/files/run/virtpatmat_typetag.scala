@@ -1,5 +1,5 @@
-//> using options -Xfatal-warnings
-//
+//> using options -Werror
+
 import reflect.{ClassTag, classTag}
 
 trait Extractors {

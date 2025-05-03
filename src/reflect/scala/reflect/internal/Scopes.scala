@@ -30,11 +30,16 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** An ADT to represent the results of symbol name lookups.
    */
-  sealed trait NameLookup { def symbol: Symbol ; def isSuccess = false }
-  case class LookupSucceeded(qualifier: Tree, symbol: Symbol) extends NameLookup { override def isSuccess = true }
-  case class LookupAmbiguous(msg: String) extends NameLookup { def symbol = NoSymbol }
-  case class LookupInaccessible(symbol: Symbol, msg: String) extends NameLookup
-  case object LookupNotFound extends NameLookup { def symbol = NoSymbol }
+  sealed trait NameLookup {
+    def symbol: Symbol = NoSymbol
+    def isSuccess: Boolean = false
+  }
+  case class LookupSucceeded(qualifier: Tree, override val symbol: Symbol) extends NameLookup {
+    override def isSuccess = true
+  }
+  case class LookupAmbiguous(msg: String) extends NameLookup
+  case class LookupInaccessible(override val symbol: Symbol, msg: String) extends NameLookup
+  case object LookupNotFound extends NameLookup
 
   class ScopeEntry(var sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket

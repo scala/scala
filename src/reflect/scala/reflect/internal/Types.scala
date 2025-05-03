@@ -1001,10 +1001,11 @@ trait Types
      *    you won't get deferred members (whether they have an overriding concrete member or not)
      *
      * Thus, findMember requiring DEFERRED flags yields deferred members,
-     * while `findMember(excludedFlags = 0, requiredFlags = 0).filter(_.isDeferred)` may not (if there's a corresponding concrete member)
+     * while `findMember(excludedFlags = 0, requiredFlags = 0).filter(_.isDeferred)` may not
+     * (if there's a corresponding concrete member)
      *
-     * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
-     *
+     * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member
+     * (if there is one).
      */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
@@ -1012,9 +1013,8 @@ trait Types
       else suspendingTypeVars(typeVarsInTypeRev(this))(findMembersInternal)
     }
 
-    /**
-     *  Find member(s) in this type. If several members matching criteria are found, they are
-     *  returned in an OverloadedSymbol
+    /** Find member(s) in this type. If several members matching criteria are found, they are
+     *  returned in an OverloadedSymbol.
      *
      *  @param name           The member's name
      *  @param excludedFlags  Returned members do not have these flags

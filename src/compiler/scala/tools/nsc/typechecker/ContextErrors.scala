@@ -462,7 +462,7 @@ trait ContextErrors extends splain.SplainErrors {
                     !nme.isLocalName(sym.name) &&
                     isEncodedComparison(sym.name) == nameIsComparison &&
                     sym.name != nme.EQ && sym.name != nme.NE &&
-                    cx.isAccessible(sym, target))
+                    cx.isAccessible(sym, target, superAccess = false))
                   .map(_.name.decode)
                   .filter { n =>
                     math.abs(n.length - x.length) <= editThreshold &&

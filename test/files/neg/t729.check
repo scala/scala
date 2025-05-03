@@ -1,13 +1,12 @@
-t729.scala:20: error: type mismatch;
- found   : ScalaParserAutoEdit.this.NodeImpl(in trait Parser)
- required: ScalaParserAutoEdit.this.NodeImpl(in trait ScalaParserAutoEdit)
-      val yyy : NodeImpl = link.from;
-                                ^
-t729.scala:3: warning: Implicit definition should have explicit type (inferred Parser.this.Node) [quickfixable]
-  implicit def coerce(n : NodeImpl) = n.self;
+t729.scala:6: warning: Implicit definition should have explicit type (inferred Parser.this.Node) [quickfixable]
+  implicit def coerce(n : NodeImpl)/*: Node*/ = n.self;
                ^
-t729.scala:14: warning: Implicit definition should have explicit type (inferred ScalaParserAutoEdit.this.Node) [quickfixable]
-  implicit def coerce(node : NodeImpl) = node.self;
+t729.scala:17: warning: Implicit definition should have explicit type (inferred ScalaParserAutoEdit.this.Node) [quickfixable]
+  implicit def coerce(node : NodeImpl)/*: Node*/ = node.self;
                ^
-2 warnings
+t729.scala:18: warning: shadowing a nested class of a parent is deprecated but trait NodeImpl shadows trait NodeImpl defined in trait Parser; rename the class to something else
+  trait NodeImpl extends super[Parser].NodeImpl {
+        ^
+error: No warnings can be incurred under -Werror.
+3 warnings
 1 error

@@ -22,7 +22,7 @@ package typechecker
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable, mutable.{LinkedHashMap, ListBuffer}
 import scala.language.implicitConversions
-import scala.reflect.internal.util.{ReusableInstance, Statistics, TriState}
+import scala.reflect.internal.util.{Statistics, TriState}
 import scala.reflect.internal.TypesStats
 import scala.tools.nsc.Reporting.WarningCategory.{Scala3Migration, WFlagSelfImplicit}
 import symtab.Flags._
@@ -88,11 +88,10 @@ trait Implicits extends splain.SplainData {
    */
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
     currentRun.profiler.beforeImplicitSearch(pt)
-    try {
+    try
       inferImplicit1(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, pos)
-    } finally {
+    finally
       currentRun.profiler.afterImplicitSearch(pt)
-    }
   }
 
   private def inferImplicit1(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
@@ -239,7 +238,6 @@ trait Implicits extends splain.SplainData {
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
-  private val shadowerUseOldImplementation = java.lang.Boolean.getBoolean("scalac.implicit.shadow.old")
   def resetImplicits(): Unit = {
     implicitsCache.clear()
     infoMapCache.clear()
@@ -815,7 +813,9 @@ trait Implicits extends splain.SplainData {
         case _                          => (if (fast) isPlausiblySubType(tp, pt) else tp <:< pt) && {
           pt match {
             case RefinedType(_, syms) if !syms.isEmpty =>
-              syms.reverseIterator.exists(x => context.isAccessible(tp.nonPrivateMember(x.name), tp))
+              syms.reverseIterator.exists { x =>
+                context.isAccessible(tp.nonPrivateMember(x.name), tp, superAccess = false)
+              }
             case _ =>
               true
           }
@@ -943,8 +943,7 @@ trait Implicits extends splain.SplainData {
         else if (itree3.isErroneous)
           fail("error typechecking implicit candidate")
         else if (isLocalToCallsite && !hasMatchingSymbol(itree2))
-          fail("candidate implicit %s is shadowed by %s".format(
-            info.sym.fullLocationString, itree2.symbol.fullLocationString))
+          fail(s"candidate implicit ${info.sym.fullLocationString} is shadowed by ${itree2.symbol.fullLocationString}")
         else {
           val tvars = undetParams map freshVar
           val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
@@ -1035,7 +1034,8 @@ trait Implicits extends splain.SplainData {
      *   - the symbol's type is initialized
      *   - the symbol comes from a classfile
      *   - the symbol comes from a different sourcefile than the current one
-     *   - the symbol and the accessed symbol's definitions come before, and do not contain the closest enclosing definition, // see #3373
+     *   - the symbol comes earlier in the source file but is not an enclosing definition
+     *   - ditto for the accessed of an accessor (#3373)
      *   - the symbol's definition is a val, var, or def with an explicit result type
      *  The aim of this method is to prevent premature cyclic reference errors
      *  by computing the types of only those implicits for which one of these
@@ -1055,21 +1055,27 @@ trait Implicits extends splain.SplainData {
       }
       def comesBefore(sym: Symbol, owner: Symbol) = {
         val ownerPos = owner.pos.pointOrElse(Int.MaxValue)
+        val res =
         sym.pos.pointOrElse(0) < ownerPos && (
           if (sym.hasAccessorFlag) {
             val symAcc = sym.accessed // #3373
             symAcc.pos.pointOrElse(0) < ownerPos &&
-            !(owner.ownerChain exists (o => (o eq sym) || (o eq symAcc))) // probably faster to iterate only once, don't feel like duplicating hasTransOwner for this case
-          } else !(owner hasTransOwner sym)) // faster than owner.ownerChain contains sym
+            !owner.ownerChain.exists(o => (o eq sym) || (o eq symAcc))
+              // probably faster to iterate only once, avoid duplicating hasTransOwner for this case
+              // TODO hasTransOwner has an override
+          }
+          else !owner.hasTransOwner(sym) // faster than owner.ownerChain contains sym
+        )
+        res
       }
-
-      sym.isInitialized || {
-        val sourceFile = sym.sourceFile
-        sourceFile == null ||
-        (sourceFile ne context.unit.source.file) ||
-        hasExplicitResultType(sym) ||
-        comesBefore(sym, context.owner)
-      }
+      (    sym.isInitialized
+        || hasExplicitResultType(sym)
+        || (sym.sourceFile match {
+             case null => true
+             case sourceFile => sourceFile ne context.unit.source.file
+           })
+        || comesBefore(sym, context.owner)
+      )
     }
 
     /** Prune ImplicitInfos down to either all the eligible ones or the best one.
@@ -1088,19 +1094,18 @@ trait Implicits extends splain.SplainData {
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
 
-      /** True if a given ImplicitInfo (already known isValid) is eligible.
+      /** True if a given ImplicitInfo that isValid is not ineligible and matches the expected type.
        */
       @nowarn("cat=lint-inaccessible")
-      def survives(info: ImplicitInfo, shadower: Shadower) = (
+      def survives(info: ImplicitInfo) = (
            !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
-        && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
         && matchesPt(info)                          // stable and matches expected type
       )
       /** The implicits that are not valid because they come later in the source and
        *  lack an explicit result type. Used for error diagnostics only.
        */
-      val invalidImplicits = new ListBuffer[Symbol]
+      val invalidImplicits = ListBuffer.empty[Symbol]
 
       /** Tests for validity and updates invalidImplicits by side effect when false.
        */
@@ -1145,88 +1150,10 @@ trait Implicits extends splain.SplainData {
         }
       }
 
-      /** Sorted list of eligible implicits.
-       */
-      private def eligibleOld = Shadower.using(isLocalToCallsite) { shadower =>
-        iss flatMap { is =>
-          val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
-          shadower addInfos is
-          result
-        }
-      }
+      val eligibleValidMatching: List[ImplicitInfo] =
+        iss.flatMap(_.filter(info => checkValid(info.sym) && survives(info)))
 
-      /** Sorted list of eligible implicits.
-       */
-      private def eligibleNew = {
-        final case class Candidate(info: ImplicitInfo, level: Int)
-        var matches: java.util.ArrayList[Candidate] = null
-        var matchesNames: java.util.HashSet[Name] = null
-
-        var maxCandidateLevel = 0
-
-        {
-          var i = 0
-          // Collect candidates, the level at which each was found and build a set of their names
-          var iss = this.iss
-          while (!iss.isEmpty) {
-            var is = iss.head
-            while (!is.isEmpty) {
-              val info = is.head
-              if (checkValid(info.sym) && survives(info, NoShadower)) {
-                if (matches == null) {
-                  matches = new java.util.ArrayList(16)
-                  matchesNames = new java.util.HashSet(16)
-                }
-                matches.add(Candidate(info, i))
-                matchesNames.add(info.name)
-                maxCandidateLevel = i
-              }
-              is = is.tail
-            }
-            iss = iss.tail
-            i += 1
-          }
-        }
-
-        if (matches == null)
-          Nil // OPT common case: no candidates
-        else {
-          if (isLocalToCallsite) {
-            // A second pass to filter out results that are shadowed by implicits in inner scopes.
-            var i = 0
-            var removed = false
-            var iss = this.iss
-            while (!iss.isEmpty && i < maxCandidateLevel) {
-              var is = iss.head
-              while (!is.isEmpty) {
-                val info = is.head
-                if (matchesNames.contains(info.name)) {
-                  var j = 0
-                  val numMatches = matches.size()
-                  while (j < numMatches) {
-                    val matchInfo = matches.get(j)
-                    if (matchInfo != null && matchInfo.info.name == info.name && matchInfo.level > i) {
-                      // Shadowed. For now set to null, so as not to mess up the indexing our current loop.
-                      matches.set(j, null)
-                      removed = true
-                    }
-                    j += 1
-                  }
-                }
-                is = is.tail
-              }
-              iss = iss.tail
-              i += 1
-            }
-            if (removed) matches.removeIf(_ == null) // remove for real now.
-          }
-          val result = new ListBuffer[ImplicitInfo]
-          matches.forEach(x => result += x.info)
-          result.toList
-        }
-      }
-
-      val eligible: List[ImplicitInfo] = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
+      val eligible: List[ImplicitInfo] = eligibleValidMatching
       if (eligible.nonEmpty)
         printTyping(tree, s"${eligible.size} eligible for pt=$pt at ${fullSiteString(context)}")
 
@@ -1270,8 +1197,9 @@ trait Implicits extends splain.SplainData {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
             }
           }
+          // Don't accumulate constraints from typechecking or type error message creation for failed candidates
           if (typedFirstPending.isFailure)
-            undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
+            undoLog.undoTo(mark)
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
           // the first `DivergentImplicitTypeError` that is being propagated
@@ -1302,13 +1230,13 @@ trait Implicits extends splain.SplainData {
         // earlier elems may improve on later ones, but not the other way.
         // So if there is any element not improved upon by the first it is an error.
         rankImplicits(eligible, Nil) match {
-          case Nil            => ()
+          case Nil =>
           case (chosenResult, chosenInfo) :: rest =>
-            rest find { case (_, alt) => !improves(chosenInfo, alt) } match {
-              case Some((competingResult, competingInfo))  =>
+            rest.find { case (_, alt) => !improves(chosenInfo, alt) } match {
+              case Some((competingResult, competingInfo)) =>
                 AmbiguousImplicitError(chosenInfo, chosenResult.tree, competingInfo, competingResult.tree, "both", "and", "")(isView, pt, tree)(context)
                 return AmbiguousSearchFailure // Stop the search once ambiguity is encountered, see t4457_2.scala
-              case _                =>
+              case _ =>
                 if (isView) chosenInfo.useCountView += 1
                 else chosenInfo.useCountArg += 1
             }
@@ -1482,8 +1410,14 @@ trait Implicits extends splain.SplainData {
       }
       emptyInfos.foreach(infoMap.remove)
       if (infoMap.nonEmpty)
-        printTyping(tree, "" + infoMap.size + " implicits in companion scope")
-
+        printTyping(tree, s"${infoMap.size} implicits in companion scope")
+      /*
+      if (settings.debug.value)
+        infoMap.foreachEntry { (sym, iis) =>
+          for (ii <- iis)
+            printTyping(tree, s"$sym -> ${ii.name} ${ii.pre} ${ii.sym}")
+        }
+      */
       infoMap
     }
 
@@ -1757,15 +1691,42 @@ trait Implicits extends splain.SplainData {
       val failstart = if (stats) statistics.startTimer(inscopeFailNanos) else null
       val succstart = if (stats) statistics.startTimer(inscopeSucceedNanos) else null
 
-      var result = searchImplicit(context.implicitss, isLocalToCallsite = true)
+      // looking up a "candidate" implicit from this context must yield the candidate if not shadowed
+      // note that isAccessible is checked by isQualifyingImplicit //&& isAccessible(ii.sym, ii.pre)
+      // if lookup fails, it's a stale symbol problem, not our problem (pos/t5639)
+      def shadowed(ii: ImplicitInfo): Boolean = {
+        def shadowed = context.lookupSymbol(ii.name, _ => true) match {
+          case LookupSucceeded(qualifier, symbol) =>
+            // ii.pre or skipPackageObject
+            val pre = if (ii.pre.typeSymbol.isPackageObjectClass) ii.pre.typeSymbol.owner.module.info else ii.pre
+            val ok = (
+                 symbol.alternatives.exists(_ == ii.sym)
+              && (qualifier.isEmpty || qualifier.tpe =:= pre)
+            )
+            if (!ok && settings.isDebug) {
+              val pretext = if (ii.pre != NoType) s" in ${ii.pre}" else ""
+              val qualtext = if (!qualifier.isEmpty) s" in ${qualifier.tpe}" else ""
+              debuglog(s"Drop shadowed implicit ${ii.sym.fullLocationString}${pretext} for ${
+                symbol.fullLocationString}${qualtext}")
+            }
+            !ok
+          case failure =>
+            debuglog(s"Not dropping implicit $ii or ${ii.sym.fullLocationString} on bad lookup $failure in ${
+              context.owner}")
+            false
+        }
+        try shadowed
+        catch { case _: TypeError => false }
+      }
+      val implicitss = context.implicitss.map(_.filterNot(shadowed)).filter(!_.isEmpty)
+      var result = searchImplicit(implicitss, isLocalToCallsite = true)
 
-      if (stats) {
+      if (stats)
         if (result.isFailure) statistics.stopTimer(inscopeFailNanos, failstart)
         else {
           statistics.stopTimer(inscopeSucceedNanos, succstart)
           statistics.incCounter(inscopeImplicitHits)
         }
-      }
 
       if (result.isFailure) {
         val failstart = if (stats) statistics.startTimer(oftypeFailNanos) else null
@@ -1973,37 +1934,6 @@ trait Implicits extends splain.SplainData {
           Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not $where.")
       }
     }
-  }
-
-  private abstract class Shadower {
-    def addInfos(infos: Infos): Unit
-    def isShadowed(name: Name): Boolean
-  }
-  object Shadower {
-    private[this] val localShadowerCache = ReusableInstance[LocalShadower](new LocalShadower, enabled = isCompilerUniverse)
-
-    def using[T](local: Boolean)(f: Shadower => T): T =
-      if (local) localShadowerCache.using { shadower =>
-        shadower.clear()
-        f(shadower)
-      }
-      else f(NoShadower)
-  }
-
-  /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
-  private final class LocalShadower extends Shadower {
-    // OPT: using j.l.HashSet as that retains the internal array on clear(), which makes it worth caching.
-    val shadowed = new java.util.HashSet[Name](512)
-    def addInfos(infos: Infos): Unit = {
-      infos.foreach(i => shadowed.add(i.name))
-    }
-    def isShadowed(name: Name) = shadowed.contains(name)
-    def clear(): Unit = shadowed.clear()
-  }
-  /** Used for the implicits of expected type, when no shadowing checks are needed. */
-  private object NoShadower extends Shadower {
-    def addInfos(infos: Infos): Unit = {}
-    def isShadowed(name: Name) = false
   }
 }
 

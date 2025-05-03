@@ -1,11 +1,14 @@
-t712.scala:10: error: overloaded method coerce needs result type
+t712.scala:12: error: overloaded method coerce needs result type
   implicit def coerce(p : ParentImpl) = p.self;
                                           ^
-t712.scala:3: warning: Implicit definition should have explicit type (inferred A.this.Node) [quickfixable]
+t712.scala:20: error: value scope is not a member of B.this.Symbol
+  val s_scope = s.scope;
+                  ^
+t712.scala:5: warning: Implicit definition should have explicit type (inferred A.this.Node) [quickfixable]
   implicit def coerce(n : NodeImpl) = n.self;
                ^
-t712.scala:10: warning: Implicit definition should have explicit type [quickfixable]
+t712.scala:12: warning: Implicit definition should have explicit type [quickfixable]
   implicit def coerce(p : ParentImpl) = p.self;
                ^
 2 warnings
-1 error
+2 errors
