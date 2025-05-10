@@ -3569,7 +3569,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def implicitMembers: Scope = {
       val tp = info
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
-        implicitMembersCacheValue = tp.membersBasedOnFlags(BridgeFlags, IMPLICIT)
+        implicitMembersCacheValue = tp.membersBasedOnFlags(excluded = BridgeFlags, required = IMPLICIT)
         implicitMembersCacheKey1 = tp
         implicitMembersCacheKey2 = tp.decls.elems
       }

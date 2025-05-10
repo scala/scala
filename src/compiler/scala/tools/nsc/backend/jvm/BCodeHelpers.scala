@@ -842,7 +842,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // * Using `exitingUncurry` (not `enteringErasure`) because erasure enters bridges in traversal,
       //   not in the InfoTransform, so it actually modifies the type from the previous phase.
       //   Uncurry adds java varargs, which need to be included in the mirror class.
-      val members = exitingUncurry(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
+      val members = exitingUncurry {
+        moduleClass.info
+          .membersBasedOnFlags(excluded = BCodeHelpers.ExcludedForwarderFlags, required = symtab.Flags.METHOD)
+      }
       for (m <- members) {
         val excl = m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
           { val o = m.owner; (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass) } ||

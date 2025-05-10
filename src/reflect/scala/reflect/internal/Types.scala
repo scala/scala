@@ -593,26 +593,27 @@ trait Types
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: Scope = membersBasedOnFlags(0, 0)
+    def members: Scope = membersBasedOnFlags(excluded = 0, required = 0)
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: Scope = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
+    def nonPrivateMembers: Scope = membersBasedOnFlags(excluded = BridgeAndPrivateFlags, required = 0)
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
-    def nonPrivateMembersAdmitting(admit: Long): Scope = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
+    def nonPrivateMembersAdmitting(admit: Long): Scope =
+      membersBasedOnFlags(excluded = BridgeAndPrivateFlags & ~admit, required = 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
     def implicitMembers: Scope = {
       typeSymbolDirect match {
         case sym: ModuleClassSymbol => sym.implicitMembers
-        case _ => membersBasedOnFlags(BridgeFlags, IMPLICIT)
+        case _ => membersBasedOnFlags(excluded = BridgeFlags, required = IMPLICIT)
       }
     }
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
-    def deferredMembers: Scope = membersBasedOnFlags(BridgeFlags, DEFERRED)
+    def deferredMembers: Scope = membersBasedOnFlags(excluded = BridgeFlags, required = DEFERRED)
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
@@ -649,8 +650,8 @@ trait Types
     /** Members excluding and requiring the given flags.
      *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
      */
-    def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): Scope =
-      findMembers(excludedFlags, requiredFlags)
+    def membersBasedOnFlags(excluded: Long, required: Long): Scope =
+      findMembers(excludedFlags = excluded, requiredFlags = required)
 
     def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
       findMember(name, excludedFlags, 0, stableOnly = false)

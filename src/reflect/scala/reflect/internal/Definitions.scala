@@ -1054,7 +1054,7 @@ trait Definitions extends api.StandardDefinitions {
             //    Scopes()
             // must filter out "universal" members (getClass is deferred for some reason)
             val deferredMembers =
-              tpSym.info.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
+              tpSym.info.membersBasedOnFlags(excluded = BridgeAndPrivateFlags, required = METHOD)
               .toList
               .filter(mem => mem.isDeferred && !isUniversalMember(mem))
 
