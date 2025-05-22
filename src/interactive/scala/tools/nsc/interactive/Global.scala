@@ -299,7 +299,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   def isOutOfDate: Boolean = outOfDate
 
   def demandNewCompilerRun() = {
-    //if (!lastWasReload) allSources.foreach(getUnit(_).foreach(reset(_)))
     if (outOfDate) throw new FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }

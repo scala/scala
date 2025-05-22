@@ -54,9 +54,6 @@ trait AskParse extends AskCommand {
    *  otherwise, parser progress update will run the next job.
    */
   def askParse(sources: Seq[SourceFile]): Unit =
-    sources.map(askParse(_)).foreach(_.get)
-
-  def askParse2(sources: Seq[SourceFile]): Unit =
     for (source <- sources) {
       val _ = askParse(source).get
     }
