@@ -46,16 +46,8 @@ object Test extends InteractiveTest {
     }
   }
 
-  override def runDefaultTests(): Unit = {
-    var retries = 0
-    //var retries = 10000
-    //val Done = false // true to retry until success
-    val Done = true // true to retry until success
-    while (dorun() != Done && retries > 0) {
-      Thread.sleep(50L)
-      retries -= 1
-    }
-  }
+  override def runDefaultTests(): Unit = dorun()
+
   def dorun(): Boolean = {
     import compiler.{TermName, TypeName, getComment}
     def findSource(name: String) = sourceFiles.find(_.file.name == name).get

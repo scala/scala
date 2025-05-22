@@ -957,6 +957,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     // New typer run to remove temp units and drop per-run caches that might refer to symbols entered from temp units.
     newTyperRun()
+    minRunId = currentRunId
   }
 
   def stabilizedType(tree: Tree): Type = tree match {
