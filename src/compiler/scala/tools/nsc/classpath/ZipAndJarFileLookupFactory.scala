@@ -203,6 +203,12 @@ final class FileBasedCache[K, T] {
         case null =>
         case task => task.cancel()
       }
+    def close(): Unit = {
+      t match {
+        case cl: Closeable => cl.close()
+        case _ =>
+      }
+    }
   }
   private val cache = collection.mutable.Map.empty[(K, Seq[Path]), Entry]
 
@@ -311,7 +317,7 @@ final class FileBasedCache[K, T] {
 
   def clear(): Unit = cache.synchronized {
     // TODO support closing
-    // cache.valuesIterator.foreach(_.close())
+    cache.valuesIterator.foreach(_.close())
     cache.clear()
   }
 }

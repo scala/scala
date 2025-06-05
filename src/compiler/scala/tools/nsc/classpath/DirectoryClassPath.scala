@@ -140,6 +140,10 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 object JrtClassPath {
   private val jrtClassPathCache = new FileBasedCache[Option[String], JrtClassPath]()
   private val ctSymClassPathCache = new FileBasedCache[String, CtSymClassPath]()
+  def clearCaches(): Unit = {
+    jrtClassPathCache.clear()     
+    ctSymClassPathCache.clear()
+  }
   def apply(release: Option[String], systemPath: Option[String], unsafe: Option[List[String]], closeableRegistry: CloseableRegistry): List[ClassPath] =
     if (!isJavaAtLeast("9")) Nil
     else {
