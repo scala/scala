@@ -160,7 +160,7 @@ object scalac extends Command {
             "Enable detailed unchecked (erasure) warnings",
             "Non variable type-arguments in type patterns are unchecked " &
             "since they are eliminated by erasure",
-            "Available since Scala version 2.3.0")),
+            "Available since Scala version 2.4.0")),
         Definition(
           CmdOption("uniqid"),
           "Uniquely tag all identifiers in debugging output."),
