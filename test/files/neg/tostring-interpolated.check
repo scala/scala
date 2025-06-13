@@ -1,41 +1,42 @@
-tostring-interpolated.scala:7: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.f
+tostring-interpolated.scala:8: warning: interpolation uses toString
   def f = f"$c" // warn
              ^
-tostring-interpolated.scala:8: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.s
+tostring-interpolated.scala:9: warning: interpolation uses toString
   def s = s"$c" // warn
              ^
-tostring-interpolated.scala:9: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.r
+tostring-interpolated.scala:10: warning: interpolation uses toString
   def r = raw"$c" // warn
                ^
-tostring-interpolated.scala:11: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.format
+tostring-interpolated.scala:12: warning: interpolation uses toString
   def format = f"${c.x}%d in $c or $c%s" // warn using c.toString // warn
                               ^
-tostring-interpolated.scala:11: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.format
+tostring-interpolated.scala:12: warning: interpolation uses toString
   def format = f"${c.x}%d in $c or $c%s" // warn using c.toString // warn
                                       ^
-tostring-interpolated.scala:13: warning: Boolean format is null test for non-Boolean
-  def bool = f"$c%b" // warn just a null check
-                  ^
-tostring-interpolated.scala:15: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.oops
-  def oops = s"${null} slipped thru my fingers" // warn
-                 ^
-tostring-interpolated.scala:20: error: interpolation uses toString
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=T.greeting
+tostring-interpolated.scala:17: warning: interpolation uses toString
   def greeting = s"$sb, world" // warn
                     ^
-tostring-interpolated.scala:31: error: interpolated Unit value
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=Mitigations.unitized
+tostring-interpolated.scala:21: warning: Boolean format is null test for non-Boolean
+  def bool = f"$c%b" // warn just a null check (quirk of Java format)
+                  ^
+tostring-interpolated.scala:23: warning: interpolation uses toString
+  def oops = s"${null} slipped thru my fingers" // warn although conforms to String
+                 ^
+tostring-interpolated.scala:25: warning: interpolation uses toString
+  def exceptionally = s"Hello, ${???}" // warn although conforms to String
+                                 ^
+tostring-interpolated.scala:36: warning: interpolated Unit value
   def unitized = s"unfortunately $shown" // warn accidental unit value
                                   ^
-tostring-interpolated.scala:32: error: interpolated Unit value
-Applicable -Wconf / @nowarn filters for this fatal warning: msg=<part of the message>, cat=w-flag-tostring-interpolated, site=Mitigations.funitized
+tostring-interpolated.scala:37: warning: interpolated Unit value
   def funitized = f"unfortunately $shown" // warn accidental unit value
                                        ^
-1 warning
-9 errors
+tostring-interpolated.scala:53: warning: interpolation uses toString
+    val greeting = s"Hello ${if (shouldCaps) "WORLD" else world}" // warn
+                             ^
+tostring-interpolated.scala:64: warning: interpolation uses toString
+    val greeting = s"Hello ${x match { case 42 => "WORLD" case 27 => world case _ => ??? }}" // warn
+                               ^
+error: No warnings can be incurred under -Werror.
+13 warnings
+1 error

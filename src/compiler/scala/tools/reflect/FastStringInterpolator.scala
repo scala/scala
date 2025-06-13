@@ -106,11 +106,22 @@ trait FastStringInterpolator extends FormatInterpolator {
       val emptyLit = treatedContents.isEmpty
       if (i < numLits - 1) {
         val arg = argsIndexed(i)
-        if (linting && !(arg.tpe =:= definitions.StringTpe))
+        def warn(msg: String) = runReporting.warning(arg.pos, msg, WFlagTostringInterpolated, c.internal.enclosingOwner)
+        def stringlyBranches = arg match {
+          case If(_, thenp, elsep) => thenp.tpe <:< definitions.StringTpe && elsep.tpe <:< definitions.StringTpe
+          case Match(_, cases) =>
+            cases.forall {
+              case CaseDef(_, _, body) => body.tpe <:< definitions.StringTpe
+            }
+          case _ => false
+        }
+        if (linting && !(arg.tpe =:= definitions.StringTpe)) // literals are widened, so include Null, Nothing
           if (arg.tpe.typeSymbol eq definitions.UnitClass)
-            runReporting.warning(arg.pos, "interpolated Unit value", WFlagTostringInterpolated, c.internal.enclosingOwner)
+            warn("interpolated Unit value")
+          else if ((arg.tpe.typeSymbol eq definitions.AnyClass) && stringlyBranches)
+            () // if or match assumes expected type Any of interpolated expression, check branches are strings
           else if (!definitions.isPrimitiveValueType(arg.tpe))
-            runReporting.warning(arg.pos, "interpolation uses toString", WFlagTostringInterpolated, c.internal.enclosingOwner)
+            warn("interpolation uses toString")
         concatArgs += arg
       }
       if (!emptyLit) concatArgs += lit
