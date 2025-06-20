@@ -347,8 +347,19 @@ abstract class UnCurry extends InfoTransform
       val isVarargs = isVarArgsList(params)
       val args1 = if (isVarargs) transformVarargs(params.last.info.typeArgs.head.widen) else args
 
+      val params0 =
+        fun.info.paramss match {
+          case Nil => Iterator.empty
+          case pss => pss.last.iterator
+        }
+
       map2Conserve(args1, params) { (arg, param) =>
-        if (!isByNameParamType(param.info)) arg
+        val param0 = if (params0.hasNext) params0.next() else NoSymbol
+        if (!isByNameParamType(param.info)) {
+          if (param0 != NoSymbol && isByNameParamType(param0.info)) // pass 2, sig is uncurried in expansion
+            byNameArgs += arg
+          arg
+        }
         else if (isByNameRef(arg)) {
           // thunk does not need to be forced because it's a reference to a by-name arg passed to a by-name param
           byNameArgs += arg
