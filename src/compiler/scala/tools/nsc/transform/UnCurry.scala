@@ -78,7 +78,6 @@ abstract class UnCurry extends InfoTransform
     private val forceExpandFunction = settings.Ydelambdafy.value == "inline"
     private var needTryLift       = false
     private var inConstructorFlag = 0L
-    private val byNameArgs        = mutable.HashSet.empty[Tree]
     private val noApply           = mutable.HashSet.empty[Tree]
     private val newMembers        = mutable.Map.empty[Symbol, Buffer[Tree]]
 
@@ -124,11 +123,14 @@ abstract class UnCurry extends InfoTransform
         EmptyTree
       }
 
-    /* Is tree a reference `x` to a call by name parameter that needs to be converted to
-     * x.apply()? Note that this is not the case if `x` is used as an argument to another
-     * call by name parameter.
+    /* Is `tree` a reference `x` to a call by name parameter and eligible to be converted to x.apply()?
+     *
+     * Normally, such a reference evaluates the argument.
+     *
+     * This is not the case if `x` is used as an argument to a method that takes it as a call by name parameter.
+     * Additionally, an expression `() => x` is "unwrapped" to `x` and must not be applied.
      */
-    def isByNameRef(tree: Tree) = {
+    def isByNameRefToApply(tree: Tree) = {
       val sym = tree.symbol
       val maybe = (
            (sym ne null)
@@ -138,7 +140,7 @@ abstract class UnCurry extends InfoTransform
       tree match {
         case _ if !maybe => false
         case _: This | _: Super => false
-        case tree => isByName(sym) && !byNameArgs(tree)
+        case tree => isByName(sym) && !noApply(tree)
       }
     }
 
@@ -227,7 +229,7 @@ abstract class UnCurry extends InfoTransform
       // Normally, we can unwrap `() => cbn` to `cbn` where `cbn` refers to a CBN argument (typically `cbn` is an Ident)
       // because we know `cbn` will already be a `Function0` thunk. When we're targeting a SAM,
       // the types don't align and we must preserve the function wrapper.
-      if (fun.vparams.isEmpty && isByNameRef(fun.body) && !fun.attachments.contains[SAMFunction]) {
+      if (fun.vparams.isEmpty && isByNameRefToApply(fun.body) && !fun.attachments.contains[SAMFunction]) {
         noApply += fun.body
         fun.body
       }
@@ -357,12 +359,12 @@ abstract class UnCurry extends InfoTransform
         val param0 = if (params0.hasNext) params0.next() else NoSymbol
         if (!isByNameParamType(param.info)) {
           if (param0 != NoSymbol && isByNameParamType(param0.info)) // pass 2, sig is uncurried in expansion
-            byNameArgs += arg
+            noApply += arg
           arg
         }
-        else if (isByNameRef(arg)) {
+        else if (isByNameRefToApply(arg)) {
           // thunk does not need to be forced because it's a reference to a by-name arg passed to a by-name param
-          byNameArgs += arg
+          noApply += arg
           arg.setType(functionType(Nil, arg.tpe))
         } else {
           log(s"Argument '$arg' at line ${arg.pos.line} is ${param.info} from ${fun.fullName}")
@@ -563,12 +565,10 @@ abstract class UnCurry extends InfoTransform
 
           case _ =>
             val tree1 = super.transform(tree)
-            if (isByNameRef(tree1)) {
-              val tree2 = tree1 setType functionType(Nil, tree1.tpe)
-              val tree3 =
-                if (noApply(tree2)) tree2
-                else localTyper.typedPos(tree1.pos)(Apply(Select(tree2, nme.apply), Nil))
-              return tree3
+            if (isByNameRefToApply(tree1)) {
+              val tree2 = tree1.setType(functionType(Nil, tree1.tpe))
+              val tree3 = localTyper.typedPos(tree1.pos)(Apply(Select(tree2, nme.apply), Nil))
+              return tree3 // result type already set
             }
             tree1
         }
