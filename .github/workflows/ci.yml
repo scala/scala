@@ -24,7 +24,7 @@ jobs:
     steps:
       - run: git config --global core.autocrlf false
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Java
         uses: actions/setup-java@v4
