@@ -212,11 +212,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
       }
       this
     case _ =>
-      class accum extends AbstractFunction2[K, V1, Unit] with Function1[(K, V1), Unit] {
+      class accum extends AbstractFunction2[K, V1, Unit] {
         var changed = false
         var shallowlyMutableNodeMap: Int = 0
         var current: BitmapIndexedMapNode[K, V1] = rootNode
-        def apply(kv: (K, V1)) = apply(kv._1, kv._2)
         def apply(key: K, value: V1): Unit = {
           val originalHash = key.##
           val improved = improve(originalHash)
@@ -252,7 +251,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
           if (it.isEmpty) this
           else {
             val accum = new accum
-            it.foreach(accum)
+            while(it.hasNext) {
+              val kv = it.next()
+              accum(kv._1, kv._2)
+            }
             newHashMapOrThis(accum.current)
           }
       }

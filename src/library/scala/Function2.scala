@@ -38,6 +38,14 @@ trait Function2[@specialized(Specializable.Args) -T1, @specialized(Specializable
    *  @return   the result of function application.
    */
   def apply(v1: T1, v2: T2): R
+
+  /** Composes a `Function1` with this in a new `Function2`, with this function applied first.
+   *
+   *  @tparam   A   the result type of function `g`
+   *  @param    g   a function R => A
+   *  @return       a new function `f` such that `f(x1, x2) == g(apply(x1, x2))`
+   */
+  @annotation.unspecialized def andThen[A](g: R => A): (T1, T2) => A = { (v1, v2) => g(apply(v1, v2)) }
   /** Creates a curried version of this function.
    *
    *  @return   a function `f` such that `f(x1)(x2) == apply(x1, x2)`

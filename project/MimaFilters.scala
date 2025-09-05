@@ -78,6 +78,26 @@ object MimaFilters extends AutoPlugin {
 
     // scala/scala#11124
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.knownFalseSubTypes"),
+
+    // ADD andThen to Function2 in Scala 2.13.17 scala/scala#11121
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Function2.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaBiConsumer.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaBiFunction.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaBiPredicate.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaBinaryOperator.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaDoubleBinaryOperator.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaIntBinaryOperator.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaLongBinaryOperator.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaObjDoubleConsumer.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaObjIntConsumer.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaObjLongConsumer.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaToDoubleBiFunction.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaToIntBiFunction.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FunctionWrappers#FromJavaToLongBiFunction.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.AbstractFunction2.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.ParseException.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.ReificationException.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.TypecheckException.andThen")
   )
 
   override val buildSettings = Seq(

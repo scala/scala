@@ -131,7 +131,7 @@ object FunctionOne extends Function(1) {
  *  is that the latter can specify inputs which it will not handle."""
 
   override def moreMethods = """
-  /** Composes two instances of Function1 in a new Function1, with this function applied last.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied last.
    *
    *  @tparam   A   the type to which function `g` can be applied
    *  @param    g   a function A => T1
@@ -139,7 +139,7 @@ object FunctionOne extends Function(1) {
    */
   @annotation.unspecialized def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
 
-  /** Composes two instances of Function1 in a new Function1, with this function applied first.
+  /** Composes two instances of `Function1` in a new `Function1`, with this function applied first.
    *
    *  @tparam   A   the result type of function `g`
    *  @param    g   a function R => A
@@ -192,6 +192,16 @@ object FunctionTwo extends Function(2) {
  *    }
  *    assert(max(0, 1) == anonfun2(0, 1))
  * """)
+
+  override def moreMethods: String = """
+  /** Composes a `Function1` with this in a new `Function2`, with this function applied first.
+   *
+   *  @tparam   A   the result type of function `g`
+   *  @param    g   a function R => A
+   *  @return       a new function `f` such that `f(x1, x2) == g(apply(x1, x2))`
+   */
+  @annotation.unspecialized def andThen[A](g: R => A): (T1, T2) => A = { (v1, v2) => g(apply(v1, v2)) }
+"""  + curryMethod + tupleMethod
 }
 
 object Function {
