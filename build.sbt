@@ -460,10 +460,11 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
   .settings(disablePublishing)
   .settings(
     libraryDependencies ++= {
-      val jacksonVersion = "2.19.2"
+      val jacksonVersion = "2.20.0"
       Seq(
         "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
-        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion,
+        // note unusual versioning scheme since 2.20 -- if other deps are a.b.c, this dep is a.b
+        "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion.split('.').take(2).mkString("."),
         "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion,
         "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
         "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
