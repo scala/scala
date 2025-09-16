@@ -144,6 +144,16 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
+  /** Appends the string representation of the given code point to this sequence.
+    *
+    * @param  n   a Unicode code point.
+    * @return     this StringBuilder.
+    */
+  def appendCodePoint(n: Int): this.type = {
+    underlying appendCodePoint n
+    this
+  }
+
   /** Appends the given String to this sequence.
     *
     *  @param  s   a String.
