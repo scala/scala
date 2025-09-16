@@ -16,6 +16,7 @@ package typechecker
 import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.reflect.internal.Depth
 import scala.tools.nsc.Reporting.WarningCategory, WarningCategory.LintInferAny
+//import scala.util.chaining._
 import scala.util.control.ControlThrowable
 import symtab.Flags._
 
@@ -814,20 +815,18 @@ trait Infer extends Checkable {
      *    type is set to `Unit`, i.e. the corresponding argument is treated as
      *    an assignment expression (@see checkNames).
      */
-    private def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
-      val res =
-        ftpe match {
-          case OverloadedType(pre, alts) => alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
-          case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
-          case mt@MethodType(_, _)       => isApplicableToMethod(undetparams, mt, argtpes0, pt)
-          case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt)
-          case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe)((tps1, res1) => isApplicable(tps1 ::: undetparams, res1, argtpes0, pt))
-          case ErrorType                 => true
-          case _                         => false
-        }
-//      println(s"isApplicable $res : $ftpe to $argtpes0 for $pt under $undetparams")
-      res
-    }
+    private def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean =
+      ftpe match {
+        case OverloadedType(pre, alts) => alts.exists(alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
+        case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
+        case mt@MethodType(_, _)       => isApplicableToMethod(undetparams, mt, argtpes0, pt)
+        case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt)
+        case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe) { (tps1, res1) =>
+                                            isApplicable(tps1 ::: undetparams, res1, argtpes0, pt) }
+        case ErrorType                 => true
+        case _                         => false
+      }
+      //.tap(res => println(s"isApplicable $res : $ftpe to $argtpes0 for $pt under $undetparams"))
 
     /**
      * Are arguments of the given types applicable to `ftpe`? Type argument inference
@@ -1501,38 +1500,60 @@ trait Infer extends Checkable {
       // with pt = WildcardType if it fails with pt != WildcardType.
       val c = context
       class InferMethodAlternativeTwice extends c.TryTwice {
-        private[this] val OverloadedType(pre, alts) = tree.tpe: @unchecked
+        private[this] var pre: Type = _
+        private[this] val alts = tree.tpe match {
+                        case OverloadedType(pre, alternatives) => // avoid tuple field
+                          this.pre = pre
+                          alternatives
+                        case x => throw new MatchError(x)
+                      }
         private[this] var varargsStar = false
-        private[this] val argtpes = argtpes0 mapConserve {
-          case RepeatedType(tp) => varargsStar = true ; tp
+        private[this] val argtpes = argtpes0.mapConserve {
+          case RepeatedType(tp) => varargsStar = true; tp
           case tp               => tp
         }
+        private[this] val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
 
         private def followType(sym: Symbol) = followApply(memberTypeForSpecificity(pre, sym, tree))
-        // separate method to help the inliner
-        private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
-        private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
-        private def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
-          val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
-          // println(s"bestForExpectedType($argtpes, $pt): $alts -app-> ${alts filter isAltApplicable(pt)} -arity-> $applicable")
-          val ranked      = bestAlternatives(applicable)(rankAlternatives)
-          def finish(s: Symbol): Unit = tree.setSymbol(s).setType(pre.memberType(s))
-          ranked match {
-            case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
-            case best :: _              => finish(best)
-            case _   if pt.isWildcard   => NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry)  // failed
-            case _                      => bestForExpectedType(WildcardType, isLastTry)                // failed, but retry with WildcardType
-          }
-        }
 
-        private[this] val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-        def tryOnce(isLastTry: Boolean): Unit = {
+        override def tryOnce(isLastTry: Boolean): Unit = {
           debuglog(s"infer method alt ${tree.symbol} with alternatives ${alts map pre.memberType} argtpes=$argtpes pt=$pt")
-          bestForExpectedType(pt, isLastTry)
+          def bestForExpectedType(pt: Type): Unit = {
+            val applicable = {
+              var applicableAlts: List[Symbol] = null
+              context.inSilentMode {
+                applicableAlts = alts.filter { alt =>
+                  val ok_? = isApplicable(undetparams, followType(alt), argtpes, pt)
+                  if (context.reporter.hasErrors) {
+                    context.reporter.clearAllErrors()
+                    false
+                  }
+                  else ok_?
+                }
+                true
+              }
+              overloadsToConsiderBySpecificity(applicableAlts, argtpes, varargsStar)
+              //.tap(res => println(s"bestForExpectedType($argtpes, $pt): $alts -app-> $applicableAlts -arity-> $res"))
+            }
+            def rankAlternatives(sym1: Symbol, sym2: Symbol) =
+              isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
+            bestAlternatives(applicable)(rankAlternatives) match {
+              case best :: rest =>
+                rest match {
+                  case competing :: _ =>
+                    AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
+                  case _ =>
+                    tree.setSymbol(best).setType(pre.memberType(best))
+                }
+              case _ =>
+                if (pt.isWildcard) NoBestMethodAlternativeError(tree, argtpes, pt, isLastTry) // failed
+                else bestForExpectedType(pt = WildcardType) // failed, but retry with WildcardType
+            }
+          }
+          bestForExpectedType(pt)
         }
       }
-
-      (new InferMethodAlternativeTwice).apply()
+      new InferMethodAlternativeTwice()()
     }
 
     /** Assign `tree` the type of all polymorphic alternatives
