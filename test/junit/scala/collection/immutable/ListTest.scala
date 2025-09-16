@@ -123,4 +123,13 @@ class ListTest extends AllocationTest {
     exactAllocates(expected(20), "list  size 20")(
       List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
   }
+
+  @Test def `list filter`: Unit = {
+    assertEquals(List(1, 2, 3, 4, 5), List(1, 2, 3, 4, 5).filter(_ != 0))
+    assertEquals(List(2, 4), List(1, 2, 3, 4, 5).filter(_ % 2 == 0))
+    assertEquals(List(1, 3, 5), List(1, 2, 3, 4, 5).filterNot(_ % 2 == 0))
+    assertEquals(List(1, 2, 3), List(1, 2, 3, 4, 5).filter(_ <= 3))
+    assertEquals(List(4, 5), List(1, 2, 3, 4, 5).filterNot(_ <= 3))
+    assertEquals(List(5), List(1, 2, 3, 4, 5).filter(_ > 4))
+  }
 }

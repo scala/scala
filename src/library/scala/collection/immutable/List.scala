@@ -490,82 +490,50 @@ sealed abstract class List[+A]
   }
 
   override def filter(p: A => Boolean): List[A] = {
-
-    // Nothing seen so far is included. If an element is found to include, switch to 'allIn'.
-    @tailrec def noneIn(l: List[A]): List[A] =
-      if (l.isEmpty)
-        Nil
-      else {
-        val h = l.head
-        val t = l.tail
-        if (p(h))
-          allIn(l, t)
-        else
-          noneIn(t)
-      }
-
-    // Everything from 'start' to 'remaining' is included.
-    // If everything from this point is included we can return the original i.e. 'start'.
-    // Otherwise if we discover an element that is excluded we must create a new partial list.
-    @tailrec def allIn(start: List[A], remaining: List[A]): List[A] =
-      if (remaining.isEmpty)
-        start
-      else {
-        val x = remaining.head
-        if (p(x))
-          allIn(start, remaining.tail)
-        else
-          partialFill(start, remaining)
-      }
-
-    // we have seen elements that should be included then one that should be excluded, start building
-    def partialFill(origStart: List[A], firstMiss: List[A]): List[A] = {
-      val newHead = new ::(origStart.head, Nil)
-      var toProcess = origStart.tail
-      var currentLast = newHead
-
-      // we know that all elements are :: until at least firstMiss.tail
-      while (!(toProcess eq firstMiss)) {
-        val newElem = new ::(toProcess.head, Nil)
-        currentLast.next = newElem
-        currentLast = newElem
-        toProcess = toProcess.tail
-      }
-
-      // at this point newHead points to a list which is a duplicate of all the 'in' elements up to the first miss.
-      // currentLast is the last element in that list.
-
-      // now we are going to try and share as much of the tail as we can, only moving elements across when we have to.
-      var next = firstMiss.tail
-      var nextToCopy = next // the next element we would need to copy to our list if we cant share.
-      while (!next.isEmpty) {
-        // generally recommended is next.isNonEmpty but this incurs an extra method call.
-        val head: A = next.head
-        if (p(head)) {
-          next = next.tail
-        } else {
-          // its not a match - do we have outstanding elements?
-          while (!(nextToCopy eq next)) {
-            val newElem = new ::(nextToCopy.head, Nil)
-            currentLast.next = newElem
-            currentLast = newElem
-            nextToCopy = nextToCopy.tail
+    // Look for the next element to include. If there is none, return the result.
+    // Given a next element to include, look for the next element to exclude.
+    // If there is none, then add the suffix to the result and return the result.
+    // Otherwise copy the current segment to the result and continue.
+    var result, last: `::`[A] = null // result, last element of result
+    var end: List[A] = null // tail end of cur segment, may be empty
+    var cur = this
+    while (true) {
+      while (!cur.isEmpty && !p(cur.head)) // advance to segment to include
+        cur = cur.tail
+      if (cur.isEmpty)
+        return {
+          if (result == null) Nil
+          else {
+            releaseFence()
+            result // all done
           }
-          nextToCopy = next.tail
-          next = next.tail
+        }
+      end = cur.tail // no pun on curtail!
+      while (!end.isEmpty && p(end.head)) // advance to end of segment
+        end = end.tail
+      if (end.isEmpty)
+        return {
+          if (result == null) cur // all in
+          else {
+            last.next = cur // share segment as suffix of result
+            releaseFence()
+            result
+          }
+        }
+      else {
+        if (result == null) {
+          result = new ::(cur.head, Nil)
+          last = result
+          cur = cur.tail
+        }
+        while (cur ne end) {
+          last.next = new ::(cur.head, Nil) // copy segment to last of result
+          last = last.tail.asInstanceOf[`::`[A]]
+          cur = cur.tail
         }
       }
-
-      // we have remaining elements - they are unchanged attach them to the end
-      if (!nextToCopy.isEmpty)
-        currentLast.next = nextToCopy
-
-      newHead
     }
-
-    val result = noneIn(this)
-    releaseFence()
-    result
+    Nil
   }
 
   override def filterNot(p: A => Boolean): List[A] = filter(!p(_))
