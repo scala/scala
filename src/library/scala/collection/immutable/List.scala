@@ -495,8 +495,8 @@ sealed abstract class List[+A]
 
   private[this] def filterCommon(p: A => Boolean, isFlipped: Boolean): List[A] = {
 
-    // everything seen so far so far is not included
-    @tailrec def noneIn(l: List[A]): List[A] = {
+    // Nothing seen so far is included. If an element is found to include, switch to 'allIn'.
+    @tailrec def noneIn(l: List[A]): List[A] =
       if (l.isEmpty)
         Nil
       else {
@@ -507,11 +507,11 @@ sealed abstract class List[+A]
         else
           noneIn(t)
       }
-    }
 
-    // everything from 'start' is included, if everything from this point is in we can return the origin
-    // start otherwise if we discover an element that is out we must create a new partial list.
-    @tailrec def allIn(start: List[A], remaining: List[A]): List[A] = {
+    // Everything from 'start' to 'remaining' is included.
+    // If everything from this point is included we can return the original i.e. 'start'.
+    // Otherwise if we discover an element that is excluded we must create a new partial list.
+    @tailrec def allIn(start: List[A], remaining: List[A]): List[A] =
       if (remaining.isEmpty)
         start
       else {
@@ -521,7 +521,6 @@ sealed abstract class List[+A]
         else
           partialFill(start, remaining)
       }
-    }
 
     // we have seen elements that should be included then one that should be excluded, start building
     def partialFill(origStart: List[A], firstMiss: List[A]): List[A] = {
