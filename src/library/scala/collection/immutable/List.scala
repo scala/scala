@@ -489,11 +489,7 @@ sealed abstract class List[+A]
     result
   }
 
-  override def filter(p: A => Boolean): List[A] = filterCommon(p, isFlipped = false)
-
-  override def filterNot(p: A => Boolean): List[A] = filterCommon(p, isFlipped = true)
-
-  private[this] def filterCommon(p: A => Boolean, isFlipped: Boolean): List[A] = {
+  override def filter(p: A => Boolean): List[A] = {
 
     // Nothing seen so far is included. If an element is found to include, switch to 'allIn'.
     @tailrec def noneIn(l: List[A]): List[A] =
@@ -502,7 +498,7 @@ sealed abstract class List[+A]
       else {
         val h = l.head
         val t = l.tail
-        if (p(h) != isFlipped)
+        if (p(h))
           allIn(l, t)
         else
           noneIn(t)
@@ -516,7 +512,7 @@ sealed abstract class List[+A]
         start
       else {
         val x = remaining.head
-        if (p(x) != isFlipped)
+        if (p(x))
           allIn(start, remaining.tail)
         else
           partialFill(start, remaining)
@@ -545,7 +541,7 @@ sealed abstract class List[+A]
       while (!next.isEmpty) {
         // generally recommended is next.isNonEmpty but this incurs an extra method call.
         val head: A = next.head
-        if (p(head) != isFlipped) {
+        if (p(head)) {
           next = next.tail
         } else {
           // its not a match - do we have outstanding elements?
@@ -571,6 +567,8 @@ sealed abstract class List[+A]
     releaseFence()
     result
   }
+
+  override def filterNot(p: A => Boolean): List[A] = filter(!p(_))
 
   override def partition(p: A => Boolean): (List[A], List[A]) = {
     if (isEmpty) List.TupleOfNil
