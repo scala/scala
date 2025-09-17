@@ -199,6 +199,7 @@ object FunctionTwo extends Function(2) {
    *  @tparam   A   the result type of function `g`
    *  @param    g   a function R => A
    *  @return       a new function `f` such that `f(x1, x2) == g(apply(x1, x2))`
+   *  @since    2.13.17
    */
   @annotation.unspecialized def andThen[A](g: R => A): (T1, T2) => A = { (v1, v2) => g(apply(v1, v2)) }
 """  + curryMethod + tupleMethod
