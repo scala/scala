@@ -148,6 +148,8 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *
     * @param  n   a Unicode code point.
     * @return     this StringBuilder.
+    *
+    * @since 2.13.17
     */
   def appendCodePoint(n: Int): this.type = {
     underlying appendCodePoint n
