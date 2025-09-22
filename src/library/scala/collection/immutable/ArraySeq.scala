@@ -239,6 +239,29 @@ sealed abstract class ArraySeq[+A]
     b
   }
 
+  override def foreach[U](f: A => U): Unit =
+    ArrayOps.foreach(unsafeArray, f, length)
+
+  override def indexWhere(p: A => Boolean, from: Int): Int =
+    ArrayOps.indexWhere(unsafeArray, p, from, length)
+
+  override def find(p: A => Boolean): Option[A] =
+    ArrayOps.find(unsafeArray, p, 0, length)
+
+  override def exists(p: A => Boolean): Boolean =
+    ArrayOps.indexWhere(unsafeArray, p, 0, length) >= 0
+
+  override def forall(p: A => Boolean): Boolean =
+    ArrayOps.forall(unsafeArray, p, length)
+
+  override def count(p: A => Boolean): Int =
+    ArrayOps.count(unsafeArray, p, length)
+
+  override def filter(pred: A => Boolean): ArraySeq[A] =
+    ArrayOps.filter(unsafeArray, pred, length, newSpecificBuilder)
+
+  override def filterNot(pred: A => Boolean): ArraySeq[A] = filter(x => !pred(x))
+
   override def tail: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).tail).asInstanceOf[ArraySeq[A]]
 
   override def reverse: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).reverse).asInstanceOf[ArraySeq[A]]

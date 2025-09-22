@@ -475,6 +475,102 @@ class ArrayDeque[A] protected (
   override def toArray[B >: A: ClassTag]: Array[B] =
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
 
+  override def foreach[U](f: A => U): Unit = {
+    val a = array
+    val mask = a.length - 1
+    val n = length
+    var idx = start
+    var i = 0
+    while (i < n) {
+      f(a(idx).asInstanceOf[A])
+      idx = (idx + 1) & mask
+      i += 1
+    }
+  }
+
+  override def indexWhere(p: A => Boolean, from: Int): Int = {
+    val a = array
+    val mask = a.length - 1
+    val n = length
+    var i = if (from > 0) from else 0
+    var idx = (start + i) & mask
+    while (i < n) {
+      if (p(a(idx).asInstanceOf[A])) return i
+      idx = (idx + 1) & mask
+      i += 1
+    }
+    -1
+  }
+
+  override def find(p: A => Boolean): Option[A] = {
+    val a = array
+    val mask = a.length - 1
+    val n = length
+    var idx = start
+    var i = 0
+    while (i < n) {
+      val x = a(idx).asInstanceOf[A]
+      if (p(x)) return Some(x)
+      idx = (idx + 1) & mask
+      i += 1
+    }
+    None
+  }
+
+  override def exists(p: A => Boolean): Boolean = indexWhere(p) >= 0
+
+  override def forall(p: A => Boolean): Boolean = {
+    val a = array
+    val mask = a.length - 1
+    val n = length
+    var idx = start
+    var i = 0
+    while (i < n) {
+      if (!p(a(idx).asInstanceOf[A])) return false
+      idx = (idx + 1) & mask
+      i += 1
+    }
+    true
+  }
+
+  override def count(p: A => Boolean): Int = {
+    val a = array
+    val mask = a.length - 1
+    val n = length
+    var idx = start
+    var i, res = 0
+    while (i < n) {
+      if (p(a(idx).asInstanceOf[A])) res += 1
+      idx = (idx + 1) & mask
+      i += 1
+    }
+    res
+  }
+
+  override def filter(pred: A => Boolean): ArrayDeque[A] = {
+    val n = length
+    if (n == 0) return empty
+    val a = array
+    val mask = a.length - 1
+    val tmp = new Array[AnyRef](n)
+    var idx = start
+    var i, j = 0
+    while (i < n) {
+      val x = a(idx)
+      if (pred(x.asInstanceOf[A])) { tmp(j) = x; j += 1 }
+      idx = (idx + 1) & mask
+      i += 1
+    }
+    if (j == 0) empty
+    else {
+      val arr = ArrayDeque.alloc(j)
+      System.arraycopy(tmp, 0, arr, 0, j)
+      new ArrayDeque(arr, 0, j)
+    }
+  }
+
+  override def filterNot(pred: A => Boolean): ArrayDeque[A] = filter(x => !pred(x))
+
   /**
     * Trims the capacity of this ArrayDeque's instance to be the current size.
     */

@@ -92,6 +92,29 @@ sealed abstract class ArraySeq[T]
     if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
     this
   }
+
+  override def foreach[U](f: T => U): Unit =
+    ArrayOps.foreach(array, f, length)
+
+  override def indexWhere(p: T => Boolean, from: Int): Int =
+    ArrayOps.indexWhere(array, p, from, length)
+
+  override def find(p: T => Boolean): Option[T] =
+    ArrayOps.find(array, p, 0, length)
+
+  override def exists(p: T => Boolean): Boolean =
+    ArrayOps.indexWhere(array, p, 0, length) >= 0
+
+  override def forall(p: T => Boolean): Boolean =
+    ArrayOps.forall(array, p, length)
+
+  override def count(p: T => Boolean): Int =
+    ArrayOps.count(array, p, length)
+
+  override def filter(pred: T => Boolean): ArraySeq[T] =
+    ArrayOps.filter(array, pred, length, newSpecificBuilder)
+
+  override def filterNot(pred: T => Boolean): ArraySeq[T] = filter(x => !pred(x))
 }
 
 /** A companion object used to create instances of `ArraySeq`.
