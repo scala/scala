@@ -306,7 +306,7 @@ trait Checkable {
       *
       *  Instead of the canRemedy flag, annotate uncheckable types that have become checkable because of the availability of a class tag?
       */
-    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false): Unit = if (!uncheckedOk(P0)) {
+    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false, PT0: Type = NoType): Unit = if (!uncheckedOk(P0)) {
       import Checkability._
 
       if (P0.typeSymbol == SingletonClass)
@@ -329,7 +329,7 @@ trait Checkable {
           case RefinedType(_, decls) if !decls.isEmpty =>
             context.warning(tree.pos, s"a pattern match on a refinement type is unchecked", WarningCategory.Unchecked)
           case RefinedType(parents, _) =>
-            parents.foreach(checkCheckable(tree, _, X, inPattern, canRemedy))
+            parents.foreach(checkCheckable(tree, _, X, inPattern, canRemedy, NoType))
           case _ =>
             val checker = new CheckabilityChecker(X, P)
             if (checker.result == RuntimeCheckable)
@@ -353,10 +353,13 @@ trait Checkable {
                 if (checker.uncheckableCard == 2)
                   s"the type test for $where$PString cannot be checked at runtime because it has type parameters eliminated by erasure"
                 else {
-                  val thing =
-                    if (checker.uncheckableType =:= P) s"abstract type $where$PString"
-                    else s"$uncheckableMessage in type $where$PString"
-                  s"$thing is unchecked since it is eliminated by erasure"
+                  val unchecked = "is unchecked since it is eliminated by erasure"
+                  if (checker.uncheckableType =:= P) {
+                    val help =
+                      if (PT0 <:< P) s" (note that ${PT0} is already expected)" else ""
+                    s"abstract type $where$PString $unchecked$help"
+                  }
+                  else s"$uncheckableMessage in type $where$PString $unchecked"
                 }
               }
               context.warning(tree.pos, msg, WarningCategory.Unchecked)

@@ -1266,7 +1266,7 @@ trait Infer extends Checkable {
         return ErrorType
       }
 
-      checkCheckable(tree0, if (isUnapply) typer.applyTypeToWildcards(pattp) else pattp, pt, inPattern = true, canRemedy = canRemedy)
+      checkCheckable(tree0, if (isUnapply) typer.applyTypeToWildcards(pattp) else pattp, pt, inPattern = true, canRemedy = canRemedy, pt0)
       if (pattp <:< pt) ()
       else {
         debuglog("free type params (1) = " + tpparams)

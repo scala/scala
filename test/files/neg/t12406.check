@@ -1,0 +1,17 @@
+t12406.scala:12: warning: abstract type pattern T is unchecked since it is eliminated by erasure (note that T is already expected)
+    case Right(_: T) => true // unchecked but mention that the test is extraneous
+                  ^
+t12406.scala:20: warning: abstract type pattern T is unchecked since it is eliminated by erasure
+    case Right(_: T) => true // unchecked simply
+                  ^
+t12406.scala:6: warning: match may not be exhaustive.
+It would fail on the following input: Right(_)
+  def f[T: ClassTag](bar: Either[String, T]): Boolean = bar match { // not exhaustive
+                                                        ^
+t12406.scala:18: warning: match may not be exhaustive.
+It would fail on the following input: Right(_)
+  def um[T](bar: Either[String, Any]): Boolean = bar match {
+                                                 ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error
