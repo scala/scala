@@ -583,21 +583,26 @@ trait Infer extends Checkable {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
       }
       val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      // Any "top type" in the constraint mitigates the warning, instead of a precise match such as:
-      // !tvar.constr.loBounds.contains(targ)
-      // For example, don't require this arg, where the lub of `AnyRef` and `V` yields the `Any`.
-      // this.forall(kv => map.getOrElse[Any](kv._1, Map.DefaultSentinelFn()) == kv._2)
-      if (settings.warnInferAny && !fn.isEmpty)
-        foreach3(tparams, targs, tvars) { (tparam, targ, tvar) =>
-          if (topTypes.contains(targ.typeSymbol) &&
-              !tvar.constr.loBounds.exists(t => topTypes.contains(t.typeSymbol)) &&
-              !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
-            context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name
-              }`; this may indicate a programming error.", LintInferAny)
-          if (!tparam.isMonomorphicType && !targ.isHigherKinded)
-            context.warning(fn.pos, s"a type was inferred to be kind-polymorphic `${targ.typeSymbol.name
-              }` to conform to `${tparam.defString}`", LintInferAny)
-        }
+      if (!fn.isEmpty) {
+        // Any "top type" in the constraint mitigates the warning, instead of a precise match such as:
+        // !tvar.constr.loBounds.contains(targ)
+        // For example, don't require this arg, where the lub of `AnyRef` and `V` yields the `Any`.
+        // this.forall(kv => map.getOrElse[Any](kv._1, Map.DefaultSentinelFn()) == kv._2)
+        if (settings.warnInferAny)
+          foreach2(targs, tvars) { (targ, tvar) =>
+            if (topTypes.contains(targ.typeSymbol) &&
+                !tvar.constr.loBounds.exists(t => topTypes.contains(t.typeSymbol)) &&
+                !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
+              context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name
+                }`; this may indicate a programming error.", LintInferAny)
+          }
+        if (settings.warnInferAnyKinded.value)
+          foreach2(tparams, targs) { (tparam, targ) =>
+            if (!tparam.isMonomorphicType && !targ.isHigherKinded)
+              context.warning(fn.pos, s"a type was inferred to be kind-polymorphic `${targ.typeSymbol.name
+                }` to conform to `${tparam.defString}`", LintInferAny) // cat is -Wconf backward compatible
+          }
+      }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
 

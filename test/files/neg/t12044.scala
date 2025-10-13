@@ -1,4 +1,4 @@
-//> using options -Werror -Xlint:infer-any
+//> using options -Werror -Winfer-any-kinded
 
 import language.implicitConversions
 
