@@ -14,9 +14,9 @@ package scala
 package math
 
 import java.util.Comparator
-
 import scala.language.implicitConversions
 import scala.annotation.migration
+import scala.math.Ordering.OrderingMinMax
 
 /** Ordering is a trait whose instances each represent a strategy for sorting
   * instances of a type.
@@ -69,7 +69,7 @@ import scala.annotation.migration
   *
   * @see [[scala.math.Ordered]], [[scala.util.Sorting]], [[scala.math.Ordering.Implicits]]
   */
-trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable {
+trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable with OrderingMinMax[T] {
   outer =>
 
   /** Returns whether a comparison between `x` and `y` is defined, and if so
@@ -103,10 +103,10 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   override def equiv(x: T, y: T): Boolean = compare(x, y) == 0
 
   /** Return `x` if `x` >= `y`, otherwise `y`. */
-  def max[U <: T](x: U, y: U): U = if (gteq(x, y)) x else y
+  override def max[U <: T](x: U, y: U): U = if (gteq(x, y)) x else y
 
   /** Return `x` if `x` <= `y`, otherwise `y`. */
-  def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
+  override def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
 
   /** Return the opposite ordering of this one.
     *
@@ -924,5 +924,12 @@ object Ordering extends LowPriorityOrderingImplicits {
       case _ => false
     }
     override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8, ord9).hashCode()
+  }
+
+  // Java 26 adds `min` / `max` default methods to `Comparator`, which requires our `min` / `max` methods in
+  // `Ordering` to have the `override` modifier. This parent trait allows that modifier on earlier Java versions.
+  private[Ordering] trait OrderingMinMax[T] {
+    def min[U <: T](x: U, y: U): U
+    def max[U <: T](x: U, y: U): U
   }
 }

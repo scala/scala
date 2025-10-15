@@ -50,6 +50,13 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.ArrayCharSequence.getChars"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.SeqCharSequence.getChars"),
 
+    // scala/scala#11153
+    ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$OrderingMinMax"),
+    // Adding `with OrderingMinMax` to `Ordering` causes mima to report a forwards bin compat warning for every subtype of Ordering, e.g.
+    //   > the type hierarchy of Ordering#Char is different in other version. Missing types {Ordering$OrderingMinMax}
+    // This should only affect the standard library, other projects are not enforcing forwards binary compatibility.
+    !_.description("other").contains("different in other version. Missing types {scala.math.Ordering$OrderingMinMax}"),
+
   )
 
   override val buildSettings = Seq(

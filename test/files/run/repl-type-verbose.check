@@ -160,7 +160,7 @@ PolyType(
       args = List(TypeParamTypeRef(TypeParam(T)))
       normalize = TypeRef(
         TypeSymbol(
-          abstract trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable
+          abstract trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable with math.Ordering.OrderingMinMax[T]
 
         )
         args = List(TypeParamTypeRef(TypeParam(T)))
