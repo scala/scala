@@ -2790,21 +2790,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val casesTrue = cases.map(deriveCaseDef(_)(x => atPos(x.pos.focus)(TRUE)).duplicate)
 
       // must generate a new tree every time
-      def selector(paramSym: Symbol): Tree = gen.mkUnchecked(
+      def selector(paramSym: Symbol): Tree = gen.mkUnchecked {
         if (sel != EmptyTree) sel.duplicate
-        else atPos(tree.pos.focusStart)(
+        else if (paramSym.info.upperBound =:= argTp)
+          atPos(tree.pos.focusStart) {
+            Typed(Ident(paramSym), TypeTree(argTp))
+          }
+        else
           // scala/bug#6925: subsume type of the selector to `argTp`
-          // we don't want/need the match to see the `A1` type that we must use for variance reasons in the method signature
+          // we don't want/need the match to see the `A1` type that we must use
+          // for variance reasons in the method signature
           //
-          // this failed: replace `selector` by `Typed(selector, TypeTree(argTp))` -- as it's an upcast, this should never fail,
-          //   `(x: A1): A` doesn't always type check, even though `A1 <: A`, due to singleton types (test/files/pos/t4269.scala)
+          // this failed:
+          // replace `selector` by `Typed(selector, TypeTree(argTp))` -- as it's an upcast, this should never fail,
+          //   `(x: A1): A` doesn't always type check, even though `A1 <: A`,
+          //   due to singleton types (test/files/pos/t4269.scala)
           // hence the cast, which will be erased in posterasure
           // (the cast originally caused  extremely weird types to show up
           //  in test/scaladoc/run/scala/bug#5933.scala because `variantToSkolem` was missing `tpSym.initialize`)
-          gen.mkCastPreservingAnnotations(Ident(paramSym), argTp)
-        ))
+          atPos(tree.pos.focusStart) {
+            gen.mkCastPreservingAnnotations(Ident(paramSym), argTp)
+          }
+      }
 
-      def mkParam(methodSym: Symbol, tp: Type = argTp) =
+      def mkParam(methodSym: Symbol, tp: Type) =
         methodSym.newValueParameter(paramName, paramPos.focus, SYNTHETIC) setInfo tp
 
       def mkDefaultCase(body: Tree) =
@@ -2911,7 +2920,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // `def isDefinedAt(x: $argTp): Boolean = ${`$selector match { $casesTrue; case default$ => false } }`
       def isDefinedAtMethod = {
         val methodSym = anonClass.newMethod(nme.isDefinedAt, tree.pos.makeTransparent, FINAL)
-        val paramSym = mkParam(methodSym)
+        val paramSym = mkParam(methodSym, argTp)
 
         val methodBodyTyper = synthMethodTyper(methodSym) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
         if (!paramSynthetic) methodBodyTyper.context.scope enter paramSym
@@ -2927,7 +2936,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // `def apply(x: $argTp): $matchResTp = $selector match { $cases }`
       def applyMethod = {
         val methodSym = anonClass.newMethod(nme.apply, tree.pos, FINAL | OVERRIDE)
-        val paramSym = mkParam(methodSym)
+        val paramSym = mkParam(methodSym, argTp)
 
         methodSym setInfo MethodType(List(paramSym), AnyTpe)
 
