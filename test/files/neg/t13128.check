@@ -1,0 +1,9 @@
+t13128.scala:9: warning: a type was inferred to be kind-polymorphic `Nothing` to conform to `F[_]`
+  def t1 = f1(1) // warn
+           ^
+t13128.scala:12: warning: a type was inferred to be kind-polymorphic `Nothing` to conform to `F[_]`
+  def t2 = f2(1)((x: Some[Int]) => 1) // warn
+           ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

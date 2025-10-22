@@ -483,6 +483,10 @@ trait Infer extends Checkable {
         WildcardType.fillList(tvars.length)
     }
 
+    def isRetractable(tparam: Symbol, targ: Type, restpe: Type): Boolean =
+      targ.typeSymbol == NothingClass &&                                   // only retract Nothings
+        (restpe.isWildcard || !varianceInType(restpe)(tparam).isPositive)  // don't retract covariant occurrences
+
     /** Retract arguments that were inferred to Nothing because inference failed. Correct types for repeated params.
      *
      * We detect Nothing-due-to-failure by only retracting a parameter if either:
@@ -503,12 +507,7 @@ trait Infer extends Checkable {
       val okArgs, allArgs = ListBuffer.empty[Type]
 
       foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
-        val retract = (
-              targ.typeSymbol == NothingClass                                         // only retract Nothings
-          && (restpe.isWildcard || !varianceInType(restpe)(tparam).isPositive)  // don't retract covariant occurrences
-        )
-
-        if (retract) {
+        if (isRetractable(tparam, targ, restpe)) {
           undetParams += tparam
           allArgs += NothingTpe
         } else {
@@ -594,7 +593,9 @@ trait Infer extends Checkable {
               !tvar.constr.hiBounds.exists(t => topTypes.contains(t.typeSymbol)))
             context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name
               }`; this may indicate a programming error.", LintInferAny)
-          if (!tparam.isMonomorphicType && !targ.isHigherKinded)
+          if (!tparam.isMonomorphicType &&
+              !targ.isHigherKinded &&
+              !isRetractable(tparam, targ, restpe))
             context.warning(fn.pos, s"a type was inferred to be kind-polymorphic `${targ.typeSymbol.name
               }` to conform to `${tparam.defString}`", LintInferAny)
         }
