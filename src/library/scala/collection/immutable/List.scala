@@ -646,6 +646,7 @@ final case class :: [+A](override val head: A, private[scala] var next: List[A @
   releaseFence()
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
+  override def knownSize: Int = if (this.next eq Nil) 1 else -1
 }
 
 case object Nil extends List[Nothing] {

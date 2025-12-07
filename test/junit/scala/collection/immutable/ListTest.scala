@@ -123,4 +123,15 @@ class ListTest extends AllocationTest {
     exactAllocates(expected(20), "list  size 20")(
       List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
   }
+
+  @Test def testKnownSizeForEmptyList(): Unit = {
+    val list = List.empty[Int]
+    assertEquals(0, list.knownSize)
+  }
+
+  @Test def testKnownSizeForOneElementList(): Unit = {
+    val list = "a" :: Nil
+    assertEquals(1, list.knownSize)
+  }
+
 }
