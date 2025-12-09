@@ -40,7 +40,7 @@ object ScriptCommands {
       Global / baseVersionSuffix := "SHA-SNAPSHOT",
     ) ++ (args flatMap {
       case url => publishTarget(url)
-    }) ++ noDocs ++ enableOptimizer
+    }) ++ noDocs
   }
 
   /** Set up the environment for `validate/test`.
@@ -53,7 +53,7 @@ object ScriptCommands {
       LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
     ) ++ (args flatMap {
       case url => Seq(Global / resolvers += "scala-pr" at url)
-    }) ++ enableOptimizer
+    })
   }
 
   /** Set up the environment for building STARR in `validate/bootstrap`. The arguments are:
@@ -64,7 +64,7 @@ object ScriptCommands {
     Seq(
       Global / baseVersion := ver,
       Global / baseVersionSuffix := "SPLIT"
-    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
+    ) ++ publishTarget(url) ++ noDocs
   }
 
   /** Set up the environment for building locker in `validate/bootstrap`. The arguments are:
@@ -76,7 +76,7 @@ object ScriptCommands {
       Global / baseVersion := ver,
       Global / baseVersionSuffix := "SPLIT",
       Global / resolvers += "scala-pr" at url
-    ) ++ publishTarget(url) ++ noDocs ++ enableOptimizer
+    ) ++ publishTarget(url) ++ noDocs
   }
 
   /** Set up the environment for building quick in `validate/bootstrap`. The arguments are:
@@ -93,7 +93,7 @@ object ScriptCommands {
       Global / baseVersionSuffix := "SPLIT",
       Global / resolvers += "scala-pr" at resolverUrl,
       LocalProject("test") / IntegrationTest / testOptions ++= Seq(Tests.Argument("--show-log"), Tests.Argument("--show-diff"))
-    ) ++ publishTarget(targetUrl) ++ enableOptimizer
+    ) ++ publishTarget(targetUrl)
   }
 
   /** Set up the environment for publishing in `validate/bootstrap`. The arguments are:
@@ -107,7 +107,7 @@ object ScriptCommands {
       Global / baseVersionSuffix := "SPLIT",
       Global / resolvers += "scala-pr" at url,
       Global / publishTo := localStaging.value,
-    ) ++ enableOptimizer
+    )
   }
 
   def enableOptimizerCommand = setup("enableOptimizer")(_ => enableOptimizer)
